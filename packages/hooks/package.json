@@ -41,21 +41,21 @@
     "graphql-request": "^5.1.0"
   },
   "devDependencies": {
-    "@tanstack/eslint-plugin-query": "^5.17.7",
+    "@tanstack/eslint-plugin-query": "^5.64.2",
     "@tanstack/react-query": "^5.17.15",
     "@testing-library/react": "^14.0.0",
     "@types/react": "^18.0.9",
     "@types/react-dom": "^18.0.3",
-    "@types/use-sync-external-store": "^0.0.3",
-    "@vitest/coverage-v8": "^3.0.2",
-    "@wagmi/cli": "^2.1.22",
-    "openapi-fetch": "^0.10.2",
+    "@types/use-sync-external-store": "^0.0.6",
+    "@vitest/coverage-v8": "^3.0.3",
+    "@wagmi/cli": "^2.2.0",
+    "openapi-fetch": "^0.13.4",
     "react-dom": "^18.2.0",
-    "typescript": "5.2.2",
+    "typescript": "5.7.3",
     "viem": "^2.21.19",
     "vite": "^6.0.4",
     "vite-plugin-dts": "^4.5.0",
-    "vitest": "^3.0.2",
+    "vitest": "^3.0.3",
     "wagmi": "^2.13.2"
   },
   "keywords": [
