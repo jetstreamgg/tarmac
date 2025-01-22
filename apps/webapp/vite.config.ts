@@ -65,7 +65,11 @@ export default ({ mode }: { mode: string }) => {
   return defineConfig({
     server: {
       // vite default is 5173
-      port: 3000
+      port: 3000,
+      watch: {
+        // Watch for changes in the packages directory
+        ignored: ['!**/node_modules/@jetstreamgg/**', '!**/packages/**']
+      }
     },
     preview: {
       port: 3000
