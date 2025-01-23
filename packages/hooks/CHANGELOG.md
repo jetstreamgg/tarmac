@@ -1,5 +1,12 @@
 # @jetstreamgg/hooks
 
+## 3.2.1
+
+### Patch Changes
+
+- 9875ab3: fix trade_tokens decimal inconsistency
+- 9875ab3: account for new ilk.rate
+
 ## 3.2.0
 
 ### Minor Changes

@@ -1,5 +1,15 @@
 # @jetstreamgg/widgets
 
+## 3.2.1
+
+### Patch Changes
+
+- 9875ab3: disable opening new position when debt ceiling reached
+- 9875ab3: account for new ilk.rate
+- Updated dependencies [9875ab3]
+- Updated dependencies [9875ab3]
+  - @jetstreamgg/hooks@3.2.1
+
 ## 3.2.0
 
 ### Minor Changes
