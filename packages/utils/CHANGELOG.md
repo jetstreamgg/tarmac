@@ -1,5 +1,11 @@
 # @jetstreamgg/utils
 
+## 2.3.0
+
+### Minor Changes
+
+- 3886a15: Add support for Safe wallet trades
+
 ## 2.2.0
 
 ### Minor Changes

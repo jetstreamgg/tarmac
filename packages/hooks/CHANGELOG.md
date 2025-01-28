@@ -1,5 +1,16 @@
 # @jetstreamgg/hooks
 
+## 3.3.0
+
+### Minor Changes
+
+- 3886a15: Add support for Safe wallet trades
+
+### Patch Changes
+
+- Updated dependencies [3886a15]
+  - @jetstreamgg/utils@2.3.0
+
 ## 3.2.1
 
 ### Patch Changes
