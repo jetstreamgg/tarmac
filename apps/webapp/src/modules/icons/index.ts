@@ -32,6 +32,9 @@ import { BaseNetwork } from './BaseNetwork';
 import { MainnetNetwork } from './MainnetNetwork';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
+import { Chat } from './Chat';
+import { ChatError } from './ChatError';
+import { ChatbotSend } from './ChatbotSend';
 
 export {
   ArrowDown,
@@ -67,5 +70,8 @@ export {
   BaseNetwork,
   MainnetNetwork,
   BaseChain,
-  MainnetChain
+  MainnetChain,
+  Chat,
+  ChatError,
+  ChatbotSend
 };

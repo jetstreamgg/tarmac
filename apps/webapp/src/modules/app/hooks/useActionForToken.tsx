@@ -22,14 +22,15 @@ export const useActionForToken = () => {
 
   const actionForToken = useCallback(
     (symbol: string, balance: string) => {
-      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details } = QueryParams;
+      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details, Chat } =
+        QueryParams;
       const {
         REWARDS_INTENT: REWARD,
         UPGRADE_INTENT: UPGRADE,
         TRADE_INTENT: TRADE,
         SAVINGS_INTENT: SAVINGS
       } = IntentMapping;
-      const retainedParams = [Locale, Details];
+      const retainedParams = [Locale, Details, Chat];
 
       const lowerSymbol = symbol.toLowerCase();
       const upperSymbol = symbol.toUpperCase();

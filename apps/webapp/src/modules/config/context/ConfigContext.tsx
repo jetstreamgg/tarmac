@@ -52,7 +52,8 @@ export const StepMap: Record<LinkedActionSteps, StepIndicatorStates[]> = {
 const defaultUserConfig: UserConfig = {
   locale: undefined,
   intent: Intent.BALANCES_INTENT,
-  sealToken: SealToken.MKR
+  sealToken: SealToken.MKR,
+  chatSuggested: false
 };
 
 const defaultLinkedActionConfig = {
