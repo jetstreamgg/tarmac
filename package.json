@@ -35,7 +35,8 @@
     "messages:extract": "pnpm -F widgets -F integration-ui -F webapp messages:extract",
     "messages:compile": "pnpm -F widgets -F integration-ui -F webapp messages:compile",
     "messages": "pnpm -F widgets -F integration-ui -F webapp messages",
-    "changeset:release": "pnpm build && changeset publish"
+    "changeset:release": "pnpm build && changeset publish",
+    "knip": "knip"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -79,6 +80,7 @@
     "eslint-plugin-testing-library": "^5.9.1",
     "happy-dom": "^15.11.7",
     "husky": "^8.0.3",
+    "knip": "^5.43.6",
     "lint-staged": "^15.2.2",
     "prettier": "^3.4.2",
     "rollup-plugin-visualizer": "^5.14.0",

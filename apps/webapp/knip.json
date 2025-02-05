@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "{index,cli,main}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}",
+    "src/{index,cli,main}.{js,cjs,mjs,jsx,ts,cts,mts,tsx,html}",
+    "src/pages/main.tsx",
+    "lingui.config.ts",
+    "vite.config.ts",
+    "src/global.css",
+    "src/modules/app/components/MainApp.tsx"
+  ],
+  "project": ["**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
+  "vite": {
+    "config": ["vite.config.{js,mjs,ts,cjs,mts,cts}"]
+  },
+  "tailwind": {
+    "entry": ["tailwind.config.{js,cjs,mjs,ts}"]
+  },
+  "postcss": {
+    "config": [
+      "package.json",
+      "postcss.config.json",
+      ".postcssrc",
+      ".postcssrc.{json,js,cjs,mjs,ts,mts,cts,yaml,yml}",
+      "postcss.config.{js,cjs,mjs,ts,mts,cts}"
+    ]
+  },
+  "typescript": {
+    "config": ["tsconfig.json", "tsconfig.node.json"]
+  }
+}
