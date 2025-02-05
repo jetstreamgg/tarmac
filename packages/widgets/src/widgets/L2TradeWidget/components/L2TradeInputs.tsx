@@ -37,7 +37,7 @@ type TradeInputsProps = {
   setMaxWithdraw?: (val: boolean) => void;
 };
 
-export function BaseTradeInputs({
+export function L2TradeInputs({
   setOriginAmount,
   originBalance,
   originToken,

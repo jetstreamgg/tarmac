@@ -1,6 +1,6 @@
 import {
-  psm3BaseAddress,
-  sUsdsBaseAddress,
+  psm3L2Address,
+  sUsdsL2Address,
   Token,
   TOKENS,
   useApproveToken,
@@ -15,7 +15,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
 import { SavingsTransactionStatus } from '../SavingsWidget/components/SavingsTransactionStatus';
-import { BaseSavingsSupplyWithdraw } from './components/BaseSavingsSupplyWithdraw';
+import { L2SavingsSupplyWithdraw } from './components/L2SavingsSupplyWithdraw';
 import { WidgetContext, WidgetProvider } from '@/context/WidgetContext';
 import { NotificationType, TxStatus, EPOCH_LENGTH } from '@/shared/constants';
 import { WidgetProps, WidgetState } from '@/shared/types/widgetState';
@@ -79,7 +79,7 @@ export type SavingsWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
-export const BaseSavingsWidget = ({
+export const L2SavingsWidget = ({
   onConnect,
   addRecentTransaction,
   locale,
@@ -174,7 +174,7 @@ const SavingsWidgetWrapped = ({
     contractAddress:
       widgetState.flow === SavingsFlow.SUPPLY ? originToken?.address[chainId] : TOKENS.susds.address[chainId],
     owner: address,
-    spender: psm3BaseAddress[chainId as keyof typeof psm3BaseAddress]
+    spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
   });
 
   const { data: chi } = useReadSsrAuthOracleGetChi();
@@ -208,7 +208,7 @@ const SavingsWidgetWrapped = ({
 
   const { data: sUsdsBalance, refetch: mutateSUsdsBalance } = useTokenBalance({
     address,
-    token: sUsdsBaseAddress[chainId as keyof typeof sUsdsBaseAddress],
+    token: sUsdsL2Address[chainId as keyof typeof sUsdsL2Address],
     chainId
   });
 
@@ -236,7 +236,7 @@ const SavingsWidgetWrapped = ({
     amount: amountToApprove,
     contractAddress:
       widgetState.flow === SavingsFlow.SUPPLY ? originToken.address[chainId] : TOKENS.susds.address[chainId],
-    spender: psm3BaseAddress[chainId as keyof typeof psm3BaseAddress],
+    spender: psm3L2Address[chainId as keyof typeof psm3L2Address],
     onStart: (hash: string) => {
       addRecentTransaction?.({
         hash,
@@ -765,7 +765,7 @@ const SavingsWidgetWrapped = ({
           </CardAnimationWrapper>
         ) : (
           <CardAnimationWrapper key="widget-inputs">
-            <BaseSavingsSupplyWithdraw
+            <L2SavingsSupplyWithdraw
               leftTabTitle={t`Supply`}
               rightTabTitle={t`Withdraw`}
               originAmount={debouncedAmount}

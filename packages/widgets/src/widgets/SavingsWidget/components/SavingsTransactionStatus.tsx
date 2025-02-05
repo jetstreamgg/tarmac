@@ -23,7 +23,7 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { approveLoadingButtonText } from '@/shared/constants';
 import { getTokenDecimals } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
 
 // TX Status wrapper to update copy
 export const SavingsTransactionStatus = ({
@@ -67,7 +67,7 @@ export const SavingsTransactionStatus = ({
         i18n._(
           getSavingsApproveSubtitle(
             txStatus,
-            isBaseChainId(chainId) ? (flow === SavingsFlow.WITHDRAW ? 'sUSDS' : originToken.symbol) : 'USDS'
+            isL2ChainId(chainId) ? (flow === SavingsFlow.WITHDRAW ? 'sUSDS' : originToken.symbol) : 'USDS'
           )
         )
       );

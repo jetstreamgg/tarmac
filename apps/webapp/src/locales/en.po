@@ -118,7 +118,7 @@ msgid "Amount"
 msgstr ""
 
 #: src/modules/ui/components/TermsModal.tsx
-msgid "An error occurred while submitting your signature. Please ensure your wallet is connected to either Ethereum mainnet or Base and try again. If the issue persists, reach out for assistance in the official <0>Sky Discord</0>"
+msgid "An error occurred while submitting your signature. Please ensure your wallet is connected to either Ethereum mainnet, Base or Arbitrum and try again. If the issue persists, reach out for assistance in the official <0>Sky Discord</0>"
 msgstr ""
 
 #: src/lib/constants.ts
@@ -255,7 +255,7 @@ msgstr ""
 msgid "Get SKY rewards with USDS"
 msgstr ""
 
-#. placeholder {0}: isBase ? 'Base' : ''
+#. placeholder {0}: isBase ? 'Base' : isArbitrum ? 'Arbitrum' : ''
 #: src/modules/balances/components/ModuleCard.tsx
 msgid "Go to {0} {module}"
 msgstr ""
@@ -473,8 +473,9 @@ msgstr ""
 msgid "Soon"
 msgstr ""
 
+#. placeholder {0}: isBase ? 'Base' : isArbitrum ? 'Arbitrum' : ''
 #: src/modules/balances/components/ModuleCard.tsx
-msgid "Soon on Base"
+msgid "Soon on {0}"
 msgstr ""
 
 #: src/modules/ui/hooks/useUserSuggestedActions.ts

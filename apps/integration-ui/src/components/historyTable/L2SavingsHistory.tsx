@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import { useBaseSavingsHistory, useSavingsData } from '@jetstreamgg/hooks';
+import { useL2SavingsHistory, useSavingsData } from '@jetstreamgg/hooks';
 import { formatBigInt, formatTradeAmount, useFormatDates } from '@jetstreamgg/utils';
 import { HistoryTable } from './HistoryTable';
 import { getTokenDecimals } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
 
-export function BaseSavingsHistory() {
-  const { data: savingsHistory, isLoading: savingsHistoryLoading, error } = useBaseSavingsHistory();
+export function L2SavingsHistory() {
+  const { data: savingsHistory, isLoading: savingsHistoryLoading, error } = useL2SavingsHistory();
   const chainId = useChainId();
   const memoizedDates = useMemo(() => {
     return savingsHistory ? savingsHistory.map(s => s.blockTimestamp) : [];
@@ -36,7 +36,7 @@ export function BaseSavingsHistory() {
         history={history}
         error={error}
         isLoading={savingsHistoryLoading}
-        transactionHeader={'Base Savings'}
+        transactionHeader={'L2 Savings'}
       />
     </>
   );

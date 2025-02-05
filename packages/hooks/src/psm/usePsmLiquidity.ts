@@ -1,7 +1,7 @@
-import { usdsBaseAddress, usdcBaseAddress, sUsdsBaseAddress } from '../generated';
+import { usdsL2Address, usdcL2Address, sUsdsL2Address } from '../generated';
 import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
-import { useReadPsm3BasePocket } from '../generated';
+import { useReadPsm3L2Pocket } from '../generated';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { TokenBalance } from '../tokens/useTokenBalance';
 
@@ -16,7 +16,7 @@ export function usePsmLiquidity(): PsmLiquidityHookResponse {
     isLoading: pocketLoading,
     error: pocketError,
     refetch: mutatePocket
-  } = useReadPsm3BasePocket();
+  } = useReadPsm3L2Pocket();
   const {
     data: usdcBalance,
     isLoading: usdcLoading,
@@ -24,7 +24,7 @@ export function usePsmLiquidity(): PsmLiquidityHookResponse {
     refetch: mutateUsdc
   } = useTokenBalance({
     chainId,
-    token: usdcBaseAddress[chainId as keyof typeof usdcBaseAddress],
+    token: usdcL2Address[chainId as keyof typeof usdcL2Address],
     address: pocketAddress,
     enabled: !!pocketAddress
   });
@@ -35,7 +35,7 @@ export function usePsmLiquidity(): PsmLiquidityHookResponse {
     refetch: mutateUsds
   } = useTokenBalance({
     chainId,
-    token: usdsBaseAddress[chainId as keyof typeof usdsBaseAddress],
+    token: usdsL2Address[chainId as keyof typeof usdsL2Address],
     address: pocketAddress,
     enabled: !!pocketAddress
   });
@@ -46,7 +46,7 @@ export function usePsmLiquidity(): PsmLiquidityHookResponse {
     refetch: mutateSusds
   } = useTokenBalance({
     chainId,
-    token: sUsdsBaseAddress[chainId as keyof typeof sUsdsBaseAddress],
+    token: sUsdsL2Address[chainId as keyof typeof sUsdsL2Address],
     address: pocketAddress,
     enabled: !!pocketAddress
   });

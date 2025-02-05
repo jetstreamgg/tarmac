@@ -50,7 +50,7 @@ export { useRewardsPeriodFinish } from './rewards/useRewardsPeriodFinish';
 
 // Shared
 export { useCombinedHistory } from './shared/useCombinedHistory';
-export { useBaseCombinedHistory } from './shared/useBaseCombinedHistory';
+export { useL2CombinedHistory } from './shared/useL2CombinedHistory';
 export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
@@ -139,8 +139,8 @@ export { useDelegateOwner } from './delegates/useDelegateOwner';
 // PSM
 export { usePsmSwapExactIn } from './psm/usePsmSwapExactIn';
 export { usePsmSwapExactOut } from './psm/usePsmSwapExactOut';
-export { useBaseSavingsHistory } from './psm/useBaseSavingsHistory';
-export { useBaseTradeHistory } from './psm/useBaseTradeHistory';
+export { useL2SavingsHistory } from './psm/useL2SavingsHistory';
+export { useL2TradeHistory } from './psm/useL2TradeHistory';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
 export { usePreviewSwapExactIn } from './psm/usePreviewSwapExactIn';
 export { usePreviewSwapExactOut } from './psm/usePreviewSwapExactOut';
@@ -215,20 +215,20 @@ export {
   usdtSepoliaAddress,
   mcdDaiSepoliaAddress,
   sealModuleAddress,
-  usdcBaseAddress,
-  usdsBaseAddress,
-  sUsdsBaseAddress,
-  skyBaseAddress,
-  psm3BaseAddress,
-  useReadPsm3BaseConvertToShares,
-  useReadPsm3BaseConvertToAssetValue,
+  usdcL2Address,
+  usdsL2Address,
+  sUsdsL2Address,
+  skyL2Address,
+  psm3L2Address,
+  useReadPsm3L2ConvertToShares,
+  useReadPsm3L2ConvertToAssetValue,
   ssrAuthOracleAbi,
   useReadSsrAuthOracleGetChi,
   useReadSsrAuthOracleGetRho,
   useReadSsrAuthOracleGetSsr,
-  useReadPsm3BasePocket,
-  useReadPsm3BasePreviewSwapExactIn,
-  useReadPsm3BasePreviewSwapExactOut
+  useReadPsm3L2Pocket,
+  useReadPsm3L2PreviewSwapExactIn,
+  useReadPsm3L2PreviewSwapExactOut
 } from './generated';
-export { contracts, tenderlyContracts, sepoliaContracts, baseContracts } from './contracts';
+export { contracts, tenderlyContracts, sepoliaContracts, l2Contracts } from './contracts';
 export * from './seal/calldata';

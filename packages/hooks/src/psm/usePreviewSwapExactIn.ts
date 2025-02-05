@@ -2,7 +2,7 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { Token } from '../tokens/types';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { useChainId } from 'wagmi';
-import { useReadPsm3BasePreviewSwapExactIn } from '../generated';
+import { useReadPsm3L2PreviewSwapExactIn } from '../generated';
 import { ZERO_ADDRESS } from '../index';
 
 export const usePreviewSwapExactIn = (
@@ -11,7 +11,7 @@ export const usePreviewSwapExactIn = (
   outToken: Token | undefined
 ) => {
   const chainId = useChainId();
-  const { data: amountOut } = useReadPsm3BasePreviewSwapExactIn({
+  const { data: amountOut } = useReadPsm3L2PreviewSwapExactIn({
     args: [
       inToken?.address[chainId] || ZERO_ADDRESS,
       outToken?.address[chainId] || ZERO_ADDRESS,

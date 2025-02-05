@@ -2,7 +2,7 @@ import { defineConfig, loadEnv } from '@wagmi/cli';
 import { etherscan, fetch as fetchPlugin, react } from '@wagmi/cli/plugins';
 import { mainnet, sepolia, base } from 'wagmi/chains';
 
-import { contracts, tenderlyContracts, sepoliaContracts, baseContracts } from './src';
+import { contracts, tenderlyContracts, sepoliaContracts, l2Contracts } from './src';
 
 export default defineConfig(() => {
   const hookNames: string[] = [];
@@ -44,7 +44,7 @@ export default defineConfig(() => {
       etherscan({
         apiKey: env.BASESCAN_API_KEY,
         chainId: base.id,
-        contracts: baseContracts
+        contracts: l2Contracts
       }),
       // The fetch plugin fetches ABIs for contracts deployed on the tenderly testnet
       fetchPlugin({

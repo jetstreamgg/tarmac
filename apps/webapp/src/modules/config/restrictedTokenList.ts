@@ -1,4 +1,4 @@
-import { sepolia, mainnet, base } from 'wagmi/chains';
+import { sepolia, mainnet, base, arbitrum } from 'wagmi/chains';
 import {
   usdcAddress,
   usdcSepoliaAddress,
@@ -13,11 +13,15 @@ import {
   ETH_ADDRESS,
   mkrAddress,
   skyAddress,
-  usdcBaseAddress,
-  usdsBaseAddress
+  usdcL2Address,
+  usdsL2Address
 } from '@jetstreamgg/hooks';
-import { tenderly, tenderlyBase } from '@/data/wagmi/config/config.default';
-import { TENDERLY_CHAIN_ID, TENDERLY_BASE_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { tenderly, tenderlyBase, tenderlyArbitrum } from '@/data/wagmi/config/config.default';
+import {
+  TENDERLY_CHAIN_ID,
+  TENDERLY_BASE_CHAIN_ID,
+  TENDERLY_ARBITRUM_CHAIN_ID
+} from '@/data/wagmi/config/testTenderlyChain';
 
 const { usdc, usdt, eth, weth, dai, usds, mkr, sky } = TOKENS;
 
@@ -51,13 +55,22 @@ export const restrictedTokenList = {
     { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
   ],
   [base.id]: [
-    { ...usdc, address: usdcBaseAddress[base.id] },
-    { ...usds, address: usdsBaseAddress[base.id] },
+    { ...usdc, address: usdcL2Address[base.id] },
+    { ...usds, address: usdsL2Address[base.id] },
+    { ...eth, address: ETH_ADDRESS }
+  ],
+  [arbitrum.id]: [
+    { ...usdc, address: usdcL2Address[arbitrum.id] },
+    { ...usds, address: usdsL2Address[arbitrum.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
   [tenderlyBase.id]: [
-    { ...usdc, address: usdcBaseAddress[TENDERLY_BASE_CHAIN_ID] },
-    { ...usds, address: usdsBaseAddress[TENDERLY_BASE_CHAIN_ID] }
+    { ...usdc, address: usdcL2Address[TENDERLY_BASE_CHAIN_ID] },
+    { ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }
+  ],
+  [tenderlyArbitrum.id]: [
+    { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
+    { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
   ]
 };
 
@@ -85,10 +98,15 @@ export const restrictedTokenListMiCa = {
     { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
   ],
   [base.id]: [
-    { ...usds, address: usdsBaseAddress[base.id] },
+    { ...usds, address: usdsL2Address[base.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
-  [tenderlyBase.id]: [{ ...usds, address: usdsBaseAddress[TENDERLY_BASE_CHAIN_ID] }]
+  [arbitrum.id]: [
+    { ...usds, address: usdsL2Address[arbitrum.id] },
+    { ...eth, address: ETH_ADDRESS }
+  ],
+  [tenderlyBase.id]: [{ ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }],
+  [tenderlyArbitrum.id]: [{ ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }]
 };
 
 export const restrictedTokenListTrade = {
@@ -118,11 +136,19 @@ export const restrictedTokenListTrade = {
     { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
   ],
   [base.id]: [
-    { ...usdc, address: usdcBaseAddress[base.id] },
-    { ...usds, address: usdsBaseAddress[base.id] }
+    { ...usdc, address: usdcL2Address[base.id] },
+    { ...usds, address: usdsL2Address[base.id] }
+  ],
+  [arbitrum.id]: [
+    { ...usds, address: usdsL2Address[arbitrum.id] },
+    { ...eth, address: ETH_ADDRESS }
   ],
   [tenderlyBase.id]: [
-    { ...usdc, address: usdcBaseAddress[TENDERLY_BASE_CHAIN_ID] },
-    { ...usds, address: usdsBaseAddress[TENDERLY_BASE_CHAIN_ID] }
+    { ...usdc, address: usdcL2Address[TENDERLY_BASE_CHAIN_ID] },
+    { ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }
+  ],
+  [tenderlyArbitrum.id]: [
+    { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
+    { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
   ]
 };

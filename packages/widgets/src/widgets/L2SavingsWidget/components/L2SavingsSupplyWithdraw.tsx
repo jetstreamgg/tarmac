@@ -8,7 +8,7 @@ import { TransactionOverview } from '@/shared/components/ui/transaction/Transact
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@/shared/animation/presets';
-import { BaseSavingsStatsCard } from './BaseSavingsStatsCard';
+import { L2SavingsStatsCard } from './L2SavingsStatsCard';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/utils';
 import { useChainId } from 'wagmi';
 
@@ -33,7 +33,7 @@ type Props = WidgetProps & {
   setMaxWithdraw?: (val: boolean) => void;
 };
 
-export function BaseSavingsSupplyWithdraw({
+export function L2SavingsSupplyWithdraw({
   leftTabTitle,
   rightTabTitle,
   originToken,
@@ -88,7 +88,7 @@ export function BaseSavingsSupplyWithdraw({
         </motion.div>
 
         <motion.div variants={positionAnimations}>
-          <BaseSavingsStatsCard
+          <L2SavingsStatsCard
             isConnectedAndEnabled={isConnectedAndEnabled}
             onExternalLinkClicked={onExternalLinkClicked}
             convertedBalance={convertedBalance}
@@ -111,7 +111,7 @@ export function BaseSavingsSupplyWithdraw({
                   onMenuItemChange?.(token as Token);
                 }}
                 value={originAmount}
-                dataTestId="base-savings-suuply-input"
+                dataTestId="l2-savings-supply-input"
                 error={error ? t`Insufficient funds` : undefined}
                 showPercentageButtons={isConnectedAndEnabled}
                 enabled={isConnectedAndEnabled}
@@ -126,7 +126,7 @@ export function BaseSavingsSupplyWithdraw({
                 balance={convertedBalance?.value}
                 onChange={onOriginInputChange}
                 value={originAmount}
-                dataTestId="base-savings-withdraw-input"
+                dataTestId="l2-savings-withdraw-input"
                 label={t`How much ${originToken?.symbol} would you like to withdraw?`}
                 tokenList={originOptions || []}
                 onTokenSelected={token => {

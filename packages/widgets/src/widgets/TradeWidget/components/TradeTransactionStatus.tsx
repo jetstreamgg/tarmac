@@ -2,13 +2,7 @@ import { useContext, useEffect } from 'react';
 import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { getTokenDecimals, OrderQuoteResponse, Token } from '@jetstreamgg/hooks';
-import {
-  WAD_PRECISION,
-  formatBigInt,
-  ExplorerName,
-  getExplorerName,
-  isBaseChainId
-} from '@jetstreamgg/utils';
+import { WAD_PRECISION, formatBigInt, ExplorerName, getExplorerName, isL2ChainId } from '@jetstreamgg/utils';
 import { TxCardCopyText } from '@/shared/types/txCardCopyText';
 import { WidgetContext } from '@/context/WidgetContext';
 import { TransactionStatus } from '@/shared/components/ui/transaction/TransactionStatus';
@@ -100,7 +94,7 @@ export const TradeTransactionStatus = ({
         ).toString()
       : undefined;
 
-  const isBase = isBaseChainId(chainId);
+  const isL2 = isL2ChainId(chainId);
   const chainExplorerName = getExplorerName(chainId);
 
   useEffect(() => {
@@ -178,7 +172,7 @@ export const TradeTransactionStatus = ({
   return (
     <TransactionStatus
       explorerName={
-        action === TradeAction.APPROVE || isBase
+        action === TradeAction.APPROVE || isL2
           ? chainExplorerName
           : isEthFlow &&
               (ethFlowTxStatus === EthFlowTxStatus.SENDING_ETH ||

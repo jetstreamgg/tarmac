@@ -1,14 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getBaseSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getL2SubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { SavingsHistory, SavingsHistoryItem } from '../savings/savings';
 
-async function fetchBaseSavingsHistory(
+async function fetchL2SavingsHistory(
   urlSubgraph: string,
   chainId: number,
   address?: string,
@@ -119,7 +119,7 @@ async function fetchBaseSavingsHistory(
   );
 }
 
-export function useBaseSavingsHistory({
+export function useL2SavingsHistory({
   subgraphUrl,
   enabled = true
 }: {
@@ -128,7 +128,7 @@ export function useBaseSavingsHistory({
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useAccount();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getBaseSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainId) || '';
   const tokenAddressMap = useTokenAddressMap();
 
   const {
@@ -138,8 +138,8 @@ export function useBaseSavingsHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph) && enabled && Boolean(tokenAddressMap),
-    queryKey: ['base-savings-history', urlSubgraph, address, chainId],
-    queryFn: () => fetchBaseSavingsHistory(urlSubgraph, chainId, address, tokenAddressMap)
+    queryKey: ['L2-savings-history', urlSubgraph, address, chainId],
+    queryFn: () => fetchL2SavingsHistory(urlSubgraph, chainId, address, tokenAddressMap)
   });
 
   return {

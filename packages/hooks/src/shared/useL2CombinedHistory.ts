@@ -1,11 +1,11 @@
-import { useBaseSavingsHistory } from '../psm/useBaseSavingsHistory';
-import { useBaseTradeHistory } from '../psm/useBaseTradeHistory';
+import { useL2SavingsHistory } from '../psm/useL2SavingsHistory';
+import { useL2TradeHistory } from '../psm/useL2TradeHistory';
 import { CombinedHistoryItem } from './shared';
 import { useMemo } from 'react';
 
-export function useBaseCombinedHistory() {
-  const savingsHistory = useBaseSavingsHistory();
-  const tradeHistory = useBaseTradeHistory();
+export function useL2CombinedHistory() {
+  const savingsHistory = useL2SavingsHistory();
+  const tradeHistory = useL2TradeHistory();
 
   const combinedData = useMemo(() => {
     return [...(savingsHistory.data || []), ...(tradeHistory.data || [])].sort(

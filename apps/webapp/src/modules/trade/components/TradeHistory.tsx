@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getTokenDecimals, TokenForChain, useTradeHistory } from '@jetstreamgg/hooks';
-import { formatNumber, useFormatDates, isBaseChainId } from '@jetstreamgg/utils';
+import { formatNumber, useFormatDates, isL2ChainId } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
@@ -34,7 +34,7 @@ export function TradeHistory() {
     ...('cowOrderStatus' in s ? { cowOrderStatus: s.cowOrderStatus } : {})
   }));
 
-  const isBase = isBaseChainId(chainId);
+  const isL2 = isL2ChainId(chainId);
 
   return (
     <HistoryTable
@@ -42,8 +42,8 @@ export function TradeHistory() {
       error={error}
       isLoading={tradeHistoryLoading}
       transactionHeader={t`Trades`}
-      statusColumn={!isBase}
-      cowExplorerLink={!isBase}
+      statusColumn={!isL2}
+      cowExplorerLink={!isL2}
     />
   );
 }

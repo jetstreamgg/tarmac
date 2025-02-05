@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { BalancesWidgetDisplay } from './widgets/BalancesWidgetDisplay';
-import { BaseSavingsWidgetDisplay } from './widgets/BaseSavingsWidgetDisplay';
-import { BaseTradeWidgetDisplay } from './widgets/BaseTradeWidgetDisplay';
+import { L2SavingsWidgetDisplay } from './widgets/L2SavingsWidgetDisplay';
+import { L2TradeWidgetDisplay } from './widgets/L2TradeWidgetDisplay';
 import { ExternalWidgetState } from '@jetstreamgg/widgets';
 import { ActionButtons } from './components/ActionButtons';
-import { BaseTradeHistory } from '@/components/historyTable/BaseTradeHistory';
-import { BaseSavingsHistory } from '@/components/historyTable/BaseSavingsHistory';
+import { L2TradeHistory } from '@/components/historyTable/L2TradeHistory';
+import { L2SavingsHistory } from '@/components/historyTable/L2SavingsHistory';
 import { TOKENS } from '@jetstreamgg/hooks';
 
 export type CustomNavigation = { href: string; label: string };
@@ -34,13 +34,13 @@ export function LandingBase(): React.ReactElement {
         return <BalancesWidgetDisplay />;
       case 'savings':
         return (
-          <BaseSavingsWidgetDisplay
+          <L2SavingsWidgetDisplay
             externalWidgetState={savingsInitialState}
             disallowedTokens={restricted ? { supply: [TOKENS.usdc], withdraw: [TOKENS.usdc] } : undefined}
           />
         );
       case 'trade':
-        return <BaseTradeWidgetDisplay externalWidgetState={savingsInitialState} />;
+        return <L2TradeWidgetDisplay externalWidgetState={savingsInitialState} />;
       default:
         return null;
     }
@@ -49,9 +49,9 @@ export function LandingBase(): React.ReactElement {
   const renderActiveDetails = () => {
     switch (activeWidget) {
       case 'trade':
-        return <BaseTradeHistory />;
+        return <L2TradeHistory />;
       case 'savings':
-        return <BaseSavingsHistory />;
+        return <L2SavingsHistory />;
       default:
         return null;
     }

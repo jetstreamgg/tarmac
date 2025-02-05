@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
-import { useBaseTradeHistory } from '@jetstreamgg/hooks';
+import { useL2TradeHistory } from '@jetstreamgg/hooks';
 import { formatTradeAmount, useFormatDates } from '@jetstreamgg/utils';
 import { HistoryTable } from './HistoryTable';
 import { getTokenDecimals } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
 
-export function BaseTradeHistory() {
-  const { data: tradeHistory, isLoading: tradeHistoryLoading, error } = useBaseTradeHistory();
+export function L2TradeHistory() {
+  const { data: tradeHistory, isLoading: tradeHistoryLoading, error } = useL2TradeHistory();
   const chainId = useChainId();
   const memoizedDates = useMemo(() => {
     return tradeHistory ? tradeHistory.map(s => s.blockTimestamp) : [];
@@ -30,7 +30,7 @@ export function BaseTradeHistory() {
       history={history}
       error={error}
       isLoading={tradeHistoryLoading}
-      transactionHeader={'Base Trades'}
+      transactionHeader={'L2 Trades'}
     />
   );
 }

@@ -4,12 +4,15 @@ import {
   STAGING_URL_SKY_SUBGRAPH_TESTNET,
   STAGING_URL_SKY_SUBGRAPH_BASE,
   STAGING_URL_SKY_SUBGRAPH_BASE_TENDERLY,
-  PROD_URL_SKY_SUBGRAPH_BASE
+  PROD_URL_SKY_SUBGRAPH_BASE,
+  PROD_URL_SKY_SUBGRAPH_ARBITRUM,
+  STAGING_URL_SKY_SUBGRAPH_ARBITRUM,
+  STAGING_URL_SKY_SUBGRAPH_ARBITRUM_TENDERLY
 } from '@/lib/constants';
 import { useState, useEffect } from 'react';
 import { useChainId } from 'wagmi';
-import { mainnet, base } from 'viem/chains';
-import { tenderly, tenderlyBase } from '@/data/wagmi/config/config.default';
+import { mainnet, base, arbitrum } from 'viem/chains';
+import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
 
 export function useSubgraphUrl(overrideChainId?: number) {
   const connectedChainId = useChainId();
@@ -25,8 +28,14 @@ export function useSubgraphUrl(overrideChainId?: number) {
         case base.id:
           setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_BASE);
           break;
+        case arbitrum.id:
+          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_ARBITRUM);
+          break;
         case tenderlyBase.id:
           setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_BASE_TENDERLY);
+          break;
+        case tenderlyArbitrum.id:
+          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_ARBITRUM_TENDERLY);
           break;
         case tenderly.id:
           setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_TESTNET);
@@ -41,6 +50,9 @@ export function useSubgraphUrl(overrideChainId?: number) {
           break;
         case base.id:
           setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_BASE);
+          break;
+        case arbitrum.id:
+          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_ARBITRUM);
           break;
       }
     }

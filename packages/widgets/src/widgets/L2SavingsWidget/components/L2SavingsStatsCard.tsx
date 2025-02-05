@@ -9,16 +9,10 @@ import { StatsOverviewCardCore } from '@/shared/components/ui/card/StatsOverview
 import { MotionHStack } from '@/shared/components/ui/layout/MotionHStack';
 import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
 import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
-import {
-  sUsdsBaseAddress,
-  useTokenBalance,
-  useOverallSkyData,
-  Token,
-  psm3BaseAddress
-} from '@jetstreamgg/hooks';
+import { sUsdsL2Address, useTokenBalance, useOverallSkyData, Token, psm3L2Address } from '@jetstreamgg/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
 
-type BaseSavingsStatsCardProps = {
+type L2SavingsStatsCardProps = {
   isConnectedAndEnabled?: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   convertedBalance?: {
@@ -28,18 +22,18 @@ type BaseSavingsStatsCardProps = {
   originToken?: Token;
 };
 
-export const BaseSavingsStatsCard = ({
+export const L2SavingsStatsCard = ({
   isConnectedAndEnabled = true,
   onExternalLinkClicked,
   convertedBalance,
   originToken
-}: BaseSavingsStatsCardProps) => {
+}: L2SavingsStatsCardProps) => {
   const chainId = useChainId();
   const { address } = useAccount();
   const { data: overallSkyData } = useOverallSkyData();
   const { data: sUsdsBalance } = useTokenBalance({
     address,
-    token: sUsdsBaseAddress[chainId as keyof typeof sUsdsBaseAddress],
+    token: sUsdsL2Address[chainId as keyof typeof sUsdsL2Address],
     chainId
   });
   const skySavingsRatecRate = overallSkyData?.skySavingsRatecRate
@@ -100,7 +94,7 @@ export const BaseSavingsStatsCard = ({
       content={
         <StatsAccordionCard
           chainId={chainId}
-          address={psm3BaseAddress[chainId as keyof typeof psm3BaseAddress]}
+          address={psm3L2Address[chainId as keyof typeof psm3L2Address]}
           accordionTitle="Savings info"
           accordionContent={accordionContent}
           onExternalLinkClicked={onExternalLinkClicked}

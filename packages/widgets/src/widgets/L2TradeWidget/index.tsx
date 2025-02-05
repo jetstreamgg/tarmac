@@ -6,7 +6,7 @@ import {
   usePsmSwapExactIn,
   getTokenDecimals,
   useTokenAllowance,
-  psm3BaseAddress,
+  psm3L2Address,
   useApproveToken,
   Token,
   useReadSsrAuthOracleGetChi,
@@ -21,7 +21,6 @@ import {
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { formatBigInt, getEtherscanLink, math, useDebounce } from '@jetstreamgg/utils';
 import { useAccount, useChainId } from 'wagmi';
-import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { notificationTypeMaping, TxStatus, EPOCH_LENGTH } from '@/shared/constants';
 import { WidgetContainer } from '@/shared/components/ui/widget/WidgetContainer';
@@ -31,7 +30,7 @@ import { defaultConfig } from '@/config/default-config';
 import { useLingui } from '@lingui/react';
 import { parseUnits } from 'viem';
 import { getValidatedState } from '@/lib/utils';
-import { BaseTradeInputs } from './components/BaseTradeInputs';
+import { L2TradeInputs } from './components/L2TradeInputs';
 import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
 import { useAddTokenToWallet } from '@/shared/hooks/useAddTokenToWallet';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
@@ -83,9 +82,10 @@ export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  widgetTitle?: string;
 };
 
-export const BaseTradeWidget = ({
+export const L2TradeWidget = ({
   onConnect,
   addRecentTransaction,
   locale,
@@ -100,7 +100,8 @@ export const BaseTradeWidget = ({
   customNavigationLabel,
   onExternalLinkClicked,
   enabled = true,
-  referralCode
+  referralCode,
+  widgetTitle
 }: TradeWidgetProps) => {
   return (
     <ErrorBoundary componentName="TradeWidget">
@@ -121,6 +122,7 @@ export const BaseTradeWidget = ({
           onExternalLinkClicked={onExternalLinkClicked}
           enabled={enabled}
           referralCode={referralCode}
+          widgetTitle={widgetTitle}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -142,7 +144,8 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   enabled = true,
-  referralCode
+  referralCode,
+  widgetTitle
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
@@ -282,7 +285,7 @@ function TradeWidgetWrapped({
     chainId,
     contractAddress: originToken?.address as `0x${string}`,
     owner: address,
-    spender: psm3BaseAddress[chainId as keyof typeof psm3BaseAddress]
+    spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
   });
 
   const needsAllowance = !!(!allowance || allowance < debouncedOriginAmount);
@@ -394,7 +397,7 @@ function TradeWidgetWrapped({
   } = useApproveToken({
     amount: debouncedOriginAmount,
     contractAddress: originTokenAddress,
-    spender: psm3BaseAddress[chainId as keyof typeof psm3BaseAddress],
+    spender: psm3L2Address[chainId as keyof typeof psm3L2Address],
     onStart: (hash: string) => {
       addRecentTransaction?.({
         hash,
@@ -818,11 +821,7 @@ function TradeWidgetWrapped({
 
   return (
     <WidgetContainer
-      header={
-        <Heading variant="x-large">
-          <Trans>Base Trade</Trans>
-        </Heading>
-      }
+      header={<Heading variant="x-large">{widgetTitle || 'Trade'}</Heading>}
       rightHeader={rightHeaderComponent}
       footer={
         <WidgetButtons
@@ -848,7 +847,7 @@ function TradeWidgetWrapped({
           </CardAnimationWrapper>
         ) : (
           <CardAnimationWrapper key="widget-inputs">
-            <BaseTradeInputs
+            <L2TradeInputs
               setOriginAmount={setOriginAmount}
               onOriginInputChange={newValue => {
                 setOriginAmount(newValue);

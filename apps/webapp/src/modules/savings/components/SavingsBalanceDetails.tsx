@@ -1,27 +1,27 @@
 import { useSavingsData } from '@jetstreamgg/hooks';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
-import { useTokenBalance, usdcBaseAddress, sUsdsBaseAddress } from '@jetstreamgg/hooks';
+import { useTokenBalance, usdcL2Address, sUsdsL2Address } from '@jetstreamgg/hooks';
 import { useChainId, useAccount } from 'wagmi';
-import { isBaseChainId, formatBigInt } from '@jetstreamgg/utils';
+import { isL2ChainId, formatBigInt } from '@jetstreamgg/utils';
 
 export function SavingsBalanceDetails() {
   const chainId = useChainId();
   const { address } = useAccount();
   const { data, isLoading, error } = useSavingsData();
-  const isBase = isBaseChainId(chainId);
+  const isL2 = isL2ChainId(chainId);
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
   const { data: usdcBalance } = useTokenBalance({
     chainId,
     address,
-    token: usdcBaseAddress[chainId as keyof typeof usdcBaseAddress],
-    enabled: isBase
+    token: usdcL2Address[chainId as keyof typeof usdcL2Address],
+    enabled: isL2
   });
 
   const { data: sUsdsBalance } = useTokenBalance({
     chainId,
     address,
-    token: sUsdsBaseAddress[chainId as keyof typeof sUsdsBaseAddress],
-    enabled: isBase
+    token: sUsdsL2Address[chainId as keyof typeof sUsdsL2Address],
+    enabled: isL2
   });
 
   const usdsToken = { name: 'USDS', symbol: 'USDS' };
@@ -34,7 +34,7 @@ export function SavingsBalanceDetails() {
         isLoading={isLoading}
         token={usdsToken}
         error={error}
-        afterBalance={isBase && sUsdsBalance ? ` (${formatBigInt(sUsdsBalance.value)} sUSDS)` : undefined}
+        afterBalance={isL2 && sUsdsBalance ? ` (${formatBigInt(sUsdsBalance.value)} sUSDS)` : undefined}
         dataTestId="savings-supplied-balance-details"
       />
     );
@@ -63,7 +63,7 @@ export function SavingsBalanceDetails() {
     );
   };
 
-  return isBase && !isRestrictedMiCa ? (
+  return isL2 && !isRestrictedMiCa ? (
     <div className="flex w-full flex-col gap-3">
       <div className="w-full">
         <SuppliedSavingsBalanceCard />

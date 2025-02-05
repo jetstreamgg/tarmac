@@ -32,6 +32,7 @@ import { BaseNetwork } from './BaseNetwork';
 import { MainnetNetwork } from './MainnetNetwork';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
+import { ArbitrumChain } from './ArbitrumChain';
 
 export {
   ArrowDown,
@@ -67,5 +68,6 @@ export {
   BaseNetwork,
   MainnetNetwork,
   BaseChain,
-  MainnetChain
+  MainnetChain,
+  ArbitrumChain
 };

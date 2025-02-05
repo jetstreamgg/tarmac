@@ -2,8 +2,8 @@ import { RewardsModule, Savings, Trade, Upgrade, Seal } from '@/modules/icons';
 import { Intent } from './enums';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { base, mainnet, sepolia } from 'viem/chains';
-import { tenderly, tenderlyBase } from '@/data/wagmi/config/config.default';
+import { base, mainnet, sepolia, arbitrum } from 'viem/chains';
+import { tenderly, tenderlyBase, tenderlyArbitrum } from '@/data/wagmi/config/config.default';
 
 export enum QueryParams {
   Locale = 'lang',
@@ -52,7 +52,14 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.SEAL_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.REWARDS_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
+  [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.REWARDS_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
   [tenderlyBase.id]: [
+    Intent.BALANCES_INTENT,
+    Intent.REWARDS_INTENT,
+    Intent.SAVINGS_INTENT,
+    Intent.TRADE_INTENT
+  ],
+  [tenderlyArbitrum.id]: [
     Intent.BALANCES_INTENT,
     Intent.REWARDS_INTENT,
     Intent.SAVINGS_INTENT,
@@ -63,7 +70,9 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
 
 export const COMING_SOON_MAP: Record<number, Intent[]> = {
   [base.id]: [Intent.REWARDS_INTENT],
-  [tenderlyBase.id]: [Intent.REWARDS_INTENT]
+  [arbitrum.id]: [Intent.REWARDS_INTENT],
+  [tenderlyBase.id]: [Intent.REWARDS_INTENT],
+  [tenderlyArbitrum.id]: [Intent.REWARDS_INTENT]
 };
 
 export const intentTxt: Record<string, MessageDescriptor> = {
@@ -128,3 +137,9 @@ export const STAGING_URL_SKY_SUBGRAPH_BASE =
   'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-base';
 export const STAGING_URL_SKY_SUBGRAPH_BASE_TENDERLY =
   'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-baseTenderly';
+export const PROD_URL_SKY_SUBGRAPH_ARBITRUM =
+  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrum';
+export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM =
+  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrum';
+export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM_TENDERLY =
+  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrumTenderly';

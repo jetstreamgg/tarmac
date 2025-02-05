@@ -1,15 +1,15 @@
 import { useEthereumSavingsHistory } from './useEthereumSavingsHistory';
-import { useBaseSavingsHistory } from '../psm/useBaseSavingsHistory';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { useL2SavingsHistory } from '../psm/useL2SavingsHistory';
+import { isL2ChainId } from '@jetstreamgg/utils';
 import { useChainId } from 'wagmi';
 
 export function useSavingsHistory(subgraphUrl?: string) {
   const chainId = useChainId();
-  const baseSavingsHistory = useBaseSavingsHistory({ subgraphUrl, enabled: isBaseChainId(chainId) });
-  const ethereumSavingsHistory = useEthereumSavingsHistory({ subgraphUrl, enabled: !isBaseChainId(chainId) });
+  const l2SavingsHistory = useL2SavingsHistory({ subgraphUrl, enabled: isL2ChainId(chainId) });
+  const ethereumSavingsHistory = useEthereumSavingsHistory({ subgraphUrl, enabled: !isL2ChainId(chainId) });
 
-  if (isBaseChainId(chainId)) {
-    return baseSavingsHistory;
+  if (isL2ChainId(chainId)) {
+    return l2SavingsHistory;
   }
   return ethereumSavingsHistory;
 }

@@ -1,10 +1,14 @@
 import './globals.css';
 export { SavingsWidget } from './widgets/SavingsWidget';
-export { BaseSavingsWidget } from './widgets/BaseSavingsWidget';
+export { L2SavingsWidget as BaseSavingsWidget } from './widgets/L2SavingsWidget';
+export { L2SavingsWidget as ArbitrumSavingsWidget } from './widgets/L2SavingsWidget';
+export { L2SavingsWidget } from './widgets/L2SavingsWidget';
 export { UpgradeWidget } from './widgets/UpgradeWidget';
 export { RewardsWidget } from './widgets/RewardsWidget';
 export { TradeWidget } from './widgets/TradeWidget';
-export { BaseTradeWidget } from './widgets/BaseTradeWidget';
+export { L2TradeWidget as BaseTradeWidget } from './widgets/L2TradeWidget';
+export { L2TradeWidget as ArbitrumTradeWidget } from './widgets/L2TradeWidget';
+export { L2TradeWidget } from './widgets/L2TradeWidget';
 export { BalancesWidget } from './widgets/BalancesWidget';
 export { SealModuleWidget } from './widgets/SealModuleWidget/index';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';

@@ -3,11 +3,11 @@ import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTrigger } from 
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useChainId, useChains, useClient, useSwitchChain } from 'wagmi';
-import { MainnetChain, BaseChain, Close } from '@/modules/icons';
+import { MainnetChain, BaseChain, ArbitrumChain, Close } from '@/modules/icons';
 import { cn } from '@/lib/utils';
-import { base } from 'viem/chains';
+import { base, arbitrum } from 'viem/chains';
 import { ChevronDown } from 'lucide-react';
-import { tenderlyBase } from '@/data/wagmi/config/config.default';
+import { tenderlyBase, tenderlyArbitrum } from '@/data/wagmi/config/config.default';
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { mapIntentToQueryParam, QueryParams } from '@/lib/constants';
@@ -22,6 +22,8 @@ enum ChainModalVariant {
 const getChainIcon = (chainId: number, className?: string) =>
   [base.id, tenderlyBase.id].includes(chainId) ? (
     <BaseChain className={className} />
+  ) : [arbitrum.id, tenderlyArbitrum.id].includes(chainId) ? (
+    <ArbitrumChain className={className} />
   ) : (
     <MainnetChain className={className} />
   );

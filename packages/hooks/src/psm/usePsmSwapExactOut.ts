@@ -1,6 +1,6 @@
 import { useAccount, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
-import { psm3BaseAbi, psm3BaseAddress } from '../generated';
+import { psm3L2Abi, psm3L2Address } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
@@ -30,15 +30,15 @@ export function usePsmSwapExactOut({
     chainId,
     contractAddress: assetIn,
     owner: address,
-    spender: psm3BaseAddress[chainId as keyof typeof psm3BaseAddress]
+    spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
   });
 
   const enabled =
     paramEnabled && isConnected && !!allowance && maxAmountIn !== 0n && allowance >= maxAmountIn && !!address;
 
   const writeContractFlowResults = useWriteContractFlow({
-    address: psm3BaseAddress[chainId as keyof typeof psm3BaseAddress],
-    abi: psm3BaseAbi,
+    address: psm3L2Address[chainId as keyof typeof psm3L2Address],
+    abi: psm3L2Abi,
     functionName: 'swapExactOut',
     args: [assetIn, assetOut, amountOut, maxAmountIn, address!, referralCode],
     chainId,

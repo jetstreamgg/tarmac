@@ -1,12 +1,12 @@
-import { useBaseCombinedHistory } from './useBaseCombinedHistory';
+import { useL2CombinedHistory } from './useL2CombinedHistory';
 import { useEthereumCombinedHistory } from './useEthereumCombinedHistory';
 import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
 
 export const useCombinedHistory = () => {
   const chainId = useChainId();
-  const baseHistory = useBaseCombinedHistory();
+  const l2History = useL2CombinedHistory();
   const ethereumHistory = useEthereumCombinedHistory();
 
-  return isBaseChainId(chainId) ? baseHistory : ethereumHistory;
+  return isL2ChainId(chainId) ? l2History : ethereumHistory;
 };

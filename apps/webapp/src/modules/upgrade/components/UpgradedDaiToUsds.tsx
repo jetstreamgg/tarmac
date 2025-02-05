@@ -5,11 +5,11 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
 
 export function UpgradedDaiToUsds() {
   const chainId = useChainId();
-  const chainIdToUse = isBaseChainId(chainId) ? 1 : chainId;
+  const chainIdToUse = isL2ChainId(chainId) ? 1 : chainId; //display mainnet data on L2s
   const subgraphUrl = useSubgraphUrl(chainIdToUse);
   const { data, isLoading, error } = useUpgradeTotals({ subgraphUrl });
 
