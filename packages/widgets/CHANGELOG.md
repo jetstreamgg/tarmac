@@ -1,5 +1,28 @@
 # @jetstreamgg/widgets
 
+## 3.3.0
+
+### Minor Changes
+
+- 2c942d1: Remove boosted rewards code
+- 3886a15: Add support for Safe wallet trades
+
+### Patch Changes
+
+- b247f30: Add a "my rewards" section
+- 8896c9d: Update dependencies, update eslint major version, migrate config, fix linting issues
+- 0f6828b: Fix source and target tokens in url for sUSDS in the Trade widgets
+- 2aca351: Fix issue that when BA Labs prices weren't present the Trade widget on mainnet would crash
+- cd365d9: Bump dependencies
+- Updated dependencies [b247f30]
+- Updated dependencies [8896c9d]
+- Updated dependencies [2c942d1]
+- Updated dependencies [2aca351]
+- Updated dependencies [3886a15]
+- Updated dependencies [cd365d9]
+  - @jetstreamgg/hooks@3.3.0
+  - @jetstreamgg/utils@2.3.0
+
 ## 3.2.1
 
 ### Patch Changes

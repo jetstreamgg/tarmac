@@ -1,5 +1,18 @@
 # @jetstreamgg/utils
 
+## 2.3.0
+
+### Minor Changes
+
+- 2c942d1: Remove boosted rewards code
+- 3886a15: Add support for Safe wallet trades
+
+### Patch Changes
+
+- b247f30: Add a "my rewards" section
+- 8896c9d: Update dependencies, update eslint major version, migrate config, fix linting issues
+- cd365d9: Bump dependencies
+
 ## 2.2.0
 
 ### Minor Changes
