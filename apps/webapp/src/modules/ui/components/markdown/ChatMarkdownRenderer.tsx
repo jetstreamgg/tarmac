@@ -1,5 +1,7 @@
 import { Text, Heading, List } from '@/modules/layout/components/Typography';
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer';
+import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { sanitizeUrl } from '@/lib/utils';
 
 export const ChatMarkdownRenderer = ({ markdown }: { markdown: string }) => (
   <SafeMarkdownRenderer
@@ -35,11 +37,17 @@ export const ChatMarkdownRenderer = ({ markdown }: { markdown: string }) => (
           {children}
         </Text>
       ),
-      a: ({ children, ...props }) => (
-        <a className="text-blue-500 hover:underline" {...props}>
-          <Text tag="span">{children}</Text>
-        </a>
-      ),
+      a: ({ children, ...props }) => {
+        return (
+          <ExternalLink
+            href={sanitizeUrl(props.href, { allowExternalLinks: true, searchParamsOnly: false }) || ''}
+            className="text-blue-500 hover:underline"
+            showIcon={false}
+          >
+            {children}
+          </ExternalLink>
+        );
+      },
       ul: ({ children, ...props }) => (
         <List className="pb-3" {...props}>
           {children}
