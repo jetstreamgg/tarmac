@@ -32,6 +32,7 @@ export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
  */
 type SanitizeUrlOptions = {
   searchParamsOnly: boolean;
+  allowExternalLinks: boolean;
 };
 
 const URL_SAFE_CHARS_REGEX = /[^\w:/.?#&=-]/g;
@@ -43,7 +44,7 @@ function parseUrl(url: string, isSearchParamsOnly: boolean) {
 
 export function sanitizeUrl(
   url: string | undefined,
-  options: SanitizeUrlOptions = { searchParamsOnly: false }
+  options: SanitizeUrlOptions = { searchParamsOnly: false, allowExternalLinks: false }
 ) {
   if (!url) return undefined;
   try {
@@ -67,8 +68,10 @@ export function sanitizeUrl(
 
     const isValidExternalUrl =
       parsedUrl.protocol === 'https:' &&
-      ALLOWED_EXTERNAL_DOMAINS.some(
-        domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
+      ALLOWED_EXTERNAL_DOMAINS.some(domain =>
+        options.allowExternalLinks
+          ? true
+          : parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
       );
 
     const sanitizedUrl = options.searchParamsOnly
