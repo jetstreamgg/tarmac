@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { intentSelectedMessage } from '../lib/intentSelectedMessage';
 import { QueryParams } from '@/lib/constants';
+import { sanitizeUrl } from '@/lib/utils';
 
 type ChatIntentsRowProps = {
   intents: ChatIntent[];
@@ -31,7 +32,11 @@ type IntentRowProps = {
 const IntentRow = ({ intent }: IntentRowProps) => {
   const { setConfirmationModalOpened, setSelectedIntent, hasShownIntent, setChatHistory } = useChatContext();
   const navigate = useNavigate();
-  const intentUrl = useRetainedQueryParams(intent?.url || '', [
+  const sanitizedIntentUrl = sanitizeUrl(intent?.url, { searchParamsOnly: true });
+
+  if (!sanitizedIntentUrl) return null;
+
+  const intentUrl = useRetainedQueryParams(sanitizedIntentUrl, [
     QueryParams.Locale,
     QueryParams.Details,
     QueryParams.Chat

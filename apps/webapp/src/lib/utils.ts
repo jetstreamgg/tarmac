@@ -30,37 +30,68 @@ export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
  * Sanitizes a URL to ensure it begins with 'https:'.
  * Some URLs are directly provided via environment variables.
  */
-export function sanitizeUrl(url: string | undefined) {
+type SanitizeUrlOptions = {
+  searchParamsOnly: boolean;
+};
+
+const URL_SAFE_CHARS_REGEX = /[^\w:/.?#&=-]/g;
+const URL_PARAM_KEY_REGEX = /^[a-zA-Z0-9_-]+$/;
+
+function parseUrl(url: string, isSearchParamsOnly: boolean) {
+  return isSearchParamsOnly ? `${window.location.origin}${url.startsWith('/') ? url : `/${url}`}` : url;
+}
+
+export function sanitizeUrl(
+  url: string | undefined,
+  options: SanitizeUrlOptions = { searchParamsOnly: false }
+) {
   if (!url) return undefined;
   try {
-    const parsedUrl = new URL(url);
-    // Ensure that the url begins with 'https:'
-    if (parsedUrl.protocol !== 'https:') {
-      return undefined;
-    }
+    // If searchParamsOnly is true, prepend the current origin
+    const fullUrl = parseUrl(url, options.searchParamsOnly);
 
-    // Check if the domain is in the allowed list. Check for subdomains too
-    if (
-      !ALLOWED_EXTERNAL_DOMAINS.some(
+    const parsedUrl = new URL(fullUrl);
+
+    // Get the sanitized search params
+    const searchParams = new URLSearchParams(parsedUrl.search);
+    const sanitizedParams = new URLSearchParams();
+
+    // Sanitize each search param value
+    searchParams.forEach((value, key) => {
+      // Only allow alphanumeric, hyphen, underscore for keys
+      if (URL_PARAM_KEY_REGEX.test(key)) {
+        const sanitizedValue = value.replace(URL_SAFE_CHARS_REGEX, '');
+        sanitizedParams.append(key, sanitizedValue);
+      }
+    });
+
+    const isValidExternalUrl =
+      parsedUrl.protocol === 'https:' &&
+      ALLOWED_EXTERNAL_DOMAINS.some(
         domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
-      )
-    ) {
-      console.log(`"${parsedUrl.hostname}" not found in allow list, returning undefined`);
-      return undefined;
-    }
+      );
 
-    // Remove any potential dangerous characters from the URL
-    const sanitizedUrl = parsedUrl.toString().replace(/[^\w:/.?#&=-]/g, '');
+    const sanitizedUrl = options.searchParamsOnly
+      ? `${parsedUrl.pathname}${sanitizedParams.toString() ? `?${sanitizedParams.toString()}` : ''}`
+      : isValidExternalUrl
+        ? parsedUrl.toString().replace(URL_SAFE_CHARS_REGEX, '')
+        : undefined;
+
+    if (!sanitizedUrl) return undefined;
 
     // Encode components to prevent XSS
-    const encodedUrl = encodeURI(sanitizedUrl);
+    const encodedUrl = parseUrl(encodeURI(sanitizedUrl), options.searchParamsOnly);
 
     // Validate the final URL
     new URL(encodedUrl); // This will throw if the URL is invalid
 
-    return encodedUrl;
+    return options.searchParamsOnly
+      ? sanitizedParams.toString()
+        ? `/?${sanitizedParams.toString()}`
+        : undefined
+      : encodedUrl;
   } catch (error) {
-    console.error('Error parsing url');
+    console.error('Error parsing url: ', error);
     return undefined;
   }
 }
