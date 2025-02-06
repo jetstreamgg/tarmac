@@ -32,7 +32,10 @@ type IntentRowProps = {
 const IntentRow = ({ intent }: IntentRowProps) => {
   const { setConfirmationModalOpened, setSelectedIntent, hasShownIntent, setChatHistory } = useChatContext();
   const navigate = useNavigate();
-  const sanitizedIntentUrl = sanitizeUrl(intent?.url, { searchParamsOnly: true });
+  const sanitizedIntentUrl = sanitizeUrl(intent?.url, {
+    searchParamsOnly: true,
+    allowExternalLinks: false
+  });
 
   if (!sanitizedIntentUrl) return null;
 
