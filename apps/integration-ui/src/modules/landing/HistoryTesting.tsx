@@ -1,4 +1,3 @@
-// import { DetailSection } from '@/components/DetailSection';
 // import { RewardsHistory } from '@/components/historyTable/RewardsHistory';
 // import { SavingsHistory } from '@/components/historyTable/SavingsHistory';
 // import { UpgradeHistory } from '@/components/historyTable/UpgradeHistory';
@@ -13,23 +12,15 @@ export const HistoryTesting = () => {
   return (
     <div>
       <TradeHistory />
-      {/* <DetailSection title="Trade History">
-      </DetailSection> */}
-      {/* <DetailSection title="Upgrade History">
-        <UpgradeHistory />
-      </DetailSection>
-      <DetailSection title="Savings History">
-        <SavingsHistory />
-      </DetailSection>
-      <DetailSection title="Rewards History">
-        {rewardContracts.map(rewardContract => {
+      {/* <UpgradeHistory /> */}
+      {/* <SavingsHistory /> */}
+      {/* {rewardContracts.map(rewardContract => {
           return (
             <div className="text-text" key={rewardContract.name}>
               <RewardsHistory rewardContract={rewardContract} />
             </div>
           );
-        })}
-      </DetailSection> */}
+        })} */}
     </div>
   );
 };

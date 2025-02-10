@@ -1,6 +1,5 @@
 import { useBaseSavingsHistory } from '../psm/useBaseSavingsHistory';
 import { useBaseTradeHistory } from '../psm/useBaseTradeHistory';
-import { CombinedHistoryItem } from './shared';
 import { useMemo } from 'react';
 
 export function useBaseCombinedHistory() {
@@ -9,7 +8,7 @@ export function useBaseCombinedHistory() {
 
   const combinedData = useMemo(() => {
     return [...(savingsHistory.data || []), ...(tradeHistory.data || [])].sort(
-      (a: CombinedHistoryItem, b: CombinedHistoryItem) => b.blockTimestamp - a.blockTimestamp
+      (a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
     );
   }, [savingsHistory.data, tradeHistory.data]);
 

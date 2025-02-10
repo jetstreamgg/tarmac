@@ -20,5 +20,6 @@ export * from './widgets/TradeWidget/lib/constants';
 export * from './widgets/UpgradeWidget/lib/constants';
 export { RewardsFlow, RewardsScreen, RewardsAction } from './widgets/RewardsWidget/lib/constants';
 export * from './widgets/SealModuleWidget/lib/constants';
+export { formatUrnIndex } from './widgets/SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';

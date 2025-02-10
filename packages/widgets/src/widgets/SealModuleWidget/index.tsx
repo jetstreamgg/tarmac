@@ -96,7 +96,7 @@ export const SealModuleWidget = ({
   );
 };
 
-export function SealModuleWidgetWrapped({
+function SealModuleWidgetWrapped({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,

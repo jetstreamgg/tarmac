@@ -9,7 +9,7 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { Token } from '../tokens/types';
 
-type BaseTradeHistoryItem = HistoryItem & {
+export type BaseTradeHistoryItem = HistoryItem & {
   fromAmount: bigint;
   toAmount: bigint;
   referralCode: string;

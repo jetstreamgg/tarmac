@@ -8,7 +8,8 @@ import {
   UpgradeWidget,
   WidgetStateChangeParams,
   UpgradeFlow,
-  UpgradeScreen
+  UpgradeScreen,
+  upgradeTokens
 } from '@jetstreamgg/widgets';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
@@ -115,7 +116,11 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       {...sharedProps}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
-        initialUpgradeToken: linkedActionConfig?.sourceToken
+        initialUpgradeToken:
+          linkedActionConfig.sourceToken &&
+          Object.values(upgradeTokens).includes(linkedActionConfig.sourceToken)
+            ? (linkedActionConfig.sourceToken as keyof typeof upgradeTokens)
+            : undefined
       }}
       onWidgetStateChange={onUpgradeWidgetStateChange}
       customNavigationLabel={customNavLabel}

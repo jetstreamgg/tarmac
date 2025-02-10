@@ -24,11 +24,7 @@ import { SealDelegateCard } from './SealDelegateCard';
 import { SealRewardCard } from './SealRewardCard';
 import { useMemo } from 'react';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-
-// TODO replace with import from @jetstreamgg/utils
-export function formatUrnIndex(index: bigint): string {
-  return (index + 1n).toString();
-}
+import { formatUrnIndex } from '@jetstreamgg/widgets';
 
 const RISK_COLORS = {
   [RiskLevel.LIQUIDATION]: { text: 'text-red-400', bg: 'bg-red-400' },

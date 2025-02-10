@@ -27,9 +27,9 @@ import { Trans } from '@lingui/react/macro';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Warning } from '@/modules/icons/Warning';
 
-export const dateFormat = 'MMM d';
-export const timeFormat = 'HH:mm';
-export const monthFormat = 'MMM';
+const dateFormat = 'MMM d';
+const timeFormat = 'HH:mm';
+const monthFormat = 'MMM';
 
 export type TimeFrame = 'd' | 'w' | 'm' | 'y' | 'all';
 

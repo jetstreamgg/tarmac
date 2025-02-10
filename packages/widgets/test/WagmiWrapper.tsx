@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { MakerHooksProvider } from '../src/context/context';
 import { mock } from 'wagmi/connectors';
-import { createConfig, useConnect, WagmiProvider, http } from 'wagmi';
+import { createConfig, WagmiProvider, http } from 'wagmi';
 import { mnemonicToAccount } from 'viem/accounts';
 import { normalize } from 'viem/ens';
 import { I18nWidgetProvider } from '../src/context/I18nWidgetProvider';
@@ -55,40 +55,4 @@ export function WagmiWrapper({ children }: { children?: React.ReactElement }) {
       </QueryClientProvider>
     </WagmiProvider>
   );
-}
-
-export function WagmiWrapperConnected({
-  children,
-  chainId
-}: {
-  children?: React.ReactElement;
-  chainId: number;
-}) {
-  return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <MakerHooksProvider
-          config={{
-            delegates: {
-              ens: normalize('vitalik.eth')
-            },
-            ipfs: {
-              gateway: 'dweb.link' //nftstorage.link is an alternative
-            }
-          }}
-        >
-          <ConnectedAccount chainId={chainId}>{children}</ConnectedAccount>
-        </MakerHooksProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
-}
-
-export function ConnectedAccount({ children, chainId }: { children?: React.ReactElement; chainId: number }) {
-  const { connect } = useConnect();
-
-  useEffect(() => {
-    connect({ connector: mockConnector, chainId });
-  }, []);
-  return <React.Fragment>{children}</React.Fragment>;
 }

@@ -1,7 +1,6 @@
 import { cn } from '@/lib/utils';
-import { cubicBezier, motion } from 'framer-motion';
-
-export const easeInOutExpo = cubicBezier(0.87, 0, 0.13, 1);
+import { motion } from 'framer-motion';
+import { easeInOutExpo } from '../animation/timingFunctions';
 
 export const LoadingSpinner = ({ className }: { className?: string }) => {
   return (

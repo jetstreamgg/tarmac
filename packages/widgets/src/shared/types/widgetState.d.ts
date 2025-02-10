@@ -1,8 +1,12 @@
-import { SavingsAction, SavingsFlow, SavingsScreen } from '../SavingsWidget/constants';
-import { UpgradeAction, UpgradeFlow, UpgradeScreen } from '../UpgradeWidget/constants';
-import { RewardsAction, RewardsFlow, RewardsScreen } from '../RewardsWidget/constants';
-import { TradeAction, TradeFlow, TradeScreen } from '../TradeWidget/constants';
-import { upgradeTokens } from '../UpgradeWidget';
+import { SavingsAction, SavingsFlow, SavingsScreen } from '@/widgets/SavingsWidget/lib/constants';
+import {
+  UpgradeAction,
+  UpgradeFlow,
+  UpgradeScreen,
+  upgradeTokens
+} from '@/widgets/UpgradeWidget/lib/constants';
+import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidget/lib/constants';
+import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/hooks';
 import { TxStatus, NotificationType } from '../constants';
 

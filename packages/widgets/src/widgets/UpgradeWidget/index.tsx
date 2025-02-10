@@ -29,7 +29,7 @@ import { math } from '@jetstreamgg/utils';
 const defaultUpgradeOptions = [TOKENS.dai, TOKENS.mkr];
 const defaultRevertOptions = [TOKENS.usds, TOKENS.sky];
 
-export function calculateOriginOptions(
+function calculateOriginOptions(
   token: Token,
   action: string,
   upgradeOptions: Token[] = [],

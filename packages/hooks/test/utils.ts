@@ -2,7 +2,7 @@ import { readFile } from 'fs/promises';
 import { NetworkName, TEST_WALLET_ADDRESS } from './constants';
 import { parseEther, parseUnits, toHex } from 'viem';
 
-export async function backOffRetry<T>(fn: () => Promise<T>, retries: number, delay: number): Promise<T> {
+async function backOffRetry<T>(fn: () => Promise<T>, retries: number, delay: number): Promise<T> {
   try {
     return await fn();
   } catch (error) {

@@ -41,7 +41,7 @@ import {
 const defaultDepositOptions = [TOKENS.usds, TOKENS.usdc];
 const defaultWithdrawOptions = [TOKENS.usds, TOKENS.usdc];
 
-export function calculateOriginOptions(
+function calculateOriginOptions(
   token: Token,
   action: string,
   flow: SavingsFlow,

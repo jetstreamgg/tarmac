@@ -18,10 +18,10 @@ export const getHistoryRightText = ({
   chainId: number;
 }) => {
   if (type == TransactionTypeEnum.SELECT_DELEGATE) {
-    return item.delegate ? formatAddress(item.delegate, 6, 6) : t`No delegate`;
+    return 'delegate' in item ? formatAddress(item.delegate, 6, 6) : t`No delegate`;
   }
   if (type == TransactionTypeEnum.SELECT_REWARD) {
-    return item.rewardContract ? formatAddress(item.rewardContract, 6, 6) : t`No reward`;
+    return 'rewardContract' in item ? formatAddress(item.rewardContract, 6, 6) : t`No reward`;
   }
   if (type == TransactionTypeEnum.OPEN) {
     return '';

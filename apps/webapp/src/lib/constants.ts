@@ -114,8 +114,6 @@ export const linkedActionMetadata = {
 
 export const ALLOWED_EXTERNAL_DOMAINS = ['sky.money', 'app.sky.money', 'docs.sky.money'];
 
-export const URL_BA_LABS_API = 'https://info-sky.blockanalitica.com/api/v1';
-
 export const PROD_URL_SKY_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/subgraph-mainnet';
 export const STAGING_URL_SKY_SUBGRAPH_MAINNET =
