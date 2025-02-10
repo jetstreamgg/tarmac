@@ -19,26 +19,29 @@ export interface TokenBalanceResponse extends GetBalanceData {
 
 interface BalancesContentProps {
   validatedExternalState?: BalancesWidgetState;
-  customTokenList?: TokenForChain[];
+  customTokenMap?: { [chainId: number]: TokenForChain[] };
   hideModuleBalances?: boolean;
+  chainIds?: number[];
   actionForToken?: (
     symbol: string,
-    balance: string
+    balance: string,
+    tokenChainId: number
   ) => { label: string; actionUrl: string; image: string } | undefined;
-  onClickRewardsCard?: () => void;
-  onClickSavingsCard?: () => void;
-  onClickSealCard?: () => void;
+  rewardsCardUrl?: string;
+  savingsCardUrlMap?: Record<number, string>;
+  sealCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
 
 export const BalancesContent = ({
   validatedExternalState,
-  customTokenList,
+  customTokenMap,
   hideModuleBalances,
   actionForToken,
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
+  chainIds,
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
   onExternalLinkClicked
 }: BalancesContentProps): React.ReactElement => {
   return (
@@ -51,11 +54,12 @@ export const BalancesContent = ({
               <Trans>Supplied Funds</Trans>
             </Heading>
             <ModulesBalances
-              onClickRewardsCard={onClickRewardsCard}
-              onClickSavingsCard={onClickSavingsCard}
-              onClickSealCard={onClickSealCard}
+              rewardsCardUrl={rewardsCardUrl}
+              savingsCardUrlMap={savingsCardUrlMap}
+              sealCardUrl={sealCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
               hideModuleBalances={hideModuleBalances}
+              chainIds={chainIds}
             />
           </motion.div>
 
@@ -63,7 +67,11 @@ export const BalancesContent = ({
             <Heading variant="small" className="mb-3 leading-6">
               <Trans>Wallet Funds</Trans>
             </Heading>
-            <TokenBalances actionForToken={actionForToken} customTokenList={customTokenList} />
+            <TokenBalances
+              actionForToken={actionForToken}
+              customTokenMap={customTokenMap}
+              chainIds={chainIds}
+            />
           </motion.div>
         </VStack>
       </TabsContent>

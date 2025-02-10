@@ -56,7 +56,6 @@ export function MainApp() {
     }
   });
 
-  const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const widgetParam = searchParams.get(QueryParams.Widget);
@@ -68,6 +67,12 @@ export function MainApp() {
   const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
+
+  const newChainId = network
+    ? (chains.find(chain => chain.name.toLowerCase() === network.toLowerCase())?.id ?? chainId)
+    : chainId;
+
+  const rewardContracts = useAvailableTokenRewardContracts(newChainId);
 
   // step is initialized as 0 and will evaluate to false, setting the first step to 1
   const step = linkedAction ? linkedActionConfig.step || 1 : 0;
@@ -85,7 +90,7 @@ export function MainApp() {
           rewardContracts,
           widgetParam || '',
           setSelectedRewardContract,
-          chainId
+          newChainId
         );
         // Runs second validation for linked-action-specific criteria
         const validatedLinkedActionParams = validateLinkedActionSearchParams(validatedParams);

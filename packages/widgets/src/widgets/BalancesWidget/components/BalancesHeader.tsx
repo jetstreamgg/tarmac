@@ -10,8 +10,6 @@ import Jazzicon, { jsNumberForAddress } from 'react-jazzicon';
 import { Card } from '@/components/ui/card';
 import { CopyToClipboard } from '@/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@/shared/components/ExternalLink';
-import { useSwitchChain } from 'wagmi';
-import { Button } from '@/components/ui/button';
 import { useChainId } from 'wagmi';
 import { isBaseChainId } from '@jetstreamgg/utils';
 
@@ -26,7 +24,6 @@ export const BalancesHeader = ({
 }): React.ReactElement => {
   const chainId = useChainId();
   const { address } = useAccount();
-  const { switchChain } = useSwitchChain();
   const { data: ethBalance, isLoading: isEthBalanceLoading } = useBalance({ address });
   const truncatedAddress = useMemo(
     () => address && address.slice(0, 7) + '...' + address.slice(-5),
@@ -64,15 +61,7 @@ export const BalancesHeader = ({
       {isBaseChain && (
         <div className="mt-3 flex">
           <Text variant="medium">
-            Ethereum balances are not shown when connected to Base.{' '}
-            <Button
-              variant="purpleLink"
-              className="mx-0 my-0 inline h-0 p-0"
-              onClick={() => switchChain({ chainId: 1 })}
-            >
-              Connect to Mainnet
-            </Button>{' '}
-            instead or{' '}
+            Learn how to{' '}
             <ExternalLink
               href="https://bridge.base.org/deposit"
               iconSize={11}

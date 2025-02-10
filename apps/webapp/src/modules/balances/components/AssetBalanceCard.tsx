@@ -17,7 +17,8 @@ export function AssetBalanceCard({
   tokenBalance,
   priceData,
   isLoadingPrice,
-  error
+  error,
+  chainId
 }: {
   tokenBalance: TokenBalance;
   priceData: PriceData | undefined;
@@ -28,7 +29,11 @@ export function AssetBalanceCard({
   return (
     <Card key={tokenBalance.symbol} className="flex h-[84px] min-w-[208px] items-center justify-between">
       <div className="flex items-center space-x-2">
-        <TokenIcon className="h-8 w-8" token={{ symbol: tokenBalance.symbol, name: tokenBalance.symbol }} />
+        <TokenIcon
+          className="h-8 w-8"
+          token={{ symbol: tokenBalance.symbol, name: tokenBalance.symbol }}
+          chainId={chainId}
+        />
         <div className="flex flex-col justify-between">
           <Text>{tokenBalance.symbol}</Text>
           <OracleInfo

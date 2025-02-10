@@ -1,43 +1,43 @@
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
-import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
 
 export interface CardProps {
-  onClick?: () => void;
+  url?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  chainIds?: number[];
 }
 
 interface ModulesBalancesProps {
-  onClickRewardsCard?: () => void;
-  onClickSavingsCard?: () => void;
-  onClickSealCard?: () => void;
+  rewardsCardUrl?: string;
+  savingsCardUrlMap?: Record<number, string>;
+  sealCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   hideModuleBalances?: boolean;
+  chainIds?: number[];
 }
 
 export const ModulesBalances = ({
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
   onExternalLinkClicked,
-  hideModuleBalances
+  hideModuleBalances,
+  chainIds
 }: ModulesBalancesProps): React.ReactElement => {
-  const chainId = useChainId();
-  const hideRewards = hideModuleBalances || isBaseChainId(chainId); //TODO: Update when base rewards are added
-  const hideSeal = isBaseChainId(chainId);
   return (
     <div className="flex flex-col gap-2">
-      {!hideRewards && (
-        <RewardsBalanceCard onClick={onClickRewardsCard} onExternalLinkClicked={onExternalLinkClicked} />
+      {!hideModuleBalances && (
+        <RewardsBalanceCard url={rewardsCardUrl} onExternalLinkClicked={onExternalLinkClicked} />
       )}
       {!hideModuleBalances && (
-        <SavingsBalanceCard onClick={onClickSavingsCard} onExternalLinkClicked={onExternalLinkClicked} />
+        <SavingsBalanceCard
+          urlMap={savingsCardUrlMap}
+          onExternalLinkClicked={onExternalLinkClicked}
+          chainIds={chainIds}
+        />
       )}
-      {!hideSeal && (
-        <SealBalanceCard onClick={onClickSealCard} onExternalLinkClicked={onExternalLinkClicked} />
-      )}
+      <SealBalanceCard url={sealCardUrl} onExternalLinkClicked={onExternalLinkClicked} />
     </div>
   );
 };

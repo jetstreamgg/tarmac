@@ -10,24 +10,38 @@ type UseTokenBalanceParameters = {
   enabled?: boolean;
 };
 
-type TokenItem = {
+export type TokenItem = {
   address?: `0x${string}`;
   isNative?: boolean;
   symbol: string;
 };
 
+type ChainTokenMap = {
+  [chainId: number]: TokenItem[];
+};
+
 type UseTokenBalancesParameters = {
   address?: `0x${string}`;
-  tokens: TokenItem[];
-  chainId?: number;
   enabled?: boolean;
-};
+} & (
+  | {
+      tokens: TokenItem[];
+      chainId?: number;
+      chainTokenMap?: never;
+    }
+  | {
+      chainTokenMap: ChainTokenMap;
+      tokens?: never;
+      chainId?: never;
+    }
+);
 
 export type TokenBalance = {
   value: bigint;
   decimals: number;
   formatted: string;
   symbol?: string;
+  chainId: number;
 };
 
 type TokenBalanceRequiredSymbol = {
@@ -35,6 +49,7 @@ type TokenBalanceRequiredSymbol = {
   decimals: number;
   formatted: string;
   symbol: string;
+  chainId: number;
 };
 
 type UseTokenBalanceReturnType = {
@@ -97,106 +112,129 @@ export function useTokenBalance({
   });
 
   return {
-    data: isNative
-      ? nativeResultData
-      : tokenResultData
-        ? {
-            value: tokenResultData[0],
-            decimals: tokenResultData[1],
-            formatted: formatUnits(tokenResultData[0], tokenResultData[1])
-          }
-        : undefined,
+    data:
+      isNative && nativeResultData && chainId
+        ? { ...nativeResultData, chainId }
+        : tokenResultData && chainId
+          ? {
+              value: tokenResultData[0],
+              decimals: tokenResultData[1],
+              formatted: formatUnits(tokenResultData[0], tokenResultData[1]),
+              chainId
+            }
+          : undefined,
     refetch: isNative ? refetchNativeResult : refetchTokenResult,
     isLoading: isNativeResultLoading || isTokenResultLoading,
     error: nativeResultError || tokenResultError
   };
 }
 
-//takes in an array of tokens
 export function useTokenBalances({
   address,
   tokens,
   chainId,
+  chainTokenMap,
   enabled = true
 }: UseTokenBalancesParameters): UseTokenBalancesReturnType {
-  const nonNativeTokens = tokens.filter(tokenItem => !tokenItem.isNative);
-  const nativeToken = tokens.find(tokenItem => tokenItem.isNative) || null;
-  const {
-    data: tokenResultData,
-    refetch: refetchTokenResult,
-    isLoading: isTokenResultLoading,
-    error: tokenResultError
-  } = useReadContracts({
-    contracts: nonNativeTokens
-      .map(tokenItem => [
-        {
-          address: tokenItem.address,
-          abi: erc20Abi,
-          chainId,
-          functionName: 'balanceOf',
-          args: address ? [address] : undefined
-        },
-        {
-          address: tokenItem.address,
-          abi: erc20Abi,
-          chainId,
-          functionName: 'decimals'
-        }
-      ])
-      .flat(),
-    allowFailure: false,
-    query: {
-      enabled: enabled && !!address && nonNativeTokens.length > 0
-    }
+  // Convert legacy params to chainTokenMap format
+  const tokenMap = chainTokenMap ?? (tokens && chainId ? { [chainId]: tokens } : {});
+
+  // Aggregate results from all chains
+  const results = Object.entries(tokenMap).map(([chainId, tokens]) => {
+    const pair = {
+      chainId: Number(chainId),
+      tokens
+    };
+
+    const nonNativeTokens = pair.tokens.filter(tokenItem => !tokenItem.isNative);
+    const nativeToken = pair.tokens.find(tokenItem => tokenItem.isNative) || null;
+
+    const {
+      data: tokenResultData,
+      refetch: refetchTokenResult,
+      isLoading: isTokenResultLoading,
+      error: tokenResultError
+    } = useReadContracts({
+      contracts: nonNativeTokens
+        .map(tokenItem => [
+          {
+            address: tokenItem.address,
+            abi: erc20Abi,
+            chainId: pair.chainId,
+            functionName: 'balanceOf',
+            args: address ? [address] : undefined
+          },
+          {
+            address: tokenItem.address,
+            abi: erc20Abi,
+            chainId: pair.chainId,
+            functionName: 'decimals'
+          }
+        ])
+        .flat(),
+      allowFailure: false,
+      query: {
+        enabled: enabled && !!address && nonNativeTokens.length > 0
+      }
+    });
+
+    const {
+      data: nativeResultData,
+      refetch: refetchNativeResult,
+      isLoading: isNativeResultLoading,
+      error: nativeResultError
+    } = useBalance({
+      address,
+      chainId: pair.chainId,
+      query: { enabled: enabled && !!nativeToken }
+    });
+
+    const formattedTokenResultData = tokenResultData?.reduce<TokenBalance[]>((acc, _, index, array) => {
+      if (index % 2 === 0) {
+        const tokenIndex = index / 2;
+        const tokenItem = nonNativeTokens[tokenIndex];
+        acc.push({
+          value: array[index] as bigint,
+          decimals: array[index + 1] as number,
+          formatted: formatUnits(tokenResultData[index] as bigint, tokenResultData[index + 1] as number),
+          symbol: tokenItem.symbol,
+          chainId: pair.chainId
+        });
+      }
+      return acc;
+    }, []);
+
+    const nativeResultWithSymbol =
+      nativeToken && nativeResultData
+        ? {
+            ...nativeResultData,
+            symbol: nativeToken.symbol,
+            chainId: pair.chainId
+          }
+        : null;
+
+    return {
+      data:
+        formattedTokenResultData || nativeResultWithSymbol
+          ? ([
+              ...(formattedTokenResultData || []),
+              ...(nativeResultWithSymbol ? [nativeResultWithSymbol] : [])
+            ] as TokenBalanceRequiredSymbol[])
+          : undefined,
+      isLoading: isNativeResultLoading || isTokenResultLoading,
+      error: nativeResultError || tokenResultError,
+      refetch: async () => {
+        await Promise.all([refetchTokenResult(), refetchNativeResult()]);
+      }
+    };
   });
 
-  const formattedTokenResultData = tokenResultData?.reduce<TokenBalance[]>((acc, _, index, array) => {
-    if (index % 2 === 0) {
-      const tokenIndex = index / 2;
-      const tokenItem = nonNativeTokens[tokenIndex];
-      acc.push({
-        value: array[index] as bigint,
-        decimals: array[index + 1] as number,
-        formatted: formatUnits(tokenResultData[index] as bigint, tokenResultData[index + 1] as number),
-        symbol: tokenItem.symbol
-      });
-    }
-    return acc;
-  }, []);
-
-  const {
-    data: nativeResultData,
-    refetch: refetchNativeResult,
-    isLoading: isNativeResultLoading,
-    error: nativeResultError
-  } = useBalance({
-    address,
-    chainId,
-    query: { enabled: enabled && !!nativeToken }
-  });
-
-  const nativeResultWithSymbol =
-    nativeToken && nativeResultData
-      ? {
-          ...nativeResultData,
-          symbol: nativeToken.symbol
-        }
-      : null;
-
-  //if one of the tokens is an eth token, then the eth balance will be appended at the end of the array
-  //TODO: should maybe update to return tokens in order they were inputted
   return {
-    data:
-      formattedTokenResultData || nativeResultWithSymbol
-        ? ([
-            ...(formattedTokenResultData || []),
-            ...(nativeResultWithSymbol ? [nativeResultWithSymbol] : [])
-          ] as TokenBalanceRequiredSymbol[])
-        : undefined,
+    data: results.every(r => r.data) ? results.flatMap(r => r.data!) : undefined,
+    isLoading: results.some(r => r.isLoading),
+    error: results.find(r => r.error)?.error ?? null,
     refetch: async () => {
-      await Promise.all([refetchTokenResult(), refetchNativeResult()]);
-    },
-    isLoading: isNativeResultLoading || isTokenResultLoading,
-    error: nativeResultError || tokenResultError
+      await Promise.all(results.map(r => r.refetch()));
+    }
   };
 }

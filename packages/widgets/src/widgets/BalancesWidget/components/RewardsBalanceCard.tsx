@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useAccount } from 'wagmi';
 import {
   useAvailableTokenRewardContracts,
   useRewardsChartInfo,
@@ -14,9 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
+import { useChainId } from 'wagmi';
+import { isTestnetId } from '@jetstreamgg/utils';
 
-export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps) => {
-  const chainId = useChainId();
+export const RewardsBalanceCard = ({ url, onExternalLinkClicked }: CardProps) => {
+  const currentChainId = useChainId();
+  const chainId = isTestnetId(currentChainId) ? 314310 : 1; //hardcoded to mainnet for now
   const { address } = useAccount();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
 
@@ -116,7 +119,7 @@ export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps
           </Text>
         ) : undefined
       }
-      onClick={onClick}
+      url={url}
     />
   );
 };

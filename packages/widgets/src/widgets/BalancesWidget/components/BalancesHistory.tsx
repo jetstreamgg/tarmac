@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { CombinedHistoryItem, useCombinedHistory } from '@jetstreamgg/hooks';
+import { CombinedHistoryItem, useCombinedHistory, useAllNetworksCombinedHistory } from '@jetstreamgg/hooks';
 import { useFormatDates } from '@jetstreamgg/utils';
 import { useLingui } from '@lingui/react';
 import { CustomPagination } from '@/shared/components/ui/pagination/CustomPagination';
-import { useChainId } from 'wagmi';
 import { BalancesHistoryItem } from './BalancesHistoryItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VStack } from '@/shared/components/ui/layout/VStack';
@@ -17,9 +16,22 @@ export const BalancesHistory = ({
 }: {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
-  const chainId = useChainId();
+  const [showAllNetworks] = useState(true);
 
-  const { data, isLoading, error } = useCombinedHistory();
+  const {
+    data: singleNetworkData,
+    isLoading: singleNetworkLoading,
+    error: singleNetworkError
+  } = useCombinedHistory();
+  const {
+    data: allNetworksData,
+    isLoading: allNetworksLoading,
+    error: allNetworksError
+  } = useAllNetworksCombinedHistory();
+
+  const data = showAllNetworks ? allNetworksData : singleNetworkData;
+  const isLoading = showAllNetworks ? allNetworksLoading : singleNetworkLoading;
+  const error = showAllNetworks ? allNetworksError : singleNetworkError;
 
   const itemsPerPage = 5;
   const { i18n } = useLingui();
@@ -60,7 +72,7 @@ export const BalancesHistory = ({
                 module={item.module}
                 type={item.type}
                 formattedDate={formattedDate}
-                chainId={chainId}
+                chainId={item.chainId}
                 savingsToken={item.token?.symbol}
                 tradeFromToken={item.fromToken?.symbol}
                 item={item}

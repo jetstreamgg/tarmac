@@ -8,6 +8,7 @@ import { HistoryItem } from '../shared/shared';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { Token } from '../tokens/types';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
 
 type BaseTradeHistoryItem = HistoryItem & {
   fromAmount: bigint;
@@ -92,7 +93,8 @@ async function fetchBaseTradeHistory(
         fromAmount: BigInt(e.amountIn),
         toAmount: BigInt(e.amountOut),
         referralCode: e.referralCode,
-        address: e.sender
+        address: e.sender,
+        chainId
       };
     })
     .filter((swap: BaseTradeHistoryItem | null) => swap !== null);
@@ -115,7 +117,8 @@ export function useBaseTradeHistory({
   const { address } = useAccount();
   const chainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getBaseSubgraphUrl(chainId) || '';
-  const tokenAddressMap = useTokenAddressMap();
+  const fetchedChainId = isTestnetId(chainId) ? chainIdMap.tenderlyBase : chainIdMap.base;
+  const tokenAddressMap = useTokenAddressMap(fetchedChainId);
 
   const {
     data,
@@ -123,9 +126,9 @@ export function useBaseTradeHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabledProp && Boolean(tokenAddressMap),
-    queryKey: ['base-trade-history', urlSubgraph, address, excludeSUsds, chainId],
-    queryFn: () => fetchBaseTradeHistory(urlSubgraph, chainId, tokenAddressMap, address, excludeSUsds)
+    enabled: Boolean(urlSubgraph) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
+    queryKey: ['base-trade-history', urlSubgraph, address, excludeSUsds, fetchedChainId],
+    queryFn: () => fetchBaseTradeHistory(urlSubgraph, fetchedChainId, tokenAddressMap, address, excludeSUsds)
   });
 
   return {

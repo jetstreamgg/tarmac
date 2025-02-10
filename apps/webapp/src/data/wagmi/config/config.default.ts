@@ -15,6 +15,7 @@ import {
   TENDERLY_RPC_URL,
   TENDERLY_BASE_RPC_URL
 } from './testTenderlyChain';
+import { isTestnetId } from '@jetstreamgg/utils';
 
 export const tenderly = {
   id: TENDERLY_CHAIN_ID,
@@ -38,7 +39,7 @@ export const tenderly = {
 
 export const tenderlyBase = {
   id: TENDERLY_BASE_CHAIN_ID,
-  name: 'base_oct_9_0',
+  name: 'new-base-testnet-jan-27',
   network: 'tenderly base',
   // This is used by RainbowKit to display a chain icon for small screens. TODO: update to Base icon once available
   iconUrl: 'tokens/weth.svg',
@@ -98,3 +99,18 @@ export const wagmiConfigMainnet = createConfig({
   },
   multiInjectedProviderDiscovery: false
 });
+
+//TODO: add arbitrum
+export const getSupportedChainIds = (chainId: number) => {
+  if (isTestnetId(chainId)) {
+    return [tenderly.id, tenderlyBase.id];
+  }
+  return [mainnet.id, base.id];
+};
+
+export const getMainnetChainName = (chainId: number) => {
+  if (isTestnetId(chainId)) {
+    return tenderly.name;
+  }
+  return mainnet.name;
+};

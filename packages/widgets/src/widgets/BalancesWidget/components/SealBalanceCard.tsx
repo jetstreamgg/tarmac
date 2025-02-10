@@ -8,7 +8,7 @@ import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
 
-export const SealBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps) => {
+export const SealBalanceCard = ({ url, onExternalLinkClicked }: CardProps) => {
   const {
     data: totalUserSealed,
     isLoading: totalUserSealedLoading,
@@ -69,7 +69,7 @@ export const SealBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps) =
           </Text>
         ) : undefined
       }
-      onClick={onClick}
+      url={url}
     />
   );
 };

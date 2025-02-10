@@ -10,7 +10,6 @@ import { RewardsFaq } from './RewardsFaq';
 import { RewardsOverviewCharts } from './history/RewardsOverviewCharts';
 import { RewardsOverviewInfo } from './RewardsOverviewInfo';
 import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
-import { useChainId } from 'wagmi';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
 import { filterActionsByIntent } from '@/lib/utils';
@@ -18,10 +17,9 @@ import { filterActionsByIntent } from '@/lib/utils';
 export function RewardsOverview() {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { linkedActionConfig } = useConfigContext();
-  const chainId = useChainId();
   const { data: actionData } = useUserSuggestedActions();
   const widget = IntentMapping.REWARDS_INTENT;
-  const allRewardContracts = useAvailableTokenRewardContracts(chainId);
+  const allRewardContracts = useAvailableTokenRewardContracts(1); //hardcode to mainnet for now to avoid bugs when linking to mainnet rewards from another chain
 
   return (
     <DetailSectionWrapper>

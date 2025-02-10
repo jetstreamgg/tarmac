@@ -187,11 +187,10 @@ export const TRADE_TOKENS = {
     usdc: { ...TOKENS.usdc, address: usdcBaseAddress[base.id] },
     usds: { ...TOKENS.usds, address: usdsBaseAddress[base.id] },
     susds: { ...TOKENS.susds, address: sUsdsBaseAddress[base.id] }
+  },
+  [TENDERLY_BASE_CHAIN_ID]: {
+    usdc: { ...TOKENS.usdc, address: usdcBaseAddress[TENDERLY_BASE_CHAIN_ID] },
+    usds: { ...TOKENS.usds, address: usdsBaseAddress[TENDERLY_BASE_CHAIN_ID] },
+    susds: { ...TOKENS.susds, address: sUsdsBaseAddress[TENDERLY_BASE_CHAIN_ID] }
   }
-  // TODO add tenderly base tokens once forked with PSM3
-  // [TENDERLY_BASE_CHAIN_ID]: {
-  //   usdc: { ...TOKENS.usdc, address: usdcBaseAddress[TENDERLY_BASE_CHAIN_ID] },
-  //   usds: { ...TOKENS.usds, address: usdsBaseAddress[TENDERLY_BASE_CHAIN_ID] },
-  //   susds: { ...TOKENS.susds, address: sUsdsBaseAddress[TENDERLY_BASE_CHAIN_ID] },
-  // }
 };
