@@ -25,7 +25,7 @@ import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
 import { Heading } from '@/shared/components/ui/Typography';
 import { getValidatedState } from '@/lib/utils';
-import { parseUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
@@ -793,7 +793,19 @@ const SavingsWidgetWrapped = ({
                 setTabIndex(index);
                 setAmount(0n);
               }}
-              onOriginInputChange={setAmount}
+              onOriginInputChange={(newValue, userTriggered) => {
+                setAmount(newValue);
+                if (userTriggered) {
+                  // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                  const formattedValue =
+                    newValue === 0n ? '' : formatUnits(newValue, getTokenDecimals(originToken, chainId));
+                  onWidgetStateChange?.({
+                    originAmount: formattedValue,
+                    txStatus,
+                    widgetState
+                  });
+                }
+              }}
               enabled={enabled}
               onExternalLinkClicked={onExternalLinkClicked}
               isConnectedAndEnabled={isConnectedAndEnabled}

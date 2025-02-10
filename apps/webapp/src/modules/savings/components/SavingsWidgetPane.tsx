@@ -34,31 +34,44 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     hash,
     txStatus,
     widgetState,
-    originToken
+    originToken,
+    originAmount
   }: WidgetStateChangeParams) => {
+    // Update amount in URL if provided and not zero
+    if (originAmount && originAmount !== '0') {
+      setSearchParams(prev => {
+        prev.set(QueryParams.InputAmount, originAmount);
+        return prev;
+      });
+    } else if (originAmount === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.InputAmount);
+        return prev;
+      });
+    }
+
+    // Update source token in URL if provided
+    if (originToken) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.SourceToken, originToken);
+        return prev;
+      });
+    } else if (originToken === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.SourceToken);
+        return prev;
+      });
+    }
+
     // Set tab search param based on widgetState.flow
     if (widgetState.flow) {
-      setSearchParams(prevParams => {
-        const params = new URLSearchParams(prevParams);
-        // only set tab if it was set already
-        if (params.get(QueryParams.Tab)) {
-          params.set(QueryParams.Tab, widgetState.flow === SavingsFlow.SUPPLY ? 'left' : 'right');
-        }
-        return params;
+      setSearchParams(prev => {
+        prev.set(QueryParams.Tab, widgetState.flow === SavingsFlow.SUPPLY ? 'left' : 'right');
+        return prev;
       });
     }
 
-    if (originToken) {
-      setSearchParams(prevParams => {
-        const params = new URLSearchParams(prevParams);
-        if (params.get(QueryParams.SourceToken)) {
-          params.set(QueryParams.SourceToken, originToken);
-        }
-        return params;
-      });
-    }
-
-    // After a successful linked action sUPPLY, set the final step to "success"
+    // After a successful linked action SUPPLY, set the final step to "success"
     if (
       widgetState.action === SavingsAction.SUPPLY &&
       txStatus === TxStatus.SUCCESS &&
