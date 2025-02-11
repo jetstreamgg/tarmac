@@ -4,6 +4,7 @@
   - Claim SKY rewards to With: USDS | Get: SKY
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'claim',
       reward: '<0x123>'
@@ -12,6 +13,7 @@
   - Supply USDS to With: USDS | Get: SKY
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'supply',
       reward: '<0x123>',
@@ -20,6 +22,7 @@
   - Supply {{amount}} USDS to With: USDS | Get: SKY
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'supply',
       reward: '<0x123>',
@@ -29,6 +32,7 @@
   - Withdraw USDS from With: USDS | Get: SKY
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'withdraw',
       reward: '<0x123>'
@@ -37,6 +41,7 @@
   - Withdraw {{amount}} USDS from With: USDS | Get: SKY
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'withdraw',
       reward: '<0x123>',
@@ -46,6 +51,7 @@
   - Supply USDS to With: USDS | Get: Chronicle Points
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'supply',
       reward: '<0x123>'
@@ -54,6 +60,7 @@
   - Supply {{amount}} USDS to With: USDS | Get: Chronicle Points
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'supply',
       reward: '<0x123>',
@@ -63,6 +70,7 @@
   - Withdraw USDS from With: USDS | Get: Chronicle Points
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'withdraw',
       reward: '<0x123>'
@@ -71,6 +79,7 @@
   - Withdraw {{amount}} USDS from With: USDS | Get: Chronicle Points
     ```ts
     {
+      network: 'mainnet',
       widget: 'rewards',
       operation: 'withdraw',
       reward: '<0x123>',
@@ -84,6 +93,7 @@
   - Deposit USDS
     ```ts
     {
+      network: 'mainnet',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDS'
@@ -92,6 +102,7 @@
   - Deposit {{amount}} USDS
     ```ts
     {
+      network: 'mainnet',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDS',
@@ -101,6 +112,7 @@
   - Withdraw USDS
     ```ts
     {
+      network: 'mainnet',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDS'
@@ -109,6 +121,7 @@
   - Withdraw {{amount}} USDS
     ```ts
     {
+      network: 'mainnet',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDS',
@@ -119,6 +132,7 @@
   - Deposit USDS
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDS'
@@ -127,6 +141,7 @@
   - Deposit {{amount}} USDS
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDS',
@@ -136,6 +151,7 @@
   - Deposit USDC
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDC'
@@ -144,6 +160,7 @@
   - Deposit {{amount}} USDC
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDC',
@@ -153,6 +170,7 @@
   - Withdraw USDS
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDS'
@@ -161,6 +179,7 @@
   - Withdraw {{amount}} USDS
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDS',
@@ -170,6 +189,7 @@
   - Withdraw USDC
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDC'
@@ -178,6 +198,7 @@
   - Withdraw {{amount}} USDC
     ```ts
     {
+      network: 'base',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDC',
@@ -188,6 +209,7 @@
   - Deposit USDS
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDS'
@@ -196,6 +218,7 @@
   - Deposit {{amount}} USDS
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDS',
@@ -205,6 +228,7 @@
   - Deposit USDC
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDC'
@@ -213,6 +237,7 @@
   - Deposit {{amount}} USDC
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'deposit',
       token: 'USDC',
@@ -222,6 +247,7 @@
   - Withdraw USDS
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDS'
@@ -230,6 +256,7 @@
   - Withdraw {{amount}} USDS
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDS',
@@ -239,6 +266,7 @@
   - Withdraw USDC
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDC'
@@ -247,6 +275,7 @@
   - Withdraw {{amount}} USDC
     ```ts
     {
+      network: 'arbitrum',
       widget: 'savings',
       operation: 'withdraw',
       token: 'USDC',
