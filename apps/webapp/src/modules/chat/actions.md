@@ -2,26 +2,257 @@
 
 - **Mainnet**
   - Claim SKY rewards to With: USDS | Get: SKY
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'claim',
+      reward: '<0x123>'
+    }
+    ```
   - Supply USDS to With: USDS | Get: SKY
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'supply',
+      reward: '<0x123>',
+    }
+    ```
+  - Supply {{amount}} USDS to With: USDS | Get: SKY
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'supply',
+      reward: '<0x123>',
+      amount: number
+    }
+    ```
   - Withdraw USDS from With: USDS | Get: SKY
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'withdraw',
+      reward: '<0x123>'
+    }
+    ```
+  - Withdraw {{amount}} USDS from With: USDS | Get: SKY
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'withdraw',
+      reward: '<0x123>',
+      amount: number
+    }
+    ```
   - Supply USDS to With: USDS | Get: Chronicle Points
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'supply',
+      reward: '<0x123>'
+    }
+    ```
+  - Supply {{amount}} USDS to With: USDS | Get: Chronicle Points
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'supply',
+      reward: '<0x123>',
+      amount: number
+    }
+    ```
   - Withdraw USDS from With: USDS | Get: Chronicle Points
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'withdraw',
+      reward: '<0x123>'
+    }
+    ```
+  - Withdraw {{amount}} USDS from With: USDS | Get: Chronicle Points
+    ```ts
+    {
+      widget: 'rewards',
+      operation: 'withdraw',
+      reward: '<0x123>',
+      amount: number
+    }
+    ```
 
 ### **Savings**
 
 - **Mainnet**
   - Deposit USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDS'
+    }
+    ```
+  - Deposit {{amount}} USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDS',
+      amount: number
+    }
+    ```
   - Withdraw USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDS'
+    }
+    ```
+  - Withdraw {{amount}} USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDS',
+      amount: number
+    }
+    ```
 - **Base**
   - Deposit USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDS'
+    }
+    ```
+  - Deposit {{amount}} USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDS',
+      amount: number
+    }
+    ```
   - Deposit USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDC'
+    }
+    ```
+  - Deposit {{amount}} USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDC',
+      amount: number
+    }
+    ```
   - Withdraw USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDS'
+    }
+    ```
+  - Withdraw {{amount}} USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDS',
+      amount: number
+    }
+    ```
   - Withdraw USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDC'
+    }
+    ```
+  - Withdraw {{amount}} USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDC',
+      amount: number
+    }
+    ```
 - **Arbitrum**
   - Deposit USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDS'
+    }
+    ```
+  - Deposit {{amount}} USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDS',
+      amount: number
+    }
+    ```
   - Deposit USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDC'
+    }
+    ```
+  - Deposit {{amount}} USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'deposit',
+      token: 'USDC',
+      amount: number
+    }
+    ```
   - Withdraw USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDS'
+    }
+    ```
+  - Withdraw {{amount}} USDS
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDS',
+      amount: number
+    }
+    ```
   - Withdraw USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDC'
+    }
+    ```
+  - Withdraw {{amount}} USDC
+    ```ts
+    {
+      widget: 'savings',
+      operation: 'withdraw',
+      token: 'USDC',
+      amount: number
+    }
+    ```
 
 ### **Upgrade**
 
