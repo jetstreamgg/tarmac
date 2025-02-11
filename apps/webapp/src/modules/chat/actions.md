@@ -1,6 +1,13 @@
 ### **Rewards**
 
 - **Mainnet**
+  - Go to Rewards
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'rewards'
+    }
+    ```
   - Claim SKY rewards to With: USDS | Get: SKY
     ```ts
     {
@@ -90,6 +97,13 @@
 ### **Savings**
 
 - **Mainnet**
+  - Go to Savings
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'savings'
+    }
+    ```
   - Deposit USDS
     ```ts
     {
@@ -129,6 +143,29 @@
     }
     ```
 - **Base**
+  - Go to Savings
+    ```ts
+    {
+      network: 'base',
+      widget: 'savings'
+    }
+    ```
+  - Deposit to Savings
+    ```ts
+    {
+      network: 'base',
+      widget: 'savings',
+      operation: 'deposit',
+    }
+    ```
+  - Withdraw from Savings
+    ```ts
+    {
+      network: 'base',
+      widget: 'savings',
+      operation: 'withdraw'
+    }
+    ```
   - Deposit USDS
     ```ts
     {
@@ -206,6 +243,21 @@
     }
     ```
 - **Arbitrum**
+  - Go to Savings
+    ```ts
+    {
+      network: 'arbitrum',
+      widget: 'savings'
+    }
+    ```
+  - Deposit to Savings
+    ```ts
+    {
+      network: 'arbitrum',
+      widget: 'savings',
+      operation: 'deposit',
+    }
+    ```
   - Deposit USDS
     ```ts
     {
@@ -287,11 +339,85 @@
 
 - **Mainnet**
   - Upgrade MKR to SKY
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'upgrade',
+      source_token: 'MKR',
+    }
+    ```
+  - Upgrade {{amount}} MKR to SKY
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'upgrade',
+      source_token: 'MKR',
+      amount: number
+    }
+    ```
   - Revert SKY to MKR
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'revert',
+      source_token: 'SKY',
+    }
+    ```
+  - Revert {{amount}} SKY to MKR
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'revert',
+      source_token: 'SKY',
+      amount: number
+    }
+    ```
   - Upgrade DAI to USDS
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'upgrade',
+      source_token: 'DAI',
+    }
+    ```
+  - Upgrade {{amount}} DAI to USDS
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'upgrade',
+      source_token: 'DAI',
+      amount: number
+    }
+    ```
   - Revert USDS to DAI
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'revert',
+      source_token: 'USDS',
+    }
+    ```
+  - Revert {{amount}} USDS to DAI
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'upgrade',
+      operation: 'revert',
+      source_token: 'USDS',
+      amount: number
+    }
+    ```
 
 ### **Trade**
+
+TODO add params
 
 - **Mainnet**
   - Trade `<add pairs>`
@@ -306,6 +432,8 @@
 
 ### **Seal (WIP)**
 
+TODO add params
+
 - **Mainnet**
   - Open seal position
   - Modify existing seal position
@@ -314,6 +442,8 @@
 ### _Potential Additions:_
 
 ### **Balances**
+
+TODO add params
 
 - **All Networks**
 
