@@ -52,6 +52,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_CF_PAGES_COMMIT_SHA`: (Optional) Git commit hash of the current build
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
 - `VITE_CHATBOT_ENABLED`: If set to `'true`, enables the chatbot functionality
+- `VITE_CHATBOT_ENDPOINT`: Domain to send chatbot requests to
 - `VITE_ADVANCED_CHAT_ENABLED`: If set to `'true`, enables advanced chat features
 - `VITE_CHAT_SUGGESTIONS_ENABLED`: If set to `'true`, enables chat suggestions functionality, set to 'true' to enable
 
