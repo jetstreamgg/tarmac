@@ -13,7 +13,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'claim',
+      flow: 'claim',
       reward: '<0x123>'
     }
     ```
@@ -22,7 +22,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'supply',
+      flow: 'supply',
       reward: '<0x123>',
     }
     ```
@@ -31,7 +31,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'supply',
+      flow: 'supply',
       reward: '<0x123>',
       amount: number
     }
@@ -41,7 +41,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'withdraw',
+      flow: 'withdraw',
       reward: '<0x123>'
     }
     ```
@@ -50,7 +50,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'withdraw',
+      flow: 'withdraw',
       reward: '<0x123>',
       amount: number
     }
@@ -60,7 +60,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'supply',
+      flow: 'supply',
       reward: '<0x123>'
     }
     ```
@@ -69,7 +69,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'supply',
+      flow: 'supply',
       reward: '<0x123>',
       amount: number
     }
@@ -79,7 +79,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'withdraw',
+      flow: 'withdraw',
       reward: '<0x123>'
     }
     ```
@@ -88,7 +88,7 @@
     {
       network: 'mainnet',
       widget: 'rewards',
-      operation: 'withdraw',
+      flow: 'withdraw',
       reward: '<0x123>',
       amount: number
     }
@@ -109,7 +109,7 @@
     {
       network: 'mainnet',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDS'
     }
     ```
@@ -118,7 +118,7 @@
     {
       network: 'mainnet',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDS',
       amount: number
     }
@@ -128,7 +128,7 @@
     {
       network: 'mainnet',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDS'
     }
     ```
@@ -137,7 +137,7 @@
     {
       network: 'mainnet',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDS',
       amount: number
     }
@@ -155,7 +155,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
     }
     ```
   - Withdraw from Savings
@@ -163,7 +163,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'withdraw'
+      flow: 'withdraw'
     }
     ```
   - Deposit USDS
@@ -171,7 +171,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDS'
     }
     ```
@@ -180,7 +180,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDS',
       amount: number
     }
@@ -190,7 +190,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDC'
     }
     ```
@@ -199,7 +199,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDC',
       amount: number
     }
@@ -209,7 +209,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDS'
     }
     ```
@@ -218,7 +218,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDS',
       amount: number
     }
@@ -228,7 +228,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDC'
     }
     ```
@@ -237,7 +237,7 @@
     {
       network: 'base',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDC',
       amount: number
     }
@@ -255,7 +255,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
     }
     ```
   - Deposit USDS
@@ -263,7 +263,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDS'
     }
     ```
@@ -272,7 +272,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDS',
       amount: number
     }
@@ -282,7 +282,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDC'
     }
     ```
@@ -291,7 +291,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'deposit',
+      flow: 'deposit',
       token: 'USDC',
       amount: number
     }
@@ -301,7 +301,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDS'
     }
     ```
@@ -310,7 +310,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDS',
       amount: number
     }
@@ -320,7 +320,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDC'
     }
     ```
@@ -329,7 +329,7 @@
     {
       network: 'arbitrum',
       widget: 'savings',
-      operation: 'withdraw',
+      flow: 'withdraw',
       token: 'USDC',
       amount: number
     }
@@ -343,7 +343,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'upgrade',
+      flow: 'upgrade',
       source_token: 'MKR',
     }
     ```
@@ -352,7 +352,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'upgrade',
+      flow: 'upgrade',
       source_token: 'MKR',
       amount: number
     }
@@ -362,7 +362,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'revert',
+      flow: 'revert',
       source_token: 'SKY',
     }
     ```
@@ -371,7 +371,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'revert',
+      flow: 'revert',
       source_token: 'SKY',
       amount: number
     }
@@ -381,7 +381,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'upgrade',
+      flow: 'upgrade',
       source_token: 'DAI',
     }
     ```
@@ -390,7 +390,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'upgrade',
+      flow: 'upgrade',
       source_token: 'DAI',
       amount: number
     }
@@ -400,7 +400,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'revert',
+      flow: 'revert',
       source_token: 'USDS',
     }
     ```
@@ -409,7 +409,7 @@
     {
       network: 'mainnet',
       widget: 'upgrade',
-      operation: 'revert',
+      flow: 'revert',
       source_token: 'USDS',
       amount: number
     }
@@ -417,18 +417,109 @@
 
 ### **Trade**
 
-TODO add params
+Each network supports different trading pairs:
+
+**Mainnet**
+Supported tokens: USDC, USDT, ETH, WETH, DAI, MKR, USDS, sUSDS, SKY
+
+- All token combinations are valid except:
+  - ETH <> WETH pairs
+  - Same token pairs (e.g. USDS <> USDS)
+
+**Base**
+Supported pairs:
+
+- USDC <> USDS
+- USDC <> sUSDS
+- USDS <> sUSDS
+
+**Arbitrum**
+Supported pairs:
+
+- USDC <> USDS
+- USDC <> sUSDS
+- USDS <> sUSDS
+
+Trade actions:
+
+type MainnetToken = 'USDC' | 'USDT' | 'ETH' | 'WETH' | 'DAI' | 'MKR' | 'USDS' | 'sUSDS' | 'SKY'
 
 - **Mainnet**
-  - Trade `<add pairs>`
+
+  - Go to Trade
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'trade'
+    }
+    ```
+  - Trade to {{target_token}}
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'trade',
+      target_token: MainnetToken
+    }
+    ```
+  - Trade {{source_token}}
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'trade',
+      source_token: MainnetToken
+    }
+    ```
+  - Trade {{amount}} {{source_token}}
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'trade',
+      source_token: MainnetToken,
+      amount: number
+    }
+    ```
+  - Trade {{source_token}} to {{target_token}}
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'trade',
+      source_token: MainnetToken,
+      target_token: MainnetToken
+    }
+    ```
+  - Trade {{amount}} {{source_token}} to {{target_token}}
+    ```ts
+    {
+      network: 'mainnet',
+      widget: 'trade',
+      source_token: MainnetToken,
+      target_token: MainnetToken,
+      amount: number
+    }
+    ```
+
 - **Base**
-  - Trade USDC ↔ USDS
-  - Trade USDC ↔ sUSDS
-  - Trade USDS ↔ sUSDS
+
+  - Go to Trade
+    ```ts
+    {
+      network: 'base',
+      widget: 'trade'
+    }
+    ```
+    // Same trade actions as mainnet but with Base-specific token types
+    // (USDC, USDS, sUSDS)
+
 - **Arbitrum**
-  - Trade USDC ↔ USDS
-  - Trade USDC ↔ sUSDS
-  - Trade USDS ↔ sUSDS
+  - Go to Trade
+    ```ts
+    {
+      network: 'arbitrum',
+      widget: 'trade'
+    }
+    ```
+    // Same trade actions as mainnet but with Arbitrum-specific token types
+    // (USDC, USDS, sUSDS)
 
 ### **Seal (WIP)**
 
