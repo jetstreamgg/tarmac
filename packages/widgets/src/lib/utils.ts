@@ -5,6 +5,11 @@ import { upgradeTokens } from '@/widgets/UpgradeWidget/lib/constants';
 import { defaultConfig } from '../config/default-config';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 import { ExternalWidgetState } from '@/shared/types/widgetState';
+import { SavingsFlow } from '@/widgets/SavingsWidget/lib/constants';
+import { UpgradeFlow } from '@/widgets/UpgradeWidget/lib/constants';
+import { RewardsFlow } from '@/widgets/RewardsWidget/lib/constants';
+import { TradeFlow } from '@/widgets/TradeWidget/lib/constants';
+import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -75,7 +80,15 @@ const ExternalWidgetStateSchema = z
       })
       .optional(),
     targetAmount: amountValidationRule,
-    tab: z.enum(['left', 'right']).optional(),
+    flow: z
+      .enum([
+        ...Object.values(SavingsFlow),
+        ...Object.values(UpgradeFlow),
+        ...Object.values(RewardsFlow),
+        ...Object.values(TradeFlow),
+        ...Object.values(BalancesFlow)
+      ] as [string, ...string[]])
+      .optional(),
     token: tokenValidationRule,
     targetToken: tokenValidationRule
   })

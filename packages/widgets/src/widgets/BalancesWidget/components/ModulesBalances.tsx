@@ -2,7 +2,7 @@ import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
 import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
 
 export interface CardProps {
   onClick?: () => void;
@@ -25,8 +25,8 @@ export const ModulesBalances = ({
   hideModuleBalances
 }: ModulesBalancesProps): React.ReactElement => {
   const chainId = useChainId();
-  const hideRewards = hideModuleBalances || isBaseChainId(chainId); //TODO: Update when base rewards are added
-  const hideSeal = isBaseChainId(chainId);
+  const hideRewards = hideModuleBalances || isL2ChainId(chainId); //TODO: Update when l2 rewards are added
+  const hideSeal = isL2ChainId(chainId);
   return (
     <div className="flex flex-col gap-2">
       {!hideRewards && (

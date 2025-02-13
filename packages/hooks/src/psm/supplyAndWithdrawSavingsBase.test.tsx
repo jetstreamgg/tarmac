@@ -5,7 +5,7 @@ import { parseEther } from 'viem';
 import { config, GAS, TEST_WALLET_ADDRESS, WagmiWrapper } from '../../test';
 import { TOKENS } from '../tokens/tokens.constants';
 import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../constants';
-import { psm3BaseAddress } from '../generated';
+import { psm3L2Address } from '../generated';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { waitForPreparedExecuteAndMine } from '../../test/helpers';
 import { usePsmSwapExactIn } from './usePsmSwapExactIn';
@@ -24,7 +24,7 @@ describe('Savings Base - Supply and withdraw', () => {
         useApproveToken({
           amount: parseEther('10'),
           contractAddress: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          spender: psm3BaseAddress[TENDERLY_BASE_CHAIN_ID],
+          spender: psm3L2Address[TENDERLY_BASE_CHAIN_ID],
           gas: GAS
         }),
       {
@@ -102,7 +102,7 @@ describe('Savings Base - Supply and withdraw', () => {
           // Actual amount of sUSDS will be slightly lower
           amount: parseEther('5'),
           contractAddress: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
-          spender: psm3BaseAddress[TENDERLY_BASE_CHAIN_ID],
+          spender: psm3L2Address[TENDERLY_BASE_CHAIN_ID],
           gas: GAS
         }),
       {

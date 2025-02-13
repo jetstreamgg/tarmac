@@ -2,7 +2,7 @@ import { TestProject } from 'vitest/node';
 import { mcdDaiAddress, mkrAddress, skyAddress, TOKENS, usdsAddress } from '../src';
 import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../src/constants';
 import { setErc20Balance, setEthBalance, waitForVnetsReady } from './utils';
-import { testClientMainnet, testClientBase } from './WagmiWrapper';
+import { testClientMainnet, testClientBase, testClientArbitrum } from './WagmiWrapper';
 import { NetworkName } from './constants';
 
 // This function will be called once before running the tests
@@ -21,12 +21,14 @@ export async function setup({ provide }: TestProject) {
     setErc20Balance(TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID], '100', 18, NetworkName.base)
   ]);
 
-  const [snapshotIdMainnet, snapshotIdBase] = await Promise.all([
+  const [snapshotIdMainnet, snapshotIdBase, snapshotIdArbitrum] = await Promise.all([
     testClientMainnet.snapshot(),
-    testClientBase.snapshot()
+    testClientBase.snapshot(),
+    testClientArbitrum.snapshot()
   ]);
   provide('snapshotIdMainnet', snapshotIdMainnet);
   provide('snapshotIdBase', snapshotIdBase);
+  provide('snapshotIdArbitrum', snapshotIdArbitrum);
 }
 
 // Extend `ProvidedContext` type to have
@@ -35,5 +37,6 @@ declare module 'vitest' {
   export interface ProvidedContext {
     snapshotIdMainnet: `0x${string}`;
     snapshotIdBase: `0x${string}`;
+    snapshotIdArbitrum: `0x${string}`;
   }
 }

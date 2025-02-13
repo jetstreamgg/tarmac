@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
-import { mcdPotAddress, usdsAddress, usdsBaseAddress } from '../generated';
+import { mcdPotAddress, usdsAddress, usdsL2Address } from '../generated';
 import { useReadMcdPot } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink, isBaseChainId } from '@jetstreamgg/utils';
+import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/utils';
 import { calculateDsrInfo } from './calculateDsrInfo';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
@@ -25,7 +25,7 @@ export type DsrHook = ReadHook & {
 export function useSavingsData(address?: `0x${string}`): DsrHook {
   const connectedChainId = useChainId();
   // If the connected chain is base, use mainnet instead (except for getting the sUSDS and NST balance)
-  const ethereumChainId = !isBaseChainId(connectedChainId) ? connectedChainId : 1;
+  const ethereumChainId = !isL2ChainId(connectedChainId) ? connectedChainId : 1;
 
   const { address: connectedAddress } = useAccount();
   const acct = address || connectedAddress;
@@ -116,8 +116,8 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
   } = useTokenBalance({
     address: acct,
     chainId: connectedChainId,
-    token: isBaseChainId(connectedChainId)
-      ? usdsBaseAddress[connectedChainId as keyof typeof usdsBaseAddress]
+    token: isL2ChainId(connectedChainId)
+      ? usdsL2Address[connectedChainId as keyof typeof usdsL2Address]
       : usdsAddress[connectedChainId as keyof typeof usdsAddress]
   });
   // TODO add data source
@@ -134,7 +134,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
     args: [acct || '0x123'],
     chainId: ethereumChainId as keyof typeof useReadSavingsUsds,
     query: {
-      enabled: !!acct && !isBaseChainId(connectedChainId)
+      enabled: !!acct && !isL2ChainId(connectedChainId)
     }
   });
   const dataSourcesMaxWithdraw: DataSource = {
@@ -158,7 +158,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
     address: acct,
     token: TOKENS.susds.address[connectedChainId],
     chainId: connectedChainId,
-    enabled: !!acct && isBaseChainId(connectedChainId)
+    enabled: !!acct && isL2ChainId(connectedChainId)
   });
 
   const convertedBalance = usePreviewSwapExactIn(sUsdsBalance?.value || 0n, TOKENS.susds, TOKENS.usds);
@@ -218,7 +218,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
     return {
       savingsRate,
       savingsTvl,
-      userSavingsBalance: isBaseChainId(connectedChainId) ? convertedBalance.value : maxWithdraw || 0n,
+      userSavingsBalance: isL2ChainId(connectedChainId) ? convertedBalance.value : maxWithdraw || 0n,
       userNstBalance: userNstBalance?.value || 0n
     };
   }, [pie, Pie, dsr, chi, userNstBalance, maxWithdraw, sUsdsBalance]);

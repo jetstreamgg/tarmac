@@ -3,13 +3,14 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { t } from '@lingui/core/macro';
 import { ModuleCard } from '@/modules/balances/components/ModuleCard';
 import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
 
 export function BalancesModuleShowcase() {
   const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
   const chainId = useChainId();
   const isBase = isBaseChainId(chainId);
+  const isArbitrum = isArbitrumChainId(chainId);
 
   return (
     <HStack className="mb-8 flex-wrap items-stretch gap-3 space-x-0">
@@ -20,8 +21,8 @@ export function BalancesModuleShowcase() {
             module={t`Rewards`}
             title={t`Access rewards without giving up control`}
             className="bg-sky-blue"
-            notAvailable={isBase}
-            soon={isBase}
+            notAvailable={isBase || isArbitrum}
+            soon={isBase || isArbitrum}
           />
           <ModuleCard
             intent={Intent.SAVINGS_INTENT}
@@ -44,7 +45,7 @@ export function BalancesModuleShowcase() {
         module={t`Upgrade`}
         title={t`Upgrade your DAI and MKR`}
         className="bg-sky-pink"
-        notAvailable={isBase}
+        notAvailable={isBase || isArbitrum}
       />
     </HStack>
   );

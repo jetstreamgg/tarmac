@@ -1,13 +1,17 @@
-import { SavingsAction, SavingsFlow, SavingsScreen } from '../SavingsWidget/constants';
-import { UpgradeAction, UpgradeFlow, UpgradeScreen } from '../UpgradeWidget/constants';
-import { RewardsAction, RewardsFlow, RewardsScreen } from '../RewardsWidget/constants';
-import { TradeAction, TradeFlow, TradeScreen } from '../TradeWidget/constants';
-import { upgradeTokens } from '../UpgradeWidget';
+import { SavingsAction, SavingsFlow, SavingsScreen } from '@/widgets/SavingsWidget/lib/constants';
+import {
+  UpgradeAction,
+  UpgradeFlow,
+  UpgradeScreen,
+  upgradeTokens
+} from '@/widgets/UpgradeWidget/lib/constants';
+import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidget/lib/constants';
+import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/hooks';
 import { TxStatus, NotificationType } from '../constants';
 
 export type WidgetState = {
-  flow: InitialFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
+  flow: InitialFlow | BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
   action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction;
   screen: InitialScreen | SavingsScreen | UpgradeScreen | RewardsScreen | TradeScreen;
 };
@@ -16,11 +20,11 @@ type Amount = {
   amount?: string;
 };
 
-type Tab = {
-  tab?: 'left' | 'right';
+type Flow = {
+  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
 };
 
-type BalancesWidgetState = Tab;
+type BalancesWidgetState = Flow;
 
 type UpgradeWidgetState = Amount & {
   initialUpgradeToken?: keyof typeof upgradeTokens;
@@ -33,10 +37,10 @@ type TradeWidgetState = Amount & {
   timestamp?: number;
 };
 
-type SavingsWidgetState = Amount & Tab;
+type SavingsWidgetState = Amount & Flow;
 
 type RewardsWidgetState = Amount &
-  Tab & {
+  Flow & {
     selectedRewardContract?: RewardContract;
   };
 

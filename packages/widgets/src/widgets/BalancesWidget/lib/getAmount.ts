@@ -1,4 +1,4 @@
-import { CombinedHistoryItem, ModuleEnum, TransactionTypeEnum } from '@jetstreamgg/hooks';
+import { CombinedHistoryItem, ModuleEnum, Token, TransactionTypeEnum } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
 import { absBigInt } from './absBigInt';
 import { getTokenDecimals } from '@jetstreamgg/hooks';
@@ -15,31 +15,29 @@ export const getAmount = ({
 }) => {
   switch (item.module) {
     case ModuleEnum.TRADE:
-      return formatBigInt(absBigInt(item.fromAmount), {
+      return formatBigInt(absBigInt('fromAmount' in item ? item.fromAmount : 0n), {
         compact: true,
-        unit: getTokenDecimals(item.fromToken, chainId)
+        unit: 'fromToken' in item ? getTokenDecimals(item.fromToken as Token, chainId) : 18
       });
     case ModuleEnum.UPGRADE:
       switch (item.type) {
         case TransactionTypeEnum.MKR_TO_SKY:
-          return formatBigInt(absBigInt(item.skyAmt), { compact: true });
         case TransactionTypeEnum.SKY_TO_MKR:
-          return formatBigInt(absBigInt(item.skyAmt), { compact: true });
+          return formatBigInt(absBigInt('skyAmt' in item ? item.skyAmt : 0n), { compact: true });
         case TransactionTypeEnum.DAI_TO_USDS:
-          return formatBigInt(absBigInt(item.wad), { compact: true });
         case TransactionTypeEnum.USDS_TO_DAI:
-          return formatBigInt(absBigInt(item.wad), { compact: true });
+          return formatBigInt(absBigInt('wad' in item ? item.wad : 0n), { compact: true });
       }
       break;
     case ModuleEnum.REWARDS:
     case ModuleEnum.SEAL:
       return [TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.SELECT_REWARD].includes(type)
         ? ''
-        : formatBigInt(absBigInt(item.amount), { compact: true });
+        : formatBigInt(absBigInt('amount' in item ? item.amount : 0n), { compact: true });
     case ModuleEnum.SAVINGS:
-      return formatBigInt(absBigInt(item.assets), {
+      return formatBigInt(absBigInt('assets' in item ? item.assets : 0n), {
         compact: true,
-        unit: getTokenDecimals(item.token, chainId)
+        unit: 'token' in item ? getTokenDecimals(item.token, chainId) : 18
       });
   }
 };

@@ -3,7 +3,7 @@ import {
   TxStatus,
   TradeAction,
   WidgetStateChangeParams,
-  BaseTradeWidget
+  L2TradeWidget
 } from '@jetstreamgg/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
@@ -17,7 +17,7 @@ import { useSearchParams } from 'react-router-dom';
 import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId, isL2ChainId } from '@jetstreamgg/utils';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
@@ -31,6 +31,8 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
 
   const isBase = isBaseChainId(chainId);
+  const isArbitrum = isArbitrumChainId(chainId);
+  const isL2 = isL2ChainId(chainId);
 
   const onTradeWidgetStateChange = ({
     hash,
@@ -137,7 +139,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     [linkedActionConfig]
   );
 
-  const Widget = isBase ? BaseTradeWidget : TradeWidget;
+  const Widget = isL2 ? L2TradeWidget : TradeWidget;
 
   return (
     <Widget
@@ -149,6 +151,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       externalWidgetState={externalWidgetState}
+      widgetTitle={isBase ? 'Base Trade' : isArbitrum ? 'Arbitrum Trade' : 'Trade'}
     />
   );
 }

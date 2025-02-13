@@ -273,7 +273,7 @@ npm install -g @wagmi/cli
 
 ```
 
-Please, add the environment variable: `ETHERSCAN_API_KEY` with your Etherscan API key and `BASESCAN_API_KEY` with your Basescan API key.
+Please, add the environment variable: `ETHERSCAN_V2_API_KEY` with your Etherscan v2 API key.
 This is used to fetch the latest ABI from Etherscan and create the contracts file.
 
 To generate the contracts file, run:

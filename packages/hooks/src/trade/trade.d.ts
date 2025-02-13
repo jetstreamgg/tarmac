@@ -1,6 +1,7 @@
 import { HistoryItem } from '../shared/shared.js';
 import { OrderBalance, OrderQuoteSideKind, OrderStatus } from './constants.js';
 import { ReadHook } from '../hooks.js';
+import { ModuleEnum, TransactionTypeEnum } from '../constants.js';
 
 export type Token = {
   id: string;
@@ -38,6 +39,8 @@ export type ParsedTradeRecord = Pick<TradeRecord, 'id' | 'blockTimestamp' | 'tra
   toAmount: bigint;
   toToken: Token;
   cowOrderStatus: OrderStatus;
+  module: ModuleEnum;
+  type: TransactionTypeEnum;
 };
 
 export type TradeHistoryRaw = TradeRecord[];

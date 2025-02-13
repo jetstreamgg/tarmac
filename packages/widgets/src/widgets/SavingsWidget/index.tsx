@@ -1,4 +1,5 @@
 import {
+  getTokenDecimals,
   TOKENS,
   useSavingsAllowance,
   useSavingsApprove,
@@ -21,7 +22,7 @@ import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
 import { Heading } from '@/shared/components/ui/Typography';
 import { getValidatedState } from '@/lib/utils';
-import { parseUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
@@ -89,13 +90,17 @@ const SavingsWidgetWrapped = ({
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const { mutate: mutateSavings, data: savingsData, isLoading: isSavingsDataLoading } = useSavingsData();
   const { data: allowance, mutate: mutateAllowance, isLoading: allowanceLoading } = useSavingsAllowance();
-  const initialAmount = parseUnits(validatedExternalState?.amount || '0', 18);
+  const initialAmount =
+    validatedExternalState?.amount && validatedExternalState.amount !== '0'
+      ? parseUnits(validatedExternalState.amount, 18)
+      : 0n;
   const [amount, setAmount] = useState(initialAmount);
   const debouncedAmount = useDebounce(amount);
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
+  const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const [max, setMax] = useState<boolean>(false);
   const linguiCtx = useLingui();
+  const usds = TOKENS.usds;
 
   useEffect(() => {
     setAmount(initialAmount);
@@ -252,7 +257,7 @@ const SavingsWidgetWrapped = ({
     } else {
       // Reset widget state when we are not connected
       setWidgetState({
-        flow: null,
+        flow: tabIndex === 0 ? SavingsFlow.SUPPLY : SavingsFlow.WITHDRAW,
         action: null,
         screen: null
       });
@@ -322,18 +327,42 @@ const SavingsWidgetWrapped = ({
     setExternalLink(undefined);
     savingsApprove.execute();
   };
+
   const supplyOnClick = () => {
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
     savingsSupply.execute();
   };
+
   const withdrawOnClick = () => {
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
     savingsWithdraw.execute();
   };
+
+  // Handle external state changes
+  useEffect(() => {
+    const tokenDecimals = getTokenDecimals(usds, chainId);
+    const formattedAmount = formatUnits(amount, tokenDecimals);
+    const amountHasChanged =
+      validatedExternalState?.amount !== undefined && validatedExternalState?.amount !== formattedAmount;
+
+    const tokenHasChanged = externalWidgetState?.token?.toLowerCase() !== usds.symbol.toLowerCase();
+
+    if ((amountHasChanged || tokenHasChanged) && txStatus === TxStatus.IDLE) {
+      // Only set amount if there's a valid amount in external state
+      if (validatedExternalState?.amount && validatedExternalState.amount !== '0') {
+        const newAmount = parseUnits(validatedExternalState.amount, tokenDecimals);
+        setAmount(newAmount);
+      } else {
+        // If amount is explicitly empty string, clear the input
+        setAmount(0n);
+      }
+    }
+  }, [validatedExternalState?.amount, txStatus]);
+
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
 
@@ -480,8 +509,6 @@ const SavingsWidgetWrapped = ({
     }
   }, [debouncedBalanceError]);
 
-  const usds = TOKENS.usds;
-
   return (
     <WidgetContainer
       header={
@@ -517,7 +544,19 @@ const SavingsWidgetWrapped = ({
               savingsBalance={savingsData?.userSavingsBalance}
               savingsTvl={savingsData?.savingsTvl}
               isSavingsDataLoading={isSavingsDataLoading}
-              onChange={setAmount}
+              onChange={(newValue: bigint, userTriggered?: boolean) => {
+                setAmount(newValue);
+                if (userTriggered) {
+                  // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                  const formattedValue =
+                    newValue === 0n ? '' : formatUnits(newValue, getTokenDecimals(usds, chainId));
+                  onWidgetStateChange?.({
+                    originAmount: formattedValue,
+                    txStatus,
+                    widgetState
+                  });
+                }
+              }}
               onToggle={setTabIndex}
               amount={amount}
               error={widgetState.flow === SavingsFlow.SUPPLY ? isSupplyBalanceError : isWithdrawBalanceError}

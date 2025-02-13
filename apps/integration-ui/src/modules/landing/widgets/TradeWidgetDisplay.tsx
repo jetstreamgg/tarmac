@@ -7,7 +7,7 @@ export function TradeWidgetDisplay() {
   const addRecentTransaction = useAddRecentTransaction();
   const onConnectModal = useCustomConnectModal();
 
-  const [tradeInitialState] = useState<ExternalWidgetState>({ tab: 'left' });
+  const [tradeInitialState] = useState<ExternalWidgetState>({});
 
   return (
     <BaseTradeWidget

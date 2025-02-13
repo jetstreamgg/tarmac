@@ -6,7 +6,8 @@ export const networkMapping = {
   mainnet: 1,
   ethereum: 1,
   base: 8453,
-  arbitrum: 42161
+  arbitrum: 42161,
+  arbitrumone: 42161
 } as const;
 
 export const chainIdNameMapping = {
@@ -14,7 +15,8 @@ export const chainIdNameMapping = {
   314310: 'ethereum', // tenderly
   8453: 'base',
   8555: 'base', // base tenderly
-  42161: 'arbitrum'
+  42161: 'arbitrumone',
+  421611: 'arbitrumone' // arbitrum+one tenderly
 } as const;
 
 export type NetworkName = keyof typeof networkMapping;

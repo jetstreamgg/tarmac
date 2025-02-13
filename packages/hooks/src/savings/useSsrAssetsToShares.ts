@@ -2,10 +2,10 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { Token } from '../tokens/types';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { useChainId } from 'wagmi';
-import { useReadPsm3BaseConvertToShares } from '../generated';
+import { useReadPsm3L2ConvertToShares } from '../generated';
 
 export const useSsrAssetsToShares = (amount: bigint | undefined, originToken: Token) => {
-  const { data: shares } = useReadPsm3BaseConvertToShares({
+  const { data: shares } = useReadPsm3L2ConvertToShares({
     args: [amount || 0n]
   });
 

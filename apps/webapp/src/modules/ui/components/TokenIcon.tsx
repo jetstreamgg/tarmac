@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Token } from '@jetstreamgg/hooks';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
 import React from 'react';
 import { useChainId } from 'wagmi';
 
@@ -22,7 +22,7 @@ export function TokenIcon({
   const chainIdToUse = chainId ?? connectedChainId;
   if (!token.symbol) return <></>;
 
-  const path = `/tokens/${isBaseChainId(chainIdToUse) ? 'base/' : ''}${token.symbol.toLowerCase()}.svg`;
+  const path = `/tokens/${isBaseChainId(chainIdToUse) ? 'base/' : isArbitrumChainId(chainIdToUse) ? 'arbitrum/' : ''}${token.symbol.toLowerCase()}.svg`;
 
   return (
     <Avatar className={cn('', className)}>

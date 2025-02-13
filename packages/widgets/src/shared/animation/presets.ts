@@ -20,7 +20,7 @@ export const cardInAnimate: Variant = {
   }
 };
 
-export const cardOutExit: Variant = {
+const cardOutExit: Variant = {
   opacity: 0,
   y: -20,
   transition: {
@@ -35,12 +35,12 @@ export const cardAnimations: Variants = {
   [AnimationLabels.exit]: cardOutExit
 };
 
-export const positionInitial: Variant = {
+const positionInitial: Variant = {
   y: 10,
   opacity: 0
 };
 
-export const positionAnimate: Variant = {
+const positionAnimate: Variant = {
   y: 0,
   opacity: 1,
   transition: {
@@ -51,7 +51,7 @@ export const positionAnimate: Variant = {
   }
 };
 
-export const positionOutExit: Variant = {
+const positionOutExit: Variant = {
   y: -10,
   opacity: 0,
   transition: {
@@ -70,12 +70,12 @@ export const positionAnimationsWithExit: Variants = {
   [AnimationLabels.exit]: positionOutExit
 };
 
-export const buttonsInInitial: Variant = {
+const buttonsInInitial: Variant = {
   scale: 0.93,
   opacity: 0
 };
 
-export const buttonsInAnimate: Variant = {
+const buttonsInAnimate: Variant = {
   scale: 1,
   opacity: 1,
   transition: {
@@ -84,7 +84,7 @@ export const buttonsInAnimate: Variant = {
   }
 };
 
-export const buttonsOutExit: Variant = {
+const buttonsOutExit: Variant = {
   opacity: 0,
   transition: {
     opacity: { duration: 0.25, ease: easeOutExpo }
@@ -104,12 +104,12 @@ export const skeletonTransition: Transition = {
   repeatDelay: 0.5
 };
 
-export const iconInInitial: Variant = {
+const iconInInitial: Variant = {
   scale: 1.12,
   opacity: 0
 };
 
-export const iconInAnimate: Variant = {
+const iconInAnimate: Variant = {
   scale: 1,
   opacity: 1,
   transition: {
@@ -118,7 +118,7 @@ export const iconInAnimate: Variant = {
   }
 };
 
-export const iconOutExit: Variant = {
+const iconOutExit: Variant = {
   scale: 1.12,
   opacity: 0,
   transition: {

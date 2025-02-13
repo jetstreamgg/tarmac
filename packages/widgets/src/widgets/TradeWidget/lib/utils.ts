@@ -1,7 +1,7 @@
 import { HandledQuoteErrorTypes, SUPPORTED_TOKEN_SYMBOLS } from './constants';
 import { TokenForChain } from '@jetstreamgg/hooks';
 
-export function makeBidirectional(
+function makeBidirectional(
   pairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>
 ): Record<string, SUPPORTED_TOKEN_SYMBOLS[]> | undefined {
   if (!pairs) return undefined;

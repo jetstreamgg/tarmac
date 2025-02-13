@@ -1,5 +1,3 @@
-import { Token } from '@makerdao-dux/contracts';
-import { SupportedCollateralTypes } from './vaults.constants';
 import { RiskLevel } from './vaults.constants';
 
 export type VaultParams = {
@@ -41,12 +39,6 @@ export type VaultRaw = {
   line: RawValue | undefined; // rad
   ilkArt: RawValue | undefined; // wad
   duty: RawValue | undefined; // ray
-};
-
-export type CollateralType = CollateralRiskParameters & {
-  id: SupportedCollateralTypes;
-  name: string;
-  token: Token;
 };
 
 export type CollateralRiskParameters = {

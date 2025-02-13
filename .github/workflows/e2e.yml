@@ -40,6 +40,10 @@ jobs:
             vnet: true
           - test: base-trade.spec
             vnet: true
+          - test: arbitrum-savings.spec
+            vnet: true
+          - test: arbitrum-trade.spec
+            vnet: true
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:

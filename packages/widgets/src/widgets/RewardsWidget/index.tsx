@@ -7,7 +7,8 @@ import {
   useRewardsWithdraw,
   useRewardsClaim,
   useTokenAllowance,
-  useTokenBalance
+  useTokenBalance,
+  getTokenDecimals
 } from '@jetstreamgg/hooks';
 import { getEtherscanLink, useDebounce, formatBigInt } from '@jetstreamgg/utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -26,7 +27,7 @@ import { Heading } from '@/shared/components/ui/Typography';
 import { RewardsOverview } from './components/RewardsOverview';
 import { Button } from '@/components/ui/button';
 import { getValidatedState } from '../../lib/utils';
-import { parseUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
 import { HStack } from '@/shared/components/ui/layout/HStack';
 import { ArrowLeft } from 'lucide-react';
@@ -142,9 +143,13 @@ const RewardsWidgetWrapped = ({
   });
 
   const debouncedAmount = useDebounce(amount);
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
+  const initialTabIndex = validatedExternalState?.flow === RewardsFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const linguiCtx = useLingui();
+
+  useEffect(() => {
+    setTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
 
   const {
     setButtonText,
@@ -623,7 +628,7 @@ const RewardsWidgetWrapped = ({
     setWidgetState({
       ...widgetState,
       action: RewardsAction.OVERVIEW,
-      flow: null
+      flow: RewardsFlow.SUPPLY
     });
     setTxStatus(TxStatus.IDLE);
     setAmount(0n);
@@ -706,10 +711,32 @@ const RewardsWidgetWrapped = ({
                   rewardsBalance={rewardsBalance}
                   claim={claim}
                   error={currentError}
-                  onChange={setAmount}
+                  onChange={(newValue: bigint, userTriggered?: boolean) => {
+                    setAmount(newValue);
+                    if (userTriggered && selectedRewardContract?.supplyToken) {
+                      // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                      const formattedValue =
+                        newValue === 0n
+                          ? ''
+                          : formatUnits(
+                              newValue,
+                              getTokenDecimals(selectedRewardContract.supplyToken, chainId)
+                            );
+                      onWidgetStateChange?.({
+                        originAmount: formattedValue,
+                        txStatus,
+                        widgetState
+                      });
+                    }
+                  }}
                   onToggle={index => {
                     setTabIndex(index);
                     setAmount(0n);
+                    onWidgetStateChange?.({
+                      originAmount: '',
+                      txStatus,
+                      widgetState
+                    });
                   }}
                   onClaimClick={onClaimClick}
                   isConnectedAndEnabled={isConnectedAndEnabled}

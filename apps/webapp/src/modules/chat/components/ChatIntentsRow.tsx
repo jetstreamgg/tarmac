@@ -9,6 +9,7 @@ import { QueryParams } from '@/lib/constants';
 import { useNetworkFromIntentUrl } from '../hooks/useNetworkFromUrl';
 import { chainIdNameMapping } from '../lib/intentUtils';
 import { useChainId } from 'wagmi';
+
 type ChatIntentsRowProps = {
   intents: ChatIntent[];
 };

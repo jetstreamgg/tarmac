@@ -11,6 +11,7 @@ import { BalancesWidgetState } from '@/shared/types/widgetState';
 import { TokenForChain } from '@jetstreamgg/hooks';
 import { Heading } from '@/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
+import { BalancesFlow } from '../constants';
 
 export interface TokenBalanceResponse extends GetBalanceData {
   tokenAddress?: string;
@@ -21,6 +22,7 @@ interface BalancesContentProps {
   validatedExternalState?: BalancesWidgetState;
   customTokenList?: TokenForChain[];
   hideModuleBalances?: boolean;
+  tabIndex: 0 | 1;
   actionForToken?: (
     symbol: string,
     balance: string
@@ -29,22 +31,24 @@ interface BalancesContentProps {
   onClickSavingsCard?: () => void;
   onClickSealCard?: () => void;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onToggle: (number: 0 | 1) => void;
 }
 
 export const BalancesContent = ({
-  validatedExternalState,
   customTokenList,
   hideModuleBalances,
   actionForToken,
   onClickRewardsCard,
   onClickSavingsCard,
   onClickSealCard,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  onToggle,
+  tabIndex
 }: BalancesContentProps): React.ReactElement => {
   return (
-    <Tabs defaultValue={validatedExternalState?.tab || 'left'} className="w-full">
-      <BalancesTabsList />
-      <TabsContent value="left" className="mt-0">
+    <Tabs value={tabIndex === 1 ? BalancesFlow.TX_HISTORY : BalancesFlow.FUNDS} className="w-full">
+      <BalancesTabsList onToggle={onToggle} />
+      <TabsContent value={BalancesFlow.FUNDS} className="mt-0">
         <VStack className="items-stretch pt-4">
           <motion.div variants={positionAnimations}>
             <Heading variant="small" className="mb-3 leading-6">
@@ -67,7 +71,7 @@ export const BalancesContent = ({
           </motion.div>
         </VStack>
       </TabsContent>
-      <TabsContent value="right" className="mt-0">
+      <TabsContent value={BalancesFlow.TX_HISTORY} className="mt-0">
         <motion.div variants={positionAnimations}>
           <BalancesHistory onExternalLinkClicked={onExternalLinkClicked} />
         </motion.div>

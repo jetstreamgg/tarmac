@@ -1,4 +1,4 @@
-import { SUPPORTED_TOKEN_SYMBOLS } from '@/TradeWidget/constants';
+import { SUPPORTED_TOKEN_SYMBOLS } from '@/widgets/TradeWidget/lib/constants';
 
 type InputTokenList = {
   [number]: Token[];

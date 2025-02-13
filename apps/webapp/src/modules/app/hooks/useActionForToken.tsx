@@ -1,4 +1,4 @@
-import { formatNumber, isBaseChainId } from '@jetstreamgg/utils';
+import { formatNumber, isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
 import { useCallback } from 'react';
 import { RewardContract, useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
@@ -11,6 +11,7 @@ import { base, mainnet } from 'viem/chains';
 export const useActionForToken = () => {
   const chainId = useChainId();
   const isBaseChain = isBaseChainId(chainId);
+  const isArbitrumChain = isArbitrumChainId(chainId);
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const skyRewardContract = rewardContracts?.find(
     (rewardContract: RewardContract) => rewardContract.rewardToken.symbol === 'SKY'
@@ -144,7 +145,7 @@ export const useActionForToken = () => {
           action = undefined;
       }
 
-      return isBaseChain ? action?.[base.id] : action?.[mainnet.id];
+      return isBaseChain || isArbitrumChain ? action?.[base.id] : action?.[mainnet.id];
     },
     [skyRewardContract, searchParams, isRestrictedBuild, isRestrictedMiCa]
   );

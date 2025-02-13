@@ -1,6 +1,6 @@
 import { Icon, IconProps } from './Icon';
 
-export const SavingsPath = (
+const SavingsPath = (
   <>
     <path
       fillRule="evenodd"

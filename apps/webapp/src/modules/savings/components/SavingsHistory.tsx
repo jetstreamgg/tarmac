@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatBigInt, useFormatDates, isBaseChainId } from '@jetstreamgg/utils';
+import { formatBigInt, useFormatDates, isL2ChainId } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
@@ -25,7 +25,7 @@ export function SavingsHistory() {
     id: s.transactionHash,
     type: s.type === TransactionTypeEnum.SUPPLY ? t`Supply` : t`Withdrawal`,
     highlightText: s.type === TransactionTypeEnum.SUPPLY,
-    textLeft: `${formatBigInt(absBigInt(s.assets), { compact: true, unit: isBaseChainId(chainId) ? getTokenDecimals(s.token, chainId) : 18 })} ${isBaseChainId(chainId) ? s.token.symbol : 'USDS'}`,
+    textLeft: `${formatBigInt(absBigInt(s.assets), { compact: true, unit: isL2ChainId(chainId) ? getTokenDecimals(s.token, chainId) : 18 })} ${isL2ChainId(chainId) ? s.token.symbol : 'USDS'}`,
     iconLeft:
       s.type === TransactionTypeEnum.SUPPLY ? (
         <SavingsSupply width={14} height={13} className="mr-1" />

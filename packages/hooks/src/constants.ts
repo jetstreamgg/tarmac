@@ -3,15 +3,6 @@ import { TrustLevel } from './hooks';
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-// WAD = 1 with 18 zeroes
-export const WAD = BigInt('1000000000000000000');
-// RAY = 1 with 27 zeroes
-export const RAY = BigInt('1000000000000000000000000000');
-// RAD = 1 with 45 zeroes
-export const RAD = BigInt('1000000000000000000000000000000000000000000000');
-
-export const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
-
 export const TRUST_LEVELS: Record<TrustLevelEnum, TrustLevel> = {
   0: {
     level: 0,
@@ -49,15 +40,22 @@ export const URL_BASE_SUBGRAPH_MAINNET =
 export const URL_BASE_SUBGRAPH_TENDERLY =
   'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-baseTenderly';
 
+export const URL_ARBITRUM_SUBGRAPH_MAINNET =
+  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrum';
+export const URL_ARBITRUM_SUBGRAPH_TENDERLY =
+  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrumTenderly';
+
 export const URL_BLOCKS_SUBGRAPH_MAINNET =
   'https://gateway-arbitrum.network.thegraph.com/api/937ce273344a610ea828ebe9702f6b65/subgraphs/id/9A6bkprqEG2XsZUYJ5B2XXp6ymz9fNcn4tVPxMWDztYC';
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 export const URL_BA_LABS_API_TENDERLY = 'https://sky-tenderly.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;
+export const ARBITRUM_CHAIN_ID = 42161;
 
 export const TENDERLY_CHAIN_ID = 314310;
 export const TENDERLY_BASE_CHAIN_ID = 8555;
+export const TENDERLY_ARBITRUM_CHAIN_ID = 42012;
 
 export enum ModuleEnum {
   SAVINGS = 'SAVINGS',

@@ -1,4 +1,4 @@
-import { TRADE, TRADE_ARBITRUM, TRADE_BASE, TRADE_MAINNET } from '../../lib/intentClassificationOptions';
+import { TRADE_ARBITRUM } from '../../lib/intentClassificationOptions';
 
 export const generateRandomResponse = () => {
   // ... existing code ...
@@ -14,9 +14,9 @@ export const generateRandomResponse = () => {
 
 export const generateRandomIntent = () => {
   const intents = [
-    TRADE,
-    TRADE_MAINNET,
-    TRADE_BASE,
+    // TRADE,
+    // TRADE_MAINNET,
+    // TRADE_BASE,
     TRADE_ARBITRUM,
     // UPGRADE,
     // SAVINGS,
@@ -131,8 +131,12 @@ export const generateRandomSlots = (intent?: string): MockSlot[] => {
 
   if (intent?.startsWith('TRADE')) {
     // Trade-specific mock data
-    const sourceTokens = ['DAI', 'USDC', 'USDT', 'ETH', 'USDS', 'MKR', 'SKY'];
-    const targetTokens = ['DAI', 'USDC', 'USDT', 'ETH', 'USDS', 'MKR', 'SKY'];
+    const sourceTokens = intent.startsWith('TRADE_')
+      ? ['USDC', 'USDS', 'sUSDS']
+      : ['DAI', 'USDC', 'USDT', 'ETH', 'USDS', 'MKR', 'SKY'];
+    const targetTokens = intent.startsWith('TRADE_')
+      ? ['USDC', 'USDS', 'sUSDS']
+      : ['DAI', 'USDC', 'USDT', 'ETH', 'USDS', 'MKR', 'SKY'];
     const amounts = ['0.1', '1', '10', '100', '1000', undefined];
 
     // Different combinations of slots for trade intents

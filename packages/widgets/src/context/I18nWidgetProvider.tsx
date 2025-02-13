@@ -3,7 +3,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { useEffect } from 'react';
 
-export function useI18n(locale?: string) {
+function useI18n(locale?: string) {
   useEffect(() => {
     (async function anyNameFunction() {
       await dynamicActivate(i18n, locale || 'en');

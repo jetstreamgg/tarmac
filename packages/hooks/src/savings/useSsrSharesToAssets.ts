@@ -3,10 +3,10 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { Token } from '../tokens/types';
 import { useChainId } from 'wagmi';
-import { useReadPsm3BaseConvertToAssetValue } from '../generated';
+import { useReadPsm3L2ConvertToAssetValue } from '../generated';
 
 export const useSsrSharesToAssets = (sUsdsBalance: TokenBalance | undefined, returnToken: Token) => {
-  const { data: assets } = useReadPsm3BaseConvertToAssetValue({
+  const { data: assets } = useReadPsm3L2ConvertToAssetValue({
     args: [sUsdsBalance?.value || 0n]
   });
 

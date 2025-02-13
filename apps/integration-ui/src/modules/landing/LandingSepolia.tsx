@@ -62,7 +62,7 @@ export function LandingSepolia(): React.ReactElement {
   // Helper to make it easy to show/hide widgets while developing
   const widgetsToShow = ['trade', 'balances'];
 
-  const [tradeInitialState, setTradeInitialState] = useState<ExternalWidgetState>({ tab: 'left' });
+  const [tradeInitialState, setTradeInitialState] = useState<ExternalWidgetState>({});
 
   return (
     <div className="p-8">
@@ -112,7 +112,7 @@ export function LandingSepolia(): React.ReactElement {
                 onConnect={onConnect}
                 locale="en"
                 rightHeaderComponent={undefined}
-                externalWidgetState={{ tab: 'left' }}
+                externalWidgetState={{ flow: 'funds' }}
                 hideModuleBalances={false}
                 actionForToken={(symbol, balance) => {
                   // TODO: The host app should provide this action for each supported asset

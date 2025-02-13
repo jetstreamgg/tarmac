@@ -262,7 +262,6 @@ describe('Seal Module Multicall tests', async () => {
 
     await waitFor(
       () => {
-        // SKY_TO_LOCK is equivalent to 20 MKR, so total collateral should be 40 MKR
         expect(resultMkrLocked.current.data?.collateralAmount).toBe(MKR_TO_LOCK);
         return;
       },

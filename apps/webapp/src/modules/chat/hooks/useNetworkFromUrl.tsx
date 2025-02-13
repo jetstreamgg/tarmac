@@ -1,6 +1,6 @@
 import { QueryParams } from '@/lib/constants';
 
-const validNetworks = ['base', 'ethereum', 'arbitrum'];
+const validNetworks = ['base', 'ethereum', 'arbitrumone'];
 
 export const useNetworkFromIntentUrl = (url: string) => {
   try {

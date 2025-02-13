@@ -1,8 +1,12 @@
-import { mainnet, sepolia, base } from 'wagmi/chains';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from './constants';
+import { mainnet, sepolia, base, arbitrum } from 'wagmi/chains';
+import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID, TENDERLY_ARBITRUM_CHAIN_ID } from './constants';
 
 type ChainId = typeof mainnet.id | typeof TENDERLY_CHAIN_ID;
-type BaseChainId = typeof base.id | typeof TENDERLY_BASE_CHAIN_ID;
+type L2ChainId =
+  | typeof base.id
+  | typeof TENDERLY_BASE_CHAIN_ID
+  | typeof TENDERLY_ARBITRUM_CHAIN_ID
+  | typeof arbitrum.id;
 
 export const contracts: { name: string; address: Record<ChainId, `0x${string}`> }[] = [
   // Savings module
@@ -260,47 +264,59 @@ export const sepoliaContracts: { name: string; address: Record<typeof sepolia.id
   }
 ];
 
-export const baseContracts: { name: string; address: Record<BaseChainId, `0x${string}`> }[] = [
+export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string}`> }[] = [
   {
-    name: 'usdcBase',
+    name: 'usdcL2',
     address: {
       [base.id]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-      [TENDERLY_BASE_CHAIN_ID]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+      [TENDERLY_BASE_CHAIN_ID]: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      [TENDERLY_ARBITRUM_CHAIN_ID]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      [arbitrum.id]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'
     }
   },
   {
-    name: 'usdsBase',
+    name: 'usdsL2',
     address: {
       [base.id]: '0x820C137fa70C8691f0e44Dc420a5e53c168921Dc',
-      [TENDERLY_BASE_CHAIN_ID]: '0x820C137fa70C8691f0e44Dc420a5e53c168921Dc'
+      [TENDERLY_BASE_CHAIN_ID]: '0x820C137fa70C8691f0e44Dc420a5e53c168921Dc',
+      [TENDERLY_ARBITRUM_CHAIN_ID]: '0x6491c05A82219b8D1479057361ff1654749b876b',
+      [arbitrum.id]: '0x6491c05A82219b8D1479057361ff1654749b876b'
     }
   },
   {
-    name: 'sUsdsBase',
+    name: 'sUsdsL2',
     address: {
       [base.id]: '0x5875eEE11Cf8398102FdAd704C9E96607675467a',
-      [TENDERLY_BASE_CHAIN_ID]: '0x5875eEE11Cf8398102FdAd704C9E96607675467a'
+      [TENDERLY_BASE_CHAIN_ID]: '0x5875eEE11Cf8398102FdAd704C9E96607675467a',
+      [TENDERLY_ARBITRUM_CHAIN_ID]: '0xdDb46999F8891663a8F2828d25298f70416d7610',
+      [arbitrum.id]: '0xdDb46999F8891663a8F2828d25298f70416d7610'
     }
   },
   {
-    name: 'skyBase',
+    name: 'skyL2',
     address: {
       [base.id]: '0x60e3c701e65DEE30c23c9Fb78c3866479cc0944a',
-      [TENDERLY_BASE_CHAIN_ID]: '0x60e3c701e65DEE30c23c9Fb78c3866479cc0944a'
+      [TENDERLY_BASE_CHAIN_ID]: '0x60e3c701e65DEE30c23c9Fb78c3866479cc0944a',
+      [TENDERLY_ARBITRUM_CHAIN_ID]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      [arbitrum.id]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' //TODO: placeholder address
     }
   },
   {
-    name: 'psm3Base',
+    name: 'psm3L2',
     address: {
       [base.id]: '0x1601843c5E9bC251A3272907010AFa41Fa18347E',
-      [TENDERLY_BASE_CHAIN_ID]: '0x1601843c5E9bC251A3272907010AFa41Fa18347E'
+      [TENDERLY_BASE_CHAIN_ID]: '0x1601843c5E9bC251A3272907010AFa41Fa18347E',
+      [TENDERLY_ARBITRUM_CHAIN_ID]: '0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266',
+      [arbitrum.id]: '0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266'
     }
   },
   {
     name: 'ssrAuthOracle',
     address: {
       [base.id]: '0x65d946e533748A998B1f0E430803e39A6388f7a1',
-      [TENDERLY_BASE_CHAIN_ID]: '0x65d946e533748A998B1f0E430803e39A6388f7a1'
+      [TENDERLY_BASE_CHAIN_ID]: '0x65d946e533748A998B1f0E430803e39A6388f7a1',
+      [TENDERLY_ARBITRUM_CHAIN_ID]: '0xEE2816c1E1eed14d444552654Ed3027abC033A36',
+      [arbitrum.id]: '0xEE2816c1E1eed14d444552654Ed3027abC033A36'
     }
   }
 ];

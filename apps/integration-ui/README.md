@@ -26,7 +26,11 @@ The following environment variables are used in this project:
 
 - `VITE_PUBLIC_RPC_PROVIDER_BASE`: The RPC provider URL for the Base network. This should be set to your preferred Base node provider.
 
+- `VITE_PUBLIC_RPC_PROVIDER_ARBITRUM`: The RPC provider URL for the Arbitrum network. This should be set to your preferred Arbitrum node provider.
+
 - `VITE_PUBLIC_RPC_PROVIDER_TENDERLY_BASE`: The RPC provider URL for Tenderly's virtual Base network. This is used for testing and development purposes.
+
+- `VITE_PUBLIC_RPC_PROVIDER_TENDERLY_ARBITRUM`: The RPC provider URL for Tenderly's virtual Arbitrum network. This is used for testing and development purposes.
 
 - `VITE_PUBLIC_RESTRICTED_BUILD`: Optional. When set, this variable enables restricted build features. It can be left empty if not needed.
 

@@ -96,7 +96,7 @@ export const SealModuleWidget = ({
   );
 };
 
-export function SealModuleWidgetWrapped({
+function SealModuleWidgetWrapped({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
@@ -110,8 +110,7 @@ export function SealModuleWidgetWrapped({
   referralCode
 }: SealModuleWidgetProps) {
   const validatedExternalState = getValidatedState(externalWidgetState);
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
-  const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
+  const [tabIndex, setTabIndex] = useState<0 | 1>(0);
   const tabSide = tabIndex === 0 ? 'left' : 'right';
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -169,7 +168,7 @@ export function SealModuleWidgetWrapped({
   const { data: currentUrnIndex } = useCurrentUrnIndex();
 
   const { data: externalParamUrnAddress } = useUrnAddress(
-    externalWidgetState?.urnIndex !== undefined ? BigInt(externalWidgetState.urnIndex) : -1n
+    validatedExternalState?.urnIndex !== undefined ? BigInt(validatedExternalState.urnIndex) : -1n
   );
   const { data: externalParamVaultData } = useVault(externalParamUrnAddress || ZERO_ADDRESS);
   const { data: externalUrnRewardContract } = useUrnSelectedRewardContract({
@@ -635,8 +634,8 @@ export function SealModuleWidgetWrapped({
 
   useEffect(() => {
     if (
-      externalWidgetState?.urnIndex !== undefined &&
-      externalWidgetState.urnIndex !== null &&
+      validatedExternalState?.urnIndex !== undefined &&
+      validatedExternalState.urnIndex !== null &&
       !!externalParamUrnAddress
     ) {
       // Navigate to the Urn
@@ -655,13 +654,13 @@ export function SealModuleWidgetWrapped({
         action: SealAction.MULTICALL
       }));
       setActiveUrn(
-        { urnAddress: externalParamUrnAddress, urnIndex: BigInt(externalWidgetState.urnIndex) },
+        { urnAddress: externalParamUrnAddress, urnIndex: BigInt(validatedExternalState.urnIndex) },
         onSealUrnChange ?? (() => {})
       );
       setCurrentStep(SealStep.OPEN_BORROW);
       setAcceptedExitFee(false);
     }
-  }, [externalWidgetState?.urnIndex, externalParamUrnAddress]);
+  }, [validatedExternalState?.urnIndex, externalParamUrnAddress]);
 
   useEffect(() => {
     if (!displayToken) return;

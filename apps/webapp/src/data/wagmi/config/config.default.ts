@@ -1,6 +1,6 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { createConfig, http } from 'wagmi';
-import { mainnet, base, sepolia } from 'wagmi/chains';
+import { mainnet, base, sepolia, arbitrum } from 'wagmi/chains';
 import {
   safeWallet,
   rainbowWallet,
@@ -13,7 +13,9 @@ import {
   TENDERLY_CHAIN_ID,
   TENDERLY_BASE_CHAIN_ID,
   TENDERLY_RPC_URL,
-  TENDERLY_BASE_RPC_URL
+  TENDERLY_BASE_RPC_URL,
+  TENDERLY_ARBITRUM_RPC_URL,
+  TENDERLY_ARBITRUM_CHAIN_ID
 } from './testTenderlyChain';
 
 export const tenderly = {
@@ -56,6 +58,26 @@ export const tenderlyBase = {
   }
 };
 
+export const tenderlyArbitrum = {
+  id: TENDERLY_ARBITRUM_CHAIN_ID,
+  name: 'arbitrum_fork_feb_7',
+  network: 'tenderly arbitrum',
+  // This is used by RainbowKit to display a chain icon for small screens. TODO: update to Arbitrum icon once available
+  iconUrl: 'tokens/weth.svg',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ethereum',
+    symbol: 'ETH'
+  },
+  rpcUrls: {
+    public: { http: [TENDERLY_ARBITRUM_RPC_URL] },
+    default: { http: [TENDERLY_ARBITRUM_RPC_URL] }
+  },
+  blockExplorers: {
+    default: { name: '', url: '' }
+  }
+};
+
 const connectors = connectorsForWallets(
   [
     {
@@ -77,14 +99,16 @@ const connectors = connectorsForWallets(
 );
 
 export const wagmiConfigDev = createConfig({
-  chains: [mainnet, tenderly, base, tenderlyBase, sepolia],
+  chains: [mainnet, tenderly, base, arbitrum, tenderlyBase, sepolia, tenderlyArbitrum],
   connectors,
   transports: {
     [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
     [tenderly.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY || ''),
     [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
+    [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || ''),
     [tenderlyBase.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_BASE || ''),
-    [sepolia.id]: http(import.meta.env.VITE_RPC_PROVIDER_SEPOLIA || '')
+    [sepolia.id]: http(import.meta.env.VITE_RPC_PROVIDER_SEPOLIA || ''),
+    [tenderlyArbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || '')
   },
   multiInjectedProviderDiscovery: false
 });

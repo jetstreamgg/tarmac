@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useChainId } from 'wagmi';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
 
 const NOT_FOUND = 'image_not_found';
 const EXTENSIONS = ['svg', 'png']; // Add more extensions if needed
@@ -22,7 +22,7 @@ export const useTokenImage = (symbol: string) => {
       }
 
       const extension = EXTENSIONS[currentIndex];
-      const path = `/tokens/${isBaseChainId(chainId) ? 'base/' : ''}${symbolLower}.${extension}`;
+      const path = `/tokens/${isBaseChainId(chainId) ? 'base/' : isArbitrumChainId(chainId) ? 'arbitrum/' : ''}${symbolLower}.${extension}`;
 
       const img = new Image();
       img.onload = () => {

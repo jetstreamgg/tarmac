@@ -2,7 +2,6 @@ import { useEthereumSavingsHistory } from '../savings/useEthereumSavingsHistory'
 import { useUpgradeHistory } from '../upgrade/useUpgradeHistory';
 import { useEthereumTradeHistory } from '../trade/useEthereumTradeHistory';
 import { useAllRewardsUserHistory } from '../rewards/useAllRewardsUserHistory';
-import { CombinedHistoryItem } from './shared';
 import { useMemo } from 'react';
 import { useSealHistory } from '../seal/useSealHistory';
 
@@ -20,7 +19,7 @@ export function useEthereumCombinedHistory() {
       ...(tradeHistory.data || []),
       ...(combinedRewardHistory.data || []),
       ...(sealHistory.data || [])
-    ].sort((a: CombinedHistoryItem, b: CombinedHistoryItem) => b.blockTimestamp - a.blockTimestamp);
+    ].sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
   }, [
     savingsHistory.data,
     upgradeHistory.data,

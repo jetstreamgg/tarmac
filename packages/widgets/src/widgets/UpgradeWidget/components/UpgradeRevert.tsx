@@ -11,6 +11,7 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@/shared/animation/presets';
 import { useChainId } from 'wagmi';
+import { UpgradeFlow } from '../lib/constants';
 
 type Props = WidgetProps & {
   leftTabTitle: string;
@@ -61,13 +62,13 @@ export function UpgradeRevert({
 
   return (
     <VStack className="w-full items-center justify-center">
-      <Tabs defaultValue={tabIndex === 0 ? 'left' : 'right'} className="w-full">
+      <Tabs value={tabIndex === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT} className="w-full">
         <motion.div variants={positionAnimations}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger
               position="left"
               data-testid="upgrade-toggle-left"
-              value="left"
+              value={UpgradeFlow.UPGRADE}
               onClick={() => onToggle(0)}
             >
               {leftTabTitle}
@@ -75,7 +76,7 @@ export function UpgradeRevert({
             <TabsTrigger
               position="right"
               data-testid="upgrade-toggle-right"
-              value="right"
+              value={UpgradeFlow.REVERT}
               onClick={() => onToggle(1)}
             >
               {rightTabTitle}

@@ -14,9 +14,17 @@ export async function backOffRetry<T>(fn: () => Promise<T>, retries: number, del
 
 const setEthBalanceRequest = async (amount: string, network = NetworkName.mainnet) => {
   const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [{ TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL }, { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL }] =
-    JSON.parse(file);
-  const rpcUrl = network === NetworkName.mainnet ? TENDERLY_MAINNET_RPC_URL : TENDERLY_BASE_RPC_URL;
+  const [
+    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
+    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
+    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
+  ] = JSON.parse(file);
+  const rpcUrl =
+    network === NetworkName.mainnet
+      ? TENDERLY_MAINNET_RPC_URL
+      : network === NetworkName.base
+        ? TENDERLY_BASE_RPC_URL
+        : TENDERLY_ARBITRUM_RPC_URL;
 
   const response = await fetch(rpcUrl, {
     method: 'POST',
@@ -48,9 +56,17 @@ const setErc20BalanceRequest = async (
   network = NetworkName.mainnet
 ) => {
   const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [{ TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL }, { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL }] =
-    JSON.parse(file);
-  const rpcUrl = network === NetworkName.mainnet ? TENDERLY_MAINNET_RPC_URL : TENDERLY_BASE_RPC_URL;
+  const [
+    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
+    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
+    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
+  ] = JSON.parse(file);
+  const rpcUrl =
+    network === NetworkName.mainnet
+      ? TENDERLY_MAINNET_RPC_URL
+      : network === NetworkName.base
+        ? TENDERLY_BASE_RPC_URL
+        : TENDERLY_ARBITRUM_RPC_URL;
 
   const response = await fetch(rpcUrl, {
     method: 'POST',

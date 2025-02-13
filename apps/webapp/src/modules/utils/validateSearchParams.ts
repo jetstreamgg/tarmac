@@ -10,8 +10,9 @@ import {
 } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
 import { Chain } from 'viem';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const validateSearchParams = (
   searchParams: URLSearchParams,
@@ -21,8 +22,8 @@ export const validateSearchParams = (
   chainId: number,
   chains: readonly [Chain, ...Chain[]]
 ) => {
-  const chainInUrl = chains.find(c => c.name.toLowerCase() === searchParams.get(QueryParams.Network));
-  const isBaseChain = isBaseChainId(chainInUrl?.id || chainId);
+  const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
+  const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
 
   searchParams.forEach((value, key) => {
     // removes any query param not found in QueryParams
@@ -58,6 +59,14 @@ export const validateSearchParams = (
       }
     }
 
+    // Reset the selected reward contract if the widget is set to rewards and no valid reward contract parameter exists.
+    if (widget === IntentMapping[Intent.REWARDS_INTENT]) {
+      if (!searchParams.get(QueryParams.Reward)) {
+        setSelectedRewardContract(undefined);
+        searchParams.delete(QueryParams.InputAmount);
+      }
+    }
+
     // if widget changes to something other than rewards, and we're not in a rewards linked action, reset the selected reward contract
     if (
       widget !== IntentMapping[Intent.REWARDS_INTENT] &&
@@ -69,18 +78,18 @@ export const validateSearchParams = (
 
     // validate source token
     if (key === QueryParams.SourceToken) {
-      // source token is only valid for upgrade and trade in Mainnet, and for savings and trade in Base, remove if widget value is not correct
+      // source token is only valid for upgrade and trade in Mainnet, and for savings and trade on L2 chains, remove if widget value is not correct
       const widgetParam = searchParams.get(QueryParams.Widget);
       if (
         !widgetParam ||
         (![IntentMapping[Intent.UPGRADE_INTENT], IntentMapping[Intent.TRADE_INTENT]].includes(
           widgetParam.toLowerCase()
         ) &&
-          !isBaseChain) ||
+          !isL2Chain) ||
         (![IntentMapping[Intent.SAVINGS_INTENT], IntentMapping[Intent.TRADE_INTENT]].includes(
           widgetParam.toLowerCase()
         ) &&
-          isBaseChain)
+          isL2Chain)
       ) {
         searchParams.delete(key);
       }

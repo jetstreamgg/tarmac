@@ -1,5 +1,5 @@
 import { Token } from '@jetstreamgg/hooks';
-import { HistoryItem } from '@/shared/shared.d.ts';
+import { HistoryItem } from '../shared/shared';
 
 export type RewardUserHistoryItem = HistoryItem & {
   amount: bigint;

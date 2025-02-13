@@ -7,7 +7,7 @@ export enum TradeSide {
   OUT = 'OUT'
 }
 
-export const COW_API_ENDPOINT = {
+const COW_API_ENDPOINT = {
   [mainnet.id]: 'https://api.cow.fi/mainnet',
   [sepolia.id]: 'https://api.cow.fi/sepolia'
 } as const;
