@@ -23,9 +23,9 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
+import { formatUnits, parseUnits } from 'viem';
 import { Heading } from '@widgets/shared/components/ui/Typography';
 import { getValidatedState } from '@widgets/lib/utils';
-import { parseUnits } from 'viem';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
@@ -142,7 +142,7 @@ const SavingsWidgetWrapped = ({
   const { address, isConnecting, isConnected } = useAccount();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
+  const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const linguiCtx = useLingui();
   const [originToken, setOriginToken] = useState<Token>(
@@ -185,6 +185,14 @@ const SavingsWidgetWrapped = ({
   const { data: dsr } = useReadSsrAuthOracleGetSsr();
 
   const [updatedChiForDeposit, setUpdatedChiForDeposit] = useState(0n);
+
+  useEffect(() => {
+    setTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
+
+  useEffect(() => {
+    setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
+  }, [validatedExternalState?.token]);
 
   useEffect(() => {
     if (rho && dsr && chi) {
@@ -475,7 +483,7 @@ const SavingsWidgetWrapped = ({
     } else {
       // Reset widget state when we are not connected
       setWidgetState({
-        flow: null,
+        flow: tabIndex === 0 ? SavingsFlow.SUPPLY : SavingsFlow.WITHDRAW,
         action: null,
         screen: null
       });
@@ -793,13 +801,26 @@ const SavingsWidgetWrapped = ({
                 setTabIndex(index);
                 setAmount(0n);
               }}
-              onOriginInputChange={setAmount}
+              onOriginInputChange={(newValue, userTriggered) => {
+                setAmount(newValue);
+                if (userTriggered) {
+                  // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                  const formattedValue =
+                    newValue === 0n ? '' : formatUnits(newValue, getTokenDecimals(originToken, chainId));
+                  onWidgetStateChange?.({
+                    originAmount: formattedValue,
+                    txStatus,
+                    widgetState
+                  });
+                }
+              }}
               enabled={enabled}
               onExternalLinkClicked={onExternalLinkClicked}
               isConnectedAndEnabled={isConnectedAndEnabled}
               onMenuItemChange={(op: Token | null) => {
                 if (op) {
                   setOriginToken(op as Token);
+                  onWidgetStateChange?.({ originToken: op.symbol, txStatus, widgetState });
                 }
               }}
               error={widgetState.flow === SavingsFlow.SUPPLY ? isSupplyBalanceError : isWithdrawBalanceError}

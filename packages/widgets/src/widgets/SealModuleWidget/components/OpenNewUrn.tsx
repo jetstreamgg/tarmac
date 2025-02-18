@@ -27,13 +27,15 @@ export const OpenNewUrn = ({
   onExternalLinkClicked,
   onClickTrigger,
   tabSide,
-  termsLink
+  termsLink,
+  onInputAmountChange
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onClickTrigger: any;
   tabSide: 'left' | 'right';
   termsLink?: { url: string; name: string };
+  onInputAmountChange: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { acceptedExitFee, setAcceptedExitFee, displayToken, setDisplayToken } =
     useContext(SealModuleWidgetContext);
@@ -108,7 +110,7 @@ export const OpenNewUrn = ({
               </Button>
             )}
           </HStack>
-          <Tabs defaultValue={tabSide}>
+          <Tabs value={tabSide}>
             {showTabs && (
               <motion.div variants={positionAnimations}>
                 <TabsList className="grid w-full grid-cols-2">
@@ -137,7 +139,7 @@ export const OpenNewUrn = ({
             )}
             <TabsContent value="left">
               <VStack gap={2} className="mt-4">
-                <Lock isConnectedAndEnabled={isConnectedAndEnabled} />
+                <Lock isConnectedAndEnabled={isConnectedAndEnabled} onChange={onInputAmountChange} />
                 <Borrow isConnectedAndEnabled={isConnectedAndEnabled} />
               </VStack>
             </TabsContent>
@@ -146,6 +148,7 @@ export const OpenNewUrn = ({
                 <Free
                   isConnectedAndEnabled={isConnectedAndEnabled}
                   sealedAmount={vaultData?.collateralAmount}
+                  onChange={onInputAmountChange}
                 />
                 <Repay isConnectedAndEnabled={isConnectedAndEnabled} />
               </VStack>

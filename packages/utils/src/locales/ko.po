@@ -369,6 +369,10 @@ msgstr ""
 msgid "Approving {0} USDS"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatInput.tsx
+msgid "Ask another question"
+msgstr ""
+
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 msgid "Back to Rewards"
 msgstr ""
@@ -905,6 +909,18 @@ msgstr ""
 msgid "Harvesting..."
 msgstr ""
 
+#: apps/webapp/src/modules/app/hooks/useChatNotification.tsx
+msgid "Hi, {CHATBOT_NAME} here!"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/context/ChatContext.tsx
+msgid "Hi, {CHATBOT_NAME} here! How can I help you today?"
+msgstr ""
+
+#: apps/webapp/src/components/ChatSwitcher.tsx
+msgid "Hide chat"
+msgstr ""
+
 #: apps/webapp/src/components/DetailsSwitcher.tsx
 msgid "Hide details"
 msgstr ""
@@ -912,6 +928,10 @@ msgstr ""
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
 msgid "High risk"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useChatNotification.tsx
+msgid "How can I help you today?"
 msgstr ""
 
 #. placeholder {0}: selectedToken.symbol
@@ -1011,6 +1031,10 @@ msgstr ""
 msgid "Legal Terms"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatBubble.tsx
+msgid "Let me think"
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
 msgid "Liquidation"
@@ -1041,6 +1065,10 @@ msgstr ""
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Loading"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ResponseModifierRow.tsx
+msgid "Longer"
 msgstr ""
 
 #. placeholder {0}: rewardContract?.supplyToken.symbol?.toUpperCase() ?? 'tokens'
@@ -1276,6 +1304,14 @@ msgstr ""
 #: apps/webapp/src/modules/ui/components/TermsModal.tsx
 #: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
 msgid "Please wait..."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ResponseModifierRow.tsx
+msgid "Please, extend your answer"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ResponseModifierRow.tsx
+msgid "Please, simplify your answer"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
@@ -1555,6 +1591,10 @@ msgstr ""
 msgid "Signing failed"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ResponseModifierRow.tsx
+msgid "Simpler"
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
 msgid "Skip"
 msgstr ""
@@ -1667,6 +1707,14 @@ msgstr ""
 msgid "Soon on {0}"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/hooks/useSendMessage.tsx
+msgid "Sorry, something went wrong. Can you repeat your question?"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useChatNotification.tsx
+msgid "Start Chatting"
+msgstr ""
+
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Start getting rewards"
 msgstr ""
@@ -1678,6 +1726,10 @@ msgstr ""
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
 msgid "Start saving with your {formattedBalance} {upperSymbol}"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/StopGeneratingButton.tsx
+msgid "Stop generating"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
@@ -2031,6 +2083,14 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatBubble.tsx
+msgid "Typing"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/hooks/useSendMessage.tsx
+msgid "typing..."
+msgstr ""
+
 #: apps/webapp/src/modules/ui/components/BalanceCards.tsx
 msgid "Unable to fetch balance"
 msgstr ""
@@ -2175,6 +2235,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/components/RewardsBalanceCard.tsx
 msgid "USDS supplied to Rewards"
+msgstr ""
+
+#: apps/webapp/src/components/ChatSwitcher.tsx
+msgid "View chat"
 msgstr ""
 
 #: apps/webapp/src/modules/ui/components/AboutCle.tsx
