@@ -112,7 +112,6 @@ function SealModuleWidgetWrapped({
   referralCode
 }: SealModuleWidgetProps) {
   const validatedExternalState = getValidatedState(externalWidgetState);
-  console.log('🚀 ~ validatedExternalState:', validatedExternalState);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -162,11 +161,8 @@ function SealModuleWidgetWrapped({
     wipeAll,
     setSelectedToken,
     selectedToken,
-    displayToken,
-    mkrToFree
+    displayToken
   } = useContext(SealModuleWidgetContext);
-  console.log('🚀 ~ mkrToLock:', mkrToLock);
-  console.log('🚀 ~ mkrToFree:', mkrToFree);
 
   const initialTabIndex = validatedExternalState?.sealTab === SealAction.FREE ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);

@@ -71,3 +71,13 @@ export const generateFallbackIntent = (intentId: string, description: string): C
   intent_description: description,
   url: generateBaseUrl(intentId, {})
 });
+
+export const intentModifiesState = (intent?: ChatIntent): boolean => {
+  if (!intent) return false;
+  return (
+    intent.intent_id !== 'balances' &&
+    (intent.url.includes(QueryParams.InputAmount) ||
+      intent.url.includes(QueryParams.SourceToken) ||
+      intent.url.includes(QueryParams.TargetToken))
+  );
+};

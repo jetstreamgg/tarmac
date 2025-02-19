@@ -1,4 +1,4 @@
-export const CHATBOT_NAME = import.meta.env.VITE_CHATBOT_NAME || 'Skywing';
+export const CHATBOT_NAME = import.meta.env.VITE_CHATBOT_NAME || 'SkyWing';
 
 export enum UserType {
   user = 'You',
