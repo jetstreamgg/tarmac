@@ -27,7 +27,7 @@ type Props = WidgetProps & {
   tabIndex: 0 | 1;
   error?: Error;
   onToggle: (number: 0 | 1) => void;
-  onOriginInputChange: (val: bigint) => void;
+  onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -94,7 +94,7 @@ export function UpgradeRevert({
               className="w-full"
               token={originToken}
               balance={originBalance}
-              onChange={onOriginInputChange}
+              onChange={(val, event) => onOriginInputChange(val, !!event)}
               value={originAmount}
               dataTestId="upgrade-input-origin"
               label={originTitle}

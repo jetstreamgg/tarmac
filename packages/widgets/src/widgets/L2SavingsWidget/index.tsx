@@ -130,7 +130,7 @@ const SavingsWidgetWrapped = ({
   referralCode,
   disallowedTokens
 }: SavingsWidgetProps) => {
-  const validatedExternalState = getValidatedState(externalWidgetState);
+  const validatedExternalState = getValidatedState(externalWidgetState, ['USDS', 'USDC']);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);

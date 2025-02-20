@@ -1,5 +1,5 @@
 import { RewardContract } from '@jetstreamgg/hooks';
-import { SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/widgets';
+import { SUPPORTED_TOKEN_SYMBOLS, UpgradeFlow } from '@jetstreamgg/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -96,7 +96,11 @@ export const validateSearchParams = (
 
       // if widget is upgrade, only valid source token is MKR or DAI
       if (widgetParam?.toLowerCase() === IntentMapping[Intent.UPGRADE_INTENT]) {
-        if (!['mkr', 'dai'].includes(value.toLowerCase())) {
+        const flow = searchParams.get(QueryParams.Flow) || UpgradeFlow.UPGRADE;
+        if (flow === UpgradeFlow.UPGRADE && !['mkr', 'dai'].includes(value.toLowerCase())) {
+          searchParams.delete(key);
+        }
+        if (flow === UpgradeFlow.REVERT && !['usds', 'sky'].includes(value.toLowerCase())) {
           searchParams.delete(key);
         }
       }
