@@ -1,5 +1,26 @@
 # @jetstreamgg/webapp
 
+## 1.0.1
+
+### Patch Changes
+
+- d5487a2: Update Tailwind to v4
+- bfd57da: Fix overview rewards TVL chart
+- 7aea06e: Relocate Lingui config and locale files
+- c0aca84: Remove unused code and dependencies
+- a39a8b7: Add support for importing source files directly in dev mode for faster HMR
+- Updated dependencies [d5487a2]
+- Updated dependencies [5b51bc9]
+- Updated dependencies [1e15017]
+- Updated dependencies [157eb22]
+- Updated dependencies [7aea06e]
+- Updated dependencies [181f01e]
+- Updated dependencies [c0aca84]
+- Updated dependencies [a39a8b7]
+  - @jetstreamgg/widgets@3.3.1
+  - @jetstreamgg/hooks@3.3.1
+  - @jetstreamgg/utils@2.3.1
+
 ## 1.0.0
 
 ### Major Changes

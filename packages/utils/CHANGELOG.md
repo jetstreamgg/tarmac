@@ -1,5 +1,15 @@
 # @jetstreamgg/utils
 
+## 2.3.1
+
+### Patch Changes
+
+- d5487a2: Update Tailwind to v4
+- 7aea06e: Relocate Lingui config and locale files
+- 181f01e: add arb tenderly testnet, and update helipad to handle it
+- c0aca84: Remove unused code and dependencies
+- a39a8b7: Add support for importing source files directly in dev mode for faster HMR
+
 ## 2.3.0
 
 ### Minor Changes
