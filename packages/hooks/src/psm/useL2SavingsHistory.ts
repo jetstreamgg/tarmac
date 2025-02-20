@@ -82,7 +82,8 @@ async function fetchL2SavingsHistory(
         assets: BigInt(e.amountOut),
         referralCode: e.referralCode,
         token,
-        address: e.sender
+        address: e.sender,
+        chainId
       };
     })
     .filter((swap: SavingsHistoryItem | null) => swap !== null);
@@ -109,7 +110,8 @@ async function fetchL2SavingsHistory(
         shares: BigInt(e.amountOut),
         referralCode: e.referralCode,
         token,
-        address: e.sender
+        address: e.sender,
+        chainId
       };
     })
     .filter((swap: SavingsHistoryItem | null) => swap !== null);
@@ -121,25 +123,27 @@ async function fetchL2SavingsHistory(
 
 export function useL2SavingsHistory({
   subgraphUrl,
-  enabled = true
+  enabled = true,
+  chainId
 }: {
   subgraphUrl?: string;
   enabled?: boolean;
+  chainId?: number;
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainId) || '';
-  const tokenAddressMap = useTokenAddressMap();
-
+  const currentChainId = useChainId();
+  const chainIdToUse = chainId ?? currentChainId;
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainIdToUse) || '';
+  const tokenAddressMap = useTokenAddressMap(chainIdToUse);
   const {
     data,
     error,
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabled && Boolean(tokenAddressMap),
-    queryKey: ['L2-savings-history', urlSubgraph, address, chainId],
-    queryFn: () => fetchL2SavingsHistory(urlSubgraph, chainId, address, tokenAddressMap)
+    enabled: Boolean(urlSubgraph) && enabled && Boolean(tokenAddressMap) && Boolean(address),
+    queryKey: ['L2-savings-history', urlSubgraph, address, chainIdToUse],
+    queryFn: () => fetchL2SavingsHistory(urlSubgraph, chainIdToUse, address, tokenAddressMap)
   });
 
   return {

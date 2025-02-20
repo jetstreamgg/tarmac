@@ -13,6 +13,7 @@ import { cowApiClient, OrderStatus } from './constants';
 import { TokenForChain } from '../tokens/types';
 import { ETH_ADDRESS, TRADE_TOKENS } from '../tokens/tokens.constants';
 import { formatOrderStatus } from './formatOrderStatus';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
 
 async function fetchEthereumTradeHistory(
   chainId: number,
@@ -63,7 +64,8 @@ async function fetchEthereumTradeHistory(
         toToken: { ...toToken, id: toToken?.address, address: toToken?.address },
         module: ModuleEnum.TRADE,
         type: TransactionTypeEnum.TRADE,
-        cowOrderStatus: formatOrderStatus(order.status as OrderStatus)
+        cowOrderStatus: formatOrderStatus(order.status as OrderStatus),
+        chainId
       };
     })
     // Don't show history items for tokens we do not support
@@ -80,8 +82,11 @@ export function useEthereumTradeHistory({
   enabled?: boolean;
 }): ReadHook & { data?: TradeHistory } {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const tokens = Object.values(TRADE_TOKENS[chainId as keyof typeof TRADE_TOKENS]);
+  const currentChainId = useChainId();
+  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const tokens = TRADE_TOKENS[chainIdToUse as keyof typeof TRADE_TOKENS]
+    ? Object.values(TRADE_TOKENS[chainIdToUse as keyof typeof TRADE_TOKENS])
+    : [];
 
   const {
     data,
@@ -90,8 +95,8 @@ export function useEthereumTradeHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(address) && enabled,
-    queryKey: ['trade-history', address, limit, chainId],
-    queryFn: () => fetchEthereumTradeHistory(chainId, address, limit, tokens)
+    queryKey: ['trade-history', address, limit, chainIdToUse],
+    queryFn: () => fetchEthereumTradeHistory(chainIdToUse, address, limit, tokens)
   });
 
   return {

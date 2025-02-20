@@ -294,7 +294,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
   const chainId = useChainId();
   const ilkName = getIlkName(chainId);
 
-  const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId] });
+  const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId], chainId });
 
   const {
     setIsBorrowCompleted,

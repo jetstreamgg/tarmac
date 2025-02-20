@@ -126,8 +126,8 @@ export function LandingSepolia(): React.ReactElement {
                       }
                     : undefined;
                 }}
-                onClickRewardsCard={() => {}}
-                onClickSavingsCard={() => {}}
+                rewardsCardUrl={''}
+                savingsCardUrlMap={{}}
                 // onStateValidated={state => {
                 //   console.log('validated balances widget state: ', state);
                 // }}

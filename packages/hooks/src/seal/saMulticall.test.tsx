@@ -148,7 +148,12 @@ describe('Seal Module Multicall tests', async () => {
 
     // Check USDS drawn
     const { result: resultUSDSBalance } = renderHook(
-      () => useTokenBalance({ address: TEST_WALLET_ADDRESS, token: TOKENS.usds.address[TENDERLY_CHAIN_ID] }),
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: TOKENS.usds.address[TENDERLY_CHAIN_ID],
+          chainId: TENDERLY_CHAIN_ID
+        }),
       {
         wrapper
       }
@@ -320,7 +325,12 @@ describe('Seal Module Multicall tests', async () => {
 
     // Check SKY balance was returned (minus exit fee)
     const { result: resultSkyBalance } = renderHook(
-      () => useTokenBalance({ address: TEST_WALLET_ADDRESS, token: TOKENS.sky.address[TENDERLY_CHAIN_ID] }),
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: TOKENS.sky.address[TENDERLY_CHAIN_ID],
+          chainId: TENDERLY_CHAIN_ID
+        }),
       {
         wrapper
       }
@@ -459,7 +469,12 @@ describe('Seal Module Multicall tests', async () => {
 
     // Check users USDS and MKR balances
     const { result: resultUSDSBalance } = renderHook(
-      () => useTokenBalance({ address: TEST_WALLET_ADDRESS, token: TOKENS.usds.address[TENDERLY_CHAIN_ID] }),
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: TOKENS.usds.address[TENDERLY_CHAIN_ID],
+          chainId: TENDERLY_CHAIN_ID
+        }),
       {
         wrapper
       }
@@ -478,7 +493,12 @@ describe('Seal Module Multicall tests', async () => {
     );
 
     const { result: resultMKRBalance } = renderHook(
-      () => useTokenBalance({ address: TEST_WALLET_ADDRESS, token: TOKENS.mkr.address[TENDERLY_CHAIN_ID] }),
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: TOKENS.mkr.address[TENDERLY_CHAIN_ID],
+          chainId: TENDERLY_CHAIN_ID
+        }),
       {
         wrapper
       }
@@ -494,7 +514,12 @@ describe('Seal Module Multicall tests', async () => {
     );
 
     const { result: resultNGTBalance } = renderHook(
-      () => useTokenBalance({ address: TEST_WALLET_ADDRESS, token: TOKENS.sky.address[TENDERLY_CHAIN_ID] }),
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: TOKENS.sky.address[TENDERLY_CHAIN_ID],
+          chainId: TENDERLY_CHAIN_ID
+        }),
       {
         wrapper
       }

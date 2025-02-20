@@ -1,6 +1,8 @@
 export { getEtherscanLink } from './getEtherscanLink';
 export { getCowExplorerLink } from './getCowExplorerLink';
 export { getExplorerName, ExplorerName } from './getExplorerName';
+export { isTestnetId } from './isTestnetId';
+export { isMainnetId } from './isMainnetId';
 export { isBaseChainId, isArbitrumChainId, isL2ChainId } from './isL2ChainId';
 export { formatAddress } from './formatAddress';
 export { chainId } from './chainId';
@@ -19,4 +21,5 @@ export * from './hooks/useIsSafeWallet';
 export * from './hooks/useIsSmartContractWallet';
 export * from './math.constants';
 export * from './collection';
+export * from './getChainIcon';
 export * from './i18n';

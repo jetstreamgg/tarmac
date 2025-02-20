@@ -23,8 +23,8 @@ export const Lock = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolean
     setUsdsToBorrow
   } = useContext(SealModuleWidgetContext);
 
-  const { data: mkrBalance } = useTokenBalance({ address, token: TOKENS.mkr.address[chainId] });
-  const { data: skyBalance } = useTokenBalance({ address, token: TOKENS.sky.address[chainId] });
+  const { data: mkrBalance } = useTokenBalance({ address, token: TOKENS.mkr.address[chainId], chainId });
+  const { data: skyBalance } = useTokenBalance({ address, token: TOKENS.sky.address[chainId], chainId });
 
   useEffect(() => {
     // If the user is managing their position, they have already accepted the exit fee

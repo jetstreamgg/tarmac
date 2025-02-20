@@ -16,9 +16,11 @@ import {
 } from './sealModule';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
 
 async function fetchSealHistory(
   urlSubgraph: string,
+  chainId: number,
   address?: string,
   index?: number
 ): Promise<SealHistory | undefined> {
@@ -109,7 +111,8 @@ async function fetchSealHistory(
     blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
     transactionHash: e.transactionHash,
     module: ModuleEnum.SEAL,
-    type: TransactionTypeEnum.OPEN
+    type: TransactionTypeEnum.OPEN,
+    chainId
   }));
 
   const selectVoteDelegates: SealSelectDelegate[] = response.sealSelectVoteDelegates.map(
@@ -119,7 +122,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.SELECT_DELEGATE
+      type: TransactionTypeEnum.SELECT_DELEGATE,
+      chainId
     })
   );
 
@@ -129,7 +133,8 @@ async function fetchSealHistory(
     blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
     transactionHash: e.transactionHash,
     module: ModuleEnum.SEAL,
-    type: TransactionTypeEnum.SELECT_REWARD
+    type: TransactionTypeEnum.SELECT_REWARD,
+    chainId
   }));
 
   const seals: SealHistoryItemWithAmount[] = response.sealLocks.map(
@@ -139,7 +144,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.SEAL
+      type: TransactionTypeEnum.SEAL,
+      chainId
     })
   );
 
@@ -150,7 +156,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.SEAL_SKY
+      type: TransactionTypeEnum.SEAL_SKY,
+      chainId
     })
   );
 
@@ -161,7 +168,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.UNSEAL
+      type: TransactionTypeEnum.UNSEAL,
+      chainId
     })
   );
 
@@ -172,7 +180,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.UNSEAL_SKY
+      type: TransactionTypeEnum.UNSEAL_SKY,
+      chainId
     })
   );
 
@@ -183,7 +192,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.BORROW
+      type: TransactionTypeEnum.BORROW,
+      chainId
     })
   );
 
@@ -194,7 +204,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.REPAY
+      type: TransactionTypeEnum.REPAY,
+      chainId
     })
   );
 
@@ -206,7 +217,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.SEAL_REWARD
+      type: TransactionTypeEnum.SEAL_REWARD,
+      chainId
     })
   );
 
@@ -217,7 +229,8 @@ async function fetchSealHistory(
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
-      type: TransactionTypeEnum.UNSEAL_KICK
+      type: TransactionTypeEnum.UNSEAL_KICK,
+      chainId
     })
   );
 
@@ -245,8 +258,9 @@ export function useSealHistory({
   index?: number;
 } = {}): ReadHook & { data?: SealHistory } {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const currentChainId = useChainId();
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
     data,
@@ -255,8 +269,8 @@ export function useSealHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['seal-history', urlSubgraph, address, index, chainId],
-    queryFn: () => fetchSealHistory(urlSubgraph, address, index)
+    queryKey: ['seal-history', urlSubgraph, address, index, chainIdToUse],
+    queryFn: () => fetchSealHistory(urlSubgraph, chainIdToUse, address, index)
   });
 
   return {

@@ -1,11 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
-import {
-  useAvailableTokenRewardContracts,
-  useRewardsChartInfo,
-  useRewardsSuppliedBalance,
-  TOKENS,
-  usePrices
-} from '@jetstreamgg/hooks';
+import { useAvailableTokenRewardContracts, useRewardsChartInfo, TOKENS, usePrices } from '@jetstreamgg/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
@@ -14,44 +7,25 @@ import { Skeleton } from '@widgets/components/ui/skeleton';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
+import { useChainId } from 'wagmi';
+import { isTestnetId } from '@jetstreamgg/utils';
 
-export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps) => {
-  const chainId = useChainId();
-  const { address } = useAccount();
+export const RewardsBalanceCard = ({
+  url,
+  onExternalLinkClicked,
+  loading,
+  usdsSkySuppliedBalance,
+  usdsCleSuppliedBalance
+}: CardProps) => {
+  const currentChainId = useChainId();
+  const chainId = isTestnetId(currentChainId) ? 314310 : 1; //TODO: update once we add non-mainnet rewards
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
 
   const usdsSkyRewardContract = rewardContracts.find(
     f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.sky.symbol
   );
-  const usdsCleRewardContract = rewardContracts.find(
-    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.cle.symbol
-  );
 
-  const {
-    data: usdsSkySuppliedBalance,
-    isLoading: usdsSkySuppliedBalanceLoading,
-    error: usdsSkySuppliedBalanceError
-  } = useRewardsSuppliedBalance({
-    chainId,
-    address,
-    contractAddress: usdsSkyRewardContract?.contractAddress as `0x${string}`
-  });
-
-  const {
-    data: usdsCleSuppliedBalance,
-    isLoading: usdsCleSuppliedBalanceIsLoading,
-    error: usdsCleSuppliedBalanceError
-  } = useRewardsSuppliedBalance({
-    chainId,
-    address,
-    contractAddress: usdsCleRewardContract?.contractAddress as `0x${string}`
-  });
-
-  const {
-    data: chartData,
-    isLoading: chartDataLoading,
-    error: chartDataError
-  } = useRewardsChartInfo({
+  const { data: chartData, isLoading: chartDataLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsSkyRewardContract?.contractAddress as string
   });
 
@@ -61,14 +35,12 @@ export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps
   const mostRecentRate = sortedChartData.length > 0 ? sortedChartData[0].rate : null;
   const mostRecentRateNumber = mostRecentRate ? parseFloat(mostRecentRate) : null;
 
-  if (usdsSkySuppliedBalanceError || usdsCleSuppliedBalanceError || chartDataError) return null;
-
   return (
     <InteractiveStatsCard
       title={t`USDS supplied to Rewards`}
       tokenSymbol="USDS"
       headerRightContent={
-        usdsSkySuppliedBalanceLoading || usdsCleSuppliedBalanceIsLoading ? (
+        loading ? (
           <Skeleton className="w-32" />
         ) : (
           <Text>
@@ -99,7 +71,7 @@ export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps
         )
       }
       footerRightContent={
-        usdsSkySuppliedBalanceLoading || usdsCleSuppliedBalanceIsLoading || pricesLoading ? (
+        loading || pricesLoading ? (
           <Skeleton className="h-[13px] w-20" />
         ) : usdsSkySuppliedBalance !== undefined &&
           usdsCleSuppliedBalance !== undefined &&
@@ -116,7 +88,7 @@ export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps
           </Text>
         ) : undefined
       }
-      onClick={onClick}
+      url={url}
     />
   );
 };

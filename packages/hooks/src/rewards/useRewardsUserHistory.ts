@@ -5,9 +5,11 @@ import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, RewardUserHistoryResponse } from './rewards';
 import { useAccount, useChainId } from 'wagmi';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
 
 async function fetchRewardsUserHistory(
   urlSubgraph: string,
+  chainId: number,
   rewardContractAddress: string,
   userAddress: string
 ): Promise<RewardUserHistoryItem[] | undefined> {
@@ -48,7 +50,8 @@ async function fetchRewardsUserHistory(
     amount: BigInt(e.amount),
     rewardsClaim: false,
     module: ModuleEnum.REWARDS,
-    type: TransactionTypeEnum.SUPPLY
+    type: TransactionTypeEnum.SUPPLY,
+    chainId
   }));
   const withdrawals = reward.withdrawals.map(e => ({
     blockTimestamp: new Date(parseInt(e.blockTimestamp, 10) * 1000),
@@ -56,7 +59,8 @@ async function fetchRewardsUserHistory(
     amount: BigInt(-e.amount), //negative for withdrawals
     rewardsClaim: false,
     module: ModuleEnum.REWARDS,
-    type: TransactionTypeEnum.WITHDRAW
+    type: TransactionTypeEnum.WITHDRAW,
+    chainId
   }));
   const rewardClaims = reward.rewardClaims.map(e => ({
     blockTimestamp: new Date(parseInt(e.blockTimestamp, 10) * 1000),
@@ -64,7 +68,8 @@ async function fetchRewardsUserHistory(
     amount: BigInt(e.amount),
     rewardsClaim: true,
     module: ModuleEnum.REWARDS,
-    type: TransactionTypeEnum.REWARD
+    type: TransactionTypeEnum.REWARD,
+    chainId
   }));
   const allParsed = [...supplyInstances, ...withdrawals, ...rewardClaims];
   return allParsed.sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
@@ -77,9 +82,11 @@ export function useRewardsUserHistory({
   subgraphUrl?: string;
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardUserHistoryItem[] } {
-  const chainId = useChainId();
+  const currentChainId = useChainId();
   const { address: userAddress } = useAccount();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  //this hook is only used for mainnet, update this if this ever changes
+  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
     data,
@@ -88,8 +95,9 @@ export function useRewardsUserHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && rewardContractAddress && userAddress),
-    queryKey: ['rewards-user-history', urlSubgraph, rewardContractAddress, userAddress, chainId],
-    queryFn: () => fetchRewardsUserHistory(urlSubgraph, rewardContractAddress, userAddress || '')
+    queryKey: ['rewards-user-history', urlSubgraph, rewardContractAddress, userAddress, chainIdToUse],
+    queryFn: () =>
+      fetchRewardsUserHistory(urlSubgraph, chainIdToUse, rewardContractAddress, userAddress || '')
   });
 
   return {

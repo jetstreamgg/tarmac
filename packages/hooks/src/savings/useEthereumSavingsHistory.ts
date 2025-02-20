@@ -12,9 +12,12 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
+import { isTestnetId } from '@jetstreamgg/utils';
+import { chainId as chainIdMap } from '@jetstreamgg/utils';
 
 async function fetchEthereumSavingsHistory(
   urlSubgraph: string,
+  chainId: number,
   address?: string
 ): Promise<SavingsHistory | undefined> {
   if (!address) return [];
@@ -40,7 +43,8 @@ async function fetchEthereumSavingsHistory(
     transactionHash: d.transactionHash,
     module: ModuleEnum.SAVINGS,
     type: TransactionTypeEnum.SUPPLY,
-    token: TOKENS.usds
+    token: TOKENS.usds,
+    chainId
   }));
 
   const withdraws: SavingsWithdrawal[] = response.savingsWithdraws.map((w: SavingsWithdrawalResponse) => ({
@@ -49,7 +53,8 @@ async function fetchEthereumSavingsHistory(
     transactionHash: w.transactionHash,
     module: ModuleEnum.SAVINGS,
     type: TransactionTypeEnum.WITHDRAW,
-    token: TOKENS.usds
+    token: TOKENS.usds,
+    chainId
   }));
 
   const combined = [...supplies, ...withdraws];
@@ -64,8 +69,9 @@ export function useEthereumSavingsHistory({
   enabled?: boolean;
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const currentChainId = useChainId();
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
     data,
@@ -74,8 +80,8 @@ export function useEthereumSavingsHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph) && enabled,
-    queryKey: ['savings-history', urlSubgraph, address, chainId],
-    queryFn: () => fetchEthereumSavingsHistory(urlSubgraph, address)
+    queryKey: ['savings-history', urlSubgraph, address, chainIdToUse],
+    queryFn: () => fetchEthereumSavingsHistory(urlSubgraph, chainIdToUse, address)
   });
 
   return {

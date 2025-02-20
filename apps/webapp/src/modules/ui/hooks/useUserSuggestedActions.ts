@@ -34,6 +34,7 @@ type TokenBalance = {
   decimals: number;
   formatted: string;
   symbol: string;
+  chainId: number;
 };
 
 // Note: some suggested actions are disabled because they aren't compatible with the Rate highlight cards, leaving them here in case we want to re-enable

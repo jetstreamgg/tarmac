@@ -26,7 +26,7 @@ export const tenderly = {
 
 export const tenderlyBase = {
   id: TENDERLY_BASE_CHAIN_ID,
-  name: 'base_oct_9_0',
+  name: 'new-base-testnet-jan-27',
   network: 'tenderly base',
   nativeCurrency: {
     decimals: 18,
@@ -34,8 +34,8 @@ export const tenderlyBase = {
     symbol: 'ETH'
   },
   rpcUrls: {
-    public: { http: [import.meta.env.VITE_PUBLIC_RPC_PROVIDER_TENDERLY_BASE || ''] },
-    default: { http: [import.meta.env.VITE_PUBLIC_RPC_PROVIDER_TENDERLY_BASE || ''] }
+    public: { http: ['https://virtual.base.rpc.tenderly.co/013be623-d567-4b28-86f6-834d6cfb3e6c'] },
+    default: { http: ['https://virtual.base.rpc.tenderly.co/013be623-d567-4b28-86f6-834d6cfb3e6c'] }
   },
   blockExplorers: {
     default: { name: '', url: '' }

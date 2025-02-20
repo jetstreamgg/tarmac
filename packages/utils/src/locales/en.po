@@ -874,8 +874,9 @@ msgstr ""
 msgid "Get rewards with USDS"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Get rewards with your {formattedBalance} {upperSymbol}"
+msgid "Get rewards with your {formattedBalance} {upperSymbol} {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
@@ -1128,6 +1129,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 msgid "Next, confirm the upgrade transaction."
+msgstr ""
+
+#: packages/widgets/src/widgets/BalancesWidget/components/BalancesContent.tsx
+msgid "No balances found"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
@@ -1650,9 +1655,13 @@ msgstr ""
 msgid "Start saving"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Base' : ''
+#. placeholder {0}: isDifferentChain ? 'on Arbitrum' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Start saving with your {formattedBalance} {upperSymbol}"
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Start saving with your {formattedBalance} {upperSymbol} {0}"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
@@ -1916,13 +1925,18 @@ msgstr ""
 msgid "Trade USDT for USDS"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#. placeholder {0}: isDifferentChain ? 'on Base' : ''
+#. placeholder {0}: isDifferentChain ? 'on Arbitrum' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Trade your {formattedBalance} {upperSymbol} for USDS"
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Trade your {formattedBalance} {upperSymbol} for USDS {0}"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Trade your {formattedBalance} {upperSymbol} for USDS to get rewards"
+msgid "Trade your {formattedBalance} {upperSymbol} for USDS to get rewards {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/balances/components/BalancesModuleShowcase.tsx
@@ -2109,16 +2123,19 @@ msgstr ""
 msgid "Upgrade successful"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Upgrade your {formattedBalance} {upperSymbol} to SKY"
+msgid "Upgrade your {formattedBalance} {upperSymbol} to SKY {0}"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS"
+msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS {0}"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS to get rewards"
+msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS to get rewards {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/balances/components/BalancesModuleShowcase.tsx

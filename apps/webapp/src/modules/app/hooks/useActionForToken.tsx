@@ -1,29 +1,27 @@
-import { formatNumber, isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import { formatNumber, isBaseChainId, isArbitrumChainId, isL2ChainId } from '@jetstreamgg/utils';
 import { useCallback } from 'react';
-import { RewardContract, useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
-import { useChainId } from 'wagmi';
+import { RewardContract, useAvailableTokenRewardContractsForChains } from '@jetstreamgg/hooks';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useSearchParams } from 'react-router-dom';
 import { IntentMapping, QueryParams } from '@/lib/constants';
 import { t } from '@lingui/core/macro';
-import { base, mainnet } from 'viem/chains';
+import { base, mainnet, arbitrum } from 'viem/chains';
+import { useChains, useChainId } from 'wagmi';
 
 export const useActionForToken = () => {
   const chainId = useChainId();
-  const isBaseChain = isBaseChainId(chainId);
-  const isArbitrumChain = isArbitrumChainId(chainId);
-  const rewardContracts = useAvailableTokenRewardContracts(chainId);
-  const skyRewardContract = rewardContracts?.find(
-    (rewardContract: RewardContract) => rewardContract.rewardToken.symbol === 'SKY'
-  );
   const [searchParams] = useSearchParams();
-
   const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
 
+  const getRewardContracts = useAvailableTokenRewardContractsForChains();
+
+  const chains = useChains();
+
   const actionForToken = useCallback(
-    (symbol: string, balance: string) => {
-      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details } = QueryParams;
+    (symbol: string, balance: string, tokenChainId: number) => {
+      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details, Network } =
+        QueryParams;
       const {
         REWARDS_INTENT: REWARD,
         UPGRADE_INTENT: UPGRADE,
@@ -32,9 +30,27 @@ export const useActionForToken = () => {
       } = IntentMapping;
       const retainedParams = [Locale, Details];
 
+      const rewardContracts = getRewardContracts(tokenChainId);
+
+      const skyRewardContract = rewardContracts?.find(
+        (rewardContract: RewardContract) => rewardContract.rewardToken.symbol === 'SKY'
+      );
+
+      const isBaseChainAction = isBaseChainId(tokenChainId);
+      const isArbitrumChainAction = isArbitrumChainId(tokenChainId);
+      const isL2ChainAction = isL2ChainId(tokenChainId);
+
+      const networkName = chains.find(c => c.id === tokenChainId)?.name || 'ethereum';
+
+      const isDifferentChain = chainId !== tokenChainId;
+
       const lowerSymbol = symbol.toLowerCase();
       const upperSymbol = symbol.toUpperCase();
-      const image = `/tokens/actions/${lowerSymbol}.png`;
+      //TODO: make this more generalizable
+      //currently, we assume that usds action is savings on L2 chains, and rewards on mainnet
+      const image = `/tokens/actions/${lowerSymbol}${
+        lowerSymbol === 'usds' && isL2ChainAction ? '-savings' : ''
+      }.png`;
       const formattedBalance = formatNumber(parseFloat(balance));
       let action;
 
@@ -46,28 +62,34 @@ export const useActionForToken = () => {
           action = {
             [mainnet.id]: isRestrictedBuild
               ? {
-                  label: t`Upgrade your ${formattedBalance} ${upperSymbol} to USDS`,
-                  actionUrl: getQueryParams(`?${Widget}=${UPGRADE}&${InputAmount}=${balance}`),
+                  label: t`Upgrade your ${formattedBalance} ${upperSymbol} to USDS ${isDifferentChain ? 'on Mainnet' : ''}`,
+                  actionUrl: getQueryParams(
+                    `?${Network}=${networkName}&${Widget}=${UPGRADE}&${InputAmount}=${balance}`
+                  ),
                   image
                 }
               : {
-                  label: t`Upgrade your ${formattedBalance} ${upperSymbol} to USDS to get rewards`,
+                  label: t`Upgrade your ${formattedBalance} ${upperSymbol} to USDS to get rewards ${isDifferentChain ? 'on Mainnet' : ''}`,
                   actionUrl: getQueryParams(
-                    `?${Widget}=${UPGRADE}&${InputAmount}=${balance}&${LinkedAction}=${REWARD}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
+                    `?${Network}=${networkName}&${Widget}=${UPGRADE}&${InputAmount}=${balance}&${LinkedAction}=${REWARD}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
                   ),
                   image
                 },
-            [base.id]: undefined
+            [base.id]: undefined,
+            [arbitrum.id]: undefined
           };
           break;
         case 'mkr':
           action = {
             [mainnet.id]: {
-              label: t`Upgrade your ${formattedBalance} ${upperSymbol} to SKY`,
-              actionUrl: getQueryParams(`?${Widget}=${UPGRADE}&${InputAmount}=${balance}&${SourceToken}=MKR`),
+              label: t`Upgrade your ${formattedBalance} ${upperSymbol} to SKY ${isDifferentChain ? 'on Mainnet' : ''}`,
+              actionUrl: getQueryParams(
+                `?${Network}=${networkName}&${Widget}=${UPGRADE}&${InputAmount}=${balance}&${SourceToken}=MKR`
+              ),
               image
             },
-            [base.id]: undefined
+            [base.id]: undefined,
+            [arbitrum.id]: undefined
           };
           break;
         case 'usds':
@@ -75,18 +97,27 @@ export const useActionForToken = () => {
             [mainnet.id]: isRestrictedBuild
               ? undefined
               : {
-                  label: t`Get rewards with your ${formattedBalance} ${upperSymbol}`,
+                  label: t`Get rewards with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Mainnet' : ''}`,
                   actionUrl: getQueryParams(
-                    `?${Widget}=${REWARD}&${InputAmount}=${balance}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
+                    `?${Network}=${networkName}&${Widget}=${REWARD}&${InputAmount}=${balance}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
                   ),
                   image
                 },
             [base.id]: isRestrictedBuild
               ? undefined
               : {
-                  label: t`Start saving with your ${formattedBalance} ${upperSymbol}`,
+                  label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
                   actionUrl: getQueryParams(
-                    `?${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                    `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                  ),
+                  image
+                },
+            [arbitrum.id]: isRestrictedBuild
+              ? undefined
+              : {
+                  label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Arbitrum' : ''}`,
+                  actionUrl: getQueryParams(
+                    `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
                   ),
                   image
                 }
@@ -103,18 +134,18 @@ export const useActionForToken = () => {
               ? undefined
               : isRestrictedBuild
                 ? {
-                    label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS`,
+                    label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Mainnet' : ''}`,
                     // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
                     actionUrl: getQueryParams(
-                      `?${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                      `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
                     ),
                     image
                   }
                 : {
-                    label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS to get rewards`,
+                    label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS to get rewards ${isDifferentChain ? 'on Mainnet' : ''}`,
                     // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
                     actionUrl: getQueryParams(
-                      `?${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS&${LinkedAction}=${REWARD}${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
+                      `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS&${LinkedAction}=${REWARD}${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
                     ),
                     image
                   },
@@ -125,28 +156,50 @@ export const useActionForToken = () => {
                   ? undefined
                   : isRestrictedBuild
                     ? {
-                        label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS`,
+                        label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Base' : ''}`,
                         actionUrl: getQueryParams(
-                          `?${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                          `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
                         ),
                         image
                       }
                     : {
-                        label: t`Start saving with your ${formattedBalance} ${upperSymbol}`,
+                        label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
                         actionUrl: getQueryParams(
-                          `?${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                          `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
                         ),
                         image
-                      }
+                      },
+            [arbitrum.id]:
+              lowerSymbol === 'usdt'
+                ? undefined
+                : isRestrictedBuild
+                  ? {
+                      label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Arbitrum' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                      ),
+                      image
+                    }
+                  : {
+                      label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                      ),
+                      image
+                    }
           };
           break;
         default:
           action = undefined;
       }
 
-      return isBaseChain || isArbitrumChain ? action?.[base.id] : action?.[mainnet.id];
+      return isBaseChainAction
+        ? action?.[base.id]
+        : isArbitrumChainAction
+          ? action?.[arbitrum.id]
+          : action?.[mainnet.id];
     },
-    [skyRewardContract, searchParams, isRestrictedBuild, isRestrictedMiCa]
+    [getRewardContracts, searchParams, isRestrictedBuild, isRestrictedMiCa, chainId, chains]
   );
 
   return actionForToken;

@@ -1,4 +1,4 @@
-import { useTotalUserSealed, useSealRewardsData, usePrices } from '@jetstreamgg/hooks';
+import { useSealRewardsData, usePrices } from '@jetstreamgg/hooks';
 import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
@@ -8,35 +8,23 @@ import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
 
-export const SealBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps) => {
-  const {
-    data: totalUserSealed,
-    isLoading: totalUserSealedLoading,
-    error: totalUserSealedError
-  } = useTotalUserSealed();
-
-  const {
-    data: sealRewardsData,
-    isLoading: sealRewardsDataLoading,
-    error: sealRewardsDataError
-  } = useSealRewardsData();
+export const SealBalanceCard = ({ url, onExternalLinkClicked, loading, sealBalance }: CardProps) => {
+  const { data: sealRewardsData, isLoading: sealRewardsDataLoading } = useSealRewardsData();
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
   const sortedSealRewardsData = sealRewardsData ? [...sealRewardsData].sort((a, b) => b.rate - a.rate) : [];
   const highestSealRewardsRate = sortedSealRewardsData.length > 0 ? sortedSealRewardsData[0].rate : null;
 
-  if (totalUserSealedError || sealRewardsDataError) return null;
-
   return (
     <InteractiveStatsCard
       title={t`MKR supplied to Seal Engine`}
       tokenSymbol="MKR"
       headerRightContent={
-        totalUserSealedLoading ? (
+        loading ? (
           <Skeleton className="w-32" />
         ) : (
-          <Text>{`${totalUserSealed ? formatBigInt(totalUserSealed) : '0'}`}</Text>
+          <Text>{`${sealBalance ? formatBigInt(sealBalance) : '0'}`}</Text>
         )
       }
       footer={
@@ -58,18 +46,18 @@ export const SealBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps) =
         )
       }
       footerRightContent={
-        totalUserSealedLoading || pricesLoading ? (
+        loading || pricesLoading ? (
           <Skeleton className="h-[13px] w-20" />
-        ) : totalUserSealed !== undefined && !!pricesData?.MKR ? (
+        ) : sealBalance !== undefined && !!pricesData?.MKR ? (
           <Text variant="small" className="text-textSecondary">
             $
-            {formatNumber(parseFloat(formatUnits(totalUserSealed, 18)) * parseFloat(pricesData.MKR.price), {
+            {formatNumber(parseFloat(formatUnits(sealBalance, 18)) * parseFloat(pricesData.MKR.price), {
               maxDecimals: 2
             })}
           </Text>
         ) : undefined
       }
-      onClick={onClick}
+      url={url}
     />
   );
 };

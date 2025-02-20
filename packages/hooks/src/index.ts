@@ -15,6 +15,7 @@ export { useReadSavingsUsds, sUsdsAddress, sUsdsImplementationAbi } from './savi
 export { useTotalSavingsSuppliers } from './savings/useTotalSavingsSuppliers';
 export { useSsrSharesToAssets } from './savings/useSsrSharesToAssets';
 export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
+export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
 
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
@@ -24,11 +25,12 @@ export { useVpnCheck } from './authentication/useVpnCheck';
 export { useTokenAllowance } from './tokens/useTokenAllowance';
 export { useApproveToken } from './tokens/useApproveToken';
 export { useTokens } from './tokens/useTokens';
-export { useTokenBalance, useTokenBalances } from './tokens/useTokenBalance';
+export { useTokenBalance, useTokenBalances, type TokenItem } from './tokens/useTokenBalance';
 export { useTokenChartInfo } from './tokens/useTokenChartInfo';
 
 // Rewards
 export { useAvailableTokenRewardContracts } from './rewards/useAvailableTokenRewardContracts';
+export { useAvailableTokenRewardContractsForChains } from './rewards/useAvailableTokenRewardContracts';
 export { useRewardContractInfo } from './rewards/useRewardContractInfo';
 export { useRewardContractsInfo } from './rewards/useRewardContractsInfo';
 export { useRewardsUserHistory } from './rewards/useRewardsUserHistory';
@@ -50,6 +52,7 @@ export { useRewardsPeriodFinish } from './rewards/useRewardsPeriodFinish';
 
 // Shared
 export { useCombinedHistory } from './shared/useCombinedHistory';
+export { useAllNetworksCombinedHistory } from './shared/useAllNetworksCombinedHistory';
 export { useL2CombinedHistory } from './shared/useL2CombinedHistory';
 export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';

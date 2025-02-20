@@ -18,6 +18,7 @@ export const AssetBalance = ({
   formatted,
   priceData,
   value,
+  chainId,
   actionForToken
 }: {
   symbol: string;
@@ -26,13 +27,18 @@ export const AssetBalance = ({
   formatted: string;
   value: bigint;
   priceData: PriceData | undefined;
+  chainId: number;
   actionForToken?: (
     symbol: string,
-    balance: string
+    balance: string,
+    tokenChainId: number
   ) => { label: string; actionUrl: string; image: string } | undefined;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const action = useMemo(() => actionForToken?.(symbol, formatted), [actionForToken, symbol, formatted]);
+  const action = useMemo(
+    () => actionForToken?.(symbol, formatted, chainId),
+    [actionForToken, symbol, formatted, chainId]
+  );
   const hasAction = !!action?.label && !!action?.actionUrl && !!action?.image;
   const shouldShowAction = isHovered && hasAction && parseFloat(formatted) !== 0;
 
@@ -61,7 +67,7 @@ export const AssetBalance = ({
         </>
         <>
           <div className={`flex items-center space-x-2 ${shouldShowAction ? 'hidden' : ''}`}>
-            <TokenIcon className="h-8 w-8" token={{ symbol: symbol, name: symbol }} />
+            <TokenIcon className="h-8 w-8" token={{ symbol: symbol, name: symbol }} chainId={chainId} />
             <div className="flex flex-col justify-between">
               <Text>{symbol}</Text>
               {isLoading ? (

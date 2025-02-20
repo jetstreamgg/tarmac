@@ -2,8 +2,9 @@ import { useMemo } from 'react';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useChainId } from 'wagmi';
 
-export function useTokenAddressMap() {
-  const chainId = useChainId();
+export function useTokenAddressMap(chainIdParam?: number) {
+  const currentChainId = useChainId();
+  const chainId = chainIdParam || currentChainId;
 
   return useMemo(() => {
     if (!chainId) {
