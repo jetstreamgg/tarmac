@@ -49,12 +49,11 @@ export const RewardsStatsCardCore = ({
     isLoading,
     error
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress
+    rewardContractAddress: rewardContract.contractAddress,
+    limit: 1
   });
 
-  // Get the most recent data
-  const sortedChartData = chartData ? [...chartData].sort((a, b) => b.blockTimestamp - a.blockTimestamp) : [];
-  const mostRecentRate = sortedChartData.length > 0 ? sortedChartData[0].rate : null;
+  const rate = chartData && chartData.length > 0 ? chartData[0].rate : null;
 
   return (
     <StatsOverviewCardCore
@@ -70,10 +69,10 @@ export const RewardsStatsCardCore = ({
       }
       headerRightContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          {rewardContract.rewardToken.symbol !== TOKENS.cle.symbol && mostRecentRate ? (
+          {rewardContract.rewardToken.symbol !== TOKENS.cle.symbol && rate ? (
             <>
               <Text className="text-bullish">
-                <Trans>Rate: {formatDecimalPercentage(parseFloat(mostRecentRate))}</Trans>
+                <Trans>Rate: {formatDecimalPercentage(parseFloat(rate))}</Trans>
               </Text>
               <PopoverRateInfo type="str" onExternalLinkClicked={onExternalLinkClicked} />
             </>

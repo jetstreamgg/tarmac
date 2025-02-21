@@ -52,13 +52,13 @@ export const RewardsBalanceCard = ({ onClick, onExternalLinkClicked }: CardProps
     isLoading: chartDataLoading,
     error: chartDataError
   } = useRewardsChartInfo({
-    rewardContractAddress: usdsSkyRewardContract?.contractAddress as string
+    rewardContractAddress: usdsSkyRewardContract?.contractAddress as string,
+    limit: 1
   });
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
-  const sortedChartData = chartData ? [...chartData].sort((a, b) => b.blockTimestamp - a.blockTimestamp) : [];
-  const mostRecentRate = sortedChartData.length > 0 ? sortedChartData[0].rate : null;
+  const mostRecentRate = chartData && chartData.length > 0 ? chartData[0].rate : null;
   const mostRecentRateNumber = mostRecentRate ? parseFloat(mostRecentRate) : null;
 
   if (usdsSkySuppliedBalanceError || usdsCleSuppliedBalanceError || chartDataError) return null;
