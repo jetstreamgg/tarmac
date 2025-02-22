@@ -26,7 +26,7 @@ type Props = WidgetProps & {
   tabIndex: 0 | 1;
   error?: boolean;
   onToggle: (number: 0 | 1) => void;
-  onOriginInputChange: (val: bigint) => void;
+  onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -65,7 +65,7 @@ export function L2SavingsSupplyWithdraw({
 
   return (
     <VStack className="w-full items-center justify-center">
-      <Tabs defaultValue={tabIndex === 0 ? 'left' : 'right'} className="w-full">
+      <Tabs value={tabIndex === 0 ? 'left' : 'right'} className="w-full">
         <motion.div variants={positionAnimations}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger
@@ -106,7 +106,7 @@ export function L2SavingsSupplyWithdraw({
                 token={originToken}
                 tokenList={originOptions || []}
                 balance={originBalance}
-                onChange={onOriginInputChange}
+                onChange={(val, event) => onOriginInputChange(BigInt(val), !!event)}
                 onTokenSelected={token => {
                   onMenuItemChange?.(token as Token);
                 }}
@@ -124,7 +124,7 @@ export function L2SavingsSupplyWithdraw({
                 className="w-full"
                 token={originToken}
                 balance={convertedBalance?.value}
-                onChange={onOriginInputChange}
+                onChange={(val, event) => onOriginInputChange(BigInt(val), !!event)}
                 value={originAmount}
                 dataTestId="l2-savings-withdraw-input"
                 label={t`How much ${originToken?.symbol} would you like to withdraw?`}

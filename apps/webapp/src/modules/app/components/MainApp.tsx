@@ -11,7 +11,11 @@ import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
 import { useAccount, useAccountEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
+import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
+import { ChatPane } from './ChatPane';
+import { useChatNotification } from '../hooks/useChatNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export function MainApp() {
   const {
@@ -32,7 +36,9 @@ export function MainApp() {
   useAccountEffect({
     // Once the user connects their wallet, check if the network param is set and switch chains if necessary
     onConnect() {
-      const parsedChainId = chains.find(chain => chain.name.toLowerCase() === network?.toLowerCase())?.id;
+      const parsedChainId = chains.find(
+        chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network || '')
+      )?.id;
       if (parsedChainId) {
         switchChain({ chainId: parsedChainId });
       }
@@ -47,7 +53,7 @@ export function MainApp() {
           const chainName = chains.find(c => c.id === chainId)?.name;
           if (chainName) {
             setSearchParams(params => {
-              params.set(QueryParams.Network, chainName.toLowerCase());
+              params.set(QueryParams.Network, normalizeUrlParam(chainName));
               return params;
             });
           }
@@ -56,7 +62,9 @@ export function MainApp() {
     }
   });
 
+  const chatEnabled = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
+  const { sendMessage } = useSendMessage();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const widgetParam = searchParams.get(QueryParams.Widget);
@@ -68,9 +76,16 @@ export function MainApp() {
   const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
+  const chatParam =
+    chatEnabled &&
+    (bpi >= BP['3xl']
+      ? !(searchParams.get(QueryParams.Chat) === 'false')
+      : searchParams.get(QueryParams.Chat) === 'true');
 
   // step is initialized as 0 and will evaluate to false, setting the first step to 1
   const step = linkedAction ? linkedActionConfig.step || 1 : 0;
+
+  useChatNotification({ isAuthorized: chatEnabled });
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
@@ -85,7 +100,8 @@ export function MainApp() {
           rewardContracts,
           widgetParam || '',
           setSelectedRewardContract,
-          chainId
+          chainId,
+          chains
         );
         // Runs second validation for linked-action-specific criteria
         const validatedLinkedActionParams = validateLinkedActionSearchParams(validatedParams);
@@ -101,12 +117,14 @@ export function MainApp() {
       const chainName = chains.find(c => c.id === chainId)?.name;
       if (chainName)
         setSearchParams(params => {
-          params.set(QueryParams.Network, chainName.toLowerCase());
+          params.set(QueryParams.Network, normalizeUrlParam(chainName));
           return params;
         });
     } else {
       // If the network param doesn't match the current chain, switch chains
-      const parsedChainId = chains.find(chain => chain.name.toLowerCase() === network.toLowerCase())?.id;
+      const parsedChainId = chains.find(
+        chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network)
+      )?.id;
       if (parsedChainId && parsedChainId !== chainId) {
         switchChain({ chainId: parsedChainId });
       }
@@ -119,7 +137,7 @@ export function MainApp() {
       const newChainName = chains.find(c => c.id === newChainId)?.name;
       if (newChainName) {
         setSearchParams(params => {
-          params.set(QueryParams.Network, newChainName.toLowerCase());
+          params.set(QueryParams.Network, normalizeUrlParam(newChainName));
           return params;
         });
       }
@@ -183,10 +201,13 @@ export function MainApp() {
 
   return (
     <AppContainer>
-      <WidgetPane intent={intent}>
-        {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
-      </WidgetPane>
-      {bpi > BP.sm && detailsParam && <DetailsPane intent={intent} />}
+      {(bpi > BP.sm || !chatParam) && (
+        <WidgetPane intent={intent}>
+          {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
+        </WidgetPane>
+      )}
+      {(bpi >= BP.xl || (bpi > BP.sm && !chatParam)) && detailsParam && <DetailsPane intent={intent} />}
+      {chatParam && <ChatPane sendMessage={sendMessage} />}
     </AppContainer>
   );
 }

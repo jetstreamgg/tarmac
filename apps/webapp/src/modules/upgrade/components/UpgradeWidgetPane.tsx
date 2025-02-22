@@ -33,7 +33,9 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
 
   const wagmiConfig = useWagmiConfig();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const flow = (searchParams.get(QueryParams.Flow) || undefined) as UpgradeFlow | undefined;
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
 
@@ -41,8 +43,42 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     hash,
     txStatus,
     widgetState,
-    targetToken
+    targetToken,
+    originToken,
+    originAmount
   }: WidgetStateChangeParams) => {
+    // Set flow search param based on widgetState.flow
+    if (widgetState.flow) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.Flow, widgetState.flow);
+        return prev;
+      });
+    }
+
+    if (originToken) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.SourceToken, originToken);
+        return prev;
+      });
+    } else if (originToken === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.SourceToken);
+        return prev;
+      });
+    }
+
+    if (originAmount && originAmount !== '0') {
+      setSearchParams(prev => {
+        prev.set(QueryParams.InputAmount, originAmount);
+        return prev;
+      });
+    } else if (originAmount === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.InputAmount);
+        return prev;
+      });
+    }
+
     if (
       widgetState.action === UpgradeAction.UPGRADE &&
       txStatus === TxStatus.SUCCESS &&
@@ -116,10 +152,11 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       {...sharedProps}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
+        flow,
         initialUpgradeToken:
           linkedActionConfig.sourceToken &&
-          Object.values(upgradeTokens).includes(linkedActionConfig.sourceToken)
-            ? (linkedActionConfig.sourceToken as keyof typeof upgradeTokens)
+          Object.values(upgradeTokens).includes(linkedActionConfig.sourceToken.toUpperCase())
+            ? (linkedActionConfig.sourceToken.toUpperCase() as keyof typeof upgradeTokens)
             : undefined
       }}
       onWidgetStateChange={onUpgradeWidgetStateChange}

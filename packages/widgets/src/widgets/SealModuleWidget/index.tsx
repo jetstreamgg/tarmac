@@ -1,7 +1,7 @@
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { WidgetProps, WidgetState, WidgetStateChangeParams } from '@widgets/shared/types/widgetState';
 import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
-import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { Heading } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
@@ -38,7 +38,8 @@ import {
   ZERO_ADDRESS,
   useUrnSelectedRewardContract,
   useUrnSelectedVoteDelegate,
-  TOKENS
+  TOKENS,
+  getTokenDecimals
 } from '@jetstreamgg/hooks';
 import { formatBigInt, getEtherscanLink, useDebounce } from '@jetstreamgg/utils';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
@@ -49,6 +50,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getValidatedState } from '@widgets/lib/utils';
 import { UnconnectedState } from './components/UnconnectedState';
 import { useLingui } from '@lingui/react';
+import { formatUnits, parseUnits } from 'viem';
 
 export type OnSealUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -110,9 +112,6 @@ function SealModuleWidgetWrapped({
   referralCode
 }: SealModuleWidgetProps) {
   const validatedExternalState = getValidatedState(externalWidgetState);
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
-  const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
-  const tabSide = tabIndex === 0 ? 'left' : 'right';
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -165,11 +164,15 @@ function SealModuleWidgetWrapped({
     displayToken
   } = useContext(SealModuleWidgetContext);
 
+  const initialTabIndex = validatedExternalState?.sealTab === SealAction.FREE ? 1 : 0;
+  const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
+  const tabSide = tabIndex === 0 ? 'left' : 'right';
+
   // Returns the urn index to use for opening a new urn
-  const { data: currentUrnIndex } = useCurrentUrnIndex();
+  const { data: currentUrnIndex, error: currentUrnIndexError } = useCurrentUrnIndex();
 
   const { data: externalParamUrnAddress } = useUrnAddress(
-    externalWidgetState?.urnIndex !== undefined ? BigInt(externalWidgetState.urnIndex) : -1n
+    validatedExternalState?.urnIndex !== undefined ? BigInt(validatedExternalState.urnIndex) : -1n
   );
   const { data: externalParamVaultData } = useVault(externalParamUrnAddress || ZERO_ADDRESS);
   const { data: externalUrnRewardContract } = useUrnSelectedRewardContract({
@@ -352,7 +355,6 @@ function SealModuleWidgetWrapped({
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
     },
     onError: (error, hash) => {
-      console.log('error', error, hash);
       //TODO: fix all this copy
       onNotification?.({
         title: t`Approval failed`,
@@ -419,6 +421,10 @@ function SealModuleWidgetWrapped({
   const needsNgtAllowance = !!(sealNgtAllowance === undefined || sealNgtAllowance < debouncedSkyAmount);
   const needsLockAllowance = selectedToken === TOKENS.mkr ? needsMkrAllowance : needsNgtAllowance;
   const needsUsdsAllowance = !!(sealUsdsAllowance === undefined || sealUsdsAllowance < debouncedUsdsAmount);
+
+  useEffect(() => {
+    setTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
 
   // Generate calldata when all steps are complete
   useEffect(() => {
@@ -634,34 +640,94 @@ function SealModuleWidgetWrapped({
     !!widgetState.action && widgetState.action !== SealAction.OVERVIEW && currentStep !== SealStep.ABOUT;
 
   useEffect(() => {
-    if (
-      externalWidgetState?.urnIndex !== undefined &&
-      externalWidgetState.urnIndex !== null &&
-      !!externalParamUrnAddress
-    ) {
-      // Navigate to the Urn
-      if (externalParamVaultData?.collateralAmount && externalUrnRewardContract) {
-        setSelectedRewardContract(externalUrnRewardContract);
-      } else {
-        setSelectedRewardContract(undefined);
-      }
-      if (externalParamVaultData?.collateralAmount && externalUrnVoteDelegate) {
-        setSelectedDelegate(externalUrnVoteDelegate);
-      } else {
-        setSelectedDelegate(undefined);
-      }
-      setWidgetState((prev: WidgetState) => ({
-        ...prev,
-        action: SealAction.MULTICALL
-      }));
-      setActiveUrn(
-        { urnAddress: externalParamUrnAddress, urnIndex: BigInt(externalWidgetState.urnIndex) },
-        onSealUrnChange ?? (() => {})
-      );
-      setCurrentStep(SealStep.OPEN_BORROW);
-      setAcceptedExitFee(false);
+    if (currentUrnIndexError) {
+      throw new Error('Failed to fetch current urn index');
     }
-  }, [externalWidgetState?.urnIndex, externalParamUrnAddress]);
+  }, [currentUrnIndexError]);
+
+  useEffect(() => {
+    // If there are no urns open, set up initial open flow
+    if (currentUrnIndex === 0n) {
+      setWidgetState({
+        flow: SealFlow.OPEN,
+        action: SealAction.MULTICALL,
+        screen: SealScreen.ACTION
+      });
+      setCurrentStep(SealStep.ABOUT);
+      return;
+    }
+
+    // Skip effect if we don't have the current urn index yet
+    if (currentUrnIndex === undefined) {
+      return;
+    }
+
+    // Get the current URL urn index
+    const urlUrnIndex = validatedExternalState?.urnIndex;
+
+    // If we're already in the correct state, don't do anything
+    // This is key to prevent the infinite loop - if we're already showing the correct urn, do nothing
+    if (activeUrn?.urnIndex === urlUrnIndex) {
+      return;
+    }
+
+    // Handle navigation to root (no urn index)
+    if (urlUrnIndex === undefined || urlUrnIndex === null) {
+      resetToOverviewState();
+      return;
+    }
+
+    // Handle navigation to specific urn
+    const urnIndexBigInt = BigInt(urlUrnIndex);
+
+    // Validate the urn index is within bounds
+    if (urnIndexBigInt >= (currentUrnIndex || 0n)) {
+      resetToOverviewState();
+      return;
+    }
+
+    // Wait for the urn address before proceeding
+    if (!externalParamUrnAddress) {
+      return;
+    }
+
+    // Set up the urn state
+    if (externalParamVaultData?.collateralAmount && externalUrnRewardContract) {
+      setSelectedRewardContract(externalUrnRewardContract);
+    } else {
+      setSelectedRewardContract(undefined);
+    }
+
+    if (externalParamVaultData?.collateralAmount && externalUrnVoteDelegate) {
+      setSelectedDelegate(externalUrnVoteDelegate);
+    } else {
+      setSelectedDelegate(undefined);
+    }
+
+    // Update widget state first
+    setWidgetState({
+      flow: SealFlow.MANAGE,
+      action: SealAction.MULTICALL,
+      screen: SealScreen.ACTION
+    });
+
+    // Then update the active urn
+    setActiveUrn(
+      { urnAddress: externalParamUrnAddress, urnIndex: urnIndexBigInt },
+      onSealUrnChange ?? (() => {})
+    );
+
+    setCurrentStep(SealStep.OPEN_BORROW);
+    setAcceptedExitFee(false);
+  }, [
+    validatedExternalState?.urnIndex,
+    externalParamUrnAddress,
+    currentUrnIndex,
+    activeUrn?.urnIndex,
+    externalParamVaultData?.collateralAmount,
+    externalUrnRewardContract,
+    externalUrnVoteDelegate
+  ]);
 
   useEffect(() => {
     if (!displayToken) return;
@@ -674,6 +740,45 @@ function SealModuleWidgetWrapped({
       displayToken
     });
   }, [displayToken]);
+
+  // Handle external amount
+  useEffect(() => {
+    if (validatedExternalState?.amount === undefined) {
+      setMkrToLock(0n);
+      setSkyToLock(0n);
+      setMkrToFree(0n);
+      setSkyToFree(0n);
+
+      return;
+    }
+
+    const decimals = getTokenDecimals(selectedToken, chainId);
+    const amount = parseUnits(validatedExternalState.amount, decimals);
+
+    if (selectedToken === TOKENS.mkr) {
+      if (tabSide === 'left') {
+        setMkrToLock(amount);
+        setMkrToFree(0n);
+      } else {
+        setMkrToFree(amount);
+        setMkrToLock(0n);
+      }
+    } else if (selectedToken === TOKENS.sky) {
+      if (tabSide === 'left') {
+        setSkyToLock(amount);
+        setSkyToFree(0n);
+      } else {
+        setSkyToFree(amount);
+        setSkyToLock(0n);
+      }
+    }
+  }, [validatedExternalState?.amount, selectedToken, tabSide, chainId, widgetState.flow]);
+
+  useEffect(() => {
+    if (validatedExternalState?.flow === SealFlow.OPEN) {
+      handleClickOpenPosition();
+    }
+  }, [externalWidgetState?.flow]);
 
   /**
    * BUTTON CLICKS ----------------------------------------------------------------------------------
@@ -773,9 +878,19 @@ function SealModuleWidgetWrapped({
     setUsdsToWipe(0n);
     setUsdsToBorrow(0n);
     setTabIndex(0);
+
+    onWidgetStateChange?.({
+      widgetState,
+      txStatus,
+      sealTab: SealAction.LOCK,
+      originAmount: ''
+    });
   };
 
   const handleClickOpenPosition = () => {
+    // First reset urn
+    setActiveUrn(undefined, onSealUrnChange ?? (() => {}));
+
     setWidgetState({
       flow: SealFlow.OPEN,
       action: SealAction.MULTICALL,
@@ -836,7 +951,7 @@ function SealModuleWidgetWrapped({
     );
   }, [widgetState.flow, widgetState.action, txStatus, currentStep]);
 
-  const handleViewAll = () => {
+  const resetToOverviewState = () => {
     setActiveUrn(undefined, onSealUrnChange ?? (() => {}));
     onSealUrnChange?.(undefined);
     setWidgetState((prev: WidgetState) => ({
@@ -852,9 +967,25 @@ function SealModuleWidgetWrapped({
     setUsdsToWipe(0n);
     setUsdsToBorrow(0n);
     setTabIndex(0);
+
+    onWidgetStateChange?.({
+      widgetState,
+      txStatus,
+      sealTab: SealAction.LOCK,
+      originAmount: ''
+    });
   };
 
   const widgetStateLoaded = !!widgetState.flow && !!widgetState.action;
+
+  const onClickTab = (index: 0 | 1) => {
+    setTabIndex(index);
+    onWidgetStateChange?.({
+      widgetState,
+      txStatus,
+      sealTab: index === 1 ? SealAction.FREE : SealAction.LOCK
+    });
+  };
 
   return (
     <WidgetContainer
@@ -873,7 +1004,7 @@ function SealModuleWidgetWrapped({
         ) : (
           // do we want to wrap this? <CardAnimationWrapper key="widget-back-button"></CardAnimationWrapper>
           <VStack className="w-full">
-            <Button variant="link" onClick={handleViewAll} className="justify-start p-0">
+            <Button variant="link" onClick={resetToOverviewState} className="justify-start p-0">
               <HStack className="space-x-2">
                 <ArrowLeft className="self-center" />
                 <Heading tag="h3" variant="small" className="text-textSecondary">
@@ -896,7 +1027,22 @@ function SealModuleWidgetWrapped({
       }
     >
       <AnimatePresence mode="popLayout" initial={false}>
-        {!isConnectedAndEnabled && <UnconnectedState />}
+        {!isConnectedAndEnabled && (
+          <UnconnectedState
+            onInputAmountChange={(val: bigint, userTriggered?: boolean) => {
+              if (userTriggered) {
+                // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                const formattedValue =
+                  val === 0n ? '' : formatUnits(val, getTokenDecimals(selectedToken, chainId));
+                onWidgetStateChange?.({
+                  originAmount: formattedValue,
+                  txStatus,
+                  widgetState
+                });
+              }
+            }}
+          />
+        )}
         {txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="widget-transaction-status">
             <SealModuleTransactionStatus onExternalLinkClicked={onExternalLinkClicked} />
@@ -921,12 +1067,13 @@ function SealModuleWidgetWrapped({
                       onExternalLinkClicked={onExternalLinkClicked}
                       currentStep={currentStep}
                       currentAction={widgetState.action}
-                      onClickTrigger={setTabIndex}
+                      onClickTrigger={onClickTab}
                       tabSide={tabSide}
                       claimPrepared={claimRewards.prepared}
                       claimExecute={claimRewards.execute}
                       onSealUrnChange={onSealUrnChange}
                       termsLink={termsLink}
+                      onWidgetStateChange={onWidgetStateChange}
                     />
                   )}
                   {widgetState.flow === SealFlow.OPEN && (
@@ -934,9 +1081,10 @@ function SealModuleWidgetWrapped({
                       isConnectedAndEnabled={isConnectedAndEnabled}
                       onExternalLinkClicked={onExternalLinkClicked}
                       currentStep={currentStep}
-                      onClickTrigger={setTabIndex}
+                      onClickTrigger={onClickTab}
                       tabSide={tabSide}
                       termsLink={termsLink}
+                      onWidgetStateChange={onWidgetStateChange}
                     />
                   )}
                 </MotionVStack>
@@ -955,7 +1103,8 @@ const Wizard = ({
   currentStep,
   onClickTrigger,
   tabSide,
-  termsLink
+  termsLink,
+  onWidgetStateChange
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -963,7 +1112,11 @@ const Wizard = ({
   onClickTrigger: any;
   tabSide: 'left' | 'right';
   termsLink?: { url: string; name: string };
+  onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
 }) => {
+  const chainId = useChainId();
+  const { selectedToken } = useContext(SealModuleWidgetContext);
+  const { widgetState, txStatus } = useContext(WidgetContext);
   return (
     <div>
       {(currentStep === SealStep.ABOUT || currentStep === SealStep.OPEN_BORROW) && (
@@ -973,6 +1126,18 @@ const Wizard = ({
           onClickTrigger={onClickTrigger}
           tabSide={tabSide}
           termsLink={termsLink}
+          onInputAmountChange={(val: bigint, userTriggered?: boolean) => {
+            if (userTriggered) {
+              // If newValue is 0n and it was triggered by user, it means they're clearing the input
+              const formattedValue =
+                val === 0n ? '' : formatUnits(val, getTokenDecimals(selectedToken, chainId));
+              onWidgetStateChange?.({
+                originAmount: formattedValue,
+                txStatus,
+                widgetState
+              });
+            }
+          }}
         />
       )}
       {currentStep === SealStep.REWARDS && (
@@ -994,7 +1159,8 @@ const ManagePosition = ({
   claimPrepared,
   claimExecute,
   onSealUrnChange,
-  termsLink
+  termsLink,
+  onWidgetStateChange
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -1006,6 +1172,7 @@ const ManagePosition = ({
   claimExecute: () => void;
   onSealUrnChange?: OnSealUrnChange;
   termsLink?: { url: string; name: string };
+  onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
 }) => {
   return currentAction === SealAction.OVERVIEW ? (
     <UrnsList claimPrepared={claimPrepared} claimExecute={claimExecute} onSealUrnChange={onSealUrnChange} />
@@ -1017,6 +1184,7 @@ const ManagePosition = ({
       onClickTrigger={onClickTrigger}
       tabSide={tabSide}
       termsLink={termsLink}
+      onWidgetStateChange={onWidgetStateChange}
     />
   );
 };

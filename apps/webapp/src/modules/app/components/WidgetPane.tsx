@@ -1,4 +1,3 @@
-import { BalancesWidget } from '@jetstreamgg/widgets';
 import { Balances, Upgrade, Trade, RewardsModule, Savings, Seal } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
@@ -23,6 +22,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { defaultConfig } from '@/modules/config/default-config';
 import { useChainId } from 'wagmi';
 import { SealWidgetPane } from '@/modules/seal/components/SealWidgetPane';
+import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
 
 export type WidgetContent = [
   Intent,
@@ -78,7 +78,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       'Balances',
       Balances,
       withErrorBoundary(
-        <BalancesWidget
+        <BalancesWidgetPane
           {...sharedProps}
           hideModuleBalances={isRestrictedBuild}
           actionForToken={actionForToken}

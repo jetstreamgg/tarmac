@@ -30,7 +30,8 @@ const toastVariants = cva(
         success: '',
         failure: '',
         info: '',
-        custom: ''
+        custom: '',
+        chat: ''
       }
     },
     defaultVariants: {

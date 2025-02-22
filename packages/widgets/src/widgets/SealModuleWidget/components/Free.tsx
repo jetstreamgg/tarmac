@@ -10,10 +10,12 @@ import { SealFlow } from '../lib/constants';
 
 export const Free = ({
   isConnectedAndEnabled,
-  sealedAmount
+  sealedAmount,
+  onChange
 }: {
   isConnectedAndEnabled: boolean;
   sealedAmount?: bigint;
+  onChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { address } = useAccount();
   const chainId = useChainId();
@@ -111,7 +113,14 @@ export const Free = ({
         tokenList={[TOKENS.mkr, TOKENS.sky]}
         balance={selectedToken === TOKENS.mkr ? mkrSealed : skySealed}
         value={selectedToken === TOKENS.mkr ? mkrToFree : skyToFree}
-        onChange={selectedToken === TOKENS.mkr ? setMkrToFree : setSkyToFree}
+        onChange={(val, event) => {
+          if (selectedToken === TOKENS.mkr) {
+            setMkrToFree(val);
+          } else {
+            setSkyToFree(val);
+          }
+          onChange?.(val, !!event);
+        }}
         onTokenSelected={option => {
           if (option.symbol !== selectedToken?.symbol) {
             setSelectedToken(option as Token);

@@ -5,7 +5,8 @@ export enum BP {
   md = 1,
   lg = 2,
   xl = 3,
-  '2xl' = 4
+  '2xl' = 4,
+  '3xl' = 5
 }
 
 enum BPValue {
@@ -13,7 +14,8 @@ enum BPValue {
   md = 768,
   lg = 912,
   xl = 1280,
-  '2xl' = 1400
+  '2xl' = 1400,
+  '3xl' = 1680
 }
 
 const getBreakpointIndex = (width: number) => {
@@ -26,7 +28,9 @@ const getBreakpointIndex = (width: number) => {
   // xl
   else if (width < BPValue['2xl']) return 3;
   // 2xl
-  else return 4;
+  else if (width < BPValue['3xl']) return 4;
+  // 3xl
+  else return 5;
 };
 
 export const useBreakpointIndex = () => {
