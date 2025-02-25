@@ -19,7 +19,7 @@ export const About = () => {
               </Text>
               <br />
               <Text>
-                Unsealing requires the payment of an exit fee, which isa percentage of the total amount of
+                Unsealing requires the payment of an exit fee, which is a percentage of the total amount of
                 tokens that you have sealed in that position. The fee is automatically subtracted from that
                 total amount, and then burnt, removing the tokens from circulation. Your accumulated rewards
                 are not affected.

@@ -10,6 +10,7 @@ import { UnsupportedNetworkPage } from './UnsupportedNetworkPage';
 import { Text } from '@/modules/layout/components/Typography';
 import { FooterLinks } from './FooterLinks';
 import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useNetworkChangeNotification } from '@/modules/app/hooks/useNetworkChangeNotification';
 
 export function Layout({
   children,
@@ -22,6 +23,7 @@ export function Layout({
   const { chain } = useAccount();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
+  useNetworkChangeNotification();
 
   const showEnvInfo =
     (import.meta.env.VITE_ENV_NAME === 'staging' || import.meta.env.VITE_ENV_NAME === 'development') &&

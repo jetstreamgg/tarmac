@@ -30,10 +30,12 @@ This is a guide to help you set up the Phase One App project on your local machi
 Create a `.env` file in the root directory of the project. You can use the `.env.example` file as a reference for the required environment variables. Fill in the necessary values.
 
 - `VITE_RPC_PROVIDER_MAINNET`: URL for the Ethereum mainnet RPC provider
+- `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
+- `VITE_RPC_PROVIDER_SEPOLIA`: URL for the Sepolia network RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_BASE`: URL for the Base RPC provider
 - `VITE_RPC_PROVIDER_TENDERLY_BASE`: URL for the Tenderly Base RPC provider (used for testing and development)
-- `VITE_RPC_PROVIDER_SEPOLIA`: URL for the Sepolia network RPC provider (used for testing and development)
-- `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
+- `VITE_RPC_PROVIDER_ARBITRUM`: URL for the Arbitrum RPC provider
+- `VITE_RPC_PROVIDER_TENDERLY_ARBITRUM`: URL for the Tenderly Arbitrum RPC provider (used for testing and development)
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production
 - `VITE_AUTH_URL`: Base URL for the authentication service
 - `VITE_RESTRICTED_BUILD`: Boolean flag to enable certain restrictions

@@ -155,7 +155,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Exit fee`,
           value:
-            hasPositions && exitFee
+            hasPositions && typeof exitFee === 'bigint'
               ? [
                   `${formatBigInt((existingColAmount - newCollateralAmount) * exitFee, {
                     unit: WAD_PRECISION * 2
@@ -166,7 +166,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Exit fee percentage`,
           value:
-            hasPositions && exitFee
+            hasPositions && typeof exitFee === 'bigint'
               ? [`${Number(formatUnits(exitFee * 100n, WAD_PRECISION)).toFixed(2)}%`]
               : ''
         },
@@ -206,7 +206,8 @@ const PositionManagerOverviewContainer = ({
       minDebtNotMet,
       simulatedVault?.delayedPrice,
       formattedMinBorrowable,
-      formattedMaxBorrowable
+      formattedMaxBorrowable,
+      exitFee
     ]
   );
 
@@ -294,7 +295,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
   const chainId = useChainId();
   const ilkName = getIlkName(chainId);
 
-  const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId] });
+  const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId], chainId });
 
   const {
     setIsBorrowCompleted,

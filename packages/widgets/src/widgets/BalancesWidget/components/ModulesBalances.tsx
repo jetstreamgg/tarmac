@@ -1,42 +1,82 @@
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
-import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/utils';
 
 export interface CardProps {
-  onClick?: () => void;
+  url?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  chainIds?: number[];
+  loading?: boolean;
+  error?: string;
+  usdsSkySuppliedBalance?: bigint;
+  usdsCleSuppliedBalance?: bigint;
+  savingsBalances?: { chainId: number; balance: bigint }[];
+  sealBalance?: bigint;
 }
 
 interface ModulesBalancesProps {
-  onClickRewardsCard?: () => void;
-  onClickSavingsCard?: () => void;
-  onClickSealCard?: () => void;
+  rewardsCardUrl?: string;
+  savingsCardUrlMap?: Record<number, string>;
+  sealCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   hideModuleBalances?: boolean;
+  chainIds?: number[];
+  hideRewards?: boolean;
+  rewardsLoading?: boolean;
+  hideSeal?: boolean;
+  sealLoading?: boolean;
+  usdsSkySuppliedBalance?: bigint;
+  usdsCleSuppliedBalance?: bigint;
+  hideSavings?: boolean;
+  totalUserSealed?: bigint;
+  savingsBalances?: { chainId: number; balance: bigint }[];
+  savingsLoading?: boolean;
+  sealBalance?: bigint;
 }
 
 export const ModulesBalances = ({
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
   onExternalLinkClicked,
-  hideModuleBalances
+  hideModuleBalances,
+  hideRewards,
+  rewardsLoading,
+  hideSeal,
+  sealLoading,
+  sealBalance,
+  usdsSkySuppliedBalance,
+  usdsCleSuppliedBalance,
+  hideSavings,
+  savingsBalances,
+  savingsLoading
 }: ModulesBalancesProps): React.ReactElement => {
-  const chainId = useChainId();
-  const hideRewards = hideModuleBalances || isL2ChainId(chainId); //TODO: Update when l2 rewards are added
-  const hideSeal = isL2ChainId(chainId);
   return (
     <div className="flex flex-col gap-2">
-      {!hideRewards && (
-        <RewardsBalanceCard onClick={onClickRewardsCard} onExternalLinkClicked={onExternalLinkClicked} />
+      {!hideModuleBalances && !hideRewards && (
+        <RewardsBalanceCard
+          url={rewardsCardUrl}
+          onExternalLinkClicked={onExternalLinkClicked}
+          loading={rewardsLoading}
+          usdsSkySuppliedBalance={usdsSkySuppliedBalance}
+          usdsCleSuppliedBalance={usdsCleSuppliedBalance}
+        />
       )}
-      {!hideModuleBalances && (
-        <SavingsBalanceCard onClick={onClickSavingsCard} onExternalLinkClicked={onExternalLinkClicked} />
+      {!hideModuleBalances && !hideSavings && (
+        <SavingsBalanceCard
+          urlMap={savingsCardUrlMap ?? {}}
+          onExternalLinkClicked={onExternalLinkClicked}
+          loading={savingsLoading}
+          savingsBalances={savingsBalances}
+        />
       )}
       {!hideSeal && (
-        <SealBalanceCard onClick={onClickSealCard} onExternalLinkClicked={onExternalLinkClicked} />
+        <SealBalanceCard
+          onExternalLinkClicked={onExternalLinkClicked}
+          url={sealCardUrl}
+          loading={sealLoading}
+          sealBalance={sealBalance}
+        />
       )}
     </div>
   );

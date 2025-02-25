@@ -1,8 +1,9 @@
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
 
 export const getTradeFaqItems = (chainId: number) => [
   ...mainnetFaqItems,
-  ...(isBaseChainId(chainId) ? baseFaqItems : [])
+  ...(isBaseChainId(chainId) ? baseFaqItems : []),
+  ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : [])
 ];
 
 const mainnetFaqItems = [
@@ -30,6 +31,28 @@ When you trade USDC, USDT, ETH and USDS for SKY, you'll soon be able to use SKY 
     answer: `When you supply USDS to the Sky Token Rewards (STRs) module, you may receive Sky Token Rewards over time in the form of Sky governance tokens. Eventually, eligible users may be able to opt for Sky Token Rewards in the form of Sky Star governance tokens. Stars are independent, decentralised projects within the larger Sky ecosystem. They are designed to enable focused, fast-moving innovation and expansion, and serve as gateways to the decentralised Sky Protocol.
 
 Eligible users will soon be able to use SKY to access the Activation and Sealed Activation modules to accumulate Activation Token Rewards, and to participate in Sky ecosystem governance through a system of decentralised onchain voting.`
+  },
+  {
+    question: 'Which Sky tokens can I trade on Arbitrum using the Sky.money web app?',
+    answer: `Currently, using the Sky.money web app, you can interact with the Peg Stability Module (PSM) for conversions to/from USDS, sUSDS and USDC. The PSM on Arbitrum handles conversions programmatically, driven at your direction, between these pairs directly. You can also access the Sky Savings Rate on Arbitrum.
+
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol. 
+
+- Subject to Sky Ecosystem Governance approval, Arbitrum (and other L2) users may soon be able to use SkyLink to access:
+- Other Sky Ecosystem tokens, including SKY
+- Sky Token Rewards
+- Rewards in the form of Sky Star Agent tokens  
+
+SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks.
+`
+  },
+  {
+    question:
+      'Why do I see activity in my Trade transaction history in the Sky.money web app if I’ve never used the Trade feature?',
+    answer: `If you’ve accessed the Sky Savings Rate on Arbitrum, a conversion from USDS or USDC to sUSDS would have been automatically triggered via the Peg Stability Module (PSM). Therefore, you will see such activity in your Trade transaction history, despite not having traded.  
+
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
+`
   }
 ];
 
@@ -42,18 +65,24 @@ SkyLink, Sky’s bridge system, enhances your ability to manage your digital ass
 `
   },
   {
-    question: 'Which Sky tokens can I trade on Base?',
-    answer: `Currently, using the Sky.money app, you can trade between USDS, sUSDS and USDC on Base.
+    question: 'Which Sky tokens can I trade on Base using the Sky.money web app?',
+    answer: `Currently, using the Sky.money web app, you can trade between USDS, sUSDS and USDC on Base. You can also access the Sky Savings Rate on Base.
 
-Subject to Sky ecosystem governance approval, Base (and other L2) users may soon be able to use SkyLink to access:
+Subject to Sky Ecosystem Governance approval, Base (and other L2) users may soon be able to use SkyLink to access:
 - Other Sky ecosystem tokens, including SKY
 - Sky Token Rewards
-- Rewards in the form of Sky Star tokens   
+- Rewards in the form of Sky Star Agent tokens
+
+SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, seamlessly connects your Ethereum L1-based Sky Protocol tokens and features to the Base network. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
 `
   },
   {
+    question: 'Which Sky tokens can I trade on Base?',
+    answer: 'Currently, USDS and sUSDS are available to trade on Base.'
+  },
+  {
     question: 'How does trading on Base differ from trading on Ethereum?',
-    answer: `Sky.money offers trading on Ethereum mainnet through an integration with [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a DEX (decentralised exchange) aggregator. On Base, trading is made possible through a PSM (Peg Stability Module) deployed to the Base blockchain and [powered by Spark](https://docs.spark.fi/dev/savings/spark-psm). The PSM offers free and deeply liquid trades with zero slippage, but only between a small set of tokens.
+    answer: `On Ethereum mainnet, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. On Base, converting between tokens is made possible through a Peg Stability Module (PSM) deployed to Arbitrum and [powered by Spark](https://docs.spark.fi/dev/savings/spark-psm). PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
 
 PSMs are special smart contracts designed to maintain the stability of stablecoins and allow users to trade certain stablecoins directly with the Sky Protocol at a fixed rate and with relatively low fees. 
 `
@@ -61,7 +90,29 @@ PSMs are special smart contracts designed to maintain the stability of stablecoi
   {
     question:
       'Why do I see activity in my Trade transaction history in the Sky.money app if I’ve never used the Trade widget?',
-    answer:
-      'If you’ve supplied USDS or USDC to the Sky Savings Rate module, a trade to sUSDS was automatically triggered. Therefore, you see the trade in your Trade transaction history.'
+    answer: `If you’ve accessed the Sky Savings Rate on Base, a conversion from USDS or USDC to sUSDS would have been automatically triggered via the Peg Stability Module (PSM). Therefore, you will see such activity in your Trade transaction history, despite not having traded. 
+      
+      PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.`
+  }
+];
+
+const arbitrumFaqItems = [
+  {
+    question: 'What is Arbitrum?',
+    answer: `[Arbitrum](https://arbitrum.io/) is a Layer 2 (L2) scaling solution designed to improve the scalability and efficiency of Ethereum. Specifically, it is an Optimistic roll-up built on top of the Ethereum blockchain, relying on Ethereum for security and consensus. Although it functions like an independent network for users interacting with it, Arbitrum is not a standalone Layer 1 (L1) blockchain. 
+
+SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, enhances your ability to manage your digital assets efficiently by seamlessly connecting your Ethereum L1-based Sky Protocol tokens and features to Arbitrum. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
+`
+  },
+  {
+    question: 'Which Sky tokens can I trade on Arbitrum?',
+    answer: 'Currently, USDS, sUSDS are available to trade on Arbitrum'
+  },
+  {
+    question: 'How does trading on Arbitrum differ from trading on Ethereum?',
+    answer: `On Ethereum mainnet, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. On Arbitrum, converting between tokens is made possible through a Peg Stability Module (PSM) deployed to Arbitrum and [powered by Spark](https://docs.spark.fi/dev/savings/spark-psm). 
+
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
+`
   }
 ];

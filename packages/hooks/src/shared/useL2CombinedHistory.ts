@@ -2,9 +2,9 @@ import { useL2SavingsHistory } from '../psm/useL2SavingsHistory';
 import { useL2TradeHistory } from '../psm/useL2TradeHistory';
 import { useMemo } from 'react';
 
-export function useL2CombinedHistory() {
-  const savingsHistory = useL2SavingsHistory();
-  const tradeHistory = useL2TradeHistory();
+export function useL2CombinedHistory(chainId?: number) {
+  const savingsHistory = useL2SavingsHistory({ chainId });
+  const tradeHistory = useL2TradeHistory({ chainId });
 
   const combinedData = useMemo(() => {
     return [...(savingsHistory.data || []), ...(tradeHistory.data || [])].sort(

@@ -1,8 +1,9 @@
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
 
 export const getSavingsFaqItems = (chainId: number) => [
   ...mainnetFaqItems,
-  ...(isBaseChainId(chainId) ? baseFaqItems : [])
+  ...(isBaseChainId(chainId) ? baseFaqItems : []),
+  ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : [])
 ];
 
 const mainnetFaqItems = [
@@ -57,9 +58,9 @@ So, when you choose to redeem your sUSDS for USDS—which you can do anytime—t
 const baseFaqItems = [
   {
     question: 'What is Base?',
-    answer: `[Base](https://www.base.org/) is a Coinbase-developed Layer 2 (L2) network that provides easy access to some L1 networks, including Ethereum and Solana, and other L2s. 
+    answer: `[Base](https://www.base.org/) is a Coinbase-developed Layer 2 (L2) network that provides easy access to some L1 networks, including Ethereum, Solana, and other L2s. 
 
-SkyLink, Sky’s bridge system, enhances your ability to manage your digital assets efficiently by seamlessly connecting your Ethereum L1-based Sky Protocol tokens and features to the Base network. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds. 
+SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, seamlessly connects your Ethereum L1-based Sky Protocol tokens and features to the Base network. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
 `
   },
   {
@@ -72,21 +73,56 @@ The conversion rate between USDS and sUSDS is determined programmatically by sma
   },
   {
     question: 'Which tokens can I supply to and withdraw from the Savings Rate Module on Base?',
-    answer: `There is no native Sky Savings Rate module deployed to Base. On Base, both USDS and USDC are currently supported. This is made possible through a PSM deployed to the Base blockchain and [powered by Spark](https://docs.spark.fi/dev/savings/cross-chain-savings-rate-oracle). 
+    answer: `There is no native Sky Savings Rate module deployed to Base. On Base, both USDS and USDC are currently supported. This is made possible through a Peg Stability Module (PSM) deployed to the Base blockchain and [powered by Spark](https://docs.spark.fi/dev/savings/cross-chain-savings-rate-oracle). 
 
-PSMs are smart contracts designed to maintain the stability of stablecoins and allow users to trade certain stablecoins directly with the Sky Protocol at a fixed rate and with relatively low fees. PSMs offer free and deeply liquid trades with zero slippage.
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
 `
   },
   {
-    question: 'Is the Savings widget experience on Base the same as on Ethereum Mainnet?',
-    answer: `As an end-user of the Sky.money app, the experience of using the Savings widget on Base and Ethereum is very similar. However, given that no native Sky Savings Rate module is deployed to Base, when on Base you always interact with the PSM module for conversions to/from sUSDS.
+    question: 'Is the Savings feature experience on Base the same as on Ethereum Mainnet?',
+    answer: `As an end-user of the Sky.money web app, the experience of using the Savings feature on Base and Ethereum is very similar. However, given that no native Sky Savings Rate module is deployed to Base, when using the Sky.money web app on Base you always interact with the Peg Stability Module (PSM) for conversions to/from sUSDS, USDS, and USDC.
 
-SkyLink, Sky’s bridge system, enhances your ability to manage your digital assets efficiently by seamlessly connecting your Ethereum L1-based Sky Protocol tokens and features to the Base network. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds. 
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
+
+SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, seamlessly connects your Ethereum L1-based Sky Protocol tokens and features to the Base network. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
 `
   },
   {
     question: 'Is the Sky Savings Rate percentage the same on Ethereum Mainnet and Base?',
     answer:
-      'Yes, the Sky Savings Rate percentage on Base tracks the rate on Ethereum mainnet. This is done programmatically in the PSM module deployed on Base.'
+      'Yes, the Sky Savings Rate percentage on Base tracks the rate on Ethereum Mainnet. This is done programmatically in the Peg Stability Module (PSM) deployed on Base. PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.'
+  }
+];
+
+const arbitrumFaqItems = [
+  {
+    question: 'What is Arbitrum?',
+    answer: `[Arbitrum](https://arbitrum.io/) is a Layer 2 (L2) scaling solution designed to improve the scalability and efficiency of Ethereum. Specifically, it is an Optimistic roll-up built on top of the Ethereum blockchain, relying on Ethereum for security and consensus. Although it functions like an independent network for users interacting with it, Arbitrum is not a standalone Layer 1 (L1) blockchain. 
+
+SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, enhances your ability to manage your digital assets efficiently by seamlessly connecting your Ethereum L1-based Sky Protocol tokens and features to Arbitrum. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
+`
+  },
+  {
+    question: 'Which tokens can I supply to and withdraw from the Savings Rate Module on Arbitrum?',
+    answer: `There is no native Sky Savings Rate module deployed to Arbitrum. On Arbitrum, both USDS and USDC are currently supported. This is made possible through a Peg Stability Module (PSM) deployed to Arbitrum and [powered by Spark](https://docs.spark.fi/dev/savings/cross-chain-savings-rate-oracle). 
+
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
+`
+  },
+  {
+    question: 'Is the Savings feature experience on Arbitrum the same as on Ethereum Mainnet?',
+    answer: `As an end-user of the Sky.money web app, the experience of using the Savings feature on Arbitrum and Ethereum is very similar. However, given that no native Sky Savings Rate module is deployed to Arbitrum, when using the the Sky.money web app on Arbitrum you always interact with the Peg Stability Module (PSM) for conversions to/from sUSDS, USDS, and USDC.
+
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
+
+SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to bridge assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, seamlessly connects your Ethereum L1-based Sky Protocol tokens and features to Arbitrum. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
+`
+  },
+  {
+    question: 'Is the Sky Savings Rate percentage the same on Ethereum Mainnet and Arbitrum?',
+    answer: `Yes, the Sky Savings Rate percentage on Arbitrum tracks the rate on Ethereum Mainnet. This is done programmatically in the Peg Stability Module (PSM) deployed on Arbitrum. 
+
+PSMs are smart contracts designed to maintain the stability of stablecoins and enable users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees; however, blockchain (gas) fees may apply. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
+`
   }
 ];

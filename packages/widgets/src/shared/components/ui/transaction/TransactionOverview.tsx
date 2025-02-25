@@ -25,7 +25,7 @@ type TransactionOverviewParams = {
         error?: boolean;
         className?: string;
         classNamePrev?: string;
-        tooltipText?: string;
+        tooltipText?: string | React.ReactNode;
       }[]
     | undefined;
 };

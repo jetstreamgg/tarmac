@@ -874,8 +874,9 @@ msgstr ""
 msgid "Get rewards with USDS"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Get rewards with your {formattedBalance} {upperSymbol}"
+msgid "Get rewards with your {formattedBalance} {upperSymbol} {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
@@ -1130,6 +1131,10 @@ msgstr ""
 msgid "Next, confirm the upgrade transaction."
 msgstr ""
 
+#: packages/widgets/src/widgets/BalancesWidget/components/BalancesContent.tsx
+msgid "No balances found"
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
@@ -1166,7 +1171,11 @@ msgid "Note that reverted transactions may still incur gas fees."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "On Base, you can trade between USDS, sUSDS and USDC through a PSM (Peg Stability Module) deployed to the Base blockchain and powered by Spark. PSMs are smart contracts designed to maintain the stability of stablecoins and allow users to trade certain stablecoins directly with the Sky Protocol at a fixed rate and with relatively low fees."
+msgid "On Arbitrum, you can convert between USDS, sUSDS and USDC through a Peg Stability Module (PSM) deployed to Arbitrum and powered by Spark. The PSM on Arbitrum handles conversions programmatically, driven at your direction. PSMs are smart contracts designed to maintain the stability of stablecoins and allow users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees. However, blockchain (gas) fees may apply."
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "On Base, you can convert between USDS, sUSDS and USDC through a Peg Stability Module (PSM) deployed to the Base blockchain and powered by Spark. The PSM on Base handles conversions programmatically, driven at your direction. PSMs are smart contracts designed to maintain the stability of stablecoins and allow users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees. However, blockchain (gas) fees may apply."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/UnsupportedNetworkPage.tsx
@@ -1650,9 +1659,13 @@ msgstr ""
 msgid "Start saving"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Base' : ''
+#. placeholder {0}: isDifferentChain ? 'on Arbitrum' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Start saving with your {formattedBalance} {upperSymbol}"
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Start saving with your {formattedBalance} {upperSymbol} {0}"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
@@ -1743,6 +1756,10 @@ msgstr ""
 msgid "Supplying {0} USDS"
 msgstr ""
 
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "Supplying stablecoins to the Savings feature on either Arbitrum or Ethereum is very similar. However, given that no native Sky Savings Rate module is currently deployed to Arbitrum, when transacting on Arbitrum you always interact with the Peg Stability Module (PSM) for conversions to/from USDS, sUSDS and USDC. The PSM on Arbitrum handles conversions programmatically, driven at your direction, between these pairs directly."
+msgstr ""
+
 #: apps/webapp/src/modules/ui/components/AboutSUsds.tsx
 msgid "sUSDS"
 msgstr ""
@@ -1764,7 +1781,7 @@ msgid "Terms of Use."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "The experience of supplying stablecoins to the Savings widget on Base and Ethereum is very similar. However, given that no native Sky Savings Rate module is deployed to Base, when on Base you always interact with the Peg Stability Module (PSM) for conversions to/from USDS, sUSDS and USDC."
+msgid "The experience of supplying stablecoins to the Savings feature on Base and Ethereum is very similar. However, given that no native Sky Savings Rate module is deployed to Base, when transacting on Base you always interact with the Peg Stability Module (PSM) for conversions to/from USDS, sUSDS and USDC. The PSM on Base handles conversions programmatically, driven at your direction, between these pairs directly."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
@@ -1916,13 +1933,18 @@ msgstr ""
 msgid "Trade USDT for USDS"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#. placeholder {0}: isDifferentChain ? 'on Base' : ''
+#. placeholder {0}: isDifferentChain ? 'on Arbitrum' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Trade your {formattedBalance} {upperSymbol} for USDS"
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Trade your {formattedBalance} {upperSymbol} for USDS {0}"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Trade your {formattedBalance} {upperSymbol} for USDS to get rewards"
+msgid "Trade your {formattedBalance} {upperSymbol} for USDS to get rewards {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/balances/components/BalancesModuleShowcase.tsx
@@ -2109,16 +2131,19 @@ msgstr ""
 msgid "Upgrade successful"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Upgrade your {formattedBalance} {upperSymbol} to SKY"
+msgid "Upgrade your {formattedBalance} {upperSymbol} to SKY {0}"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS"
+msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS {0}"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
 #: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
-msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS to get rewards"
+msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS to get rewards {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/balances/components/BalancesModuleShowcase.tsx

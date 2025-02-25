@@ -208,7 +208,7 @@ export const PositionSummary = () => {
         label: t`Exit fee`,
         updated: hasPositions && (mkrToFree > 0n || skyToFree > 0n),
         value:
-          hasPositions && (mkrToFree > 0n || skyToFree > 0n) && exitFee
+          hasPositions && (mkrToFree > 0n || skyToFree > 0n) && typeof exitFee === 'bigint'
             ? [
                 `${Number(formatUnits((displayToken === mkr ? mkrToFree : math.calculateConversion(mkr, mkrToFree)) * exitFee, WAD_PRECISION * 2)).toFixed(2)} ${displayToken.symbol}`
               ]
@@ -421,7 +421,8 @@ export const PositionSummary = () => {
     selectedDelegateName,
     selectedDelegateOwner,
     isDelegateLoading,
-    displayToken
+    displayToken,
+    exitFee
   ]);
 
   // If there's no borrowing, filter out items related to it

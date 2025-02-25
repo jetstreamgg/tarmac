@@ -1,11 +1,11 @@
 import React from 'react';
 import { Layout } from '../modules/layout/components/Layout';
-import { Landing } from '../modules/app/Landing';
+import { MainApp } from '@/modules/app/components/MainApp';
 
 function Home(): React.ReactElement {
   return (
     <Layout>
-      <Landing />
+      <MainApp />
     </Layout>
   );
 }

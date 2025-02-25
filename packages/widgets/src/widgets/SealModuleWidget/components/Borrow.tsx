@@ -9,7 +9,8 @@ import {
   useSimulatedVault,
   useVault,
   Vault,
-  CollateralRiskParameters
+  CollateralRiskParameters,
+  useSealExitFee
 } from '@jetstreamgg/hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
@@ -149,6 +150,8 @@ const PositionManagerOverviewContainer = ({
       ? [formattedExistingMaxBorrowable, formatterSimulatedMaxBorrowable]
       : formatterSimulatedMaxBorrowable;
 
+  const { data: exitFee } = useSealExitFee();
+
   const initialTxData = useMemo(
     () =>
       [
@@ -161,6 +164,40 @@ const PositionManagerOverviewContainer = ({
                   `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount))}  ${displayToken.symbol}`
                 ]
               : `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount))}  ${displayToken.symbol}`
+        },
+        {
+          label: t`Exit fee percentage`,
+          value:
+            typeof exitFee === 'bigint'
+              ? [`${Number(formatUnits(exitFee * 100n, WAD_PRECISION)).toFixed(2)}%`]
+              : '',
+          tooltipText: (
+            <>
+              <Text>
+                When you supply MKR or SKY to the Seal Engine, a position is created and those tokens are
+                sealed behind an exit fee. You can seal and unseal your tokens anytime.
+              </Text>
+              <br />
+              <Text>
+                Unsealing requires the payment of an exit fee, which is a percentage of the total amount of
+                tokens that you have sealed in that position. The fee is automatically subtracted from that
+                total amount, and then burnt, removing the tokens from circulation. Your accumulated rewards
+                are not affected.
+              </Text>
+              <br />
+              <Text>
+                The exit fee is a risk parameter managed and determined (regardless of position duration) by
+                Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that
+                it is determined the moment you unseal your MKR.
+              </Text>
+              <br />
+              <Text>
+                The moment the Seal Engine launched, the exit fee rate was set to 5% of the value of the MKR
+                or SKY tokens that you have sealed, with a planned 1% increase every 6 months thereafter until
+                it reaches the long-term fee rate of 15%.
+              </Text>
+            </>
+          )
         },
         {
           label: t`You borrowed`,
@@ -199,7 +236,8 @@ const PositionManagerOverviewContainer = ({
       existingColAmount,
       existingBorrowAmount,
       hasPositions,
-      displayToken
+      displayToken,
+      exitFee
     ]
   );
 
@@ -363,7 +401,8 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
       : availableBorrowFromDebtCeiling;
 
   const formattedMaxBorrowable = `${formatBigInt(availableBorrowBalance, {
-    unit: getTokenDecimals(usds, chainId)
+    unit: getTokenDecimals(usds, chainId),
+    roundingMode: 'floor'
   })} ${usds.symbol}`;
 
   useEffect(() => {

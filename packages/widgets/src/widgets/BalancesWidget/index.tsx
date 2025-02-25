@@ -17,16 +17,22 @@ import { useEffect, useMemo } from 'react';
 import { TokenForChain } from '@jetstreamgg/hooks';
 
 type BalancesWidgetProps = WidgetProps & {
-  customTokenList?: TokenForChain[];
+  customTokenMap?: { [chainId: number]: TokenForChain[] };
+  chainIds?: number[];
   hideModuleBalances?: boolean;
   actionForToken?: (
     symbol: string,
-    balance: string
+    balance: string,
+    tokenChainId: number
   ) => { label: string; actionUrl: string; image: string } | undefined;
-  onClickRewardsCard?: () => void;
-  onClickSavingsCard?: () => void;
-  onClickSealCard?: () => void;
+  rewardsCardUrl?: string;
+  savingsCardUrlMap?: Record<number, string>;
+  sealCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  showAllNetworks?: boolean;
+  setShowAllNetworks?: (showAllNetworks: boolean) => void;
+  hideZeroBalances?: boolean;
+  setHideZeroBalances?: (hideZeroBalances: boolean) => void;
 };
 
 export const BalancesWidget = ({
@@ -38,11 +44,16 @@ export const BalancesWidget = ({
   hideModuleBalances = false,
   enabled = true,
   actionForToken,
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
-  customTokenList,
-  onExternalLinkClicked
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
+  customTokenMap,
+  chainIds,
+  onExternalLinkClicked,
+  showAllNetworks,
+  hideZeroBalances,
+  setShowAllNetworks,
+  setHideZeroBalances
 }: BalancesWidgetProps) => {
   return (
     <ErrorBoundary componentName="BalancesWidget">
@@ -55,11 +66,16 @@ export const BalancesWidget = ({
           hideModuleBalances={hideModuleBalances}
           enabled={enabled}
           actionForToken={actionForToken}
-          customTokenList={customTokenList}
-          onClickRewardsCard={onClickRewardsCard}
-          onClickSavingsCard={onClickSavingsCard}
-          onClickSealCard={onClickSealCard}
+          customTokenMap={customTokenMap}
+          chainIds={chainIds}
+          rewardsCardUrl={rewardsCardUrl}
+          savingsCardUrlMap={savingsCardUrlMap}
+          sealCardUrl={sealCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
+          showAllNetworks={showAllNetworks}
+          hideZeroBalances={hideZeroBalances}
+          setShowAllNetworks={setShowAllNetworks}
+          setHideZeroBalances={setHideZeroBalances}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -74,11 +90,16 @@ const BalancesWidgetWrapped = ({
   hideModuleBalances = false,
   enabled = true,
   actionForToken,
-  customTokenList,
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
-  onExternalLinkClicked
+  customTokenMap,
+  chainIds,
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
+  onExternalLinkClicked,
+  showAllNetworks,
+  hideZeroBalances,
+  setShowAllNetworks,
+  setHideZeroBalances
 }: BalancesWidgetProps) => {
   const { isConnected, isConnecting } = useAccount();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
@@ -129,13 +150,18 @@ const BalancesWidgetWrapped = ({
             />
             <BalancesContent
               validatedExternalState={validatedExternalState}
-              customTokenList={customTokenList}
+              customTokenMap={customTokenMap}
               hideModuleBalances={hideModuleBalances}
               actionForToken={actionForToken}
-              onClickRewardsCard={onClickRewardsCard}
-              onClickSavingsCard={onClickSavingsCard}
-              onClickSealCard={onClickSealCard}
+              rewardsCardUrl={rewardsCardUrl}
+              savingsCardUrlMap={savingsCardUrlMap}
+              sealCardUrl={sealCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
+              chainIds={chainIds}
+              showAllNetworks={showAllNetworks}
+              hideZeroBalances={hideZeroBalances}
+              setShowAllNetworks={setShowAllNetworks}
+              setHideZeroBalances={setHideZeroBalances}
             />
           </CardAnimationWrapper>
         )}

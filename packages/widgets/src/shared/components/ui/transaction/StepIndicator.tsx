@@ -56,12 +56,12 @@ const ProgressBar = ({ txStatus, currentStep }: { txStatus: TxStatus; currentSte
   };
 
   return (
-    <div className="mt-2.5 h-[2px] w-full bg-white bg-opacity-[.3]">
+    <div className="mt-2.5 h-[2px] w-full bg-white/30">
       <motion.div
         initial={{ width: '0%' }}
         animate={{ width: `${getProgress()}%` }}
         transition={{ duration: getAnimationDuration() }}
-        className={`h-[2px] bg-white ${currentStep ? '' : 'bg-opacity-[.4]'}`}
+        className={`h-[2px] ${currentStep ? 'bg-white' : 'bg-white/40'}`}
       />
     </div>
   );
@@ -78,15 +78,13 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
     <div className={cn(className, '')}>
       <div className="mt-8 flex items-center">
         <Text
-          className={`inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-center text-xs text-white ${
-            currentStep ? '' : 'border-opacity-[.6] text-opacity-[.6]'
+          className={`inline-flex h-5 w-5 items-center justify-center rounded-full border-2 text-center text-xs ${
+            currentStep ? 'border-white text-white' : 'border-white/60 text-white/60'
           }`}
         >
           {txStatus === TxStatus.SUCCESS ? <SuccessCheckSolidColor /> : stepNumber}
         </Text>
-        <Text className={`ml-3 inline-flex text-white ${currentStep ? '' : 'text-opacity-[.6]'}`}>
-          {text}
-        </Text>
+        <Text className={`ml-3 inline-flex ${currentStep ? 'text-white' : 'text-white/60'}`}>{text}</Text>
       </div>
       <ProgressBar txStatus={txStatus} currentStep={currentStep} />
     </div>

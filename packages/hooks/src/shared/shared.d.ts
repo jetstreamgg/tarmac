@@ -11,6 +11,7 @@ export interface HistoryItem {
   transactionHash: string;
   module: ModuleEnum;
   type: TransactionTypeEnum;
+  chainId: number;
 }
 
 export type CombinedHistoryItem =

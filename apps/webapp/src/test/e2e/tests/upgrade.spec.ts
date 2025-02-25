@@ -184,6 +184,7 @@ test('percentage buttons work', async ({ page }) => {
   expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('100');
 
   await page.getByRole('tab', { name: 'Revert' }).click();
+  await expect(page.getByText('No wallet connected')).not.toBeVisible();
   await page.getByRole('button', { name: '25%' }).click();
   expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('250');
   await page.getByRole('button', { name: '50%' }).click();

@@ -5,18 +5,22 @@ import { Token } from '@jetstreamgg/hooks';
 
 export function TokenIcon({
   token,
+  chainId,
   width = 50,
   className,
   fallbackClassName,
-  fallbackDelay = 500
+  fallbackDelay = 500,
+  noChain
 }: {
   token: Partial<Token> & { symbol: string };
+  chainId?: number;
   width?: number;
   className?: string;
   fallbackClassName?: string;
   fallbackDelay?: number;
+  noChain?: boolean;
 }): React.ReactElement {
-  const imageSrc = useTokenImage(token.symbol);
+  const imageSrc = useTokenImage(token.symbol, chainId, noChain);
 
   if (!imageSrc) return <></>;
 

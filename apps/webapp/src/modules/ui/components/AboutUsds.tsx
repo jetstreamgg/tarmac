@@ -24,7 +24,7 @@ export const AboutUsds = () => {
       colorRight="#1e1a4b"
       className="mb-6"
     >
-      <div className="w-[80%] space-y-2 lg:w-1/2">
+      <div className="w-[80%] space-y-2 lg:w-2/3">
         <Heading>
           <Trans>USDS</Trans>
         </Heading>

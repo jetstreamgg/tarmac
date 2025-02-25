@@ -119,16 +119,16 @@ export function WidgetNavigation({ widgetContent, intent, children }: WidgetNavi
       <motion.div layout transition={{ layout: { duration: 0 } }}>
         {/* TODO justify-around only when restricted */}
         <TabsList
-          className={`${isMobile ? 'space-x-1' : ''} sticky top-0 z-20 flex w-full justify-around rounded-none rounded-t-3xl border-b p-3 backdrop-blur-2xl md:border-none md:p-0 md:backdrop-filter-none`}
+          className="sticky top-0 z-20 flex w-full justify-around rounded-none rounded-t-3xl border-b p-3 backdrop-blur-2xl md:border-none md:p-0 md:backdrop-filter-none"
           data-testid="widget-navigation"
         >
           {widgetContent.map(([widgetIntent, label, icon, , comingSoon, options]) => (
-            <div key={widgetIntent}>
+            <div key={widgetIntent} className="flex grow basis-[15%] justify-center">
               <TabsTrigger
                 variant="icons"
                 value={widgetIntent}
                 className={cn(
-                  'text-textSecondary data-[state=active]:text-text px-1 md:px-2',
+                  'text-textSecondary data-[state=active]:text-text w-full px-1 md:px-2',
                   'before:opacity-0',
                   'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)] disabled:before:opacity-0 disabled:hover:before:opacity-0',
                   tabGlowClasses,

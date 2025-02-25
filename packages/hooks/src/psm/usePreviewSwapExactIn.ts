@@ -8,15 +8,18 @@ import { ZERO_ADDRESS } from '../index';
 export const usePreviewSwapExactIn = (
   amount: bigint | undefined,
   inToken: Token | undefined,
-  outToken: Token | undefined
+  outToken: Token | undefined,
+  chainIdParam?: number
 ) => {
-  const chainId = useChainId();
+  const currentChainId = useChainId();
+  const chainId = chainIdParam || currentChainId;
   const { data: amountOut } = useReadPsm3L2PreviewSwapExactIn({
     args: [
       inToken?.address[chainId] || ZERO_ADDRESS,
       outToken?.address[chainId] || ZERO_ADDRESS,
       amount || 0n
-    ]
+    ],
+    chainId: chainId as 8453 | 8555 | 42161 | 42012
   });
 
   if (!amount || !amountOut || !inToken || !outToken) {

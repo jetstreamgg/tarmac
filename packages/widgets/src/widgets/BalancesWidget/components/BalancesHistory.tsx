@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useCombinedHistory } from '@jetstreamgg/hooks';
+import { useCombinedHistory, useAllNetworksCombinedHistory } from '@jetstreamgg/hooks';
 import { useFormatDates } from '@jetstreamgg/utils';
 import { useLingui } from '@lingui/react';
 import { CustomPagination } from '@widgets/shared/components/ui/pagination/CustomPagination';
-import { useChainId } from 'wagmi';
 import { BalancesHistoryItem } from './BalancesHistoryItem';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
@@ -11,15 +10,29 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
+import { NoResults } from '@widgets/shared/components/icons/NoResults';
 
 export const BalancesHistory = ({
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  showAllNetworks
 }: {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  showAllNetworks?: boolean;
 }) => {
-  const chainId = useChainId();
+  const {
+    data: singleNetworkData,
+    isLoading: singleNetworkLoading,
+    error: singleNetworkError
+  } = useCombinedHistory();
+  const {
+    data: allNetworksData,
+    isLoading: allNetworksLoading,
+    error: allNetworksError
+  } = useAllNetworksCombinedHistory();
 
-  const { data, isLoading, error } = useCombinedHistory();
+  const data = showAllNetworks ? allNetworksData : singleNetworkData;
+  const isLoading = showAllNetworks ? allNetworksLoading : singleNetworkLoading;
+  const error = showAllNetworks ? allNetworksError : singleNetworkError;
 
   const itemsPerPage = 5;
   const { i18n } = useLingui();
@@ -60,7 +73,7 @@ export const BalancesHistory = ({
                 module={item.module}
                 type={item.type}
                 formattedDate={formattedDate}
-                chainId={chainId}
+                chainId={item.chainId}
                 savingsToken={'token' in item ? item.token?.symbol : undefined}
                 tradeFromToken={'fromToken' in item ? item.fromToken?.symbol : undefined}
                 item={item}
@@ -81,8 +94,11 @@ export const BalancesHistory = ({
       </Text>
     </div>
   ) : (
-    <Text className="text-textSecondary mt-10 text-center text-xs">
-      <Trans>No history found</Trans>
-    </Text>
+    <VStack gap={3} className="items-center pb-3 pt-9">
+      <NoResults />
+      <Text className="text-textSecondary text-center">
+        <Trans>No history found</Trans>
+      </Text>
+    </VStack>
   );
 };

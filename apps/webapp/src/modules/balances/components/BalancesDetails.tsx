@@ -9,11 +9,15 @@ import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { BalancesChart } from './BalancesChart';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { BalancesFaq } from './BalancesFaq';
+import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
+import { useChainId } from 'wagmi';
 
 export function BalancesDetails() {
   const { bpi } = useBreakpointIndex();
   const isDesktop = bpi > BP.lg;
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
+  const chainId = useChainId();
+  const supportedChainIds = getSupportedChainIds(chainId);
 
   return (
     <DetailSectionWrapper>
@@ -26,7 +30,7 @@ export function BalancesDetails() {
       {isConnectedAndAcceptedTerms && isDesktop && (
         <DetailSection title={t`Your funds`}>
           <DetailSectionRow>
-            <BalancesAssets />
+            <BalancesAssets chainIds={supportedChainIds} />
           </DetailSectionRow>
         </DetailSection>
       )}

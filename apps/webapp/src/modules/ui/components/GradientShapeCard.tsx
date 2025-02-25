@@ -21,40 +21,26 @@ export function GradientShapeCard({
     <Card className={cn('mb-10 w-full p-0 lg:p-0', className)}>
       <div className="relative h-full w-full overflow-hidden rounded-[20px]">
         <div
-          className="absolute h-full w-[110%] lg:w-[65%]"
+          className="absolute h-full w-[110%] lg:w-[90%]"
           style={{
             background: colorLeft,
             clipPath: `polygon(100% 0, ${isMobileOrTablet ? '45%' : '65%'} 100%, 0 100%, 0 0)`
           }}
         />
         <div
-          className="absolute left-[48%] h-full w-[138%] lg:left-[42%] lg:w-[35%]"
+          className="absolute left-[48%] h-full w-[138%] lg:left-[57%] lg:w-[35%]"
           style={{
             background: colorMiddle,
             clipPath: `polygon(100% 0, 10% 100%, 0 100%, ${isMobileOrTablet ? '45%' : '65%'} 0)`
           }}
         />
         <div
-          className="absolute left-[55%] h-full w-[200%] lg:left-[45%] lg:w-[60%]"
+          className="absolute left-[55%] h-full w-[200%] lg:left-[60%] lg:w-[60%]"
           style={{
             background: colorRight,
             clipPath: 'polygon(100% 0, 100% 100%, 0 100%, 53% 0)'
           }}
         />
-        {/* <div
-          className="absolute left-[42%] h-full w-[35%]"
-          style={{
-            background: colorMiddle,
-            clipPath: 'polygon(100% 0, 10% 100%, 0 100%, 65% 0)'
-          }}
-        />
-        <div
-          className="absolute left-[45%] h-full w-[60%]"
-          style={{
-            background: colorRight,
-            clipPath: 'polygon(100% 0, 100% 100%, 0 100%, 53% 0)'
-          }}
-        /> */}
         <div className="relative z-10 flex h-full w-full flex-col p-3 lg:flex-row lg:items-center lg:justify-between lg:p-6">
           {children}
         </div>

@@ -92,7 +92,8 @@ async function fetchL2TradeHistory(
         fromAmount: BigInt(e.amountIn),
         toAmount: BigInt(e.amountOut),
         referralCode: e.referralCode,
-        address: e.sender
+        address: e.sender,
+        chainId
       };
     })
     .filter((swap: L2TradeHistoryItem | null) => swap !== null);
@@ -105,16 +106,19 @@ async function fetchL2TradeHistory(
 export function useL2TradeHistory({
   subgraphUrl,
   enabled: enabledProp = true,
-  excludeSUsds = false
+  excludeSUsds = false,
+  chainId
 }: {
   subgraphUrl?: string;
   enabled?: boolean;
   excludeSUsds?: boolean;
+  chainId?: number;
 } = {}): ReadHook & { data?: L2TradeHistory } {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainId) || '';
-  const tokenAddressMap = useTokenAddressMap();
+  const currentChainId = useChainId();
+  const chainIdToUse = chainId || currentChainId;
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainIdToUse) || '';
+  const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
   const {
     data,
@@ -122,9 +126,9 @@ export function useL2TradeHistory({
     refetch: mutate,
     isLoading
   } = useQuery({
-    enabled: Boolean(urlSubgraph) && enabledProp && Boolean(tokenAddressMap),
-    queryKey: ['L2-trade-history', urlSubgraph, address, excludeSUsds, chainId],
-    queryFn: () => fetchL2TradeHistory(urlSubgraph, chainId, tokenAddressMap, address, excludeSUsds)
+    enabled: Boolean(urlSubgraph) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
+    queryKey: ['L2-trade-history', urlSubgraph, address, excludeSUsds, chainIdToUse],
+    queryFn: () => fetchL2TradeHistory(urlSubgraph, chainIdToUse, tokenAddressMap, address, excludeSUsds)
   });
 
   return {

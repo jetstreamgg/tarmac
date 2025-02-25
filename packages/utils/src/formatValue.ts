@@ -17,6 +17,7 @@ type FormatOptions = {
   amount?: number;
   maxDecimals?: number;
   showPercentageDecimals?: boolean;
+  roundingMode?: 'ceil' | 'floor';
 };
 
 export function createNumberFormatter(options?: FormatOptions) {
@@ -37,7 +38,8 @@ export function createNumberFormatter(options?: FormatOptions) {
     minimumFractionDigits: 0,
     maximumFractionDigits: maxDecimals,
     notation: options?.compact ? 'compact' : undefined,
-    compactDisplay: options?.compact ? 'short' : undefined
+    compactDisplay: options?.compact ? 'short' : undefined,
+    roundingMode: options?.roundingMode || undefined
   });
 }
 

@@ -21,8 +21,12 @@ const defaultBaseSubgraphUrl = URL_BASE_SUBGRAPH_MAINNET;
 export function getMakerSubgraphUrl(chainId: number): string | null {
   switch (chainId) {
     case 1:
+    case BASE_CHAIN_ID:
+    case ARBITRUM_CHAIN_ID:
       return URL_MAKER_SUBGRAPH_MAINNET;
     case TENDERLY_CHAIN_ID:
+    case TENDERLY_BASE_CHAIN_ID:
+    case TENDERLY_ARBITRUM_CHAIN_ID:
       return URL_MAKER_SUBGRAPH_TENDERLY;
     default:
       return defaultSubgraphUrl;

@@ -35,7 +35,7 @@
     "vnet:delete": "node --env-file=.env ./scripts/deleteVnet.ts",
     "vnet:delete:all": "node --env-file=.env ./scripts/deleteAllVnets.ts",
     "vnet:delete:ci": "node ./scripts/deleteVnet.ts",
-    "prepare": "husky install",
+    "prepare": "husky",
     "typecheck": "pnpm --filter './packages/**' --filter './apps/**' typecheck",
     "messages:extract": "lingui extract --clean",
     "messages:compile": "lingui compile",
