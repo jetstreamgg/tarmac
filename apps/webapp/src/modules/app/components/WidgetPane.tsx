@@ -19,7 +19,7 @@ import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPan
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNotification } from '../hooks/useNotification';
 import { useActionForToken } from '../hooks/useActionForToken';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
@@ -69,6 +69,18 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const retainedParams = [Locale, Details];
   const [searchParams] = useSearchParams();
 
+  const previousChainIdRef = useRef(chainId);
+  const [networkHasChanged, setNetworkHasChanged] = useState(false);
+  useEffect(() => {
+    if (previousChainIdRef.current !== chainId) {
+      setNetworkHasChanged(true);
+      previousChainIdRef.current = chainId;
+    } else {
+      // Reset the flag after one render cycle
+      setNetworkHasChanged(false);
+    }
+  }, [chainId]);
+
   const sharedProps = {
     onConnect,
     addRecentTransaction,
@@ -78,7 +90,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     enabled: isConnectedAndAcceptedTerms,
     onExternalLinkClicked,
     referralCode,
-    shouldReset: searchParams.get(QueryParams.Reset) === 'true'
+    shouldReset: searchParams.get(QueryParams.Reset) === 'true' || networkHasChanged
   };
 
   const getQueryParams = (url: string) => getRetainedQueryParams(url, retainedParams, searchParams);
