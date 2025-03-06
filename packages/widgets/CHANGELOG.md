@@ -1,5 +1,17 @@
 # @jetstreamgg/widgets
 
+## 3.3.2
+
+### Patch Changes
+
+- 761cbde: Fix retry button handler
+- 3a36381: Add Arbitrum copy and update some of the Base copy
+- 3addddd: handle multi-network balances
+- Updated dependencies [3a36381]
+- Updated dependencies [3addddd]
+  - @jetstreamgg/utils@2.3.2
+  - @jetstreamgg/hooks@3.3.2
+
 ## 3.3.1
 
 ### Patch Changes

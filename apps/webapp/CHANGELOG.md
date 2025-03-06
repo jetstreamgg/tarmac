@@ -1,5 +1,20 @@
 # @jetstreamgg/webapp
 
+## 1.0.2
+
+### Patch Changes
+
+- 3a36381: Add Arbitrum copy and update some of the Base copy
+- d37d608: Fix navigation tabs on mobile
+- 50d7193: Fix multiple wagmi configs using same storage
+- 3addddd: handle multi-network balances
+- Updated dependencies [761cbde]
+- Updated dependencies [3a36381]
+- Updated dependencies [3addddd]
+  - @jetstreamgg/widgets@3.3.2
+  - @jetstreamgg/utils@2.3.2
+  - @jetstreamgg/hooks@3.3.2
+
 ## 1.0.1
 
 ### Patch Changes
