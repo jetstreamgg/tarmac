@@ -1,5 +1,12 @@
 # @jetstreamgg/utils
 
+## 2.3.2
+
+### Patch Changes
+
+- 3a36381: Add Arbitrum copy and update some of the Base copy
+- 3addddd: handle multi-network balances
+
 ## 2.3.1
 
 ### Patch Changes
