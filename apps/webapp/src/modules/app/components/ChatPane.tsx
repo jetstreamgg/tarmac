@@ -56,6 +56,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
                   intents={intents}
                   sendMessage={sendMessage}
                   showModifierRow={!isFirstMessage && isLastMessage}
+                  isFirstMessage={isFirstMessage}
                 />
               );
             })}
