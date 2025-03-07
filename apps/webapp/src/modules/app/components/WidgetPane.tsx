@@ -1,4 +1,3 @@
-import { BalancesWidget } from '@jetstreamgg/widgets';
 import { Balances, Upgrade, Trade, RewardsModule, Savings, Seal } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
@@ -28,6 +27,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { defaultConfig } from '@/modules/config/default-config';
 import { useChainId } from 'wagmi';
 import { SealWidgetPane } from '@/modules/seal/components/SealWidgetPane';
+import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
 import { getSupportedChainIds, getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
@@ -65,6 +65,10 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   const rightHeaderComponent = <DualSwitcher />;
 
+  const { Locale, Details } = QueryParams;
+  const retainedParams = [Locale, Details];
+  const [searchParams] = useSearchParams();
+
   const sharedProps = {
     onConnect,
     addRecentTransaction,
@@ -73,12 +77,9 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     onNotification,
     enabled: isConnectedAndAcceptedTerms,
     onExternalLinkClicked,
-    referralCode
+    referralCode,
+    shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };
-
-  const { Locale, Details } = QueryParams;
-  const retainedParams = [Locale, Details];
-  const [searchParams] = useSearchParams();
 
   const getQueryParams = (url: string) => getRetainedQueryParams(url, retainedParams, searchParams);
 
@@ -111,7 +112,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       'Balances',
       Balances,
       withErrorBoundary(
-        <BalancesWidget
+        <BalancesWidgetPane
           {...sharedProps}
           hideModuleBalances={isRestrictedBuild}
           actionForToken={actionForToken}

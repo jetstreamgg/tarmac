@@ -4,7 +4,7 @@ import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { BalancesWidgetDisplay } from './widgets/BalancesWidgetDisplay';
 import { L2SavingsWidgetDisplay } from './widgets/L2SavingsWidgetDisplay';
 import { L2TradeWidgetDisplay } from './widgets/L2TradeWidgetDisplay';
-import { ExternalWidgetState } from '@jetstreamgg/widgets';
+import { ExternalWidgetState, SavingsFlow } from '@jetstreamgg/widgets';
 import { ActionButtons } from './components/ActionButtons';
 import { L2TradeHistory } from '@/components/historyTable/L2TradeHistory';
 import { L2SavingsHistory } from '@/components/historyTable/L2SavingsHistory';
@@ -20,7 +20,7 @@ export function LandingBase(): React.ReactElement {
   const [restricted, setRestricted] = useState<boolean>(false);
 
   const [savingsInitialState, setSavingsInitialState] = useState<ExternalWidgetState>({
-    tab: 'left',
+    flow: SavingsFlow.SUPPLY,
     token: 'USDS',
     targetToken: 'USDS',
     amount: '100'

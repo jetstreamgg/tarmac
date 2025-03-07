@@ -1,5 +1,5 @@
 import { RewardContract } from '@jetstreamgg/hooks';
-import { SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/widgets';
+import { SUPPORTED_TOKEN_SYMBOLS, UpgradeFlow } from '@jetstreamgg/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -11,15 +11,19 @@ import {
 import { Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@jetstreamgg/utils';
+import { Chain } from 'viem';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const validateSearchParams = (
   searchParams: URLSearchParams,
   rewardContracts: RewardContract[],
   widget: string,
   setSelectedRewardContract: (rewardContract?: RewardContract) => void,
-  chainId: number
+  chainId: number,
+  chains: readonly [Chain, ...Chain[]]
 ) => {
-  const isL2Chain = isL2ChainId(chainId);
+  const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
+  const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
 
   searchParams.forEach((value, key) => {
     // removes any query param not found in QueryParams
@@ -36,8 +40,8 @@ export const validateSearchParams = (
     if (
       key === QueryParams.Widget &&
       (!Object.values(IntentMapping).includes(value.toLowerCase()) ||
-        !CHAIN_WIDGET_MAP[chainId].includes(mapQueryParamToIntent(value)) ||
-        COMING_SOON_MAP[chainId]?.includes(mapQueryParamToIntent(value)))
+        !CHAIN_WIDGET_MAP[chainInUrl?.id || chainId].includes(mapQueryParamToIntent(value)) ||
+        COMING_SOON_MAP[chainInUrl?.id || chainId]?.includes(mapQueryParamToIntent(value)))
     ) {
       searchParams.delete(key);
     }
@@ -52,6 +56,14 @@ export const validateSearchParams = (
         searchParams.delete(key);
       } else {
         setSelectedRewardContract(rewardContract);
+      }
+    }
+
+    // Reset the selected reward contract if the widget is set to rewards and no valid reward contract parameter exists.
+    if (widget === IntentMapping[Intent.REWARDS_INTENT]) {
+      if (!searchParams.get(QueryParams.Reward)) {
+        setSelectedRewardContract(undefined);
+        searchParams.delete(QueryParams.InputAmount);
       }
     }
 
@@ -84,7 +96,11 @@ export const validateSearchParams = (
 
       // if widget is upgrade, only valid source token is MKR or DAI
       if (widgetParam?.toLowerCase() === IntentMapping[Intent.UPGRADE_INTENT]) {
-        if (!['mkr', 'dai'].includes(value.toLowerCase())) {
+        const flow = searchParams.get(QueryParams.Flow) || UpgradeFlow.UPGRADE;
+        if (flow === UpgradeFlow.UPGRADE && !['mkr', 'dai'].includes(value.toLowerCase())) {
+          searchParams.delete(key);
+        }
+        if (flow === UpgradeFlow.REVERT && !['usds', 'sky'].includes(value.toLowerCase())) {
           searchParams.delete(key);
         }
       }
@@ -134,6 +150,11 @@ export const validateSearchParams = (
     // removes linked action param if value is not valid
     if (key === QueryParams.LinkedAction && !VALID_LINKED_ACTIONS.includes(value.toLowerCase())) {
       // TODO here we could also check if it's a valid linked action based on the combination of widget and LA value
+      searchParams.delete(key);
+    }
+
+    // removes reset param
+    if (key === QueryParams.Reset) {
       searchParams.delete(key);
     }
   });

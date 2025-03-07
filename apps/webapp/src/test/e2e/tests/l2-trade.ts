@@ -29,7 +29,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
 
     await page.getByTestId('trade-input-target').click();
     await page.getByTestId('trade-input-target').fill('10');
-
+    await page.waitForTimeout(2000);
     await page.getByLabel('Switch token inputs').click();
 
     await approveOrPerformAction(page, 'Trade');
@@ -61,6 +61,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
 
     await page.getByTestId('trade-input-target').click();
     await page.getByTestId('trade-input-target').fill('9');
+    await page.waitForTimeout(2000);
 
     await page.getByLabel('Switch token inputs').click();
 
@@ -92,9 +93,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
 
     await page.locator('button', { hasText: 'Add sUSDS to wallet' }).first().click();
 
-    //select usds for origin token (will be switched)
-    await page.getByRole('button', { name: 'USDC USDC' }).click();
-    await page.getByRole('button', { name: 'USDS USDS USDS' }).click();
+    // USDS remain as the origin token after the trade
 
     //select sUsds for target token (will be switched)
     await page.getByRole('button', { name: 'Select token' }).click();

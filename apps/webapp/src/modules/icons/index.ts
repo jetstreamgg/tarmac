@@ -26,6 +26,9 @@ import { Close } from './Close';
 import { Seal } from './Seal';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
+import { Chat } from './Chat';
+import { ChatError } from './ChatError';
+import { ChatbotSend } from './ChatbotSend';
 import { ArbitrumChain } from './ArbitrumChain';
 
 export {
@@ -57,5 +60,8 @@ export {
   Seal,
   BaseChain,
   MainnetChain,
+  Chat,
+  ChatError,
+  ChatbotSend,
   ArbitrumChain
 };

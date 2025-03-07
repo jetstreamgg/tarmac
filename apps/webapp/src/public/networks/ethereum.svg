@@ -1,0 +1,54 @@
+<svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="12" height="12" rx="3.3" fill="#F2F4F7"/>
+<path d="M3.375 6.08046L6.18637 7.71221V4.82422L3.375 6.08046Z" fill="white" fill-opacity="0.602"/>
+<g opacity="0.6">
+<mask id="mask0_5755_78025" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="3" y="4" width="7" height="4">
+<g opacity="0.6">
+<path d="M3 4.69824H9.13795V7.90779H3V4.69824Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask0_5755_78025)">
+<path d="M6.0696 4.69824L3 6.09429L6.0696 7.90779L9.13795 6.09429L6.0696 4.69824Z" fill="#010101"/>
+</g>
+</g>
+<g opacity="0.45">
+<mask id="mask1_5755_78025" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="3" y="1" width="4" height="7">
+<g opacity="0.45">
+<path d="M3 1H6.0696V7.90655H3V1Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask1_5755_78025)">
+<path d="M3 6.09305L6.0696 7.90655V1L3 6.09305Z" fill="#010101"/>
+</g>
+</g>
+<g opacity="0.8">
+<mask id="mask2_5755_78025" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="6" y="1" width="4" height="7">
+<g opacity="0.8">
+<path d="M6.07227 1H9.14182V7.90655H6.07227V1Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask2_5755_78025)">
+<path d="M6.07227 1V7.90655L9.14062 6.09305L6.07227 1Z" fill="#010101"/>
+</g>
+</g>
+<g opacity="0.45">
+<mask id="mask3_5755_78025" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="3" y="6" width="4" height="5">
+<g opacity="0.45">
+<path d="M3 6.67578H6.0696V11.0002H3V6.67578Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask3_5755_78025)">
+<path d="M3 6.67578L6.0696 11.0002V8.48928L3 6.67578Z" fill="#010101"/>
+</g>
+</g>
+<g opacity="0.8">
+<mask id="mask4_5755_78025" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="6" y="6" width="4" height="5">
+<g opacity="0.8">
+<path d="M6.07227 6.67578H9.14302V11.0002H6.07227V6.67578Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask4_5755_78025)">
+<path d="M6.07227 8.48928V11.0002L9.14302 6.67578L6.07227 8.48928Z" fill="#010101"/>
+</g>
+</g>
+</svg>
