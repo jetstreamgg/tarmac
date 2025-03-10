@@ -30,11 +30,13 @@ type TradeInputsProps = {
   canSwitchTokens: boolean;
   isConnectedAndEnabled: boolean;
   onUserSwitchTokens?: (originToken?: string, targetToken?: string) => void;
-  onOriginInputChange: (val: bigint) => void;
+  onOriginInputChange?: (val: bigint, userTriggered?: boolean) => void;
   onTargetInputChange: (val: bigint) => void;
   onOriginInputInput?: () => void;
   onTargetInputInput?: () => void;
   setMaxWithdraw?: (val: boolean) => void;
+  onOriginTokenChange?: (token: TokenForChain) => void;
+  onTargetTokenChange?: (token: TokenForChain) => void;
 };
 
 export function L2TradeInputs({
@@ -57,7 +59,9 @@ export function L2TradeInputs({
   onOriginInputChange,
   onTargetInputChange,
   onOriginInputInput,
-  onTargetInputInput
+  onTargetInputInput,
+  onOriginTokenChange,
+  onTargetTokenChange
   // setMaxWithdraw
 }: TradeInputsProps) {
   const separationPx = 12;
@@ -134,13 +138,16 @@ export function L2TradeInputs({
           label={t`Choose a token to trade, and enter an amount`}
           token={originToken as Token}
           balance={originBalance?.value}
-          onChange={onOriginInputChange}
+          onChange={(newValue, event) => {
+            onOriginInputChange?.(BigInt(newValue), !!event);
+          }}
           onInput={onOriginInputInput}
           value={originAmount}
           dataTestId="trade-input-origin"
           tokenList={originList as Token[]}
           onTokenSelected={option => {
             setOriginToken(option as TokenForChain);
+            onOriginTokenChange?.(option as TokenForChain);
           }}
           error={isBalanceError ? t`Insufficient funds` : undefined}
           variant="top"
@@ -177,7 +184,7 @@ export function L2TradeInputs({
               setTimeout(() => {
                 setOriginAmount(prevTargetAmount);
                 setTargetAmount(prevOriginAmount);
-                onUserSwitchTokens?.();
+                onUserSwitchTokens?.(targetToken?.symbol, originToken?.symbol);
               }, 500);
             }, 500);
           }}
@@ -200,6 +207,7 @@ export function L2TradeInputs({
           tokenList={targetList as Token[]}
           onTokenSelected={option => {
             setTargetToken(option as TokenForChain);
+            onTargetTokenChange?.(option as TokenForChain);
           }}
           showPercentageButtons={false}
           enabled={isConnectedAndEnabled}

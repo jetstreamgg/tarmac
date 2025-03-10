@@ -9,9 +9,10 @@ import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidg
 import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/hooks';
 import { TxStatus, NotificationType } from '../constants';
+import { SealAction } from '@/widgets/SealModuleWidget/lib/constants';
 
 export type WidgetState = {
-  flow: InitialFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
+  flow: InitialFlow | BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
   action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction;
   screen: InitialScreen | SavingsScreen | UpgradeScreen | RewardsScreen | TradeScreen;
 };
@@ -20,11 +21,11 @@ type Amount = {
   amount?: string;
 };
 
-type Tab = {
-  tab?: 'left' | 'right';
+type Flow = {
+  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
 };
 
-type BalancesWidgetState = Tab;
+type BalancesWidgetState = Flow;
 
 type UpgradeWidgetState = Amount & {
   initialUpgradeToken?: keyof typeof upgradeTokens;
@@ -37,15 +38,16 @@ type TradeWidgetState = Amount & {
   timestamp?: number;
 };
 
-type SavingsWidgetState = Amount & Tab;
+type SavingsWidgetState = Amount & Flow;
 
 type RewardsWidgetState = Amount &
-  Tab & {
+  Flow & {
     selectedRewardContract?: RewardContract;
   };
 
 type SealWidgetState = Amount & {
   urnIndex?: number;
+  sealTab?: SealAction.LOCK | SealAction.FREE;
 };
 
 export type ExternalWidgetState = BalancesWidgetState &
@@ -66,10 +68,13 @@ export type WidgetStateChangeParams = {
   hash?: string;
   txStatus: TxStatus;
   widgetState: WidgetState;
+  originToken?: string;
   targetToken?: string;
   executedBuyAmount?: string;
   executedSellAmount?: string;
   displayToken?: Token;
+  originAmount?: string;
+  sealTab?: SealAction.LOCK | SealAction.FREE;
 };
 
 export type WidgetProps = {
@@ -85,4 +90,5 @@ export type WidgetProps = {
   customNavigationLabel?: string;
   enabled?: boolean;
   referralCode?: number;
+  shouldReset?: boolean;
 };

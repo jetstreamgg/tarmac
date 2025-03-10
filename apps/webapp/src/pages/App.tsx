@@ -17,6 +17,7 @@ import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersConte
 
 import '@rainbow-me/rainbowkit/styles.css';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
+import { ChatProvider } from '@/modules/chat/context/ChatContext';
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 // Vite sets MODE to production when running vite build
@@ -35,15 +36,17 @@ export const App = () => (
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowTheme} avatar={CustomAvatar} showRecentTransactions={true}>
           <ConnectedProvider>
-            <TermsModalProvider>
-              <BalanceFiltersProvider>
-                <TooltipProvider delayDuration={300}>
-                  <ExternalLinkModal />
-                  <Toaster />
-                  <RouterProvider router={router} />
-                </TooltipProvider>
-              </BalanceFiltersProvider>
-            </TermsModalProvider>
+            <ChatProvider>
+              <TermsModalProvider>
+                <BalanceFiltersProvider>
+                  <TooltipProvider delayDuration={300}>
+                    <ExternalLinkModal />
+                    <Toaster />
+                    <RouterProvider router={router} />
+                  </TooltipProvider>
+                </BalanceFiltersProvider>
+              </TermsModalProvider>
+            </ChatProvider>
           </ConnectedProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
