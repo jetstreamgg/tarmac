@@ -34,6 +34,7 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "/+Z5u4"
 msgstr ""
 
@@ -58,8 +59,11 @@ msgstr ""
 
 #. placeholder {0}: SealToken.MKR
 #. placeholder {0}: SealToken.SKY
+#. placeholder {0}: ActivationToken.MKR
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 msgid "{0} sealed"
 msgstr ""
 
@@ -109,6 +113,15 @@ msgid "A minimum 0.01 ETH is needed to cover transaction costs. Actual gas fees 
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "About Activation Engine"
+msgstr ""
+
+#: apps/webapp/src/modules/activation/components/ActivationPositionDetails.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
+msgid "About Activation Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "About Balances"
 msgstr ""
 
@@ -136,6 +149,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "About Sky Token Rewards"
+msgstr ""
+
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
+msgid "About the Activation Engine"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
@@ -175,6 +192,18 @@ msgstr ""
 msgid "Accumulated Rewards"
 msgstr ""
 
+#: apps/webapp/src/lib/constants.ts
+msgid "activation"
+msgstr ""
+
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+msgid "Activation Engine"
+msgstr ""
+
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
+msgid "Activation Engine Overview"
+msgstr ""
+
 #. placeholder {0}: targetToken?.symbol || ''
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
@@ -196,16 +225,19 @@ msgstr ""
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Almost done!"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
 #: apps/webapp/src/modules/savings/components/SavingsHistory.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
 msgid "Amount exceeds debt"
 msgstr ""
 
@@ -214,6 +246,7 @@ msgid "An error occurred when allowing this app to access the {symbol} in your w
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "An error occurred when allowing this app to access the tokens in your wallet."
 msgstr ""
 
@@ -231,6 +264,7 @@ msgid "An error occurred while claiming your {amount} {symbol}"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "An error occurred while claiming your rewards"
 msgstr ""
 
@@ -283,6 +317,10 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approval failed"
 msgstr ""
 
@@ -296,10 +334,12 @@ msgid "Approve {0} amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approve repay amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approve seal amount"
 msgstr ""
 
@@ -313,6 +353,10 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approve successful"
 msgstr ""
 
@@ -324,6 +368,7 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Approve token access"
 msgstr ""
 
@@ -354,11 +399,13 @@ msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedMkrAmount)
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approving {0} MKR"
 msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedSkyAmount)
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approving {0} SKY"
 msgstr ""
 
@@ -371,6 +418,7 @@ msgstr ""
 #. placeholder {0}: formatBigInt(debouncedAmount)
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Approving {0} USDS"
 msgstr ""
 
@@ -424,16 +472,21 @@ msgid "Begin the savings process"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Borrow"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Borrow rate"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Borrow Rate"
 msgstr ""
 
@@ -441,12 +494,19 @@ msgstr ""
 msgid "Borrow USDS against your MKR and SKY"
 msgstr ""
 
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
+msgid "Borrow USDS against your SKY"
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Borrowed"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Borrowing"
 msgstr ""
 
@@ -496,10 +556,12 @@ msgid "Choose a token to upgrade, and enter an amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SelectDelegate.tsx
 msgid "Choose your delegate"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectRewardContract.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SelectRewardContract.tsx
 msgid "Choose your reward token"
 msgstr ""
 
@@ -518,20 +580,24 @@ msgid "Claim {0} {1}"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Claim failed"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Claim rewards"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Claim successful"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Claim your rewards"
 msgstr ""
 
@@ -550,18 +616,25 @@ msgid "Claiming from the {0} rewards pool"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Claiming rewards"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Collateral value"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Collateralization ratio"
 msgstr ""
 
@@ -571,19 +644,24 @@ msgstr ""
 #: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionDetails.tsx
 msgid "Combined actions"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Confirm"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Confirm position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Confirm the change in your position"
 msgstr ""
 
@@ -601,6 +679,8 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Confirm your position"
 msgstr ""
 
@@ -614,6 +694,7 @@ msgid "Confirm your trade"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Confirm your transaction"
 msgstr ""
 
@@ -655,6 +736,7 @@ msgstr ""
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/BalancesWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Connect Wallet"
 msgstr ""
 
@@ -666,6 +748,8 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Continue"
 msgstr ""
 
@@ -690,16 +774,22 @@ msgstr ""
 #. placeholder {0}: displayToken.symbol
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Current {0} price"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Current MKR price"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Current SKY price"
 msgstr ""
 
@@ -713,20 +803,25 @@ msgid "Date"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Debt ceiling"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Debt ceiling utilization"
 msgstr ""
 
 #. placeholder {0}: formatBigInt(simulatedVault?.dust || 0n)
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
 msgid "Debt must be paid off entirely, or left with a minimum of {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealDelegateCard.tsx
+#: apps/webapp/src/modules/activation/components/ActivationDelegateCard.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Delegate"
 msgstr ""
 
@@ -739,6 +834,7 @@ msgid "Directly trade eligible tokens for Sky ecosystem tokens using permissionl
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Doing multicall"
 msgstr ""
 
@@ -759,6 +855,10 @@ msgstr ""
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Lock.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Free.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Enter amount"
 msgstr ""
 
@@ -778,6 +878,10 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Error"
 msgstr ""
@@ -818,11 +922,15 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Exit fee"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Exit fee percentage"
 msgstr ""
 
@@ -844,11 +952,15 @@ msgstr ""
 #: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
 #: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionDetails.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "FAQs"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Fetching position details"
 msgstr ""
 
@@ -901,11 +1013,14 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "High risk"
 msgstr ""
 
 #. placeholder {0}: selectedToken.symbol
 #: packages/widgets/src/widgets/SealModuleWidget/components/Lock.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Lock.tsx
 msgid "How much {0} would you like to seal?"
 msgstr ""
 
@@ -932,18 +1047,22 @@ msgid "How much USDS would you like to withdraw?"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "How much would you like to borrow? (Optional)"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
 msgid "How much would you like to repay?"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Free.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Free.tsx
 msgid "How much would you like to unseal?"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/OpenNewUrn.tsx
 msgid "I have read and understand the"
 msgstr ""
 
@@ -952,6 +1071,7 @@ msgid "If the actual slippage is greater than your chosen tolerance level, the t
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
 msgid "in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem governance."
 msgstr ""
 
@@ -969,6 +1089,9 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "In progress"
 msgstr ""
 
@@ -988,6 +1111,9 @@ msgstr ""
 #: packages/widgets/src/widgets/L2TradeWidget/components/L2TradeInputs.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Lock.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Free.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Free.tsx
 msgid "Insufficient funds"
 msgstr ""
 
@@ -1003,33 +1129,46 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Liquidation"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Liquidation price"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Liquidation ratio"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Liquidation risk meter"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Free.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Free.tsx
 msgid "Liquidation risk too high"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Loading"
 msgstr ""
 
@@ -1044,20 +1183,26 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Low risk"
 msgstr ""
 
 #. placeholder {0}: formatUrnIndex(activeUrn?.urnIndex || 0n)
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/OpenNewUrn.tsx
 msgid "Manage Position {0}"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Manage your position(s)"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Max borrowable amount"
 msgstr ""
 
@@ -1071,11 +1216,15 @@ msgstr ""
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
 #: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionDetails.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Metrics"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Min borrowable amount"
 msgstr ""
 
@@ -1089,10 +1238,12 @@ msgid "MKR"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/DelegateCard.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/DelegateCard.tsx
 msgid "MKR delegated by you"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 msgid "MKR Liquidation price"
 msgstr ""
 
@@ -1101,6 +1252,7 @@ msgid "MKR supplied to Seal Engine"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectRewardContract.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SelectRewardContract.tsx
 msgid "More rewards coming soon"
 msgstr ""
 
@@ -1125,6 +1277,7 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Next, confirm the transaction in your wallet."
 msgstr ""
 
@@ -1140,10 +1293,14 @@ msgstr ""
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getHistoryRightText.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "No delegate"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SelectDelegate.tsx
 msgid "No delegates found"
 msgstr ""
 
@@ -1160,10 +1317,12 @@ msgid "No transactions found"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Not enough collateral to borrow"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
 msgid "Not enough USDS in your wallet"
 msgstr ""
 
@@ -1184,26 +1343,32 @@ msgid "Only Ethereum Mainnet and Base are supported at this time.<0/>Please swit
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Open a new position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/ActivationModuleTransactionStatus.tsx
 msgid "Open a position"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Open position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/OpenNewUrn.tsx
 msgid "Open Position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Opening position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
 msgid "or a contract that you own"
 msgstr ""
 
@@ -1238,6 +1403,7 @@ msgid "Please allow this app to access the {symbol} in your wallet."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Please allow this app to access the tokens in your wallet."
 msgstr ""
 
@@ -1246,6 +1412,7 @@ msgid "Please confirm that you want to claim your {symbol} rewards directly to y
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Please confirm that you want to claim your rewards directly to your wallet."
 msgstr ""
 
@@ -1269,10 +1436,13 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Position overview"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Position summary"
 msgstr ""
 
@@ -1317,14 +1487,17 @@ msgid "Remaining {0} balance"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Repay"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Repaying"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Repaying USDS in the Seal Rewards module"
 msgstr ""
 
@@ -1335,6 +1508,7 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "Retry"
 msgstr ""
 
@@ -1366,6 +1540,8 @@ msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
 #: apps/webapp/src/modules/seal/components/SealRewardCard.tsx
+#: apps/webapp/src/modules/activation/components/ActivationRewardsOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationRewardCard.tsx
 msgid "Reward"
 msgstr ""
 
@@ -1378,6 +1554,7 @@ msgid "Rewards"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Rewards overview"
 msgstr ""
 
@@ -1394,9 +1571,13 @@ msgid "Rewards Withdraw "
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "Risk level"
 msgstr ""
 
@@ -1432,15 +1613,19 @@ msgid "seal"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Seal"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/UnconnectedState.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/UnconnectedState.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/OpenNewUrn.tsx
 msgid "Seal and borrow"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Seal and Borrow"
 msgstr ""
 
@@ -1453,10 +1638,12 @@ msgid "Seal Engine Overview"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Seal Positions"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Seal reward"
 msgstr ""
 
@@ -1465,20 +1652,32 @@ msgid "Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engin
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
 msgid "Seal your tokens and continue to collect rewards"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Sealed"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Sealing"
+msgstr ""
+
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+msgid "Sealing MKR in the Activation Rewards module"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Sealing MKR in the Seal Rewards module"
+msgstr ""
+
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+msgid "Sealing SKY in the Activation Rewards module"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
@@ -1490,6 +1689,7 @@ msgid "See all rewards"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Select a delegate"
 msgstr ""
 
@@ -1499,11 +1699,14 @@ msgid "Select a token"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Select delegate"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Select reward"
 msgstr ""
 
@@ -1541,6 +1744,7 @@ msgid "Signing failed"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SelectDelegate.tsx
 msgid "Skip"
 msgstr ""
 
@@ -1555,6 +1759,7 @@ msgid "SKY is a native governance token of the decentralised Sky ecosystem and t
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 msgid "SKY Liquidation price"
 msgstr ""
 
@@ -1681,10 +1886,12 @@ msgstr ""
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Success!"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Successfully claimed your rewards"
 msgstr ""
 
@@ -1707,8 +1914,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
+#: apps/webapp/src/modules/activation/components/ActivationRewardsOverview.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/SaRewardsCard.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SaRewardsCard.tsx
 msgid "Suppliers"
 msgstr ""
 
@@ -1778,7 +1987,12 @@ msgid "Switch network"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/OpenNewUrn.tsx
 msgid "Terms of Use."
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "The Activation Engine is a module of the Sky Protocol. The SKY token you supply to the Activation Engine are sealed behind an exit fee in order to provide access to Activation Rewards and encourage a deeper commitment to Sky ecosystem governance. With Sky, you always remain in control of your funds."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
@@ -1791,6 +2005,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem governance. With Sky, you always remain in control of your funds."
+msgstr ""
+
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
+msgid "The SKY tokens you supply to the Activation Engine are sealed behind an exit fee"
 msgstr ""
 
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
@@ -1810,12 +2028,14 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Token access approval in progress."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Token access approved"
 msgstr ""
 
@@ -1834,7 +2054,9 @@ msgid "Total {0} rewarded"
 msgstr ""
 
 #. placeholder {0}: userConfig?.sealToken ?? ''
+#. placeholder {0}: userConfig?.activationToken ?? ''
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Total {0} sealed"
 msgstr ""
 
@@ -1850,6 +2072,7 @@ msgid "Total DAI upgraded"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/DelegateCard.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/DelegateCard.tsx
 msgid "Total MKR delegated"
 msgstr ""
 
@@ -1875,6 +2098,7 @@ msgid "Total USDS"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Total USDS borrowed"
 msgstr ""
 
@@ -1995,6 +2219,10 @@ msgstr ""
 msgid "Transfer the voting power of your MKR and SKY tokens to a recognized delegate"
 msgstr ""
 
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
+msgid "Transfer the voting power of your SKY tokens to a recognized delegate"
+msgstr ""
+
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "Transferring {amount} {symbol}"
@@ -2004,19 +2232,23 @@ msgstr ""
 #: apps/webapp/src/modules/savings/components/SavingsChart.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
 #: apps/webapp/src/modules/rewards/components/history/RewardsOverviewCharts.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/SaRewardsCard.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SavingsStatsCard.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/SelectedRewardsCard.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsStatsCard.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SaRewardsCard.tsx
 msgid "TVL"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealChart.tsx
+#: apps/webapp/src/modules/activation/components/ActivationChart.tsx
 msgid "TVL (Sealed)"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationRewardsOverview.tsx
 msgid "TVL (Total Value Locked)"
 msgstr ""
 
@@ -2055,28 +2287,36 @@ msgid "Unknown status."
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Unseal"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/components/UnconnectedState.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/UnconnectedState.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/OpenNewUrn.tsx
 msgid "Unseal and pay back"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/activation/components/ActivationHistory.tsx
 msgid "Unseal kick"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/PositionSummary.tsx
 msgid "Unsealing"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/ActivationModuleTransactionStatus.tsx
 msgid "Update Position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Updating position"
 msgstr ""
 
@@ -2190,6 +2430,7 @@ msgid "View contract"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/DelegateCard.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/DelegateCard.tsx
 msgid "View delegate profile"
 msgstr ""
 
@@ -2223,6 +2464,8 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Waiting for confirmation"
 msgstr ""
@@ -2247,10 +2490,15 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "We could not approve your token allowance."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "We could not claim your rewards."
 msgstr ""
 
@@ -2259,6 +2507,7 @@ msgid "We couldn't load your funds. Please try again later."
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationRewardsOverview.tsx
 msgid "We couldn&t load the Seal module rewards. Please try again later."
 msgstr ""
 
@@ -2342,19 +2591,23 @@ msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedMkrAmount)
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "You approved {0} MKR"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "You approved MKR"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "You approved SKY"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "You approved USDS"
 msgstr ""
 
@@ -2366,26 +2619,33 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "You borrowed"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/SelectDelegate.tsx
 msgid "You can optionally select a delegate or skip this step"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/index.tsx
 msgid "You claimed your rewards"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
 msgid "You have no debt to repay"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You just opened your position"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You just updated your position"
 msgstr ""
 
@@ -2404,6 +2664,8 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Repay.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/Borrow.tsx
 msgid "You sealed"
 msgstr ""
 
@@ -2488,15 +2750,18 @@ msgstr ""
 
 #. placeholder {0}: selectedToken ?? ''
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've borrowed {borrowAmount} USDS by sealing {collateralToLock} {0}. Your new position is open."
 msgstr ""
 
 #. placeholder {0}: selectedToken ?? ''
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've borrowed {borrowAmount} USDS by sealing {collateralToLock} {0}. Your position is updated."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've borrowed {borrowAmount} USDS. Your position is updated."
 msgstr ""
 
@@ -2505,6 +2770,7 @@ msgid "You’ve claimed {amount} {symbol} rewards"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You’ve claimed your rewards"
 msgstr ""
 
@@ -2514,16 +2780,19 @@ msgid "You've received {amount} {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've repaid {borrowToRepay} USDS to exit your position."
 msgstr ""
 
 #. placeholder {0}: selectedToken ?? ''
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've sealed {collateralToLock} {0}. Your new position is open."
 msgstr ""
 
 #. placeholder {0}: selectedToken ?? ''
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've sealed {collateralToLock} {0}. Your position is updated."
 msgstr ""
 
@@ -2533,11 +2802,13 @@ msgstr ""
 
 #. placeholder {0}: selectedToken ?? ''
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've unsealed {collateralToFree} {0} and repaid {borrowToRepay} USDS to exit your position. An exit fee was applied."
 msgstr ""
 
 #. placeholder {0}: selectedToken ?? ''
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "You've unsealed {collateralToFree} {0} to exit your position. An exit fee was applied."
 msgstr ""
 
@@ -2561,6 +2832,7 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Your claim is being processed on the blockchain. Please wait."
 msgstr ""
 
@@ -2578,10 +2850,12 @@ msgstr ""
 
 #. placeholder {0}: formatUrnIndex(BigInt(positionIndex))
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionOverview.tsx
 msgid "Your position {0}"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/UrnsList.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/UrnsList.tsx
 msgid "Your positions"
 msgstr ""
 
@@ -2609,15 +2883,22 @@ msgid "Your Savings transaction history"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/activation/components/ActivationOverview.tsx
 msgid "Your Seal Engine transaction history"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionDetails.tsx
+#: apps/webapp/src/modules/activation/components/ActivationPositionDetails.tsx
 msgid "Your Seal position transaction history"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
 msgid "Your sealed tokens enable you to create one or more positions through which you access rewards. You can:"
+msgstr ""
+
+#: packages/widgets/src/widgets/ActivationModuleWidget/components/About.tsx
+msgid "Your SKY tokens, as well as any rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary takes custody of those tokens. With Sky, you always remain in control of your assets."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
@@ -2633,10 +2914,12 @@ msgid "Your Trade transaction history"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Your transaction is being processed on the blockchain to create your position. Please wait."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/ActivationModuleWidget/lib/constants.ts
 msgid "Your transaction is being processed on the blockchain to update your position. Please wait."
 msgstr ""
 

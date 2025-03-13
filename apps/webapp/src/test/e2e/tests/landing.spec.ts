@@ -17,7 +17,7 @@ test.describe('Switch chains', () => {
 
     expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
     expect(page.url()).toContain('network=tenderly+base');
-    expect(page.getByTestId('widget-navigation')).not.toContainText('Seal');
+    expect(page.getByTestId('widget-navigation')).not.toContainText('Activation');
   });
 
   test('Can switch chains through the widget header', async ({ page }) => {
@@ -27,7 +27,7 @@ test.describe('Switch chains', () => {
 
     expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
     expect(page.url()).toContain('network=tenderly+base');
-    expect(page.getByTestId('widget-navigation')).not.toContainText('Seal');
+    expect(page.getByTestId('widget-navigation')).not.toContainText('Activation');
   });
 
   test('Can switch chains through the URL', async ({ page }) => {
@@ -35,12 +35,12 @@ test.describe('Switch chains', () => {
     await connectMockWalletAndAcceptTerms(page);
 
     expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
-    expect(page.getByTestId('widget-navigation')).not.toContainText('Seal');
+    expect(page.getByTestId('widget-navigation')).not.toContainText('Activation');
 
     await page.goto('/?network=tenderly+mainnet');
     await connectMockWalletAndAcceptTerms(page);
 
     expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Mainnet');
-    expect(page.getByTestId('widget-navigation')).toContainText('Seal');
+    expect(page.getByTestId('widget-navigation')).toContainText('Activation');
   });
 });

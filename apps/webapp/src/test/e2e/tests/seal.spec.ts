@@ -13,13 +13,11 @@ test.beforeEach(async ({ page }) => {
     setErc20Balance(mkrAddress[TENDERLY_CHAIN_ID], '100'),
     setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '1')
   ]);
-  await page.goto('/');
+  await page.goto('/seal-engine');
   await connectMockWalletAndAcceptTerms(page);
-  await page.getByRole('tab', { name: 'Seal' }).click();
 });
 
 test('Lock MKR, select rewards, select delegate, and open position', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'About Seal Rewards' }).nth(1)).toBeVisible();
   await page.getByRole('checkbox').click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByTestId('supply-first-input-lse-balance')).toHaveText('100 MKR');
@@ -69,7 +67,6 @@ test('Lock MKR, select rewards, select delegate, and open position', async ({ pa
 
   // manage position
   await page.getByRole('button', { name: 'Manage Position' }).click();
-  await expect(page.getByText('Your position 1')).toBeVisible();
   await expect(page.getByTestId('borrow-input-lse-balance')).toHaveText('Limit 0 <> 15,593 USDS');
 
   // borrow more and skip rewards and delegate selection
@@ -91,7 +88,6 @@ test('Lock MKR, select rewards, select delegate, and open position', async ({ pa
 
   // repay all
   await page.getByRole('button', { name: 'Manage Position' }).click();
-  await expect(page.getByText('Your position 1')).toBeVisible();
   await expect(page.getByTestId('borrow-input-lse-balance')).toHaveText('Limit 0 <> 15,493 USDS');
 
   // switch tabs
@@ -127,7 +123,6 @@ test('Lock MKR, select rewards, select delegate, and open position', async ({ pa
 
   // unseal all
   await page.getByRole('button', { name: 'Manage Position' }).click();
-  await expect(page.getByText('Your position 1')).toBeVisible();
 
   // switch tabs
   await page.getByRole('tab', { name: 'Unseal and pay back' }).click();
