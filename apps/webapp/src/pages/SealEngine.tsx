@@ -99,6 +99,15 @@ export function SealEngine() {
                 Select mainnet in the chain selector
               </Text>
             </div>
+          ) : currentUrnIndex === 0n ? (
+            <div className="mt-10 text-center">
+              <Heading variant="large">Seal Engine is deprecated</Heading>
+              <Text className="text-text mt-8">
+                Creation of new positions has been disabled. Management of existing positions remains
+                available.
+              </Text>
+              <Text className="text-text mt-8">You don&apos;t have any open positions.</Text>
+            </div>
           ) : (
             <SealModuleWidget
               {...sharedProps}

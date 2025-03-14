@@ -3,7 +3,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
-import { Heading } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
@@ -459,11 +459,13 @@ function SealModuleWidgetWrapped({
       } else if (widgetState.flow === SealFlow.MANAGE && currentStep === SealStep.SUMMARY) {
         setButtonText(t`Confirm`);
       } else if (shouldOpenFromWidgetButton) {
-        setButtonText(t`Open a new position`);
+        setButtonText(t`New positions disabled`);
       } else if ([SealStep.REWARDS, SealStep.DELEGATE].includes(currentStep)) {
         setButtonText(t`Confirm`);
       } else if (currentStep === SealStep.OPEN_BORROW) {
         setButtonText(t`Confirm position`);
+      } else if (currentStep === SealStep.ABOUT) {
+        setButtonText(t`New positions disabled`);
       } else {
         // let's set it to Next for now
         setButtonText(t`Continue`);
@@ -505,6 +507,13 @@ function SealModuleWidgetWrapped({
     // Enable the button if not connected so the user can connect their wallet
     if (!isConnectedAndEnabled) {
       setIsDisabled(false);
+      return;
+    }
+
+    // Always disable the button for opening new positions
+    // New positions are disabled as Seal is deprecated
+    if (widgetState.action === SealAction.OVERVIEW) {
+      setIsDisabled(true);
       return;
     }
 
@@ -1024,7 +1033,12 @@ const Wizard = ({
 }) => {
   return (
     <div>
-      {(currentStep === SealStep.ABOUT || currentStep === SealStep.OPEN_BORROW) && (
+      {currentStep === SealStep.ABOUT && (
+        <Text>
+          Creation of new positions has been disabled. Management of existing positions remains available.
+        </Text>
+      )}
+      {currentStep === SealStep.OPEN_BORROW && (
         <OpenNewUrn
           isConnectedAndEnabled={isConnectedAndEnabled}
           onExternalLinkClicked={onExternalLinkClicked}

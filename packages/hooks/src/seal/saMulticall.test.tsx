@@ -31,7 +31,7 @@ import { useUrnAddress } from './useUrnAddress';
 
 describe('Seal Module Multicall tests', async () => {
   const wrapper = WagmiWrapper;
-  const URN_INDEX = 0n;
+  const URN_INDEX = 1n; // Test account already has a URN open
   const MKR_TO_LOCK = parseEther('20');
   const USDS_TO_DRAW = parseEther('10000');
   const SKY_TO_LOCK = parseEther('480000');
