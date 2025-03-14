@@ -26,7 +26,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
   const wrapper = WagmiWrapper;
   const SKY_AMOUNT = '720000';
   const SKY_AMOUNT_AFTER_EXIT = '684000';
-  const URN_INDEX = 0n;
+  const URN_INDEX = 1n; // Test account already has a URN open
 
   await Promise.all([
     setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], SKY_AMOUNT),
