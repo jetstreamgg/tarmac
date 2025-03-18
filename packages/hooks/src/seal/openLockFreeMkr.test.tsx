@@ -21,7 +21,7 @@ import { waitForPreparedExecuteAndMine } from '../../test/helpers';
 describe('Open position, lock MKR, delegate, select reward contract and free MKR', async () => {
   const wrapper = WagmiWrapper;
   let URN_ADDRESS: `0x${string}`;
-  const URN_INDEX = 0n;
+  const URN_INDEX = 1n; // Test account already has a URN open
 
   it('Should open urn', async () => {
     const { result: resultUrnIndex } = renderHook(() => useCurrentUrnIndex(), { wrapper });
@@ -42,13 +42,13 @@ describe('Open position, lock MKR, delegate, select reward contract and free MKR
 
     await waitFor(
       () => {
-        expect(resultNewUrnIndex.current.data).toEqual(1n);
+        expect(resultNewUrnIndex.current.data).toEqual(URN_INDEX + 1n);
         return;
       },
       { timeout: 5000 }
     );
 
-    const { result: resultUrnAddress } = renderHook(() => useUrnAddress(0n), { wrapper });
+    const { result: resultUrnAddress } = renderHook(() => useUrnAddress(URN_INDEX), { wrapper });
 
     await waitFor(
       () => {
