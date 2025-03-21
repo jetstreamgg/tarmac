@@ -22,7 +22,13 @@ const checkVpn = async (authUrl: string): Promise<VpnResponse> => {
   }
 
   const { ip } = await ipRes.json();
-  const vpnRes = await fetch(`${authUrl}/ip/status?ip=${ip}`);
+  const vpnRes = await fetch(`${authUrl}/ip/status`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ip })
+  });
   if (!vpnRes.ok) {
     throw new Error('Could not fetch VPN status');
   }

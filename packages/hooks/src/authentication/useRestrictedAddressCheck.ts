@@ -13,7 +13,13 @@ const checkAddress = async (address?: string, authUrl?: string): Promise<AuthRes
 
   let addressAllowed = true;
   if (address) {
-    const res = await fetch(wholeUrl);
+    const res = await fetch(wholeUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ address })
+    });
     if (res.status === 200) {
       const data = await res.json();
       addressAllowed = data.addressAllowed;
