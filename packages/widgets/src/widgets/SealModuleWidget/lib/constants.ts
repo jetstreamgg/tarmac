@@ -6,7 +6,8 @@ import { TOKENS } from '@jetstreamgg/hooks';
 
 export enum SealFlow {
   OPEN = 'open',
-  MANAGE = 'manage'
+  MANAGE = 'manage',
+  CLAIM = 'claim'
 }
 
 export enum SealAction {

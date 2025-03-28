@@ -11,6 +11,7 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useChainId } from 'wagmi';
+import { UpgradeFlow } from '../lib/constants';
 
 type Props = WidgetProps & {
   leftTabTitle: string;
@@ -26,7 +27,7 @@ type Props = WidgetProps & {
   tabIndex: 0 | 1;
   error?: Error;
   onToggle: (number: 0 | 1) => void;
-  onOriginInputChange: (val: bigint) => void;
+  onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -61,13 +62,13 @@ export function UpgradeRevert({
 
   return (
     <VStack className="w-full items-center justify-center">
-      <Tabs defaultValue={tabIndex === 0 ? 'left' : 'right'} className="w-full">
+      <Tabs value={tabIndex === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT} className="w-full">
         <motion.div variants={positionAnimations}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger
               position="left"
               data-testid="upgrade-toggle-left"
-              value="left"
+              value={UpgradeFlow.UPGRADE}
               onClick={() => onToggle(0)}
             >
               {leftTabTitle}
@@ -75,7 +76,7 @@ export function UpgradeRevert({
             <TabsTrigger
               position="right"
               data-testid="upgrade-toggle-right"
-              value="right"
+              value={UpgradeFlow.REVERT}
               onClick={() => onToggle(1)}
             >
               {rightTabTitle}
@@ -93,7 +94,7 @@ export function UpgradeRevert({
               className="w-full"
               token={originToken}
               balance={originBalance}
-              onChange={onOriginInputChange}
+              onChange={(val, event) => onOriginInputChange(val, !!event)}
               value={originAmount}
               dataTestId="upgrade-input-origin"
               label={originTitle}

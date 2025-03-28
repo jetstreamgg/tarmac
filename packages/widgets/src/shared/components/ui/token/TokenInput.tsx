@@ -27,7 +27,10 @@ export interface TokenInputProps {
   placeholder?: string;
   token?: Token;
   onTokenSelected?: (token: Token) => void;
-  onChange: (val: bigint) => void;
+  onChange: (
+    val: bigint,
+    e?: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>
+  ) => void;
   onInput?: () => void;
   tokenList: Token[];
   balance?: bigint;
@@ -90,7 +93,10 @@ export function TokenInput({
   const [errorInvalidFormat, setErrorInvalidFormat] = useState(false);
   const shownError = errorInvalidFormat ? 'Invalid amount. Please enter a valid amount.' : error;
 
-  const updateValue = (val: `${number}`) => {
+  const updateValue = (
+    val: `${number}`,
+    event?: React.ChangeEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>
+  ) => {
     //prevent exponential notation
     if (val.includes('e')) return;
 
@@ -118,11 +124,11 @@ export function TokenInput({
 
       setErrorInvalidFormat(false);
 
-      onChange(newValue);
+      onChange(newValue, event);
     } catch (e) {
       console.error('Error updating value: ', e);
       setErrorInvalidFormat(true);
-      onChange(0n);
+      onChange(0n, event);
       return;
     }
   };
@@ -175,13 +181,13 @@ export function TokenInput({
 
     if (max) {
       const maxValue = balance - gasBufferAmount > 0n ? balance - gasBufferAmount : 0n;
-      updateValue(formatUnits(maxValue, decimals) as `${number}`);
+      updateValue(formatUnits(maxValue, decimals) as `${number}`, e);
       if (typeof onSetMax === 'function') onSetMax(true);
     } else {
       // Truncate the string to two decimal places
       const truncatedValue = truncateStringToFourDecimals(formattedValue);
       // Update the value
-      updateValue(truncatedValue as `${number}`);
+      updateValue(truncatedValue as `${number}`, e);
       if (typeof onSetMax === 'function') onSetMax(false);
     }
   };
@@ -261,7 +267,7 @@ export function TokenInput({
                       className="hide-spin-button placeholder:text-white/30"
                       value={inputValue !== '00' ? inputValue : '0'}
                       onChange={e => {
-                        updateValue(e.target.value as `${number}`);
+                        updateValue(e.target.value as `${number}`, e);
                         if (typeof onSetMax === 'function') onSetMax(false);
                       }}
                       onInput={() => {

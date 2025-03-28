@@ -10,7 +10,7 @@ export function BalancesWidgetDisplay() {
       onConnect={onConnectModal}
       locale="en"
       rightHeaderComponent={undefined}
-      externalWidgetState={{ tab: 'left' }}
+      externalWidgetState={{ flow: 'funds' }}
       hideModuleBalances={false}
       actionForToken={(symbol, balance) => {
         return symbol.toLowerCase() === 'dai'

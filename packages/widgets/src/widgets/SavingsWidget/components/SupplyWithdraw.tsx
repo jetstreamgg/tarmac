@@ -21,7 +21,7 @@ type SupplyWithdrawProps = {
   savingsBalance?: bigint;
   savingsTvl?: bigint;
   isSavingsDataLoading: boolean;
-  onChange: (val: bigint) => void;
+  onChange: (val: bigint, userTriggered?: boolean) => void;
   amount: bigint;
   error: boolean;
   onToggle: (number: 0 | 1) => void;
@@ -73,7 +73,7 @@ export const SupplyWithdraw = ({
 
   return (
     <MotionVStack gap={0} className="w-full" variants={positionAnimations}>
-      <Tabs defaultValue={tabIndex === 0 ? 'left' : 'right'}>
+      <Tabs value={tabIndex === 0 ? 'left' : 'right'}>
         <motion.div variants={positionAnimations}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger position="left" value="left" onClick={() => onToggle(0)}>
@@ -101,7 +101,9 @@ export const SupplyWithdraw = ({
               token={inputToken}
               tokenList={[inputToken]}
               balance={address ? nstBalance : undefined}
-              onChange={onChange}
+              onChange={(newValue, event) => {
+                onChange(BigInt(newValue), !!event);
+              }}
               value={amount}
               dataTestId="supply-input-savings"
               error={error ? t`Insufficient funds` : undefined}
@@ -119,7 +121,9 @@ export const SupplyWithdraw = ({
               token={inputToken}
               tokenList={[inputToken]}
               balance={address ? savingsBalance : undefined}
-              onChange={onChange}
+              onChange={(newValue, event) => {
+                onChange(BigInt(newValue), !!event);
+              }}
               value={amount}
               error={
                 error

@@ -45,7 +45,7 @@ jobs:
           - test: arbitrum-trade.spec
             vnet: true
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:

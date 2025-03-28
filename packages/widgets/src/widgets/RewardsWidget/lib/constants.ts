@@ -6,7 +6,8 @@ import { RewardContract } from '@jetstreamgg/hooks';
 
 export enum RewardsFlow {
   SUPPLY = 'supply',
-  WITHDRAW = 'withdraw'
+  WITHDRAW = 'withdraw',
+  CLAIM = 'claim'
 }
 
 export enum RewardsAction {

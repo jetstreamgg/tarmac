@@ -18,6 +18,7 @@ import {
 } from '@jetstreamgg/hooks';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
+import { BalancesFlow } from '../constants';
 import { BalancesFilter } from './BalancesFilter';
 import { useState } from 'react';
 import { defaultConfig } from '@widgets/config/default-config';
@@ -37,6 +38,7 @@ interface BalancesContentProps {
   validatedExternalState?: BalancesWidgetState;
   customTokenMap?: { [chainId: number]: TokenForChain[] };
   hideModuleBalances?: boolean;
+  tabIndex: 0 | 1;
   chainIds?: number[];
   actionForToken?: (
     symbol: string,
@@ -47,6 +49,7 @@ interface BalancesContentProps {
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onToggle: (number: 0 | 1) => void;
   showAllNetworks?: boolean;
   hideZeroBalances?: boolean;
   setShowAllNetworks?: (showAllNetworks: boolean) => void;
@@ -54,15 +57,16 @@ interface BalancesContentProps {
 }
 
 export const BalancesContent = ({
-  validatedExternalState,
-  customTokenMap,
   hideModuleBalances,
   actionForToken,
+  onExternalLinkClicked,
+  onToggle,
+  tabIndex,
+  customTokenMap,
   chainIds,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
-  onExternalLinkClicked,
   showAllNetworks: showAllNetworksProp,
   hideZeroBalances: hideZeroBalancesProp,
   setShowAllNetworks: setShowAllNetworksProp,
@@ -211,9 +215,9 @@ export const BalancesContent = ({
   const hideTokenBalances = filteredAndSortedTokenBalances && filteredAndSortedTokenBalances.length === 0;
 
   return (
-    <Tabs defaultValue={validatedExternalState?.tab || 'left'} className="w-full">
-      <BalancesTabsList />
-      <TabsContent value="left" className="mt-0">
+    <Tabs value={tabIndex === 1 ? BalancesFlow.TX_HISTORY : BalancesFlow.FUNDS} className="w-full">
+      <BalancesTabsList onToggle={onToggle} />
+      <TabsContent value={BalancesFlow.FUNDS} className="mt-0">
         <VStack className="items-stretch">
           <motion.div variants={positionAnimations}>
             <BalancesFilter
@@ -274,7 +278,7 @@ export const BalancesContent = ({
           </motion.div>
         </VStack>
       </TabsContent>
-      <TabsContent value="right" className="mt-0">
+      <TabsContent value={BalancesFlow.TX_HISTORY} className="mt-0">
         <motion.div variants={positionAnimations}>
           <BalancesFilter
             showBalanceFilter={false}
