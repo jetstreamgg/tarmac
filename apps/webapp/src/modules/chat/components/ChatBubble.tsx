@@ -67,10 +67,8 @@ export const ChatBubble = ({
   user,
   message,
   type,
-  intents,
   sendMessage,
   showModifierRow = true,
-  isLastMessage,
   isFirstMessage
 }: ChatBubbleProps) => {
   const { address } = useAccount();
@@ -132,10 +130,11 @@ export const ChatBubble = ({
             {isFirstMessage && !hasAcceptedAgeRestriction && <AgeWarningRow />}
             {user === UserType.bot && !isError && !isInternal && !isCanceled && (
               <div className="space-y-5">
-                {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />}
+                {/* {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />} */}
                 {showModifierRow && <ResponseModifierRow sendMessage={sendMessage} />}
               </div>
             )}
+            <ChatIntentsRow />
           </div>
         )}
       </VStack>
