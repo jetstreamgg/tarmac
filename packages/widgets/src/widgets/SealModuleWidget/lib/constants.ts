@@ -130,9 +130,9 @@ export function getSealSubtitle({
             ? msg`You've sealed ${collateralToLock} ${selectedToken ?? ''}. Your new position is open.`
             : msg`You just opened your position`
         : collateralToFree && borrowToRepay
-          ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} and repaid ${borrowToRepay} USDS to exit your position. An exit fee was applied.`
+          ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} and repaid ${borrowToRepay} USDS to exit your position. An exit fee may have been applied.`
           : collateralToFree
-            ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} to exit your position. An exit fee was applied.`
+            ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} to exit your position. An exit fee may have been applied.`
             : borrowToRepay
               ? msg`You've repaid ${borrowToRepay} USDS to exit your position.`
               : collateralToLock && borrowAmount

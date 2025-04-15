@@ -233,5 +233,5 @@ export {
   useReadPsm3L2PreviewSwapExactIn,
   useReadPsm3L2PreviewSwapExactOut
 } from './generated';
-export { contracts, tenderlyContracts, sepoliaContracts, l2Contracts } from './contracts';
+export { contracts, /*tenderlyContracts,*/ sepoliaContracts, l2Contracts } from './contracts';
 export * from './seal/calldata';

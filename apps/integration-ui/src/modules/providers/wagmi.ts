@@ -81,7 +81,7 @@ export const getWagmiClientAndChains = (appName: string): Config => {
       [tenderlyBase.id]: http(import.meta.env.VITE_PUBLIC_RPC_PROVIDER_TENDERLY_BASE || ''),
       [tenderlyArbitrum.id]: http(import.meta.env.VITE_PUBLIC_RPC_PROVIDER_TENDERLY_ARBITRUM || '')
     },
-    multiInjectedProviderDiscovery: false
+    multiInjectedProviderDiscovery: true
   });
 
   return wagmiConfig;

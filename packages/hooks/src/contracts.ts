@@ -106,7 +106,9 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
   {
     name: 'ethFlow',
     address: {
-      [mainnet.id]: '0x40A50cf069e992AA4536211B23F286eF88752187',
+      [mainnet.id]: '0xba3cb449bd2b4adddbc894d8697f5170800eadec',
+      // TODO: Update the Tenderly address to the mainnet address
+      // if we use a testnet forked after March 28, 2025
       [TENDERLY_CHAIN_ID]: '0x40A50cf069e992AA4536211B23F286eF88752187'
     }
   },
@@ -213,16 +215,16 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
   }
 ];
 
-export const tenderlyContracts: { name: string; address: Record<typeof TENDERLY_CHAIN_ID, `0x${string}`> }[] =
-  [
-    {
-      name: 'cle',
-      address: {
-        // same token as USDS for now
-        [TENDERLY_CHAIN_ID]: '0xdC035D45d973E3EC169d2276DDab16f1e407384F'
-      }
-    }
-  ];
+// export const tenderlyContracts: { name: string; address: Record<typeof TENDERLY_CHAIN_ID, `0x${string}`> }[] =
+//   [
+//     {
+//       name: 'cle',
+//       address: {
+//         // same token as USDS for now
+//         [TENDERLY_CHAIN_ID]: '0xdC035D45d973E3EC169d2276DDab16f1e407384F'
+//       }
+//     }
+//   ];
 
 export const sepoliaContracts: { name: string; address: Record<typeof sepolia.id, `0x${string}`> }[] = [
   {

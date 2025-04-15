@@ -1,58 +1,9 @@
 import {
-  createUseWatchContractEvent,
   createUseReadContract,
   createUseWriteContract,
-  createUseSimulateContract
+  createUseSimulateContract,
+  createUseWatchContractEvent
 } from 'wagmi/codegen';
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// cle
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- *
- */
-export const cleAbi = [
-  {
-    type: 'constructor',
-    inputs: [
-      { name: 'implementation', internalType: 'address', type: 'address' },
-      { name: '_data', internalType: 'bytes', type: 'bytes' }
-    ],
-    stateMutability: 'payable'
-  },
-  {
-    type: 'error',
-    inputs: [{ name: 'target', internalType: 'address', type: 'address' }],
-    name: 'AddressEmptyCode'
-  },
-  {
-    type: 'error',
-    inputs: [{ name: 'implementation', internalType: 'address', type: 'address' }],
-    name: 'ERC1967InvalidImplementation'
-  },
-  { type: 'error', inputs: [], name: 'ERC1967NonPayable' },
-  { type: 'error', inputs: [], name: 'FailedInnerCall' },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: true }],
-    name: 'Upgraded'
-  },
-  { type: 'fallback', stateMutability: 'payable' }
-] as const;
-
-/**
- *
- */
-export const cleAddress = {
-  314310: '0xdC035D45d973E3EC169d2276DDab16f1e407384F'
-} as const;
-
-/**
- *
- */
-export const cleConfig = { address: cleAddress, abi: cleAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // cleReward
@@ -624,7 +575,7 @@ export const dsProxyConfig = { address: dsProxyAddress, abi: dsProxyAbi } as con
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const ethFlowAbi = [
   {
@@ -829,15 +780,15 @@ export const ethFlowAbi = [
 ] as const;
 
 /**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const ethFlowAddress = {
-  1: '0x40A50cf069e992AA4536211B23F286eF88752187',
+  1: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
   314310: '0x40A50cf069e992AA4536211B23F286eF88752187'
 } as const;
 
 /**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const ethFlowConfig = { address: ethFlowAddress, abi: ethFlowAbi } as const;
 
@@ -9211,24 +9162,6 @@ export const wethSepoliaConfig = { address: wethSepoliaAddress, abi: wethSepolia
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link cleAbi}__
- *
- *
- */
-export const useWatchCle = /*#__PURE__*/ createUseWatchContractEvent({ abi: cleAbi, address: cleAddress });
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link cleAbi}__ and `eventName` set to `"Upgraded"`
- *
- *
- */
-export const useWatchCleUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: cleAbi,
-  address: cleAddress,
-  eventName: 'Upgraded'
-});
-
-/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link cleRewardAbi}__
  *
  * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x10ab606B067C9C461d8893c47C7512472E19e2Ce)
@@ -10198,7 +10131,7 @@ export const useWatchDsProxyLogSetOwner = /*#__PURE__*/ createUseWatchContractEv
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ethFlowAbi}__
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useReadEthFlow = /*#__PURE__*/ createUseReadContract({
   abi: ethFlowAbi,
@@ -10208,7 +10141,7 @@ export const useReadEthFlow = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"cowSwapSettlement"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useReadEthFlowCowSwapSettlement = /*#__PURE__*/ createUseReadContract({
   abi: ethFlowAbi,
@@ -10219,7 +10152,7 @@ export const useReadEthFlowCowSwapSettlement = /*#__PURE__*/ createUseReadContra
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"isValidSignature"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useReadEthFlowIsValidSignature = /*#__PURE__*/ createUseReadContract({
   abi: ethFlowAbi,
@@ -10230,7 +10163,7 @@ export const useReadEthFlowIsValidSignature = /*#__PURE__*/ createUseReadContrac
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"orders"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useReadEthFlowOrders = /*#__PURE__*/ createUseReadContract({
   abi: ethFlowAbi,
@@ -10241,7 +10174,7 @@ export const useReadEthFlowOrders = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"wrappedNativeToken"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useReadEthFlowWrappedNativeToken = /*#__PURE__*/ createUseReadContract({
   abi: ethFlowAbi,
@@ -10252,7 +10185,7 @@ export const useReadEthFlowWrappedNativeToken = /*#__PURE__*/ createUseReadContr
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlow = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10262,7 +10195,7 @@ export const useWriteEthFlow = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"createOrder"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlowCreateOrder = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10273,7 +10206,7 @@ export const useWriteEthFlowCreateOrder = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"invalidateOrder"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlowInvalidateOrder = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10284,7 +10217,7 @@ export const useWriteEthFlowInvalidateOrder = /*#__PURE__*/ createUseWriteContra
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"invalidateOrdersIgnoringNotAllowed"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlowInvalidateOrdersIgnoringNotAllowed = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10295,7 +10228,7 @@ export const useWriteEthFlowInvalidateOrdersIgnoringNotAllowed = /*#__PURE__*/ c
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"unwrap"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlowUnwrap = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10306,7 +10239,7 @@ export const useWriteEthFlowUnwrap = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"wrap"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlowWrap = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10317,7 +10250,7 @@ export const useWriteEthFlowWrap = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"wrapAll"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWriteEthFlowWrapAll = /*#__PURE__*/ createUseWriteContract({
   abi: ethFlowAbi,
@@ -10328,7 +10261,7 @@ export const useWriteEthFlowWrapAll = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlow = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10338,7 +10271,7 @@ export const useSimulateEthFlow = /*#__PURE__*/ createUseSimulateContract({
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"createOrder"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlowCreateOrder = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10349,7 +10282,7 @@ export const useSimulateEthFlowCreateOrder = /*#__PURE__*/ createUseSimulateCont
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"invalidateOrder"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlowInvalidateOrder = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10360,7 +10293,7 @@ export const useSimulateEthFlowInvalidateOrder = /*#__PURE__*/ createUseSimulate
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"invalidateOrdersIgnoringNotAllowed"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlowInvalidateOrdersIgnoringNotAllowed = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10371,7 +10304,7 @@ export const useSimulateEthFlowInvalidateOrdersIgnoringNotAllowed = /*#__PURE__*
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"unwrap"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlowUnwrap = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10382,7 +10315,7 @@ export const useSimulateEthFlowUnwrap = /*#__PURE__*/ createUseSimulateContract(
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"wrap"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlowWrap = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10393,7 +10326,7 @@ export const useSimulateEthFlowWrap = /*#__PURE__*/ createUseSimulateContract({
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ethFlowAbi}__ and `functionName` set to `"wrapAll"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useSimulateEthFlowWrapAll = /*#__PURE__*/ createUseSimulateContract({
   abi: ethFlowAbi,
@@ -10404,7 +10337,7 @@ export const useSimulateEthFlowWrapAll = /*#__PURE__*/ createUseSimulateContract
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ethFlowAbi}__
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWatchEthFlow = /*#__PURE__*/ createUseWatchContractEvent({
   abi: ethFlowAbi,
@@ -10414,7 +10347,7 @@ export const useWatchEthFlow = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ethFlowAbi}__ and `eventName` set to `"OrderInvalidation"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWatchEthFlowOrderInvalidation = /*#__PURE__*/ createUseWatchContractEvent({
   abi: ethFlowAbi,
@@ -10425,7 +10358,7 @@ export const useWatchEthFlowOrderInvalidation = /*#__PURE__*/ createUseWatchCont
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ethFlowAbi}__ and `eventName` set to `"OrderPlacement"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWatchEthFlowOrderPlacement = /*#__PURE__*/ createUseWatchContractEvent({
   abi: ethFlowAbi,
@@ -10436,7 +10369,7 @@ export const useWatchEthFlowOrderPlacement = /*#__PURE__*/ createUseWatchContrac
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ethFlowAbi}__ and `eventName` set to `"OrderRefund"`
  *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x40A50cf069e992AA4536211B23F286eF88752187)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xba3cb449bd2b4adddbc894d8697f5170800eadec)
  */
 export const useWatchEthFlowOrderRefund = /*#__PURE__*/ createUseWatchContractEvent({
   abi: ethFlowAbi,
