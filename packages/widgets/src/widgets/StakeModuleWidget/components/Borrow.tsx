@@ -386,7 +386,7 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
         <div className="ml-3">
           <Text variant="small" className="text-error flex gap-2">
             <Warning boxSize={16} viewBox="0 0 16 16" className="mt-1 shrink-0" />
-            Debt ceiling reached. New positions and additional USDS borrowing are temporarily disabled.
+            Debt ceiling reached. Borrowing USDS is temporarily unavailable.
           </Text>
         </div>
       ) : (
