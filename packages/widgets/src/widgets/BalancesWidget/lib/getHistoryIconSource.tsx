@@ -30,5 +30,11 @@ export const getHistoryIconSource = ({
           : src + 'rewards-withdraw.svg';
     case ModuleEnum.SEAL:
       return src + 'seal.svg';
+    case ModuleEnum.STAKE:
+      return type && [TransactionTypeEnum.STAKE, TransactionTypeEnum.STAKE_REPAY].includes(type)
+        ? src + 'savings-supply.svg'
+        : type && [TransactionTypeEnum.UNSTAKE, TransactionTypeEnum.STAKE_BORROW].includes(type)
+          ? src + 'savings-withdraw.svg'
+          : '';
   }
 };

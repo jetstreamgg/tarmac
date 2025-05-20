@@ -25,7 +25,6 @@ import { motion } from 'framer-motion';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { WAD_PRECISION, captitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/utils';
-import { formatUnits } from 'viem';
 import { cn } from '@widgets/lib/utils';
 import { getRiskTextColor } from '../lib/utils';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
@@ -224,20 +223,12 @@ export const PositionSummary = () => {
           hasPositions &&
           isUpdatedValue(existingVault?.collateralizationRatio, updatedVault?.collateralizationRatio)
             ? [
-                `${(
-                  Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`,
-                `${(
-                  Number(formatUnits(updatedVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`
+                `${formatPercent(existingVault?.collateralizationRatio || 0n)}`,
+                `${formatPercent(updatedVault?.collateralizationRatio || 0n)}`
               ]
             : hasPositions
-              ? `${(
-                  Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`
-              : `${(
-                  Number(formatUnits(updatedVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`,
+              ? `${formatPercent(existingVault?.collateralizationRatio || 0n)}`
+              : `${formatPercent(updatedVault?.collateralizationRatio || 0n)}`,
         tooltipText: collateralizationRatioTooltipText,
         className:
           hasPositions &&

@@ -214,20 +214,12 @@ export const MigratePositionSummary = () => {
           hasPositions &&
           isUpdatedValue(existingVault?.collateralizationRatio, updatedVault?.collateralizationRatio)
             ? [
-                `${(
-                  Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`,
-                `${(
-                  Number(formatUnits(updatedVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`
+                `${formatPercent(existingVault?.collateralizationRatio || 0n)}`,
+                `${formatPercent(updatedVault?.collateralizationRatio || 0n)}`
               ]
             : hasPositions
-              ? `${(
-                  Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`
-              : `${(
-                  Number(formatUnits(updatedVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`,
+              ? `${formatPercent(existingVault?.collateralizationRatio || 0n)}`
+              : `${formatPercent(updatedVault?.collateralizationRatio || 0n)}`,
         tooltipText: collateralizationRatioTooltipText,
         className:
           hasPositions &&

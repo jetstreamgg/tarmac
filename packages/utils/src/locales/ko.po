@@ -504,6 +504,7 @@ msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Borrow"
 msgstr ""
 
@@ -623,6 +624,7 @@ msgstr ""
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Claim rewards"
 msgstr ""
@@ -875,6 +877,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/MigrateAbout.tsx
 msgid "Debt to migrate"
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Delayed Upgrade Penalty"
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeDelegateCard.tsx
@@ -1229,6 +1235,7 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Borrow.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Borrow.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Liquidation"
 msgstr ""
 
@@ -1391,10 +1398,6 @@ msgstr ""
 msgid "MKR Liquidation price"
 msgstr ""
 
-#: packages/widgets/src/widgets/BalancesWidget/components/SealBalanceCard.tsx
-msgid "MKR supplied to Seal Engine"
-msgstr ""
-
 #: packages/widgets/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
 msgid "MKR supplied to the Seal Engine"
 msgstr ""
@@ -1537,6 +1540,7 @@ msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Open position"
 msgstr ""
 
@@ -1660,6 +1664,7 @@ msgstr ""
 msgid "Processing transaction"
 msgstr ""
 
+#: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
@@ -1686,6 +1691,7 @@ msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Repay"
 msgstr ""
 
@@ -1887,6 +1893,7 @@ msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Select delegate"
 msgstr ""
 
@@ -1894,6 +1901,7 @@ msgstr ""
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Select reward"
 msgstr ""
 
@@ -2058,6 +2066,7 @@ msgid "stake"
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Stake"
 msgstr ""
 
@@ -2613,6 +2622,7 @@ msgid "Unsealing"
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Unstake"
 msgstr ""
 

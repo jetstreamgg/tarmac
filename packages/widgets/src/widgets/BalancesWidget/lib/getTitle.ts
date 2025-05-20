@@ -28,6 +28,24 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
       return t`Withdraw`;
     case TransactionTypeEnum.REWARD:
       return t`Claim rewards`;
+    case TransactionTypeEnum.STAKE_OPEN:
+      return t`Open position`;
+    case TransactionTypeEnum.STAKE:
+      return t`Stake`;
+    case TransactionTypeEnum.UNSTAKE:
+      return t`Unstake`;
+    case TransactionTypeEnum.STAKE_REWARD:
+      return t`Claim rewards`;
+    case TransactionTypeEnum.STAKE_BORROW:
+      return t`Borrow`;
+    case TransactionTypeEnum.STAKE_REPAY:
+      return t`Repay`;
+    case TransactionTypeEnum.STAKE_SELECT_DELEGATE:
+      return t`Select delegate`;
+    case TransactionTypeEnum.STAKE_SELECT_REWARD:
+      return t`Select reward`;
+    case TransactionTypeEnum.UNSTAKE_KICK:
+      return t`Liquidation`;
     default:
       return captitalizeFirstLetter((type || module).toLowerCase().replace('_', ' '));
   }

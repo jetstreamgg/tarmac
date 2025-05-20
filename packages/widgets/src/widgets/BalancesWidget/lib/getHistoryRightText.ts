@@ -17,13 +17,15 @@ export const getHistoryRightText = ({
   savingsToken?: string;
   chainId: number;
 }) => {
-  if (type == TransactionTypeEnum.SELECT_DELEGATE) {
-    return 'delegate' in item ? formatAddress(item.delegate, 6, 6) : t`No delegate`;
+  if ([TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.STAKE_SELECT_DELEGATE].includes(type)) {
+    return 'delegate' in item && item.delegate ? formatAddress(item.delegate, 6, 6) : t`No delegate`;
   }
-  if (type == TransactionTypeEnum.SELECT_REWARD) {
-    return 'rewardContract' in item ? formatAddress(item.rewardContract, 6, 6) : t`No reward`;
+  if ([TransactionTypeEnum.SELECT_REWARD, TransactionTypeEnum.STAKE_SELECT_REWARD].includes(type)) {
+    return 'rewardContract' in item && item.rewardContract
+      ? formatAddress(item.rewardContract, 6, 6)
+      : t`No reward`;
   }
-  if (type == TransactionTypeEnum.OPEN) {
+  if ([TransactionTypeEnum.OPEN, TransactionTypeEnum.STAKE_OPEN].includes(type)) {
     return '';
   }
   return getAmount({ item, type, chainId }) + ' ' + getToken({ type, tradeFromToken, savingsToken });

@@ -27,7 +27,7 @@ type DelegateApiData = {
 };
 
 const fetchDelegateMetadata = async (url?: string) => {
-  const response = await fetch(url || 'https://vote.makerdao.com/api/delegates/info'); //to test with tenderly, switch to https://governance-portal-v2-git-tenderly-delegate-4c3fd5-dux-core-unit.vercel.app/api/delegates/info?network=tenderly
+  const response = await fetch(url || 'https://vote.sky.money/api/delegates/info'); //to test with tenderly, switch to https://governance-portal-v2-git-tenderly-delegate-4c3fd5-dux-core-unit.vercel.app/api/delegates/info?network=tenderly
   const data: DelegateApiData[] = await response.json();
 
   // Transform into mapping from delegate address to name
@@ -65,7 +65,7 @@ export function useDelegateMetadataMapping(
     dataSources: [
       {
         title: 'Governance Portal',
-        href: 'vote.makerdao.com',
+        href: 'vote.sky.money',
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
       }
