@@ -39,6 +39,16 @@ export interface SealUrn {
     transactionHash: string;
     blockNumber: string;
   }[];
+  locks: {
+    wad: string;
+    transactionHash: string;
+    blockNumber: string;
+  }[];
+  frees: {
+    wad: string;
+    transactionHash: string;
+    blockNumber: string;
+  }[];
 }
 
 interface SealUrnsResponse {
@@ -83,6 +93,16 @@ async function fetchSealUrns(urlSubgraph: string, urnAddress: string): Promise<S
         }
         barks {
           id
+          transactionHash
+          blockNumber
+        }
+        locks {
+          wad
+          transactionHash
+          blockNumber
+        }
+        frees {
+          wad
           transactionHash
           blockNumber
         }

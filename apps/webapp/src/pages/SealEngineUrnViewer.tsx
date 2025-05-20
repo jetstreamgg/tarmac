@@ -162,6 +162,32 @@ export function SealEngineUrnViewer() {
                 ))}
               </VStack>
             )}
+
+            {urn.locks.length > 0 && (
+              <VStack gap={2}>
+                <Text variant="medium">Locks</Text>
+                {urn.locks.map((lock, index) => (
+                  <HStack key={index} className="justify-between">
+                    <Text>Amount: {lock.wad}</Text>
+                    <Text>Block: {lock.blockNumber}</Text>
+                    <Text>Tx: {lock.transactionHash}</Text>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
+
+            {urn.frees.length > 0 && (
+              <VStack gap={2}>
+                <Text variant="medium">Frees</Text>
+                {urn.frees.map((free, index) => (
+                  <HStack key={index} className="justify-between">
+                    <Text>Amount: {free.wad}</Text>
+                    <Text>Block: {free.blockNumber}</Text>
+                    <Text>Tx: {free.transactionHash}</Text>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
           </VStack>
         </Card>
       </VStack>

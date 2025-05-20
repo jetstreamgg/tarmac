@@ -5,7 +5,7 @@ import { NotFound } from '../modules/layout/components/NotFound';
 import Dev from './Dev';
 import { SealEngine } from './SealEngine';
 import { SealEngineUrnViewer } from './SealEngineUrnViewer';
-import { SealMigration } from './SealMigration';
+import { MigrationDashboard } from './MigrationDashboard';
 
 const restrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
 
@@ -26,8 +26,8 @@ const commonRoutes = [
     errorElement: <ErrorPage />
   } as RouteObject,
   {
-    path: '/seal-migration',
-    element: <SealMigration />,
+    path: '/migration-dashboard',
+    element: <MigrationDashboard />,
     errorElement: <ErrorPage />
   } as RouteObject,
   // catch all and show NotFound component
