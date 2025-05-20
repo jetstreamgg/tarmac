@@ -4,6 +4,7 @@ import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';
 import Dev from './Dev';
 import { SealEngine } from './SealEngine';
+import { SealEngineUrnViewer } from './SealEngineUrnViewer';
 
 const restrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
 
@@ -16,6 +17,11 @@ const commonRoutes = [
   {
     path: '/seal-engine',
     element: <SealEngine />,
+    errorElement: <ErrorPage />
+  } as RouteObject,
+  {
+    path: '/seal-engine/:urnAddress',
+    element: <SealEngineUrnViewer />,
     errorElement: <ErrorPage />
   } as RouteObject,
   // catch all and show NotFound component

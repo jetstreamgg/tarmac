@@ -136,6 +136,7 @@ export { useMigrateUrn } from './seal/useMigrateUrn';
 export { useIsUrnAuth as useIsSealUrnAuth } from './seal/useIsUrnAuth';
 export { useNextMigrationUrnIndex } from './seal/useNextMigrationUrnIndex';
 export { useMigrationUrnIndexValid } from './seal/useMigrationUrnIndexValid';
+export { useUrnViewer, type SealUrn } from './seal/useUrnViewer';
 export * from './seal/calldata';
 
 // Stake Module
