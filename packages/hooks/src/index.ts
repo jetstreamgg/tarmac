@@ -264,3 +264,8 @@ export {
   lsMigratorAddress
 } from './generated';
 export { contracts, /*tenderlyContracts,*/ sepoliaContracts, l2Contracts } from './contracts';
+
+// Temporary export for testing, remove afterwards since this hook will probably be
+// a low level one which will be implemented by other hooks
+export { useSendBatchTransactionFlow } from './shared/useSendBatchTransactionFlow';
+export { getWriteContractCall } from './shared/getWriteContractCall';

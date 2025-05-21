@@ -14,7 +14,7 @@ import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useEffect, useMemo } from 'react';
-import { TokenForChain } from '@jetstreamgg/hooks';
+import { TokenForChain, useSendBatchTransactionFlow } from '@jetstreamgg/hooks';
 
 type BalancesWidgetProps = WidgetProps & {
   customTokenMap?: { [chainId: number]: TokenForChain[] };
@@ -108,6 +108,9 @@ const BalancesWidgetWrapped = ({
   const { isConnected, isConnecting } = useAccount();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const validatedExternalState = getValidatedState(externalWidgetState);
+  useSendBatchTransactionFlow({
+    calls: []
+  });
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);

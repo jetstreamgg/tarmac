@@ -11,3 +11,9 @@ export const SAFE_TRANSACTION_SERVICE_URL: Record<number, string> = {
   [chainId.tenderlyBase]: 'https://safe-transaction-base.safe.global',
   [chainId.tenderlyArbitrum]: 'https://safe-transaction-arbitrum.safe.global'
 };
+
+export enum CapabilitySupportStatus {
+  supported = 'supported',
+  ready = 'ready',
+  unsupported = 'unsupported'
+}
