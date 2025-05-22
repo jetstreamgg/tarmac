@@ -7,7 +7,7 @@ import {
   useVault,
   ZERO_ADDRESS
 } from '@jetstreamgg/hooks';
-import { formatBigInt, math, WAD_PRECISION } from '@jetstreamgg/utils';
+import { formatBigInt, formatPercent, math } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { SealToken } from '../constants';
@@ -16,7 +16,6 @@ import { SealBorrowedCard, SealSealedCard } from '@/modules/ui/components/Balanc
 import { VStack } from '@/modules/layout/components/VStack';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Heading, Text } from '@/modules/layout/components/Typography';
-import { formatUnits } from 'viem';
 import { cn } from '@/lib/utils';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
@@ -107,8 +106,7 @@ export function SealPositionOverview({
               error={urnAddressLoading ? null : vaultError}
               content={
                 <Text className={cn('mt-2', riskColor ? riskColor.text : '')}>
-                  {(Number(formatUnits(vault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100).toFixed(2)}
-                  %
+                  {formatPercent(vault?.collateralizationRatio || 0n)}
                 </Text>
               }
             />

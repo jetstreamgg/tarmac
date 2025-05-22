@@ -1,6 +1,7 @@
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
+import { StakeBalanceCard } from './StakeBalanceCard';
 
 export interface CardProps {
   url?: string;
@@ -12,6 +13,7 @@ export interface CardProps {
   usdsCleSuppliedBalance?: bigint;
   savingsBalances?: { chainId: number; balance: bigint }[];
   sealBalance?: bigint;
+  stakeBalance?: bigint;
 }
 
 interface ModulesBalancesProps {
@@ -32,6 +34,10 @@ interface ModulesBalancesProps {
   savingsBalances?: { chainId: number; balance: bigint }[];
   savingsLoading?: boolean;
   sealBalance?: bigint;
+  stakeBalance?: bigint;
+  stakeLoading?: boolean;
+  hideStake?: boolean;
+  stakeCardUrl?: string;
 }
 
 export const ModulesBalances = ({
@@ -49,7 +55,11 @@ export const ModulesBalances = ({
   usdsCleSuppliedBalance,
   hideSavings,
   savingsBalances,
-  savingsLoading
+  savingsLoading,
+  stakeBalance,
+  stakeLoading,
+  hideStake,
+  stakeCardUrl
 }: ModulesBalancesProps): React.ReactElement => {
   return (
     <div className="flex flex-col gap-2">
@@ -68,6 +78,14 @@ export const ModulesBalances = ({
           onExternalLinkClicked={onExternalLinkClicked}
           loading={savingsLoading}
           savingsBalances={savingsBalances}
+        />
+      )}
+      {!hideStake && (
+        <StakeBalanceCard
+          loading={stakeLoading}
+          stakeBalance={stakeBalance}
+          onExternalLinkClicked={onExternalLinkClicked}
+          url={stakeCardUrl}
         />
       )}
       {!hideSeal && (

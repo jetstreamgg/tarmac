@@ -8,12 +8,17 @@ interface WidgetContainerProps {
   footer?: React.ReactElement;
   children?: React.ReactNode;
   contentClassname?: string;
+  containerClassName?: string;
 }
 
 export const WidgetContainer = forwardRef<HTMLDivElement, WidgetContainerProps>(
-  ({ header, rightHeader, footer, children, contentClassname }, ref) => {
+  ({ header, rightHeader, footer, children, contentClassname, containerClassName }, ref) => {
     return (
-      <Card variant="widget" data-testid="widget-container" className="relative h-full">
+      <Card
+        variant="widget"
+        data-testid="widget-container"
+        className={cn('relative h-full', containerClassName)}
+      >
         <div ref={ref} className="scrollbar-thin overflow-y-auto">
           <CardHeader className="space-y-0">
             {header}

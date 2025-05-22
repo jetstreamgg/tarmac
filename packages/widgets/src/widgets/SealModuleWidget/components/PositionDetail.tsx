@@ -9,7 +9,13 @@ import {
   useRewardContractTokens,
   useDelegateName,
   useSaRewardContracts,
-  useDelegateOwner
+  useDelegateOwner,
+  useVault,
+  ZERO_ADDRESS,
+  useUrnAddress,
+  useUrnSelectedRewardContract,
+  useUrnSelectedVoteDelegate,
+  useIsSealUrnAuth
 } from '@jetstreamgg/hooks';
 import { captitalizeFirstLetter, formatBigInt, formatPercent, math } from '@jetstreamgg/utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -21,8 +27,14 @@ import { JazziconComponent } from './Jazzicon';
 import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
 import { ClaimRewardsButton } from './ClaimRewardsButton';
-import { useContext } from 'react';
+import { useCallback, useContext } from 'react';
 import { SealModuleWidgetContext } from '../context/context';
+import { Button } from '@widgets/components/ui/button';
+import { SealAction, SealFlow, SealStep } from '../lib/constants';
+import { WidgetState } from '@widgets/index';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { OnSealUrnChange } from '../lib/types';
+import { Success } from '@widgets/shared/components/icons/Success';
 
 type Props = {
   collateralizationRatio?: bigint;
@@ -42,6 +54,9 @@ type Props = {
   index: bigint;
   claimPrepared: boolean;
   claimExecute: () => void;
+  isMigrated?: boolean;
+  onNavigateToMigratedUrn?: (index?: bigint) => void;
+  onSealUrnChange?: OnSealUrnChange;
 };
 
 // Copied from TransactionDetail, it could be reusable
@@ -58,13 +73,20 @@ export function PositionDetail({
   urnAddress,
   index,
   claimPrepared,
-  claimExecute
+  claimExecute,
+  isMigrated,
+  onNavigateToMigratedUrn,
+  onSealUrnChange
 }: Props) {
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
   const { data: selectedDelegateOwner } = useDelegateOwner(selectedVoteDelegate);
   const { data: sealRewardContracts } = useSaRewardContracts();
   const { displayToken, setDisplayToken } = useContext(SealModuleWidgetContext);
+  const { data: isOldUrnAuth } = useIsSealUrnAuth({
+    urnIndex: index || 0n
+  });
+  const needsOldUrnAuth = isOldUrnAuth === undefined || !isOldUrnAuth;
 
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
 
@@ -95,7 +117,7 @@ export function PositionDetail({
             <VStack gap={3}>
               <TextWithTooltip
                 text="Collateralization ratio"
-                tooltip="The ratio between the value of collateral you’ve provided and the amount you’ve borrowed against that collateral."
+                tooltip="The ratio between the value of collateral you've provided and the amount you've borrowed against that collateral."
                 contentClassname="w-[400px]"
                 textClassName="leading-4"
                 gap={1}
@@ -181,6 +203,15 @@ export function PositionDetail({
         delayedPrice={delayedPrice}
         liquidationPrice={liquidationPrice}
       />
+      <MigrateButton
+        isMigrated={isMigrated}
+        index={index}
+        onNavigateToMigratedUrn={onNavigateToMigratedUrn}
+        sealedAmount={sealedAmount}
+        onSealUrnChange={onSealUrnChange}
+        borrowedAmount={borrowedAmount}
+        needsOldUrnAuth={needsOldUrnAuth}
+      />
       <>
         {sealRewardContracts &&
           urnAddress &&
@@ -198,3 +229,105 @@ export function PositionDetail({
     </MotionVStack>
   );
 }
+
+const MigrateButton = ({
+  isMigrated,
+  index,
+  sealedAmount,
+  onNavigateToMigratedUrn,
+  onSealUrnChange,
+  borrowedAmount,
+  needsOldUrnAuth
+}: {
+  isMigrated?: boolean;
+  index: bigint;
+  onNavigateToMigratedUrn?: (index?: bigint) => void;
+  onSealUrnChange?: OnSealUrnChange;
+  sealedAmount?: bigint;
+  borrowedAmount?: bigint;
+  needsOldUrnAuth?: boolean;
+}) => {
+  const { setWidgetState } = useContext(WidgetContext);
+  const { setCurrentStep, setSelectedRewardContract, setSelectedDelegate, setActiveUrn } =
+    useContext(SealModuleWidgetContext);
+
+  //TODO this stuff is just to help  mock the transaction screens temporarily
+  const { data: urnAddress } = useUrnAddress(index);
+  const { data: urnSelectedRewardContract } = useUrnSelectedRewardContract({
+    urn: urnAddress || ZERO_ADDRESS
+  });
+  const { data: urnSelectedVoteDelegate } = useUrnSelectedVoteDelegate({ urn: urnAddress || ZERO_ADDRESS });
+  const { data: vaultData } = useVault(urnAddress || ZERO_ADDRESS);
+
+  const handleOnClick = useCallback(() => {
+    if (urnAddress && urnAddress !== ZERO_ADDRESS && urnSelectedRewardContract) {
+      setSelectedRewardContract(urnSelectedRewardContract);
+    } else {
+      setSelectedRewardContract(undefined);
+    }
+    if (urnAddress && urnAddress !== ZERO_ADDRESS && urnSelectedVoteDelegate) {
+      setSelectedDelegate(urnSelectedVoteDelegate);
+    } else {
+      setSelectedDelegate(undefined);
+    }
+
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      flow: SealFlow.MIGRATE,
+      action: SealAction.MULTICALL
+    }));
+
+    setActiveUrn({ urnAddress, urnIndex: index }, onSealUrnChange ?? (() => {}));
+    setCurrentStep(SealStep.ABOUT);
+  }, [urnAddress, index, vaultData, urnSelectedVoteDelegate, urnSelectedRewardContract]);
+
+  if (isMigrated === undefined) return null;
+
+  if (isMigrated) {
+    return (
+      <>
+        <Text variant="small" className="text-warning text-center">
+          This position has been migrated to the new Staking Engine.
+        </Text>
+        {onNavigateToMigratedUrn && (
+          <Button variant="primaryAlt" className="mt-2 w-full" onClick={() => onNavigateToMigratedUrn(index)}>
+            <Text>Manage position in Staking Engine</Text>
+          </Button>
+        )}
+      </>
+    );
+  }
+
+  // TODO: turn this back on after testing is done
+  if (sealedAmount === undefined || sealedAmount === 0n) {
+    return (
+      <Text variant="small" className="text-warning text-center">
+        Only positions with collateral can be migrated.
+      </Text>
+    );
+  }
+
+  return (
+    <VStack gap={3}>
+      {!borrowedAmount && (
+        <Text variant="captionSm" className="text-warning text-center">
+          Note: It will be more gas-efficient to manually close this position and open a new one in the
+          Staking Engine.
+        </Text>
+      )}
+      <Button
+        variant="primaryAlt"
+        onClick={handleOnClick}
+        // disabled={!!rewardContractToClaim && indexToClaim !== undefined}
+      >
+        <Text>Migrate Position</Text>
+      </Button>
+      {!needsOldUrnAuth && (
+        <HStack className="items-center justify-between">
+          <Text variant="captionSm">This position has been approved for migration</Text>
+          <Success />
+        </HStack>
+      )}
+    </VStack>
+  );
+};

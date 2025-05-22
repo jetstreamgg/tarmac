@@ -5,7 +5,7 @@ export default defineConfig({
   testDir: 'src/test/e2e/tests',
 
   // Run all tests in parallel.
-  fullyParallel: true,
+  fullyParallel: false,
 
   // Fail the build on CI if you accidentally left test.only in the source code.
   forbidOnly: !!process.env.CI,
@@ -13,8 +13,8 @@ export default defineConfig({
   // Retry on CI only.
   retries: process.env.CI ? 2 : 0,
 
-  // Opt out of parallel tests
-  workers: 1,
+  // Set number of parallel workers (5 on CI, default on local)
+  workers: process.env.CI ? 3 : 1,
 
   // Set test timeout
   timeout: 120000,

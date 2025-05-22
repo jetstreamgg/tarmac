@@ -58,10 +58,11 @@ export const SelectDelegate = ({
     !!selectedDelegate &&
     selectedDelegate.toLowerCase() !== ZERO_ADDRESS.toLowerCase();
   const hasCompletedManageFlow = widgetState.flow === SealFlow.MANAGE;
+  const hasCompletedMigrateFlow = widgetState.flow === SealFlow.MIGRATE;
 
   useEffect(() => {
-    setIsSelectDelegateCompleted(hasCompletedOpenFlow || hasCompletedManageFlow);
-  }, [hasCompletedOpenFlow, hasCompletedManageFlow]);
+    setIsSelectDelegateCompleted(hasCompletedOpenFlow || hasCompletedManageFlow || hasCompletedMigrateFlow);
+  }, [hasCompletedOpenFlow, hasCompletedManageFlow, hasCompletedMigrateFlow]);
 
   const handleSkip = () => {
     // If this is an open flow, `urnSelectedVoteDelegate` would be undefined,

@@ -2,7 +2,14 @@ import { useContext, useEffect } from 'react';
 import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { getTokenDecimals, OrderQuoteResponse, Token } from '@jetstreamgg/hooks';
-import { WAD_PRECISION, formatBigInt, ExplorerName, getExplorerName, isL2ChainId } from '@jetstreamgg/utils';
+import {
+  WAD_PRECISION,
+  formatBigInt,
+  ExplorerName,
+  getExplorerName,
+  isL2ChainId,
+  useIsSafeWallet
+} from '@jetstreamgg/utils';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
@@ -53,6 +60,7 @@ export const TradeTransactionStatus = ({
 }) => {
   const { i18n } = useLingui();
   const chainId = useChainId();
+  const isSafeWallet = useIsSafeWallet();
   const {
     setTxTitle,
     setTxSubtitle,
@@ -95,7 +103,7 @@ export const TradeTransactionStatus = ({
       : undefined;
 
   const isL2 = isL2ChainId(chainId);
-  const chainExplorerName = getExplorerName(chainId);
+  const chainExplorerName = getExplorerName(chainId, isSafeWallet);
 
   useEffect(() => {
     setOriginToken(originToken);

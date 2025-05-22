@@ -11,13 +11,13 @@ test('Linked Action - Upgrade DAI then supply to Savings', async ({ page }) => {
 
   await approveOrPerformAction(page, 'Upgrade');
 
-  const gotToSavingsButton = page.getByRole('button', { name: 'Go to Savings' });
+  const gotToSavingsButton = page.getByRole('button', { name: 'Go to Savings' }).first();
   await expect(gotToSavingsButton).toBeEnabled(); //don't click until enabled
   await gotToSavingsButton.click();
 
   await approveOrPerformAction(page, 'Supply');
 
-  const finishButton = page.getByRole('button', { name: 'Back to Savings' });
+  const finishButton = page.getByRole('button', { name: 'Back to Savings' }).first();
   await expect(finishButton).toBeEnabled(); // don't click until enabled
   await finishButton.click();
 });

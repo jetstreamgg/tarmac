@@ -29,8 +29,9 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   formatBigInt,
-  getEtherscanLink,
   truncateStringToFourDecimals,
+  getTransactionLink,
+  useIsSafeWallet,
   useDebounce,
   useIsSmartContractWallet
 } from '@jetstreamgg/utils';
@@ -140,6 +141,7 @@ function TradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isSmartContractWallet = useIsSmartContractWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
@@ -348,7 +350,7 @@ function TradeWidgetWrapped({
           unit: originToken ? getTokenDecimals(originToken, chainId) : 18
         })} ${originToken?.symbol ?? ''}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -526,7 +528,7 @@ function TradeWidgetWrapped({
           unit: originToken ? getTokenDecimals(originToken, chainId) : 18
         })} ${originToken?.symbol ?? ''} to the EthFlow contract`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       setEthFlowTxStatus(EthFlowTxStatus.SENDING_ETH);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });

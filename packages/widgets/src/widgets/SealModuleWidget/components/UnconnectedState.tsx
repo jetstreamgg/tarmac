@@ -9,7 +9,7 @@ import { Trans } from '@lingui/react/macro';
 export const UnconnectedState = ({
   onInputAmountChange
 }: {
-  onInputAmountChange: (val: bigint, userTriggered?: boolean) => void;
+  onInputAmountChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   return (
     <div className="mb-8 mt-6 space-y-2">

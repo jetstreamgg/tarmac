@@ -21,10 +21,11 @@ import {
 import { useContext, useEffect, useMemo, useState } from 'react';
 import {
   formatBigInt,
-  getEtherscanLink,
   math,
   truncateStringToFourDecimals,
-  useDebounce
+  useDebounce,
+  getTransactionLink,
+  useIsSafeWallet
 } from '@jetstreamgg/utils';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -168,6 +169,7 @@ function TradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
 
@@ -539,7 +541,7 @@ function TradeWidgetWrapped({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken?.symbol ?? ''}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -587,7 +589,7 @@ function TradeWidgetWrapped({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken?.symbol ?? ''}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -643,7 +645,7 @@ function TradeWidgetWrapped({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken?.symbol ?? ''}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },

@@ -241,7 +241,11 @@ describe('useUserDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     expect(query).toContain('delegations_: {delegator_contains_nocase: "0xabc", amount_gt: 0}');
-    expect(query).toContain('delegations(where: {delegator_contains_nocase: "0xabc", amount_gt: 0})');
+    expect(query).toContain(`
+        delegations(
+          first: 1000
+          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
+        ) {`);
   });
 
   it('Should build the correct query with search parameter', async () => {
@@ -260,7 +264,11 @@ describe('useUserDelegates', async () => {
 
     expect(query).toContain('{id_contains_nocase: "delegate"}');
     expect(query).toContain('delegations_: {delegator_contains_nocase: "0xabc", amount_gt: 0}');
-    expect(query).toContain('delegations(where: {delegator_contains_nocase: "0xabc", amount_gt: 0})');
+    expect(query).toContain(`
+        delegations(
+          first: 1000
+          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
+        ) {`);
   });
 });
 

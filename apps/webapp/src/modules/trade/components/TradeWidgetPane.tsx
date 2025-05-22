@@ -7,7 +7,7 @@ import {
 } from '@jetstreamgg/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
-import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -19,6 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { isBaseChainId, isArbitrumChainId, isL2ChainId } from '@jetstreamgg/utils';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Intent } from '@/lib/enums';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
@@ -27,7 +28,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { linkedActionConfig, updateLinkedActionConfig } = useConfigContext();
 
   const wagmiConfig = useWagmiConfig();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
 
@@ -45,6 +46,11 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     executedBuyAmount,
     originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.TRADE_INTENT]) {
+      return;
+    }
+
     setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update search params

@@ -1,9 +1,14 @@
 import { JSX } from 'react';
 
+export enum HighlightColor {
+  Bullish = 'bullish',
+  Bearish = 'bearish'
+}
+
 export interface HistoryRow {
   id: string;
   type?: string;
-  textLeft: string;
+  textLeft: string | JSX.Element;
   tokenLeft?: string;
   iconLeft?: JSX.Element;
   textRight?: string;
@@ -12,6 +17,7 @@ export interface HistoryRow {
   rawDate: Date;
   transactionHash: string;
   highlightText?: boolean;
+  highlightColor?: HighlightColor;
   cowOrderStatus?: string;
 }
 

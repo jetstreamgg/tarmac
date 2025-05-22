@@ -1,10 +1,11 @@
-import { useChainId } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 import { getSavingsFaqItems } from '../getSavingsFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 
 export function SavingsFaq() {
   const chainId = useChainId();
-  const faqItems = getSavingsFaqItems(chainId);
+  const { isConnected } = useAccount();
+  const faqItems = getSavingsFaqItems(chainId, isConnected);
 
   return <FaqAccordion items={faqItems} />;
 }

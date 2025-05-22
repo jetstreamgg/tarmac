@@ -15,7 +15,8 @@ export const StatsOverviewCardCoreAccordion = ({
   content,
   footerContent,
   onClick,
-  className
+  className,
+  dataTestId
 }: {
   headerLeftContent: JSX.Element;
   headerRightContent?: JSX.Element;
@@ -23,9 +24,15 @@ export const StatsOverviewCardCoreAccordion = ({
   footerContent?: JSX.Element;
   onClick?: (any?: any) => void;
   className?: string;
+  dataTestId?: string;
 }) => {
   return (
-    <Card variant="pool" onClick={onClick} className={cn('hover-in-before overflow-hidden', className)}>
+    <Card
+      variant="pool"
+      onClick={onClick}
+      className={cn('hover-in-before overflow-hidden', className)}
+      data-testid={dataTestId}
+    >
       <CardContent>
         <Accordion type="single" collapsible>
           <AccordionItem value="content">

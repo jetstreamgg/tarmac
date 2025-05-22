@@ -32,7 +32,7 @@ export const getConfirmationWarningMetadata = (intent?: ChatIntent) => {
     CONFIRMATION_WARNING_METADATA[intent.intent_id] || {
       description: 'You are about to execute a transaction suggested by our AI chatbot.',
       disclaimer:
-        'Please be aware that while we strive to provide accurate and helpful suggestions, you&apos;re solely responsible for reviewing and implementing any recommended actions. We do not guarantee the accuracy or completeness of the AI&apos;s suggestions and disclaim any liability for consequences arising from your use of this feature.'
+        "Please be aware that while we strive to provide accurate and helpful suggestions, you're solely responsible for reviewing and implementing any recommended actions. We do not guarantee the accuracy or completeness of the AI's suggestions and disclaim any liability for consequences arising from your use of this feature."
     }
   );
 };

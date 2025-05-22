@@ -1,11 +1,11 @@
-import { useChainId } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 import { MutationFunction, useMutation } from '@tanstack/react-query';
 import { SendMessageRequest, SendMessageResponse, ChatIntent } from '../types/Chat';
 import { useChatContext } from '../context/ChatContext';
 import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/macro';
-import { chainIdNameMapping } from '../lib/intentUtils';
+import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
 
 interface ChatbotResponse {
   chatResponse: {
@@ -17,7 +17,7 @@ interface ChatbotResponse {
 const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
   const domain = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 
-  const response = await fetch(`${domain}/chat/predictions`, {
+  const response = await fetch(`${domain}/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -70,6 +70,7 @@ const sendMessageMutation: MutationFunction<
 export const useSendMessage = () => {
   const { setChatHistory, sessionId, chatHistory } = useChatContext();
   const chainId = useChainId();
+  const { isConnected } = useAccount();
 
   const { loading: LOADING, error: ERROR, canceled: CANCELED } = MessageType;
   const { mutate } = useMutation<SendMessageResponse, Error, { messagePayload: Partial<SendMessageRequest> }>(
@@ -85,7 +86,7 @@ export const useSendMessage = () => {
       content: record.message,
       role: record.user === UserType.user ? 'user' : 'assistant'
     }));
-  const network = chainIdNameMapping[chainId as keyof typeof chainIdNameMapping];
+  const network = isConnected ? chainIdNameMapping[chainId as keyof typeof chainIdNameMapping] : 'ethereum';
 
   const sendMessage = (message: string) => {
     mutate(
@@ -99,6 +100,10 @@ export const useSendMessage = () => {
       },
       {
         onSuccess: data => {
+          const intents = data.intents
+            ?.filter(chatIntent => isChatIntentAllowed(chatIntent, chainId))
+            .map(intent => ({ ...intent, url: processNetworkNameInUrl(intent.url) }));
+
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED
               ? prevHistory
@@ -108,7 +113,7 @@ export const useSendMessage = () => {
                     id: generateUUID(),
                     user: UserType.bot,
                     message: data.response,
-                    intents: data.intents
+                    intents
                   }
                 ];
           });
@@ -131,6 +136,7 @@ export const useSendMessage = () => {
         }
       }
     );
+
     setChatHistory(prevHistory => [
       ...prevHistory,
       { id: generateUUID(), user: UserType.user, message },

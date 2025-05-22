@@ -10,7 +10,7 @@ export enum QueryParams {
   Widget = 'widget',
   Details = 'details',
   Reward = 'reward',
-  SealUrnIndex = 'urn_index',
+  UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
   LinkedAction = 'linked_action',
@@ -18,9 +18,10 @@ export enum QueryParams {
   Timestamp = 'timestamp',
   Network = 'network',
   Chat = 'chat',
+  Reset = 'reset',
   Flow = 'flow',
-  SealTab = 'seal_tab',
-  Reset = 'reset'
+  StakeTab = 'stake_tab',
+  SealTab = 'seal_tab'
 }
 
 const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
@@ -36,7 +37,8 @@ export const IntentMapping = {
   [Intent.TRADE_INTENT]: 'trade',
   [Intent.SAVINGS_INTENT]: 'savings',
   [Intent.REWARDS_INTENT]: 'rewards',
-  [Intent.SEAL_INTENT]: 'seal'
+  [Intent.SEAL_INTENT]: 'seal',
+  [Intent.STAKE_INTENT]: 'stake'
 };
 
 export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
@@ -46,14 +48,16 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.SAVINGS_INTENT,
     Intent.UPGRADE_INTENT,
     Intent.TRADE_INTENT,
-    Intent.SEAL_INTENT
+    Intent.SEAL_INTENT,
+    Intent.STAKE_INTENT
   ],
   [tenderly.id]: [
     Intent.BALANCES_INTENT,
     Intent.REWARDS_INTENT,
     Intent.SAVINGS_INTENT,
     Intent.UPGRADE_INTENT,
-    Intent.SEAL_INTENT
+    Intent.SEAL_INTENT,
+    Intent.STAKE_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.REWARDS_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.REWARDS_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
@@ -77,6 +81,7 @@ export const COMING_SOON_MAP: Record<number, Intent[]> = {
   [arbitrum.id]: [Intent.REWARDS_INTENT],
   [tenderlyBase.id]: [Intent.REWARDS_INTENT],
   [tenderlyArbitrum.id]: [Intent.REWARDS_INTENT]
+  // [base.id]: [Intent.YOUR_INTENT] // Example of how to add a coming soon intent
 };
 
 export const intentTxt: Record<string, MessageDescriptor> = {
@@ -85,7 +90,8 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   savings: msg`savings`,
   rewards: msg`rewards`,
   balances: msg`balances`,
-  seal: msg`seal`
+  seal: msg`seal`,
+  stake: msg`stake`
 };
 
 export const VALID_LINKED_ACTIONS = [
@@ -122,10 +128,16 @@ export const linkedActionMetadata = {
   [IntentMapping[Intent.TRADE_INTENT]]: { text: 'Trade Tokens', icon: Trade },
   [IntentMapping[Intent.SAVINGS_INTENT]]: { text: 'Access Savings', icon: Savings },
   [IntentMapping[Intent.REWARDS_INTENT]]: { text: 'Get Rewards', icon: RewardsModule },
-  [IntentMapping[Intent.SEAL_INTENT]]: { text: 'Seal', icon: Seal }
+  [IntentMapping[Intent.SEAL_INTENT]]: { text: 'Seal', icon: Seal },
+  [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Activate', icon: Seal }
 };
 
-export const ALLOWED_EXTERNAL_DOMAINS = ['sky.money', 'app.sky.money', 'docs.sky.money'];
+export const ALLOWED_EXTERNAL_DOMAINS = [
+  'sky.money',
+  'app.sky.money',
+  'docs.sky.money',
+  'upgrademkrtosky.sky.money'
+];
 
 export const PROD_URL_SKY_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/subgraph-mainnet';

@@ -1,6 +1,7 @@
 import { ReadHook } from '../hooks';
 import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { useChainId } from 'wagmi';
 
 type DelegateApiData = {
   name: string;
@@ -26,8 +27,9 @@ type DelegateApiData = {
   };
 };
 
-const fetchDelegateMetadata = async (url?: string) => {
-  const response = await fetch(url || 'https://vote.makerdao.com/api/delegates/info'); //to test with tenderly, switch to https://governance-portal-v2-git-tenderly-delegate-4c3fd5-dux-core-unit.vercel.app/api/delegates/info?network=tenderly
+const fetchDelegateMetadata = async (chainId: number) => {
+  const networkSearchParam = chainId === TENDERLY_CHAIN_ID ? 'tenderly' : 'mainnet';
+  const response = await fetch(`https://vote.sky.money/api/delegates/info?network=${networkSearchParam}`);
   const data: DelegateApiData[] = await response.json();
 
   // Transform into mapping from delegate address to name
@@ -48,13 +50,11 @@ type UseDelegateMetadataMappingResponse = ReadHook & {
     | undefined;
 };
 
-export function useDelegateMetadataMapping(
-  url?: string,
-  enabled: boolean = true
-): UseDelegateMetadataMappingResponse {
+export function useDelegateMetadataMapping(enabled: boolean = true): UseDelegateMetadataMappingResponse {
+  const chainId = useChainId();
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['delegate-metadata', url],
-    queryFn: () => fetchDelegateMetadata(url),
+    queryKey: ['delegate-metadata', chainId],
+    queryFn: () => fetchDelegateMetadata(chainId),
     enabled
   });
   return {
@@ -65,7 +65,7 @@ export function useDelegateMetadataMapping(
     dataSources: [
       {
         title: 'Governance Portal',
-        href: 'vote.makerdao.com',
+        href: 'vote.sky.money',
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
       }

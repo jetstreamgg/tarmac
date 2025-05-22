@@ -1,6 +1,10 @@
-import { Chain } from 'wagmi/chains';
-import { QueryParams } from '@/lib/constants';
+import { arbitrum, base, Chain, mainnet } from 'wagmi/chains';
+import { COMING_SOON_MAP, QueryParams } from '@/lib/constants';
 import { ChatIntent } from '../types/Chat';
+import { Intent } from '@/lib/enums';
+import { isIntentAllowed } from '@/lib/utils';
+import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const networkMapping = {
   mainnet: 1,
@@ -12,11 +16,20 @@ export const networkMapping = {
 
 export const chainIdNameMapping = {
   1: 'ethereum',
-  314310: 'ethereum', // tenderly
   8453: 'base',
-  8555: 'base', // base tenderly
   42161: 'arbitrumone',
-  421611: 'arbitrumone' // arbitrum+one tenderly
+  [tenderly.id]: 'ethereum',
+  [tenderlyBase.id]: 'base',
+  [tenderlyArbitrum.id]: 'arbitrumone'
+} as const;
+
+export const intents = {
+  balances: Intent.BALANCES_INTENT,
+  rewards: Intent.REWARDS_INTENT,
+  savings: Intent.SAVINGS_INTENT,
+  upgrade: Intent.UPGRADE_INTENT,
+  trade: Intent.TRADE_INTENT,
+  stake: Intent.STAKE_INTENT
 } as const;
 
 export type NetworkName = keyof typeof networkMapping;
@@ -80,4 +93,62 @@ export const intentModifiesState = (intent?: ChatIntent): boolean => {
       intent.url.includes(QueryParams.SourceToken) ||
       intent.url.includes(QueryParams.TargetToken))
   );
+};
+
+export const processNetworkNameInUrl = (url: string): string => {
+  if (
+    import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&
+    (import.meta.env.VITE_ENV_NAME === 'staging' || import.meta.env.VITE_ENV_NAME === 'development')
+  ) {
+    const networkMappings = {
+      [normalizeUrlParam(mainnet.name)]: tenderly.name,
+      [normalizeUrlParam(base.name)]: tenderlyBase.name,
+      [normalizeUrlParam(arbitrum.name)]: tenderlyArbitrum.name
+    } as const;
+
+    return Object.entries(networkMappings).reduce((processedUrl, [mainnet, testnet]) => {
+      return processedUrl.replace(`network=${mainnet}`, `network=${testnet}`);
+    }, url);
+  }
+  return url;
+};
+
+export const isChatIntentAllowed = (intent: ChatIntent, currentChainId: number): boolean => {
+  try {
+    const urlObj = new URL(intent.url, window.location.origin);
+    const intentWidget = urlObj.searchParams.get(QueryParams.Widget);
+    const intentNetwork = urlObj.searchParams.get(QueryParams.Network);
+
+    if (!intentWidget) {
+      console.warn('Intent URL missing widget param:', intent.url);
+      return false; // Cannot determine allowance without widget
+    }
+
+    // Look up the Intent enum based on the widget string
+    const intentEnum = intents[intentWidget as keyof typeof intents];
+
+    if (intentEnum === undefined) {
+      console.warn('Could not map widget to known value:', { intentWidget });
+      return false; // Widget name is not recognized
+    }
+
+    // In case the network param is missing, we use the current chainId as fallback
+    let chainIdToCheck: number = currentChainId;
+
+    // If the network param is present and it's a valid network, we use the mapped chainId
+    if (intentNetwork) {
+      const mappedChainId = networkMapping[intentNetwork as keyof typeof networkMapping];
+      if (mappedChainId === undefined) {
+        // Invalid network param value, intent is not allowed
+        return false;
+      }
+      chainIdToCheck = mappedChainId;
+    }
+    return (
+      isIntentAllowed(intentEnum, chainIdToCheck) && !COMING_SOON_MAP[chainIdToCheck]?.includes(intentEnum)
+    );
+  } catch (error) {
+    console.error('Failed to parse intent URL or check allowance:', error);
+    return false;
+  }
 };

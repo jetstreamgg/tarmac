@@ -14,6 +14,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { FooterLinks } from '@/modules/layout/components/FooterLinks';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
+import { StakeDetailsPane } from '@/modules/stake/components/StakeDetailsPane';
 
 type DetailsPaneProps = {
   intent: Intent;
@@ -97,6 +98,12 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
               return (
                 <MotionDetailsWrapper key={keys[3]}>
                   <SealDetailsPane />
+                </MotionDetailsWrapper>
+              );
+            case Intent.STAKE_INTENT:
+              return (
+                <MotionDetailsWrapper key={keys[3]}>
+                  <StakeDetailsPane />
                 </MotionDetailsWrapper>
               );
             case Intent.BALANCES_INTENT:

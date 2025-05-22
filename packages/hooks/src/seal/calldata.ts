@@ -1,5 +1,5 @@
 import { encodeFunctionData } from 'viem';
-import { sealModuleAbi } from '../generated';
+import { lsMigratorAbi, sealModuleAbi } from '../generated';
 
 export const getSaOpenCalldata = ({ urnIndex }: { urnIndex: bigint }) =>
   encodeFunctionData({
@@ -168,4 +168,45 @@ export const getSaGetRewardCalldata = ({
     abi: sealModuleAbi,
     functionName: 'getReward',
     args: [ownerAddress, urnIndex, rewardContractAddress, toAddress]
+  });
+
+export const getSaHopeCalldata = ({
+  ownerAddress,
+  urnIndex,
+  usrAddress
+}: {
+  ownerAddress: `0x${string}`;
+  urnIndex: bigint;
+  usrAddress: `0x${string}`;
+}) =>
+  encodeFunctionData({
+    abi: sealModuleAbi,
+    functionName: 'hope',
+    args: [ownerAddress, urnIndex, usrAddress]
+  });
+
+export const getSaMigrateCalldata = ({
+  oldOwner,
+  oldIndex,
+  newOwner,
+  newIndex,
+  ref = 0
+}: {
+  oldOwner: `0x${string}`;
+  oldIndex: bigint;
+  newOwner: `0x${string}`;
+  newIndex: bigint;
+  ref?: number;
+}) =>
+  encodeFunctionData({
+    abi: lsMigratorAbi,
+    functionName: 'migrate',
+    args: [oldOwner, oldIndex, newOwner, newIndex, ref]
+  });
+
+export const getSaMulticallCalldata = ({ calldata }: { calldata: `0x${string}`[] }) =>
+  encodeFunctionData({
+    abi: sealModuleAbi,
+    functionName: 'multicall',
+    args: [calldata]
   });
