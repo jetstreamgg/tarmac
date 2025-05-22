@@ -113,24 +113,24 @@ const intents2 = [
 
   // Seal intents (Ethereum only)
   {
-    intent_id: 'seal_1',
-    title: 'Open a new Seal position',
-    url: '/?widget=seal&network=mainnet_sep_30_0&flow=open&reset=true'
+    intent_id: 'stake_1',
+    title: 'Open a new Stake position',
+    url: '/?widget=stake&network=mainnet_2025_apr_15_0&flow=open&reset=true'
   },
   {
-    intent_id: 'seal_2',
-    title: 'Manage my Seal position (Urn 5)',
-    url: '/?widget=seal&network=mainnet_sep_30_0&flow=manage&urn_index=4&reset=true'
+    intent_id: 'stake_2',
+    title: 'Manage my Stake position (Urn 5)',
+    url: '/?widget=stake&network=mainnet_2025_apr_15_0&flow=manage&urn_index=4&reset=true'
   },
   {
-    intent_id: 'seal_3',
-    title: 'Lock 10 SKY in my Seal position (Urn 3)',
-    url: '/?widget=seal&network=mainnet_sep_30_0&flow=manage&urn_index=2&seal_tab=lock&input_amount=10&reset=true'
+    intent_id: 'stake_3',
+    title: 'Lock 10 SKY in my Stake position (Urn 3)',
+    url: '/?widget=stake&network=mainnet_2025_apr_15_0&flow=manage&urn_index=2&stake_tab=lock&input_amount=10&reset=true'
   },
   {
-    intent_id: 'seal_4',
-    title: 'Repay debt for my Seal position (Urn 1)',
-    url: '/?widget=seal&network=mainnet_sep_30_0&flow=manage&urn_index=0&seal_tab=free&reset=true'
+    intent_id: 'stake_4',
+    title: 'Repay debt for my Stake position (Urn 1)',
+    url: '/?widget=stake&network=mainnet_2025_apr_15_0&flow=manage&urn_index=0&stake_tab=free&reset=true'
   },
 
   // Balances intents
