@@ -32,86 +32,86 @@ const intents2 = [
   {
     intent_id: 'trade_1',
     title: 'Trade 500 USDS to USDC',
-    url: '/?widget=trade&network=base&source_token=USDS&target_token=USDC&input_amount=500&reset=true'
+    url: '/?widget=trade&network=new-base-testnet-jan-27&source_token=USDS&target_token=USDC&input_amount=500&reset=true'
   },
   {
     intent_id: 'trade_2',
     title: 'Trade 100 ETH to USDC',
-    url: '/?widget=trade&network=ethereum&source_token=ETH&target_token=USDC&input_amount=100&reset=true'
+    url: '/?widget=trade&network=mainnet_2025_apr_15_0&source_token=ETH&target_token=USDC&input_amount=100&reset=true'
   },
   {
     intent_id: 'trade_3',
     title: 'Trade 1000 USDC to USDS',
-    url: '/?widget=trade&network=arbitrumone&source_token=USDC&target_token=USDS&input_amount=1000&reset=true'
+    url: '/?widget=trade&network=arbitrum_fork_feb_7&source_token=USDC&target_token=USDS&input_amount=1000&reset=true'
   },
   {
     intent_id: 'trade_4',
     title: 'Trade 50 WETH to USDS',
-    url: '/?widget=trade&network=base&source_token=WETH&target_token=USDS&input_amount=50&reset=true'
+    url: '/?widget=trade&network=new-base-testnet-jan-27&source_token=WETH&target_token=USDS&input_amount=50&reset=true'
   },
 
   // Savings intents
   {
     intent_id: 'savings_1',
     title: 'Deposit 20 USDS to Savings',
-    url: '/?widget=savings&network=base&source_token=USDS&reset=true&input_amount=20'
+    url: '/?widget=savings&network=new-base-testnet-jan-27&source_token=USDS&reset=true&input_amount=20'
   },
   {
     intent_id: 'savings_2',
     title: 'View Savings on Arbitrum',
-    url: '/?widget=savings&network=arbitrumone&reset=true'
+    url: '/?widget=savings&network=arbitrum_fork_feb_7&reset=true'
   },
   {
     intent_id: 'savings_3',
     title: 'Withdraw 15 USDS from Savings',
-    url: '/?widget=savings&network=base&source_token=USDS&flow=withdraw&reset=true&input_amount=15'
+    url: '/?widget=savings&network=new-base-testnet-jan-27&source_token=USDS&flow=withdraw&reset=true&input_amount=15'
   },
 
   // Upgrade intents (Ethereum only)
   {
     intent_id: 'upgrade_1',
     title: 'Upgrade 1000 DAI to USDS',
-    url: '/?widget=upgrade&network=ethereum&source_token=DAI&input_amount=1000&reset=true'
+    url: '/?widget=upgrade&network=mainnet_2025_apr_15_0&source_token=DAI&input_amount=1000&reset=true'
   },
   {
     intent_id: 'upgrade_2',
     title: 'Upgrade 10 MKR to SKY',
-    url: '/?widget=upgrade&network=ethereum&source_token=MKR&input_amount=10&reset=true'
+    url: '/?widget=upgrade&network=mainnet_2025_apr_15_0&source_token=MKR&input_amount=10&reset=true'
   },
   {
     intent_id: 'upgrade_3',
     title: 'Revert 500 USDS to DAI',
-    url: '/?widget=upgrade&network=ethereum&source_token=USDS&flow=revert&input_amount=500&reset=true'
+    url: '/?widget=upgrade&network=mainnet_2025_apr_15_0&source_token=USDS&flow=revert&input_amount=500&reset=true'
   },
 
   // Rewards intents
   {
     intent_id: 'rewards_1',
     title: 'Supply 1000 USDS for SKY Rewards',
-    url: '/?widget=rewards&network=ethereum&flow=supply&input_amount=1000&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275&reset=true'
+    url: '/?widget=rewards&network=mainnet_2025_apr_15_0&flow=supply&input_amount=1000&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275&reset=true'
   },
   {
     intent_id: 'rewards_2',
     title: 'Supply 500 USDS for Chronicle Points',
-    url: '/?widget=rewards&network=ethereum&flow=supply&input_amount=500&reward=0x10ab606B067C9C461d8893c47C7512472E19e2Ce&reset=true'
+    url: '/?widget=rewards&network=mainnet_2025_apr_15_0&flow=supply&input_amount=500&reward=0x10ab606B067C9C461d8893c47C7512472E19e2Ce&reset=true'
   },
   {
     intent_id: 'rewards_3',
     title: 'Withdraw 200 USDS from SKY Rewards',
-    url: '/?widget=rewards&network=ethereum&flow=withdraw&input_amount=200&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275&reset=true'
+    url: '/?widget=rewards&network=mainnet_2025_apr_15_0&flow=withdraw&input_amount=200&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275&reset=true'
   },
   {
     intent_id: 'rewards_4',
     title: 'Claim SKY Rewards',
-    url: '/?widget=rewards&network=ethereum&flow=claim&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275&reset=true'
+    url: '/?widget=rewards&network=mainnet_2025_apr_15_0&flow=claim&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275&reset=true'
   },
   {
     intent_id: 'rewards_5',
     title: 'Claim Chronicle Points',
-    url: '/?widget=rewards&network=ethereum&flow=claim&reward=0x10ab606B067C9C461d8893c47C7512472E19e2Ce&reset=true'
+    url: '/?widget=rewards&network=mainnet_2025_apr_15_0&flow=claim&reward=0x10ab606B067C9C461d8893c47C7512472E19e2Ce&reset=true'
   },
 
-  // Seal intents (Ethereum only)
+  // Stake intents (Ethereum only)
   {
     intent_id: 'stake_1',
     title: 'Open a new Stake position',
@@ -137,32 +137,32 @@ const intents2 = [
   {
     intent_id: 'balances_1',
     title: 'View Funds on Base',
-    url: '/?widget=balances&network=base&flow=funds&reset=true'
+    url: '/?widget=balances&network=new-base-testnet-jan-27&flow=funds&reset=true'
   },
   {
     intent_id: 'balances_2',
     title: 'Check Arbitrum Funds',
-    url: '/?widget=balances&network=arbitrumone&flow=funds&reset=true'
+    url: '/?widget=balances&network=arbitrum_fork_feb_7&flow=funds&reset=true'
   },
   {
     intent_id: 'balances_3',
     title: 'View Ethereum Funds',
-    url: '/?widget=balances&network=ethereum&flow=funds&reset=true'
+    url: '/?widget=balances&network=mainnet_2025_apr_15_0&flow=funds&reset=true'
   },
   {
     intent_id: 'balances_4',
     title: 'View Base Transaction History',
-    url: '/?widget=balances&network=base&flow=tx_history&reset=true'
+    url: '/?widget=balances&network=new-base-testnet-jan-27&flow=tx_history&reset=true'
   },
   {
     intent_id: 'balances_5',
     title: 'Check Arbitrum Transaction History',
-    url: '/?widget=balances&network=arbitrumone&flow=tx_history&reset=true'
+    url: '/?widget=balances&network=arbitrum_fork_feb_7&flow=tx_history&reset=true'
   },
   {
     intent_id: 'balances_6',
     title: 'View Ethereum Transaction History',
-    url: '/?widget=balances&network=ethereum&flow=tx_history&reset=true'
+    url: '/?widget=balances&network=mainnet_2025_apr_15_0&flow=tx_history&reset=true'
   }
 ];
 
