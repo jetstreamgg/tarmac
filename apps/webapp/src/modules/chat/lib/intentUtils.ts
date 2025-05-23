@@ -23,6 +23,15 @@ export const chainIdNameMapping = {
   [tenderlyArbitrum.id]: 'arbitrumone'
 } as const;
 
+export const testnetNameMapping = {
+  [normalizeUrlParam(mainnet.name)]: normalizeUrlParam(mainnet.name),
+  [normalizeUrlParam(base.name)]: normalizeUrlParam(base.name),
+  [normalizeUrlParam(arbitrum.name)]: normalizeUrlParam(arbitrum.name),
+  [normalizeUrlParam(tenderly.name)]: normalizeUrlParam(mainnet.name),
+  [normalizeUrlParam(tenderlyBase.name)]: normalizeUrlParam(base.name),
+  [normalizeUrlParam(tenderlyArbitrum.name)]: normalizeUrlParam(arbitrum.name)
+} as const;
+
 export const intents = {
   balances: Intent.BALANCES_INTENT,
   rewards: Intent.REWARDS_INTENT,
