@@ -5,9 +5,17 @@ import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
 import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { getTestWalletAddress } from '../utils/testWallets.ts';
+import { NetworkName } from '../utils/constants.ts';
+
+const setTestBalance = async (tokenAddress: string, amount: string, decimals = 18) => {
+  const workerIndex = Number(process.env.VITE_TEST_WORKER_INDEX ?? 1);
+  const address = getTestWalletAddress(workerIndex);
+  await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
+};
 
 test('Upgrade DAI and revert USDS', async ({ page }) => {
-  await setErc20Balance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
   await page.getByRole('tab', { name: 'Upgrade' }).click();
@@ -28,8 +36,8 @@ test('Upgrade DAI and revert USDS', async ({ page }) => {
   await page.getByRole('button', { name: 'Back to Upgrade' }).click();
 });
 
-test('Upgrade MKR and revert SKY', async ({ page }) => {
-  await setErc20Balance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+test('Upgrade MKR but revert SKY isnt allowed', async ({ page }) => {
+  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
   await page.getByRole('tab', { name: 'Upgrade' }).click();
@@ -44,14 +52,8 @@ test('Upgrade MKR and revert SKY', async ({ page }) => {
   await approveOrPerformAction(page, 'Upgrade');
   await page.getByRole('button', { name: 'Back to Upgrade' }).click();
   await page.getByRole('tab', { name: 'Revert' }).click();
-  await page.getByTestId('undefined-menu-button').click();
-  await page.getByRole('button', { name: 'SKY SKY SKY' }).click();
-  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
-  await page.getByTestId('upgrade-input-origin').click();
-  await page.getByTestId('upgrade-input-origin').fill((4 * 24000).toString());
-  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
-  await approveOrPerformAction(page, 'Revert');
-  await page.getByRole('button', { name: 'Back to Upgrade' }).click();
+  // Sky can't be reverted
+  await expect(page.getByRole('button', { name: 'SKY SKY SKY' })).not.toBeVisible();
 });
 
 test('Upgrade and revert with insufficient balance', async ({ page }) => {
@@ -82,8 +84,8 @@ test('Upgrade and revert with insufficient balance', async ({ page }) => {
 });
 
 test('Balances change after successfully upgrading and reverting', async ({ page }) => {
-  await setErc20Balance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
-  await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '10');
+  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+  await setTestBalance(usdsAddress[TENDERLY_CHAIN_ID], '10');
 
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
@@ -170,7 +172,7 @@ test('if not connected it should show a connect button', async ({ page }) => {
 
 // TODO: this test occasionally fails due to wallet not being connect, which might be related to above test
 test('percentage buttons work', async ({ page }) => {
-  await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '1000');
+  await setTestBalance(usdsAddress[TENDERLY_CHAIN_ID], '1000');
 
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
@@ -234,8 +236,8 @@ test('An approval error redirects to the error screen', async ({ page }) => {
   await page.getByRole('button', { name: 'Approve' }).click();
 
   expect(page.getByText('An error occurred ')).toBeVisible();
-  expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
-  expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
+  expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeVisible();
+  expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeEnabled({ timeout: 15000 });
 
@@ -243,7 +245,7 @@ test('An approval error redirects to the error screen', async ({ page }) => {
 
   await expect(page.getByText('An error occurred while approving access to your DAI.')).toBeVisible();
 
-  page.getByRole('button', { name: 'Back' }).last().click();
+  page.getByRole('button', { name: 'Back', exact: true }).last().click();
   await page.getByRole('tab', { name: 'Revert' }).click();
   await page.getByTestId('upgrade-input-origin').click();
   await page.getByTestId('upgrade-input-origin').fill('100');
@@ -251,8 +253,8 @@ test('An approval error redirects to the error screen', async ({ page }) => {
   await page.getByRole('button', { name: 'Approve' }).click();
 
   expect(page.getByText('An error occurred while approving access to your USDS.')).toBeVisible();
-  expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
-  expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
+  expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeVisible();
+  expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeEnabled({ timeout: 15000 });
 
@@ -341,7 +343,7 @@ test('Details pane shows right data', async ({ page }) => {
   await page.pause();
   const totalDaiUpgradedWidget = await page
     .getByTestId('widget-container')
-    .getByRole('heading', { name: 'Total DAI upgraded', exact: true })
+    .getByRole('heading', { name: 'Total USDS upgraded', exact: true })
     .first()
     .locator('xpath=ancestor::div[1]')
     .getByText(/\d+/)
@@ -355,13 +357,13 @@ test('Details pane shows right data', async ({ page }) => {
   //   .innerText();
   const totalDaiUpgradedDetails = await page
     .getByTestId('upgrade-stats-details')
-    .getByRole('heading', { name: 'Total DAI upgraded', exact: true })
+    .getByRole('heading', { name: 'Total USDS upgraded', exact: true })
     .locator('xpath=ancestor::div[1]')
     .getByText(/\d+/)
     .innerText();
   await page
     .getByTestId('upgrade-stats-details')
-    .getByRole('heading', { name: 'Total MKR upgraded', exact: true })
+    .getByRole('heading', { name: 'Total SKY upgraded', exact: true })
     .locator('xpath=ancestor::div[1]')
     .getByText(/\d+/)
     .innerText();
@@ -387,5 +389,5 @@ test('Details pane shows right data', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'About' })).toBeVisible();
 
   // FAQ section is present
-  await expect(page.getByRole('button', { name: 'FAQ' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'FAQs', exact: true })).toBeVisible();
 });

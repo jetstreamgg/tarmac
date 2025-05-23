@@ -132,6 +132,7 @@ export const defaultConfig: WidgetsConfig = {
     ]
   },
   tradeDisallowedPairs: {
-    ETH: [weth.symbol as SUPPORTED_TOKEN_SYMBOLS]
+    ETH: [weth.symbol as SUPPORTED_TOKEN_SYMBOLS],
+    MKR: [sky.symbol as SUPPORTED_TOKEN_SYMBOLS]
   }
 };

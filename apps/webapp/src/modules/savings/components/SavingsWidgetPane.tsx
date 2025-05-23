@@ -7,7 +7,7 @@ import {
   SavingsFlow
 } from '@jetstreamgg/widgets';
 import { TOKENS, useSavingsHistory } from '@jetstreamgg/hooks';
-import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@jetstreamgg/utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -17,6 +17,7 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Intent } from '@/lib/enums';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -41,6 +42,11 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     originToken,
     originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SAVINGS_INTENT]) {
+      return;
+    }
+
     setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update amount in URL if provided and not zero

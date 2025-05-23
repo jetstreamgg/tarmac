@@ -9,10 +9,18 @@ import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidg
 import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/hooks';
 import { TxStatus, NotificationType } from '../constants';
-import { SealAction } from '@/widgets/SealModuleWidget/lib/constants';
+import { SealFlow } from '@widgets/widgets/SealModuleWidget/lib/constants';
 
 export type WidgetState = {
-  flow: InitialFlow | BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
+  flow:
+    | InitialFlow
+    | BalancesFlow
+    | SavingsFlow
+    | UpgradeFlow
+    | RewardsFlow
+    | TradeFlow
+    | StakeFlow
+    | SealFlow;
   action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction;
   screen: InitialScreen | SavingsScreen | UpgradeScreen | RewardsScreen | TradeScreen;
 };
@@ -22,7 +30,7 @@ type Amount = {
 };
 
 type Flow = {
-  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow;
+  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | StakeFlow | SealFlow;
 };
 
 type BalancesWidgetState = Flow;
@@ -45,6 +53,11 @@ type RewardsWidgetState = Amount &
     selectedRewardContract?: RewardContract;
   };
 
+type StakeWidgetState = Amount & {
+  urnIndex?: number;
+  stakeTab?: StakeAction.LOCK | StakeAction.FREE;
+};
+
 type SealWidgetState = Amount & {
   urnIndex?: number;
   sealTab?: SealAction.LOCK | SealAction.FREE;
@@ -55,6 +68,7 @@ export type ExternalWidgetState = BalancesWidgetState &
   TradeWidgetState &
   SavingsWidgetState &
   RewardsWidgetState &
+  StakeWidgetState &
   SealWidgetState;
 
 type WidgetMessage = {
@@ -74,7 +88,9 @@ export type WidgetStateChangeParams = {
   executedSellAmount?: string;
   displayToken?: Token;
   originAmount?: string;
+  stakeTab?: StakeAction.LOCK | StakeAction.FREE;
   sealTab?: SealAction.LOCK | SealAction.FREE;
+  urnIndex?: number;
 };
 
 export type WidgetProps = {

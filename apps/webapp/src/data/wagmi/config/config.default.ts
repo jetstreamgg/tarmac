@@ -6,8 +6,7 @@ import {
   rainbowWallet,
   walletConnectWallet,
   metaMaskWallet,
-  coinbaseWallet,
-  injectedWallet
+  coinbaseWallet
 } from '@rainbow-me/rainbowkit/wallets';
 import {
   TENDERLY_CHAIN_ID,
@@ -21,7 +20,7 @@ import { isTestnetId } from '@jetstreamgg/utils';
 
 export const tenderly = {
   id: TENDERLY_CHAIN_ID,
-  name: 'mainnet_sep_30_0',
+  name: 'mainnet_2025_apr_15_0',
   network: 'tenderly',
   // This is used by RainbowKit to display a chain icon for small screens
   iconUrl: 'tokens/weth.svg',
@@ -83,14 +82,7 @@ const connectors = connectorsForWallets(
   [
     {
       groupName: 'Suggested',
-      wallets: [
-        metaMaskWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-        rainbowWallet,
-        safeWallet,
-        injectedWallet
-      ]
+      wallets: [metaMaskWallet, coinbaseWallet, walletConnectWallet, rainbowWallet, safeWallet]
     }
   ],
   {
@@ -111,7 +103,9 @@ export const wagmiConfigDev = createConfig({
     [sepolia.id]: http(import.meta.env.VITE_RPC_PROVIDER_SEPOLIA || ''),
     [tenderlyArbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || '')
   },
-  multiInjectedProviderDiscovery: false,
+  // This was causing issues in the past when users tried to connect to the Safe connector and had the Phantom wallet installed
+  // due to how Phantom handled `eth_accounts` requests, resulting in the Safe connector hanging in a reconnecting state
+  multiInjectedProviderDiscovery: true,
   storage: createStorage({
     storage: typeof window !== 'undefined' && window.localStorage ? window.localStorage : noopStorage,
     key: 'wagmi-dev'
@@ -126,7 +120,7 @@ export const wagmiConfigMainnet = createConfig({
     [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
     [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || '')
   },
-  multiInjectedProviderDiscovery: false
+  multiInjectedProviderDiscovery: true
 });
 
 export const getSupportedChainIds = (chainId: number) => {

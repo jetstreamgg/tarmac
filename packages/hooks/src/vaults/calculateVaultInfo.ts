@@ -37,7 +37,9 @@ export function calculateVaultInfo({ spot, rate, art, ink, par, mat, dust }: Vau
     collateralAmount: ink,
     collateralizationRatio,
     delayedPrice,
-    dust: BigInt(formatUnits(dust, RAD_PRECISION - WAD_PRECISION)),
+    // TODO: check if this approach is valid
+    // If dust is less than the smallest unit of WAD, set it to the smallest unit of WAD
+    dust: math.convertRadToWad(dust) === 0n ? 1n : BigInt(formatUnits(dust, RAD_PRECISION - WAD_PRECISION)),
     minSafeCollateralAmount,
     maxSafeBorrowableAmount,
     maxSafeBorrowableIntAmount: math.removeDecimalPartOfWad(maxSafeBorrowableAmount), // wad

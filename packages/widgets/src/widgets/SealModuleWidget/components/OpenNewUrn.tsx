@@ -35,7 +35,7 @@ export const OpenNewUrn = ({
   onClickTrigger: any;
   tabSide: 'left' | 'right';
   termsLink?: { url: string; name: string };
-  onInputAmountChange: (val: bigint, userTriggered?: boolean) => void;
+  onInputAmountChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { acceptedExitFee, setAcceptedExitFee, displayToken, setDisplayToken } =
     useContext(SealModuleWidgetContext);

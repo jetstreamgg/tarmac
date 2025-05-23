@@ -40,12 +40,17 @@ export function SealWidgetPane(sharedProps: SharedProps) {
   const { setShouldDisableActionButtons } = useChatContext();
 
   const onSealUrnChange = (urn?: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined }) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SEAL_INTENT]) {
+      return;
+    }
+
     setSearchParams(params => {
       if (urn?.urnAddress && urn?.urnIndex !== undefined) {
         params.set(QueryParams.Widget, IntentMapping[Intent.SEAL_INTENT]);
-        params.set(QueryParams.SealUrnIndex, urn.urnIndex.toString());
+        params.set(QueryParams.UrnIndex, urn.urnIndex.toString());
       } else {
-        params.delete(QueryParams.SealUrnIndex);
+        params.delete(QueryParams.UrnIndex);
       }
       return params;
     });
@@ -53,7 +58,7 @@ export function SealWidgetPane(sharedProps: SharedProps) {
   };
 
   // Reset detail pane urn index when widget is mounted
-  const urnIndexParam = searchParams.get(QueryParams.SealUrnIndex);
+  const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   useEffect(() => {
     setSelectedSealUrnIndex(
       urnIndexParam ? (isNaN(Number(urnIndexParam)) ? undefined : Number(urnIndexParam)) : undefined
@@ -73,6 +78,11 @@ export function SealWidgetPane(sharedProps: SharedProps) {
     sealTab,
     originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SEAL_INTENT]) {
+      return;
+    }
+
     setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow
@@ -164,6 +174,7 @@ export function SealWidgetPane(sharedProps: SharedProps) {
         flow
       }}
       termsLink={Array.isArray(termsLink) && termsLink.length > 0 ? termsLink[0] : undefined}
+      mkrSkyUpgradeUrl="https://upgrademkrtosky.sky.money"
     />
   );
 }

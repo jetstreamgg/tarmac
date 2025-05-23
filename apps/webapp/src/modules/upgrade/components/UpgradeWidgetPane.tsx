@@ -11,7 +11,7 @@ import {
   UpgradeScreen,
   upgradeTokens
 } from '@jetstreamgg/widgets';
-import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -21,6 +21,8 @@ import { capitalizeFirstLetter } from '@/lib/helpers/string/capitalizeFirstLette
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { useEffect, useState } from 'react';
+import { Intent } from '@/lib/enums';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -38,8 +40,30 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const { setShouldDisableActionButtons } = useChatContext();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as UpgradeFlow | undefined;
+  const [currentToken, setCurrentToken] = useState<string | undefined>();
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
+
+  // Get source_token from URL params
+  const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
+
+  // Set initial currentToken from sourceToken
+  useEffect(() => {
+    if (sourceToken && !currentToken) {
+      setCurrentToken(sourceToken);
+    }
+  }, []);
+
+  // Update URL when token changes
+  useEffect(() => {
+    if (currentToken && currentToken !== sourceToken) {
+      setSearchParams(prevParams => {
+        const params = new URLSearchParams(prevParams);
+        params.set(QueryParams.SourceToken, currentToken);
+        return params;
+      });
+    }
+  }, [currentToken, sourceToken, setSearchParams]);
 
   const onUpgradeWidgetStateChange = ({
     hash,
@@ -49,6 +73,11 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     originToken,
     originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.UPGRADE_INTENT]) {
+      return;
+    }
+
     setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow
@@ -81,6 +110,11 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
         prev.delete(QueryParams.InputAmount);
         return prev;
       });
+    }
+
+    // Update currentToken if originToken changes and is different from the sourceToken param
+    if (originToken && originToken !== currentToken && originToken !== sourceToken) {
+      setCurrentToken(originToken);
     }
 
     if (
@@ -128,7 +162,12 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       widgetState.screen === UpgradeScreen.TRANSACTION
     ) {
       setSearchParams(prevParams => {
+        const sourceTokenParam = prevParams.get(QueryParams.SourceToken);
         const params = deleteSearchParams(prevParams);
+        // Keep the source token param, otherwise the revert flow will break after approving
+        if (sourceTokenParam) {
+          params.set(QueryParams.SourceToken, sourceTokenParam);
+        }
         return params;
       });
       exitLinkedActionMode();
@@ -157,17 +196,17 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
         flow,
-        initialUpgradeToken:
-          linkedActionConfig.sourceToken &&
-          Object.values(upgradeTokens).includes(linkedActionConfig.sourceToken.toUpperCase())
+        initialUpgradeToken: (sourceToken && Object.values(upgradeTokens).includes(sourceToken)
+          ? sourceToken
+          : linkedActionConfig.sourceToken &&
+              Object.values(upgradeTokens).includes(linkedActionConfig.sourceToken.toUpperCase())
             ? (linkedActionConfig.sourceToken.toUpperCase() as keyof typeof upgradeTokens)
-            : undefined
+            : undefined) as keyof typeof upgradeTokens | undefined
       }}
       onWidgetStateChange={onUpgradeWidgetStateChange}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={[TOKENS.dai, TOKENS.mkr]}
-      revertOptions={[TOKENS.usds, TOKENS.sky]}
     />
   );
 }

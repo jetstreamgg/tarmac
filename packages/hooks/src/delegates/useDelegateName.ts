@@ -14,7 +14,7 @@ export function useDelegateName(address?: `0x${string}`): UseDelegateNameRespons
     error,
     mutate,
     dataSources
-  } = useDelegateMetadataMapping(undefined, enabled);
+  } = useDelegateMetadataMapping(enabled);
   const name =
     address && metadataMapping?.[address.toLowerCase()]?.name
       ? metadataMapping[address.toLowerCase()].name

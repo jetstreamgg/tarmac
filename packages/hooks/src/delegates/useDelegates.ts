@@ -17,7 +17,7 @@ async function fetchDelegates(
   orderBy?: string,
   orderDirection?: string,
   search?: string,
-  version?: 1 | 2
+  version?: 1 | 2 | 3
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions = [];
   if (version) whereConditions.push(`{version: "${version}"}`);
@@ -40,15 +40,23 @@ async function fetchDelegates(
         blockTimestamp
         blockNumber
         ownerAddress
-        totalDelegated
         id
         delegators
+        delegations(
+          first: 1000
+          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
+        ) {
+          amount
+        }
       }
     }
   `;
 
   const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
-  const parsedDelegates = response.delegates as DelegateRaw[];
+  const parsedDelegates = response.delegates.map(d => ({
+    ...d,
+    totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
+  })) as DelegateRaw[];
   if (!parsedDelegates) {
     return undefined;
   }
@@ -65,7 +73,6 @@ export function useDelegates({
   random,
   search,
   version,
-  urlMetadata,
   enabled = true
 }: {
   chainId: number;
@@ -75,8 +82,7 @@ export function useDelegates({
   pageSize?: number;
   random?: boolean;
   search?: string;
-  version?: 1 | 2;
-  urlMetadata?: string;
+  version?: 1 | 2 | 3;
   enabled?: boolean;
 }): ReadHook & { data?: DelegateInfo[] } {
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
@@ -108,8 +114,7 @@ export function useDelegates({
       random ? randomOrderBy : undefined,
       random ? randomOrderDirection : undefined,
       search,
-      version,
-      urlMetadata
+      version
     ],
     queryFn: () =>
       fetchDelegates(
@@ -124,7 +129,7 @@ export function useDelegates({
       )
   });
 
-  const { data: metadataMapping } = useDelegateMetadataMapping(urlMetadata);
+  const { data: metadataMapping } = useDelegateMetadataMapping();
   const data = subgraphDelegates?.map(d => ({
     ...d,
     metadata: metadataMapping?.[d.id] || null

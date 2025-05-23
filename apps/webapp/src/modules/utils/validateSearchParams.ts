@@ -1,5 +1,5 @@
 import { RewardContract } from '@jetstreamgg/hooks';
-import { RewardsFlow, SealFlow, SUPPORTED_TOKEN_SYMBOLS, UpgradeFlow } from '@jetstreamgg/widgets';
+import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -73,9 +73,9 @@ export const validateSearchParams = (
       }
     }
 
-    if (widget === IntentMapping[Intent.SEAL_INTENT]) {
+    if (widget === IntentMapping[Intent.STAKE_INTENT]) {
       // if the flow is claim, remove the flow param as it's only used by the chatbot
-      if (searchParams.get(QueryParams.Flow) === SealFlow.CLAIM) {
+      if (searchParams.get(QueryParams.Flow) === StakeFlow.CLAIM) {
         searchParams.delete(QueryParams.Flow);
       }
     }
@@ -117,13 +117,9 @@ export const validateSearchParams = (
         }
       }
 
-      // if widget is upgrade, only valid source token is MKR or DAI
+      // if widget is upgrade, only valid source token is MKR, DAI or USDS
       if (widgetParam?.toLowerCase() === IntentMapping[Intent.UPGRADE_INTENT]) {
-        const flow = searchParams.get(QueryParams.Flow) || UpgradeFlow.UPGRADE;
-        if (flow === UpgradeFlow.UPGRADE && !['mkr', 'dai'].includes(value.toLowerCase())) {
-          searchParams.delete(key);
-        }
-        if (flow === UpgradeFlow.REVERT && !['usds', 'sky'].includes(value.toLowerCase())) {
+        if (!['mkr', 'dai', 'usds'].includes(value.toLowerCase())) {
           searchParams.delete(key);
         }
       }

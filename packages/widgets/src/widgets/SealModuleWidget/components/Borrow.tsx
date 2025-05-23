@@ -190,12 +190,6 @@ const PositionManagerOverviewContainer = ({
                 Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that
                 it is determined the moment you unseal your MKR.
               </Text>
-              <br />
-              <Text>
-                The moment the Seal Engine launched, the exit fee rate was set to 5% of the value of the MKR
-                or SKY tokens that you have sealed, with a planned 1% increase every 6 months thereafter until
-                it reaches the long-term fee rate of 15%.
-              </Text>
             </>
           )
         },

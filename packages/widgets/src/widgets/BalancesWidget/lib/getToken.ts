@@ -18,11 +18,16 @@ export const getToken = ({
     case TransactionTypeEnum.USDS_TO_DAI:
     case TransactionTypeEnum.BORROW:
     case TransactionTypeEnum.REPAY:
+    case TransactionTypeEnum.STAKE_BORROW:
+    case TransactionTypeEnum.STAKE_REPAY:
+    case TransactionTypeEnum.STAKE_REWARD:
       return t`USDS`;
     case TransactionTypeEnum.MKR_TO_SKY:
     case TransactionTypeEnum.SKY_TO_MKR:
     case TransactionTypeEnum.SEAL_SKY:
     case TransactionTypeEnum.UNSEAL_SKY:
+    case TransactionTypeEnum.STAKE:
+    case TransactionTypeEnum.UNSTAKE:
       return t`SKY`;
     case TransactionTypeEnum.TRADE:
       return tradeFromToken || 'Token';

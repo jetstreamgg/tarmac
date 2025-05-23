@@ -20,7 +20,7 @@ import { formatUrnIndex } from '../lib/utils';
 import { PositionDetail } from './PositionDetail';
 import { Button } from '@widgets/components/ui/button';
 import { Edit } from '@widgets/shared/components/icons/Edit';
-import { OnSealUrnChange } from '..';
+import { OnSealUrnChange } from '../lib/types';
 import { fromHex, trim } from 'viem';
 
 interface UrnPositionProps {
@@ -28,13 +28,17 @@ interface UrnPositionProps {
   claimPrepared: boolean;
   claimExecute: () => void;
   onSealUrnChange?: OnSealUrnChange;
+  isMigrated?: boolean;
+  onNavigateToMigratedUrn?: (index?: bigint) => void;
 }
 
 export const UrnPosition: React.FC<UrnPositionProps> = ({
   index,
   claimPrepared,
   claimExecute,
-  onSealUrnChange
+  onSealUrnChange,
+  isMigrated,
+  onNavigateToMigratedUrn
 }) => {
   const { data: urnAddress } = useUrnAddress(index);
   const { data: urnSelectedRewardContract } = useUrnSelectedRewardContract({
@@ -83,12 +87,12 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
   };
 
   const handleOnClick = useCallback(() => {
-    if (vaultData?.collateralAmount && urnSelectedRewardContract) {
+    if (urnAddress && urnAddress !== ZERO_ADDRESS && urnSelectedRewardContract) {
       setSelectedRewardContract(urnSelectedRewardContract);
     } else {
       setSelectedRewardContract(undefined);
     }
-    if (vaultData?.collateralAmount && urnSelectedVoteDelegate) {
+    if (urnAddress && urnAddress !== ZERO_ADDRESS && urnSelectedVoteDelegate) {
       setSelectedDelegate(urnSelectedVoteDelegate);
     } else {
       setSelectedDelegate(undefined);
@@ -107,9 +111,11 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
     <Card>
       <div className="flex items-center justify-between">
         <Text className="text-sm leading-4">{`Position ${formatUrnIndex(index)}`}</Text>
-        <Button variant="ghost" onClick={handleOnClick} className="h-fit px-0 py-1.5">
-          Manage position <Edit className="ml-[5px]" />
-        </Button>
+        {isMigrated === false && !!vaultData?.collateralAmount && (
+          <Button variant="ghost" onClick={handleOnClick} className="h-fit px-0 py-1.5">
+            Manage Seal position <Edit className="ml-[5px]" />
+          </Button>
+        )}
       </div>
       <PositionDetail
         collateralizationRatio={vaultData?.collateralizationRatio}
@@ -125,6 +131,9 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
         index={index}
         claimPrepared={claimPrepared}
         claimExecute={claimExecute}
+        isMigrated={isMigrated}
+        onNavigateToMigratedUrn={onNavigateToMigratedUrn}
+        onSealUrnChange={onSealUrnChange}
       />
     </Card>
   );

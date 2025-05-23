@@ -11,7 +11,7 @@ async function fetchUserDelegates(
   urlSubgraph: string,
   user: `0x${string}`,
   search?: string,
-  version?: 1 | 2
+  version?: 1 | 2 | 3
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions = [`{delegations_: {delegator_contains_nocase: "${user}", amount_gt: 0}}`];
   if (version) whereConditions.push(`{version: "${version}"}`);
@@ -28,9 +28,11 @@ async function fetchUserDelegates(
         id
         blockTimestamp
         ownerAddress
-        totalDelegated
         delegators
-        delegations(where: {delegator_contains_nocase: "${user}", amount_gt: 0}) {
+        delegations(
+          first: 1000
+          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
+        ) {
           id
           delegator
           amount
@@ -41,7 +43,10 @@ async function fetchUserDelegates(
   `;
 
   const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
-  const parsedDelegates = response.delegates;
+  const parsedDelegates = response.delegates.map(d => ({
+    ...d,
+    totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
+  }));
   if (!parsedDelegates) {
     return undefined;
   }
@@ -50,8 +55,10 @@ async function fetchUserDelegates(
 
   return delegates.sort((a, b) => {
     // It should only be one delegation object for the user
-    const amountA = a.delegations[0]?.amount || BigInt(0);
-    const amountB = b.delegations[0]?.amount || BigInt(0);
+    const amountA =
+      a.delegations.find(d => d.delegator.toLowerCase() === user.toLowerCase())?.amount || BigInt(0);
+    const amountB =
+      b.delegations.find(d => d.delegator.toLowerCase() === user.toLowerCase())?.amount || BigInt(0);
 
     // Sort in descending order
     if (amountA > amountB) return -1;
@@ -65,15 +72,13 @@ export function useUserDelegates({
   chainId,
   user,
   search,
-  version,
-  urlMetadata
+  version
 }: {
   subgraphUrl?: string;
   chainId: number;
   user: `0x${string}`;
   search?: string;
-  version?: 1 | 2;
-  urlMetadata?: string;
+  version?: 1 | 2 | 3;
 }): ReadHook & { data?: DelegateInfo[] } {
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
 
@@ -84,16 +89,15 @@ export function useUserDelegates({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && user.length > 0 && user !== ZERO_ADDRESS),
-    queryKey: ['user-delegates', urlSubgraph, user, search, version, urlMetadata],
+    queryKey: ['user-delegates', urlSubgraph, user, search, version],
     queryFn: () => fetchUserDelegates(urlSubgraph, user, search, version)
   });
 
-  const { data: metadataMapping } = useDelegateMetadataMapping(urlMetadata);
+  const { data: metadataMapping } = useDelegateMetadataMapping();
   const data = subgraphDelegates?.map(d => ({
     ...d,
     metadata: metadataMapping?.[d.id] || null
   })) as DelegateInfo[] | undefined;
-
   return {
     isLoading,
     data,

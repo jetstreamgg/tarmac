@@ -2,7 +2,7 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { useUpgradeTotals } from '@jetstreamgg/hooks';
-import { formatBigInt, isL2ChainId } from '@jetstreamgg/utils';
+import { formatBigInt, isL2ChainId, math } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { useChainId } from 'wagmi';
 
@@ -11,17 +11,18 @@ export function UpgradedMkrToSky() {
   const chainIdToUse = isL2ChainId(chainId) ? 1 : chainId; // Display mainnet data on L2s
   const subgraphUrl = useSubgraphUrl(chainIdToUse);
   const { data, isLoading, error } = useUpgradeTotals({ subgraphUrl });
+  const totalSkyUpgraded = math.calculateConversion({ symbol: 'MKR' }, BigInt(data?.totalMkrUpgraded || 0));
 
   return (
     <StatsCard
-      title={t`Total MKR upgraded`}
+      title={t`Total SKY upgraded`}
       isLoading={isLoading}
       error={error}
       content={
         <TokenIconWithBalance
           className="mt-2"
-          token={{ symbol: 'MKR', name: 'mkr' }}
-          balance={data?.totalMkrUpgraded ? formatBigInt(data?.totalMkrUpgraded) : '0'}
+          token={{ symbol: 'SKY', name: 'sky' }}
+          balance={formatBigInt(totalSkyUpgraded)}
           chainId={chainIdToUse}
         />
       }

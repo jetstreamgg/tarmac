@@ -13,13 +13,15 @@ export function useUrnAddress(urnIndex: bigint): UseUrnAddressResponse {
 
   const dataSource = lseDataSource(chainId, 'getUrn');
 
+  const engineAddress = sealModuleAddress[chainId as keyof typeof sealModuleAddress];
+
   const { data, isLoading, error, refetch } = useReadContract({
     chainId,
-    address: sealModuleAddress[chainId as keyof typeof sealModuleAddress],
+    address: engineAddress,
     abi: sealModuleAbi,
     functionName: 'ownerUrns',
     args: [address!, urnIndex],
-    scopeKey: `urnAddress-${address}-${urnIndex}-${chainId}`,
+    scopeKey: `urnAddress-${address}-${urnIndex}-${chainId}-${engineAddress}`,
     query: {
       enabled: !!address
     }

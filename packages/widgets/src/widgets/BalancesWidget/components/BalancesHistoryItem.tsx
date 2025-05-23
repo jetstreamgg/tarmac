@@ -40,7 +40,8 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
     type === TransactionTypeEnum.TRADE && !isL2ChainId(chainId || 1)
       ? getCowExplorerLink(chainId || 1, transactionHash)
       : getEtherscanLink(chainId || 1, transactionHash, 'tx');
-  const explorerName = getExplorerName(chainId || 1);
+
+  const explorerName = getExplorerName(chainId || 1, false);
   const positive = getPositive({ type });
   const iconSrc = getHistoryIconSource({ type, module, chainId: chainId || 1 });
   return (

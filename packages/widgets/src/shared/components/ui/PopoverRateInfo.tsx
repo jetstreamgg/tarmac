@@ -60,14 +60,14 @@ const getContent = (
     )
   },
   srr: {
-    title: 'Seal Rewards Rate (SRR)',
+    title: 'Staking Rewards Rate (SRR)',
     description: (
       <Text variant="small" className="leading-5 text-white/80">
-        The Seal Rewards Rate (SRR) is variable and may fluctuate. It is determined by: (1) the current
-        issuance rate of the rewards set through onchain governance processes, and (2) the sealed MKR or SKY
-        market price at the time of each calculation. Rewards are accrued in USDS for the time being, subject
-        to revision by onchain governance. The SRR provided is an estimated annual rate, updated using data
-        from a third party provider. (i.e.,{' '}
+        The Staking Rewards Rate (SRR) is variable and may fluctuate. It is determined by: (1) the current
+        issuance rate of the rewards set through onchain governance processes and (2) the market price of the
+        stakedSKY at the time of each calculation. Rewards are accrued in USDS for the time being, subject to
+        future adjustment by onchain governance. The SRR provided is an estimated annual rate, updated using
+        data from a third party provider (i.e.,{' '}
         <ExternalLink
           href="https://blockanalitica.com/"
           className="hover:text-white hover:underline"
@@ -76,9 +76,7 @@ const getContent = (
         >
           {'BlockAnalitica'}
         </ExternalLink>
-        ). The estimated fee does not take into account the exit fee that will be subtracted from your
-        position upon unsealing. This estimate is for informational purposes only and does not guarantee
-        future results.
+        ). Further, The estimate is for informational purposes only and does not guarantee future results.
       </Text>
     )
   }

@@ -1,4 +1,4 @@
-import { Balances, Upgrade, Trade, RewardsModule, Savings, Seal } from '../../icons';
+import { Balances, Upgrade, Trade, RewardsModule, Savings, Stake } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
@@ -13,15 +13,15 @@ import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPan
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNotification } from '../hooks/useNotification';
 import { useActionForToken } from '../hooks/useActionForToken';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { defaultConfig } from '@/modules/config/default-config';
 import { useChainId } from 'wagmi';
-import { SealWidgetPane } from '@/modules/seal/components/SealWidgetPane';
 import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
+import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds, getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
@@ -60,7 +60,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   const { Locale, Details } = QueryParams;
   const retainedParams = [Locale, Details];
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const sharedProps = {
     onConnect,
@@ -95,8 +95,9 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     );
   }
 
-  const sealUrl = getQueryParams(
-    `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.SEAL_INTENT)}`
+  const sealUrl = `/seal-engine${getQueryParams(`/?network=${mainnetName}`)}`;
+  const stakeUrl = getQueryParams(
+    `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`
   );
 
   const widgetContent: WidgetContent = [
@@ -112,6 +113,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           rewardsCardUrl={rewardsUrl}
           savingsCardUrlMap={savingsUrlMap}
           sealCardUrl={sealUrl}
+          stakeCardUrl={stakeUrl}
           customTokenMap={defaultConfig.balancesTokenList}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
@@ -130,7 +132,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     [Intent.SAVINGS_INTENT, 'Savings', Savings, withErrorBoundary(<SavingsWidgetPane {...sharedProps} />)],
     [Intent.UPGRADE_INTENT, 'Upgrade', Upgrade, withErrorBoundary(<UpgradeWidgetPane {...sharedProps} />)],
     [Intent.TRADE_INTENT, 'Trade', Trade, withErrorBoundary(<TradeWidgetPane {...sharedProps} />)],
-    [Intent.SEAL_INTENT, 'Seal', Seal, withErrorBoundary(<SealWidgetPane {...sharedProps} />)]
+    [Intent.STAKE_INTENT, 'Stake', Stake, withErrorBoundary(<StakeWidgetPane {...sharedProps} />)]
   ].map(([intent, label, icon, component]) => {
     const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
     return [
@@ -142,6 +144,18 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       comingSoon ? { disabled: true } : undefined
     ];
   });
+
+  // Delete reset param after 500ms
+  useEffect(() => {
+    if (searchParams.get(QueryParams.Reset)) {
+      setTimeout(() => {
+        setSearchParams(prev => {
+          prev.delete(QueryParams.Reset);
+          return prev;
+        });
+      }, 500);
+    }
+  }, [searchParams]);
 
   return (
     <WidgetNavigation

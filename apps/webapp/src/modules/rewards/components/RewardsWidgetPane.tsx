@@ -35,6 +35,11 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;
 
   const onRewardContractChange = (rewardContract?: RewardContract) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
+      return;
+    }
+
     setSearchParams(params => {
       if (rewardContract?.contractAddress) {
         params.set(QueryParams.Widget, IntentMapping[Intent.REWARDS_INTENT]);
@@ -53,6 +58,11 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     widgetState,
     originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
+      return;
+    }
+
     setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow

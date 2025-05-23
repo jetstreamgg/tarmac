@@ -1,6 +1,8 @@
 import { FixedNumber } from 'ethers';
 import invariant from 'tiny-invariant';
 import {
+  RAD_FORMAT,
+  RAD_PRECISION,
   RAY_FORMAT,
   RAY_PRECISION,
   SECONDS_PER_YEAR,
@@ -361,4 +363,13 @@ export const calculateAssetsFromShares = (susdsAmount: bigint, chi: bigint) => {
   const rec = amtFixed.mul(chiFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
 
   return rec.value;
+};
+
+// Conversions
+export const convertRadToWad = (radValue: bigint): bigint => {
+  const radFixed = FixedNumber.fromValue(radValue, RAD_PRECISION, RAD_FORMAT);
+  // Convert to WAD format (normalize from 27 to 18 decimal places)
+  const wadFixed = radFixed.round(WAD_PRECISION).toFormat(WAD_FORMAT);
+
+  return wadFixed.value;
 };

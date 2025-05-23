@@ -5,9 +5,9 @@ export const TENDERLY_CHAIN_ID = 314310;
 export const TENDERLY_BASE_CHAIN_ID = 8555;
 export const TENDERLY_ARBITRUM_CHAIN_ID = 42012;
 
-// only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `mainnet_sep_30_0`
+// only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `mainnet_2025_apr_15_0`
 export const TENDERLY_RPC_URL =
-  'https://virtual.mainnet.rpc.tenderly.co/b333d3ac-c24f-41fa-ad41-9176fa719ac3';
+  'https://virtual.mainnet.rpc.tenderly.co/b0298788-ff98-44df-ad8a-c10b7d8e3199';
 
 // only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `new-base-testnet-jan-27`
 export const TENDERLY_BASE_RPC_URL =

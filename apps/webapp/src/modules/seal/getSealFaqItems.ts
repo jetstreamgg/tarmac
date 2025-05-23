@@ -43,9 +43,7 @@ Seal Rewards are what you access when you supply and seal MKR or SKY to the Seal
       
 Unsealing requires the payment of an exit fee, which is a percentage of the total amount of tokens that you have sealed in that position. The fee is automatically subtracted from that total amount, and then burnt, removing the tokens from circulation. Your accumulated rewards are not affected.
       
-The exit fee is a risk parameter managed and determined (regardless of position duration) by Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that it is determined the moment you unseal your MKR.
-
-The moment the Seal Engine launched, the exit fee rate was set to 5% of the value of the MKR or SKY tokens that you have sealed, with a planned 1% increase every 6 months thereafter until it reaches the long-term fee rate of 15%.`
+The exit fee is a risk parameter managed and determined (regardless of position duration) by Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that it is determined the moment you unseal your MKR.`
   },
   {
     question: 'What does it mean to delegate my voting power?',

@@ -21,7 +21,7 @@ import { waitForPreparedExecuteAndMine } from '../../test/helpers';
 describe('Open position, lock MKR, delegate, select reward contract and free MKR', async () => {
   const wrapper = WagmiWrapper;
   let URN_ADDRESS: `0x${string}`;
-  const URN_INDEX = 1n; // Test account already has a URN open
+  const URN_INDEX = 0n;
 
   it('Should open urn', async () => {
     const { result: resultUrnIndex } = renderHook(() => useCurrentUrnIndex(), { wrapper });
@@ -105,7 +105,7 @@ describe('Open position, lock MKR, delegate, select reward contract and free MKR
   });
 
   it('Should delegate and select reward contract', async () => {
-    const TEST_DELEGATE = '0x278c4Cbf1726Af5a62f0bCe40B1ddC2ea784aA45';
+    const TEST_DELEGATE = '0x4E4393f93ac7ba34648A82eA2248D9bDBb1Ff7e5';
     const TEST_REWARD_CONTRACT = lsMkrUsdsRewardAddress[TENDERLY_CHAIN_ID];
 
     // Select delegate
@@ -210,10 +210,10 @@ describe('Open position, lock MKR, delegate, select reward contract and free MKR
       }
     );
 
-    // User should have 99.5 MKR after freeing 10 due to the exit fee
+    // User should have the full 100 MKR after freeing since exit fee is 0
     await waitFor(
       () => {
-        expect(resultMkrBalanceAfter.current.data?.formatted).toEqual('99.5');
+        expect(resultMkrBalanceAfter.current.data?.formatted).toEqual('100');
         return;
       },
       { timeout: 5000 }

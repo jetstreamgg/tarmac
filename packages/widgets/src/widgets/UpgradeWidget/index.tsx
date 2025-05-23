@@ -16,7 +16,7 @@ import { Heading } from '@widgets/shared/components/ui/Typography';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useAccount, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { getEtherscanLink, useDebounce } from '@jetstreamgg/utils';
+import { useDebounce, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/utils';
 import { useTokenAllowance } from '@jetstreamgg/hooks';
 import { useUpgraderManager } from './hooks/useUpgraderManager';
 import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';
@@ -34,7 +34,7 @@ import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState
 import { math } from '@jetstreamgg/utils';
 
 const defaultUpgradeOptions = [TOKENS.dai, TOKENS.mkr];
-const defaultRevertOptions = [TOKENS.usds, TOKENS.sky];
+const defaultRevertOptions = [TOKENS.usds];
 
 function calculateOriginOptions(
   token: Token,
@@ -81,7 +81,6 @@ const targetTokenForSymbol = (symbol: keyof typeof upgradeTokens) => {
 export type UpgradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   upgradeOptions?: Token[];
-  revertOptions?: Token[];
 };
 
 export const UpgradeWidget = ({
@@ -97,7 +96,6 @@ export const UpgradeWidget = ({
   customNavigationLabel,
   onExternalLinkClicked,
   upgradeOptions = defaultUpgradeOptions,
-  revertOptions = defaultRevertOptions,
   enabled = true,
   shouldReset = false
 }: UpgradeWidgetProps) => {
@@ -119,7 +117,6 @@ export const UpgradeWidget = ({
           onExternalLinkClicked={onExternalLinkClicked}
           enabled={enabled}
           upgradeOptions={upgradeOptions}
-          revertOptions={revertOptions}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -138,7 +135,6 @@ export function UpgradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   upgradeOptions,
-  revertOptions,
   enabled = true
 }: UpgradeWidgetProps): React.ReactElement {
   const validatedExternalState = getValidatedState(externalWidgetState);
@@ -150,6 +146,7 @@ export function UpgradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === UpgradeFlow.REVERT ? 1 : 0;
@@ -225,7 +222,13 @@ export function UpgradeWidgetWrapped({
     setWidgetState
   } = useContext(WidgetContext);
 
-  useNotifyWidgetState({ widgetState, txStatus, targetToken: targetToken?.symbol, onWidgetStateChange });
+  useNotifyWidgetState({
+    widgetState,
+    txStatus,
+    originToken: originToken?.symbol,
+    targetToken: targetToken?.symbol,
+    onWidgetStateChange
+  });
 
   // Balance of the tokens to be upgraded/reverted
   const { data: originBalance, refetch: mutateOriginBalance } = useTokenBalance({
@@ -263,7 +266,7 @@ export function UpgradeWidgetWrapped({
             ? t`Upgrade ${originToken.symbol} into ${targetToken.symbol}`
             : t`Revert ${originToken.symbol} into ${targetToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -306,7 +309,7 @@ export function UpgradeWidgetWrapped({
     enabled: widgetState.action === UpgradeAction.APPROVE && allowance !== undefined,
     onStart: (hash: string) => {
       addRecentTransaction?.({ hash, description: t`Approving ${originToken.symbol} token` });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -660,7 +663,7 @@ export function UpgradeWidgetWrapped({
                 originTitle={
                   tabIndex === 0
                     ? t`Choose a token to upgrade, and enter an amount`
-                    : t`Choose a token to revert, and enter an amount`
+                    : t`Enter an amount of USDS to revert`
                 }
                 originAmount={originAmount}
                 targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
@@ -668,7 +671,7 @@ export function UpgradeWidgetWrapped({
                   originToken,
                   tabIndex === 0 ? 'upgrade' : 'revert',
                   upgradeOptions,
-                  revertOptions
+                  defaultRevertOptions
                 )}
                 originToken={originToken}
                 targetToken={targetToken}
@@ -733,7 +736,10 @@ export function UpgradeWidgetWrapped({
                 onMenuItemChange={(op: Token | null) => {
                   if (op) {
                     setOriginToken(op as Token);
-                    const target = calculateTargetOptions(op as Token, upgradeOptions, revertOptions);
+                    const target = calculateTargetOptions(op as Token, upgradeOptions, [
+                      TOKENS.usds,
+                      TOKENS.sky
+                    ]);
                     if (target?.length) {
                       setTargetToken(target[0]);
                     }

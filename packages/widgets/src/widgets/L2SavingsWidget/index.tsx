@@ -10,7 +10,7 @@ import {
   useTokenBalance,
   getTokenDecimals
 } from '@jetstreamgg/hooks';
-import { getEtherscanLink, useDebounce, formatBigInt, math } from '@jetstreamgg/utils';
+import { getTransactionLink, useDebounce, formatBigInt, math, useIsSafeWallet } from '@jetstreamgg/utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
@@ -164,6 +164,7 @@ const SavingsWidgetWrapped = ({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
@@ -268,7 +269,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -328,7 +329,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -378,7 +379,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -432,7 +433,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },

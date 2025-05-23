@@ -23,7 +23,7 @@ The project structure is divided in:
 
 This project contains the following apps, located under the ["apps" folder](./apps):
 
-- [integration-ui](./apps/integration-ui): UI interface for interacting with widgets from the [widgets](./packages/widgets/README.md) package
+- [webapp](./apps/webapp): Web3 dApp that interacts with widgets from the [widgets](./packages/widgets/README.md) package
 
 ## Packages
 
@@ -94,7 +94,7 @@ This monorepo uses `changesets` to manage the versioning and changelog of the Je
 
 ## Internationalization and Translation Process
 
-In this project, we're utilizing `lingui` library for handling the internationalization (i18n) of the widgets package, and the webapp and integration-ui apps. The following steps provide an overview of the i18n process:
+In this project, we're utilizing `lingui` library for handling the internationalization (i18n) of the widgets package and the webapp. The following steps provide an overview of the i18n process:
 
 The three commands we use for managing messages are listed in the `scripts` section of your `package.json` file:
 

@@ -20,7 +20,8 @@ export function ConnectCard({ intent }: { intent: Intent }) {
     [Intent.SAVINGS_INTENT]: t`About the Sky Savings Rate`,
     [Intent.UPGRADE_INTENT]: t`Ready to upgrade and explore?`,
     [Intent.TRADE_INTENT]: t`About Trade`,
-    [Intent.SEAL_INTENT]: t`About Seal Engine`
+    [Intent.SEAL_INTENT]: t`About Seal Engine`,
+    [Intent.STAKE_INTENT]: t`About the Staking Engine`
   };
 
   const contentText = {
@@ -39,7 +40,8 @@ export function ConnectCard({ intent }: { intent: Intent }) {
       : isArbitrumChain
         ? t`On Arbitrum, you can convert between USDS, sUSDS and USDC through a Peg Stability Module (PSM) deployed to Arbitrum and powered by Spark. The PSM on Arbitrum handles conversions programmatically, driven at your direction. PSMs are smart contracts designed to maintain the stability of stablecoins and allow users to convert certain stablecoins directly with the Sky Protocol at a fixed rate and with no fees. However, blockchain (gas) fees may apply.`
         : t`Directly trade eligible tokens for Sky ecosystem tokens using permissionless and non-custodial rails. With the Sky.money interface, you can access the decentralised Sky Protocol to trade, via smart contracts on the blockchain instead of relying on centralised entities.`,
-    [Intent.SEAL_INTENT]: t`The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem governance. With Sky, you always remain in control of your funds.`
+    [Intent.SEAL_INTENT]: t`The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem governance. With Sky, you always remain in control of your funds.`,
+    [Intent.STAKE_INTENT]: t`The Staking Engine is a module of the Sky Protocol. It has replaced the Seal Engine, offering the same features but it has no exit fee and only supports SKY, not MKR. The SKY tokens you supply to the Seal Engine enable you to access Staking Rewards, and more. With Sky, you always remain in control of your assets.`
   };
 
   return (

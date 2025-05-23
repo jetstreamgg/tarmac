@@ -18,6 +18,7 @@ type FormatOptions = {
   maxDecimals?: number;
   showPercentageDecimals?: boolean;
   roundingMode?: 'ceil' | 'floor';
+  useGrouping?: boolean;
 };
 
 export function createNumberFormatter(options?: FormatOptions) {
@@ -39,7 +40,8 @@ export function createNumberFormatter(options?: FormatOptions) {
     maximumFractionDigits: maxDecimals,
     notation: options?.compact ? 'compact' : undefined,
     compactDisplay: options?.compact ? 'short' : undefined,
-    roundingMode: options?.roundingMode || undefined
+    roundingMode: options?.roundingMode || undefined,
+    useGrouping: options?.useGrouping
   });
 }
 
@@ -92,4 +94,24 @@ export function formatPercent(amount: bigint, options?: FormatOptions): `${numbe
 export function formatDecimalPercentage(value: number, decimalPlaces: number = 2): string {
   const percentage = value * 100;
   return `${percentage.toFixed(decimalPlaces)}%`;
+}
+
+export function formatBigIntAsCeiledAbsoluteWithSymbol(
+  amount: bigint,
+  unit: number,
+  symbol?: string
+): string {
+  const formattedRoundedDebtValue = formatBigInt(amount, {
+    unit,
+    useGrouping: false
+  });
+  const parsedRoundedDebtValue = parseFloat(formattedRoundedDebtValue);
+  const regex = /\.[0-9]*[1-9]/;
+  const hasDecimalPart = regex.test(formattedRoundedDebtValue);
+  const nearestWholeNumber = hasDecimalPart
+    ? Math.floor(Math.abs(parsedRoundedDebtValue)) + 1
+    : Math.abs(parsedRoundedDebtValue);
+  const formattedNumber = formatNumber(nearestWholeNumber);
+
+  return `${formattedNumber}${symbol ? ` ${symbol}` : ''}`;
 }

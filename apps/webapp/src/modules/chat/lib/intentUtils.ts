@@ -1,8 +1,10 @@
-import { Chain } from 'wagmi/chains';
+import { arbitrum, base, Chain, mainnet } from 'wagmi/chains';
 import { COMING_SOON_MAP, QueryParams } from '@/lib/constants';
 import { ChatIntent } from '../types/Chat';
 import { Intent } from '@/lib/enums';
 import { isIntentAllowed } from '@/lib/utils';
+import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const networkMapping = {
   mainnet: 1,
@@ -14,11 +16,20 @@ export const networkMapping = {
 
 export const chainIdNameMapping = {
   1: 'ethereum',
-  314310: 'ethereum', // tenderly
   8453: 'base',
-  8555: 'base', // base tenderly
   42161: 'arbitrumone',
-  421611: 'arbitrumone' // arbitrum+one tenderly
+  [tenderly.id]: 'ethereum',
+  [tenderlyBase.id]: 'base',
+  [tenderlyArbitrum.id]: 'arbitrumone'
+} as const;
+
+export const testnetNameMapping = {
+  [normalizeUrlParam(mainnet.name)]: normalizeUrlParam(mainnet.name),
+  [normalizeUrlParam(base.name)]: normalizeUrlParam(base.name),
+  [normalizeUrlParam(arbitrum.name)]: normalizeUrlParam(arbitrum.name),
+  [normalizeUrlParam(tenderly.name)]: normalizeUrlParam(mainnet.name),
+  [normalizeUrlParam(tenderlyBase.name)]: normalizeUrlParam(base.name),
+  [normalizeUrlParam(tenderlyArbitrum.name)]: normalizeUrlParam(arbitrum.name)
 } as const;
 
 export const intents = {
@@ -27,7 +38,7 @@ export const intents = {
   savings: Intent.SAVINGS_INTENT,
   upgrade: Intent.UPGRADE_INTENT,
   trade: Intent.TRADE_INTENT,
-  seal: Intent.SEAL_INTENT
+  stake: Intent.STAKE_INTENT
 } as const;
 
 export type NetworkName = keyof typeof networkMapping;
@@ -91,6 +102,24 @@ export const intentModifiesState = (intent?: ChatIntent): boolean => {
       intent.url.includes(QueryParams.SourceToken) ||
       intent.url.includes(QueryParams.TargetToken))
   );
+};
+
+export const processNetworkNameInUrl = (url: string): string => {
+  if (
+    import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&
+    (import.meta.env.VITE_ENV_NAME === 'staging' || import.meta.env.VITE_ENV_NAME === 'development')
+  ) {
+    const networkMappings = {
+      [normalizeUrlParam(mainnet.name)]: tenderly.name,
+      [normalizeUrlParam(base.name)]: tenderlyBase.name,
+      [normalizeUrlParam(arbitrum.name)]: tenderlyArbitrum.name
+    } as const;
+
+    return Object.entries(networkMappings).reduce((processedUrl, [mainnet, testnet]) => {
+      return processedUrl.replace(`network=${mainnet}`, `network=${testnet}`);
+    }, url);
+  }
+  return url;
 };
 
 export const isChatIntentAllowed = (intent: ChatIntent, currentChainId: number): boolean => {

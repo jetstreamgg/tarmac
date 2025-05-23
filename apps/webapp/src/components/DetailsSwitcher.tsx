@@ -1,6 +1,6 @@
 import { Toggle } from '@/components/ui/toggle';
 import { Metrics } from '@/modules/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useMatch, useSearchParams } from 'react-router-dom';
 import { QueryParams } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import {
@@ -15,6 +15,7 @@ import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { JSX } from 'react';
 
 export function DetailsSwitcher(): JSX.Element {
+  const isSealEngine = useMatch('/seal-engine');
   // TODO replace all instances of this with CHATBOT_ENABLED from constants.ts
   const chatEnabled = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
   const { bpi } = useBreakpointIndex();
@@ -36,7 +37,7 @@ export function DetailsSwitcher(): JSX.Element {
         <div>
           <Toggle
             variant="singleSwitcher"
-            className={`hidden h-10 w-10 rounded-xl md:flex ${chatEnabled ? 'md:rounded-r-none' : ''} `}
+            className={`hidden h-10 w-10 rounded-xl md:flex ${chatEnabled && !isSealEngine ? 'md:rounded-r-none' : ''} `}
             pressed={detailsParam}
             onPressedChange={handleSwitch}
             aria-label="Toggle details"

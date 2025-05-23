@@ -12,11 +12,9 @@ export function useSaUserDelegates({
   page = 1,
   pageSize = 100,
   random,
-  search,
-  urlMetadata
+  search
 }: {
   subgraphUrl?: string;
-  urlMetadata?: string;
   chainId: number;
   user: `0x${string}`;
   page?: number;
@@ -31,7 +29,7 @@ export function useSaUserDelegates({
     isLoading: isLoadingUserDelegates,
     error: errorUserDelegates,
     mutate: mutateUserDelegates
-  } = useUserDelegates({ chainId, user: user || ZERO_ADDRESS, search, version: 2, urlMetadata });
+  } = useUserDelegates({ chainId, user: user || ZERO_ADDRESS, search, version: 2 });
 
   const totalUserDelegates = userDelegatesData?.length || 0;
   const startIndex = (page - 1) * pageSize;
@@ -53,8 +51,7 @@ export function useSaUserDelegates({
     pageSize: remainingSlots,
     random,
     search,
-    version: 2,
-    urlMetadata
+    version: 2
   });
   const isLoading = isLoadingUserDelegates || isLoadingRestDelegates;
   const isDataReady = user && user !== ZERO_ADDRESS && !isLoading && (userDelegatesData || restDelegates);

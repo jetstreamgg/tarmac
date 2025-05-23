@@ -30,6 +30,13 @@ import { Chat } from './Chat';
 import { ChatError } from './ChatError';
 import { ChatbotSend } from './ChatbotSend';
 import { ArbitrumChain } from './ArbitrumChain';
+import { Stake } from './Stake';
+import { Delegate } from './Delegate';
+import { Borrow } from './Borrow';
+import { ClaimRewards } from './ClaimRewards';
+import { Liquidated } from './Liquidated';
+import { Repaid } from './Repaid';
+import { SelectRewards } from './SelectRewards';
 
 export {
   ArrowDown,
@@ -63,5 +70,12 @@ export {
   Chat,
   ChatError,
   ChatbotSend,
-  ArbitrumChain
+  ArbitrumChain,
+  Stake,
+  Delegate,
+  Borrow,
+  ClaimRewards,
+  Liquidated,
+  Repaid,
+  SelectRewards
 };

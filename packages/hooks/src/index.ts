@@ -98,7 +98,7 @@ export { useLsMkrPrice } from './prices/useLsMkrPrice';
 
 // Seal Module
 export { useOpenUrn } from './seal/useOpenUrn';
-export { useCurrentUrnIndex } from './seal/useCurrentUrnIndex';
+export { useCurrentUrnIndex as useSealCurrentIndex } from './seal/useCurrentUrnIndex';
 export { useUrnAddress } from './seal/useUrnAddress';
 export { useSelectRewardContract } from './seal/useSelectRewardContract';
 export { useSelectVoteDelegate } from './seal/useSelectVoteDelegate';
@@ -119,12 +119,40 @@ export { useWipeAll } from './seal/useWipeAll';
 export { useSaUserDelegates } from './seal/useSaUserDelegates';
 export { useSaRewardContracts } from './seal/useSaRewardContracts';
 export { useSealHistory } from './seal/useSealHistory';
+export { useStakeHistory } from './stake/useStakeHistory';
 export { useSealPosition } from './seal/useSealPosition';
 export { useSealExitFee } from './seal/useSealExitFee';
 export { usePositionsAtRisk } from './seal/usePositionsAtRisk';
 export { useTotalUserSealed } from './seal/useTotalUserSealed';
+export { useTotalUserStaked } from './stake/useTotalUserStaked';
 export { useSealRewardsData } from './seal/useSealRewardsData';
 export { useSealHistoricData } from './seal/useSealHistoricData';
+export { useStakeHistoricData } from './stake/useStakeHistoricData';
+export { useIsUrnMigrated } from './seal/useIsUrnMigrated';
+export { useSealMigrations } from './seal/useSealMigrations';
+export { checkUrnMigrationStatus } from './seal/checkUrnMigrationStatus';
+export { useSaHope } from './seal/useSaHope';
+export { useMigrateUrn } from './seal/useMigrateUrn';
+export { useIsUrnAuth as useIsSealUrnAuth } from './seal/useIsUrnAuth';
+export { useNextMigrationUrnIndex } from './seal/useNextMigrationUrnIndex';
+export { useMigrationUrnIndexValid } from './seal/useMigrationUrnIndexValid';
+export * from './seal/calldata';
+
+// Stake Module
+export { useStakeRewardContracts } from './stake/useStakeRewardContracts';
+export { useStakeUserDelegates } from './stake/useStakeUserDelegates';
+export { useStakeMulticall } from './stake/useStakeMulticall';
+export { useCurrentUrnIndex } from './stake/useCurrentUrnIndex';
+export { useUrnAddress as useStakeUrnAddress } from './stake/useUrnAddress';
+export { useIsUrnAuth as useIsStakeUrnAuth } from './stake/useIsUrnAuth';
+export { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from './stake/useUrnSelectedRewardContract';
+export { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from './stake/useUrnSelectedVoteDelegate';
+export { useStakeSkyAllowance, useStakeUsdsAllowance } from './stake/useStakeAllowance';
+export { useStakeSkyApprove, useStakeUsdsApprove } from './stake/useStakeApprove';
+export { useClaimRewards as useStakeClaimRewards } from './stake/useClaimRewards';
+export { useStakeRewardsData } from './stake/useStakeRewardsData';
+export { useStakePosition } from './stake/useStakePosition';
+export * from './stake/calldata';
 
 //Vaults
 export { useVault } from './vaults/useVault';
@@ -231,7 +259,8 @@ export {
   useReadSsrAuthOracleGetSsr,
   useReadPsm3L2Pocket,
   useReadPsm3L2PreviewSwapExactIn,
-  useReadPsm3L2PreviewSwapExactOut
+  useReadPsm3L2PreviewSwapExactOut,
+  lsMkrUsdsRewardAddress,
+  lsMigratorAddress
 } from './generated';
-export { contracts, tenderlyContracts, sepoliaContracts, l2Contracts } from './contracts';
-export * from './seal/calldata';
+export { contracts, /*tenderlyContracts,*/ sepoliaContracts, l2Contracts } from './contracts';

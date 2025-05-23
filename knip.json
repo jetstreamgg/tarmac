@@ -8,10 +8,6 @@
       "entry": ["src/pages/main.tsx"],
       "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
     },
-    "apps/integration-ui": {
-      "entry": ["src/pages/main.tsx"],
-      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
-    },
     "packages/hooks": {
       "entry": ["src/index.{js,ts,tsx}", "wagmi.config.ts"],
       "ignore": ["src/generated.ts"]

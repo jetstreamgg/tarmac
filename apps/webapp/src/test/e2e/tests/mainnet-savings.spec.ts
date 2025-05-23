@@ -149,6 +149,8 @@ test('supply with enough allowance does not require approval', async ({ page }) 
   await page.getByTestId('supply-input-savings').fill('100');
   // Approve
   await page.getByRole('button', { name: 'Approve' }).click();
+  // Wait for approval tx to finish
+  await expect(page.getByText('Token access approved')).toBeVisible();
   // await page.locator('role=button[name="Back"]').first().click(); //for some reason there's another button named Next
   // await page.getByRole('button', { name: 'Finish' }).click();
 
@@ -160,10 +162,10 @@ test('supply with enough allowance does not require approval', async ({ page }) 
   await page.getByTestId('supply-input-savings').click();
   await page.getByTestId('supply-input-savings').fill('100');
   // It should not ask for approval
-  await expect(page.getByRole('button', { name: 'Supply' })).toBeVisible();
+  await expect(page.getByTestId('widget-button')).toHaveText(/^Supply$/);
 
   // Supply and reset approval
-  await page.getByRole('button', { name: 'Supply' }).click();
+  await page.getByTestId('widget-button').click();
 });
 
 test('supply without allowance requires approval', async ({ page }) => {

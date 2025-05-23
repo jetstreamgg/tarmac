@@ -5,7 +5,7 @@ import { useChatContext } from '../context/ChatContext';
 import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/macro';
-import { chainIdNameMapping, isChatIntentAllowed } from '../lib/intentUtils';
+import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
 
 interface ChatbotResponse {
   chatResponse: {
@@ -100,7 +100,9 @@ export const useSendMessage = () => {
       },
       {
         onSuccess: data => {
-          const intents = data.intents?.filter(chatIntent => isChatIntentAllowed(chatIntent, chainId));
+          const intents = data.intents
+            ?.filter(chatIntent => isChatIntentAllowed(chatIntent, chainId))
+            .map(intent => ({ ...intent, url: processNetworkNameInUrl(intent.url) }));
 
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED

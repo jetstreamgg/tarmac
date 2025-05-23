@@ -14,6 +14,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ConnectedProvider } from '@/modules/ui/context/ConnectedContext';
 import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
 import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersContext';
+import { useGovernanceMigrationToast } from '@/modules/app/hooks/useGovernanceMigrationToast';
 
 import '@rainbow-me/rainbowkit/styles.css';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
@@ -30,24 +31,32 @@ const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : w
 
 const queryClient = new QueryClient();
 
+const AppContent = () => {
+  useGovernanceMigrationToast();
+
+  return (
+    <ConnectedProvider>
+      <ChatProvider>
+        <TermsModalProvider>
+          <BalanceFiltersProvider>
+            <TooltipProvider delayDuration={300}>
+              <ExternalLinkModal />
+              <Toaster />
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </BalanceFiltersProvider>
+        </TermsModalProvider>
+      </ChatProvider>
+    </ConnectedProvider>
+  );
+};
+
 export const App = () => (
   <I18nProvider i18n={i18n}>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={rainbowTheme} avatar={CustomAvatar} showRecentTransactions={true}>
-          <ConnectedProvider>
-            <ChatProvider>
-              <TermsModalProvider>
-                <BalanceFiltersProvider>
-                  <TooltipProvider delayDuration={300}>
-                    <ExternalLinkModal />
-                    <Toaster />
-                    <RouterProvider router={router} />
-                  </TooltipProvider>
-                </BalanceFiltersProvider>
-              </TermsModalProvider>
-            </ChatProvider>
-          </ConnectedProvider>
+          <AppContent />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

@@ -11,6 +11,25 @@ import { waitForPreparedExecuteAndMine } from '../../test/helpers';
 
 describe('useRewardsTotalSupplied hook', async () => {
   it('Should return data about the total supplied', async () => {
+    const { result: resultTotalSupplied } = renderHook(
+      () =>
+        useRewardsTotalSupplied({
+          chainId: TENDERLY_CHAIN_ID,
+          contractAddress: usdsSkyRewardAddress[TENDERLY_CHAIN_ID]
+        }),
+      {
+        wrapper: WagmiWrapper
+      }
+    );
+    await waitFor(
+      () => {
+        expect(resultTotalSupplied.current.data).toBeDefined();
+        return;
+      },
+      { timeout: 5000 }
+    );
+    const totalSuppliedBefore = resultTotalSupplied.current.data;
+
     // Approve token spending in the reward contract
     const { result: resultApprove } = renderHook(
       () =>
@@ -42,20 +61,19 @@ describe('useRewardsTotalSupplied hook', async () => {
     );
     await waitForPreparedExecuteAndMine(resultSupply);
 
-    const { result } = renderHook(
-      () =>
-        useRewardsTotalSupplied({
-          chainId: TENDERLY_CHAIN_ID,
-          contractAddress: usdsSkyRewardAddress[TENDERLY_CHAIN_ID]
-        }),
-      {
-        wrapper: WagmiWrapper
-      }
+    resultTotalSupplied.current.mutate();
+    await waitFor(
+      () => {
+        expect(resultTotalSupplied.current.data).not.equal(totalSuppliedBefore);
+        return;
+      },
+      { timeout: 5000 }
     );
+    const totalSuppliedAfter = resultTotalSupplied.current.data;
 
     await waitFor(
       () => {
-        expect(result.current.data).toBe(478888302139384542499245234n);
+        expect(totalSuppliedAfter).toBe((totalSuppliedBefore || 0n) + parseEther('100'));
         return;
       },
       { timeout: 5000 }

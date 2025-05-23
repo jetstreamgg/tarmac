@@ -31,6 +31,7 @@ export const getAmount = ({
       break;
     case ModuleEnum.REWARDS:
     case ModuleEnum.SEAL:
+    case ModuleEnum.STAKE:
       return [TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.SELECT_REWARD].includes(type)
         ? ''
         : formatBigInt(absBigInt('amount' in item ? item.amount : 0n), { compact: true });
