@@ -856,7 +856,6 @@ function StakeModuleWidgetWrapped({
 
   const resetToOverviewState = () => {
     setActiveUrn(undefined, onStakeUrnChange ?? (() => {}));
-    onStakeUrnChange?.(undefined);
     setWidgetState((prev: WidgetState) => ({
       ...prev,
       flow: StakeFlow.MANAGE,

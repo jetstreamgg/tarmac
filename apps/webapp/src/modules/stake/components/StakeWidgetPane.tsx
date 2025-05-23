@@ -27,6 +27,8 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   const { mutate: refreshStakeHistory } = useStakeHistory();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setShouldDisableActionButtons } = useChatContext();
+  const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
+  const isReset = searchParams.get(QueryParams.Reset) === 'true';
 
   const onStakeUrnChange = (urn?: {
     urnAddress: `0x${string}` | undefined;
@@ -34,6 +36,11 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   }) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.STAKE_INTENT]) {
+      return;
+    }
+
+    // Don't run while resetting
+    if (isReset) {
       return;
     }
 
@@ -48,8 +55,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     });
     setSelectedStakeUrnIndex(urn?.urnIndex !== undefined ? Number(urn.urnIndex) : undefined);
   };
-
-  const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
 
   // Reset detail pane urn index when widget is mounted
   useEffect(() => {
@@ -100,15 +105,12 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     }
 
     // Update amount in URL if provided and not zero
-    console.log('AAA originAmount', originAmount);
     if (originAmount && originAmount !== '0') {
-      console.log('AAABBB originAmount: ', originAmount);
       setSearchParams(prev => {
         prev.set(QueryParams.InputAmount, originAmount);
         return prev;
       });
     } else if (originAmount === '') {
-      console.log('AAADDD originAmount: ', originAmount);
       setSearchParams(prev => {
         prev.delete(QueryParams.InputAmount);
         return prev;
