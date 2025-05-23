@@ -8,6 +8,19 @@ export const isBaseChainId = (chainId: number) => {
   return chainId === chainIdMap.base || chainId === chainIdMap.tenderlyBase;
 };
 
+export const isUnichainChainId = (chainId: number) => {
+  return chainId === chainIdMap.unichain;
+};
+
+export const isOptimismChainId = (chainId: number) => {
+  return chainId === chainIdMap.optimism;
+};
+
 export const isL2ChainId = (chainId: number) => {
-  return isArbitrumChainId(chainId) || isBaseChainId(chainId);
+  return (
+    isArbitrumChainId(chainId) ||
+    isBaseChainId(chainId) ||
+    isUnichainChainId(chainId) ||
+    isOptimismChainId(chainId)
+  );
 };

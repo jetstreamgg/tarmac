@@ -5,7 +5,13 @@ export { getTransactionLink } from './getTransactionLink';
 export { getExplorerName, ExplorerName } from './getExplorerName';
 export { isTestnetId } from './isTestnetId';
 export { isMainnetId } from './isMainnetId';
-export { isBaseChainId, isArbitrumChainId, isL2ChainId } from './isL2ChainId';
+export {
+  isBaseChainId,
+  isArbitrumChainId,
+  isL2ChainId,
+  isUnichainChainId,
+  isOptimismChainId
+} from './isL2ChainId';
 export { formatAddress } from './formatAddress';
 export { normalizeAddress } from './normalizeAddress';
 export { chainId } from './chainId';

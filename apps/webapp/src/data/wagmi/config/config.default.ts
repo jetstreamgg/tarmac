@@ -1,6 +1,6 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { createConfig, createStorage, http, noopStorage } from 'wagmi';
-import { mainnet, base, sepolia, arbitrum } from 'wagmi/chains';
+import { mainnet, base, sepolia, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   safeWallet,
   rainbowWallet,
@@ -92,7 +92,7 @@ const connectors = connectorsForWallets(
 );
 
 export const wagmiConfigDev = createConfig({
-  chains: [mainnet, tenderly, base, arbitrum, tenderlyBase, sepolia, tenderlyArbitrum],
+  chains: [mainnet, tenderly, base, arbitrum, tenderlyBase, sepolia, tenderlyArbitrum, optimism, unichain],
   connectors,
   transports: {
     [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
@@ -101,7 +101,9 @@ export const wagmiConfigDev = createConfig({
     [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || ''),
     [tenderlyBase.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_BASE || ''),
     [sepolia.id]: http(import.meta.env.VITE_RPC_PROVIDER_SEPOLIA || ''),
-    [tenderlyArbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || '')
+    [tenderlyArbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || ''),
+    [unichain.id]: http(import.meta.env.VITE_RPC_PROVIDER_UNICHAIN || ''),
+    [optimism.id]: http(import.meta.env.VITE_RPC_PROVIDER_OPTIMISM || '')
   },
   // This was causing issues in the past when users tried to connect to the Safe connector and had the Phantom wallet installed
   // due to how Phantom handled `eth_accounts` requests, resulting in the Safe connector hanging in a reconnecting state
@@ -113,12 +115,14 @@ export const wagmiConfigDev = createConfig({
 });
 
 export const wagmiConfigMainnet = createConfig({
-  chains: [mainnet, base, arbitrum],
+  chains: [mainnet, base, arbitrum, optimism, unichain],
   connectors,
   transports: {
     [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
     [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
-    [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || '')
+    [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || ''),
+    [optimism.id]: http(import.meta.env.VITE_RPC_PROVIDER_OPTIMISM || ''),
+    [unichain.id]: http(import.meta.env.VITE_RPC_PROVIDER_UNICHAIN || '')
   },
   multiInjectedProviderDiscovery: true
 });
@@ -127,7 +131,7 @@ export const getSupportedChainIds = (chainId: number) => {
   if (isTestnetId(chainId)) {
     return [tenderly.id, tenderlyBase.id, tenderlyArbitrum.id];
   }
-  return [mainnet.id, base.id, arbitrum.id];
+  return [mainnet.id, base.id, arbitrum.id, optimism.id, unichain.id];
 };
 
 export const getMainnetChainName = (chainId: number) => {

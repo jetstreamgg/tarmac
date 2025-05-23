@@ -1,6 +1,6 @@
 // Default configuration used site-wide
 
-import { base, mainnet, sepolia, arbitrum } from 'wagmi/chains';
+import { base, mainnet, sepolia, arbitrum, unichain, optimism } from 'wagmi/chains';
 import { WidgetsConfig } from './types/widgets-config';
 import {
   usdsAddress,
@@ -77,7 +77,9 @@ export const defaultConfig: WidgetsConfig = {
       { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
       { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
       { ...susds, address: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
-    ]
+    ],
+    [unichain.id]: [eth],
+    [optimism.id]: [eth]
   },
   tradeTokenList: {
     [mainnet.id]: [
@@ -129,7 +131,9 @@ export const defaultConfig: WidgetsConfig = {
       { ...eth, address: ETH_ADDRESS },
       { ...weth, address: wethSepoliaAddress[sepolia.id] },
       { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
-    ]
+    ],
+    [unichain.id]: [],
+    [optimism.id]: []
   },
   tradeDisallowedPairs: {
     ETH: [weth.symbol as SUPPORTED_TOKEN_SYMBOLS],

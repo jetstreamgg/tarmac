@@ -5,5 +5,7 @@ export const chainId = {
   base: 8453,
   arbitrum: 42161,
   tenderlyBase: 8555,
-  tenderlyArbitrum: 42012
+  tenderlyArbitrum: 42012,
+  optimism: 10,
+  unichain: 130
 };
