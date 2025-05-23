@@ -33,7 +33,7 @@ export enum TrustLevelEnum {
 export const URL_MAKER_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/subgraph-mainnet';
 export const URL_MAKER_SUBGRAPH_TENDERLY =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-testnet';
+  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-testnet';
 
 export const URL_BASE_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/subgraph-base';
