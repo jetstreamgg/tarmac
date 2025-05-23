@@ -1,4 +1,4 @@
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardTitle } from '@widgets/components/ui/card';
 
 export const StatsCard = ({
   title,

@@ -1,4 +1,4 @@
-import { TokenInput } from '@/shared/components/ui/token/TokenInput';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import {
   getIlkName,
   getTokenDecimals,
@@ -9,12 +9,13 @@ import {
   useSimulatedVault,
   useVault,
   Vault,
-  CollateralRiskParameters
+  CollateralRiskParameters,
+  useSealExitFee
 } from '@jetstreamgg/hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
 import { SealModuleWidgetContext } from '../context/context';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import {
   WAD_PRECISION,
   captitalizeFirstLetter,
@@ -24,7 +25,7 @@ import {
   math
 } from '@jetstreamgg/utils';
 import { formatUnits } from 'viem';
-import { RiskSlider } from '@/shared/components/ui/RiskSlider';
+import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor, getCeilingTextColor } from '../lib/utils';
 import { useChainId } from 'wagmi';
 import { useRiskSlider } from '../hooks/useRiskSlider';
@@ -35,10 +36,8 @@ import {
   borrowRateTooltipText,
   debtCeilingTooltipText
 } from '../lib/constants';
-import { Warning } from '@/shared/components/icons/Warning';
-import { Text } from '@/shared/components/ui/Typography';
-import { WidgetContext } from '@/context/WidgetContext';
-import { SealFlow } from '../lib/constants';
+import { Warning } from '@widgets/shared/components/icons/Warning';
+import { Text } from '@widgets/shared/components/ui/Typography';
 
 const { usds, mkr, sky } = TOKENS;
 
@@ -151,6 +150,8 @@ const PositionManagerOverviewContainer = ({
       ? [formattedExistingMaxBorrowable, formatterSimulatedMaxBorrowable]
       : formatterSimulatedMaxBorrowable;
 
+  const { data: exitFee } = useSealExitFee();
+
   const initialTxData = useMemo(
     () =>
       [
@@ -163,6 +164,34 @@ const PositionManagerOverviewContainer = ({
                   `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount))}  ${displayToken.symbol}`
                 ]
               : `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount))}  ${displayToken.symbol}`
+        },
+        {
+          label: t`Exit fee percentage`,
+          value:
+            typeof exitFee === 'bigint'
+              ? [`${Number(formatUnits(exitFee * 100n, WAD_PRECISION)).toFixed(2)}%`]
+              : '',
+          tooltipText: (
+            <>
+              <Text>
+                When you supply MKR or SKY to the Seal Engine, a position is created and those tokens are
+                sealed behind an exit fee. You can seal and unseal your tokens anytime.
+              </Text>
+              <br />
+              <Text>
+                Unsealing requires the payment of an exit fee, which is a percentage of the total amount of
+                tokens that you have sealed in that position. The fee is automatically subtracted from that
+                total amount, and then burnt, removing the tokens from circulation. Your accumulated rewards
+                are not affected.
+              </Text>
+              <br />
+              <Text>
+                The exit fee is a risk parameter managed and determined (regardless of position duration) by
+                Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that
+                it is determined the moment you unseal your MKR.
+              </Text>
+            </>
+          )
         },
         {
           label: t`You borrowed`,
@@ -201,7 +230,8 @@ const PositionManagerOverviewContainer = ({
       existingColAmount,
       existingBorrowAmount,
       hasPositions,
-      displayToken
+      displayToken,
+      exitFee
     ]
   );
 
@@ -308,8 +338,6 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
     selectedToken
   } = useContext(SealModuleWidgetContext);
 
-  const { widgetState } = useContext(WidgetContext);
-
   const chainId = useChainId();
   const ilkName = getIlkName(chainId);
 
@@ -367,7 +395,8 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
       : availableBorrowFromDebtCeiling;
 
   const formattedMaxBorrowable = `${formatBigInt(availableBorrowBalance, {
-    unit: getTokenDecimals(usds, chainId)
+    unit: getTokenDecimals(usds, chainId),
+    roundingMode: 'floor'
   })} ${usds.symbol}`;
 
   useEffect(() => {
@@ -376,10 +405,9 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
       debouncedUsdsToBorrow === usdsToBorrow &&
         !error &&
         !isLoading &&
-        //TODO: delete the widgetState.flow !== SealFlow.MANAGE check if rewards are turned on.
         //This will allow opening a position without borrowing any USDS
         ((debouncedUsdsToBorrow > 0n && debouncedUsdsToBorrow < availableBorrowFromDebtCeiling) ||
-          (widgetState.flow == SealFlow.MANAGE && !debouncedUsdsToBorrow))
+          !debouncedUsdsToBorrow)
     );
   }, [debouncedUsdsToBorrow, usdsToBorrow, error, isLoading, availableBorrowFromDebtCeiling]);
 
@@ -423,7 +451,7 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
       {collateralData?.debtCeilingUtilization === 1 ? (
         <div className="ml-3">
           <Text variant="small" className="text-error flex gap-2">
-            <Warning boxSize={16} viewBox="0 0 16 16" className="mt-1 flex-shrink-0" />
+            <Warning boxSize={16} viewBox="0 0 16 16" className="mt-1 shrink-0" />
             Debt ceiling reached. New positions and additional USDS borrowing are temporarily disabled.
           </Text>
         </div>

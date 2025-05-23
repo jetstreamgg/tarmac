@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 import { HStack } from '../layout/HStack';
 import { LoadingSpinner } from './LoadingSpinner';
 import { Text } from '../Typography';

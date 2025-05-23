@@ -1,32 +1,41 @@
-import { Heading } from '@/shared/components/ui/Typography';
-import { WidgetContainer } from '@/shared/components/ui/widget/WidgetContainer';
+import { Heading } from '@widgets/shared/components/ui/Typography';
+import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { WidgetProvider } from '@/context/WidgetContext';
-import { WidgetProps } from '@/shared/types/widgetState';
+import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetProps, WidgetStateChangeParams } from '@widgets/shared/types/widgetState';
 import { useAccount } from 'wagmi';
 import { BalancesHeader } from './components/BalancesHeader';
 import { BalancesContent } from './components/BalancesContent';
-import { getValidatedState } from '@/lib/utils';
-import { LoadingButton } from '@/shared/components/ui/LoadingButton';
-import { ConnectWalletCopy } from '@/shared/components/ui/ConnectWalletCopy';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { getValidatedState } from '@widgets/lib/utils';
+import { LoadingButton } from '@widgets/shared/components/ui/LoadingButton';
+import { ConnectWalletCopy } from '@widgets/shared/components/ui/ConnectWalletCopy';
+import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
-import { CardAnimationWrapper } from '@/shared/animation/Wrappers';
-import { useEffect, useMemo } from 'react';
+import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { TokenForChain } from '@jetstreamgg/hooks';
+import { BalancesFlow } from './constants';
 
-type BalancesWidgetProps = WidgetProps & {
-  customTokenList?: TokenForChain[];
+export type BalancesWidgetProps = WidgetProps & {
+  customTokenMap?: { [chainId: number]: TokenForChain[] };
+  chainIds?: number[];
   hideModuleBalances?: boolean;
   actionForToken?: (
     symbol: string,
-    balance: string
+    balance: string,
+    tokenChainId: number
   ) => { label: string; actionUrl: string; image: string } | undefined;
-  onClickRewardsCard?: () => void;
-  onClickSavingsCard?: () => void;
-  onClickSealCard?: () => void;
+  rewardsCardUrl?: string;
+  savingsCardUrlMap?: Record<number, string>;
+  sealCardUrl?: string;
+  stakeCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
+  showAllNetworks?: boolean;
+  setShowAllNetworks?: (showAllNetworks: boolean) => void;
+  hideZeroBalances?: boolean;
+  setHideZeroBalances?: (hideZeroBalances: boolean) => void;
 };
 
 export const BalancesWidget = ({
@@ -38,11 +47,18 @@ export const BalancesWidget = ({
   hideModuleBalances = false,
   enabled = true,
   actionForToken,
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
-  customTokenList,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  onWidgetStateChange,
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
+  stakeCardUrl,
+  customTokenMap,
+  chainIds,
+  showAllNetworks,
+  hideZeroBalances,
+  setShowAllNetworks,
+  setHideZeroBalances
 }: BalancesWidgetProps) => {
   return (
     <ErrorBoundary componentName="BalancesWidget">
@@ -55,11 +71,18 @@ export const BalancesWidget = ({
           hideModuleBalances={hideModuleBalances}
           enabled={enabled}
           actionForToken={actionForToken}
-          customTokenList={customTokenList}
-          onClickRewardsCard={onClickRewardsCard}
-          onClickSavingsCard={onClickSavingsCard}
-          onClickSealCard={onClickSealCard}
+          customTokenMap={customTokenMap}
+          chainIds={chainIds}
+          rewardsCardUrl={rewardsCardUrl}
+          savingsCardUrlMap={savingsCardUrlMap}
+          sealCardUrl={sealCardUrl}
+          stakeCardUrl={stakeCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
+          onWidgetStateChange={onWidgetStateChange}
+          showAllNetworks={showAllNetworks}
+          hideZeroBalances={hideZeroBalances}
+          setShowAllNetworks={setShowAllNetworks}
+          setHideZeroBalances={setHideZeroBalances}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -74,19 +97,43 @@ const BalancesWidgetWrapped = ({
   hideModuleBalances = false,
   enabled = true,
   actionForToken,
-  customTokenList,
-  onClickRewardsCard,
-  onClickSavingsCard,
-  onClickSealCard,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  onWidgetStateChange,
+  customTokenMap,
+  chainIds,
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
+  stakeCardUrl,
+  showAllNetworks,
+  hideZeroBalances,
+  setShowAllNetworks,
+  setHideZeroBalances
 }: BalancesWidgetProps) => {
   const { isConnected, isConnecting } = useAccount();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const validatedExternalState = getValidatedState(externalWidgetState);
+  const { txStatus, widgetState, setWidgetState } = useContext(WidgetContext);
+  const initialTabIndex = validatedExternalState?.flow === BalancesFlow.TX_HISTORY ? 1 : 0;
+  const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
+
+  useEffect(() => {
+    setTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
+
+  const onToggle = (number: 0 | 1) => {
+    setTabIndex(number);
+    const flow = number === 0 ? BalancesFlow.FUNDS : BalancesFlow.TX_HISTORY;
+    setWidgetState({
+      ...widgetState,
+      flow
+    });
+    onWidgetStateChange?.({ widgetState: { ...widgetState, flow }, txStatus });
+  };
 
   return (
     <WidgetContainer
@@ -116,26 +163,36 @@ const BalancesWidgetWrapped = ({
           <CardAnimationWrapper key="widget-not-connected">
             <BalancesHeader
               isConnectedAndEnabled={isConnectedAndEnabled}
-              initialTabSide={validatedExternalState?.tab}
+              tabIndex={tabIndex}
               onExternalLinkClicked={onExternalLinkClicked}
+              onToggle={onToggle}
             />
           </CardAnimationWrapper>
         ) : (
           <CardAnimationWrapper key="widget-connected" className="flex flex-col gap-4">
             <BalancesHeader
               isConnectedAndEnabled={isConnectedAndEnabled}
-              initialTabSide={validatedExternalState?.tab}
+              tabIndex={tabIndex}
               onExternalLinkClicked={onExternalLinkClicked}
+              onToggle={onToggle}
             />
             <BalancesContent
+              tabIndex={tabIndex}
               validatedExternalState={validatedExternalState}
-              customTokenList={customTokenList}
+              customTokenMap={customTokenMap}
               hideModuleBalances={hideModuleBalances}
               actionForToken={actionForToken}
-              onClickRewardsCard={onClickRewardsCard}
-              onClickSavingsCard={onClickSavingsCard}
-              onClickSealCard={onClickSealCard}
+              rewardsCardUrl={rewardsCardUrl}
+              savingsCardUrlMap={savingsCardUrlMap}
+              sealCardUrl={sealCardUrl}
+              stakeCardUrl={stakeCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
+              onToggle={onToggle}
+              chainIds={chainIds}
+              showAllNetworks={showAllNetworks}
+              hideZeroBalances={hideZeroBalances}
+              setShowAllNetworks={setShowAllNetworks}
+              setHideZeroBalances={setHideZeroBalances}
             />
           </CardAnimationWrapper>
         )}

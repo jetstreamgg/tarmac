@@ -6,7 +6,7 @@ import {
   RewardContract,
   TOKENS
 } from '@jetstreamgg/hooks';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useChainId } from 'wagmi';
@@ -34,6 +34,7 @@ type TokenBalance = {
   decimals: number;
   formatted: string;
   symbol: string;
+  chainId: number;
 };
 
 // Note: some suggested actions are disabled because they aren't compatible with the Rate highlight cards, leaving them here in case we want to re-enable
@@ -57,10 +58,10 @@ const fetchUserSuggestedActions = (
   const skyRewardContract = rewardContracts?.find(
     (rewardContract: RewardContract) => rewardContract.rewardToken === TOKENS.sky
   );
-  const baseChainId = isBaseChainId(chainId);
+  const l2ChainId = isL2ChainId(chainId);
 
   // Limit the Linked and Suggested actions to Mainnet and Tenderly mainnet for now
-  if (!baseChainId) {
+  if (!l2ChainId) {
     // if user has DAI or MKR, add suggestion to upgrade, then get rewards or save
     // DAI actions
     const daiBalance = tokenBalances?.find((token: TokenBalance) => token.symbol === 'DAI');

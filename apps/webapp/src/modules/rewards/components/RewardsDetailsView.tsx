@@ -33,7 +33,7 @@ export function RewardsDetailsView({ rewardContract }: { rewardContract?: Reward
           <RewardsBalanceDetails rewardContract={rewardContract} />
         </DetailSectionRow>
       </DetailSection>
-      <DetailSection title={t`Rewards statistics`}>
+      <DetailSection title={t`${rewardContract.name} — Rewards statistics`}>
         <DetailSectionRow>
           <RewardsTokenInfo rewardContract={rewardContract} />
         </DetailSectionRow>

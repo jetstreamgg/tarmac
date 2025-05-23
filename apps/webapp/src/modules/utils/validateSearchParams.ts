@@ -1,5 +1,5 @@
 import { RewardContract } from '@jetstreamgg/hooks';
-import { SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/widgets';
+import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -12,6 +12,7 @@ import { Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@jetstreamgg/utils';
 import { Chain } from 'viem';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const validateSearchParams = (
   searchParams: URLSearchParams,
@@ -21,8 +22,9 @@ export const validateSearchParams = (
   chainId: number,
   chains: readonly [Chain, ...Chain[]]
 ) => {
-  const chainInUrl = chains.find(c => c.name.toLowerCase() === searchParams.get(QueryParams.Network));
+  const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
   const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
+  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
 
   searchParams.forEach((value, key) => {
     // removes any query param not found in QueryParams
@@ -49,12 +51,32 @@ export const validateSearchParams = (
     // also sets the selected reward contract if the reward contract address is valid
     if (key === QueryParams.Reward) {
       const rewardContract = rewardContracts?.find(
-        f => f.contractAddress.toLowerCase() === value.toLowerCase()
+        f => f.contractAddress?.toLowerCase() === value?.toLowerCase()
       );
       if (!rewardContract) {
         searchParams.delete(key);
       } else {
         setSelectedRewardContract(rewardContract);
+      }
+    }
+
+    // Reset the selected reward contract if the widget is set to rewards and no valid reward contract parameter exists.
+    if (widget === IntentMapping[Intent.REWARDS_INTENT]) {
+      if (!searchParams.get(QueryParams.Reward)) {
+        setSelectedRewardContract(undefined);
+        searchParams.delete(QueryParams.InputAmount);
+      }
+
+      // if the flow is claim, remove the flow param as it's only used by the chatbot
+      if (searchParams.get(QueryParams.Flow) === RewardsFlow.CLAIM) {
+        searchParams.delete(QueryParams.Flow);
+      }
+    }
+
+    if (widget === IntentMapping[Intent.STAKE_INTENT]) {
+      // if the flow is claim, remove the flow param as it's only used by the chatbot
+      if (searchParams.get(QueryParams.Flow) === StakeFlow.CLAIM) {
+        searchParams.delete(QueryParams.Flow);
       }
     }
 
@@ -85,9 +107,19 @@ export const validateSearchParams = (
         searchParams.delete(key);
       }
 
-      // if widget is upgrade, only valid source token is MKR or DAI
+      // Add check for disallowed tokens in Savings on L2
+      if (widgetParam?.toLowerCase() === IntentMapping[Intent.SAVINGS_INTENT] && isL2Chain) {
+        if (isRestrictedMiCa) {
+          // Currently, USDS is the only allowed token in this scenario
+          if (value.toLowerCase() !== 'usds') {
+            searchParams.delete(key);
+          }
+        }
+      }
+
+      // if widget is upgrade, only valid source token is MKR, DAI or USDS
       if (widgetParam?.toLowerCase() === IntentMapping[Intent.UPGRADE_INTENT]) {
-        if (!['mkr', 'dai'].includes(value.toLowerCase())) {
+        if (!['mkr', 'dai', 'usds'].includes(value.toLowerCase())) {
           searchParams.delete(key);
         }
       }
@@ -138,6 +170,14 @@ export const validateSearchParams = (
     if (key === QueryParams.LinkedAction && !VALID_LINKED_ACTIONS.includes(value.toLowerCase())) {
       // TODO here we could also check if it's a valid linked action based on the combination of widget and LA value
       searchParams.delete(key);
+    }
+
+    // removes reset param
+    if (key === QueryParams.Reset) {
+      setTimeout(() => {
+        // wait for the widget to reset
+        searchParams.delete(key);
+      }, 500);
     }
   });
 

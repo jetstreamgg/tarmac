@@ -1,5 +1,5 @@
-import { WidgetProps, WidgetState } from '@/shared/types/widgetState';
-import { WidgetContext, WidgetProvider } from '@/context/WidgetContext';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
 import {
   MAX_SLIPPAGE_WITHOUT_WARNING,
   MAX_FEE_PERCENTAGE_WITHOUT_WARNING,
@@ -29,33 +29,34 @@ import {
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   formatBigInt,
-  getEtherscanLink,
   truncateStringToFourDecimals,
+  getTransactionLink,
+  useIsSafeWallet,
   useDebounce,
   useIsSmartContractWallet
 } from '@jetstreamgg/utils';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { TxStatus, notificationTypeMaping } from '@/shared/constants';
+import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';
 import { TradeTransactionStatus } from './components/TradeTransactionStatus';
-import { WidgetContainer } from '@/shared/components/ui/widget/WidgetContainer';
+import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { TradeAction, TradeFlow, TradeSide } from './lib/constants';
 import { TradeInputs } from './components/TradeInputs';
 import { getAllowedTargetTokens, getQuoteErrorForType, verifySlippage } from './lib/utils';
-import { defaultConfig } from '@/config/default-config';
+import { defaultConfig } from '@widgets/config/default-config';
 import { useLingui } from '@lingui/react';
 import { TradeHeader } from './components/TradeHeader';
 import { formatUnits, parseUnits } from 'viem';
-import { getValidatedState } from '@/lib/utils';
+import { getValidatedState } from '@widgets/lib/utils';
 import { TradeSummary } from './components/TradeSummary';
-import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
-import { useAddTokenToWallet } from '@/shared/hooks/useAddTokenToWallet';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
+import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
+import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
-import { CardAnimationWrapper } from '@/shared/animation/Wrappers';
-import { useNotifyWidgetState } from '@/shared/hooks/useNotifyWidgetState';
+import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
+import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { sepolia } from 'viem/chains';
-import { useTokenImage } from '@/shared/hooks/useTokenImage';
+import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -77,12 +78,15 @@ export const TradeWidget = ({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
-  enabled = true
+  enabled = true,
+  shouldReset = false
 }: TradeWidgetProps) => {
+  const key = shouldReset ? 'reset' : undefined;
   return (
     <ErrorBoundary componentName="TradeWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider key={key} locale={locale}>
         <TradeWidgetWrapped
+          key={key}
           onConnect={onConnect}
           addRecentTransaction={addRecentTransaction}
           rightHeaderComponent={rightHeaderComponent}
@@ -92,7 +96,7 @@ export const TradeWidget = ({
           externalWidgetState={externalWidgetState}
           onStateValidated={onStateValidated}
           onNotification={onNotification}
-          onWidgetStateChange={onWidgetStateChange}
+          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
           customNavigationLabel={customNavigationLabel}
           onCustomNavigation={onCustomNavigation}
           onExternalLinkClicked={onExternalLinkClicked}
@@ -137,6 +141,7 @@ function TradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isSmartContractWallet = useIsSmartContractWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
@@ -345,7 +350,7 @@ function TradeWidgetWrapped({
           unit: originToken ? getTokenDecimals(originToken, chainId) : 18
         })} ${originToken?.symbol ?? ''}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -523,7 +528,7 @@ function TradeWidgetWrapped({
           unit: originToken ? getTokenDecimals(originToken, chainId) : 18
         })} ${originToken?.symbol ?? ''} to the EthFlow contract`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       setEthFlowTxStatus(EthFlowTxStatus.SENDING_ETH);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -827,6 +832,15 @@ function TradeWidgetWrapped({
       action: TradeAction.TRADE,
       screen: TradeScreen.ACTION
     });
+
+    // Reset additional state
+    setTradeAnyway(false);
+    setShowAddToken(false);
+    setCancelLoading(false);
+    setOrderId(undefined);
+    setExternalLink(undefined);
+    setFormattedExecutedSellAmount(undefined);
+    setFormattedExecutedBuyAmount(undefined);
   }, [chainId]);
 
   useEffect(() => {
@@ -1107,9 +1121,9 @@ function TradeWidgetWrapped({
   // Handle the error onClicks separately to keep it clean
   const errorOnClick = () => {
     return widgetState.action === TradeAction.TRADE
-      ? tradeOnClick
+      ? tradeOnClick()
       : widgetState.action === TradeAction.APPROVE
-        ? approveOnClick
+        ? approveOnClick()
         : undefined;
   };
 
@@ -1125,7 +1139,7 @@ function TradeWidgetWrapped({
         : txStatus === TxStatus.SUCCESS
           ? nextOnClick
           : txStatus === TxStatus.ERROR
-            ? errorOnClick()
+            ? errorOnClick
             : txStatus === TxStatus.CANCELLED
               ? nextOnClick
               : widgetState.screen === TradeScreen.ACTION

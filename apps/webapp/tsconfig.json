@@ -5,7 +5,8 @@
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@jetstreamgg/*": ["../../packages/*/src"]
     }
     // ...
   },

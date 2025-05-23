@@ -1,12 +1,17 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { positionAnimations } from '@/shared/animation/presets';
-import { TextWithTooltip } from '@/shared/components/ui/tooltip/TextWithTooltip';
-import { Text } from '@/shared/components/ui/Typography';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@widgets/components/ui/accordion';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { captitalizeFirstLetter, formatBigInt, formatPercent, math } from '@jetstreamgg/utils';
 import { motion } from 'framer-motion';
 import { getRiskTextColor } from '../lib/utils';
 import { RiskLevel, Token, TOKENS, useCollateralData } from '@jetstreamgg/hooks';
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 import {
   collateralizationRatioTooltipText,
   borrowRateTooltipText,

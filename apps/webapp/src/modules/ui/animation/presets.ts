@@ -2,12 +2,12 @@ import { Transition, Variant, Variants } from 'framer-motion';
 import { bezierSkeleton, easeOutExpo } from './timingFunctions';
 import { AnimationLabels } from './constants';
 
-export const cardInInitial: Variant = {
+const cardInInitial: Variant = {
   opacity: 0,
   y: 20
 };
 
-export const cardInAnimate: Variant = {
+const cardInAnimate: Variant = {
   opacity: 1,
   y: 0,
   transition: {
@@ -20,7 +20,7 @@ export const cardInAnimate: Variant = {
   }
 };
 
-export const cardOutExit: Variant = {
+const cardOutExit: Variant = {
   opacity: 0,
   y: -20,
   transition: {
@@ -42,12 +42,12 @@ export const skeletonTransition: Transition = {
   repeatDelay: 0.5
 };
 
-export const positionInitial: Variant = {
+const positionInitial: Variant = {
   y: 10,
   opacity: 0
 };
 
-export const positionAnimate: Variant = {
+const positionAnimate: Variant = {
   y: 0,
   opacity: 1,
   transition: {
@@ -58,30 +58,16 @@ export const positionAnimate: Variant = {
   }
 };
 
-export const positionOutExit: Variant = {
-  y: -10,
-  opacity: 0,
-  transition: {
-    y: { duration: 0.83, ease: easeOutExpo },
-    opacity: { duration: 0.5, ease: easeOutExpo }
-  }
-};
-
 export const positionAnimations: Variants = {
   [AnimationLabels.initial]: positionInitial,
   [AnimationLabels.animate]: positionAnimate
 };
 
-export const positionAnimationsWithExit: Variants = {
-  ...positionAnimations,
-  [AnimationLabels.exit]: positionOutExit
-};
-
-export const fadeInInitial: Variant = {
+const fadeInInitial: Variant = {
   opacity: 0
 };
 
-export const fadeInAnimate: Variant = {
+const fadeInAnimate: Variant = {
   opacity: 1,
   transition: {
     opacity: { duration: 0.25, ease: easeOutExpo },
@@ -90,19 +76,7 @@ export const fadeInAnimate: Variant = {
   }
 };
 
-export const fadeOutExit: Variant = {
-  opacity: 0,
-  transition: {
-    opacity: { duration: 0.25, ease: easeOutExpo }
-  }
-};
-
 export const fadeAnimations: Variants = {
   [AnimationLabels.initial]: fadeInInitial,
   [AnimationLabels.animate]: fadeInAnimate
-};
-
-export const fadeAnimationsWithExit: Variants = {
-  ...positionAnimations,
-  [AnimationLabels.exit]: fadeOutExit
 };

@@ -1,9 +1,9 @@
 import * as React from 'react';
 
-import { cn } from '@/lib/utils';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { Text } from '@/shared/components/ui/Typography';
-import { Warning } from '@/shared/components/icons/Warning';
+import { cn } from '@widgets/lib/utils';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { Warning } from '@widgets/shared/components/icons/Warning';
 import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './tooltip';
 import { useState } from 'react';
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -69,7 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               `bg-background flex h-6 w-full px-3 py-0 pl-0 ${
                 error ? 'text-error' : 'text-text'
-              } focus-visible:ring-ring ring-offset-background placeholder:text-textDimmed text-base leading-tight file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 lg:text-lg lg:leading-normal`,
+              } focus-visible:ring-ring ring-offset-background placeholder:text-textDimmed focus-visible:outline-hidden text-base leading-tight file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 lg:text-lg lg:leading-normal`,
               className
             )}
             ref={ref}

@@ -1,7 +1,7 @@
 import { useContext, useEffect } from 'react';
-import { WidgetContext } from '@/context/WidgetContext';
-import { TransactionStatus } from '@/shared/components/ui/transaction/TransactionStatus';
-import { TxCardCopyText } from '@/shared/types/txCardCopyText';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
+import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { i18n } from '@lingui/core';
 import { t } from '@lingui/core/macro';
 import {
@@ -13,7 +13,7 @@ import {
   ZERO_ADDRESS
 } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
-import { approveLoadingButtonText } from '@/shared/constants';
+import { approveLoadingButtonText } from '@widgets/shared/constants';
 import {
   claimLoadingButtonText,
   claimSubtitle,
@@ -27,15 +27,21 @@ import {
   getSealTitle,
   getSealSubtitle,
   sealApproveDescription,
-  repayApproveDescription
+  repayApproveDescription,
+  hopeLoadingButtonText,
+  hopeTitle,
+  hopeSubtitle,
+  migrateLoadingButtonText,
+  migrateTitle,
+  migrateSubtitle
 } from '../lib/constants';
-import { positionAnimations } from '@/shared/animation/presets';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { TokenIconWithBalance } from '@/shared/components/ui/token/TokenIconWithBalance';
-import { Text } from '@/shared/components/ui/Typography';
-import { VStack } from '@/shared/components/ui/layout/VStack';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { TokenIconWithBalance } from '@widgets/shared/components/ui/token/TokenIconWithBalance';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { SealModuleWidgetContext } from '../context/context';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { useDelegateName } from '@jetstreamgg/hooks';
 import { JazziconComponent } from './Jazzicon';
 import { needsDelegateUpdate, needsRewardUpdate } from '../lib/utils';
@@ -60,6 +66,7 @@ function TransactionDetail() {
     activeUrn,
     selectedToken
   } = useContext(SealModuleWidgetContext);
+  const { widgetState } = useContext(WidgetContext);
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
 
   const { data: selectedDelegateName } = useDelegateName(selectedDelegate);
@@ -115,7 +122,7 @@ function TransactionDetail() {
       component: rewardContractTokens ? (
         <VStack gap={3} className="mt-2">
           <Text variant="medium" className="text-textSecondary leading-4">
-            Seal reward
+            {widgetState.flow === SealFlow.MIGRATE ? 'Staking reward' : 'Seal reward'}
           </Text>
           <HStack gap={2}>
             <TokenIcon token={rewardContractTokens.rewardsToken} width={24} className="h-6 w-6 text-[18px]" />
@@ -221,9 +228,24 @@ export const SealModuleTransactionStatus = ({ onExternalLinkClicked }: SealModul
   useEffect(() => {
     if (flow === SealFlow.OPEN) setStepTwoTitle(t`Open a position`);
     if (flow === SealFlow.MANAGE) setStepTwoTitle(t`Update Position`);
+    if (flow === SealFlow.MIGRATE) setStepTwoTitle(t`Execute Migration`);
 
-    // Both flows will have the same approval copy
-    if (action === SealAction.APPROVE && screen === SealScreen.TRANSACTION) {
+    if (flow === SealFlow.MIGRATE && action === SealAction.HOPE && screen === SealScreen.TRANSACTION) {
+      setStep(1);
+      setLoadingText(i18n._(hopeLoadingButtonText[txStatus]));
+      setTxTitle(i18n._(hopeTitle[txStatus]));
+      setTxSubtitle(i18n._(hopeSubtitle[txStatus]));
+    } else if (
+      flow === SealFlow.MIGRATE &&
+      action === SealAction.MIGRATE &&
+      screen === SealScreen.TRANSACTION
+    ) {
+      setStep(2);
+      setLoadingText(i18n._(migrateLoadingButtonText[txStatus]));
+      setTxTitle(i18n._(migrateTitle[txStatus]));
+      setTxSubtitle(i18n._(migrateSubtitle[txStatus]));
+    } else if (action === SealAction.APPROVE && screen === SealScreen.TRANSACTION) {
+      // Both flows will have the same approval copy
       setStep(1);
       setLoadingText(i18n._(approveLoadingButtonText[txStatus]));
       setTxTitle(i18n._(sealApproveTitle[txStatus]));

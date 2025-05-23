@@ -1,10 +1,10 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { MotionHStack } from '@/shared/components/ui/layout/MotionHStack';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
-import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
-import { Text } from '@/shared/components/ui/Typography';
-import { StatsOverviewCardCore } from '@/shared/components/ui/card/StatsOverviewCardCore';
-import { positionAnimations } from '@/shared/animation/presets';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { StatsOverviewCardCore } from '@widgets/shared/components/ui/card/StatsOverviewCardCore';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useOverallSkyData } from '@jetstreamgg/hooks';
 import { formatDecimalPercentage } from '@jetstreamgg/utils';
 import { JSX } from 'react';
@@ -30,15 +30,15 @@ export const SavingsStatsCardCore = ({
       }
       headerRightContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          <Text className="text-bullish">
-            {isLoading || isOverallSkyDataLoading ? (
-              <Skeleton className="bg-textSecondary h-5 w-12" />
-            ) : overallSkyData?.skySavingsRatecRate ? (
-              `Rate: ${formatDecimalPercentage(parseFloat(overallSkyData.skySavingsRatecRate))}`
-            ) : (
-              '--'
-            )}
-          </Text>
+          {isLoading || isOverallSkyDataLoading ? (
+            <Skeleton className="bg-textSecondary h-5 w-12" />
+          ) : (
+            <Text className="text-bullish">
+              {overallSkyData?.skySavingsRatecRate
+                ? `Rate: ${formatDecimalPercentage(parseFloat(overallSkyData.skySavingsRatecRate))}`
+                : '--'}
+            </Text>
+          )}
           <PopoverRateInfo type="ssr" onExternalLinkClicked={onExternalLinkClicked} />
         </MotionHStack>
       }

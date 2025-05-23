@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
+import { Button } from '@widgets/components/ui/button';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { Token } from '@jetstreamgg/hooks';
 import { ArrowLeftRight } from 'lucide-react';
 import {
@@ -8,15 +8,20 @@ import {
   TooltipContent,
   TooltipArrow,
   TooltipPortal
-} from '@/components/ui/tooltip';
-import { Text } from '@/shared/components/ui/Typography';
+} from '@widgets/components/ui/tooltip';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 
 export const ViewSkyMkrButton = ({ onClick, displayToken }: { onClick: () => void; displayToken: Token }) => {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button className="h-full px-3 text-xs" onClick={onClick} data-testid="view-sky-mkr-button">
+        <Button
+          variant="primary"
+          className="h-full px-3 text-xs"
+          onClick={onClick}
+          data-testid="view-sky-mkr-button"
+        >
           <TokenIcon className="h-4 w-4" token={displayToken} width={16} />{' '}
           <ArrowLeftRight size={14} className="ml-1" />
         </Button>

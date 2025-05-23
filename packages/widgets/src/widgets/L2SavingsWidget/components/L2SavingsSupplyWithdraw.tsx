@@ -1,13 +1,13 @@
 import React from 'react';
-import { WidgetProps } from '@/shared/types/widgetState';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { TokenInput } from '@/shared/components/ui/token/TokenInput';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { WidgetProps } from '@widgets/shared/types/widgetState';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { Token, useOverallSkyData, getTokenDecimals } from '@jetstreamgg/hooks';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 import { L2SavingsStatsCard } from './L2SavingsStatsCard';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/utils';
 import { useChainId } from 'wagmi';
@@ -26,7 +26,7 @@ type Props = WidgetProps & {
   tabIndex: 0 | 1;
   error?: boolean;
   onToggle: (number: 0 | 1) => void;
-  onOriginInputChange: (val: bigint) => void;
+  onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -106,7 +106,7 @@ export function L2SavingsSupplyWithdraw({
                 token={originToken}
                 tokenList={originOptions || []}
                 balance={originBalance}
-                onChange={onOriginInputChange}
+                onChange={(val, event) => onOriginInputChange(BigInt(val), !!event)}
                 onTokenSelected={token => {
                   onMenuItemChange?.(token as Token);
                 }}
@@ -124,7 +124,7 @@ export function L2SavingsSupplyWithdraw({
                 className="w-full"
                 token={originToken}
                 balance={convertedBalance?.value}
-                onChange={onOriginInputChange}
+                onChange={(val, event) => onOriginInputChange(BigInt(val), !!event)}
                 value={originAmount}
                 dataTestId="l2-savings-withdraw-input"
                 label={t`How much ${originToken?.symbol} would you like to withdraw?`}

@@ -38,7 +38,7 @@ export default defineConfig({
     exclude: [...configDefaults.exclude],
     globals: true,
     environment: 'happy-dom',
-    testTimeout: 60000,
+    testTimeout: 90000,
     setupFiles: ['./test/setup.ts'],
     globalSetup: ['./test/globalSetup.ts'],
     pool: 'forks',

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Unavailable } from '@/modules/icons';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { LoadingSpinner } from '@/modules/ui/components/LoadingSpinner';
@@ -105,20 +105,24 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
         {isLoading ? (
           <DialogContent className="bg-containerDark max-w-[300px]">
             <div className="flex items-center justify-center p-4">
-              <Text className="text-text mr-2 text-center">
-                <Trans>Please wait...</Trans>
-              </Text>
+              <DialogTitle asChild>
+                <Text className="text-text mr-2 text-center">
+                  <Trans>Please wait...</Trans>
+                </Text>
+              </DialogTitle>
               <LoadingSpinner />
             </div>
           </DialogContent>
         ) : (
           <DialogContent className="bg-containerDark max-w-[640px] p-10">
             <div className="flex flex-col gap-5 sm:flex-row">
-              <Unavailable className="flex-shrink-0" />
+              <Unavailable className="shrink-0" />
               <div className="">
-                <Text className="text-text mb-2 text-[28px] md:text-[32px]">
-                  {getTitle(authData, vpnData)}
-                </Text>
+                <DialogTitle asChild>
+                  <Text className="text-text mb-2 text-[28px] md:text-[32px]">
+                    {getTitle(authData, vpnData)}
+                  </Text>
+                </DialogTitle>
                 <Text className="font-graphik text-text mb-10">
                   {getMessage(authData, vpnData, termsLink)}
                 </Text>

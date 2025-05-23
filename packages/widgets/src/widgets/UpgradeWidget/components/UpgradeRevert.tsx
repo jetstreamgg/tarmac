@@ -1,16 +1,17 @@
-import React, { useMemo } from 'react';
-import { WidgetProps } from '@/shared/types/widgetState';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { TokenInput } from '@/shared/components/ui/token/TokenInput';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getTokenDecimals, Token } from '@jetstreamgg/hooks';
+import { WidgetProps } from '@widgets/shared/types/widgetState';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
+import { Tabs, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
+import { getTokenDecimals, Token, TOKENS } from '@jetstreamgg/hooks';
 import { UpgradeStats } from './UpgradeStats';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { t } from '@lingui/core/macro';
 import { formatBigInt } from '@jetstreamgg/utils';
 import { motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useChainId } from 'wagmi';
+import { UpgradeFlow } from '../lib/constants';
+import { Text } from '@widgets/shared/components/ui/Typography';
 
 type Props = WidgetProps & {
   leftTabTitle: string;
@@ -26,7 +27,7 @@ type Props = WidgetProps & {
   tabIndex: 0 | 1;
   error?: Error;
   onToggle: (number: 0 | 1) => void;
-  onOriginInputChange: (val: bigint) => void;
+  onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -50,24 +51,16 @@ export function UpgradeRevert({
   isConnectedAndEnabled = true
 }: Props): React.ReactElement {
   const chainId = useChainId();
-  const shouldShowDaiStats = useMemo(
-    () => originOptions?.some(token => ['DAI', 'USDS'].includes(token.symbol)),
-    [originOptions]
-  );
-  const shouldShowMkrStats = useMemo(
-    () => originOptions?.some(token => ['MKR', 'SKY'].includes(token.symbol)),
-    [originOptions]
-  );
 
   return (
     <VStack className="w-full items-center justify-center">
-      <Tabs defaultValue={tabIndex === 0 ? 'left' : 'right'} className="w-full">
+      <Tabs value={tabIndex === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT} className="w-full">
         <motion.div variants={positionAnimations}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger
               position="left"
               data-testid="upgrade-toggle-left"
-              value="left"
+              value={UpgradeFlow.UPGRADE}
               onClick={() => onToggle(0)}
             >
               {leftTabTitle}
@@ -75,7 +68,7 @@ export function UpgradeRevert({
             <TabsTrigger
               position="right"
               data-testid="upgrade-toggle-right"
-              value="right"
+              value={UpgradeFlow.REVERT}
               onClick={() => onToggle(1)}
             >
               {rightTabTitle}
@@ -84,7 +77,7 @@ export function UpgradeRevert({
         </motion.div>
 
         <motion.div variants={positionAnimations}>
-          <UpgradeStats shouldShowDai={!!shouldShowDaiStats} shouldShowMkr={!!shouldShowMkrStats} />
+          <UpgradeStats />
         </motion.div>
 
         <VStack className="w-full" gap={0}>
@@ -93,7 +86,7 @@ export function UpgradeRevert({
               className="w-full"
               token={originToken}
               balance={originBalance}
-              onChange={onOriginInputChange}
+              onChange={(val, event) => onOriginInputChange(val, !!event)}
               value={originAmount}
               dataTestId="upgrade-input-origin"
               label={originTitle}
@@ -127,7 +120,32 @@ export function UpgradeRevert({
                     value: `${formatBigInt(targetAmount, {
                       unit: targetToken ? getTokenDecimals(targetToken, chainId) : 18
                     })} ${targetToken?.symbol}`
-                  }
+                  },
+                  ...(originToken?.symbol === TOKENS.mkr.symbol
+                    ? [
+                        {
+                          label: t`Delayed Upgrade Penalty`,
+                          // TODO: Fetch this value dynamically
+                          value: '0%',
+                          tooltipText: (
+                            <>
+                              <Text>
+                                The Delayed Upgrade Penalty is a time-based upgrade mechanism, approved by Sky
+                                Ecosystem Governance, which is designed to facilitate a smooth and prompt
+                                upgrade of MKR to SKY.
+                              </Text>
+                              <br />
+                              <Text>
+                                The penalty, which will begin sometime in September 2025, reduces the amount
+                                of SKY received per MKR upgraded at a rate of 1%, and increases by 1% every
+                                three months thereafter until it reaches 100% in 25 years. The penalty will
+                                not apply to anyone upgrading their MKR to SKY before it kicks in.
+                              </Text>
+                            </>
+                          )
+                        }
+                      ]
+                    : [])
                 ]}
               />
             </motion.div>

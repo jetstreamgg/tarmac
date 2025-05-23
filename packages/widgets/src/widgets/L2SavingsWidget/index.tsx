@@ -10,27 +10,27 @@ import {
   useTokenBalance,
   getTokenDecimals
 } from '@jetstreamgg/hooks';
-import { getEtherscanLink, useDebounce, formatBigInt, math } from '@jetstreamgg/utils';
+import { getTransactionLink, useDebounce, formatBigInt, math, useIsSafeWallet } from '@jetstreamgg/utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { WidgetContainer } from '@/shared/components/ui/widget/WidgetContainer';
+import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
 import { SavingsTransactionStatus } from '../SavingsWidget/components/SavingsTransactionStatus';
 import { L2SavingsSupplyWithdraw } from './components/L2SavingsSupplyWithdraw';
-import { WidgetContext, WidgetProvider } from '@/context/WidgetContext';
-import { NotificationType, TxStatus, EPOCH_LENGTH } from '@/shared/constants';
-import { WidgetProps, WidgetState } from '@/shared/types/widgetState';
+import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { NotificationType, TxStatus, EPOCH_LENGTH } from '@widgets/shared/constants';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
-import { Heading } from '@/shared/components/ui/Typography';
-import { getValidatedState } from '@/lib/utils';
-import { parseUnits } from 'viem';
-import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { formatUnits, parseUnits } from 'viem';
+import { Heading } from '@widgets/shared/components/ui/Typography';
+import { getValidatedState } from '@widgets/lib/utils';
+import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
+import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
-import { CardAnimationWrapper } from '@/shared/animation/Wrappers';
-import { useNotifyWidgetState } from '@/shared/hooks/useNotifyWidgetState';
+import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
+import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { usePreviewSwapExactIn, usePreviewSwapExactOut } from '@jetstreamgg/hooks';
 import {
   useReadSsrAuthOracleGetChi,
@@ -41,7 +41,7 @@ import {
 const defaultDepositOptions = [TOKENS.usds, TOKENS.usdc];
 const defaultWithdrawOptions = [TOKENS.usds, TOKENS.usdc];
 
-export function calculateOriginOptions(
+function calculateOriginOptions(
   token: Token,
   action: string,
   flow: SavingsFlow,
@@ -91,19 +91,22 @@ export const L2SavingsWidget = ({
   onExternalLinkClicked,
   enabled = true,
   referralCode,
-  disallowedTokens
+  disallowedTokens,
+  shouldReset = false
 }: SavingsWidgetProps) => {
+  const key = shouldReset ? 'reset' : undefined;
   return (
     <ErrorBoundary componentName="SavingsWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider key={key} locale={locale}>
         <SavingsWidgetWrapped
+          key={key}
           onConnect={onConnect}
           addRecentTransaction={addRecentTransaction}
           rightHeaderComponent={rightHeaderComponent}
           externalWidgetState={externalWidgetState}
           onStateValidated={onStateValidated}
           onNotification={onNotification}
-          onWidgetStateChange={onWidgetStateChange}
+          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
           onExternalLinkClicked={onExternalLinkClicked}
           locale={locale}
           enabled={enabled}
@@ -130,7 +133,28 @@ const SavingsWidgetWrapped = ({
   referralCode,
   disallowedTokens
 }: SavingsWidgetProps) => {
-  const validatedExternalState = getValidatedState(externalWidgetState);
+  const {
+    setButtonText,
+    setIsDisabled,
+    setIsLoading,
+    txStatus,
+    setTxStatus,
+    setExternalLink,
+    widgetState,
+    setWidgetState,
+    setShowStepIndicator
+  } = useContext(WidgetContext);
+
+  const disallowedForFlow =
+    disallowedTokens?.[SavingsFlow.WITHDRAW ? SavingsFlow.WITHDRAW : SavingsFlow.SUPPLY] || [];
+  const allowedSymbolsForValidation = ['USDS', 'USDC'].filter(
+    symbol =>
+      !disallowedForFlow.some(
+        disallowedToken => disallowedToken.symbol.toLowerCase() === symbol.toLowerCase()
+      )
+  );
+
+  const validatedExternalState = getValidatedState(externalWidgetState, allowedSymbolsForValidation);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
@@ -140,9 +164,10 @@ const SavingsWidgetWrapped = ({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
+  const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const linguiCtx = useLingui();
   const [originToken, setOriginToken] = useState<Token>(
@@ -155,18 +180,6 @@ const SavingsWidgetWrapped = ({
   );
   const [amount, setAmount] = useState(initialAmount);
   const debouncedAmount = useDebounce(amount);
-
-  const {
-    setButtonText,
-    setIsDisabled,
-    setIsLoading,
-    txStatus,
-    setTxStatus,
-    setExternalLink,
-    widgetState,
-    setWidgetState,
-    setShowStepIndicator
-  } = useContext(WidgetContext);
 
   const {
     data: allowance,
@@ -256,7 +269,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -316,7 +329,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -366,7 +379,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -420,7 +433,7 @@ const SavingsWidgetWrapped = ({
           unit: originToken && getTokenDecimals(originToken, chainId)
         })} ${originToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -483,7 +496,7 @@ const SavingsWidgetWrapped = ({
     } else {
       // Reset widget state when we are not connected
       setWidgetState({
-        flow: null,
+        flow: tabIndex === 0 ? SavingsFlow.SUPPLY : SavingsFlow.WITHDRAW,
         action: null,
         screen: null
       });
@@ -508,8 +521,8 @@ const SavingsWidgetWrapped = ({
   }, [widgetState.flow, widgetState.screen, needsAllowance, allowanceLoading]);
 
   useEffect(() => {
-    setShowStepIndicator(widgetState.flow === SavingsFlow.SUPPLY);
-  }, [widgetState.flow]);
+    setShowStepIndicator(true);
+  }, []);
 
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
@@ -531,14 +544,13 @@ const SavingsWidgetWrapped = ({
 
   const isAmountWaitingForDebounce = debouncedAmount !== amount;
 
-  const isSuccessfulWithdrawAll =
-    isMaxWithdraw &&
+  const isSuccessfulWithdraw =
     widgetState.screen === SavingsScreen.TRANSACTION &&
     widgetState.action === SavingsAction.WITHDRAW &&
     txStatus === TxStatus.SUCCESS;
   const withdrawDisabled =
     // Enable button if we're in transaction screen and status is success
-    isSuccessfulWithdrawAll
+    isSuccessfulWithdraw
       ? false
       : [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
         isWithdrawBalanceError ||
@@ -623,11 +635,11 @@ const SavingsWidgetWrapped = ({
   // Handle the error onClicks separately to keep it clean
   const errorOnClick = () => {
     return widgetState.action === SavingsAction.SUPPLY
-      ? supplyOnClick
+      ? supplyOnClick()
       : widgetState.action === SavingsAction.WITHDRAW
-        ? withdrawOnClick
+        ? withdrawOnClick()
         : widgetState.action === SavingsAction.APPROVE
-          ? approveOnClick
+          ? approveOnClick()
           : undefined;
   };
 
@@ -640,7 +652,7 @@ const SavingsWidgetWrapped = ({
       : txStatus === TxStatus.SUCCESS
         ? nextOnClick
         : txStatus === TxStatus.ERROR
-          ? errorOnClick()
+          ? errorOnClick
           : (widgetState.flow === SavingsFlow.SUPPLY && widgetState.action === SavingsAction.APPROVE) ||
               (widgetState.flow === SavingsFlow.WITHDRAW && widgetState.action === SavingsAction.APPROVE)
             ? approveOnClick
@@ -752,6 +764,31 @@ const SavingsWidgetWrapped = ({
 
   const usds = TOKENS.usds;
 
+  // Reset widget state after switching network
+  useEffect(() => {
+    // Reset all state variables
+    setAmount(initialAmount);
+    setMaxWithdraw(false);
+    setTxStatus(TxStatus.IDLE);
+    setExternalLink(undefined);
+    setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
+
+    // Reset widget state to initial screen
+    if (tabIndex === 0) {
+      setWidgetState({
+        flow: SavingsFlow.SUPPLY,
+        action: SavingsAction.SUPPLY,
+        screen: SavingsScreen.ACTION
+      });
+    } else {
+      setWidgetState({
+        flow: SavingsFlow.WITHDRAW,
+        action: SavingsAction.WITHDRAW,
+        screen: SavingsScreen.ACTION
+      });
+    }
+  }, [chainId]);
+
   return (
     <WidgetContainer
       header={
@@ -801,7 +838,19 @@ const SavingsWidgetWrapped = ({
                 setTabIndex(index);
                 setAmount(0n);
               }}
-              onOriginInputChange={setAmount}
+              onOriginInputChange={(newValue, userTriggered) => {
+                setAmount(newValue);
+                if (userTriggered) {
+                  // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                  const formattedValue =
+                    newValue === 0n ? '' : formatUnits(newValue, getTokenDecimals(originToken, chainId));
+                  onWidgetStateChange?.({
+                    originAmount: formattedValue,
+                    txStatus,
+                    widgetState
+                  });
+                }
+              }}
               enabled={enabled}
               onExternalLinkClicked={onExternalLinkClicked}
               isConnectedAndEnabled={isConnectedAndEnabled}

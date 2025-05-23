@@ -39,7 +39,7 @@ export const tokenColors = [
   { symbol: 'WETH', color: '#6d7ce3' },
   { symbol: 'DAI', color: '#fbc854' },
   { symbol: 'MKR', color: '#1aab9b' },
-  { symbol: 'USDS', color: '#b66bfc' },
+  { symbol: 'USDS', color: '#ffa74e' },
   { symbol: 'SKY', color: '#d56ed7' },
   { symbol: 'USDT', color: '#5a9e7d' },
   { symbol: 'USDC', color: '#4872c4' },

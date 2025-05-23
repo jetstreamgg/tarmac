@@ -26,8 +26,8 @@ function BalancesPage() {
         hideModuleBalances={false}
         enabled={true}
         actionForToken={actionForToken}
-        onClickRewardsCard={onClickRewardsCard}
-        onClickSavingsCard={onClickSavingsCard}
+        rewardsCardUrl={rewardsCardUrl}
+        savingsCardUrlMap={savingsCardUrlMap}
       />
     </div>
   );
@@ -38,13 +38,15 @@ function BalancesPage() {
 
 In addition to `WidgetProps`, `BalancesWidget` component also accepts the following props:
 
-- `customTokenList?: TokenForChain[];`
-  - A list of custom tokens to be used in the widget. If provided, this list will override the default list.
+- `customTokenMap?: { [chainId: number]: TokenForChain[]; }`
+  - A map of custom tokens to be used in the widget. If provided, this map will override the default list.
 - `hideModuleBalances?: boolean;`
   - A boolean to hide or show module balances.
-- `actionForToken?: (symbol: string, balance: string) => { label: string; actionUrl: string; image: string } | undefined;`
+- `actionForToken?: (symbol: string, balance: string, tokenChainId: number) => { label: string; actionUrl: string; image: string } | undefined;`
   - A function to define actions for a specific token.
-- `onClickRewardsCard?: () => void;`
-  - A callback function that is called when the rewards card is clicked.
-- `onClickSavingsCard?: () => void;`
-  - A callback function that is called when the savings card is clicked.
+- `rewardsCardUrl?: string;`
+  - A url to navigate to when the rewards card is clicked.
+- `savingsCardUrlMap?: Record<number, string>;`
+  - A map of chain ids to urls to navigate to when the savings card is clicked.
+- `sealCardUrl?: string;`
+  - A url to navigate to when the seal card is clicked.

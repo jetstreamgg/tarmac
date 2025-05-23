@@ -1,4 +1,4 @@
-import { Heading, Text } from '@/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { JSX, useContext, useEffect, useMemo } from 'react';
@@ -18,21 +18,21 @@ import {
   useCollateralData
 } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
-import { Card, CardContent } from '@/components/ui/card';
-import { positionAnimations } from '@/shared/animation/presets';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
+import { Card, CardContent } from '@widgets/components/ui/card';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { motion } from 'framer-motion';
-import { Skeleton } from '@/components/ui/skeleton';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { WAD_PRECISION, captitalizeFirstLetter, formatBigInt, formatPercent, math } from '@jetstreamgg/utils';
 import { formatUnits } from 'viem';
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 import { getRiskTextColor } from '../lib/utils';
-import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { ArrowDown } from '@/shared/components/icons/ArrowDown';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { ArrowDown } from '@widgets/shared/components/icons/ArrowDown';
 import { JazziconComponent } from './Jazzicon';
-import { InfoTooltip } from '@/shared/components/ui/tooltip/InfoTooltip';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
 import {
   collateralizationRatioTooltipText,
   liquidationPriceTooltipText,
@@ -79,7 +79,7 @@ const LineItem = ({
         {tooltipText && <InfoTooltip content={tooltipText} iconClassName="text-textSecondary" />}
       </HStack>
       {Array.isArray(value) && value.length >= 2 ? (
-        <HStack className="flex-shrink-0 items-center">
+        <HStack className="shrink-0 items-center">
           <div className="flex items-center gap-2">
             {Array.isArray(icon) ? icon[0] : icon}
             <Text
@@ -208,7 +208,7 @@ export const PositionSummary = () => {
         label: t`Exit fee`,
         updated: hasPositions && (mkrToFree > 0n || skyToFree > 0n),
         value:
-          hasPositions && (mkrToFree > 0n || skyToFree > 0n) && exitFee
+          hasPositions && (mkrToFree > 0n || skyToFree > 0n) && typeof exitFee === 'bigint'
             ? [
                 `${Number(formatUnits((displayToken === mkr ? mkrToFree : math.calculateConversion(mkr, mkrToFree)) * exitFee, WAD_PRECISION * 2)).toFixed(2)} ${displayToken.symbol}`
               ]
@@ -254,20 +254,12 @@ export const PositionSummary = () => {
           hasPositions &&
           isUpdatedValue(existingVault?.collateralizationRatio, updatedVault?.collateralizationRatio)
             ? [
-                `${(
-                  Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`,
-                `${(
-                  Number(formatUnits(updatedVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`
+                formatPercent(existingVault?.collateralizationRatio || 0n),
+                formatPercent(updatedVault?.collateralizationRatio || 0n)
               ]
             : hasPositions
-              ? `${(
-                  Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`
-              : `${(
-                  Number(formatUnits(updatedVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
-                ).toFixed(2)}%`,
+              ? formatPercent(existingVault?.collateralizationRatio || 0n)
+              : formatPercent(updatedVault?.collateralizationRatio || 0n),
         tooltipText: collateralizationRatioTooltipText,
         className:
           hasPositions &&
@@ -421,7 +413,8 @@ export const PositionSummary = () => {
     selectedDelegateName,
     selectedDelegateOwner,
     isDelegateLoading,
-    displayToken
+    displayToken,
+    exitFee
   ]);
 
   // If there's no borrowing, filter out items related to it

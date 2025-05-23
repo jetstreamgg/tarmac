@@ -1,7 +1,7 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
-import { Text } from '@/shared/components/ui/Typography';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import {
   RewardContract,
   WriteHook,
@@ -12,9 +12,9 @@ import { formatBigInt } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { useAccount } from 'wagmi';
 import { RewardsStatsCardCore } from './RewardsStatsCardCore';
-import { StatsAccordionCard } from '@/shared/components/ui/card/StatsAccordionCard'; // Import StatsAccordionCard
-import { Warning } from '@/shared/components/icons/Warning';
-import { positionAnimations } from '@/shared/animation/presets';
+import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard'; // Import StatsAccordionCard
+import { Warning } from '@widgets/shared/components/icons/Warning';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 
 export const SelectedRewardsCard = ({
   rewardContract,

@@ -5,6 +5,7 @@ export const useNotifyWidgetState = ({
   hash,
   widgetState,
   txStatus,
+  originToken,
   targetToken,
   executedBuyAmount,
   executedSellAmount,
@@ -14,6 +15,7 @@ export const useNotifyWidgetState = ({
     hash,
     widgetState,
     txStatus,
+    originToken,
     targetToken,
     executedBuyAmount,
     executedSellAmount
@@ -23,6 +25,7 @@ export const useNotifyWidgetState = ({
     hash,
     txStatus,
     widgetState,
+    originToken,
     targetToken,
     executedBuyAmount,
     executedSellAmount
@@ -37,6 +40,7 @@ export const useNotifyWidgetState = ({
       (prevState.hash !== hash ||
         prevState.txStatus !== txStatus ||
         prevState.widgetState !== widgetState ||
+        prevState.originToken !== originToken ||
         prevState.targetToken !== targetToken ||
         prevState.executedBuyAmount !== executedBuyAmount ||
         prevState.executedSellAmount !== executedSellAmount)
@@ -45,6 +49,7 @@ export const useNotifyWidgetState = ({
         hash,
         txStatus,
         widgetState,
+        originToken,
         targetToken,
         executedBuyAmount,
         executedSellAmount
@@ -55,10 +60,20 @@ export const useNotifyWidgetState = ({
         hash,
         txStatus,
         widgetState,
+        originToken,
         targetToken,
         executedBuyAmount,
         executedSellAmount
       };
     }
-  }, [hash, txStatus, widgetState, targetToken, executedBuyAmount, executedSellAmount, onWidgetStateChange]);
+  }, [
+    hash,
+    txStatus,
+    widgetState,
+    originToken,
+    targetToken,
+    executedBuyAmount,
+    executedSellAmount,
+    onWidgetStateChange
+  ]);
 };

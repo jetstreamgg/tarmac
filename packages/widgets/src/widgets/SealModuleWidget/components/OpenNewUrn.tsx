@@ -1,6 +1,6 @@
-import { Checkbox } from '@/components/ui/checkbox';
-import { ExternalLink } from '@/shared/components/ExternalLink';
-import { Text } from '@/shared/components/ui/Typography';
+import { Checkbox } from '@widgets/components/ui/checkbox';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { TOKENS, useUrnAddress, useVault } from '@jetstreamgg/hooks';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
@@ -11,14 +11,14 @@ import { Lock } from './Lock';
 import { Borrow } from './Borrow';
 import { Free } from './Free';
 import { Repay } from './Repay';
-import { Button } from '@/components/ui/button';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { VStack } from '@/shared/components/ui/layout/VStack';
+import { Button } from '@widgets/components/ui/button';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { formatUrnIndex, getNextStep } from '../lib/utils';
-import { WidgetContext } from '@/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SealAction, SealFlow, SealStep } from '../lib/constants';
-import { positionAnimations } from '@/shared/animation/presets';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { motion } from 'framer-motion';
 import { ViewSkyMkrButton } from './ViewSkyMkrButton';
 
@@ -27,13 +27,15 @@ export const OpenNewUrn = ({
   onExternalLinkClicked,
   onClickTrigger,
   tabSide,
-  termsLink
+  termsLink,
+  onInputAmountChange
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onClickTrigger: any;
   tabSide: 'left' | 'right';
   termsLink?: { url: string; name: string };
+  onInputAmountChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { acceptedExitFee, setAcceptedExitFee, displayToken, setDisplayToken } =
     useContext(SealModuleWidgetContext);
@@ -108,7 +110,7 @@ export const OpenNewUrn = ({
               </Button>
             )}
           </HStack>
-          <Tabs defaultValue={tabSide}>
+          <Tabs value={tabSide}>
             {showTabs && (
               <motion.div variants={positionAnimations}>
                 <TabsList className="grid w-full grid-cols-2">
@@ -137,7 +139,7 @@ export const OpenNewUrn = ({
             )}
             <TabsContent value="left">
               <VStack gap={2} className="mt-4">
-                <Lock isConnectedAndEnabled={isConnectedAndEnabled} />
+                <Lock isConnectedAndEnabled={isConnectedAndEnabled} onChange={onInputAmountChange} />
                 <Borrow isConnectedAndEnabled={isConnectedAndEnabled} />
               </VStack>
             </TabsContent>
@@ -146,6 +148,7 @@ export const OpenNewUrn = ({
                 <Free
                   isConnectedAndEnabled={isConnectedAndEnabled}
                   sealedAmount={vaultData?.collateralAmount}
+                  onChange={onInputAmountChange}
                 />
                 <Repay isConnectedAndEnabled={isConnectedAndEnabled} />
               </VStack>

@@ -15,13 +15,13 @@ export function UpgradedDaiToUsds() {
 
   return (
     <StatsCard
-      title={t`Total DAI upgraded`}
+      title={t`Total USDS upgraded`}
       isLoading={isLoading}
       error={error}
       content={
         <TokenIconWithBalance
           className="mt-2"
-          token={{ symbol: 'DAI', name: 'dai' }}
+          token={{ symbol: 'USDS', name: 'usds' }}
           balance={data?.totalDaiUpgraded ? formatBigInt(data?.totalDaiUpgraded) : '0'}
           chainId={chainIdToUse}
         />

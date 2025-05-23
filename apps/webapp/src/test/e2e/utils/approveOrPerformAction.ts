@@ -10,9 +10,14 @@ export type Action =
   | 'Approve'
   | 'Approve supply amount'
   | 'Approve seal amount'
+  | 'Approve staking amount'
   | 'Approve repay amount'
   | 'Continue'
-  | 'Confirm';
+  | 'Confirm'
+  | 'Submit'
+  | 'Begin migration'
+  | 'Migrate'
+  | 'Continue to migrate';
 
 type approveOrPerformActionOptions = {
   reject?: boolean;

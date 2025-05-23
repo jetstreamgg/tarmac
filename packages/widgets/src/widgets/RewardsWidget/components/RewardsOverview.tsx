@@ -1,4 +1,4 @@
-import { WidgetContext } from '@/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
   RewardContract,
   useAvailableTokenRewardContracts,
@@ -6,11 +6,11 @@ import {
 } from '@jetstreamgg/hooks';
 import { useContext, useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
-import { RewardsAction } from '@/widgets/RewardsWidget/lib/constants';
+import { RewardsAction } from '@widgets/widgets/RewardsWidget/lib/constants';
 import { RewardsStatsCard } from './RewardsStatsCard';
 import { motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
-import { Heading } from '@/shared/components/ui/Typography';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { Heading } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
 
 type RewardsOverviewProps = {

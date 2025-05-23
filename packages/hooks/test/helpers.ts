@@ -3,7 +3,10 @@ import { WriteHook } from '../src';
 import { renderHook, waitFor } from '@testing-library/react';
 import { WagmiWrapper } from './WagmiWrapper';
 
-export const waitForPreparedExecuteAndMine = async (result: { current: WriteHook }) => {
+export const waitForPreparedExecuteAndMine = async (
+  result: { current: WriteHook },
+  loadingTimeout: number = 3000
+) => {
   await waitFor(
     () => {
       expect(result.current.prepared).toBe(true);
@@ -16,13 +19,13 @@ export const waitForPreparedExecuteAndMine = async (result: { current: WriteHook
     () => {
       expect(result.current.isLoading).toBe(true);
     },
-    { timeout: 3000 }
+    { timeout: loadingTimeout }
   );
   await waitFor(
     () => {
       expect(result.current.isLoading).toBe(false);
     },
-    { timeout: 3000 }
+    { timeout: loadingTimeout }
   );
   expect(result.current.error).toBeNull();
 };

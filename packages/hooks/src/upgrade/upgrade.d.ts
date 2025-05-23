@@ -1,6 +1,6 @@
 export type UpgradeHistoryRow = DaiUsdsRow | MkrSkyRow;
 export type UpgradeHistory = Array<UpgradeHistoryRow>;
-import { HistoryItem } from '@/shared/shared.d.ts';
+import { HistoryItem } from '../shared/shared';
 
 export type UpgradeResponse<T> = Omit<T, 'blockTimestamp'> & {
   blockTimestamp: string;

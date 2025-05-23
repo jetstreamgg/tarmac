@@ -1,11 +1,16 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@widgets/components/ui/accordion';
 import { HStack } from '../layout/HStack';
-import { Text } from '@/shared/components/ui/Typography';
-import { ExternalLink } from '@/shared/components/ExternalLink';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
+import { Skeleton } from '@widgets/components/ui/skeleton';
 import { getEtherscanLink } from '@jetstreamgg/utils';
 import { Trans } from '@lingui/react/macro';
-import { positionAnimations } from '@/shared/animation/presets';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 import { motion } from 'framer-motion';
 import { JSX } from 'react';
 
@@ -26,7 +31,7 @@ export const StatsAccordionCard = ({
     <Accordion type="single" collapsible defaultValue={'info'}>
       <AccordionItem value="info">
         <motion.div variants={positionAnimations}>
-          <AccordionTrigger>
+          <AccordionTrigger className="mt-3">
             <HStack className="mr-1 w-full justify-between">
               {address ? (
                 <ExternalLink

@@ -2,17 +2,17 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { getTokenDecimals, sUsdsAddress, TOKENS, useOverallSkyData } from '@jetstreamgg/hooks';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/utils';
-import { TokenInput } from '@/shared/components/ui/token/TokenInput';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { useContext, useMemo } from 'react';
-import { WidgetContext } from '@/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SavingsFlow } from '../lib/constants';
 import { SavingsStatsCard } from './SavingsStatsCard';
 import { useAccount, useChainId } from 'wagmi';
 import { motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { formatUnits } from 'viem';
 
 type SupplyWithdrawProps = {
@@ -21,7 +21,7 @@ type SupplyWithdrawProps = {
   savingsBalance?: bigint;
   savingsTvl?: bigint;
   isSavingsDataLoading: boolean;
-  onChange: (val: bigint) => void;
+  onChange: (val: bigint, userTriggered?: boolean) => void;
   amount: bigint;
   error: boolean;
   onToggle: (number: 0 | 1) => void;
@@ -101,7 +101,9 @@ export const SupplyWithdraw = ({
               token={inputToken}
               tokenList={[inputToken]}
               balance={address ? nstBalance : undefined}
-              onChange={onChange}
+              onChange={(newValue, event) => {
+                onChange(BigInt(newValue), !!event);
+              }}
               value={amount}
               dataTestId="supply-input-savings"
               error={error ? t`Insufficient funds` : undefined}
@@ -119,7 +121,9 @@ export const SupplyWithdraw = ({
               token={inputToken}
               tokenList={[inputToken]}
               balance={address ? savingsBalance : undefined}
-              onChange={onChange}
+              onChange={(newValue, event) => {
+                onChange(BigInt(newValue), !!event);
+              }}
               value={amount}
               error={
                 error

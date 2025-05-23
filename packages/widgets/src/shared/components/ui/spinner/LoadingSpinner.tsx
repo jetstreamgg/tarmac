@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
-import { easeInOutExpo } from '@/shared/animation/timingFunctions';
+import { cn } from '@widgets/lib/utils';
+import { easeInOutExpo } from '@widgets/shared/animation/timingFunctions';
 import { motion } from 'framer-motion';
 
 export const LoadingSpinner = ({ className }: { className?: string }) => {

@@ -64,10 +64,6 @@ dev-dist.gitsigners
 cache
 .eslintcache
 
-# E2e videos & screenshots
-apps/integration-ui/tests/e2e/videos/*
-apps/integration-ui/tests/e2e/screenshots/*
-
 # coverage results
 coverage
 

@@ -1,5 +1,5 @@
 // this list cannot come dynamically from trade list because we may support tokens in some modules that we do not support trading for
-export const slotTokenList = ['MKR', 'DAI', 'USDC', 'USDT', 'USDC', 'WETH', 'ETH', 'USDS', 'SKY'];
+export const slotTokenList = ['MKR', 'DAI', 'USDT', 'USDC', 'WETH', 'ETH', 'USDS', 'SKY'];
 
 export const slotDefinitions = [
   {

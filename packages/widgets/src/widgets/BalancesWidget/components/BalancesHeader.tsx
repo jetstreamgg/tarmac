@@ -1,32 +1,32 @@
 import { useMemo } from 'react';
 import { useAccount, useBalance } from 'wagmi';
-import { Text } from '@/shared/components/ui/Typography';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { BalancesTabsList } from '@/widgets/BalancesWidget/components/BalancesTabsList';
-import { AssetsNoWalletConnected } from '@/widgets/BalancesWidget/components/AssetsNoWalletConnected';
-import { HistoryNoWalletConnected } from '@/widgets/BalancesWidget/components/HistoryNoWalletConnected';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { Tabs, TabsContent } from '@widgets/components/ui/tabs';
+import { BalancesTabsList } from '@widgets/widgets/BalancesWidget/components/BalancesTabsList';
+import { AssetsNoWalletConnected } from '@widgets/widgets/BalancesWidget/components/AssetsNoWalletConnected';
+import { HistoryNoWalletConnected } from '@widgets/widgets/BalancesWidget/components/HistoryNoWalletConnected';
 import Jazzicon, { jsNumberForAddress } from 'react-jazzicon';
-import { Card } from '@/components/ui/card';
-import { CopyToClipboard } from '@/shared/components/ui/CopyToClipboard';
-import { ExternalLink } from '@/shared/components/ExternalLink';
-import { useSwitchChain } from 'wagmi';
-import { Button } from '@/components/ui/button';
+import { Card } from '@widgets/components/ui/card';
+import { CopyToClipboard } from '@widgets/shared/components/ui/CopyToClipboard';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
 import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import { BalancesFlow } from '../constants';
 
 export const BalancesHeader = ({
-  initialTabSide,
+  tabIndex,
   isConnectedAndEnabled,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  onToggle
 }: {
-  initialTabSide?: 'left' | 'right';
+  tabIndex: 0 | 1;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onToggle: (number: 0 | 1) => void;
 }): React.ReactElement => {
   const chainId = useChainId();
   const { address } = useAccount();
-  const { switchChain } = useSwitchChain();
   const { data: ethBalance, isLoading: isEthBalanceLoading } = useBalance({ address });
   const truncatedAddress = useMemo(
     () => address && address.slice(0, 7) + '...' + address.slice(-5),
@@ -41,12 +41,12 @@ export const BalancesHeader = ({
 
   return !isConnectedAndEnabled ? (
     <div>
-      <Tabs defaultValue={initialTabSide || 'left'}>
-        <BalancesTabsList />
-        <TabsContent className="mt-4" value="left">
+      <Tabs value={tabIndex === 1 ? BalancesFlow.TX_HISTORY : BalancesFlow.FUNDS}>
+        <BalancesTabsList onToggle={onToggle} />
+        <TabsContent className="mt-4" value={BalancesFlow.FUNDS}>
           <AssetsNoWalletConnected />
         </TabsContent>
-        <TabsContent className="mt-4" value="right">
+        <TabsContent className="mt-4" value={BalancesFlow.TX_HISTORY}>
           <HistoryNoWalletConnected />
         </TabsContent>
       </Tabs>
@@ -65,15 +65,7 @@ export const BalancesHeader = ({
       {isBaseChain && (
         <div className="mt-3 flex">
           <Text variant="medium">
-            Ethereum balances are not shown when connected to Base.{' '}
-            <Button
-              variant="purpleLink"
-              className="mx-0 my-0 inline h-0 p-0"
-              onClick={() => switchChain({ chainId: 1 })}
-            >
-              Connect to Mainnet
-            </Button>{' '}
-            instead or{' '}
+            Learn how to{' '}
             <ExternalLink
               href="https://bridge.base.org/deposit"
               iconSize={11}
@@ -89,17 +81,9 @@ export const BalancesHeader = ({
       {isArbitrumChain && (
         <div className="mt-3 flex">
           <Text variant="medium">
-            Ethereum balances are not shown when connected to Arbitrum.{' '}
-            <Button
-              variant="purpleLink"
-              className="mx-0 my-0 inline h-0 p-0"
-              onClick={() => switchChain({ chainId: 1 })}
-            >
-              Connect to Mainnet
-            </Button>{' '}
-            instead or{' '}
+            Learn how to{' '}
             <ExternalLink
-              href="https://bridge.base.org/deposit" //TODO: update to arbitrum bridge
+              href="https://bridge.arbitrum.io/?destinationChain=arbitrum-one&sourceChain=ethereum"
               iconSize={11}
               className="text-textEmphasis inline"
               inline

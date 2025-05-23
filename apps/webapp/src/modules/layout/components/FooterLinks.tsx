@@ -7,7 +7,7 @@ export function FooterLinks() {
   const externalClass = 'hover:text-white hover:underline hover:underline-offset-4';
 
   return (
-    <div className={'block flex w-full pt-2'}>
+    <div className={'flex w-full pt-2'}>
       <div className="flex w-full justify-end gap-3">
         {footerLinks.map((link, i) => (
           <ExternalLink

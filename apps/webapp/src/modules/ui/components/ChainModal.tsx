@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useChainId, useChains, useClient, useSwitchChain } from 'wagmi';
@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { mapIntentToQueryParam, QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 enum ChainModalVariant {
   default = 'default',
@@ -57,7 +58,7 @@ export function ChainModal({
           const newChainName = chains.find(c => c.id === newChainId)?.name;
           if (newChainName) {
             setSearchParams(params => {
-              params.set(QueryParams.Network, newChainName.toLowerCase());
+              params.set(QueryParams.Network, normalizeUrlParam(newChainName));
               if (nextIntent) {
                 params.set(QueryParams.Widget, mapIntentToQueryParam(nextIntent));
               }
@@ -83,7 +84,7 @@ export function ChainModal({
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-2',
               variant === ChainModalVariant.widget &&
-                'bg-primary border-transparent px-[9px] bg-blend-overlay hover:border-transparent hover:bg-white/10 hover:[--gradient-opacity:100%] focus:border-transparent focus:bg-white/15 focus:[--gradient-opacity:100%]'
+                'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 border-transparent px-[9px] bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
             )}
             data-testid={dataTestId}
           >
@@ -98,9 +99,9 @@ export function ChainModal({
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogTitle>
           <Text className="text-text pl-2 text-[28px] md:text-[32px]">{t`Switch chain`}</Text>
-        </DialogHeader>
+        </DialogTitle>
         <div className="flex flex-col items-start gap-1">
           {chains.map(chain => (
             <Button
@@ -108,7 +109,8 @@ export function ChainModal({
               onClick={() => handleSwitchChain(chain.id)}
               className={cn(
                 'flex w-full justify-between p-1.5',
-                chainId === chain.id && 'hover:bg-primary focus:bg-primary active:bg-primary'
+                chainId === chain.id &&
+                  'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'
               )}
               variant={chainId === chain.id ? 'default' : 'ghost'}
             >

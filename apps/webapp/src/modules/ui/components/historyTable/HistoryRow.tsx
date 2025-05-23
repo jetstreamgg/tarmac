@@ -7,7 +7,7 @@ import { Trans } from '@lingui/react/macro';
 import { formatAddress, getCowExplorerLink, getEtherscanLink, getExplorerName } from '@jetstreamgg/utils';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { CopyToClipboard } from '../CopyToClipboard';
-import { HistoryRow as HistoryRowType } from './types';
+import { HighlightColor, HistoryRow as HistoryRowType } from './types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { LoadingErrorWrapper } from '../LoadingErrorWrapper';
@@ -94,19 +94,29 @@ const HistoryRowContent = ({
   statusColumn,
   cowExplorerLink = false
 }: HistoryRowProps) => {
-  const explorerName = getExplorerName(chainId);
+  const explorerName = getExplorerName(chainId, false);
 
   const content = useMemo(
     () => [
       <Fragment key="first-content">
         {row?.tokenLeft && <TokenIcon token={{ symbol: row?.tokenLeft }} className="h-6 w-6" />}
         {row?.iconLeft && row?.iconLeft}
-        <Text
-          className={row?.highlightText ? 'text-bullish' : 'text-text'}
-          data-testid={index === 0 ? 'history-transaction-left-text' : undefined}
-        >
-          {row?.textLeft} {row?.tokenLeft}
-        </Text>
+        {typeof row?.textLeft === 'string' ? (
+          <Text
+            className={
+              row?.highlightText
+                ? row?.highlightColor === HighlightColor.Bearish
+                  ? 'text-error'
+                  : 'text-bullish'
+                : 'text-text'
+            }
+            data-testid={index === 0 ? 'history-transaction-left-text' : undefined}
+          >
+            {row?.textLeft} {row?.tokenLeft}
+          </Text>
+        ) : (
+          row?.textLeft
+        )}
       </Fragment>,
       <Fragment key="second-content">
         {row?.textLeft && row?.textRight && <ArrowRightLong width={14} height={10} />}

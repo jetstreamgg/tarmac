@@ -1,7 +1,7 @@
 import React from 'react';
-import { Text } from '@/shared/components/ui/Typography';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { TokenIcon } from './TokenIcon';
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 
 interface TokenIconWithBalanceProps {
   token: {

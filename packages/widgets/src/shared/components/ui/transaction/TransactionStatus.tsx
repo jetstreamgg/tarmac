@@ -5,17 +5,17 @@ import { Trans } from '@lingui/react/macro';
 import { VStack } from '../layout/VStack';
 import { Heading, Text } from '../Typography';
 import { Clock, FailedX, InProgress, SuccessCheck, Cancel } from '../../icons/Icons';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { formatBigInt, ExplorerName, getExplorerName } from '@jetstreamgg/utils';
+import { Card, CardContent, CardFooter, CardHeader } from '@widgets/components/ui/card';
+import { formatBigInt, ExplorerName, getExplorerName, useIsSafeWallet } from '@jetstreamgg/utils';
 import { TokenIconWithBalance } from '../token/TokenIconWithBalance';
 import { StepIndicator } from './StepIndicator';
 import { t } from '@lingui/core/macro';
-import { ExternalLink } from '@/shared/components/ExternalLink';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { HStack } from '../layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
-import { IconAnimationWrapper, PositionAnimationWithExitWrapper } from '@/shared/animation/Wrappers';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { IconAnimationWrapper, PositionAnimationWithExitWrapper } from '@widgets/shared/animation/Wrappers';
 import { useChainId } from 'wagmi';
 import { getTokenDecimals } from '@jetstreamgg/hooks';
 
@@ -71,7 +71,8 @@ export function TransactionStatus({
   const { txStatus, txTitle, txSubtitle, externalLink, step, stepTwoTitle, showStepIndicator } =
     useContext(WidgetContext);
   const chainId = useChainId();
-  const explorerName = paramExplorerName ?? getExplorerName(chainId);
+  const isSafeWallet = useIsSafeWallet();
+  const explorerName = paramExplorerName ?? getExplorerName(chainId, isSafeWallet);
 
   return (
     <VStack className="w-full items-center justify-center" color="primary">
@@ -96,7 +97,7 @@ export function TransactionStatus({
       <motion.div variants={positionAnimations} className="my-3 w-full">
         <Card
           data-status={txStatus === TxStatus.SUCCESS && 'success'}
-          className="transition-gradient-opacity ease-out-expo w-full duration-500 [--gradient-opacity:0%] data-[status=success]:[--gradient-opacity:100%]"
+          className="ease-out-expo from-primary-start/0 to-primary-end/0 data-[status=success]:from-primary-start/100 data-[status=success]:to-primary-end/100 w-full transition duration-500"
         >
           <CardHeader>
             <motion.div variants={positionAnimations}>

@@ -13,14 +13,14 @@ import {
   savingsSupplyTitle,
   savingsWithdrawTitle
 } from '../lib/constants';
-import { TxCardCopyText } from '@/shared/types/txCardCopyText';
-import { WidgetContext } from '@/context/WidgetContext';
-import { TransactionStatus } from '@/shared/components/ui/transaction/TransactionStatus';
+import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
 import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { Token } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
-import { approveLoadingButtonText } from '@/shared/constants';
+import { approveLoadingButtonText } from '@widgets/shared/constants';
 import { getTokenDecimals } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
 import { isL2ChainId } from '@jetstreamgg/utils';

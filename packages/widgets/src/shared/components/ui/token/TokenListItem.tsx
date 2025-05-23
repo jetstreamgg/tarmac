@@ -1,11 +1,11 @@
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { positionAnimations } from '@/shared/animation/presets';
-import { Text } from '@/shared/components/ui/Typography';
+import { Button } from '@widgets/components/ui/button';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { HStack } from '../layout/HStack';
 import { VStack } from '../layout/VStack';
 import { TokenIcon } from './TokenIcon';
-import { PopoverClose } from '@/components/ui/popover';
+import { PopoverClose } from '@widgets/components/ui/popover';
 import { TOKENS, Token, getTokenDecimals, usePrices, useTokenBalance } from '@jetstreamgg/hooks';
 import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
 import { motion } from 'framer-motion';

@@ -1,18 +1,18 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { Text } from '@/shared/components/ui/Typography';
+import { Card, CardContent, CardHeader } from '@widgets/components/ui/card';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { getTokenDecimals, OrderQuoteResponse } from '@jetstreamgg/hooks';
 import { formatNumber } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { ArrowRight } from 'lucide-react';
 import { TradeSide } from '../lib/constants';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { InfoTooltip } from '@/shared/components/ui/tooltip/InfoTooltip';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
 import { motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
-import { MotionHStack } from '@/shared/components/ui/layout/MotionHStack';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
 import { formatUnits } from 'viem';
 import { TokenForChain } from '@jetstreamgg/hooks';
 import { useChainId } from 'wagmi';
@@ -79,14 +79,14 @@ export function TradeSummary({
             <MotionHStack className="mb-4 mt-8 items-stretch" variants={positionAnimations}>
               <VStack className="flex-1 items-center gap-3">
                 <TokenIcon token={{ symbol: originToken.symbol || 'ETH' }} className="h-8 w-8" />
-                <Text variant="large" className="!mt-0 flex-1 text-[18px] font-medium">
+                <Text variant="large" className="mt-0! flex-1 text-[18px] font-medium">
                   {formattedInputAmount} {originToken.symbol}
                 </Text>
               </VStack>
               <ArrowRight className="text-textSecondary self-center" />
               <VStack className="flex-1 items-center gap-3">
                 <TokenIcon token={{ symbol: targetToken.symbol || 'ETH' }} className="h-8 w-8" />
-                <Text variant="large" className="!mt-0 flex-1 text-[18px] font-medium">
+                <Text variant="large" className="mt-0! flex-1 text-[18px] font-medium">
                   {formattedOutputAmount} {targetToken.symbol}
                 </Text>
               </VStack>

@@ -1,7 +1,7 @@
-import { Text } from '@/shared/components/ui/Typography';
-import { InfoTooltip } from '@/shared/components/ui/tooltip/InfoTooltip';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { cn } from '@/lib/utils';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { cn } from '@widgets/lib/utils';
 
 export const TextWithTooltip = ({
   text,

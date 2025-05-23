@@ -1,13 +1,12 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
-import { createConfig, http } from 'wagmi';
+import { createConfig, createStorage, http, noopStorage } from 'wagmi';
 import { mainnet, base, sepolia, arbitrum } from 'wagmi/chains';
 import {
   safeWallet,
   rainbowWallet,
   walletConnectWallet,
   metaMaskWallet,
-  coinbaseWallet,
-  injectedWallet
+  coinbaseWallet
 } from '@rainbow-me/rainbowkit/wallets';
 import {
   TENDERLY_CHAIN_ID,
@@ -17,10 +16,11 @@ import {
   TENDERLY_ARBITRUM_RPC_URL,
   TENDERLY_ARBITRUM_CHAIN_ID
 } from './testTenderlyChain';
+import { isTestnetId } from '@jetstreamgg/utils';
 
 export const tenderly = {
   id: TENDERLY_CHAIN_ID,
-  name: 'mainnet_sep_30_0',
+  name: 'mainnet_2025_apr_15_0',
   network: 'tenderly',
   // This is used by RainbowKit to display a chain icon for small screens
   iconUrl: 'tokens/weth.svg',
@@ -40,7 +40,7 @@ export const tenderly = {
 
 export const tenderlyBase = {
   id: TENDERLY_BASE_CHAIN_ID,
-  name: 'base_oct_9_0',
+  name: 'new-base-testnet-jan-27',
   network: 'tenderly base',
   // This is used by RainbowKit to display a chain icon for small screens. TODO: update to Base icon once available
   iconUrl: 'tokens/weth.svg',
@@ -82,14 +82,7 @@ const connectors = connectorsForWallets(
   [
     {
       groupName: 'Suggested',
-      wallets: [
-        metaMaskWallet,
-        coinbaseWallet,
-        walletConnectWallet,
-        rainbowWallet,
-        safeWallet,
-        injectedWallet
-      ]
+      wallets: [metaMaskWallet, coinbaseWallet, walletConnectWallet, rainbowWallet, safeWallet]
     }
   ],
   {
@@ -110,7 +103,13 @@ export const wagmiConfigDev = createConfig({
     [sepolia.id]: http(import.meta.env.VITE_RPC_PROVIDER_SEPOLIA || ''),
     [tenderlyArbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || '')
   },
-  multiInjectedProviderDiscovery: false
+  // This was causing issues in the past when users tried to connect to the Safe connector and had the Phantom wallet installed
+  // due to how Phantom handled `eth_accounts` requests, resulting in the Safe connector hanging in a reconnecting state
+  multiInjectedProviderDiscovery: true,
+  storage: createStorage({
+    storage: typeof window !== 'undefined' && window.localStorage ? window.localStorage : noopStorage,
+    key: 'wagmi-dev'
+  })
 });
 
 export const wagmiConfigMainnet = createConfig({
@@ -121,5 +120,19 @@ export const wagmiConfigMainnet = createConfig({
     [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
     [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || '')
   },
-  multiInjectedProviderDiscovery: false
+  multiInjectedProviderDiscovery: true
 });
+
+export const getSupportedChainIds = (chainId: number) => {
+  if (isTestnetId(chainId)) {
+    return [tenderly.id, tenderlyBase.id, tenderlyArbitrum.id];
+  }
+  return [mainnet.id, base.id, arbitrum.id];
+};
+
+export const getMainnetChainName = (chainId: number) => {
+  if (isTestnetId(chainId)) {
+    return tenderly.name;
+  }
+  return mainnet.name;
+};

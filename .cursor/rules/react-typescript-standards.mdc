@@ -1,0 +1,89 @@
+---
+description: React TypeScript Development Standards
+globs: *.{ts,tsx}
+---
+# React TypeScript Development Standards
+
+Standards for React TypeScript development including component structure, naming conventions, and best practices.
+
+<rule>
+name: react_typescript_standards
+description: Core standards for React TypeScript development
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)import.*React"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these core development standards:
+
+      ## File Structure & Naming
+      - Components: PascalCase (Button.tsx)
+      - Hooks: camelCase (useWallet.ts)
+      - Tests: kebab-case (button-test.tsx)
+      - One component per file
+      - Co-locate tests with components
+      - Group related components in feature folders
+
+      ## TypeScript Usage
+      - Use type aliases over interfaces
+      - Define prop types as ComponentNameProps
+      - Ensure proper type safety
+      - Use explicit return types
+
+      ## Component Patterns
+      - Use functional components
+      - Implement proper hooks
+      - Destructure props
+      - Handle loading/error states
+      - Use proper dependency arrays
+
+      ## UI Development
+      - Use Radix UI primitives
+      - Style with Tailwind CSS
+      - Implement class-variance-authority
+      - Ensure responsive design
+      - Use CSS variables for theming
+
+      ## Web3 Integration
+      - Use Wagmi hooks
+      - Implement RainbowKit
+      - Handle transaction errors
+      - Use Viem for low-level operations
+
+      ## Testing
+      - Write Vitest unit tests
+      - Implement Playwright E2E tests
+      - Mock blockchain calls
+      - Test component interactions
+
+examples:
+  - input: |
+      // Bad
+      interface Props {
+        name: string;
+      }
+      
+      class Button extends React.Component<Props> {
+        render() {
+          return <button>{this.props.name}</button>
+        }
+      }
+
+      // Good
+      type ButtonProps = {
+        name: string;
+      }
+
+      export const Button = ({ name }: ButtonProps) => {
+        return <button>{name}</button>
+      }
+    output: "Properly structured React TypeScript component"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

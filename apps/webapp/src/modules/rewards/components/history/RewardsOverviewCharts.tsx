@@ -14,25 +14,21 @@ enum ChartName {
 function calculateCumulativeTotalSupplied(rewardChartData: RewardsChartInfoParsed[]) {
   if (!rewardChartData || rewardChartData.length === 0) return [];
 
-  const sortedData = [...rewardChartData].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
-  let cumulativeTotalSupplied = 0;
+  const mergedData = new Map<number, RewardsChartInfoParsed>();
 
-  return sortedData.map(entry => {
-    const suppliedVolume = parseFloat(entry.suppliedVolume).toFixed(0);
-    const withdrawVolume = parseFloat(entry.withdrawVolume).toFixed(0);
-
-    // Calculate the change in total supplied for this entry
-    const change = parseFloat(suppliedVolume) - parseFloat(withdrawVolume);
-
-    // Update the cumulative total supplied
-    cumulativeTotalSupplied += change;
-
-    return {
-      ...entry,
-      totalSupplied: cumulativeTotalSupplied.toString(),
-      blockTimestamp: entry.blockTimestamp
-    };
+  rewardChartData.forEach(entry => {
+    const foundData = mergedData.get(entry.blockTimestamp);
+    if (foundData) {
+      mergedData.set(entry.blockTimestamp, {
+        ...foundData,
+        totalSupplied: (parseFloat(foundData.totalSupplied) + parseFloat(entry.totalSupplied)).toString()
+      });
+    } else {
+      mergedData.set(entry.blockTimestamp, entry);
+    }
   });
+
+  return [...mergedData.values()].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 }
 
 // TODO: Move this logic to helipad

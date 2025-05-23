@@ -9,7 +9,7 @@ export function CopyToClipboard({ text }: { text: string }) {
 
   return (
     <Tooltip open={hasCopied}>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <Copy onClick={onCopy} boxSize={13} />
       </TooltipTrigger>
       <TooltipContent>

@@ -1,35 +1,42 @@
-import { TOKENS, Token, daiUsdsAddress, mkrSkyAddress, useTokenBalance } from '@jetstreamgg/hooks';
+import {
+  TOKENS,
+  Token,
+  daiUsdsAddress,
+  getTokenDecimals,
+  mkrSkyAddress,
+  useTokenBalance
+} from '@jetstreamgg/hooks';
 import { UpgradeRevert } from './components/UpgradeRevert';
-import { WidgetContext, WidgetProvider } from '@/context/WidgetContext';
-import { WidgetProps, WidgetState } from '@/shared/types/widgetState';
-import { WidgetContainer } from '@/shared/components/ui/widget/WidgetContainer';
+import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { Heading } from '@/shared/components/ui/Typography';
+import { Heading } from '@widgets/shared/components/ui/Typography';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useAccount, useChainId } from 'wagmi';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { getEtherscanLink, useDebounce } from '@jetstreamgg/utils';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useDebounce, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/utils';
 import { useTokenAllowance } from '@jetstreamgg/hooks';
 import { useUpgraderManager } from './hooks/useUpgraderManager';
-import { TxStatus, notificationTypeMaping } from '@/shared/constants';
+import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';
 import { formatUnits, parseUnits } from 'viem';
 import { useApproveManager } from './hooks/useApproveManager';
 import { UpgradeAction, UpgradeFlow, UpgradeScreen, upgradeTokens } from './lib/constants';
 import { useLingui } from '@lingui/react';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { getValidatedState } from '@/lib/utils';
-import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { getValidatedState } from '@widgets/lib/utils';
+import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
+import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
-import { CardAnimationWrapper } from '@/shared/animation/Wrappers';
-import { useNotifyWidgetState } from '@/shared/hooks/useNotifyWidgetState';
+import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
+import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { math } from '@jetstreamgg/utils';
 
 const defaultUpgradeOptions = [TOKENS.dai, TOKENS.mkr];
-const defaultRevertOptions = [TOKENS.usds, TOKENS.sky];
+const defaultRevertOptions = [TOKENS.usds];
 
-export function calculateOriginOptions(
+function calculateOriginOptions(
   token: Token,
   action: string,
   upgradeOptions: Token[] = [],
@@ -63,10 +70,6 @@ const calculateTargetOptions = (
     SKY: [upgradeOptions[1]]
   })[originToken.symbol];
 
-const actionForTokenSymbol = (symbol: keyof typeof upgradeTokens) => {
-  return symbol === 'DAI' || symbol === 'MKR' ? 0 : 1;
-};
-
 const tokenForSymbol = (symbol: keyof typeof upgradeTokens) => {
   return TOKENS[symbol.toLowerCase()];
 };
@@ -78,7 +81,6 @@ const targetTokenForSymbol = (symbol: keyof typeof upgradeTokens) => {
 export type UpgradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   upgradeOptions?: Token[];
-  revertOptions?: Token[];
 };
 
 export const UpgradeWidget = ({
@@ -94,26 +96,27 @@ export const UpgradeWidget = ({
   customNavigationLabel,
   onExternalLinkClicked,
   upgradeOptions = defaultUpgradeOptions,
-  revertOptions = defaultRevertOptions,
-  enabled = true
+  enabled = true,
+  shouldReset = false
 }: UpgradeWidgetProps) => {
+  const key = shouldReset ? 'reset' : undefined;
   return (
     <ErrorBoundary componentName="UpgradeWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider key={key} locale={locale}>
         <UpgradeWidgetWrapped
+          key={key}
           onConnect={onConnect}
           addRecentTransaction={addRecentTransaction}
           rightHeaderComponent={rightHeaderComponent}
           externalWidgetState={externalWidgetState}
           onStateValidated={onStateValidated}
           onNotification={onNotification}
-          onWidgetStateChange={onWidgetStateChange}
+          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
           customNavigationLabel={customNavigationLabel}
           onCustomNavigation={onCustomNavigation}
           onExternalLinkClicked={onExternalLinkClicked}
           enabled={enabled}
           upgradeOptions={upgradeOptions}
-          revertOptions={revertOptions}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -132,10 +135,10 @@ export function UpgradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   upgradeOptions,
-  revertOptions,
   enabled = true
 }: UpgradeWidgetProps): React.ReactElement {
   const validatedExternalState = getValidatedState(externalWidgetState);
+  const shouldAllowExternalUpdate = useRef(true);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
@@ -143,14 +146,10 @@ export function UpgradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
-  // initialUpgradeToken takes first priority, then tab, then default to 0 for tabIndex
-  const initialTabIndex = validatedExternalState?.initialUpgradeToken
-    ? actionForTokenSymbol(validatedExternalState.initialUpgradeToken as keyof typeof upgradeTokens)
-    : validatedExternalState?.tab === 'right'
-      ? 1
-      : 0;
+  const initialTabIndex = validatedExternalState?.flow === UpgradeFlow.REVERT ? 1 : 0;
 
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const [originAmount, setOriginAmount] = useState(parseUnits(validatedExternalState?.amount || '0', 18));
@@ -165,16 +164,52 @@ export function UpgradeWidgetWrapped({
   const linguiCtx = useLingui();
 
   useEffect(() => {
-    setOriginToken(
-      tokenForSymbol((validatedExternalState?.initialUpgradeToken as keyof typeof upgradeTokens) || 'DAI')
-    );
-    setTargetToken(
-      targetTokenForSymbol(
-        (validatedExternalState?.initialUpgradeToken as keyof typeof upgradeTokens) || 'DAI'
-      )
-    );
-    setOriginAmount(parseUnits(validatedExternalState?.amount || '0', 18));
-  }, [validatedExternalState?.initialUpgradeToken, validatedExternalState?.amount]);
+    setTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
+
+  useEffect(() => {
+    if (!shouldAllowExternalUpdate.current) return;
+
+    const externalToken = validatedExternalState?.initialUpgradeToken;
+    let newOriginToken: Token;
+
+    if (externalToken) {
+      // If we have an external token, use it
+      newOriginToken = tokenForSymbol(externalToken as keyof typeof upgradeTokens);
+    } else {
+      // If no external token, check if current originToken matches the flow
+      const isUpgradeToken = originToken.symbol === 'DAI' || originToken.symbol === 'MKR';
+      const isRevertToken = originToken.symbol === 'USDS' || originToken.symbol === 'SKY';
+      const isFlowUpgrade =
+        validatedExternalState?.flow === undefined || validatedExternalState?.flow === UpgradeFlow.UPGRADE;
+
+      if ((isFlowUpgrade && !isUpgradeToken) || (!isFlowUpgrade && !isRevertToken)) {
+        // Token doesn't match flow, set to default
+        newOriginToken = tokenForSymbol(
+          (validatedExternalState?.flow === UpgradeFlow.REVERT ? 'USDS' : 'DAI') as keyof typeof upgradeTokens
+        );
+      } else {
+        // Current token is valid for the flow, keep it
+        newOriginToken = originToken;
+      }
+    }
+
+    const newTargetToken = targetTokenForSymbol(newOriginToken.symbol as keyof typeof upgradeTokens);
+
+    if (newOriginToken && newTargetToken) {
+      setOriginToken(newOriginToken);
+      setTargetToken(newTargetToken);
+    }
+
+    if (validatedExternalState?.amount !== undefined) {
+      setOriginAmount(parseUnits(validatedExternalState.amount, 18));
+    }
+  }, [
+    validatedExternalState?.initialUpgradeToken,
+    validatedExternalState?.amount,
+    validatedExternalState?.flow,
+    originToken
+  ]);
 
   const {
     setButtonText,
@@ -187,7 +222,13 @@ export function UpgradeWidgetWrapped({
     setWidgetState
   } = useContext(WidgetContext);
 
-  useNotifyWidgetState({ widgetState, txStatus, targetToken: targetToken?.symbol, onWidgetStateChange });
+  useNotifyWidgetState({
+    widgetState,
+    txStatus,
+    originToken: originToken?.symbol,
+    targetToken: targetToken?.symbol,
+    onWidgetStateChange
+  });
 
   // Balance of the tokens to be upgraded/reverted
   const { data: originBalance, refetch: mutateOriginBalance } = useTokenBalance({
@@ -225,7 +266,7 @@ export function UpgradeWidgetWrapped({
             ? t`Upgrade ${originToken.symbol} into ${targetToken.symbol}`
             : t`Revert ${originToken.symbol} into ${targetToken.symbol}`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -268,7 +309,7 @@ export function UpgradeWidgetWrapped({
     enabled: widgetState.action === UpgradeAction.APPROVE && allowance !== undefined,
     onStart: (hash: string) => {
       addRecentTransaction?.({ hash, description: t`Approving ${originToken.symbol} token` });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -297,31 +338,32 @@ export function UpgradeWidgetWrapped({
   });
 
   useEffect(() => {
-    //Initialize the upgrade flow
+    if (widgetState.screen === UpgradeScreen.TRANSACTION) return;
+    const flow = validatedExternalState?.flow || (tabIndex === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT);
     if (isConnectedAndEnabled) {
-      if (tabIndex === 0) {
+      // Use external flow if available, otherwise use tabIndex
+      if (flow === UpgradeFlow.UPGRADE) {
         setWidgetState({
           flow: UpgradeFlow.UPGRADE,
           action: UpgradeAction.APPROVE,
           screen: UpgradeScreen.ACTION
         });
-      } else if (tabIndex === 1) {
-        //Initialize the revert flow
+      } else if (flow === UpgradeFlow.REVERT) {
         setWidgetState({
           flow: UpgradeFlow.REVERT,
-          action: UpgradeAction.REVERT,
+          action: UpgradeAction.APPROVE,
           screen: UpgradeScreen.ACTION
         });
       }
     } else {
-      // Reset widget state when we are not connected
+      // Reset widget state when we are not connected, but still respect external flow
       setWidgetState({
-        flow: null,
+        flow,
         action: null,
         screen: null
       });
     }
-  }, [tabIndex, isConnectedAndEnabled]);
+  }, [isConnectedAndEnabled, validatedExternalState?.flow, tabIndex, widgetState.screen]);
 
   // If we're in the upgrade or revert flow and we need allowance, set the action to approve,
   useEffect(() => {
@@ -383,13 +425,19 @@ export function UpgradeWidgetWrapped({
     isAmountWaitingForDebounce;
 
   const approveOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: UpgradeScreen.TRANSACTION }));
+    shouldAllowExternalUpdate.current = false;
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      action: UpgradeAction.APPROVE,
+      screen: UpgradeScreen.TRANSACTION
+    }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
     approve.execute();
   };
 
   const upgradeOnClick = () => {
+    shouldAllowExternalUpdate.current = false;
     setWidgetState((prev: WidgetState) => ({
       ...prev,
       action: UpgradeAction.UPGRADE,
@@ -401,6 +449,7 @@ export function UpgradeWidgetWrapped({
   };
 
   const revertOnClick = () => {
+    shouldAllowExternalUpdate.current = false;
     setWidgetState((prev: WidgetState) => ({
       ...prev,
       action: UpgradeAction.REVERT,
@@ -412,6 +461,7 @@ export function UpgradeWidgetWrapped({
   };
 
   const nextOnClick = () => {
+    shouldAllowExternalUpdate.current = true;
     setTxStatus(TxStatus.IDLE);
 
     // After a successful upgrade/revert, we reset the origin amount
@@ -429,16 +479,27 @@ export function UpgradeWidgetWrapped({
       action: UpgradeAction.UPGRADE,
       screen: UpgradeScreen.ACTION
     }));
+
+    onWidgetStateChange?.({
+      originAmount: '',
+      originToken: '',
+      widgetState: {
+        ...widgetState,
+        action: UpgradeAction.UPGRADE,
+        screen: UpgradeScreen.ACTION
+      },
+      txStatus: TxStatus.IDLE
+    });
   };
 
   // Handle the error onClicks separately to keep it clear
   const errorOnClick = () => {
     return widgetState.action === UpgradeAction.UPGRADE
-      ? upgradeOnClick
+      ? upgradeOnClick()
       : widgetState.action === UpgradeAction.REVERT
-        ? revertOnClick
+        ? revertOnClick()
         : widgetState.action === UpgradeAction.APPROVE
-          ? approveOnClick
+          ? approveOnClick()
           : undefined;
   };
 
@@ -449,7 +510,7 @@ export function UpgradeWidgetWrapped({
       : txStatus === TxStatus.SUCCESS
         ? nextOnClick
         : txStatus === TxStatus.ERROR
-          ? errorOnClick()
+          ? errorOnClick
           : (widgetState.flow === UpgradeFlow.UPGRADE && widgetState.action === UpgradeAction.APPROVE) ||
               (widgetState.flow === UpgradeFlow.REVERT && widgetState.action === UpgradeAction.APPROVE)
             ? approveOnClick
@@ -460,6 +521,7 @@ export function UpgradeWidgetWrapped({
                 : undefined;
 
   const onClickBack = () => {
+    shouldAllowExternalUpdate.current = true;
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({
       ...prev,
@@ -526,6 +588,43 @@ export function UpgradeWidgetWrapped({
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
   }, [txStatus, isConnecting]);
 
+  // Reset widget state after switching network
+  useEffect(() => {
+    // Reset all state variables
+    setOriginAmount(parseUnits(validatedExternalState?.amount || '0', 18));
+    setTxStatus(TxStatus.IDLE);
+    setExternalLink(undefined);
+
+    // Reset tokens to initial values
+    setOriginToken(
+      tokenForSymbol((validatedExternalState?.initialUpgradeToken as keyof typeof upgradeTokens) || 'DAI')
+    );
+    setTargetToken(
+      targetTokenForSymbol(
+        (validatedExternalState?.initialUpgradeToken as keyof typeof upgradeTokens) || 'DAI'
+      )
+    );
+
+    // Reset widget state to initial screen based on current tab
+    if (tabIndex === 0) {
+      setWidgetState({
+        flow: UpgradeFlow.UPGRADE,
+        action: UpgradeAction.APPROVE,
+        screen: UpgradeScreen.ACTION
+      });
+    } else {
+      setWidgetState({
+        flow: UpgradeFlow.REVERT,
+        action: UpgradeAction.REVERT,
+        screen: UpgradeScreen.ACTION
+      });
+    }
+
+    // Refresh data
+    mutateAllowance();
+    mutateOriginBalance();
+  }, [chainId]);
+
   return (
     <WidgetContainer
       header={
@@ -564,7 +663,7 @@ export function UpgradeWidgetWrapped({
                 originTitle={
                   tabIndex === 0
                     ? t`Choose a token to upgrade, and enter an amount`
-                    : t`Choose a token to revert, and enter an amount`
+                    : t`Enter an amount of USDS to revert`
                 }
                 originAmount={originAmount}
                 targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
@@ -572,27 +671,83 @@ export function UpgradeWidgetWrapped({
                   originToken,
                   tabIndex === 0 ? 'upgrade' : 'revert',
                   upgradeOptions,
-                  revertOptions
+                  defaultRevertOptions
                 )}
                 originToken={originToken}
                 targetToken={targetToken}
                 originBalance={originBalance?.value}
                 onToggle={(index: 0 | 1) => {
+                  if (tabIndex === index) {
+                    return;
+                  }
+
+                  const newOriginToken = targetToken;
                   setTabIndex(index);
-                  setOriginToken(targetToken);
+                  setOriginToken(newOriginToken);
                   setTargetToken(originToken);
                   setOriginAmount(0n);
+
+                  if (isConnectedAndEnabled) {
+                    if (index === 0) {
+                      //Initialize the upgrade flow
+                      setWidgetState({
+                        flow: UpgradeFlow.UPGRADE,
+                        action: UpgradeAction.APPROVE,
+                        screen: UpgradeScreen.ACTION
+                      });
+                    } else if (index === 1) {
+                      //Initialize the revert flow
+                      setWidgetState({
+                        flow: UpgradeFlow.REVERT,
+                        action: UpgradeAction.REVERT,
+                        screen: UpgradeScreen.ACTION
+                      });
+                    }
+                  } else {
+                    setWidgetState({
+                      flow: index === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT,
+                      action: null,
+                      screen: null
+                    });
+                  }
+
+                  onWidgetStateChange?.({
+                    originToken: newOriginToken.symbol,
+                    txStatus,
+                    widgetState: {
+                      ...widgetState,
+                      flow: index === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT
+                    }
+                  });
                 }}
-                onOriginInputChange={setOriginAmount}
+                onOriginInputChange={(val, userTriggered) => {
+                  setOriginAmount(val);
+                  if (originToken && userTriggered) {
+                    const formattedValue = formatUnits(val, getTokenDecimals(originToken, chainId));
+                    onWidgetStateChange?.({
+                      originAmount: formattedValue,
+                      txStatus,
+                      widgetState
+                    });
+                  }
+                }}
                 tabIndex={tabIndex}
                 error={isBalanceError ? new Error(t`Insufficient funds`) : undefined}
                 onMenuItemChange={(op: Token | null) => {
                   if (op) {
                     setOriginToken(op as Token);
-                    const target = calculateTargetOptions(op as Token, upgradeOptions, revertOptions);
+                    const target = calculateTargetOptions(op as Token, upgradeOptions, [
+                      TOKENS.usds,
+                      TOKENS.sky
+                    ]);
                     if (target?.length) {
                       setTargetToken(target[0]);
                     }
+                    onWidgetStateChange?.({
+                      originToken: op.symbol,
+                      txStatus,
+                      widgetState
+                    });
                   }
                 }}
                 isConnectedAndEnabled={isConnectedAndEnabled}

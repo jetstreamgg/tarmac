@@ -95,7 +95,7 @@ export const TOKENS: TokenMapping = {
     },
     name: 'USDS',
     symbol: 'USDS',
-    color: '#b66bfc',
+    color: '#ffa74e',
     decimals: 18
   },
   weth: {

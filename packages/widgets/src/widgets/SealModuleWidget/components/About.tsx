@@ -1,5 +1,5 @@
-import { InfoTooltip } from '@/shared/components/ui/tooltip/InfoTooltip';
-import { Heading, Text } from '@/shared/components/ui/Typography';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
 
 export const About = () => {
@@ -19,7 +19,7 @@ export const About = () => {
               </Text>
               <br />
               <Text>
-                Unsealing requires the payment of an exit fee, which isa percentage of the total amount of
+                Unsealing requires the payment of an exit fee, which is a percentage of the total amount of
                 tokens that you have sealed in that position. The fee is automatically subtracted from that
                 total amount, and then burnt, removing the tokens from circulation. Your accumulated rewards
                 are not affected.
@@ -31,11 +31,6 @@ export const About = () => {
                 it is determined the moment you unseal your MKR.
               </Text>
               <br />
-              <Text>
-                The moment the Seal Engine launched, the exit fee rate was set to 5% of the value of the MKR
-                or SKY tokens that you have sealed, with a planned 1% increase every 6 months thereafter until
-                it reaches the long-term fee rate of 15%.
-              </Text>
             </>
           }
           contentClassname="max-w-[400px]"

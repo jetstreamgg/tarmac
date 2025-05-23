@@ -1,16 +1,16 @@
 import { type GetBalanceData } from 'wagmi/query';
 import { t } from '@lingui/core/macro';
 import { TradeSide } from '../lib/constants';
-import { ShiftArrow } from '@/shared/components/icons/Icons';
+import { ShiftArrow } from '@widgets/shared/components/icons/Icons';
 import { TradeDetails } from './TradeDetails';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { OrderQuoteResponse, Token, tokenArrayFiltered, TokenForChain } from '@jetstreamgg/hooks';
-import { TokenInput, TokenInputProps } from '@/shared/components/ui/token/TokenInput';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { Text } from '@/shared/components/ui/Typography';
-import { Button } from '@/components/ui/button';
+import { TokenInput, TokenInputProps } from '@widgets/shared/components/ui/token/TokenInput';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { Button } from '@widgets/components/ui/button';
 import { motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 import { CostWarning } from './CostWarning';
 import { getQuoteErrorForType } from '../lib/utils';
 
@@ -238,7 +238,7 @@ export function TradeInputs({
         <Button
           aria-label="Switch token inputs"
           size="icon"
-          className="border-background text-tabPrimary my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent focus:outline-none active:bg-transparent disabled:bg-transparent"
+          className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
           onClick={() => {
             setLastSwitchTimestamp(Date.now());
             const auxOriginAmount = originAmount;

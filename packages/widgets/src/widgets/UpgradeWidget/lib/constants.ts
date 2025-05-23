@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro';
-import { TxStatus } from '@/shared/constants';
-import { TxCardCopyText } from '@/shared/types/txCardCopyText';
+import { TxStatus } from '@widgets/shared/constants';
+import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { TOKENS, Token } from '@jetstreamgg/hooks';
 import { MessageDescriptor } from '@lingui/core';
 

@@ -1,18 +1,18 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { positionAnimations } from '@/shared/animation/presets';
-import { Warning } from '@/shared/components/icons/Warning';
-import { Text } from '@/shared/components/ui/Typography';
-import { StatsOverviewCardCoreAccordion } from '@/shared/components/ui/card/StatsOverviewCardCoreAccordion';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { MotionHStack } from '@/shared/components/ui/layout/MotionHStack';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { Warning } from '@widgets/shared/components/icons/Warning';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { StatsOverviewCardCoreAccordion } from '@widgets/shared/components/ui/card/StatsOverviewCardCoreAccordion';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { useRewardContractInfo, useRewardContractTokens, useSealRewardsData } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { Dispatch, SetStateAction } from 'react';
 import { useChainId } from 'wagmi';
-import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { getAddress } from 'viem';
 
 export const SaRewardsCard = ({
@@ -55,9 +55,9 @@ export const SaRewardsCard = ({
 
   return (
     <StatsOverviewCardCoreAccordion
-      className={`${
+      className={`transition-colors ${
         selectedRewardContract && getAddress(selectedRewardContract) === getAddress(contractAddress)
-          ? 'bg-primary'
+          ? 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'
           : ''
       } ${setSelectedRewardContract ? 'cursor-pointer' : 'cursor-default'}`}
       headerLeftContent={

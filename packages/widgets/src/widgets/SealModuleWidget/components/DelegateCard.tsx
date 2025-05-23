@@ -1,19 +1,19 @@
-import { positionAnimations } from '@/shared/animation/presets';
-import { ExternalLink } from '@/shared/components/ExternalLink';
-import { Text } from '@/shared/components/ui/Typography';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { MotionHStack } from '@/shared/components/ui/layout/MotionHStack';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
-import { VStack } from '@/shared/components/ui/layout/VStack';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { DelegateInfo } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { Dispatch, SetStateAction } from 'react';
-import { StatsOverviewCardCoreAccordion } from '@/shared/components/ui/card/StatsOverviewCardCoreAccordion';
+import { StatsOverviewCardCoreAccordion } from '@widgets/shared/components/ui/card/StatsOverviewCardCoreAccordion';
 import { getAddress } from 'viem';
 import { JazziconComponent } from './Jazzicon';
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 
 export const DelegateCard = ({
   delegate,
@@ -32,8 +32,10 @@ export const DelegateCard = ({
 
   return (
     <StatsOverviewCardCoreAccordion
-      className={`${
-        selectedDelegate && getAddress(selectedDelegate) === getAddress(delegate.id) ? 'bg-primary' : ''
+      className={`transition-colors ${
+        selectedDelegate && getAddress(selectedDelegate) === getAddress(delegate.id)
+          ? 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'
+          : ''
       } ${setSelectedDelegate ? 'cursor-pointer' : 'cursor-default'}`}
       headerLeftContent={
         <VStack className="mr-2 grow">

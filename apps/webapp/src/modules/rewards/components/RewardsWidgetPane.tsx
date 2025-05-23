@@ -2,15 +2,23 @@ import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { RewardContract, useRewardsUserHistory } from '@jetstreamgg/hooks';
-import { RewardsAction, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@jetstreamgg/widgets';
+import {
+  RewardsAction,
+  RewardsFlow,
+  RewardsWidget,
+  TxStatus,
+  WidgetStateChangeParams
+} from '@jetstreamgg/widgets';
 import { useSearchParams } from 'react-router-dom';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
+  const { setShouldDisableActionButtons } = useChatContext();
   const {
     selectedRewardContract,
     setSelectedRewardContract,
@@ -23,9 +31,15 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     subgraphUrl
   });
 
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;
 
   const onRewardContractChange = (rewardContract?: RewardContract) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
+      return;
+    }
+
     setSearchParams(params => {
       if (rewardContract?.contractAddress) {
         params.set(QueryParams.Widget, IntentMapping[Intent.REWARDS_INTENT]);
@@ -38,7 +52,40 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     setSelectedRewardContract(rewardContract);
   };
 
-  const onRewardsWidgetStateChange = ({ hash, txStatus, widgetState }: WidgetStateChangeParams) => {
+  const onRewardsWidgetStateChange = ({
+    hash,
+    txStatus,
+    widgetState,
+    originAmount
+  }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
+      return;
+    }
+
+    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
+
+    // Set flow search param based on widgetState.flow
+    if (widgetState.flow) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.Flow, widgetState.flow);
+        return prev;
+      });
+    }
+
+    // Update amount in URL if provided and not zero
+    if (originAmount && originAmount !== '0') {
+      setSearchParams(prev => {
+        prev.set(QueryParams.InputAmount, originAmount);
+        return prev;
+      });
+    } else if (originAmount === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.InputAmount);
+        return prev;
+      });
+    }
+
     // After a successful linked action supply, set the step to "success"
     if (
       widgetState.action === RewardsAction.SUPPLY &&
@@ -72,7 +119,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     <RewardsWidget
       {...sharedProps}
       onRewardContractChange={onRewardContractChange}
-      externalWidgetState={{ selectedRewardContract, amount: linkedActionConfig?.inputAmount }}
+      externalWidgetState={{ selectedRewardContract, amount: linkedActionConfig?.inputAmount, flow }}
       onWidgetStateChange={onRewardsWidgetStateChange}
     />
   );

@@ -83,14 +83,15 @@ export type SealHistoryKick = BaseSealHistoryItem & {
   urnAddress: string;
 };
 
-export type SealHistory = Array<
+export type SealHistoryItem =
   | BaseSealHistoryItem
   | SealHistoryItemWithAmount
   | SealSelectDelegate
   | SealSelectReward
   | SealClaimReward
-  | SealHistoryKick
->;
+  | SealHistoryKick;
+
+export type SealHistory = Array<SealHistoryItem>;
 
 export type Bark = {
   id: string;
@@ -106,4 +107,22 @@ export type SealPosition = {
   selectedDelegate: string | undefined;
   selectedReward: string | undefined;
   barks: Bark[];
+};
+
+export type SealMigrationRaw = {
+  id: `0x${string}`;
+  oldOwner: `0x${string}`;
+  newOwner: `0x${string}`;
+  oldIndex: string;
+  newIndex: string;
+  ink: string;
+  debt: string;
+  blockNumber: string;
+  blockTimestamp: string;
+  transactionHash: `0x${string}`;
+};
+
+export type SealMigration = SealMigrationRaw & {
+  ink: bigint;
+  debt: bigint;
 };

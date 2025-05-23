@@ -1,11 +1,11 @@
 import * as React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 import { tv, type VariantProps } from 'tailwind-variants';
 import { motion } from 'framer-motion';
 
 const card = tv({
   // Base styles apply to the base component before variant styles are applied
-  base: 'rounded-[20px] bg-card p-4 lg:p-5 text-text text-base font-normal leading-normal data-[status=success]:bg-primary',
+  base: 'rounded-[20px] bg-card p-4 lg:p-5 text-text text-base font-normal leading-normal data-[status=success]:bg-radial-(--gradient-position)',
 
   // Slot styles will apply to every slot before slot variants are applied
   slots: {
@@ -25,7 +25,7 @@ const card = tv({
         title: 'text-xl font-semibold leading-normal lg:text-2xl lg:leading-loose',
         content: 'pt-0'
       },
-      pool: { base: 'leading-tight lg:px-5 lg:py-4 cursor-pointer space-y-3' },
+      pool: { base: 'leading-tight lg:px-5 lg:py-4 cursor-pointer' },
       stats: {
         base: 'py-3 px-5 lg:px-5 w-full',
         header: 'p-0',
@@ -34,7 +34,7 @@ const card = tv({
       },
       statsCompact: { base: 'p-3 lg:pl-4 lg:pb-4 lg:pt-3 lg:pr-3' },
       statsInteractive: {
-        base: 'hover:bg-primary transition-gradient-and-colors group/interactive-card cursor-pointer px-4 py-3 [--gradient-opacity:0%] hover:[--gradient-opacity:100%] lg:px-4 lg:py-3 w-full',
+        base: 'hover:bg-radial-(--gradient-position) hover:from-primary-start/100 hover:to-primary-end/100 transition group/interactive-card cursor-pointer px-4 py-3 lg:px-4 lg:py-3 w-full',
         header: 'p-0',
         title: 'text-sm font-normal leading-tight text-textSecondary',
         content: 'pt-0 mt-1'
@@ -46,8 +46,10 @@ const card = tv({
       address: {
         base: 'py-3 px-5'
       },
-      fade: { base: 'pb-3 lg:pb-3 bg-transparent bg-gradient-to-b from-card via-transparent to-transparent' },
-      history: { base: 'hover:bg-cardHover' }
+      fade: { base: 'pb-3 lg:pb-3 bg-transparent bg-linear-to-b from-card via-transparent to-transparent' },
+      history: {
+        base: 'hover:bg-radial-(--gradient-position) from-primary-alt-start/2 to-primary-alt-end/2 hover:from-primary-alt-start/20 hover:to-primary-alt-end/20 active:from-primary-alt-start/25 active:to-primary-alt-end/25 transition'
+      }
     }
   },
 
@@ -128,13 +130,6 @@ const CardTitle = React.forwardRef<
 ));
 CardTitle.displayName = 'CardTitle';
 
-const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn('text-muted-foreground text-sm', className)} {...props} />
-  )
-);
-CardDescription.displayName = 'CardDescription';
-
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof card>
@@ -154,13 +149,4 @@ CardFooter.displayName = 'CardFooter';
 const MotionCard = motion.create(Card);
 const MotionCardContent = motion.create(CardContent);
 
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  MotionCard,
-  MotionCardContent
-};
+export { Card, CardHeader, CardFooter, CardTitle, CardContent, MotionCard, MotionCardContent };

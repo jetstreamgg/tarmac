@@ -4,13 +4,13 @@ import {
   TooltipContent,
   TooltipPortal,
   TooltipTrigger
-} from '@/components/ui/tooltip';
-import { useClipboard } from '@/shared/hooks/useClipboard';
+} from '@widgets/components/ui/tooltip';
+import { useClipboard } from '@widgets/shared/hooks/useClipboard';
 import { Text } from './Typography';
-import { Copy } from '@/shared/components/icons/Icons';
+import { Copy } from '@widgets/shared/components/icons/Icons';
 import { motion } from 'framer-motion';
-import { iconAnimations } from '@/shared/animation/presets';
-import { AnimationLabels } from '@/shared/animation/constants';
+import { iconAnimations } from '@widgets/shared/animation/presets';
+import { AnimationLabels } from '@widgets/shared/animation/constants';
 
 export function CopyToClipboard({ text }: { text: string }) {
   const { hasCopied, onCopy } = useClipboard(text);

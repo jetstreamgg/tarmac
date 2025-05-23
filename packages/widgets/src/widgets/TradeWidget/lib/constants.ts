@@ -1,5 +1,5 @@
-import { TxCardCopyTextWithCancel } from '@/shared/types/txCardCopyText';
-import { TxStatus } from '@/shared/constants';
+import { TxCardCopyTextWithCancel } from '@widgets/shared/types/txCardCopyText';
+import { TxStatus } from '@widgets/shared/constants';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 import { Token } from '@jetstreamgg/hooks';

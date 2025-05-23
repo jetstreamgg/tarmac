@@ -1,13 +1,13 @@
 import { useChainId } from 'wagmi';
 import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
-import { Text } from '@/shared/components/ui/Typography';
-import { Skeleton } from '@/components/ui/skeleton';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { Skeleton } from '@widgets/components/ui/skeleton';
 import { SavingsStatsCardCore } from './SavingsStatsCardCore';
-import { StatsAccordionCard } from '@/shared/components/ui/card/StatsAccordionCard'; // Import StatsAccordionCard
-import { positionAnimations } from '@/shared/animation/presets';
+import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard'; // Import StatsAccordionCard
+import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useOverallSkyData } from '@jetstreamgg/hooks';
 
 export type SavingsStats = {

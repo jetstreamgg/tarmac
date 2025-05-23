@@ -30,10 +30,12 @@ This is a guide to help you set up the Phase One App project on your local machi
 Create a `.env` file in the root directory of the project. You can use the `.env.example` file as a reference for the required environment variables. Fill in the necessary values.
 
 - `VITE_RPC_PROVIDER_MAINNET`: URL for the Ethereum mainnet RPC provider
+- `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
+- `VITE_RPC_PROVIDER_SEPOLIA`: URL for the Sepolia network RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_BASE`: URL for the Base RPC provider
 - `VITE_RPC_PROVIDER_TENDERLY_BASE`: URL for the Tenderly Base RPC provider (used for testing and development)
-- `VITE_RPC_PROVIDER_SEPOLIA`: URL for the Sepolia network RPC provider (used for testing and development)
-- `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
+- `VITE_RPC_PROVIDER_ARBITRUM`: URL for the Arbitrum RPC provider
+- `VITE_RPC_PROVIDER_TENDERLY_ARBITRUM`: URL for the Tenderly Arbitrum RPC provider (used for testing and development)
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production
 - `VITE_AUTH_URL`: Base URL for the authentication service
 - `VITE_RESTRICTED_BUILD`: Boolean flag to enable certain restrictions
@@ -52,8 +54,13 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_CF_PAGES_COMMIT_SHA`: (Optional) Git commit hash of the current build
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
 - `VITE_CHATBOT_ENABLED`: If set to `'true`, enables the chatbot functionality
+- `VITE_CHATBOT_USE_TESTNET_NETWORK_NAME`: If set to `'true'` replaces network names for their testnet counterpart. Only in development or staging.
 - `VITE_ADVANCED_CHAT_ENABLED`: If set to `'true`, enables advanced chat features
 - `VITE_CHAT_SUGGESTIONS_ENABLED`: If set to `'true`, enables chat suggestions functionality, set to 'true' to enable
+- `VITE_CHATBOT_NAME`: The name of the chatbot
+- `VITE_CHATBOT_DOMAIN`: The base URL for the chatbot backend API
+- `VITE_CHATBOT_MAX_HISTORY`: Maximum number of previous messages to include in chat context.
+- `VITE_CHATBOT_MAX_MESSAGE_LENGTH`: Maximum character length for user input messages.
 
 ## Running the App
 

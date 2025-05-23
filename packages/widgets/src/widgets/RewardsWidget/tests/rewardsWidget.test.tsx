@@ -5,7 +5,7 @@ import { render, screen } from '@testing-library/react';
 import { WagmiWrapper } from '../../../../test/WagmiWrapper';
 import { RewardsWidget } from '..';
 import { TOKENS } from '@jetstreamgg/hooks';
-import { TENDERLY_CHAIN_ID } from '@/shared/constants';
+import { TENDERLY_CHAIN_ID } from '@widgets/shared/constants';
 
 const renderWithWagmiWrapper = (ui: any, options?: any) => render(ui, { wrapper: WagmiWrapper, ...options });
 
@@ -132,7 +132,7 @@ describe('Rewards widget tests', () => {
   // We need to mock ResizeObserver as it's being used by the chakra slider
   // https://github.com/maslianok/react-resize-detector#testing-with-enzyme-and-jest
   beforeEach(() => {
-    //@ts-ignore
+    // @ts-expect-error ResizeObserver is required in the Window interface
     delete window.ResizeObserver;
     window.ResizeObserver = vi.fn().mockImplementation(() => ({
       observe: vi.fn(),

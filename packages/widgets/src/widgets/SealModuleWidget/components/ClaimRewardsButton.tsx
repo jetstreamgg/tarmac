@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button';
-import { WidgetContext } from '@/context/WidgetContext';
-import { Text } from '@/shared/components/ui/Typography';
+import { Button } from '@widgets/components/ui/button';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
 import { useContext, useEffect } from 'react';
 import { useChainId } from 'wagmi';
-import { TxStatus } from '@/shared/constants';
-import { WidgetState } from '@/shared/types/widgetState';
+import { TxStatus } from '@widgets/shared/constants';
+import { WidgetState } from '@widgets/shared/types/widgetState';
 import { SealAction, SealScreen } from '../lib/constants';
 import { SealModuleWidgetContext } from '../context/context';
 
@@ -59,7 +59,11 @@ export function ClaimRewardsButton({
   if (!rewardsBalance || !rewardContractTokens) return null;
 
   return (
-    <Button onClick={handleClick} disabled={!!rewardContractToClaim && indexToClaim !== undefined}>
+    <Button
+      variant="primaryAlt"
+      onClick={handleClick}
+      disabled={!!rewardContractToClaim && indexToClaim !== undefined}
+    >
       <Text>
         {indexToClaim === index && rewardContractToClaim === rewardContract
           ? 'Preparing your claim transaction...'

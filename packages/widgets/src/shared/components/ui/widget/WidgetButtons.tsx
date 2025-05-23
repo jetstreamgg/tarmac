@@ -1,11 +1,11 @@
 import React, { useContext, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@widgets/components/ui/button';
 import { WidgetButton } from './WidgetButton';
-import { WidgetContext } from '@/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useAccount } from 'wagmi';
 import { ConnectWalletCopy } from '../ConnectWalletCopy';
 import { AnimatePresence } from 'framer-motion';
-import { ButtonsAnimationWrapper } from '@/shared/animation/Wrappers';
+import { ButtonsAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { VStack } from '../layout/VStack';
 
 interface WidgetButtonsProps {

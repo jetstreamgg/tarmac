@@ -1,17 +1,17 @@
 import { useSaRewardContracts, useUrnSelectedRewardContract, ZERO_ADDRESS } from '@jetstreamgg/hooks';
 import { SaRewardsCard } from './SaRewardsCard';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card } from '@/components/ui/card';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { Card } from '@widgets/components/ui/card';
 import { useContext, useEffect } from 'react';
-import { HStack } from '@/shared/components/ui/layout/HStack';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Trans } from '@lingui/react/macro';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/shared/components/ui/Typography';
+import { Button } from '@widgets/components/ui/button';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { SealModuleWidgetContext } from '../context/context';
 import { getNextStep } from '../lib/utils';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { WidgetContext } from '@/context/WidgetContext';
-import { SealFlow } from '@/index';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { SealFlow } from '@widgets/index';
 
 export const SelectRewardContract = ({
   onExternalLinkClicked

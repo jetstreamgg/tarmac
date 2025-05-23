@@ -1,0 +1,244 @@
+---
+description: Testing Standards for React TypeScript Applications
+globs: *.{test,spec}.{ts,tsx}
+---
+# Testing Standards
+
+Standards for implementing tests using Vitest and Playwright.
+
+<rule>
+name: vitest_unit_testing
+description: Standards for unit testing with Vitest
+filters:
+  - type: file_extension
+    pattern: "\\.(test|spec)\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)(describe|it|test|expect)"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these unit testing standards:
+
+      ## Test Structure
+      - Co-locate tests with components
+      - Use descriptive test names
+      - Follow AAA pattern (Arrange-Act-Assert)
+      - Group related tests in describes
+      - Keep tests focused and atomic
+
+      ## Component Testing
+      ```typescript
+      // Component test pattern
+      import { render, screen } from '@testing-library/react'
+      import { Button } from './Button'
+      
+      describe('Button', () => {
+        it('renders children correctly', () => {
+          render(<Button>Click me</Button>)
+          expect(screen.getByText('Click me')).toBeInTheDocument()
+        })
+
+        it('handles click events', async () => {
+          const onClickMock = vi.fn()
+          render(<Button onClick={onClickMock}>Click me</Button>)
+          
+          await userEvent.click(screen.getByRole('button'))
+          expect(onClickMock).toHaveBeenCalledOnce()
+        })
+      })
+      ```
+
+      ## Mocking
+      - Mock external dependencies
+      - Use vi.mock for modules
+      - Implement proper cleanup
+      - Reset mocks between tests
+      - Mock Web3 providers properly
+
+examples:
+  - input: |
+      // Bad
+      test('button', () => {
+        const { getByText } = render(<Button />)
+        getByText('Submit').click()
+      })
+
+      // Good
+      describe('Button', () => {
+        it('should call onClick when clicked', async () => {
+          const onClickMock = vi.fn()
+          render(<Button onClick={onClickMock}>Submit</Button>)
+          
+          await userEvent.click(screen.getByRole('button'))
+          
+          expect(onClickMock).toHaveBeenCalledOnce()
+        })
+      })
+    output: "Properly structured unit test"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+
+<rule>
+name: playwright_e2e_testing
+description: Standards for E2E testing with Playwright
+filters:
+  - type: file_extension
+    pattern: "\\.spec\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)test\\(['\"](mdc:.*?)['\"]"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these E2E testing standards:
+
+      ## Test Organization
+      - Group tests by feature
+      - Use page object model
+      - Implement proper fixtures
+      - Handle authentication properly
+      - Manage test data appropriately
+
+      ## Best Practices
+      ```typescript
+      // E2E test pattern
+      import { test, expect } from '@playwright/test'
+      
+      test.describe('Authentication Flow', () => {
+        test('successful login', async ({ page }) => {
+          await page.goto('/login')
+          await page.fill('[name="email"]', 'user@example.com')
+          await page.fill('[name="password"]', 'password123')
+          await page.click('button[type="submit"]')
+          
+          await expect(page).toHaveURL('/dashboard')
+          await expect(page.getByText('Welcome')).toBeVisible()
+        })
+      })
+      ```
+
+      ## Web3 Testing
+      - Mock wallet connections
+      - Simulate blockchain interactions
+      - Test transaction flows
+      - Handle network switching
+      - Test error scenarios
+
+examples:
+  - input: |
+      // Bad
+      test('login', async ({ page }) => {
+        await page.click('#submit')
+      })
+
+      // Good
+      test.describe('Login Flow', () => {
+        test.beforeEach(async ({ page }) => {
+          await page.goto('/login')
+        })
+
+        test('displays validation errors', async ({ page }) => {
+          await page.click('button[type="submit"]')
+          await expect(page.getByText('Email is required')).toBeVisible()
+        })
+
+        test('successful login', async ({ page }) => {
+          await page.fill('[name="email"]', 'user@example.com')
+          await page.fill('[name="password"]', 'password123')
+          await page.click('button[type="submit"]')
+          await expect(page).toHaveURL('/dashboard')
+        })
+      })
+    output: "Properly structured E2E test"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+
+<rule>
+name: web3_testing_standards
+description: Standards for testing Web3 functionality
+filters:
+  - type: file_extension
+    pattern: "\\.(test|spec)\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)(wagmi|viem|ethereum)"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these Web3 testing standards:
+
+      ## Contract Testing
+      - Mock contract interactions
+      - Test transaction states
+      - Validate error handling
+      - Test wallet connections
+      - Simulate network conditions
+
+      ## Example Pattern
+      ```typescript
+      import { renderHook } from '@testing-library/react'
+      import { createPublicClient, http } from 'viem'
+      import { useContractRead } from 'wagmi'
+
+      describe('Contract Integration', () => {
+        beforeEach(() => {
+          vi.mock('wagmi', async () => {
+            const actual = await vi.importActual('wagmi')
+            return {
+              ...actual,
+              useContractRead: vi.fn()
+            }
+          })
+        })
+
+        it('handles successful contract read', async () => {
+          const mockData = '100'
+          ;(useContractRead as any).mockReturnValue({
+            data: mockData,
+            isSuccess: true,
+            isLoading: false
+          })
+
+          const { result } = renderHook(() => useYourHook())
+          expect(result.current.data).toBe(mockData)
+        })
+      })
+      ```
+
+examples:
+  - input: |
+      // Bad
+      test('contract', () => {
+        const { result } = renderHook(() => useContract())
+        expect(result.current).toBeDefined()
+      })
+
+      // Good
+      describe('Contract Hook', () => {
+        beforeEach(() => {
+          vi.mock('wagmi')
+        })
+
+        it('handles loading state', () => {
+          ;(useContractRead as any).mockReturnValue({
+            isLoading: true,
+            data: undefined
+          })
+          
+          const { result } = renderHook(() => useContract())
+          expect(result.current.isLoading).toBe(true)
+        })
+      })
+    output: "Properly structured Web3 test"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

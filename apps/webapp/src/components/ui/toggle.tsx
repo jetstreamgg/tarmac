@@ -5,15 +5,15 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const toggleVariants = cva(
-  'inline-flex flex-col items-center rounded-xl justify-center text-sm text-textSecondary font-medium ring-offset-background transition-colors after:bg-muted disabled:pointer-events-none disabled:opacity-50 overflow-hidden',
+  'inline-flex flex-col items-center rounded-xl justify-center text-sm text-textSecondary font-medium ring-offset-background transition after:bg-muted disabled:pointer-events-none disabled:opacity-50 overflow-hidden',
   {
     variants: {
       variant: {
         default:
-          'bg-transparent data-[state=on]:bg-primary after:bg-primaryHover active:bg-primaryActive hover:data-[state=on]:bg-white',
+          'bg-transparent data-[state=on]:bg-radial-(--gradient-position) data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 after:bg-primaryHover active:bg-primaryActive hover:data-[state=on]:bg-white',
         outline: 'border border-input bg-transparent after:bg-accent hover:text-accent-foreground',
         singleSwitcher:
-          'rounded-md px-4 py-2 w-[64px] bg-primary bg-blend-overlay [--gradient-opacity:0%] hover:[--gradient-opacity:50%] data-[state=on]:[--gradient-opacity:100%] data-[state=on]:text-text data-[state=on]:hover:bg-white/10 data-[state=on]:border-transparent transition-gradient-and-colors transition-bg duration-250 ease-out-expo border border-[rgb(61,47,164)]'
+          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 bg-blend-overlay hover:from-primary-start/50 hover:to-primary-end/50 data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 data-[state=on]:text-text data-[state=on]:hover:bg-white/10 data-[state=on]:border-transparent transition transition-bg duration-250 ease-out-expo border border-[rgb(61,47,164)]'
       },
       size: {
         default: '',
@@ -47,4 +47,4 @@ const Toggle = React.forwardRef<
 
 Toggle.displayName = TogglePrimitive.Root.displayName;
 
-export { Toggle, toggleVariants };
+export { Toggle };

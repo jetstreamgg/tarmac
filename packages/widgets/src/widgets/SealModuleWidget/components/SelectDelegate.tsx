@@ -1,25 +1,25 @@
-import { Input } from '@/components/ui/input';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { Text } from '@/shared/components/ui/Typography';
+import { Input } from '@widgets/components/ui/input';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { ZERO_ADDRESS, useSaUserDelegates, useUrnSelectedVoteDelegate } from '@jetstreamgg/hooks';
 import { useDebounce } from '@jetstreamgg/utils';
 import { useContext, useEffect, useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { DelegateCard } from './DelegateCard';
 import { SealModuleWidgetContext } from '../context/context';
-import { HStack } from '@/shared/components/ui/layout/HStack';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { InfoTooltip } from '@/shared/components/ui/tooltip/InfoTooltip';
-import { Button } from '@/components/ui/button';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
+import { Button } from '@widgets/components/ui/button';
 import { getNextStep } from '../lib/utils';
 // import { getAddress } from 'viem';
-import { FetchingSpinner } from '@/shared/components/ui/spinner/FetchingSpinner';
-import { WidgetContext } from '@/context/WidgetContext';
+import { FetchingSpinner } from '@widgets/shared/components/ui/spinner/FetchingSpinner';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SealFlow } from '../lib/constants';
-import { Search } from '@/shared/components/icons/Search';
-import { NoResults } from '@/shared/components/icons/NoResults';
-import { Close } from '@/shared/components/icons/Close';
+import { Search } from '@widgets/shared/components/icons/Search';
+import { NoResults } from '@widgets/shared/components/icons/NoResults';
+import { Close } from '@widgets/shared/components/icons/Close';
 import { formatEther } from 'viem';
 
 export const SelectDelegate = ({
@@ -58,10 +58,11 @@ export const SelectDelegate = ({
     !!selectedDelegate &&
     selectedDelegate.toLowerCase() !== ZERO_ADDRESS.toLowerCase();
   const hasCompletedManageFlow = widgetState.flow === SealFlow.MANAGE;
+  const hasCompletedMigrateFlow = widgetState.flow === SealFlow.MIGRATE;
 
   useEffect(() => {
-    setIsSelectDelegateCompleted(hasCompletedOpenFlow || hasCompletedManageFlow);
-  }, [hasCompletedOpenFlow, hasCompletedManageFlow]);
+    setIsSelectDelegateCompleted(hasCompletedOpenFlow || hasCompletedManageFlow || hasCompletedMigrateFlow);
+  }, [hasCompletedOpenFlow, hasCompletedManageFlow, hasCompletedMigrateFlow]);
 
   const handleSkip = () => {
     // If this is an open flow, `urnSelectedVoteDelegate` would be undefined,

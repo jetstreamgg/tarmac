@@ -11,7 +11,7 @@ describe('Savings widget tests', () => {
   // We need to mock ResizeObserver as it's being used by the chakra slider
   // https://github.com/maslianok/react-resize-detector#testing-with-enzyme-and-jest
   beforeEach(() => {
-    //@ts-ignore
+    //@ts-expect-error ResizeObserver is required in the Window interface
     delete window.ResizeObserver;
     window.ResizeObserver = vi.fn().mockImplementation(() => ({
       observe: vi.fn(),

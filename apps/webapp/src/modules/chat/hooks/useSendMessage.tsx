@@ -1,75 +1,28 @@
+import { useAccount, useChainId } from 'wagmi';
 import { MutationFunction, useMutation } from '@tanstack/react-query';
-import { Recommendation, SendMessageRequest, SendMessageResponse } from '../types/Chat';
+import { SendMessageRequest, SendMessageResponse, ChatIntent } from '../types/Chat';
 import { useChatContext } from '../context/ChatContext';
-import {
-  CHAT_SUGGESTIONS_ENABLED,
-  ADVANCED_CHAT_ENABLED,
-  CHATBOT_NAME,
-  MessageType,
-  UserType
-} from '../constants';
+import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/macro';
-import { actionIntentClassificationOptions } from '../lib/intentClassificationOptions';
-import { handleActionIntent } from '../lib/handleActionIntent';
-import { slotDefinitions } from '../lib/slotDefinitions';
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
-import { useChainId } from 'wagmi';
-import {
-  generateRandomResponse,
-  generateRandomIntent,
-  generateRandomRecommendations,
-  generateRandomSlots
-} from './__mocks__/mock-chat-endpoints';
-import { mainnet } from 'wagmi/chains';
-import { base } from 'wagmi/chains';
-import { arbitrum } from 'wagmi/chains';
+import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
 
-const isMocked = true;
+interface ChatbotResponse {
+  chatResponse: {
+    response: string;
+  };
+  actionIntentResponse: Pick<ChatIntent, 'title' | 'url'>[];
+}
 
 const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
-  const endpoint = import.meta.env.VITE_CHATBOT_ENDPOINT || 'https://staging-api.sky.money';
+  const domain = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 
-  // Use mock data in development
-  if (isMocked) {
-    // Simulate a 2-second network delay
-    const delay = 1; // 2000
-    await new Promise(resolve => setTimeout(resolve, delay));
-    const mockResponses = {
-      chatResponse: {
-        response: generateRandomResponse(),
-        messageId: Math.random().toString(36).substring(7)
-      },
-      actionIntentResponse: {
-        classification: generateRandomIntent(),
-        confidence: Math.random()
-      },
-      questionIntentResponse: {
-        recommendations: generateRandomRecommendations()
-      },
-      slotResponse: {
-        slots: generateRandomSlots('TRADE')
-      }
-    };
-
-    return Promise.resolve(mockResponses);
-  }
-
-  return ADVANCED_CHAT_ENABLED && CHAT_SUGGESTIONS_ENABLED
-    ? fetchAdvancedChat(endpoint, messagePayload)
-    : fetchSimpleChat(endpoint, messagePayload);
-};
-
-const fetchAdvancedChat = async (endpoint: string, messagePayload: Partial<SendMessageRequest>) => {
-  const response = await fetch(`${endpoint}/copilot`, {
+  const response = await fetch(`${domain}/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ...messagePayload,
-      classification_options: actionIntentClassificationOptions,
-      slots: slotDefinitions,
-      limit: 4 // for recommendations
-    })
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(messagePayload)
   });
 
   if (!response.ok) {
@@ -81,99 +34,22 @@ const fetchAdvancedChat = async (endpoint: string, messagePayload: Partial<SendM
   // Transform the advanced response to match the simple mode structure
   return {
     chatResponse: {
-      response: data.response,
-      messageId: data.messageId
+      response: data?.response || ''
     },
-    actionIntentResponse: {
-      classification: data.classification,
-      confidence: data.confidence
-    },
-    questionIntentResponse: {
-      recommendations: data.recommendations
-    },
-    slotResponse: {
-      slots: data.slots
-    }
-  };
-};
-
-const fetchSimpleChat = async (endpoint: string, messagePayload: Partial<SendMessageRequest>) => {
-  const chatPromise = fetch(`${endpoint}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(messagePayload)
-  })
-    .then(response => response.json())
-    .catch(error => {
-      console.error('Failed to fetch chat response:', error);
-      throw new Error('Chat response was not ok');
-    });
-
-  // Only create these promises if suggestions are enabled
-  const [actionIntentPromise, questionIntentPromise, slotPromise] = CHAT_SUGGESTIONS_ENABLED
-    ? [
-        fetch(`${endpoint}/intent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            classification_options: actionIntentClassificationOptions,
-            input: messagePayload.message,
-            history: messagePayload.history,
-            session_id: messagePayload.session_id
-          })
-        }).then(response => (response.ok ? response.json() : null)),
-
-        fetch(`${endpoint}/recommend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            session_id: messagePayload.session_id,
-            input: messagePayload.message,
-            limit: 4
-          })
-        }).then(response => (response.ok ? response.json() : null)),
-
-        fetch(`${endpoint}/slot-machine/fill-slots`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            history: [
-              ...(messagePayload.history || []),
-              { id: generateUUID(), message: messagePayload.message, role: 'user' }
-            ],
-            slots: slotDefinitions,
-            session_id: messagePayload.session_id
-          })
-        }).then(response => (response.ok ? response.json() : null))
-      ]
-    : [Promise.resolve(null), Promise.resolve(null), Promise.resolve(null)];
-
-  const [chatResponse, actionIntentResponse, questionIntentResponse, slotResponse] = await Promise.all([
-    chatPromise,
-    actionIntentPromise,
-    questionIntentPromise,
-    slotPromise
-  ]);
-
-  return {
-    chatResponse,
-    actionIntentResponse,
-    questionIntentResponse,
-    slotResponse
-  };
+    actionIntentResponse: data?.actions || []
+  } as ChatbotResponse;
 };
 
 const sendMessageMutation: MutationFunction<
   SendMessageResponse,
-  { messagePayload: Partial<SendMessageRequest>; rewards: any }
-> = async ({ messagePayload, rewards }) => {
+  { messagePayload: Partial<SendMessageRequest> }
+> = async ({ messagePayload }) => {
   const chatEnabled = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
   if (!chatEnabled) {
     throw new Error(`${CHATBOT_NAME} is disabled`);
   }
 
-  const { chatResponse, actionIntentResponse, questionIntentResponse, slotResponse } =
-    await fetchEndpoints(messagePayload);
+  const { chatResponse, actionIntentResponse } = await fetchEndpoints(messagePayload);
 
   if (!chatResponse.response) {
     throw new Error('Chatbot did not respond');
@@ -182,63 +58,52 @@ const sendMessageMutation: MutationFunction<
   // we will override the response if we detect an action intent
   const data: SendMessageResponse = { ...chatResponse };
 
-  if (
-    actionIntentResponse.classification &&
-    slotResponse.slots &&
-    actionIntentResponse.classification !== 'NONE'
-  ) {
-    // if so, return the action intent button, accompanied by hard-coded text acknowledging the intent
-    const actionIntents = handleActionIntent({
-      classification: actionIntentResponse.classification,
-      slots: slotResponse.slots,
-      rewards,
-      chains: [mainnet, base, arbitrum]
-    });
-
-    data.intents = actionIntents;
-  }
-
-  // next, check for question intents
-  if (questionIntentResponse.recommendations && questionIntentResponse.recommendations.length > 0) {
-    const questions = questionIntentResponse.recommendations.map(
-      (rec: Recommendation) => rec.metadata.content
-    );
-    data.suggestions = questions;
-  }
+  data.intents = actionIntentResponse.map(action => ({
+    title: action.title,
+    url: action.url,
+    intent_id: action.title
+  }));
 
   return data;
 };
 
 export const useSendMessage = () => {
-  const { chatHistory: history, setChatHistory, sessionId } = useChatContext();
-  const { loading: LOADING, error: ERROR, canceled: CANCELED } = MessageType;
+  const { setChatHistory, sessionId, chatHistory } = useChatContext();
   const chainId = useChainId();
-  const rewards = useAvailableTokenRewardContracts(chainId);
-  const { mutate } = useMutation<
-    SendMessageResponse,
-    Error,
-    { messagePayload: Partial<SendMessageRequest>; rewards: any }
-  >({
-    mutationFn: sendMessageMutation
-  });
+  const { isConnected } = useAccount();
+
+  const { loading: LOADING, error: ERROR, canceled: CANCELED } = MessageType;
+  const { mutate } = useMutation<SendMessageResponse, Error, { messagePayload: Partial<SendMessageRequest> }>(
+    {
+      mutationFn: sendMessageMutation
+    }
+  );
+
+  const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
+  const history = chatHistory
+    .filter(record => record.type !== CANCELED)
+    .map(record => ({
+      content: record.message,
+      role: record.user === UserType.user ? 'user' : 'assistant'
+    }));
+  const network = isConnected ? chainIdNameMapping[chainId as keyof typeof chainIdNameMapping] : 'ethereum';
 
   const sendMessage = (message: string) => {
     mutate(
       {
         messagePayload: {
           session_id: sessionId,
-          message,
-          history: history
-            .filter(record => record.type !== CANCELED)
-            .map(record => ({
-              ...record,
-              role: record.user === UserType.user ? 'user' : 'assistant'
-            }))
-        },
-        rewards
+          accepted_terms_hash: 'aaaaaaaa11111111bbbbbbbb22222222cccccccc33333333dddddddd44444444', // TODO, this is hardcoded for now
+          network,
+          messages: [...history.slice(-MAX_HISTORY_LENGTH), { role: 'user', content: message }]
+        }
       },
       {
         onSuccess: data => {
+          const intents = data.intents
+            ?.filter(chatIntent => isChatIntentAllowed(chatIntent, chainId))
+            .map(intent => ({ ...intent, url: processNetworkNameInUrl(intent.url) }));
+
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED
               ? prevHistory
@@ -248,8 +113,7 @@ export const useSendMessage = () => {
                     id: generateUUID(),
                     user: UserType.bot,
                     message: data.response,
-                    suggestions: data.suggestions,
-                    intents: data.intents
+                    intents
                   }
                 ];
           });
@@ -272,6 +136,7 @@ export const useSendMessage = () => {
         }
       }
     );
+
     setChatHistory(prevHistory => [
       ...prevHistory,
       { id: generateUUID(), user: UserType.user, message },

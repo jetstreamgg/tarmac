@@ -1,6 +1,5 @@
-import { cn } from '@/lib/utils';
-import { LinkExternal } from '@/shared/components/icons/LinkExternal';
-import { HStack } from '@/shared/components/ui/layout/HStack';
+import { cn } from '@widgets/lib/utils';
+import { LinkExternal } from '@widgets/shared/components/icons/LinkExternal';
 import React from 'react';
 
 export function ExternalLink({
@@ -28,10 +27,10 @@ export function ExternalLink({
       {showIcon && <LinkExternal className="mb-px ml-2 inline" boxSize={iconSize} />}
     </span>
   ) : (
-    <HStack className={cn('items-center gap-2', wrapperClassName)}>
+    <span className={cn('flex items-center gap-2', wrapperClassName)}>
       {children ? children : null}
       {showIcon && <LinkExternal boxSize={iconSize} />}
-    </HStack>
+    </span>
   );
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {

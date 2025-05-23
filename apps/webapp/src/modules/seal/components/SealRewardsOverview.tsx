@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { HStack } from '@/modules/layout/components/HStack';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -114,7 +115,7 @@ export function SealRewardsOverview() {
       error={error}
       errorComponent={
         <Text variant="large" className="text-text text-center">
-          <Trans>We couldn&amp;t load the Seal module rewards. Please try again later.</Trans>
+          <Trans>We couldn't load the Seal module rewards. Please try again later.</Trans>
         </Text>
       }
     >

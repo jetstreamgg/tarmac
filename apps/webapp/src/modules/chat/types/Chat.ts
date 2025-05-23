@@ -1,18 +1,15 @@
 import { MessageType, UserType } from '../constants';
 
 export interface SendMessageRequest {
-  api_key: string;
-  chatbot_id: string;
   session_id: string;
-  history: ChatHistory[];
-  message: string;
-  traceable: boolean;
+  accepted_terms_hash: string;
+  messages: ChatMessage[];
+  promptText: string;
+  network: string;
 }
 
 export interface SendMessageResponse {
-  message: string;
   response: string;
-  suggestions?: string[];
   intents?: ChatIntent[];
 }
 
@@ -21,16 +18,19 @@ export interface ChatHistory {
   user: UserType;
   message: string;
   type?: MessageType;
-  // TODO remove, temp until API is updated
   role?: string;
-  suggestions?: string[];
   intents?: ChatIntent[];
 }
 
+export interface ChatMessage {
+  content: string;
+  role: string;
+}
+
 export interface ChatIntent {
-  intent_description: string;
-  url: string;
   intent_id: string;
+  title: string;
+  url: string;
 }
 
 export enum SlotType {

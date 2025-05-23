@@ -1,0 +1,217 @@
+---
+description: React Performance Optimization Standards
+globs: *.{ts,tsx}
+---
+# Performance Optimization Standards
+
+Standards for optimizing React application performance.
+
+<rule>
+name: react_performance_standards
+description: Core performance optimization standards for React
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)(React\\.memo|useMemo|useCallback|Suspense)"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these React performance optimization standards:
+
+      ## Memoization
+      - Use React.memo for expensive renders
+      - Implement useMemo for costly computations
+      - Use useCallback for function props
+      - Avoid premature optimization
+      - Profile before optimizing
+
+      ## Example Patterns
+      ```typescript
+      // Proper memoization pattern
+      const MemoizedComponent = React.memo(({ data, onAction }: Props) => {
+        const processedData = useMemo(() => {
+          return expensiveOperation(data)
+        }, [data])
+
+        const handleAction = useCallback(() => {
+          onAction(processedData)
+        }, [onAction, processedData])
+
+        return (
+          <div onClick={handleAction}>
+            {processedData}
+          </div>
+        )
+      })
+      ```
+
+      ## Code Splitting
+      - Use dynamic imports
+      - Implement proper route splitting
+      - Use Suspense boundaries
+      - Handle loading states
+      - Split large components
+
+examples:
+  - input: |
+      // Bad
+      const Component = ({ data }) => {
+        const processed = heavyCalculation(data)
+        return <div>{processed}</div>
+      }
+
+      // Good
+      const Component = React.memo(({ data }) => {
+        const processed = useMemo(() => 
+          heavyCalculation(data), 
+          [data]
+        )
+        return <div>{processed}</div>
+      })
+    output: "Properly optimized component"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+
+<rule>
+name: dependency_optimization
+description: Standards for optimizing dependencies and hooks
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)use[A-Z]"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these dependency optimization standards:
+
+      ## Hook Dependencies
+      - Use proper dependency arrays
+      - Avoid unnecessary dependencies
+      - Handle stale closures properly
+      - Implement cleanup functions
+      - Use refs for mutable values
+
+      ## Example Pattern
+      ```typescript
+      // Proper hook optimization
+      const useOptimizedHook = (data: Data) => {
+        const dataRef = useRef(data)
+        
+        useEffect(() => {
+          dataRef.current = data
+        }, [data])
+
+        const handleData = useCallback(() => {
+          return processData(dataRef.current)
+        }, []) // No dependencies needed
+
+        return handleData
+      }
+      ```
+
+      ## State Management
+      - Batch state updates
+      - Use reducer for complex state
+      - Implement proper context splitting
+      - Avoid prop drilling
+      - Use state colocating
+
+examples:
+  - input: |
+      // Bad
+      useEffect(() => {
+        doSomething(prop1, prop2)
+      }) // Missing dependency array
+
+      // Good
+      useEffect(() => {
+        doSomething(prop1, prop2)
+        return () => cleanup()
+      }, [prop1, prop2])
+    output: "Properly optimized hook usage"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+
+<rule>
+name: web3_performance_optimization
+description: Standards for optimizing Web3 interactions
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)(useContract|useAccount|wagmi)"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these Web3 performance standards:
+
+      ## Contract Interactions
+      - Implement proper caching
+      - Use multicall when possible
+      - Batch blockchain reads
+      - Optimize polling intervals
+      - Handle RPC rate limits
+
+      ## Example Pattern
+      ```typescript
+      // Optimized contract reads
+      const useOptimizedContractRead = () => {
+        const { data, isLoading } = useContractRead({
+          address: CONTRACT_ADDRESS,
+          abi: CONTRACT_ABI,
+          functionName: 'getData',
+          cacheTime: 30_000,
+          enabled: !!address,
+          watch: true,
+          staleTime: 5_000,
+        })
+
+        return useMemo(() => ({
+          data,
+          isLoading
+        }), [data, isLoading])
+      }
+      ```
+
+      ## State Synchronization
+      - Implement proper websocket usage
+      - Handle network changes efficiently
+      - Optimize event listeners
+      - Use proper cleanup
+      - Handle reconnection logic
+
+examples:
+  - input: |
+      // Bad
+      const { data } = useContractRead({
+        address,
+        abi,
+        functionName: 'getData',
+      })
+
+      // Good
+      const { data } = useContractRead({
+        address,
+        abi,
+        functionName: 'getData',
+        cacheTime: 30_000,
+        staleTime: 5_000,
+        enabled: !!address,
+      })
+    output: "Properly optimized Web3 interaction"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 
 type VStackProps = React.HTMLAttributes<HTMLDivElement> & {
   gap?: number;

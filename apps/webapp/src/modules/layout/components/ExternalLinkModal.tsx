@@ -77,12 +77,16 @@ export const ExternalLinkModal: React.FC = () => {
           </Text>
           <div className="mt-4 flex w-full justify-between gap-6 sm:mt-0 sm:w-auto">
             <DialogClose asChild>
-              <Button variant="secondary" className="flex-1 border" onClick={() => handleCancel(false)}>
+              <Button
+                variant="secondary"
+                className="flex-1 border bg-transparent hover:bg-[rgb(17,16,31)] active:bg-[rgb(34,32,66)]"
+                onClick={() => handleCancel(false)}
+              >
                 <Text>Cancel</Text>
               </Button>
             </DialogClose>
             <DialogClose asChild>
-              <Button variant="default" className="flex-1" onClick={handleConfirm}>
+              <Button variant="primary" className="flex-1" onClick={handleConfirm}>
                 <Text>Continue</Text>
               </Button>
             </DialogClose>

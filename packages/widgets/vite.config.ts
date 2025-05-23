@@ -7,7 +7,7 @@ import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
 import pkg from './package.json';
 import { visualizer } from 'rollup-plugin-visualizer';
-import tailwindcss from 'tailwindcss';
+import tailwindcss from '@tailwindcss/vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 // Construct the regular expresion with the caret (^) to avoid matching local file imports
@@ -28,7 +28,7 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'jetstream-gg-widgets',
       fileName: 'jetstream-gg-widgets',
-      cssFileName: 'style',
+      cssFileName: 'globals',
       formats: ['es']
     },
     rollupOptions: {
@@ -49,7 +49,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src')
+      '@widgets': resolve(__dirname, './src')
     }
   },
   plugins: [
@@ -61,15 +61,11 @@ export default defineConfig({
     react({
       plugins: [['@lingui/swc-plugin', {}]]
     }),
+    tailwindcss(),
     lingui(),
     visualizer(),
     viteStaticCopy({
       targets: [{ src: 'src/public/fonts/*', dest: 'fonts' }]
     })
-  ],
-  css: {
-    postcss: {
-      plugins: [tailwindcss()]
-    }
-  }
+  ]
 });

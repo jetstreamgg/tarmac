@@ -1,23 +1,23 @@
-import { MotionCard, MotionCardContent } from '@/components/ui/card';
-import { Popover, PopoverAnchor, PopoverContent, PopoverPortal } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
+import { MotionCard, MotionCardContent } from '@widgets/components/ui/card';
+import { Popover, PopoverAnchor, PopoverContent, PopoverPortal } from '@widgets/components/ui/popover';
+import { Input } from '@widgets/components/ui/input';
 import { getTokenDecimals, Token } from '@jetstreamgg/hooks';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@widgets/components/ui/button';
+import { cn } from '@widgets/lib/utils';
 import { formatUnits, parseUnits } from 'viem';
 import { formatBigInt, truncateStringToFourDecimals } from '@jetstreamgg/utils';
 import { HStack } from '../layout/HStack';
-import { Text } from '@/shared/components/ui/Typography';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { VStack } from '../layout/VStack';
-import { createSvgCardMask } from '@/lib/svgMask';
+import { createSvgCardMask } from '@widgets/lib/svgMask';
 import { Wallet } from '../../icons/Wallet';
-import { tokenColors } from '@/shared/constants';
+import { tokenColors } from '@widgets/shared/constants';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence, motion } from 'framer-motion';
-import { positionAnimations } from '@/shared/animation/presets';
-import { easeOutExpo } from '@/shared/animation/timingFunctions';
-import { AnimationLabels } from '@/shared/animation/constants';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { easeOutExpo } from '@widgets/shared/animation/timingFunctions';
+import { AnimationLabels } from '@widgets/shared/animation/constants';
 import { TokenListItem } from './TokenListItem';
 import { TokenSelector } from './TokenSelector';
 import { useChainId } from 'wagmi';
@@ -242,7 +242,7 @@ export function TokenInput({
         <MotionCard
           ref={cardRef}
           className={cn(
-            'hover-in-before min-h-16 w-96 overflow-hidden rounded-2xl border-0 !pb-4',
+            'hover-in-before pb-4! min-h-16 w-96 overflow-hidden rounded-2xl border-0',
             className
           )}
           style={{
@@ -264,7 +264,7 @@ export function TokenInput({
                   <motion.div variants={positionAnimations}>
                     <Input
                       ref={inputRef}
-                      className="hideSpinButton"
+                      className="hide-spin-button placeholder:text-white/30"
                       value={inputValue !== '00' ? inputValue : '0'}
                       onChange={e => {
                         updateValue(e.target.value as `${number}`, e);

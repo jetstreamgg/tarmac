@@ -1,9 +1,14 @@
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@widgets/components/ui/accordion';
 import { Text } from '../Typography';
 import { FetchingSpinner } from '../spinner/FetchingSpinner';
 import { AnimatePresence, motion } from 'framer-motion';
-import { positionAnimations, positionAnimationsWithExit } from '@/shared/animation/presets';
-import { AnimationLabels } from '@/shared/animation/constants';
+import { positionAnimations, positionAnimationsWithExit } from '@widgets/shared/animation/presets';
+import { AnimationLabels } from '@widgets/shared/animation/constants';
 import { PopoverRateInfo } from '../PopoverRateInfo';
 import { HStack } from '../layout/HStack';
 import { ArrowDown } from '../../icons/ArrowDown';
@@ -20,7 +25,7 @@ type TransactionOverviewParams = {
         error?: boolean;
         className?: string;
         classNamePrev?: string;
-        tooltipText?: string;
+        tooltipText?: string | React.ReactNode;
       }[]
     | undefined;
 };
@@ -73,7 +78,7 @@ export function TransactionOverview({
                       </HStack>
 
                       {Array.isArray(value) && value.length >= 2 ? (
-                        <HStack className="flex-shrink-0 items-center">
+                        <HStack className="shrink-0 items-center">
                           <Text
                             className={`${error ? 'text-error' : classNamePrev || className} text-right text-sm`}
                           >

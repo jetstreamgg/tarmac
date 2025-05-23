@@ -1,19 +1,21 @@
-import { TokenInput } from '@/shared/components/ui/token/TokenInput';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { TOKENS, useVault, useSimulatedVault, getIlkName, Token } from '@jetstreamgg/hooks';
 import { math } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { SealModuleWidgetContext } from '../context/context';
-import { WidgetContext } from '@/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SealFlow } from '../lib/constants';
 
 export const Free = ({
   isConnectedAndEnabled,
-  sealedAmount
+  sealedAmount,
+  onChange
 }: {
   isConnectedAndEnabled: boolean;
   sealedAmount?: bigint;
+  onChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { address } = useAccount();
   const chainId = useChainId();
@@ -111,7 +113,14 @@ export const Free = ({
         tokenList={[TOKENS.mkr, TOKENS.sky]}
         balance={selectedToken === TOKENS.mkr ? mkrSealed : skySealed}
         value={selectedToken === TOKENS.mkr ? mkrToFree : skyToFree}
-        onChange={selectedToken === TOKENS.mkr ? setMkrToFree : setSkyToFree}
+        onChange={(val, event) => {
+          if (selectedToken === TOKENS.mkr) {
+            setMkrToFree(val);
+          } else {
+            setSkyToFree(val);
+          }
+          onChange?.(val, !!event);
+        }}
         onTokenSelected={option => {
           if (option.symbol !== selectedToken?.symbol) {
             setSelectedToken(option as Token);

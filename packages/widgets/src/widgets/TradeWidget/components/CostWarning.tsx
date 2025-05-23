@@ -1,6 +1,6 @@
 import React from 'react';
-import { Text } from '@/shared/components/ui/Typography';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { Checkbox } from '@widgets/components/ui/checkbox';
 import { MAX_FEE_PERCENTAGE_WITHOUT_WARNING, MAX_SLIPPAGE_WITHOUT_WARNING } from '../lib/constants';
 
 type CostWarningProps = {

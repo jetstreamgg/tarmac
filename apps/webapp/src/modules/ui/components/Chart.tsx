@@ -27,9 +27,9 @@ import { Trans } from '@lingui/react/macro';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Warning } from '@/modules/icons/Warning';
 
-export const dateFormat = 'MMM d';
-export const timeFormat = 'HH:mm';
-export const monthFormat = 'MMM';
+const dateFormat = 'MMM d';
+const timeFormat = 'HH:mm';
+const monthFormat = 'MMM';
 
 export type TimeFrame = 'd' | 'w' | 'm' | 'y' | 'all';
 
@@ -420,7 +420,7 @@ export function Chart({
     <>
       <Card
         data-testid={dataTestId}
-        className="bg-card-light relative h-[288px] overflow-hidden p-0 lg:h-[220px] lg:p-0"
+        className="bg-cardLight relative h-[288px] overflow-hidden p-0 lg:h-[220px] lg:p-0"
         ref={containerRef}
       >
         <CardHeader className="p-5 pb-0">

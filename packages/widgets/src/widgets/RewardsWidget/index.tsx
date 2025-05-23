@@ -7,9 +7,10 @@ import {
   useRewardsWithdraw,
   useRewardsClaim,
   useTokenAllowance,
-  useTokenBalance
+  useTokenBalance,
+  getTokenDecimals
 } from '@jetstreamgg/hooks';
-import { getEtherscanLink, useDebounce, formatBigInt } from '@jetstreamgg/utils';
+import { getTransactionLink, useDebounce, formatBigInt, useIsSafeWallet } from '@jetstreamgg/utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '../../shared/components/ui/widget/WidgetContainer';
 import { RewardsFlow, RewardsAction, RewardsScreen } from './lib/constants';
@@ -22,20 +23,20 @@ import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
 import { RewardsTransactionStatus } from './components/RewardsTransactionStatus';
 import { ManagePosition } from './components/ManagePosition';
-import { Heading } from '@/shared/components/ui/Typography';
+import { Heading } from '@widgets/shared/components/ui/Typography';
 import { RewardsOverview } from './components/RewardsOverview';
-import { Button } from '@/components/ui/button';
+import { Button } from '@widgets/components/ui/button';
 import { getValidatedState } from '../../lib/utils';
-import { parseUnits } from 'viem';
-import { WidgetButtons } from '@/shared/components/ui/widget/WidgetButtons';
-import { HStack } from '@/shared/components/ui/layout/HStack';
+import { formatUnits, parseUnits } from 'viem';
+import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowLeft } from 'lucide-react';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
-import { ErrorBoundary } from '@/shared/components/ErrorBoundary';
-import { useNotifyWidgetState } from '@/shared/hooks/useNotifyWidgetState';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
+import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CardAnimationWrapper } from '@/shared/animation/Wrappers';
-import { positionAnimations } from '@/shared/animation/presets';
+import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
+import { positionAnimations } from '@widgets/shared/animation/presets';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
@@ -54,12 +55,15 @@ export const RewardsWidget = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
-  referralCode
+  referralCode,
+  shouldReset = false
 }: RewardsWidgetProps) => {
+  const key = shouldReset ? 'reset' : undefined;
   return (
     <ErrorBoundary componentName="RewardsWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider key={key} locale={locale}>
         <RewardsWidgetWrapped
+          key={key}
           addRecentTransaction={addRecentTransaction}
           onConnect={onConnect}
           locale={locale}
@@ -68,7 +72,7 @@ export const RewardsWidget = ({
           externalWidgetState={externalWidgetState}
           onStateValidated={onStateValidated}
           onNotification={onNotification}
-          onWidgetStateChange={onWidgetStateChange}
+          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
           onExternalLinkClicked={onExternalLinkClicked}
           enabled={enabled}
           referralCode={referralCode}
@@ -96,6 +100,7 @@ const RewardsWidgetWrapped = ({
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
+  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [amount, setAmount] = useState(parseUnits(validatedExternalState?.amount || '0', 18));
@@ -142,9 +147,13 @@ const RewardsWidgetWrapped = ({
   });
 
   const debouncedAmount = useDebounce(amount);
-  const initialTabIndex = validatedExternalState?.tab === 'right' ? 1 : 0;
+  const initialTabIndex = validatedExternalState?.flow === RewardsFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const linguiCtx = useLingui();
+
+  useEffect(() => {
+    setTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
 
   const {
     setButtonText,
@@ -174,7 +183,7 @@ const RewardsWidgetWrapped = ({
           selectedRewardContract?.supplyToken.name ?? ''
         }`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -219,7 +228,7 @@ const RewardsWidgetWrapped = ({
           selectedRewardContract?.supplyToken.name ?? ''
         }`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -261,7 +270,7 @@ const RewardsWidgetWrapped = ({
           selectedRewardContract?.supplyToken.name ?? ''
         }`
       });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -300,7 +309,7 @@ const RewardsWidgetWrapped = ({
     contractAddress: selectedRewardContract?.contractAddress as `0x${string}`,
     onStart: (hash: string) => {
       addRecentTransaction?.({ hash, description: 'Claiming tokens' });
-      setExternalLink(getEtherscanLink(chainId, hash, 'tx'));
+      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
@@ -521,13 +530,13 @@ const RewardsWidgetWrapped = ({
   // Handle the error onClicks separately to keep it clean
   const errorOnClick = () => {
     return widgetState.action === RewardsAction.SUPPLY
-      ? supplyOnClick
+      ? supplyOnClick()
       : widgetState.action === RewardsAction.WITHDRAW
-        ? withdrawOnClick
+        ? withdrawOnClick()
         : widgetState.action === RewardsAction.APPROVE
-          ? approveOnClick
+          ? approveOnClick()
           : widgetState.action === RewardsAction.CLAIM
-            ? onClaimClick
+            ? onClaimClick()
             : undefined;
   };
 
@@ -553,7 +562,7 @@ const RewardsWidgetWrapped = ({
       : txStatus === TxStatus.SUCCESS
         ? nextOnClick
         : txStatus === TxStatus.ERROR
-          ? errorOnClick()
+          ? errorOnClick
           : widgetState.flow === RewardsFlow.SUPPLY && widgetState.action === RewardsAction.APPROVE
             ? approveOnClick
             : widgetState.flow === RewardsFlow.SUPPLY && widgetState.action === RewardsAction.SUPPLY
@@ -623,11 +632,36 @@ const RewardsWidgetWrapped = ({
     setWidgetState({
       ...widgetState,
       action: RewardsAction.OVERVIEW,
-      flow: null
+      flow: RewardsFlow.SUPPLY
     });
     setTxStatus(TxStatus.IDLE);
     setAmount(0n);
   };
+
+  // Reset widget state after switching network
+  useEffect(() => {
+    // Reset all state variables
+    setAmount(parseUnits(validatedExternalState?.amount || '0', 18));
+    setClaimAmount(0n);
+    setTxStatus(TxStatus.IDLE);
+    setExternalLink(undefined);
+
+    // Reset selected reward contract to initial value
+    setSelectedRewardContract(validatedExternalState?.selectedRewardContract);
+
+    // Reset widget state to overview screen
+    setWidgetState({
+      flow: null,
+      action: RewardsAction.OVERVIEW,
+      screen: RewardsScreen.ACTION
+    });
+
+    // Refresh data
+    mutateAllowance?.();
+    mutateTokenBalance?.();
+    mutateRewardsBalance?.();
+    mutateUserSuppliedBalance?.();
+  }, [chainId]);
 
   return (
     <WidgetContainer
@@ -654,7 +688,7 @@ const RewardsWidgetWrapped = ({
       rightHeader={rightHeaderComponent}
       footer={
         <AnimatePresence mode="popLayout" initial={false}>
-          {widgetState.action !== RewardsAction.OVERVIEW ? (
+          {widgetState.action !== RewardsAction.OVERVIEW && (
             <CardAnimationWrapper key="widget-footer" className="w-full">
               {widgetState.action !== RewardsAction.OVERVIEW && (
                 <WidgetButtons
@@ -666,8 +700,6 @@ const RewardsWidgetWrapped = ({
                 />
               )}
             </CardAnimationWrapper>
-          ) : (
-            <></>
           )}
         </AnimatePresence>
       }
@@ -706,10 +738,32 @@ const RewardsWidgetWrapped = ({
                   rewardsBalance={rewardsBalance}
                   claim={claim}
                   error={currentError}
-                  onChange={setAmount}
+                  onChange={(newValue: bigint, userTriggered?: boolean) => {
+                    setAmount(newValue);
+                    if (userTriggered && selectedRewardContract?.supplyToken) {
+                      // If newValue is 0n and it was triggered by user, it means they're clearing the input
+                      const formattedValue =
+                        newValue === 0n
+                          ? ''
+                          : formatUnits(
+                              newValue,
+                              getTokenDecimals(selectedRewardContract.supplyToken, chainId)
+                            );
+                      onWidgetStateChange?.({
+                        originAmount: formattedValue,
+                        txStatus,
+                        widgetState
+                      });
+                    }
+                  }}
                   onToggle={index => {
                     setTabIndex(index);
                     setAmount(0n);
+                    onWidgetStateChange?.({
+                      originAmount: '',
+                      txStatus,
+                      widgetState
+                    });
                   }}
                   onClaimClick={onClaimClick}
                   isConnectedAndEnabled={isConnectedAndEnabled}

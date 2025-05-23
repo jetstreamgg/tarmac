@@ -1,6 +1,6 @@
 import React from 'react';
-import { Button, ButtonVariant } from '@/components/ui/button';
-import { LoadingSpinner } from '@/shared/components/ui/spinner/LoadingSpinner';
+import { Button, ButtonVariant } from '@widgets/components/ui/button';
+import { LoadingSpinner } from '@widgets/shared/components/ui/spinner/LoadingSpinner';
 
 interface LoadingButtonProps {
   onClick?: (e?: React.MouseEvent<HTMLButtonElement>) => void;

@@ -5,9 +5,11 @@ import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
 
 async function fetchUpgradeHistory(
   urlSubgraph: string,
+  chainId: number,
   address?: string
 ): Promise<UpgradeHistory | undefined> {
   if (!address) return [];
@@ -50,7 +52,8 @@ async function fetchUpgradeHistory(
       blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
       transactionHash: d.transactionHash,
       module: ModuleEnum.UPGRADE,
-      type: TransactionTypeEnum.DAI_TO_USDS
+      type: TransactionTypeEnum.DAI_TO_USDS,
+      chainId
     })
   );
 
@@ -59,7 +62,8 @@ async function fetchUpgradeHistory(
     blockTimestamp: new Date(parseInt(w.blockTimestamp) * 1000),
     transactionHash: w.transactionHash,
     module: ModuleEnum.UPGRADE,
-    type: TransactionTypeEnum.USDS_TO_DAI
+    type: TransactionTypeEnum.USDS_TO_DAI,
+    chainId
   }));
 
   const mkrToSkyUpgrades: MkrSkyRow[] = response.mkrToSkyUpgrades.map((d: UpgradeResponse<MkrSkyRow>) => ({
@@ -68,7 +72,8 @@ async function fetchUpgradeHistory(
     blockTimestamp: new Date(parseInt(d.blockTimestamp) * 1000),
     transactionHash: d.transactionHash,
     module: ModuleEnum.UPGRADE,
-    type: TransactionTypeEnum.MKR_TO_SKY
+    type: TransactionTypeEnum.MKR_TO_SKY,
+    chainId
   }));
 
   const skyToMkrReverts: MkrSkyRow[] = response.skyToMkrReverts.map((w: UpgradeResponse<MkrSkyRow>) => ({
@@ -77,7 +82,8 @@ async function fetchUpgradeHistory(
     blockTimestamp: new Date(parseInt(w.blockTimestamp) * 1000),
     transactionHash: w.transactionHash,
     module: ModuleEnum.UPGRADE,
-    type: TransactionTypeEnum.SKY_TO_MKR
+    type: TransactionTypeEnum.SKY_TO_MKR,
+    chainId
   }));
 
   const combined = [...daiToUsdsUpgrades, ...usdsToDaiReverts, ...mkrToSkyUpgrades, ...skyToMkrReverts];
@@ -90,8 +96,9 @@ export function useUpgradeHistory({
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: UpgradeHistory } {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const currentChainId = useChainId();
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
     data,
@@ -100,8 +107,8 @@ export function useUpgradeHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && address),
-    queryKey: ['upgrade-history', urlSubgraph, address, chainId],
-    queryFn: () => fetchUpgradeHistory(urlSubgraph, address)
+    queryKey: ['upgrade-history', urlSubgraph, address, chainIdToUse],
+    queryFn: () => fetchUpgradeHistory(urlSubgraph, chainIdToUse, address)
   });
 
   return {

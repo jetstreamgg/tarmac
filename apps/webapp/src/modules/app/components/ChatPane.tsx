@@ -7,10 +7,9 @@ import { useEffect, useRef } from 'react';
 import { formatMessage } from '@/modules/chat/lib/formatMessage';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useDismissChatSuggestion } from '../hooks/useDismissChatSuggestion';
-import { ChatConfirmationModal } from '@/modules/chat/components/ChatConfirmationModal';
 
 export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
-  const { chatHistory } = useChatContext();
+  const { chatHistory, shouldShowConfirmationWarning } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,7 +19,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
         behavior: 'smooth'
       });
     }
-  }, [chatHistory]);
+  }, [chatHistory, shouldShowConfirmationWarning]);
 
   useDismissChatSuggestion();
 
@@ -42,7 +41,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
             ref={chatContainerRef}
             className="scrollbar-thin flex w-full flex-col gap-10 overflow-y-auto pr-2 xl:gap-8"
           >
-            {chatHistory.map(({ user, message, type, suggestions, intents }, index) => {
+            {chatHistory.map(({ user, message, type, intents }, index) => {
               const formattedMessage = formatMessage(message);
               const isLastMessage = index === chatHistory.length - 1 && index !== 0;
               const isFirstMessage = index === 0;
@@ -53,10 +52,10 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
                   message={formattedMessage}
                   type={type}
                   isLastMessage={isLastMessage}
-                  suggestions={suggestions}
                   intents={intents}
                   sendMessage={sendMessage}
                   showModifierRow={!isFirstMessage && isLastMessage}
+                  isFirstMessage={isFirstMessage}
                 />
               );
             })}
@@ -64,7 +63,6 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
           <ChatInput sendMessage={sendMessage} />
         </div>
       </div>
-      <ChatConfirmationModal />
     </motion.div>
   );
 };

@@ -1,14 +1,14 @@
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { MotionVStack } from '@/shared/components/ui/layout/MotionVStack';
-import { Text } from '@/shared/components/ui/Typography';
-import { StatsAccordionCard } from '@/shared/components/ui/card/StatsAccordionCard';
-import { positionAnimations } from '@/shared/animation/presets';
-import { StatsOverviewCardCore } from '@/shared/components/ui/card/StatsOverviewCardCore';
-import { MotionHStack } from '@/shared/components/ui/layout/MotionHStack';
-import { TokenIcon } from '@/shared/components/ui/token/TokenIcon';
-import { PopoverRateInfo } from '@/shared/components/ui/PopoverRateInfo';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { StatsOverviewCardCore } from '@widgets/shared/components/ui/card/StatsOverviewCardCore';
+import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { sUsdsL2Address, useTokenBalance, useOverallSkyData, Token, psm3L2Address } from '@jetstreamgg/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
 

@@ -9,7 +9,7 @@ export interface MakerHooksContextProps {
   };
 }
 
-export const MakerHooksContext = React.createContext<MakerHooksContextProps>({
+const MakerHooksContext = React.createContext<MakerHooksContextProps>({
   delegates: {
     ens: ''
   },

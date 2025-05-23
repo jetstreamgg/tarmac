@@ -1,5 +1,36 @@
 # @jetstreamgg/utils
 
+## 2.3.2
+
+### Patch Changes
+
+- 3a36381: Add Arbitrum copy and update some of the Base copy
+- 3addddd: handle multi-network balances
+
+## 2.3.1
+
+### Patch Changes
+
+- d5487a2: Update Tailwind to v4
+- 7aea06e: Relocate Lingui config and locale files
+- 181f01e: add arb tenderly testnet, and update helipad to handle it
+- c0aca84: Remove unused code and dependencies
+- a39a8b7: Add support for importing source files directly in dev mode for faster HMR
+
+## 2.3.0
+
+### Minor Changes
+
+- 2c942d1: Remove boosted rewards code
+- 3886a15: Add support for Safe wallet trades
+
+### Patch Changes
+
+- b247f30: Add a "my rewards" section
+- 3c179d8: Update wagmi versions
+- 8896c9d: Update dependencies, update eslint major version, migrate config, fix linting issues
+- cd365d9: Bump dependencies
+
 ## 2.2.0
 
 ### Minor Changes

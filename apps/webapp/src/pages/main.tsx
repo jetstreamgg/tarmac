@@ -4,7 +4,6 @@ import { ConfigProvider } from '../modules/config/context/ConfigContext';
 import { App } from './App';
 import { ErrorBoundary } from '../modules/layout/components/ErrorBoundary';
 
-import '@jetstreamgg/widgets/style.css';
 import '../globals.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

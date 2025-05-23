@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { WidgetState } from '@/shared/types/widgetState';
-import { TxStatus } from '@/shared/constants';
+import { WidgetState } from '@widgets/shared/types/widgetState';
+import { TxStatus } from '@widgets/shared/constants';
 import { I18nWidgetProvider } from './I18nWidgetProvider';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@widgets/components/ui/tooltip';
 import { Token } from '@jetstreamgg/hooks';
 
 export interface WidgetContextProps {

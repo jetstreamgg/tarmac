@@ -1,5 +1,5 @@
-import { PopoverTrigger } from '@/components/ui/popover';
-import { Text } from '@/shared/components/ui/Typography';
+import { PopoverTrigger } from '@widgets/components/ui/popover';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { HStack } from '../layout/HStack';
 import { TokenIcon } from './TokenIcon';
 import { ChevronDown } from 'lucide-react';
@@ -31,7 +31,7 @@ export function TokenSelector({
     >
       {token ? (
         <HStack className={`text-text ${disabled ? '' : 'cursor-pointer'} items-center justify-end`} gap={1}>
-          <TokenIcon className="mr-1 h-6 w-6 text-black" fallbackClassName="text-[9px]" token={token} />
+          <TokenIcon className="mr-2 h-6 w-6 text-black" fallbackClassName="text-[9px]" token={token} />
           <Text>{token.symbol}</Text>
           {showChevron && (
             <ChevronDown className="chevron-down text-textDesaturated h-6 w-6 shrink-0 transition-transform duration-200" />

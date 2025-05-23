@@ -19,9 +19,15 @@ interface WidgetNavigationProps {
   widgetContent: WidgetContent;
   intent?: Intent;
   children?: React.ReactNode;
+  hideTabs?: boolean;
 }
 
-export function WidgetNavigation({ widgetContent, intent, children }: WidgetNavigationProps): JSX.Element {
+export function WidgetNavigation({
+  widgetContent,
+  intent,
+  children,
+  hideTabs
+}: WidgetNavigationProps): JSX.Element {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,7 +90,9 @@ export function WidgetNavigation({ widgetContent, intent, children }: WidgetNavi
     : `${baseTabContentClasses} p-6 pr-3.5 md:p-3 md:pr-0.5 md:pt-2 xl:p-4 xl:pr-1.5`;
   // If it's mobile, use the widget navigation row height + the height of the webiste header
   // as we're using 100vh for the content style, if not, just use the height of the navigation row
-  const headerHeight = (isMobile ? 63 + 56 : 66) + (contentMarginTop + contentPaddingTop) * 4;
+  // If the tab list is hidden, don't count it's height
+  const headerHeight =
+    (isMobile ? (hideTabs ? 56 : 63 + 56) : 66) + (contentMarginTop + contentPaddingTop) * 4;
   const topOffset = headerHeight;
   const style = isMobile
     ? { height: `calc(100dvh - ${topOffset + (showLinkedAction ? laExtraHeight : 0)}px)` }
@@ -107,9 +115,7 @@ export function WidgetNavigation({ widgetContent, intent, children }: WidgetNavi
   return (
     <Tabs
       ref={containerRef}
-      className={
-        'w-full md:flex md:min-w-[352px] md:max-w-[440px] md:flex-col md:gap-8 lg:min-w-[416px] lg:max-w-[416px] xl:p-1'
-      }
+      className="w-full md:flex md:min-w-[352px] md:max-w-[440px] md:flex-col lg:min-w-[416px] lg:max-w-[416px] xl:p-1"
       defaultValue={Intent.BALANCES_INTENT}
       onValueChange={handleWidgetChange}
       value={intent}
@@ -119,16 +125,16 @@ export function WidgetNavigation({ widgetContent, intent, children }: WidgetNavi
       <motion.div layout transition={{ layout: { duration: 0 } }}>
         {/* TODO justify-around only when restricted */}
         <TabsList
-          className={`${isMobile ? 'space-x-1' : ''} sticky top-0 z-20 flex w-full justify-around rounded-none rounded-t-3xl border-b p-3 backdrop-blur-2xl md:border-none md:p-0 md:backdrop-filter-none`}
+          className={`sticky top-0 z-20 flex w-full justify-around rounded-none rounded-t-3xl border-b p-3 backdrop-blur-2xl md:border-none md:p-0 md:backdrop-filter-none ${hideTabs ? 'hidden' : ''}`}
           data-testid="widget-navigation"
         >
           {widgetContent.map(([widgetIntent, label, icon, , comingSoon, options]) => (
-            <div key={widgetIntent}>
+            <div key={widgetIntent} className="flex grow basis-[15%] justify-center">
               <TabsTrigger
                 variant="icons"
                 value={widgetIntent}
                 className={cn(
-                  'text-textSecondary data-[state=active]:text-text px-1 md:px-2',
+                  'text-textSecondary data-[state=active]:text-text w-full px-1 md:px-2',
                   'before:opacity-0',
                   'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)] disabled:before:opacity-0 disabled:hover:before:opacity-0',
                   tabGlowClasses,
@@ -137,13 +143,13 @@ export function WidgetNavigation({ widgetContent, intent, children }: WidgetNavi
                 disabled={options?.disabled || false}
               >
                 {!isMobile && icon({ color: 'inherit' })}
-                <Text variant="small" className="text-inherit">
+                <Text variant="small" className="leading-4 text-inherit">
                   <Trans>{label}</Trans>
                 </Text>
                 {comingSoon && (
                   <Text
                     variant="small"
-                    className="bg-primary text-textSecondary absolute left-1/2 top-0 rounded-full px-1.5 py-0 md:px-2 md:py-1"
+                    className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-textSecondary absolute left-1/2 top-0 rounded-full px-1.5 py-0 md:px-2 md:py-1"
                   >
                     <Trans>Soon</Trans>
                   </Text>

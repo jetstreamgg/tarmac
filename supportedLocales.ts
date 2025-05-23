@@ -1,4 +1,4 @@
-export const supportedLocales = [
+const supportedLocales = [
   { value: 'en', name: 'English' },
   { value: 'es', name: 'Español' },
   { value: 'es-AR', name: 'Español (Argentina)' },

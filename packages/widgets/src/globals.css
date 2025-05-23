@@ -1,22 +1,128 @@
-@font-face {
-  font-family: 'GraphikStd';
-  src: url('./fonts/GraphikRegular.otf') format('opentype');
+@import 'tailwindcss';
+
+@plugin 'tailwindcss-animate';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-graphik: GraphikStd;
+  --font-circle: CircleStd;
+
+  --color-text: var(--primary-white);
+  --color-textSecondary: var(--transparent-white-overlay-40);
+  --color-bullish: var(--service-green);
+  --color-textEmphasis: var(--primary-pink);
+  --color-textMuted: var(--transparent-white-overlay-15);
+  --color-error: var(--service-red);
+  --color-textDimmed: rgba(255, 255, 255, 0.25);
+  --color-textDesaturated: rgba(255, 255, 255, 0.5);
+  --color-containerDark: var(--transparent-black-85);
+  --color-container: var(--transparent-black-65);
+  --color-surface: var(--transparent-white-25);
+  --color-surfaceAlt: var(--transparent-white-20);
+  --color-panel: var(--transparent-white-25);
+  --color-selectBackground: var(--transparent-white-25);
+  --color-selectActive: var(--transparent-white-40);
+  --color-widget: transparent;
+  --color-primary: transparent;
+  --color-primaryHover: hsla(300, 100%, 25%, 0.5);
+  --color-primaryActive: hsla(300, 100%, 25%, 0.2);
+  --color-primaryFocus: hsla(300, 100%, 25%, 0.7);
+  --color-primaryDisabled: hsla(200, 100%, 25%, 1);
+  --color-secondary: var(--transparent-black-20);
+  --color-secondaryHover: var(--transparent-black-20);
+  --color-secondaryActive: var(--transparent-black-20);
+  --color-secondaryFocus: var(--transparent-black-20);
+  --color-secondaryDisabled: var(--transparent-black-20);
+  --color-tab: var(--transparent-white-70);
+  --color-tabPrimary: var(--transparent-white-40);
+  --color-card: var(--transparent-white-15);
+  --color-border: var(--transparent-white-15);
+  --color-borderActive: --transparent-white-25;
+  --color-cardHover: var(--service-purple-5);
+  --color-brand: rgb(var(--brand-purple));
+  --color-brandLight: rgb(var(--brand-light-purple));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary-start: rgba(61, 47, 164);
+  --color-primary-end: rgba(76, 61, 183);
+  --color-primary-bright-start: rgba(87, 59, 246);
+  --color-primary-bright-end: rgba(102, 72, 246);
+  --color-primary-alt-start: rgba(98, 89, 191);
+  --color-primary-alt-end: rgba(123, 113, 204);
+
+  --gradient-position: 116.48% 116.48% at 50% 2.27%;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  --ease-in-expo: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.03, 1);
+  --ease-in-out-expo: cubic-bezier(0.87, 0, 0.13, 1);
+  --ease-bezier-mouse: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --transition-duration-250: 250ms;
+  --transition-duration-350: 350ms;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
 }
 
-@font-face {
-  font-family: 'CircleStd';
-  src: url('./fonts/CircularStd-Book.otf') format('opentype');
-}
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
 @layer base {
-  @property --gradient-opacity {
-    syntax: '<percentage>';
-    inherits: false;
-    initial-value: 100%;
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  @font-face {
+    font-family: 'GraphikStd';
+    src: URL('./fonts/GraphikRegular.otf') format('opentype');
+  }
+
+  @font-face {
+    font-family: 'CircleStd';
+    src: URL('./fonts/CircularStd-Book.otf') format('opentype');
+  }
+
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
   }
 
   :root {
@@ -28,29 +134,37 @@
     /* NOTE: in the radial gradients, the color stop percentages needs to be placed after the color value.
        TODO: update the rest of the gradients to this format
      */
-    --primary-purple-40: linear-gradient(#ffffff4d, #ffffff4d), linear-gradient(#4331e966, #4331e966),
+    --primary-purple-40:
+      linear-gradient(#ffffff4d, #ffffff4d), linear-gradient(#4331e966, #4331e966),
       radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 100%);
 
     /* --primary-purple-40: #ffffff4d, #4331e966,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1)); */
-    --primary-purple-100: #ffffffb3, #1a1855ff,
+    --primary-purple-100:
+      #ffffffb3, #1a1855ff,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
-    --primary-purple-5: #ffffffff, #4331e90d,
+    --primary-purple-5:
+      #ffffffff, #4331e90d,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
     --primary-pink: #b68effff;
     --primary-white: #ffffffff;
-    --primary-glass-stroke: linear-gradient(90deg, 0% rgba(255, 255, 255, 1), 100% rgba(255, 255, 255, 0)),
-      #ffffff80;
+    --primary-glass-stroke:
+      linear-gradient(90deg, 0% rgba(255, 255, 255, 1), 100% rgba(255, 255, 255, 0)), #ffffff80;
 
-    --service-purple-25: #ffffff4d, #4331e940,
+    --service-purple-25:
+      #ffffff4d, #4331e940,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
-    --service-purple-15: #ffffff4d, #4331e926,
+    --service-purple-15:
+      #ffffff4d, #4331e926,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
-    --service-purple-5: #ffffff4d, #4331e90d,
+    --service-purple-5:
+      #ffffff4d, #4331e90d,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
-    --service-purple-0: #ffffff4d, #4331e9ff,
+    --service-purple-0:
+      #ffffff4d, #4331e9ff,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
-    --service-focused: #ffffffe6, #312e9dff,
+    --service-focused:
+      #ffffffe6, #312e9dff,
       radial-gradient(50% 50% at 50% 50%, 0% rgba(255, 255, 255, 0), 100% rgba(255, 255, 255, 1));
     --service-green: #1dd9ba;
     --service-chart-green: linear-gradient(90deg, 0% rgba(0, 161, 103, 1), 100% rgba(0, 161, 103, 0));
@@ -77,54 +191,64 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
   }
-  body {
-    @apply bg-background text-foreground;
+  @media (width >= 912px) {
+    max-width: 912px;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
   }
 }
 
-@layer utilities {
+@utility scrollbar-hidden {
   /* Hide scrollbar for Chrome, Safari, and Opera */
-  .scrollbar-hidden::-webkit-scrollbar {
+  &::-webkit-scrollbar {
     width: 0;
   }
+}
 
-  .scrollbar-thin::-webkit-scrollbar {
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
+  scrollbar-gutter: stable;
 
-  .scrollbar-thin {
-    scrollbar-gutter: stable;
-  }
-
-  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  &:hover::-webkit-scrollbar-thumb {
     box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
     border: solid 3px transparent;
     border-radius: 5px;
   }
+}
 
-  [data-state='open'] .chevron-down {
+@utility chevron-down {
+  [data-state='open'] & {
     transform: rotate(180deg);
     transition: transform 0.2s ease-in-out; /* Smooth transition */
   }
+}
 
+@utility hide-spin-button {
   /* InputStyles.module.css */
-  .hideSpinButton {
-    -webkit-appearance: none;
-    -moz-appearance: textfield;
-  }
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
 
-  .hideSpinButton::-webkit-inner-spin-button,
-  .hideSpinButton::-webkit-outer-spin-button {
+  &::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
 
-  .hover-in-before {
-    @apply before:duration-250 hover:before:duration-350 before:ease-out-expo relative before:absolute before:bottom-0 before:left-0 before:right-0 before:top-0 before:z-[-1] before:bg-[rgba(255,255,255,0.05)] before:opacity-0 before:transition-opacity before:content-[''] hover:before:opacity-100;
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
+}
+
+@utility hover-in-before {
+  @apply before:duration-250 hover:before:duration-350 before:ease-out-expo relative before:absolute before:bottom-0 before:left-0 before:right-0 before:top-0 before:z-[-1] before:bg-[rgba(255,255,255,0.05)] before:opacity-0 before:transition-opacity before:content-[''] hover:before:opacity-100;
 }

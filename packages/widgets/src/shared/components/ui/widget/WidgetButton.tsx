@@ -1,7 +1,7 @@
 import { useContext } from 'react';
-import { WidgetContext } from '@/context/WidgetContext';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { LoadingButton } from '@/shared/components/ui/LoadingButton';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { LoadingButton } from '@widgets/shared/components/ui/LoadingButton';
 
 export const WidgetButton = ({
   onClickAction,

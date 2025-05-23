@@ -1,0 +1,177 @@
+---
+description: Web3 Integration Standards for React Applications
+globs: *.{ts,tsx}
+---
+# Web3 Integration Standards
+
+Standards for implementing Web3 functionality using Wagmi, Viem, and RainbowKit.
+
+<rule>
+name: web3_integration_standards
+description: Standards for Web3 integration in React applications
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)(wagmi|viem|rainbowkit|useContract|useAccount)"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these Web3 integration standards:
+
+      ## Wallet Connection
+      - Use RainbowKit for wallet connections
+      - Implement proper connection state handling
+      - Handle wallet switching events
+      - Support multiple chains
+      - Implement proper disconnection cleanup
+
+      ## Contract Interactions
+      - Use Wagmi hooks for contract reads/writes
+      - Implement proper error boundaries
+      - Handle transaction lifecycle states
+      - Use proper typing for contract ABIs
+      - Implement proper gas estimation
+
+      ## Transaction Handling
+      ```typescript
+      // Proper transaction handling pattern
+      const { write, isLoading, isSuccess, isError } = useContractWrite({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'function',
+        onSuccess: (data) => {
+          // Handle success
+        },
+        onError: (error) => {
+          // Handle error
+        }
+      })
+      ```
+
+      ## Error Handling
+      - Implement user-friendly error messages
+      - Handle network errors gracefully
+      - Provide transaction status feedback
+      - Handle wallet rejection cases
+      - Implement proper fallbacks
+
+      ## Performance & Security
+      - Cache contract reads appropriately
+      - Implement proper memo patterns
+      - Validate transaction inputs
+      - Handle chain ID mismatches
+      - Implement proper signing validation
+
+examples:
+  - input: |
+      // Bad
+      const sendTransaction = async () => {
+        try {
+          await contract.write()
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
+      // Good
+      const { write, isLoading, isSuccess, error } = useContractWrite({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'function',
+        onSuccess: (data) => {
+          toast.success('Transaction successful')
+        },
+        onError: (error) => {
+          toast.error(getErrorMessage(error))
+        }
+      })
+
+      const handleTransaction = async () => {
+        if (!write) return
+        await write()
+      }
+    output: "Properly implemented Web3 transaction handling"
+
+  - input: |
+      // Bad
+      const { data } = useContractRead({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'getData'
+      })
+
+      // Good
+      const { data, isError, isLoading, refetch } = useContractRead({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'getData',
+        enabled: !!address,
+        cacheTime: 30_000,
+        watch: true,
+      })
+    output: "Proper contract read implementation with caching and watching"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
+
+<rule>
+name: viem_usage_standards
+description: Standards for using Viem for low-level blockchain operations
+filters:
+  - type: file_extension
+    pattern: "\\.(ts|tsx)$"
+  - type: content
+    pattern: "(?s)import.*viem"
+
+actions:
+  - type: suggest
+    message: |
+      Follow these Viem usage standards:
+
+      ## Client Configuration
+      - Use appropriate transport layer
+      - Configure proper chain settings
+      - Implement proper retry logic
+      - Handle RPC rate limiting
+      - Use appropriate batch settings
+
+      ## Data Formatting
+      - Use proper BigInt handling
+      - Implement proper hex encoding
+      - Use appropriate ABI encoding
+      - Handle address checksums
+      - Format transaction data correctly
+
+      ## Custom Contract Interactions
+      ```typescript
+      // Proper Viem contract interaction pattern
+      const client = createPublicClient({
+        chain: mainnet,
+        transport: http()
+      })
+
+      const data = await client.readContract({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'function',
+        args: [arg1, arg2]
+      })
+      ```
+
+examples:
+  - input: |
+      // Bad
+      const amount = "1000000000000000000"
+
+      // Good
+      const amount = parseEther("1.0")
+    output: "Proper BigInt handling with Viem"
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

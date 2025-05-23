@@ -4,10 +4,15 @@ export enum ExplorerName {
   ETHERSCAN = 'Etherscan',
   COW_EXPLORER = 'CoW Explorer',
   BASESCAN = 'Basescan',
-  ARBITRUM_EXPLORER = 'Arbiscan'
+  ARBITRUM_EXPLORER = 'Arbiscan',
+  SAFE = 'Safe Wallet'
 }
 
-export const getExplorerName = (chainId: number) => {
+export const getExplorerName = (chainId: number, isSafeWallet: boolean) => {
+  if (isSafeWallet) {
+    return ExplorerName.SAFE;
+  }
+
   switch (chainId) {
     case chainIdMap.base:
     case chainIdMap.tenderlyBase:

@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { getEtherscanLink, formatAddress, getCowExplorerLink, getExplorerName } from '@jetstreamgg/utils';
-import { Card } from '@/components/ui/card';
-import { LinkExternal } from '@/shared/components/icons/LinkExternal';
-import { Text } from '@/shared/components/ui/Typography';
+import { Card } from '@widgets/components/ui/card';
+import { LinkExternal } from '@widgets/shared/components/icons/LinkExternal';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { getPositive } from '../lib/getPositive';
 import { ModuleEnum, TransactionTypeEnum, CombinedHistoryItem } from '@jetstreamgg/hooks';
-import { getIcon } from '../lib/getIcon';
+import { getHistoryIconSource } from '../lib/getHistoryIconSource';
 import { getTitle } from '../lib/getTitle';
-import { ExternalLink } from '@/shared/components/ExternalLink';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { getHistoryRightText } from '../lib/getHistoryRightText';
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/utils';
+import { Avatar, AvatarImage } from '@widgets/components/ui/avatar';
 
 interface BalancesHistoryItemProps {
   transactionHash: string;
@@ -22,18 +23,6 @@ interface BalancesHistoryItemProps {
   item: CombinedHistoryItem;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
-
-interface IconWrapperProps {
-  chainId?: number;
-  children: React.ReactNode;
-}
-
-const IconWrapper: React.FC<IconWrapperProps> = ({ chainId, children }) => {
-  const baseClasses = 'mr-3';
-  const ethereumClasses =
-    'mr-3 bg-surface inline-flex h-8 w-8 min-w-8 items-center justify-center rounded-full text-white';
-  return <div className={`${!isBaseChainId(chainId || 1) ? ethereumClasses : baseClasses}`}>{children}</div>;
-};
 
 export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   transactionHash,
@@ -48,11 +37,13 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const href =
-    type === TransactionTypeEnum.TRADE && !isBaseChainId(chainId || 1)
+    type === TransactionTypeEnum.TRADE && !isL2ChainId(chainId || 1)
       ? getCowExplorerLink(chainId || 1, transactionHash)
       : getEtherscanLink(chainId || 1, transactionHash, 'tx');
-  const explorerName = getExplorerName(chainId || 1);
+
+  const explorerName = getExplorerName(chainId || 1, false);
   const positive = getPositive({ type });
+  const iconSrc = getHistoryIconSource({ type, module, chainId: chainId || 1 });
   return (
     <ExternalLink
       href={href}
@@ -68,7 +59,11 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
         className="w-full"
       >
         <div className="flex items-center">
-          <IconWrapper chainId={chainId}>{getIcon({ type, module, chainId: chainId || 1 })}</IconWrapper>
+          <div className="mr-3">
+            <Avatar className="bg-transparent">
+              <AvatarImage src={iconSrc} alt={getTitle({ type, module })} />
+            </Avatar>
+          </div>
           <div className="flex w-full items-center justify-between">
             <div>
               <Text>{getTitle({ type, module })}</Text>
@@ -76,7 +71,7 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
                 <div className="text-textEmphasis flex items-center">
                   <Text variant="small" className="mr-[7px]">
                     View on
-                    {module === ModuleEnum.TRADE && !isBaseChainId(chainId || 1)
+                    {module === ModuleEnum.TRADE && !isL2ChainId(chainId || 1)
                       ? ' Cow Explorer'
                       : ` ${explorerName}`}
                   </Text>

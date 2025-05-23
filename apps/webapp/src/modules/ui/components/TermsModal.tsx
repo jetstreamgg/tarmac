@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTermsModal } from '../context/TermsModalContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import termsMarkdown from '@/content/terms.md?raw'; //https://vitejs.dev/guide/assets#importing-asset-as-string
@@ -109,19 +109,21 @@ export function TermsModal() {
       {isCheckingTerms || signStatus === 'loading' ? (
         <DialogContent className="bg-containerDark max-w-[300px]">
           <div className="flex items-center justify-center p-4">
-            <Text className="text-text mr-2 text-center">
-              <Trans>Please wait...</Trans>
-            </Text>
+            <DialogTitle asChild>
+              <Text className="text-text mr-2 text-center">
+                <Trans>Please wait...</Trans>
+              </Text>
+            </DialogTitle>
             <LoadingSpinner />
           </div>
         </DialogContent>
       ) : (
         <DialogContent className="bg-containerDark max-h-[95dvh] overflow-y-auto">
-          <DialogHeader>
+          <DialogTitle asChild>
             <Text className="text-text text-center text-[26px] sm:text-[28px] md:text-[32px]">
               <Trans>Legal Terms</Trans>
             </Text>
-          </DialogHeader>
+          </DialogTitle>
           <Card className="mx-auto max-h-[256px] w-full overflow-y-auto bg-[#181720] p-3 sm:max-h-[432px] sm:p-4">
             <TermsMarkdownRenderer markdown={termsMarkdown} />
             <div ref={endOfTermsRef} data-testid="end-of-terms" />
@@ -163,14 +165,18 @@ export function TermsModal() {
           )}
           <div className="flex w-full justify-between gap-4 sm:mt-0 sm:w-auto">
             <DialogClose asChild>
-              <Button variant="secondary" className="flex-1 border" onClick={handleReject}>
+              <Button
+                variant="secondary"
+                className="flex-1 border bg-transparent hover:bg-[rgb(17,16,31)] active:bg-[rgb(34,32,66)]"
+                onClick={handleReject}
+              >
                 <Text>
                   <Trans>Reject</Trans>
                 </Text>
               </Button>
             </DialogClose>
             <Button
-              variant="default"
+              variant="primary"
               className="flex-1"
               onClick={handleAgreeAndSign}
               disabled={!isChecked || signStatus === 'signing'}

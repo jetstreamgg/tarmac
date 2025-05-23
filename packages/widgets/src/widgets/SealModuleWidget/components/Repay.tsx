@@ -1,4 +1,4 @@
-import { TokenInput } from '@/shared/components/ui/token/TokenInput';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import {
   getIlkName,
   getTokenDecimals,
@@ -14,7 +14,7 @@ import {
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
 import { SealModuleWidgetContext } from '../context/context';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import {
   WAD_PRECISION,
   captitalizeFirstLetter,
@@ -24,7 +24,7 @@ import {
   useDebounce
 } from '@jetstreamgg/utils';
 import { formatUnits } from 'viem';
-import { RiskSlider } from '@/shared/components/ui/RiskSlider';
+import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor } from '../lib/utils';
 import { useAccount, useChainId } from 'wagmi';
 import { useSealExitFee } from '@jetstreamgg/hooks';
@@ -155,7 +155,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Exit fee`,
           value:
-            hasPositions && exitFee
+            hasPositions && typeof exitFee === 'bigint'
               ? [
                   `${formatBigInt((existingColAmount - newCollateralAmount) * exitFee, {
                     unit: WAD_PRECISION * 2
@@ -166,7 +166,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Exit fee percentage`,
           value:
-            hasPositions && exitFee
+            hasPositions && typeof exitFee === 'bigint'
               ? [`${Number(formatUnits(exitFee * 100n, WAD_PRECISION)).toFixed(2)}%`]
               : ''
         },
@@ -206,7 +206,8 @@ const PositionManagerOverviewContainer = ({
       minDebtNotMet,
       simulatedVault?.delayedPrice,
       formattedMinBorrowable,
-      formattedMaxBorrowable
+      formattedMaxBorrowable,
+      exitFee
     ]
   );
 
@@ -294,7 +295,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
   const chainId = useChainId();
   const ilkName = getIlkName(chainId);
 
-  const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId] });
+  const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId], chainId });
 
   const {
     setIsBorrowCompleted,

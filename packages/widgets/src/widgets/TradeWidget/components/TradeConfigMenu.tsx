@@ -8,15 +8,15 @@ import {
   ETH_SLIPPAGE_STORAGE_KEY,
   ERC_SLIPPAGE_STORAGE_KEY
 } from '../lib/constants';
-import { Settings as SettingsIcon } from '@/shared/components/icons/Icons';
+import { Settings as SettingsIcon } from '@widgets/shared/components/icons/Icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { VStack } from '@/shared/components/ui/layout/VStack';
-import { Heading, Text } from '@/shared/components/ui/Typography';
-import { HStack } from '@/shared/components/ui/layout/HStack';
-import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { WidgetContext } from '@/context/WidgetContext';
+import { VStack } from '@widgets/shared/components/ui/layout/VStack';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
+import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@widgets/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { verifySlippage } from '../lib/utils';
 
 type PropTypes = {
@@ -52,7 +52,7 @@ export const TradeConfigMenu = ({
   // we can't use a Button inside PopoverTrigger because PopoverTrigger is already a button
   // this applies all the button styles to a div inside the PopoverTrigger
   const paginationButtonClasses =
-    'flex justify-center text-textDesaturated text-base leading-normal bg-primary [--gradient-opacity:0%] rounded-full hover:[--gradient-opacity:40%] hover:text-text active:text-text active:[--gradient-opacity:20%] data-[state=open]:[--gradient-opacity:80%] data-[state=open]:text-text h-min p-1.5 transition-gradient-and-colors duration-250 ease-out-expo';
+    'flex justify-center text-textDesaturated text-base leading-normal bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 rounded-full hover:from-primary-start/40 hover:to-primary-end/40 hover:text-text active:text-text active:from-primary-start/20 active:to-primary-end/20 data-[state=open]:from-primary-start/80 data-[state=open]:to-primary-end/80 data-[state=open]:text-text h-min p-1.5 transition duration-250 ease-out-expo';
 
   return widgetState.flow === TradeFlow.TRADE && widgetState.screen === TradeScreen.ACTION ? (
     <Popover>
@@ -120,7 +120,7 @@ export const TradeConfigMenu = ({
                   <HStack className="border-selectActive flex items-center rounded-xl border p-2">
                     <input
                       placeholder={t`Custom`}
-                      className="bg-background ring-offset-background placeholder:text-surface text-text w-[55px] text-right text-[14px] leading-tight [appearance:textfield] focus-visible:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="bg-background ring-offset-background placeholder:text-surface text-text focus-visible:outline-hidden w-[55px] text-right text-[14px] leading-tight [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       type="number"
                       min={slippageConfig.min}
                       max={slippageConfig.max}

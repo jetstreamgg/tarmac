@@ -3,15 +3,6 @@ import { TrustLevel } from './hooks';
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 export const ZERO_BYTES32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
-// WAD = 1 with 18 zeroes
-export const WAD = BigInt('1000000000000000000');
-// RAY = 1 with 27 zeroes
-export const RAY = BigInt('1000000000000000000000000000');
-// RAD = 1 with 45 zeroes
-export const RAD = BigInt('1000000000000000000000000000000000000000000000');
-
-export const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
-
 export const TRUST_LEVELS: Record<TrustLevelEnum, TrustLevel> = {
   0: {
     level: 0,
@@ -71,7 +62,8 @@ export enum ModuleEnum {
   UPGRADE = 'UPGRADE',
   TRADE = 'TRADE',
   REWARDS = 'REWARDS',
-  SEAL = 'SEAL'
+  SEAL = 'SEAL',
+  STAKE = 'STAKE'
 }
 
 export enum TransactionTypeEnum {
@@ -93,5 +85,15 @@ export enum TransactionTypeEnum {
   BORROW = 'BORROW',
   REPAY = 'REPAY',
   SEAL_REWARD = 'SEAL_REWARD',
-  UNSEAL_KICK = 'UNSEAL_KICK'
+  UNSEAL_KICK = 'UNSEAL_KICK',
+  STAKE = 'STAKE',
+  UNSTAKE = 'UNSTAKE',
+  FREE = 'FREE',
+  STAKE_BORROW = 'STAKE_BORROW',
+  STAKE_REPAY = 'STAKE_REPAY',
+  STAKE_REWARD = 'STAKE_REWARD',
+  UNSTAKE_KICK = 'UNSTAKE_KICK',
+  STAKE_OPEN = 'STAKE_OPEN',
+  STAKE_SELECT_DELEGATE = 'STAKE_SELECT_DELEGATE',
+  STAKE_SELECT_REWARD = 'STAKE_SELECT_REWARD'
 }

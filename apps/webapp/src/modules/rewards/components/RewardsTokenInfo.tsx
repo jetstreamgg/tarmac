@@ -98,7 +98,7 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
           error={rewardContractInfoError}
           content={
             <Text className="mt-2" variant="large">
-              {`${formatBigInt(rewardContractInfoData?.totalRewardsClaimed || 0n)} ${rewardContract.rewardToken.symbol} rewarded`}
+              {`${formatBigInt(rewardContractInfoData?.totalRewardsClaimed || 0n)} ${rewardContract.rewardToken.symbol}`}
             </Text>
           }
         />

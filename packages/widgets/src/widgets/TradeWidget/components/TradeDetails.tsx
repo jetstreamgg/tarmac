@@ -1,6 +1,6 @@
 import { t } from '@lingui/core/macro';
 import { getTokenDecimals, OrderQuoteResponse, TokenForChain } from '@jetstreamgg/hooks';
-import { TransactionOverview } from '@/shared/components/ui/transaction/TransactionOverview';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { formatNumber } from '@jetstreamgg/utils';
 import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';

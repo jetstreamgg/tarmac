@@ -6,8 +6,8 @@ import { parseEther } from 'viem';
 
 describe('Hook should return error messages for incorrect vault parameters', async () => {
   // TODO: We should move error messages to a constants file for reuse
-  const DUST_ERROR = 'Minimum borrow amount is 10000';
-  const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 10000';
+  const DUST_ERROR = 'Minimum borrow amount is 30000';
+  const DUST_REPAY_ERROR = 'Debt must be payed off entirely, or left with a minimum of 30000';
   const INSUFFICIENT_COLLATERAL_ERROR = 'Insufficient collateral';
 
   const wrapper = WagmiWrapper;
@@ -52,9 +52,9 @@ describe('Hook should return error messages for incorrect vault parameters', asy
   });
 
   it('shows insufficient collateral when trying to draw more than the collateral value from a position with existing debt', async () => {
-    const colAmt = parseEther('20');
-    const existingDebtAmt = parseEther('10000');
-    const newDebtAmt = parseEther('19000');
+    const colAmt = parseEther('100');
+    const existingDebtAmt = parseEther('30000');
+    const newDebtAmt = parseEther('130000');
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
@@ -66,8 +66,8 @@ describe('Hook should return error messages for incorrect vault parameters', asy
 
   it('can draw a small additional amount of debt from a position with existing debt', async () => {
     const colAmt = parseEther('20');
-    const existingDebtAmt = parseEther('10000');
-    const newDebtAmt = parseEther('10005');
+    const existingDebtAmt = parseEther('30000');
+    const newDebtAmt = parseEther('30005');
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
@@ -85,7 +85,7 @@ describe('Hook should return error messages for incorrect vault parameters', asy
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.data?.riskLevel).toEqual('HIGH');
+      expect(result.current.data?.riskLevel).toEqual('MEDIUM');
       return;
     });
 

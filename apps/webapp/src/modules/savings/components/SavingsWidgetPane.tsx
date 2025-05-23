@@ -7,7 +7,7 @@ import {
   SavingsFlow
 } from '@jetstreamgg/widgets';
 import { TOKENS, useSavingsHistory } from '@jetstreamgg/hooks';
-import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@jetstreamgg/utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -16,6 +16,8 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Intent } from '@/lib/enums';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -23,6 +25,7 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
+  const { setShouldDisableActionButtons } = useChatContext();
 
   const isL2 = isL2ChainId(chainId);
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
@@ -30,37 +33,57 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
   const disallowedTokens =
     isRestrictedMiCa && isL2 ? { supply: [TOKENS.usdc], withdraw: [TOKENS.usdc] } : undefined;
 
-  const tab = (searchParams.get(QueryParams.Tab) || undefined) as 'left' | 'right' | undefined;
+  const flow = (searchParams.get(QueryParams.Flow) || undefined) as SavingsFlow | undefined;
 
   const onSavingsWidgetStateChange = ({
     hash,
     txStatus,
     widgetState,
-    originToken
+    originToken,
+    originAmount
   }: WidgetStateChangeParams) => {
-    // Set tab search param based on widgetState.flow
-    if (widgetState.flow) {
-      setSearchParams(prevParams => {
-        const params = new URLSearchParams(prevParams);
-        // only set tab if it was set already
-        if (params.get(QueryParams.Tab)) {
-          params.set(QueryParams.Tab, widgetState.flow === SavingsFlow.SUPPLY ? 'left' : 'right');
-        }
-        return params;
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SAVINGS_INTENT]) {
+      return;
+    }
+
+    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
+
+    // Update amount in URL if provided and not zero
+    if (originAmount && originAmount !== '0') {
+      setSearchParams(prev => {
+        prev.set(QueryParams.InputAmount, originAmount);
+        return prev;
+      });
+    } else if (originAmount === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.InputAmount);
+        return prev;
       });
     }
 
+    // Update source token in URL if provided
     if (originToken) {
-      setSearchParams(prevParams => {
-        const params = new URLSearchParams(prevParams);
-        if (params.get(QueryParams.SourceToken)) {
-          params.set(QueryParams.SourceToken, originToken);
-        }
-        return params;
+      setSearchParams(prev => {
+        prev.set(QueryParams.SourceToken, originToken);
+        return prev;
+      });
+    } else if (originToken === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.SourceToken);
+        return prev;
       });
     }
 
-    // After a successful linked action sUPPLY, set the final step to "success"
+    // Set flow search param based on widgetState.flow
+    if (widgetState.flow) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.Flow, widgetState.flow);
+        return prev;
+      });
+    }
+
+    // After a successful linked action SUPPLY, set the final step to "success"
     if (
       widgetState.action === SavingsAction.SUPPLY &&
       txStatus === TxStatus.SUCCESS &&
@@ -98,7 +121,7 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
         token: isL2 ? linkedActionConfig?.sourceToken : undefined,
-        tab
+        flow
       }}
       disallowedTokens={disallowedTokens}
     />

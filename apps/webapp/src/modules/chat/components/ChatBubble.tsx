@@ -10,19 +10,20 @@ import { QueryParams } from '@/lib/constants';
 import { motion } from 'framer-motion';
 import { ResponseModifierRow } from './ResponseModifierRow';
 import { t } from '@lingui/macro';
-import { ChatSuggestionsRow } from './ChatSuggestionsRow';
 import { ChatIntent } from '../types/Chat';
 import { ChatIntentsRow } from './ChatIntentsRow';
 import { StopGeneratingButton } from './StopGeneratingButton';
 import { ChatError } from '@/modules/icons';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
+import { AgeWarningRow } from './AgeWarningRow';
+import { useChatContext } from '../context/ChatContext';
 
 type ChatBubbleProps = {
   user: UserType;
   message: string;
   type?: MessageType;
   isLastMessage?: boolean;
-  suggestions?: string[];
+  isFirstMessage?: boolean;
   intents?: ChatIntent[];
   sendMessage: (message: string) => void;
   showModifierRow?: boolean;
@@ -66,15 +67,14 @@ export const ChatBubble = ({
   user,
   message,
   type,
-  suggestions,
-  intents,
   sendMessage,
   showModifierRow = true,
-  isLastMessage
+  isFirstMessage
 }: ChatBubbleProps) => {
   const { address } = useAccount();
   const [searchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
+  const { hasAcceptedAgeRestriction } = useChatContext();
   const shouldUseLargeAvatar = bpi >= BP.xl && searchParams.get(QueryParams.Details) !== 'true';
   const isError = type === MessageType.error;
   const isLoading = type === MessageType.loading;
@@ -127,15 +127,14 @@ export const ChatBubble = ({
                 <ChatMarkdownRenderer markdown={message} />
               </div>
             </HStack>
+            {isFirstMessage && !hasAcceptedAgeRestriction && <AgeWarningRow />}
             {user === UserType.bot && !isError && !isInternal && !isCanceled && (
               <div className="space-y-5">
-                {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />}
-                {(!intents || intents.length === 0) && suggestions && (
-                  <ChatSuggestionsRow suggestions={suggestions} sendMessage={sendMessage} />
-                )}
+                {/* {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />} */}
                 {showModifierRow && <ResponseModifierRow sendMessage={sendMessage} />}
               </div>
             )}
+            <ChatIntentsRow />
           </div>
         )}
       </VStack>

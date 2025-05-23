@@ -1,7 +1,7 @@
 import { useContext, useEffect } from 'react';
-import { WidgetContext } from '@/context/WidgetContext';
-import { TransactionStatus } from '@/shared/components/ui/transaction/TransactionStatus';
-import { TxCardCopyText } from '@/shared/types/txCardCopyText';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
+import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import {
   UpgradeFlow,
   UpgradeAction,
@@ -20,7 +20,7 @@ import { i18n } from '@lingui/core';
 import { t } from '@lingui/core/macro';
 import { getTokenDecimals, Token } from '@jetstreamgg/hooks';
 import { formatBigInt } from '@jetstreamgg/utils';
-import { approveLoadingButtonText } from '@/shared/constants';
+import { approveLoadingButtonText } from '@widgets/shared/constants';
 import { useChainId } from 'wagmi';
 
 export const UpgradeTransactionStatus = ({

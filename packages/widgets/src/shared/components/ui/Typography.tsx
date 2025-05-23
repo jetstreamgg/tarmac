@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 
 type TextElement = 'p' | 'span';
 type HeadingElement = 'h1' | 'h2' | 'h3' | 'h4';
@@ -21,7 +21,7 @@ const ELEMENTS: Record<TypographyElement, string> = {
   // ...add other variants as needed
 };
 
-export function Typography({ children, tag = 'span', className, dataTestId, ...props }: TypographyProps) {
+function Typography({ children, tag = 'span', className, dataTestId, ...props }: TypographyProps) {
   const elementClass = ELEMENTS[tag];
   const Element = tag;
 

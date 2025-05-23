@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
-import { Text } from '@/shared/components/ui/Typography';
-import { cn } from '@/lib/utils';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { cn } from '@widgets/lib/utils';
 import { HStack } from './layout/HStack';
 
 type RiskSliderProps = React.ComponentProps<typeof SliderPrimitive.Root> & {
@@ -80,13 +80,13 @@ const RiskSlider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Root
           />
         )}
         {disabled ? (
-          <SliderPrimitive.Thumb className="block h-0 w-0 focus:outline-none" aria-label="Slider">
+          <SliderPrimitive.Thumb className="focus:outline-hidden block h-0 w-0" aria-label="Slider">
             <div
               className={`absolute ${(value?.[0] || 0) > 95 ? '-left-[20px]' : ''} -top-[0.5px] h-0 w-0 border-b-[11px] border-l-[5.5px] border-r-[5.5px] border-b-white border-l-transparent border-r-transparent`}
             />
           </SliderPrimitive.Thumb>
         ) : (
-          <SliderPrimitive.Thumb className="border-primary ring-offset-background focus-visible:ring-ring block rounded-full border-8 bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+          <SliderPrimitive.Thumb className="border-primary ring-offset-background focus-visible:ring-ring focus-visible:outline-hidden block rounded-full border-8 bg-white transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
         )}
       </SliderPrimitive.Root>
       <HStack className="justify-between px-4 pt-1">
