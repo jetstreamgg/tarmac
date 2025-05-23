@@ -35,8 +35,8 @@ import {
   borrowRateTooltipText,
   debtCeilingTooltipText
 } from '../lib/constants';
-import { Warning } from '@widgets/shared/components/icons/Warning';
 import { Text } from '@widgets/shared/components/ui/Typography';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 
 const { usds } = TOKENS;
 
@@ -358,9 +358,12 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
           ? error?.message
           : undefined;
 
-  const inputText = minCollateralNotMet
-    ? `You need to stake at least ${simulatedVault?.formattedMinSkyCollateralForDust} SKY to borrow`
-    : `Limit ${formattedMinBorrowable.slice(0, -5)} <> ${formattedMaxBorrowable}`;
+  const inputText =
+    collateralData?.debtCeilingUtilization === 1
+      ? ''
+      : minCollateralNotMet
+        ? `You need to stake at least ${simulatedVault?.formattedMinSkyCollateralForDust} SKY to borrow`
+        : `Limit ${formattedMinBorrowable.slice(0, -5)} <> ${formattedMaxBorrowable}`;
 
   return (
     <div className="mb-8 space-y-2">
@@ -383,9 +386,9 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
         enabled={isConnectedAndEnabled}
       />
       {collateralData?.debtCeilingUtilization === 1 ? (
-        <div className="ml-3">
-          <Text variant="small" className="text-error flex gap-2">
-            <Warning boxSize={16} viewBox="0 0 16 16" className="mt-1 shrink-0" />
+        <div className="ml-3 flex items-start text-amber-400">
+          <PopoverRateInfo type="dtc" iconClassName="mt-1 shrink-0" />
+          <Text variant="small" className="ml-2 flex gap-2">
             Debt ceiling reached. Borrowing USDS is temporarily unavailable.
           </Text>
         </div>
