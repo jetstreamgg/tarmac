@@ -76,7 +76,14 @@ export function StakeOverview() {
               }
             />
             <StatsCard
-              title={t`Debt ceiling`}
+              title={
+                <HStack gap={1} className="items-center">
+                  <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+                    <Trans>Debt ceiling</Trans>
+                  </Heading>
+                  <PopoverRateInfo type="dtc" />
+                </HStack>
+              }
               isLoading={collateralDataLoading}
               error={collateralDataError}
               content={
