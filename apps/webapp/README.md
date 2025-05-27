@@ -100,4 +100,4 @@ This application supports i18n and translations via the Lingui package. To add c
 - Run `pnpm extract` from the root of this repo to extract the messages into `.po` files, which can then be translated.
 - Run `pnpm compile` to compile the translations into optimized JavaScript format.
 
-For more information on the i18n process, refer to the [Internationalization and Translation Process](../../README.md#internationalization-and-translation-process) section in the root README and for more information on how Lingui works, refer to the [Lingui documentation](https://lingui.dev/).
+For more information on the i18n process, refer to the [Internationalization and Translation Process](../../README.md#internationalization-and-translation-process) section in the root README and for more information on how Lingui works, refer to the [Lingui documentation](https://lingui.dev/)
