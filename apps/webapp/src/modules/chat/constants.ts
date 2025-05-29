@@ -12,7 +12,3 @@ export enum MessageType {
   internal = 'internal',
   canceled = 'canceled'
 }
-
-export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHAT_SUGGESTIONS_ENABLED === 'true';
-export const ADVANCED_CHAT_ENABLED = import.meta.env.VITE_ADVANCED_CHAT_ENABLED === 'true';
-export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';

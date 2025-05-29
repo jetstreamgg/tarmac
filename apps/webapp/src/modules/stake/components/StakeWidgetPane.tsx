@@ -68,7 +68,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     };
   }, [urnIndexParam]);
 
-  ////////////////////////////// START CHATBOT //////////////////////////////
   const onStakeWidgetStateChange = ({
     hash,
     txStatus,
@@ -145,90 +144,13 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
       }, REFRESH_DELAY);
     }
   };
-  ////////////////////////////// END CHATBOT //////////////////////////////
-
-  ////////////////////////////// START DEVELOPMENT //////////////////////////////
-  // const onStakeWidgetStateChange = ({
-  //   hash,
-  //   txStatus,
-  //   widgetState,
-  //   stakeTab,
-  //   originAmount
-  // }: WidgetStateChangeParams) => {
-  //   const currentStakeTabParam = searchParams.get(QueryParams.StakeTab);
-
-  //   setSearchParams(prev => {
-  //     const params = new URLSearchParams(prev);
-  //     if (widgetState.flow) {
-  //       params.set(QueryParams.Flow, widgetState.flow);
-  //     }
-
-  //     const newStakeTabValue =
-  //       stakeTab === StakeAction.FREE ? 'free' : stakeTab === StakeAction.LOCK ? 'lock' : undefined;
-  //     let tabDidChange = false;
-
-  //     if (newStakeTabValue) {
-  //       if (currentStakeTabParam !== newStakeTabValue) {
-  //         params.delete(QueryParams.InputAmount); // Tab changed, remove input amount
-  //         tabDidChange = true;
-  //       }
-  //       params.set(QueryParams.StakeTab, newStakeTabValue);
-  //     } else if (stakeTab === '') {
-  //       // Explicitly clearing the tab
-  //       params.delete(QueryParams.StakeTab);
-  //       params.delete(QueryParams.InputAmount); // Tab cleared, remove input amount
-  //       tabDidChange = true; // Treat as a change for amount handling logic
-  //     }
-
-  //     // Update InputAmount based on originAmount, only if the tab didn't *just* change in this event
-  //     if (!tabDidChange) {
-  //       if (originAmount && originAmount !== '0') {
-  //         params.set(QueryParams.InputAmount, originAmount);
-  //       } else if (originAmount === '') {
-  //         // Explicitly empty string means clear
-  //         params.delete(QueryParams.InputAmount);
-  //       }
-  //       // If originAmount is undefined (not part of this event), InputAmount remains untouched unless tabDidChange was true
-  //     }
-
-  //     return params;
-  //   });
-
-  //   // After a successful linked action open flow, set the final step to "success"
-  //   if (
-  //     widgetState.flow === StakeFlow.OPEN &&
-  //     txStatus === TxStatus.SUCCESS &&
-  //     linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
-  //   ) {
-  //     updateLinkedActionConfig({ step: LinkedActionSteps.COMPLETED_SUCCESS });
-  //   }
-
-  //   // Reset the linked action state and URL params after clicking "finish"
-  //   if (txStatus === TxStatus.IDLE && linkedActionConfig.step === LinkedActionSteps.COMPLETED_SUCCESS) {
-  //     exitLinkedActionMode();
-  //     setSearchParams(prevParams => {
-  //       const params = deleteSearchParams(prevParams);
-  //       return params;
-  //     });
-  //   }
-
-  //   if (
-  //     hash &&
-  //     txStatus === TxStatus.SUCCESS &&
-  //     [StakeFlow.OPEN, StakeFlow.MANAGE].includes(widgetState.flow)
-  //   ) {
-  //     setTimeout(() => {
-  //       refreshStakeHistory();
-  //     }, REFRESH_DELAY);
-  //   }
-  // };
-  ////////////////////////////// END DEVELOPMENT //////////////////////////////
 
   const stakeTabParam = searchParams.get(QueryParams.StakeTab);
   const stakeTab =
     stakeTabParam === 'free' ? StakeAction.FREE : stakeTabParam === 'lock' ? StakeAction.LOCK : undefined;
   const flowParam = searchParams.get(QueryParams.Flow);
   const flow = flowParam === 'open' ? StakeFlow.OPEN : undefined;
+
   return (
     <StakeModuleWidget
       {...sharedProps}

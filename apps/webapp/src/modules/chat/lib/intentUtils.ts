@@ -1,5 +1,5 @@
 import { arbitrum, base, Chain, mainnet } from 'wagmi/chains';
-import { COMING_SOON_MAP, QueryParams } from '@/lib/constants';
+import { CHATBOT_USE_TESTNET_NETWORK_NAME, COMING_SOON_MAP, QueryParams } from '@/lib/constants';
 import { ChatIntent } from '../types/Chat';
 import { Intent } from '@/lib/enums';
 import { isIntentAllowed } from '@/lib/utils';
@@ -105,10 +105,7 @@ export const intentModifiesState = (intent?: ChatIntent): boolean => {
 };
 
 export const processNetworkNameInUrl = (url: string): string => {
-  if (
-    import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&
-    (import.meta.env.VITE_ENV_NAME === 'staging' || import.meta.env.VITE_ENV_NAME === 'development')
-  ) {
+  if (CHATBOT_USE_TESTNET_NETWORK_NAME) {
     const networkMappings = {
       [normalizeUrlParam(mainnet.name)]: tenderly.name,
       [normalizeUrlParam(base.name)]: tenderlyBase.name,

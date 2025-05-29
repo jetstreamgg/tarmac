@@ -140,8 +140,8 @@ export const restrictedTokenListTrade = {
     { ...usds, address: usdsL2Address[base.id] }
   ],
   [arbitrum.id]: [
-    { ...usds, address: usdsL2Address[arbitrum.id] },
-    { ...eth, address: ETH_ADDRESS }
+    { ...usdc, address: usdcL2Address[arbitrum.id] },
+    { ...usds, address: usdsL2Address[arbitrum.id] }
   ],
   [tenderlyBase.id]: [
     { ...usdc, address: usdcL2Address[TENDERLY_BASE_CHAIN_ID] },

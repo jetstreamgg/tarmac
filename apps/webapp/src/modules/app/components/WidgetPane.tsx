@@ -145,17 +145,18 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     ];
   });
 
-  // Delete reset param after 500ms
   useEffect(() => {
-    if (searchParams.get(QueryParams.Reset)) {
-      setTimeout(() => {
-        setSearchParams(prev => {
-          prev.delete(QueryParams.Reset);
-          return prev;
-        });
-      }, 500);
-    }
-  }, [searchParams]);
+    if (!searchParams.get(QueryParams.Reset)) return;
+
+    const timer = setTimeout(() => {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.Reset);
+        return prev;
+      });
+    }, 500);
+
+    return () => clearTimeout(timer); // cleanup
+  }, [searchParams, setSearchParams]);
 
   return (
     <WidgetNavigation

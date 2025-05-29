@@ -79,6 +79,16 @@ const getContent = (
         ). Further, The estimate is for informational purposes only and does not guarantee future results.
       </Text>
     )
+  },
+  dtc: {
+    title: 'Debt Ceiling',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        The debt ceiling is the maximum amount of debt or tokens that can be issued within the SKY protocol,
+        serving as a risk management tool to ensure stability and limit overexposure. It is a parameter
+        subject to change by the Sky Ecosystem Governance.
+      </Text>
+    )
   }
 });
 
@@ -87,7 +97,7 @@ export const PopoverRateInfo = ({
   onExternalLinkClicked,
   iconClassName
 }: {
-  type: 'str' | 'ssr' | 'srr';
+  type: 'str' | 'ssr' | 'srr' | 'dtc';
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   iconClassName?: string;
 }) => {

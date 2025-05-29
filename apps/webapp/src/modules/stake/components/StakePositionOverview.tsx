@@ -82,7 +82,7 @@ export function StakePositionOverview({
         <VStack className="gap-8">
           <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
             <SealSealedCard
-              label={t`${StakeToken.SKY} sealed`}
+              label={t`${StakeToken.SKY} staked`}
               token={{ name: 'Sky', symbol: 'SKY' }}
               balance={vault?.collateralAmount || 0n}
               isLoading={vaultLoading}

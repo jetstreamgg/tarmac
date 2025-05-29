@@ -8,7 +8,7 @@ import { Trans } from '@lingui/macro';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { QueryParams } from '@/lib/constants';
+import { CHATBOT_ENABLED, QueryParams } from '@/lib/constants';
 import { CHATBOT_NAME } from '@/modules/chat/constants';
 import { Chat } from '@/modules/icons';
 
@@ -18,9 +18,7 @@ export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean })
   const [searchParams, setSearchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
 
-  const chatEnabled = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
-
-  const showChat = useMemo(() => chatEnabled && isAuthorized, [chatEnabled, isAuthorized]);
+  const showChat = useMemo(() => CHATBOT_ENABLED && isAuthorized, [CHATBOT_ENABLED, isAuthorized]);
 
   const onClickChat = useCallback(() => {
     searchParams.set(QueryParams.Chat, 'true');

@@ -157,3 +157,13 @@ export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM =
   'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrum';
 export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM_TENDERLY =
   'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/subgraph-arbitrumTenderly';
+
+export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
+export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');
+export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHAT_SUGGESTIONS_ENABLED === 'true';
+export const ADVANCED_CHAT_ENABLED = import.meta.env.VITE_ADVANCED_CHAT_ENABLED === 'true';
+export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
+export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
+export const CHATBOT_USE_TESTNET_NETWORK_NAME =
+  import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&
+  (import.meta.env.VITE_ENV_NAME === 'staging' || import.meta.env.VITE_ENV_NAME === 'development');

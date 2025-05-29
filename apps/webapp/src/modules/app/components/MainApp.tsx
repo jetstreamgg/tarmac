@@ -3,7 +3,13 @@ import { WidgetPane } from './WidgetPane';
 import { DetailsPane } from './DetailsPane';
 import { AppContainer } from './AppContainer';
 import { useSearchParams } from 'react-router-dom';
-import { CHAIN_WIDGET_MAP, COMING_SOON_MAP, QueryParams, mapQueryParamToIntent } from '@/lib/constants';
+import {
+  CHAIN_WIDGET_MAP,
+  CHATBOT_ENABLED,
+  COMING_SOON_MAP,
+  QueryParams,
+  mapQueryParamToIntent
+} from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateLinkedActionSearchParams, validateSearchParams } from '@/modules/utils/validateSearchParams';
@@ -62,7 +68,6 @@ export function MainApp() {
     }
   });
 
-  const chatEnabled = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
   const { sendMessage } = useSendMessage();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -76,7 +81,7 @@ export function MainApp() {
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
   const chatParam =
-    chatEnabled &&
+    CHATBOT_ENABLED &&
     (bpi >= BP['3xl']
       ? !(searchParams.get(QueryParams.Chat) === 'false')
       : searchParams.get(QueryParams.Chat) === 'true');
@@ -90,7 +95,7 @@ export function MainApp() {
   // step is initialized as 0 and will evaluate to false, setting the first step to 1
   const step = linkedAction ? linkedActionConfig.step || 1 : 0;
 
-  useChatNotification({ isAuthorized: chatEnabled });
+  useChatNotification({ isAuthorized: CHATBOT_ENABLED });
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();

@@ -6,6 +6,7 @@ import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/macro';
 import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
+import { CHATBOT_DOMAIN, CHATBOT_ENABLED, MAX_HISTORY_LENGTH } from '@/lib/constants';
 
 interface ChatbotResponse {
   chatResponse: {
@@ -15,9 +16,7 @@ interface ChatbotResponse {
 }
 
 const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
-  const domain = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
-
-  const response = await fetch(`${domain}/chat`, {
+  const response = await fetch(`${CHATBOT_DOMAIN}/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -44,8 +43,7 @@ const sendMessageMutation: MutationFunction<
   SendMessageResponse,
   { messagePayload: Partial<SendMessageRequest> }
 > = async ({ messagePayload }) => {
-  const chatEnabled = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
-  if (!chatEnabled) {
+  if (!CHATBOT_ENABLED) {
     throw new Error(`${CHATBOT_NAME} is disabled`);
   }
 
@@ -79,7 +77,6 @@ export const useSendMessage = () => {
     }
   );
 
-  const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
   const history = chatHistory
     .filter(record => record.type !== CANCELED)
     .map(record => ({

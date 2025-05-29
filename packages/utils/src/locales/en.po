@@ -61,13 +61,16 @@ msgstr ""
 msgid "{0} {1} to {2}"
 msgstr ""
 
-#. placeholder {0}: StakeToken.SKY
 #. placeholder {0}: SealToken.MKR
 #. placeholder {0}: SealToken.SKY
-#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
 #: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
 msgid "{0} sealed"
+msgstr ""
+
+#. placeholder {0}: StakeToken.SKY
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+msgid "{0} staked"
 msgstr ""
 
 #. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Supplied to' : 'Withdrawn from'
@@ -2372,7 +2375,7 @@ msgid "The Seal Engine is now deprecated. Migrate your positions to the Staking 
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "The Staking Engine is a module of the Sky Protocol. It has replaced the Seal Engine, offering the same features but it has no exit fee and only supports SKY, not MKR. The SKY tokens you supply to the Seal Engine enable you to access Staking Rewards, and more. With Sky, you always remain in control of your assets."
+msgid "The Staking Engine is a module of the Sky Protocol. It has replaced the Seal Engine, offering the same features but it has no exit fee and only supports SKY, not MKR. The SKY tokens you supply to the Staking Engine enable you to access Staking Rewards, and more. With Sky, you always remain in control of your assets."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
