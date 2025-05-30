@@ -118,15 +118,18 @@ const PositionManagerOverviewContainer = ({
   const formattedMinBorrowable = `${formatBigInt(
     (existingVault?.debtValue || 0n) > 0n ? 0n : simulatedVault?.dust || 0n,
     {
-      unit: getTokenDecimals(usds, chainId)
+      unit: getTokenDecimals(usds, chainId),
+      compact: true
     }
   )} ${usds.symbol}`;
 
   const formattedExistingMaxBorrowable = `${formatBigInt(existingVault?.maxSafeBorrowableIntAmount || 0n, {
-    unit: getTokenDecimals(usds, chainId)
+    unit: getTokenDecimals(usds, chainId),
+    compact: true
   })} ${usds.symbol}`;
   const formatterSimulatedMaxBorrowable = `${formatBigInt(simulatedVault?.maxSafeBorrowableIntAmount || 0n, {
-    unit: getTokenDecimals(usds, chainId)
+    unit: getTokenDecimals(usds, chainId),
+    compact: true
   })} ${usds.symbol}`;
 
   const formattedMaxBorrowable =
@@ -143,18 +146,21 @@ const PositionManagerOverviewContainer = ({
           label: t`You staked`,
           value:
             hasPositions && newCollateralAmount !== existingColAmount
-              ? [`${formatBigInt(existingColAmount)} SKY`, `${formatBigInt(newCollateralAmount)} SKY`]
-              : `${formatBigInt(newCollateralAmount)} SKY`
+              ? [
+                  `${formatBigInt(existingColAmount, { compact: true })} SKY`,
+                  `${formatBigInt(newCollateralAmount, { compact: true })} SKY`
+                ]
+              : `${formatBigInt(newCollateralAmount, { compact: true })} SKY`
         },
         {
           label: t`You borrowed`,
           value:
             hasPositions && newBorrowAmount !== existingBorrowAmount
               ? [
-                  `${formatBigInt(existingBorrowAmount)} ${usds.symbol}`,
-                  `${formatBigInt(newBorrowAmount)} ${usds.symbol}`
+                  `${formatBigInt(existingBorrowAmount, { compact: true })} ${usds.symbol}`,
+                  `${formatBigInt(newBorrowAmount, { compact: true })} ${usds.symbol}`
                 ]
-              : `${formatBigInt(newBorrowAmount)} ${usds.symbol}`
+              : `${formatBigInt(newBorrowAmount, { compact: true })} ${usds.symbol}`
         },
         minCollateralNotMet
           ? { label: 'Borrow limit', value: t`Not enough collateral to borrow` }
@@ -199,10 +205,10 @@ const PositionManagerOverviewContainer = ({
         value:
           hasPositions && existingVault?.collateralValue !== simulatedVault?.collateralValue
             ? [
-                `$${formatBigInt(existingVault?.collateralValue || 0n)}`,
-                `$${formatBigInt(simulatedVault?.collateralValue || 0n)}`
+                `$${formatBigInt(existingVault?.collateralValue || 0n, { compact: true })}`,
+                `$${formatBigInt(simulatedVault?.collateralValue || 0n, { compact: true })}`
               ]
-            : `$${formatBigInt(simulatedVault?.collateralValue || 0n)}`
+            : `$${formatBigInt(simulatedVault?.collateralValue || 0n, { compact: true })}`
       },
       {
         label: t`Liquidation price`,

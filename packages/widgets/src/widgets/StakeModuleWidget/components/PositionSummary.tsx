@@ -191,12 +191,12 @@ export const PositionSummary = () => {
         value:
           hasPositions && isUpdatedValue(existingVault?.collateralAmount, updatedVault?.collateralAmount)
             ? [
-                `${formatBigInt(existingCollateralAmount)} SKY`,
-                `${formatBigInt(updatedCollateralAmount)} SKY`
+                `${formatBigInt(existingCollateralAmount, { compact: true })} SKY`,
+                `${formatBigInt(updatedCollateralAmount, { compact: true })} SKY`
               ]
             : hasPositions
-              ? `${formatBigInt(existingCollateralAmount)} SKY`
-              : `${formatBigInt(updatedCollateralAmount)} SKY`,
+              ? `${formatBigInt(existingCollateralAmount, { compact: true })} SKY`
+              : `${formatBigInt(updatedCollateralAmount, { compact: true })} SKY`,
         icon: <TokenIcon token={TOKENS.sky} className="h-5 w-5" />
       },
       {
@@ -205,12 +205,12 @@ export const PositionSummary = () => {
         value:
           hasPositions && isUpdatedValue(existingVault?.debtValue, updatedVault?.debtValue)
             ? [
-                `${formatBigInt(existingVault?.debtValue || 0n)} ${usds.symbol}`,
-                `${formatBigInt(updatedVault?.debtValue || 0n)} ${usds.symbol}`
+                `${formatBigInt(existingVault?.debtValue || 0n, { compact: true })} ${usds.symbol}`,
+                `${formatBigInt(updatedVault?.debtValue || 0n, { compact: true })} ${usds.symbol}`
               ]
             : hasPositions
-              ? `${formatBigInt(existingVault?.debtValue || 0n)} ${usds.symbol}`
-              : `${formatBigInt(updatedVault?.debtValue || 0n)} ${usds.symbol}`,
+              ? `${formatBigInt(existingVault?.debtValue || 0n, { compact: true })} ${usds.symbol}`
+              : `${formatBigInt(updatedVault?.debtValue || 0n, { compact: true })} ${usds.symbol}`,
         icon: <TokenIcon token={usds} className="h-5 w-5" />,
         hideIfNoDebt: true
       },

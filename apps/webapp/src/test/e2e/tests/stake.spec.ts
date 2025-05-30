@@ -44,9 +44,9 @@ test('Lock SKY, select rewards, select delegate, and open position', async ({ pa
   // position summary
   await expect(page.getByText('Confirm your position').nth(0)).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId('position-summary-card').getByText('Staking').first()).toBeVisible();
-  await expect(page.getByText('2,400,000 SKY')).toBeVisible();
+  await expect(page.getByText('2.4M SKY')).toBeVisible();
   await expect(page.getByTestId('position-summary-card').getByText('Borrowing')).toBeVisible();
-  await expect(page.getByText('38,000 USDS')).toBeVisible();
+  await expect(page.getByText('38K USDS')).toBeVisible();
   await expect(page.getByTestId('position-summary-card').getByText('Staking reward')).toBeVisible();
 
   // approval
