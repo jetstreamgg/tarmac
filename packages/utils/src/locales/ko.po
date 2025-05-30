@@ -592,7 +592,6 @@ msgid "Choose a token to upgrade, and enter an amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
-#: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/MigrateSelectDelegate.tsx
 msgid "Choose your delegate"
@@ -2650,6 +2649,10 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/components/StakeModuleTransactionStatus.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
 msgid "Update Position"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
+msgid "Update your delegate"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
