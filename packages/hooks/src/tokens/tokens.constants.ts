@@ -1,4 +1,4 @@
-import { base, mainnet, sepolia, arbitrum } from 'wagmi/chains';
+import { base, mainnet, sepolia, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   mcdDaiConfig,
   skyConfig,
@@ -50,7 +50,9 @@ export const TOKENS: TokenMapping = {
       [base.id]: ETH_ADDRESS,
       [arbitrum.id]: ETH_ADDRESS,
       [TENDERLY_BASE_CHAIN_ID]: ETH_ADDRESS,
-      [TENDERLY_ARBITRUM_CHAIN_ID]: ETH_ADDRESS
+      [TENDERLY_ARBITRUM_CHAIN_ID]: ETH_ADDRESS,
+      [optimism.id]: ETH_ADDRESS,
+      [unichain.id]: ETH_ADDRESS
     },
     name: 'Ether',
     symbol: 'ETH',
@@ -78,7 +80,9 @@ export const TOKENS: TokenMapping = {
       [base.id]: skyL2Address[base.id],
       [arbitrum.id]: skyL2Address[arbitrum.id],
       [TENDERLY_BASE_CHAIN_ID]: skyL2Address[TENDERLY_BASE_CHAIN_ID],
-      [TENDERLY_ARBITRUM_CHAIN_ID]: skyL2Address[TENDERLY_ARBITRUM_CHAIN_ID]
+      [TENDERLY_ARBITRUM_CHAIN_ID]: skyL2Address[TENDERLY_ARBITRUM_CHAIN_ID],
+      [optimism.id]: skyL2Address[optimism.id],
+      [unichain.id]: skyL2Address[unichain.id]
     },
     name: 'SKY',
     symbol: 'SKY',
@@ -91,7 +95,9 @@ export const TOKENS: TokenMapping = {
       [base.id]: usdsL2Address[base.id],
       [arbitrum.id]: usdsL2Address[arbitrum.id],
       [TENDERLY_BASE_CHAIN_ID]: usdsL2Address[TENDERLY_BASE_CHAIN_ID],
-      [TENDERLY_ARBITRUM_CHAIN_ID]: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID]
+      [TENDERLY_ARBITRUM_CHAIN_ID]: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID],
+      [optimism.id]: usdsL2Address[optimism.id],
+      [unichain.id]: usdsL2Address[unichain.id]
     },
     name: 'USDS',
     symbol: 'USDS',
@@ -113,7 +119,9 @@ export const TOKENS: TokenMapping = {
       [base.id]: usdcL2Address[base.id],
       [arbitrum.id]: usdcL2Address[arbitrum.id],
       [TENDERLY_BASE_CHAIN_ID]: usdcL2Address[TENDERLY_BASE_CHAIN_ID],
-      [TENDERLY_ARBITRUM_CHAIN_ID]: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID]
+      [TENDERLY_ARBITRUM_CHAIN_ID]: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID],
+      [optimism.id]: usdcL2Address[optimism.id],
+      [unichain.id]: usdcL2Address[unichain.id]
     },
     name: 'USDC',
     symbol: 'USDC',
@@ -125,7 +133,9 @@ export const TOKENS: TokenMapping = {
       [sepolia.id]: 18,
       [TENDERLY_CHAIN_ID]: 6,
       [TENDERLY_BASE_CHAIN_ID]: 6,
-      [TENDERLY_ARBITRUM_CHAIN_ID]: 6
+      [TENDERLY_ARBITRUM_CHAIN_ID]: 6,
+      [optimism.id]: 6,
+      [unichain.id]: 6
     }
   },
   usdt: {
@@ -156,7 +166,9 @@ export const TOKENS: TokenMapping = {
       [base.id]: sUsdsL2Address[base.id],
       [arbitrum.id]: sUsdsL2Address[arbitrum.id],
       [TENDERLY_BASE_CHAIN_ID]: sUsdsL2Address[TENDERLY_BASE_CHAIN_ID],
-      [TENDERLY_ARBITRUM_CHAIN_ID]: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID]
+      [TENDERLY_ARBITRUM_CHAIN_ID]: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID],
+      [optimism.id]: sUsdsL2Address[optimism.id],
+      [unichain.id]: sUsdsL2Address[unichain.id]
     },
     name: 'sUSDS',
     symbol: 'sUSDS',
@@ -214,5 +226,15 @@ export const TRADE_TOKENS = {
     usdc: { ...TOKENS.usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
     usds: { ...TOKENS.usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
     susds: { ...TOKENS.susds, address: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
+  },
+  [optimism.id]: {
+    usdc: { ...TOKENS.usdc, address: usdcL2Address[optimism.id] },
+    usds: { ...TOKENS.usds, address: usdsL2Address[optimism.id] },
+    susds: { ...TOKENS.susds, address: sUsdsL2Address[optimism.id] }
+  },
+  [unichain.id]: {
+    usdc: { ...TOKENS.usdc, address: usdcL2Address[unichain.id] },
+    usds: { ...TOKENS.usds, address: usdsL2Address[unichain.id] },
+    susds: { ...TOKENS.susds, address: sUsdsL2Address[unichain.id] }
   }
 };

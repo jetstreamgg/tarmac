@@ -7,7 +7,13 @@ import { getEtherscanLink } from '@jetstreamgg/utils';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
 import { usePreviewSwapExactIn } from '../psm/usePreviewSwapExactIn';
-import { isMainnetId, isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import {
+  isMainnetId,
+  isBaseChainId,
+  isArbitrumChainId,
+  isOptimismChainId,
+  isUnichainChainId
+} from '@jetstreamgg/utils';
 
 export type MultiChainSavingsBalancesHook = ReadHook & {
   data?: Record<number, bigint>;
@@ -23,6 +29,8 @@ export function useMultiChainSavingsBalances({
   const ethereumChainId = chainIds?.find(chainId => isMainnetId(chainId));
   const baseChainId = chainIds?.find(chainId => isBaseChainId(chainId));
   const arbitrumChainId = chainIds?.find(chainId => isArbitrumChainId(chainId));
+  const optimismChainId = chainIds?.find(chainId => isOptimismChainId(chainId));
+  const unichainChainId = chainIds?.find(chainId => isUnichainChainId(chainId));
 
   const { address: connectedAddress } = useAccount();
   const acct = address || connectedAddress;
@@ -115,19 +123,107 @@ export function useMultiChainSavingsBalances({
     arbitrumChainId
   );
 
+  //OPTIMISM - get balance of sUSDS
+  const {
+    data: optimismSusdsBalance,
+    isLoading: optimismSusdsBalanceIsLoading,
+    error: optimismSusdsBalanceError,
+    refetch: refetchOptimismSusdsBalance
+  } = useTokenBalance({
+    chainId: optimismChainId as number,
+    address: acct,
+    token: TOKENS.susds.address[optimismChainId as keyof typeof TOKENS.susds.address],
+    enabled: !!acct && !!optimismChainId
+  });
+
+  const dataSourcesOptimism: DataSource = {
+    title: 'sUSDS Token Balance',
+    onChain: true,
+    href: getEtherscanLink(
+      optimismChainId || 1,
+      TOKENS.susds.address[optimismChainId as keyof typeof TOKENS.susds.address],
+      'address'
+    ),
+    trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]
+  };
+
+  const convertedOptimismBalance = usePreviewSwapExactIn(
+    optimismSusdsBalance?.value || 0n,
+    TOKENS.susds,
+    TOKENS.usds,
+    optimismChainId
+  );
+
+  //UNICHAIN - get balance of sUSDS
+  const {
+    data: unichainSusdsBalance,
+    isLoading: unichainSusdsBalanceIsLoading,
+    error: unichainSusdsBalanceError,
+    refetch: refetchUnichainSusdsBalance
+  } = useTokenBalance({
+    chainId: unichainChainId as number,
+    address: acct,
+    token: TOKENS.susds.address[unichainChainId as keyof typeof TOKENS.susds.address],
+    enabled: !!acct && !!unichainChainId
+  });
+
+  const dataSourcesUnichain: DataSource = {
+    title: 'sUSDS Token Balance',
+    onChain: true,
+    href: getEtherscanLink(
+      unichainChainId || 1,
+      TOKENS.susds.address[unichainChainId as keyof typeof TOKENS.susds.address],
+      'address'
+    ),
+    trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]
+  };
+
+  const convertedUnichainBalance = usePreviewSwapExactIn(
+    unichainSusdsBalance?.value || 0n,
+    TOKENS.susds,
+    TOKENS.usds,
+    unichainChainId
+  );
+
   // Hook common interface
   const isLoading = useMemo(() => {
-    return maxWithdrawIsLoading || baseSusdsBalanceIsLoading || arbitrumSusdsBalanceIsLoading;
-  }, [maxWithdrawIsLoading, baseSusdsBalanceIsLoading, arbitrumSusdsBalanceIsLoading]);
+    return (
+      maxWithdrawIsLoading ||
+      baseSusdsBalanceIsLoading ||
+      arbitrumSusdsBalanceIsLoading ||
+      optimismSusdsBalanceIsLoading ||
+      unichainSusdsBalanceIsLoading
+    );
+  }, [
+    maxWithdrawIsLoading,
+    baseSusdsBalanceIsLoading,
+    arbitrumSusdsBalanceIsLoading,
+    optimismSusdsBalanceIsLoading,
+    unichainSusdsBalanceIsLoading
+  ]);
 
   const error = useMemo(() => {
-    return maxWithdrawError || baseSusdsBalanceError || arbitrumSusdsBalanceError;
-  }, [maxWithdrawError, baseSusdsBalanceError, arbitrumSusdsBalanceError]);
+    return (
+      maxWithdrawError ||
+      baseSusdsBalanceError ||
+      arbitrumSusdsBalanceError ||
+      optimismSusdsBalanceError ||
+      unichainSusdsBalanceError
+    );
+  }, [
+    maxWithdrawError,
+    baseSusdsBalanceError,
+    arbitrumSusdsBalanceError,
+    optimismSusdsBalanceError,
+    unichainSusdsBalanceError
+  ]);
 
   const mutate = () => {
     refetchMaxWithdraw();
     refetchBaseSusdsBalance();
     refetchArbitrumSusdsBalance();
+    refetchOptimismSusdsBalance();
+    refetchUnichainSusdsBalance();
   };
 
   const data = useMemo<Record<number, bigint> | undefined>(() => {
@@ -148,14 +244,28 @@ export function useMultiChainSavingsBalances({
       balances[arbitrumChainId] = convertedArbitrumBalance.value || 0n;
     }
 
+    // Add optimism balance
+    if (optimismChainId) {
+      balances[optimismChainId] = convertedOptimismBalance.value || 0n;
+    }
+
+    // Add unichain balance
+    if (unichainChainId) {
+      balances[unichainChainId] = convertedUnichainBalance.value || 0n;
+    }
+
     return balances;
   }, [
     maxWithdraw,
     convertedBaseBalance.value,
     convertedArbitrumBalance.value,
+    convertedOptimismBalance.value,
+    convertedUnichainBalance.value,
     ethereumChainId,
     baseChainId,
-    arbitrumChainId
+    arbitrumChainId,
+    optimismChainId,
+    unichainChainId
   ]);
 
   return {
@@ -163,6 +273,12 @@ export function useMultiChainSavingsBalances({
     data,
     error,
     mutate,
-    dataSources: [dataSourcesMaxWithdraw, dataSourcesBase, dataSourcesArbitrum]
+    dataSources: [
+      dataSourcesMaxWithdraw,
+      dataSourcesBase,
+      dataSourcesArbitrum,
+      dataSourcesOptimism,
+      dataSourcesUnichain
+    ]
   };
 }

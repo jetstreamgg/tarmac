@@ -1,11 +1,18 @@
-import { formatNumber, isBaseChainId, isArbitrumChainId, isL2ChainId } from '@jetstreamgg/utils';
+import {
+  formatNumber,
+  isBaseChainId,
+  isArbitrumChainId,
+  isOptimismChainId,
+  isUnichainChainId,
+  isL2ChainId
+} from '@jetstreamgg/utils';
 import { useCallback } from 'react';
 import { RewardContract, useAvailableTokenRewardContractsForChains } from '@jetstreamgg/hooks';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useSearchParams } from 'react-router-dom';
 import { IntentMapping, QueryParams } from '@/lib/constants';
 import { t } from '@lingui/core/macro';
-import { base, mainnet, arbitrum } from 'viem/chains';
+import { base, mainnet, arbitrum, optimism, unichain } from 'viem/chains';
 import { useChains, useChainId } from 'wagmi';
 
 export const useActionForToken = () => {
@@ -38,6 +45,8 @@ export const useActionForToken = () => {
 
       const isBaseChainAction = isBaseChainId(tokenChainId);
       const isArbitrumChainAction = isArbitrumChainId(tokenChainId);
+      const isOptimismChainAction = isOptimismChainId(tokenChainId);
+      const isUnichainChainAction = isUnichainChainId(tokenChainId);
       const isL2ChainAction = isL2ChainId(tokenChainId);
 
       const networkName = chains.find(c => c.id === tokenChainId)?.name || 'ethereum';
@@ -76,7 +85,9 @@ export const useActionForToken = () => {
                   image
                 },
             [base.id]: undefined,
-            [arbitrum.id]: undefined
+            [arbitrum.id]: undefined,
+            [optimism.id]: undefined,
+            [unichain.id]: undefined
           };
           break;
         case 'mkr':
@@ -89,7 +100,9 @@ export const useActionForToken = () => {
               image
             },
             [base.id]: undefined,
-            [arbitrum.id]: undefined
+            [arbitrum.id]: undefined,
+            [optimism.id]: undefined,
+            [unichain.id]: undefined
           };
           break;
         case 'usds':
@@ -116,6 +129,24 @@ export const useActionForToken = () => {
               ? undefined
               : {
                   label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Arbitrum' : ''}`,
+                  actionUrl: getQueryParams(
+                    `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                  ),
+                  image
+                },
+            [optimism.id]: isRestrictedBuild
+              ? undefined
+              : {
+                  label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Optimism' : ''}`,
+                  actionUrl: getQueryParams(
+                    `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                  ),
+                  image
+                },
+            [unichain.id]: isRestrictedBuild
+              ? undefined
+              : {
+                  label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Unichain' : ''}`,
                   actionUrl: getQueryParams(
                     `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
                   ),
@@ -186,6 +217,42 @@ export const useActionForToken = () => {
                         `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
                       ),
                       image
+                    },
+            [optimism.id]:
+              lowerSymbol === 'usdt'
+                ? undefined
+                : isRestrictedBuild
+                  ? {
+                      label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Optimism' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                      ),
+                      image
+                    }
+                  : {
+                      label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Optimism' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                      ),
+                      image
+                    },
+            [unichain.id]:
+              lowerSymbol === 'usdt'
+                ? undefined
+                : isRestrictedBuild
+                  ? {
+                      label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Unichain' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                      ),
+                      image
+                    }
+                  : {
+                      label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Unichain' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                      ),
+                      image
                     }
           };
           break;
@@ -193,11 +260,11 @@ export const useActionForToken = () => {
           action = undefined;
       }
 
-      return isBaseChainAction
-        ? action?.[base.id]
-        : isArbitrumChainAction
-          ? action?.[arbitrum.id]
-          : action?.[mainnet.id];
+      if (isBaseChainAction) return action?.[base.id];
+      if (isArbitrumChainAction) return action?.[arbitrum.id];
+      if (isOptimismChainAction) return action?.[optimism.id];
+      if (isUnichainChainAction) return action?.[unichain.id];
+      return action?.[mainnet.id];
     },
     [getRewardContracts, searchParams, isRestrictedBuild, isRestrictedMiCa, chainId, chains]
   );

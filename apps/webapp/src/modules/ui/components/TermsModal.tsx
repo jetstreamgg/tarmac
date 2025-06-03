@@ -148,8 +148,8 @@ export function TermsModal() {
             <Text className="text-error mb-4 text-center text-sm leading-none md:leading-tight">
               <Trans>
                 An error occurred while submitting your signature. Please ensure your wallet is connected to
-                either Ethereum mainnet, Base or Arbitrum and try again. If the issue persists, reach out for
-                assistance in the official{' '}
+                either Ethereum mainnet, Base, Arbitrum, Optimism or Unichain and try again. If the issue
+                persists, reach out for assistance in the official{' '}
                 <ExternalLink
                   className="text-textEmphasis hover:underline"
                   href="https://discord.gg/skyecosystem"

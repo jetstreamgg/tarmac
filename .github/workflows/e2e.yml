@@ -48,6 +48,14 @@ jobs:
             vnet: true
           - test: arbitrum-trade.spec
             vnet: true
+          - test: optimism-savings.spec
+            vnet: true
+          - test: optimism-trade.spec
+            vnet: true
+          - test: unichain-savings.spec
+            vnet: true
+          - test: unichain-trade.spec
+            vnet: true
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

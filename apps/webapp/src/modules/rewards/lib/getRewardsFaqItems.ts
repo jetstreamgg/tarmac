@@ -3,6 +3,7 @@ import { isBaseChainId } from '@jetstreamgg/utils';
 export const getRewardsFaqItems = (chainId: number) => [
   ...mainnetFaqItems,
   ...(isBaseChainId(chainId) && baseFaqItems ? baseFaqItems : [])
+  // TODO add arbitrum, optimism and unichain
 ];
 
 const mainnetFaqItems: { question: string; answer: string; type?: 'restricted' | 'unrestricted' }[] = [

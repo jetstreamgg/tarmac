@@ -369,8 +369,8 @@ test('Details pane shows right data', async ({ page }) => {
     .innerText();
 
   // TODO: we should run these through the number formatter, but it was throwing an error
-  expect(totalDaiUpgradedWidget.slice(0, 2)).toEqual(totalDaiUpgradedDetails.slice(0, 2));
-  // expect(totalMkrUpgradedWidget.slice(0, 2)).toEqual(totalMkrUpgradedDetails.slice(0, 2));
+  // The widget is truncated with a "." while the details is comma seprated, so just check the first number
+  expect(totalDaiUpgradedWidget.slice(0, 1)).toEqual(totalDaiUpgradedDetails.slice(0, 1));
 
   // close details pane
   await page.getByLabel('Toggle details').click();

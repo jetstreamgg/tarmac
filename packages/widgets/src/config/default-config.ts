@@ -1,6 +1,6 @@
 // Default configuration used site-wide
 
-import { base, mainnet, sepolia, arbitrum } from 'wagmi/chains';
+import { base, mainnet, sepolia, arbitrum, unichain, optimism } from 'wagmi/chains';
 import { WidgetsConfig } from './types/widgets-config';
 import {
   usdsAddress,
@@ -77,6 +77,18 @@ export const defaultConfig: WidgetsConfig = {
       { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
       { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
       { ...susds, address: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
+    ],
+    [unichain.id]: [
+      eth,
+      { ...usdc, address: usdcL2Address[unichain.id] },
+      { ...usds, address: usdsL2Address[unichain.id] },
+      { ...susds, address: sUsdsL2Address[unichain.id] }
+    ],
+    [optimism.id]: [
+      eth,
+      { ...usdc, address: usdcL2Address[optimism.id] },
+      { ...usds, address: usdsL2Address[optimism.id] },
+      { ...susds, address: sUsdsL2Address[optimism.id] }
     ]
   },
   tradeTokenList: {
@@ -129,6 +141,16 @@ export const defaultConfig: WidgetsConfig = {
       { ...eth, address: ETH_ADDRESS },
       { ...weth, address: wethSepoliaAddress[sepolia.id] },
       { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
+    ],
+    [unichain.id]: [
+      { ...usdc, address: usdcL2Address[unichain.id] },
+      { ...usds, address: usdsL2Address[unichain.id] },
+      { ...susds, address: sUsdsL2Address[unichain.id] }
+    ],
+    [optimism.id]: [
+      { ...usdc, address: usdcL2Address[optimism.id] },
+      { ...usds, address: usdsL2Address[optimism.id] },
+      { ...susds, address: sUsdsL2Address[optimism.id] }
     ]
   },
   tradeDisallowedPairs: {

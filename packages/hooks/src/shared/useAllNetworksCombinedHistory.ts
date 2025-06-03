@@ -12,22 +12,45 @@ export function useAllNetworksCombinedHistory() {
   const arbitrumHistory = useL2CombinedHistory(
     isTestnetId(chainId) ? chainIdMap.tenderlyArbitrum : chainIdMap.arbitrum
   );
+  const optimismHistory = useL2CombinedHistory(chainIdMap.optimism);
+  const unichainHistory = useL2CombinedHistory(chainIdMap.unichain);
+
   const combinedData = useMemo(() => {
     return [
       ...(baseHistory.data || []),
       ...(ethereumHistory.data || []),
-      ...(arbitrumHistory.data || [])
+      ...(arbitrumHistory.data || []),
+      ...(optimismHistory.data || []),
+      ...(unichainHistory.data || [])
     ].sort((a: CombinedHistoryItem, b: CombinedHistoryItem) => b.blockTimestamp - a.blockTimestamp);
-  }, [baseHistory.data, ethereumHistory.data, arbitrumHistory.data]);
+  }, [
+    baseHistory.data,
+    ethereumHistory.data,
+    arbitrumHistory.data,
+    optimismHistory.data,
+    unichainHistory.data
+  ]);
 
   return {
     data: combinedData,
-    isLoading: baseHistory.isLoading || ethereumHistory.isLoading || arbitrumHistory.isLoading,
-    error: baseHistory.error || ethereumHistory.error || arbitrumHistory.error,
+    isLoading:
+      baseHistory.isLoading ||
+      ethereumHistory.isLoading ||
+      arbitrumHistory.isLoading ||
+      optimismHistory.isLoading ||
+      unichainHistory.isLoading,
+    error:
+      baseHistory.error ||
+      ethereumHistory.error ||
+      arbitrumHistory.error ||
+      optimismHistory.error ||
+      unichainHistory.error,
     mutate: () => {
       baseHistory.mutate();
       ethereumHistory.mutate();
       arbitrumHistory.mutate();
+      optimismHistory.mutate();
+      unichainHistory.mutate();
     }
   };
 }

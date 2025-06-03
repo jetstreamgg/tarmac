@@ -5,7 +5,9 @@ export enum ExplorerName {
   COW_EXPLORER = 'CoW Explorer',
   BASESCAN = 'Basescan',
   ARBITRUM_EXPLORER = 'Arbiscan',
-  SAFE = 'Safe Wallet'
+  SAFE = 'Safe Wallet',
+  OPTIMISTIC_ETHERSCAN = 'OP Explorer',
+  UNISCAN = 'Uniscan'
 }
 
 export const getExplorerName = (chainId: number, isSafeWallet: boolean) => {
@@ -20,6 +22,10 @@ export const getExplorerName = (chainId: number, isSafeWallet: boolean) => {
     case chainIdMap.arbitrum:
     case chainIdMap.tenderlyArbitrum:
       return ExplorerName.ARBITRUM_EXPLORER;
+    case chainIdMap.optimism:
+      return ExplorerName.OPTIMISTIC_ETHERSCAN;
+    case chainIdMap.unichain:
+      return ExplorerName.UNISCAN;
     case chainIdMap.mainnet:
     case chainIdMap.sepolia:
     case chainIdMap.tenderly:

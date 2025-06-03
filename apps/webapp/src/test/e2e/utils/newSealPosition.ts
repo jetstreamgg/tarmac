@@ -8,9 +8,9 @@ import {
   getSaSelectRewardContractCalldata,
   sealModuleAddress
 } from '@jetstreamgg/hooks';
-import { readFile } from 'fs/promises';
 import { parseEther } from 'viem';
-import { TEST_ADDRESS } from './constants';
+import { NetworkName, TEST_ADDRESS } from './constants';
+import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
 export const newSealPosition = async (
   mkrAmount: string,
@@ -18,9 +18,7 @@ export const newSealPosition = async (
   rewardContractAddress: `0x${string}`,
   usdsAmount?: string
 ) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  // RPC URL for the Mainnet fork
-  const [{ TENDERLY_RPC_URL }] = JSON.parse(file);
+  const TENDERLY_RPC_URL = await getRpcUrlFromFile(NetworkName.mainnet);
 
   const URN_INDEX = 0n;
   const MKR_TO_LOCK = parseEther(mkrAmount);

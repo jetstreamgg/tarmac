@@ -20,6 +20,7 @@ import {
 } from '@/data/wagmi/config/testTenderlyChain';
 import { NetworkName } from './utils/constants';
 import { getTestWalletAddress } from './utils/testWallets';
+import { optimism, unichain } from 'viem/chains';
 
 type WorkerFixture = {
   snapshotIds: string[];
@@ -68,6 +69,16 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
         NetworkName.arbitrum,
         address
       );
+
+      // Optimism funding
+      await setEthBalance('100', NetworkName.optimism, address);
+      await setErc20Balance(usdsL2Address[optimism.id], '100', 18, NetworkName.optimism, address);
+      await setErc20Balance(usdcL2Address[optimism.id], '100', 6, NetworkName.optimism, address);
+
+      // Unichain funding
+      await setEthBalance('100', NetworkName.unichain, address);
+      await setErc20Balance(usdsL2Address[unichain.id], '100', 18, NetworkName.unichain, address);
+      await setErc20Balance(usdcL2Address[unichain.id], '100', 6, NetworkName.unichain, address);
 
       const snapshotIds = await evmSnapshot();
 

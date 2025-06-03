@@ -23,6 +23,8 @@ export default ({ mode }: { mode: modeEnum }) => {
   const RPC_PROVIDER_TENDERLY_BASE = process.env.VITE_RPC_PROVIDER_TENDERLY_BASE || '';
   const RPC_PROVIDER_ARBITRUM = process.env.VITE_RPC_PROVIDER_ARBITRUM || '';
   const RPC_PROVIDER_TENDERLY_ARBITRUM = process.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || '';
+  const RPC_PROVIDER_OPTIMISM = process.env.VITE_RPC_PROVIDER_OPTIMISM || '';
+  const RPC_PROVIDER_UNICHAIN = process.env.VITE_RPC_PROVIDER_UNICHAIN || '';
 
   const CONTENT_SECURITY_POLICY = `
     default-src 'self';
@@ -41,15 +43,21 @@ export default ({ mode }: { mode: modeEnum }) => {
       ${RPC_PROVIDER_TENDERLY_BASE}
       ${RPC_PROVIDER_ARBITRUM}
       ${RPC_PROVIDER_TENDERLY_ARBITRUM}
+      ${RPC_PROVIDER_OPTIMISM}
+      ${RPC_PROVIDER_UNICHAIN}
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
       https://virtual.arbitrum.rpc.tenderly.co
+      https://virtual.optimism.rpc.tenderly.co
+      https://virtual.unichain.rpc.tenderly.co
       https://rpc.sepolia.org
       https://mainnet.base.org
       https://safe-transaction-mainnet.safe.global
       https://safe-transaction-base.safe.global
       https://safe-transaction-arbitrum.safe.global
       https://safe-transaction-sepolia.safe.global
+      https://safe-transaction-optimism.safe.global
+      https://safe-transaction-unichain.safe.global
       https://vote.makerdao.com
       https://vote.sky.money
       https://query-subgraph-testnet.sky.money
@@ -68,6 +76,8 @@ export default ({ mode }: { mode: modeEnum }) => {
       wss://www.walletlink.org
       https://explorer-api.walletconnect.com/
       https://enhanced-provider.rainbow.me
+      https://mainnet.unichain.org/
+      https://mainnet.optimism.io/
       cloudflareinsights.com;
     frame-src 'self'
       https://verify.walletconnect.com

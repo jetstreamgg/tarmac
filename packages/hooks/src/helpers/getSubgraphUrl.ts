@@ -12,7 +12,11 @@ import {
   ARBITRUM_CHAIN_ID,
   URL_ARBITRUM_SUBGRAPH_MAINNET,
   TENDERLY_ARBITRUM_CHAIN_ID,
-  URL_ARBITRUM_SUBGRAPH_TENDERLY
+  URL_ARBITRUM_SUBGRAPH_TENDERLY,
+  OPTIMISM_CHAIN_ID,
+  URL_OPTIMISM_SUBGRAPH_MAINNET,
+  UNICHAIN_CHAIN_ID,
+  URL_UNICHAIN_SUBGRAPH_MAINNET
 } from '../constants';
 
 const defaultSubgraphUrl = URL_MAKER_SUBGRAPH_MAINNET;
@@ -23,6 +27,8 @@ export function getMakerSubgraphUrl(chainId: number): string | null {
     case 1:
     case BASE_CHAIN_ID:
     case ARBITRUM_CHAIN_ID:
+    case OPTIMISM_CHAIN_ID:
+    case UNICHAIN_CHAIN_ID:
       return URL_MAKER_SUBGRAPH_MAINNET;
     case TENDERLY_CHAIN_ID:
     case TENDERLY_BASE_CHAIN_ID:
@@ -45,6 +51,10 @@ export function getL2SubgraphUrl(chainId: number): string | null {
       return URL_ARBITRUM_SUBGRAPH_MAINNET;
     case TENDERLY_ARBITRUM_CHAIN_ID:
       return URL_ARBITRUM_SUBGRAPH_TENDERLY;
+    case OPTIMISM_CHAIN_ID:
+      return URL_OPTIMISM_SUBGRAPH_MAINNET;
+    case UNICHAIN_CHAIN_ID:
+      return URL_UNICHAIN_SUBGRAPH_MAINNET;
     default:
       return defaultBaseSubgraphUrl;
   }

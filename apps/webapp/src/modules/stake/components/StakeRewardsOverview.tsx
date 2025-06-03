@@ -4,7 +4,7 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { LoadingErrorWrapper } from '@/modules/ui/components/LoadingErrorWrapper';
 import { LoadingStatCard } from '@/modules/ui/components/LoadingStatCard';
-import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
@@ -98,14 +98,17 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
             <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
               <Trans>Rate</Trans>
             </Heading>
-            <PopoverRateInfo type="srr" />
+            <PopoverInfo type="srr" />
           </HStack>
         }
         isLoading={false}
         error={null}
-        // TODO update once rewards go live
         content={
-          <Text className="mt-2">
+          <Text
+            className={`mt-2 ${
+              parseFloat(mostRecentRewardsChartInfoData?.rate || '0') > 0 ? 'text-bullish' : ''
+            }`}
+          >
             {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData?.rate || '0'))}
           </Text>
         }

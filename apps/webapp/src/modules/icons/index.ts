@@ -27,6 +27,8 @@ import { Seal } from './Seal';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
 import { ArbitrumChain } from './ArbitrumChain';
+import { UnichainChain } from './UnichainChain';
+import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
 import { Delegate } from './Delegate';
 import { Borrow } from './Borrow';
@@ -65,6 +67,8 @@ export {
   BaseChain,
   MainnetChain,
   ArbitrumChain,
+  OptimismChain,
+  UnichainChain,
   Stake,
   Delegate,
   Borrow,

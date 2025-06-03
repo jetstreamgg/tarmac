@@ -15,6 +15,10 @@ function getSafePrefix(id: number) {
     case chainId.arbitrum:
     case chainId.tenderlyArbitrum:
       return 'arb1';
+    case chainId.optimism:
+      return 'oeth';
+    case chainId.unichain:
+      return 'unichain';
     case chainId.mainnet:
     case chainId.tenderly:
     default:
