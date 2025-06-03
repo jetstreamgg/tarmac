@@ -3,9 +3,9 @@ import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useChainId, useChains, useClient, useSwitchChain } from 'wagmi';
-import { MainnetChain, BaseChain, ArbitrumChain, Close } from '@/modules/icons';
+import { MainnetChain, BaseChain, ArbitrumChain, Close, OptimismChain, UnichainChain } from '@/modules/icons';
 import { cn } from '@/lib/utils';
-import { base, arbitrum } from 'viem/chains';
+import { base, arbitrum, optimism, unichain } from 'viem/chains';
 import { ChevronDown } from 'lucide-react';
 import { tenderlyBase, tenderlyArbitrum } from '@/data/wagmi/config/config.default';
 import { useState } from 'react';
@@ -19,11 +19,16 @@ enum ChainModalVariant {
   wrapper = 'wrapper'
 }
 
+//TODO: handle optimism and unichain
 const getChainIcon = (chainId: number, className?: string) =>
   [base.id, tenderlyBase.id].includes(chainId) ? (
     <BaseChain className={className} />
   ) : [arbitrum.id, tenderlyArbitrum.id].includes(chainId) ? (
     <ArbitrumChain className={className} />
+  ) : chainId === optimism.id ? (
+    <OptimismChain className={className} />
+  ) : chainId === unichain.id ? (
+    <UnichainChain className={className} />
   ) : (
     <MainnetChain className={className} />
   );

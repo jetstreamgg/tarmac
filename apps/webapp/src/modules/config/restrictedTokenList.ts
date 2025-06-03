@@ -1,4 +1,4 @@
-import { sepolia, mainnet, base, arbitrum } from 'wagmi/chains';
+import { sepolia, mainnet, base, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   usdcAddress,
   usdcSepoliaAddress,
@@ -71,6 +71,14 @@ export const restrictedTokenList = {
   [tenderlyArbitrum.id]: [
     { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
     { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
+  ],
+  [optimism.id]: [
+    { ...usdc, address: usdcL2Address[optimism.id] },
+    { ...usds, address: usdsL2Address[optimism.id] }
+  ],
+  [unichain.id]: [
+    { ...usdc, address: usdcL2Address[unichain.id] },
+    { ...usds, address: usdsL2Address[unichain.id] }
   ]
 };
 
@@ -106,7 +114,15 @@ export const restrictedTokenListMiCa = {
     { ...eth, address: ETH_ADDRESS }
   ],
   [tenderlyBase.id]: [{ ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }],
-  [tenderlyArbitrum.id]: [{ ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }]
+  [tenderlyArbitrum.id]: [{ ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }],
+  [optimism.id]: [
+    { ...usds, address: usdsL2Address[optimism.id] },
+    { ...eth, address: ETH_ADDRESS }
+  ],
+  [unichain.id]: [
+    { ...usds, address: usdsL2Address[unichain.id] },
+    { ...eth, address: ETH_ADDRESS }
+  ]
 };
 
 export const restrictedTokenListTrade = {
@@ -126,7 +142,6 @@ export const restrictedTokenListTrade = {
     { ...dai, address: mcdDaiAddress[TENDERLY_CHAIN_ID] },
     { ...usds, address: usdsAddress[TENDERLY_CHAIN_ID] }
   ],
-  // ]
   [sepolia.id]: [
     // The USDC token that COW uses has 18 decimals, instead of 6
     { ...usdc, address: usdcSepoliaAddress[sepolia.id], decimals: 18 },
@@ -150,5 +165,13 @@ export const restrictedTokenListTrade = {
   [tenderlyArbitrum.id]: [
     { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
     { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
+  ],
+  [optimism.id]: [
+    { ...usdc, address: usdcL2Address[optimism.id] },
+    { ...usds, address: usdsL2Address[optimism.id] }
+  ],
+  [unichain.id]: [
+    { ...usdc, address: usdcL2Address[unichain.id] },
+    { ...usds, address: usdsL2Address[unichain.id] }
   ]
 };

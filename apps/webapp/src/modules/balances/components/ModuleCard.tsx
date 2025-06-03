@@ -9,7 +9,7 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
-import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@jetstreamgg/utils';
 import { useChainId } from 'wagmi';
 import { QueryParams } from '@/lib/constants';
 
@@ -26,12 +26,22 @@ export const ModuleCard = ({ className, title, intent, module, notAvailable, soo
   const chainId = useChainId();
   const isBase = isBaseChainId(chainId);
   const isArbitrum = isArbitrumChainId(chainId);
+  const isOptimism = isOptimismChainId(chainId);
+  const isUnichain = isUnichainChainId(chainId);
   const url = useRetainedQueryParams(
     `/?widget=${mapIntentToQueryParam(intent)}${notAvailable ? '&network=ethereum' : ''}`,
     notAvailable
       ? [QueryParams.Locale, QueryParams.Details]
       : [QueryParams.Locale, QueryParams.Details, QueryParams.Network]
   );
+
+  const availableSoonChains = [
+    { check: isBase, name: 'Base' },
+    { check: isArbitrum, name: 'Arbitrum' },
+    { check: isOptimism, name: 'Optimism' },
+    { check: isUnichain, name: 'Unichain' }
+  ];
+  const soonChain = availableSoonChains.find(chain => chain.check);
 
   const content = (
     <>
@@ -40,7 +50,7 @@ export const ModuleCard = ({ className, title, intent, module, notAvailable, soo
           variant="small"
           className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text absolute -top-3 right-2 z-10 rounded-full px-1.5 py-0 md:px-2 md:py-1"
         >
-          <Trans>Soon on {isBase ? 'Base' : isArbitrum ? 'Arbitrum' : ''}</Trans>
+          {soonChain ? <Trans>Soon on {soonChain.name}</Trans> : <Trans>Coming Soon</Trans>}
         </Text>
       )}
       <Card className={cn('relative flex h-full flex-col justify-between bg-[length:100%_100%]', className)}>

@@ -18,7 +18,7 @@ import {
   usePreviewSwapExactOut,
   ZERO_ADDRESS
 } from '@jetstreamgg/hooks';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { formatBigInt, getTransactionLink, math, useDebounce, useIsSafeWallet } from '@jetstreamgg/utils';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -82,7 +82,7 @@ export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  widgetTitle?: string;
+  widgetTitle?: ReactNode;
 };
 
 export const L2TradeWidget = ({

@@ -1,5 +1,5 @@
-import { usePrices } from '@jetstreamgg/hooks';
-import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
+import { lsSkyUsdsRewardAddress, usePrices, useRewardsChartInfo } from '@jetstreamgg/hooks';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -7,14 +7,27 @@ import { Skeleton } from '@widgets/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { useChainId } from 'wagmi';
+import { useMemo } from 'react';
 
 export const StakeBalanceCard = ({ loading, stakeBalance, url, onExternalLinkClicked }: CardProps) => {
+  const chainId = useChainId();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
   const totalStakedValue =
     stakeBalance && pricesData?.SKY
       ? parseFloat(formatUnits(stakeBalance, 18)) * parseFloat(pricesData.SKY.price)
       : 0;
+
+  // Fetch from this BA labs endpoint to get the rate
+  const { data: rewardsChartInfoData } = useRewardsChartInfo({
+    rewardContractAddress: lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]
+  });
+
+  const mostRecentRewardsChartInfoData = useMemo(
+    () => rewardsChartInfoData?.slice().sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0],
+    [rewardsChartInfoData]
+  );
 
   if (totalStakedValue === 0) {
     return null;
@@ -33,9 +46,8 @@ export const StakeBalanceCard = ({ loading, stakeBalance, url, onExternalLinkCli
       }
       footer={
         <div className="z-[99999] flex w-fit items-center gap-1.5">
-          <Text variant="small" className="leading-4">
-            {/* TODO update once rewards go live */}
-            Rate: 0%
+          <Text variant="small" className="text-bullish leading-4">
+            {`Rate: ${formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData?.rate || '0'))}`}
           </Text>
           <PopoverRateInfo
             type="srr"

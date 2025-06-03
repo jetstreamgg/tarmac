@@ -61,8 +61,7 @@ export function useStakeRewardsData(): ReadHook & { data?: StakeRewardsData[] } 
   const baseUrl = getBaLabsApiUrl(chainId) || '';
   let url: URL | undefined;
   if (baseUrl) {
-    // TODO: Update this endpoint once deployed
-    const endpoint = `${baseUrl}/lsefarms/`;
+    const endpoint = `${baseUrl}/lsev2/`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 

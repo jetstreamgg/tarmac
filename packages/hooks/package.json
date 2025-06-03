@@ -1,6 +1,6 @@
 {
   "name": "@jetstreamgg/hooks",
-  "version": "3.3.2",
+  "version": "3.3.3",
   "description": "",
   "type": "module",
   "types": "./dist/index.d.ts",

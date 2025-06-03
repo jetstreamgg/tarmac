@@ -3,7 +3,7 @@ import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useChainId } from 'wagmi';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
-import { PopoverRateInfo } from './PopoverRateInfo';
+import { PopoverInfo } from './PopoverInfo';
 import { TOKENS } from '@jetstreamgg/hooks';
 import { useOverallSkyData } from '@jetstreamgg/hooks';
 import { formatDecimalPercentage } from '@jetstreamgg/utils';
@@ -23,7 +23,7 @@ export function SavingsRate() {
           </div>
           <div className="flex items-center gap-2">
             <Heading className="text-[32px]"> Rate: {rate}</Heading>
-            <PopoverRateInfo type="ssr" />
+            <PopoverInfo type="ssr" />
           </div>
         </VStack>
       ) : (
@@ -65,7 +65,7 @@ export function RewardsRate({ token }: any) {
           </div>
           <div className="flex items-center gap-2">
             <Heading className="text-[32px]">Rate {rate}</Heading>
-            <PopoverRateInfo type="str" />
+            <PopoverInfo type="str" />
           </div>
         </VStack>
       ) : (

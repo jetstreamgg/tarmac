@@ -1,6 +1,6 @@
-import { readFile } from 'fs/promises';
 import { encodeFunctionData, parseEther } from 'viem';
 import { NetworkName, TEST_ADDRESS } from './constants';
+import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
 export const approveToken = async (
   tokenAddress: `0x${string}`,
@@ -9,18 +9,7 @@ export const approveToken = async (
   abi: any,
   network = NetworkName.mainnet
 ) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [
-    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
-  ] = JSON.parse(file);
-  const rpcUrl =
-    network === NetworkName.mainnet
-      ? TENDERLY_MAINNET_RPC_URL
-      : network === NetworkName.base
-        ? TENDERLY_BASE_RPC_URL
-        : TENDERLY_ARBITRUM_RPC_URL;
+  const rpcUrl = await getRpcUrlFromFile(network);
 
   const amountToApprove = parseEther(amount);
 

@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Heading } from '@/modules/layout/components/Typography';
 import { SafeMarkdownRenderer } from './markdown/SafeMarkdownRenderer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { PopoverInfo } from './PopoverInfo';
 
 interface Item {
   question: string;
@@ -23,15 +24,36 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
               <SafeMarkdownRenderer
                 markdown={content}
                 components={{
-                  a: ({ children, ...props }) => (
-                    <ExternalLink
-                      href={props.href || ''}
-                      className="text-blue-500 hover:underline"
-                      showIcon={false}
-                    >
-                      {children}
-                    </ExternalLink>
-                  )
+                  a: ({ children, href, ...props }) => {
+                    // Handle tooltip syntax: [text](#tooltip-type)
+                    if (href?.startsWith('#tooltip-')) {
+                      const tooltipType = href.replace('#tooltip-', '') as
+                        | 'str'
+                        | 'ssr'
+                        | 'sbr'
+                        | 'srr'
+                        | 'dtc'
+                        | 'psm';
+                      return (
+                        <span className="inline-flex items-center gap-1">
+                          {children}
+                          <PopoverInfo type={tooltipType} />
+                        </span>
+                      );
+                    }
+
+                    // Handle regular links
+                    return (
+                      <ExternalLink
+                        href={href || ''}
+                        className="text-blue-500 hover:underline"
+                        showIcon={false}
+                        {...props}
+                      >
+                        {children}
+                      </ExternalLink>
+                    );
+                  }
                 }}
               />
             </AccordionContent>

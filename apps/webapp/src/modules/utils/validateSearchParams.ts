@@ -46,7 +46,7 @@ export const validateSearchParams = (
     // also sets the selected reward contract if the reward contract address is valid
     if (key === QueryParams.Reward) {
       const rewardContract = rewardContracts?.find(
-        f => f.contractAddress.toLowerCase() === value.toLowerCase()
+        f => f.contractAddress?.toLowerCase() === value.toLowerCase()
       );
       if (!rewardContract) {
         searchParams.delete(key);
@@ -131,8 +131,11 @@ export const validateSearchParams = (
       }
     }
 
-    // removes linked action param if value is not valid
-    if (key === QueryParams.LinkedAction && !VALID_LINKED_ACTIONS.includes(value.toLowerCase())) {
+    // removes linked action param if value is not valid or if we are on an L2 chain
+    if (
+      key === QueryParams.LinkedAction &&
+      (!VALID_LINKED_ACTIONS.includes(value.toLowerCase()) || isL2Chain)
+    ) {
       // TODO here we could also check if it's a valid linked action based on the combination of widget and LA value
       searchParams.delete(key);
     }

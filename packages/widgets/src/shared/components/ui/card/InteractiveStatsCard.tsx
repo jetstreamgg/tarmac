@@ -22,36 +22,35 @@ export const InteractiveStatsCard = ({
   chainId?: number;
 }): React.ReactElement => {
   return (
-    <Link to={url ?? ''}>
-      <Card variant={url ? 'statsInteractive' : 'stats'} className="p-4 lg:p-5">
-        <div className="flex items-center gap-2">
-          <TokenIcon
-            className="h-8 w-8"
-            token={{ symbol: tokenSymbol, name: tokenSymbol }}
-            chainId={chainId ?? 1}
-          />{' '}
-          <div className="grow">
-            <CardContent className="flex items-center justify-between gap-4">
-              <Text>{title}</Text>
-              {headerRightContent}
-            </CardContent>
-            <CardFooter>
-              <div className="flex w-full justify-between">
-                <div className="flex grow items-center gap-2">
-                  {footer}
-                  <div className="h-4 w-4">
-                    <ArrowRight
-                      size={16}
-                      className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
-                    />
-                  </div>
+    <Card variant={url ? 'statsInteractive' : 'stats'} className="relative p-4 lg:p-5">
+      <div className="flex items-center gap-2">
+        <TokenIcon
+          className="h-8 w-8"
+          token={{ symbol: tokenSymbol, name: tokenSymbol }}
+          chainId={chainId ?? 1}
+        />{' '}
+        <div className="grow">
+          <CardContent className="flex items-center justify-between gap-4">
+            <Text>{title}</Text>
+            {headerRightContent}
+          </CardContent>
+          <CardFooter>
+            <div className="flex w-full justify-between">
+              <div className="flex grow items-center gap-2">
+                {footer}
+                <div className="h-4 w-4">
+                  <ArrowRight
+                    size={16}
+                    className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
+                  />
                 </div>
-                {footerRightContent}
               </div>
-            </CardFooter>
-          </div>
+              {footerRightContent}
+            </div>
+          </CardFooter>
         </div>
-      </Card>
-    </Link>
+      </div>
+      {url && <Link to={url} className="absolute inset-0 z-0 h-full w-full rounded-[20px]" />}
+    </Card>
   );
 };

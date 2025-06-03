@@ -1,14 +1,9 @@
 import { Input } from '@widgets/components/ui/input';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import {
-  ZERO_ADDRESS,
-  useStakeUserDelegates,
-  useStakeUrnSelectedVoteDelegate,
-  DelegateInfo
-} from '@jetstreamgg/hooks';
+import { ZERO_ADDRESS, useStakeUserDelegates, useStakeUrnSelectedVoteDelegate } from '@jetstreamgg/hooks';
 import { useDebounce } from '@jetstreamgg/utils';
-import { useContext, useEffect, useState, useRef, useMemo } from 'react';
+import { useContext, useEffect, useState, useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { DelegateCard } from './DelegateCard';
 import { StakeModuleWidgetContext } from '../context/context';
@@ -24,12 +19,7 @@ import { StakeFlow } from '../lib/constants';
 import { Search } from '@widgets/shared/components/icons/Search';
 import { NoResults } from '@widgets/shared/components/icons/NoResults';
 import { Close } from '@widgets/shared/components/icons/Close';
-import { formatEther, getAddress } from 'viem';
 import { t } from '@lingui/core/macro';
-
-type DelegateInfoWithTotal = DelegateInfo & {
-  totalDelegatedEther: number;
-};
 
 export const SelectDelegate = ({
   onExternalLinkClicked
@@ -50,15 +40,15 @@ export const SelectDelegate = ({
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search);
-  const hasInitiallyOrdered = useRef(false);
-  const [displayedDelegates, setDisplayedDelegates] = useState<DelegateInfoWithTotal[]>([]);
   const { data: delegates, isLoading } = useStakeUserDelegates({
     chainId,
     user: address || ZERO_ADDRESS,
     page: 1,
     pageSize: 100, //TODO: add pagination
     random: true,
-    search: debouncedSearch
+    search: debouncedSearch,
+    selectedDelegate,
+    shouldSortDelegates: true
   });
   const { data: urnSelectedVoteDelegate } = useStakeUrnSelectedVoteDelegate({
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
@@ -82,50 +72,6 @@ export const SelectDelegate = ({
     setIsSelectDelegateCompleted(true);
     setCurrentStep(getNextStep(currentStep));
   };
-
-  // One-time setup of delegate list order when data first loads
-  // Runs independently of the selected delegate changing
-  useEffect(() => {
-    if (!delegates || hasInitiallyOrdered.current) return;
-
-    const sortDelegatesFn = (a: DelegateInfoWithTotal, b: DelegateInfoWithTotal) =>
-      b.totalDelegatedEther - a.totalDelegatedEther;
-
-    const sortDelegatesWithSelectedFirst = (
-      delegates: DelegateInfoWithTotal[],
-      selectedDelegateAddress: string
-    ) => {
-      const selectedDelegate = delegates.find(
-        delegate => getAddress(delegate.id) === getAddress(selectedDelegateAddress)
-      );
-      const otherDelegates = delegates
-        .filter(delegate => getAddress(delegate.id) !== getAddress(selectedDelegateAddress))
-        .sort(sortDelegatesFn);
-
-      return [...(selectedDelegate ? [selectedDelegate] : []), ...otherDelegates];
-    };
-
-    hasInitiallyOrdered.current = true;
-    const delegatesWithTotals = delegates.map(delegate => ({
-      ...delegate,
-      totalDelegatedEther: delegate.totalDelegated ? Number(formatEther(delegate.totalDelegated)) : 0
-    }));
-
-    if (selectedDelegate && selectedDelegate !== ZERO_ADDRESS) {
-      // If there's a pre-selected delegate, put it first in the list
-      const orderedDelegates = sortDelegatesWithSelectedFirst(delegatesWithTotals, selectedDelegate);
-      setDisplayedDelegates(orderedDelegates);
-    } else {
-      // No pre-selected delegate, just sort by total delegated amount
-      const sortedDelegates = delegatesWithTotals.sort(sortDelegatesFn);
-      setDisplayedDelegates(sortedDelegates);
-    }
-  }, [delegates]);
-
-  // TODO: How to handle pagination? Pending design
-  //    Infinite scroll
-  //    Load more button
-  //    Pagination component
 
   // Runs only once, when the component mounts
   const delegateTitle = useMemo(
@@ -216,7 +162,7 @@ export const SelectDelegate = ({
         </VStack>
       ) : (
         <VStack className="py-3">
-          {displayedDelegates?.map((delegate, index) => (
+          {delegates?.map((delegate, index) => (
             <DelegateCard
               key={`${delegate.id}-${index}`}
               delegate={delegate}

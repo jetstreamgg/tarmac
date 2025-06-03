@@ -1,9 +1,19 @@
-import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@jetstreamgg/utils';
+
+import {
+  L2GeneralFaqItems,
+  baseFaqItems,
+  arbitrumFaqItems,
+  optimismFaqItems,
+  unichainFaqItems
+} from '../ui/constants/sharedFaqItems';
 
 export const getBalancesFaqItems = (chainId: number) => [
-  ...mainnetFaqItems,
+  ...[...mainnetFaqItems, ...L2GeneralFaqItems],
   ...(isBaseChainId(chainId) ? baseFaqItems : []),
-  ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : [])
+  ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : []),
+  ...(isOptimismChainId(chainId) ? optimismFaqItems : []),
+  ...(isUnichainChainId(chainId) ? unichainFaqItems : [])
 ];
 
 const mainnetFaqItems = [
@@ -87,25 +97,5 @@ SKY holders can use the token to:
     question: 'Are there risks involved with using the Sky.money web app?',
     answer:
       'For details regarding potential risks using Sky.money web app, please see the [User Risk Documentation](https://docs.sky.money/user-risks).'
-  }
-];
-
-const baseFaqItems = [
-  {
-    question: 'What is Base?',
-    answer: `Base is a Coinbase-developed Layer 2 (L2) network that provides easy access to some L1 networks, including Ethereum, Solana, and other L2s. 
-
-SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, seamlessly connects your Ethereum L1-based Sky Protocol tokens and features to the Base network. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds. 
-`
-  }
-];
-
-const arbitrumFaqItems = [
-  {
-    question: 'What is Arbitrum?',
-    answer: `Arbitrum is a Layer 2 (L2) scaling solution designed to improve the scalability and efficiency of Ethereum. Specifically, it is an Optimistic roll-up built on top of the Ethereum blockchain, relying on Ethereum for security and consensus. Although it functions like an independent network for users interacting with it, Arbitrum is not a standalone Layer 1 (L1) blockchain. 
-
-SkyLink, the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks, enhances your ability to manage your digital assets efficiently by seamlessly connecting your Ethereum L1-based Sky Protocol tokens and features to Arbitrum. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds. 
-`
   }
 ];

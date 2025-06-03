@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 import { usePrepareNotification } from './usePrepareNotification';
 import { RewardsModule } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 
 const generateToastConfig = ({
   title,
@@ -52,7 +52,7 @@ const generateToastConfig = ({
             <Text variant={descriptionSubVariant} className={descriptionSubClassName}>
               {descriptionSub}
             </Text>
-            {!!rateType && <PopoverRateInfo type={rateType} />}
+            {!!rateType && <PopoverInfo type={rateType} />}
           </HStack>
         </VStack>
         <Button className="place-self-end" variant="pill" size="xs" onClick={onClick}>

@@ -26,7 +26,7 @@ import {
   useCreatePreSignTradeOrder,
   useOnChainCancelOrder
 } from '@jetstreamgg/hooks';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   formatBigInt,
   getTransactionLink,
@@ -61,6 +61,7 @@ export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  widgetTitle?: ReactNode;
 };
 
 export const TradeWidget = ({

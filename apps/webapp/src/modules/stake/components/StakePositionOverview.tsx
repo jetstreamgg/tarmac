@@ -98,7 +98,10 @@ export function StakePositionOverview({
               token={usds}
             />
             {data?.selectedReward && (
-              <StakePositionRewardsCard rewardContractAddress={data.selectedReward as `0x${string}`} />
+              <StakePositionRewardsCard
+                rewardContractAddress={data.selectedReward as `0x${string}`}
+                urnAddress={urnAddress || ZERO_ADDRESS}
+              />
             )}
           </HStack>
           {(data?.selectedDelegate || data?.selectedReward) && (

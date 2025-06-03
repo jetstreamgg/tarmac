@@ -1,5 +1,12 @@
 # @jetstreamgg/hooks
 
+## 3.3.3
+
+### Patch Changes
+
+- 947d9b0: Add log error when useWriteContractFlow.execute() is called before the simulation is ready
+- eb162fc: Update EthFlow contract address
+
 ## 3.3.2
 
 ### Patch Changes

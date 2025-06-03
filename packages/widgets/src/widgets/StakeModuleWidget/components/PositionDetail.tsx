@@ -8,8 +8,8 @@ import {
   TOKENS,
   useRewardContractTokens,
   useDelegateName,
-  useSaRewardContracts,
-  useDelegateOwner
+  useDelegateOwner,
+  useStakeRewardContracts
 } from '@jetstreamgg/hooks';
 import { captitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -61,7 +61,7 @@ export function PositionDetail({
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
   const { data: selectedDelegateOwner } = useDelegateOwner(selectedVoteDelegate);
-  const { data: sealRewardContracts } = useSaRewardContracts();
+  const { data: stakeRewardContracts } = useStakeRewardContracts();
 
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
 
@@ -170,9 +170,9 @@ export function PositionDetail({
         liquidationPrice={liquidationPrice}
       />
       <>
-        {sealRewardContracts &&
+        {stakeRewardContracts &&
           urnAddress &&
-          sealRewardContracts.map(({ contractAddress }) => (
+          stakeRewardContracts.map(({ contractAddress }) => (
             <ClaimRewardsButton
               key={`${index}-${contractAddress}`}
               rewardContract={contractAddress}

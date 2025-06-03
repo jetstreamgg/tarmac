@@ -52,7 +52,7 @@ export const BalancesHeader = ({
     <Skeleton className="bg-card h-8" />
   ) : (
     <Card variant="address" className="mb-3">
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex">
           {jazziconComponent}
           <Text className="ml-3">{truncatedAddress}</Text>

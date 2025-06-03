@@ -4,19 +4,21 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { LoadingErrorWrapper } from '@/modules/ui/components/LoadingErrorWrapper';
 import { LoadingStatCard } from '@/modules/ui/components/LoadingStatCard';
-import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
+  lsSkyUsdsRewardAddress,
   useRewardContractTokens,
   useRewardsChartInfo,
   useStakeHistoricData,
   useStakeRewardContracts
 } from '@jetstreamgg/hooks';
-import { formatAddress, formatNumber } from '@jetstreamgg/utils';
+import { formatAddress, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useMemo } from 'react';
+import { useChainId } from 'wagmi';
 
 const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${string}` }) => {
   const {
@@ -24,6 +26,8 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
     isLoading: tokensLoading,
     error: tokensError
   } = useRewardContractTokens(contractAddress);
+
+  const chainId = useChainId();
 
   // const {
   //   data: rewardRate,
@@ -55,6 +59,17 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
       stakeHistoricData?.sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime())[0],
     [stakeHistoricData]
   );
+
+  // Fetch from this BA labs endpoint to get the rate
+  const { data: rewardsChartInfoData } = useRewardsChartInfo({
+    rewardContractAddress: lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]
+  });
+
+  const mostRecentRewardsChartInfoData = useMemo(
+    () => rewardsChartInfoData?.slice().sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0],
+    [rewardsChartInfoData]
+  );
+
   const skyPrice = mostRecentStakeData?.skyPrice ? Number(mostRecentStakeData.skyPrice) : 0;
 
   const totalSupplied = mostRecentReward?.totalSupplied ? parseFloat(mostRecentReward.totalSupplied) : 0;
@@ -83,13 +98,20 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
             <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
               <Trans>Rate</Trans>
             </Heading>
-            <PopoverRateInfo type="srr" />
+            <PopoverInfo type="srr" />
           </HStack>
         }
         isLoading={false}
         error={null}
-        // TODO update once rewards go live
-        content={<Text className="mt-2">0%</Text>}
+        content={
+          <Text
+            className={`mt-2 ${
+              parseFloat(mostRecentRewardsChartInfoData?.rate || '0') > 0 ? 'text-bullish' : ''
+            }`}
+          >
+            {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData?.rate || '0'))}
+          </Text>
+        }
       />
       <StatsCard
         title={t`TVL (Total Value Locked)`}

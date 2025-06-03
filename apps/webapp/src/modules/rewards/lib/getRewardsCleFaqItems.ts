@@ -8,6 +8,7 @@ export interface Item {
 export const getRewardsCleFaqItems = (chainId: number): Item[] => [
   ...mainnetFaqItems,
   ...(isBaseChainId(chainId) ? baseFaqItems : [])
+  // TODO add arbitrum, optimism and unichain
 ];
 
 const mainnetFaqItems = [

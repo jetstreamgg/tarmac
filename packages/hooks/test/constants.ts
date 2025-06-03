@@ -4,5 +4,7 @@ export const MAX_UINT_256 = BigInt(2) ** BigInt(256) - BigInt(1);
 export enum NetworkName {
   mainnet = 'mainnet',
   base = 'base',
-  arbitrum = 'arbitrum'
+  arbitrum = 'arbitrum',
+  optimism = 'optimism',
+  unichain = 'unichain'
 }

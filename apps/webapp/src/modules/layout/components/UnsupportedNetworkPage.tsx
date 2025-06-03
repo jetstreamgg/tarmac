@@ -40,8 +40,7 @@ export const UnsupportedNetworkPage = ({ children }: { children: React.ReactNode
                 </Trans>
               </Text>
               <div className="flex flex-wrap gap-2">
-                {/* This will display buttons for all supported networks for the current Wagmi config.
-                 * For production this would only use Mainnet and Base */}
+                {/* This will display buttons for all supported networks for the current Wagmi config. */}
                 {chains.map(({ name, id }) => (
                   <Button
                     variant="connectPrimary"

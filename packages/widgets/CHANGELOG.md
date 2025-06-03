@@ -1,5 +1,18 @@
 # @jetstreamgg/widgets
 
+## 4.0.0
+
+### Major Changes
+
+- d0d07ec: Seal engine deprecation
+
+### Patch Changes
+
+- ce7e1e2: Add ActivationWidget
+- Updated dependencies [947d9b0]
+- Updated dependencies [eb162fc]
+  - @jetstreamgg/hooks@3.3.3
+
 ## 3.3.2
 
 ### Patch Changes

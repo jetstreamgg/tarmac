@@ -1,5 +1,6 @@
 import { Chain, defineChain } from 'viem';
 import tenderlyTestnetData from '../../../../../../tenderlyTestnetData.json' with { type: 'json' };
+import { optimism, unichain } from 'viem/chains';
 
 export const TENDERLY_CHAIN_ID = 314310;
 export const TENDERLY_BASE_CHAIN_ID = 8555;
@@ -18,7 +19,7 @@ export const TENDERLY_ARBITRUM_RPC_URL =
   'https://virtual.arbitrum.rpc.tenderly.co/5a2a28a6-322f-4506-acf8-1151a13b5ccf';
 
 export const getTestTenderlyChains = () => {
-  const [mainnetData, baseData, arbitrumData] = tenderlyTestnetData;
+  const [mainnetData, baseData, arbitrumData, optimismData, unichainData] = tenderlyTestnetData;
 
   return [
     defineChain({
@@ -44,6 +45,20 @@ export const getTestTenderlyChains = () => {
       rpcUrls: {
         default: { http: [arbitrumData.TENDERLY_RPC_URL || TENDERLY_ARBITRUM_RPC_URL] }
       }
-    })
-  ] as readonly [Chain, Chain, Chain];
+    }),
+    {
+      ...optimism,
+      name: 'Tenderly Optimism',
+      rpcUrls: {
+        default: { http: [optimismData.TENDERLY_RPC_URL] }
+      }
+    },
+    {
+      ...unichain,
+      name: 'Tenderly Unichain',
+      rpcUrls: {
+        default: { http: [unichainData.TENDERLY_RPC_URL] }
+      }
+    }
+  ] as readonly Chain[];
 };

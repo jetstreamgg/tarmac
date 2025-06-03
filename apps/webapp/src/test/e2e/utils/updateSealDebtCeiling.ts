@@ -1,12 +1,12 @@
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { getIlkName } from '@jetstreamgg/hooks';
-import { readFile } from 'fs/promises';
 import { mcdVatAbi, mcdVatAddress, sealModuleAddress } from 'node_modules/@jetstreamgg/hooks/src/generated';
 import { encodeFunctionData, stringToHex } from 'viem';
+import { NetworkName } from './constants';
+import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
 export const updateSealDebtCeiling = async (newDebtCeiling: bigint) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [{ TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL }] = JSON.parse(file);
+  const TENDERLY_MAINNET_RPC_URL = await getRpcUrlFromFile(NetworkName.mainnet);
 
   // The seal module contract is authorized to change the `line` parameter
   const AUTHORIZED_ADDRESS = sealModuleAddress[TENDERLY_CHAIN_ID];

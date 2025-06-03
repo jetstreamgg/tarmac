@@ -3,7 +3,7 @@ import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
-import { PopoverRateInfo } from '@/modules/ui/components/PopoverRateInfo';
+import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 import { useOverallSkyData } from '@jetstreamgg/hooks';
 import { formatDecimalPercentage } from '@jetstreamgg/utils';
 import { TOKENS } from '@jetstreamgg/hooks';
@@ -53,7 +53,7 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
             <Text className="text-bullish" variant="large">
               {formatDecimalPercentage(parseFloat(skyData?.usdsSkyCRate || '0'))}
             </Text>
-            <PopoverRateInfo type="str" />
+            <PopoverInfo type="str" />
           </div>
         }
       />

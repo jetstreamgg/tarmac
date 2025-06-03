@@ -1,6 +1,6 @@
-import { readFile } from 'fs/promises';
 import { NetworkName, TEST_ADDRESS } from './constants';
 import { parseEther, parseUnits, toHex } from 'viem';
+import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
 export async function backOffRetry<T>(fn: () => Promise<T>, retries: number, delay: number): Promise<T> {
   try {
@@ -13,18 +13,7 @@ export async function backOffRetry<T>(fn: () => Promise<T>, retries: number, del
 }
 
 const checkBalanceRequest = async (address: string, network = NetworkName.mainnet) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [
-    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
-  ] = JSON.parse(file);
-  const rpcUrl =
-    network === NetworkName.mainnet
-      ? TENDERLY_MAINNET_RPC_URL
-      : network === NetworkName.base
-        ? TENDERLY_BASE_RPC_URL
-        : TENDERLY_ARBITRUM_RPC_URL;
+  const rpcUrl = await getRpcUrlFromFile(network);
 
   const response = await fetch(rpcUrl, {
     method: 'POST',
@@ -53,18 +42,7 @@ const setEthBalanceRequest = async (
   network = NetworkName.mainnet,
   address = TEST_ADDRESS
 ) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [
-    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
-  ] = JSON.parse(file);
-  const rpcUrl =
-    network === NetworkName.mainnet
-      ? TENDERLY_MAINNET_RPC_URL
-      : network === NetworkName.base
-        ? TENDERLY_BASE_RPC_URL
-        : TENDERLY_ARBITRUM_RPC_URL;
+  const rpcUrl = await getRpcUrlFromFile(network);
 
   console.log(`Setting ETH balance for address ${address} on network ${network} to ${amount}`);
 
@@ -114,18 +92,7 @@ const checkErc20BalanceRequest = async (
   address: string,
   network = NetworkName.mainnet
 ) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [
-    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
-  ] = JSON.parse(file);
-  const rpcUrl =
-    network === NetworkName.mainnet
-      ? TENDERLY_MAINNET_RPC_URL
-      : network === NetworkName.base
-        ? TENDERLY_BASE_RPC_URL
-        : TENDERLY_ARBITRUM_RPC_URL;
+  const rpcUrl = await getRpcUrlFromFile(network);
 
   // Call balanceOf function on the ERC20 token contract
   const response = await fetch(rpcUrl, {
@@ -164,18 +131,7 @@ const setErc20BalanceRequest = async (
   network = NetworkName.mainnet,
   address = TEST_ADDRESS
 ) => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const [
-    { TENDERLY_RPC_URL: TENDERLY_MAINNET_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_BASE_RPC_URL },
-    { TENDERLY_RPC_URL: TENDERLY_ARBITRUM_RPC_URL }
-  ] = JSON.parse(file);
-  const rpcUrl =
-    network === NetworkName.mainnet
-      ? TENDERLY_MAINNET_RPC_URL
-      : network === NetworkName.base
-        ? TENDERLY_BASE_RPC_URL
-        : TENDERLY_ARBITRUM_RPC_URL;
+  const rpcUrl = await getRpcUrlFromFile(network);
 
   console.log(
     `Setting ERC20 balance for token ${tokenAddress} address ${address} on network ${network} to ${amount}`
