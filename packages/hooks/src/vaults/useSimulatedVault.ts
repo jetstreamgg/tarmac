@@ -8,7 +8,6 @@ import { formatBigInt, getEtherscanLink, math } from '@jetstreamgg/utils';
 import { TRUST_LEVELS } from '../constants';
 import { SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';
-import { TOKENS } from '../tokens/tokens.constants';
 
 export function useSimulatedVault(
   collateralAmount: bigint,
@@ -91,7 +90,7 @@ export function useSimulatedVault(
     ? `${formatBigInt(minCollateralForDust, { unit: 'wad', compact: true })}`
     : undefined;
   const formattedMinSkyCollateralForDust = minCollateralForDust
-    ? `${formatBigInt(math.calculateConversion(TOKENS.mkr, minCollateralForDust), { unit: 'wad', compact: true })}`
+    ? `${formatBigInt(minCollateralForDust, { unit: 'wad', compact: true })}`
     : undefined;
 
   const insufficientCollateral =
