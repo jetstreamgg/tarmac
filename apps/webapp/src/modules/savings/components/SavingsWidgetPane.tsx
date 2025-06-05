@@ -18,6 +18,7 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Intent } from '@/lib/enums';
+import { BATCH_TX_ENABLED } from '@/lib/constants';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -124,6 +125,7 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
         flow
       }}
       disallowedTokens={disallowedTokens}
+      batchEnabled={BATCH_TX_ENABLED}
     />
   );
 }

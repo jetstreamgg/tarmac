@@ -243,7 +243,7 @@ export function UpgradeWidgetWrapped({
     token: originToken.address[chainId]
   });
 
-  const { data: batchSupported } = useIsBatchSupported();
+  const { data: batchSupported, isLoading: isBatchSupportLoading } = useIsBatchSupported();
 
   const {
     data: allowance,
@@ -424,7 +424,7 @@ export function UpgradeWidgetWrapped({
       setWidgetState((prev: WidgetState) => ({
         ...prev,
         action:
-          !hasAllowance && !allowanceLoading && !shouldUseBatch
+          !hasAllowance && !allowanceLoading && !shouldUseBatch && !isBatchSupportLoading
             ? UpgradeAction.APPROVE
             : UpgradeAction.UPGRADE
       }));
@@ -432,10 +432,19 @@ export function UpgradeWidgetWrapped({
       setWidgetState((prev: WidgetState) => ({
         ...prev,
         action:
-          !hasAllowance && !allowanceLoading && !shouldUseBatch ? UpgradeAction.APPROVE : UpgradeAction.REVERT
+          !hasAllowance && !allowanceLoading && !shouldUseBatch && !isBatchSupportLoading
+            ? UpgradeAction.APPROVE
+            : UpgradeAction.REVERT
       }));
     }
-  }, [widgetState.flow, widgetState.screen, hasAllowance, allowanceLoading, shouldUseBatch]);
+  }, [
+    widgetState.flow,
+    widgetState.screen,
+    hasAllowance,
+    allowanceLoading,
+    shouldUseBatch,
+    isBatchSupportLoading
+  ]);
 
   const isBalanceError =
     txStatus === TxStatus.IDLE &&
@@ -470,7 +479,8 @@ export function UpgradeWidgetWrapped({
     allowance === undefined ||
     allowanceLoading ||
     (txStatus === TxStatus.SUCCESS && !actionManager.prepared) || //disable next button if action not prepared
-    isAmountWaitingForDebounce;
+    isAmountWaitingForDebounce ||
+    (!!batchEnabled && isBatchSupportLoading);
 
   const upgradeDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
@@ -562,13 +572,15 @@ export function UpgradeWidgetWrapped({
 
   // Handle the error onClicks separately to keep it clear
   const errorOnClick = () => {
-    return widgetState.action === UpgradeAction.UPGRADE
-      ? upgradeOnClick()
-      : widgetState.action === UpgradeAction.REVERT
-        ? revertOnClick()
-        : widgetState.action === UpgradeAction.APPROVE
-          ? approveOnClick()
-          : undefined;
+    return shouldUseBatch
+      ? batchTransactionOnClick()
+      : widgetState.action === UpgradeAction.UPGRADE
+        ? upgradeOnClick()
+        : widgetState.action === UpgradeAction.REVERT
+          ? revertOnClick()
+          : widgetState.action === UpgradeAction.APPROVE
+            ? approveOnClick()
+            : undefined;
   };
 
   const batchTransactionOnClick = () => {

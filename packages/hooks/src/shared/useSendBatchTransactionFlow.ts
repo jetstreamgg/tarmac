@@ -43,26 +43,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     }
   });
 
-  // TODO: Check how the implementation for Safe would work
-  // Workaround to get `txHash` from Safe connector
-  // const { connector } = useAccount();
-  // const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID;
-
-  // const eventHash = useWaitForSafeTxHash({
-  //   chainId,
-  //   safeTxHash: mutationData?.id,
-  //   isSafeConnector
-  // });
-
-  // // If the user is currently connected through the Safe connector, the txHash will only
-  // // be populated after we get it from the Safe wallet contract event, if they're connected
-  // // to any other connector, the txHash will be the one we get from the mutation
-  // const txHash = useMemo(
-  //   () => (isSafeConnector ? eventHash : mutationData?.id),
-  //   [eventHash, mutationData?.id, isSafeConnector]
-  // );
-
-  // Monitor tx
+  // Monitor tx, this is also compatible with Safe wallets
   const {
     isLoading: isMining,
     isSuccess,

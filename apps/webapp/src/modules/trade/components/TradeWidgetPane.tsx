@@ -7,7 +7,7 @@ import {
 } from '@jetstreamgg/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
-import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { BATCH_TX_ENABLED, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -168,6 +168,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         },
         chainId
       )}
+      batchEnabled={BATCH_TX_ENABLED}
     />
   );
 }
