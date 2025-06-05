@@ -18,7 +18,7 @@ import {
   usePreviewSwapExactOut,
   ZERO_ADDRESS
 } from '@jetstreamgg/hooks';
-import { useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useState, ReactNode, useRef } from 'react';
 import {
   formatBigInt,
   math,
@@ -166,7 +166,7 @@ function TradeWidgetWrapped({
   }, [onStateValidated, validatedExternalState]);
 
   const [lastUpdated, setLastUpdated] = useState<TradeSide>(TradeSide.IN);
-
+  const isUpdatingFromExternalState = useRef(false);
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
   const isSafeWallet = useIsSafeWallet();
@@ -316,105 +316,119 @@ function TradeWidgetWrapped({
 
   useEffect(() => {
     if (lastUpdated === TradeSide.IN) {
-      // stables <-> stables
-      if (
-        originToken?.symbol === 'USDS' &&
-        targetToken?.symbol === 'USDC' &&
-        maxAmountOutForDeposit !== undefined &&
-        maxAmountOutForDeposit !== 0n
-      ) {
-        setTargetAmount(maxAmountOutForDeposit);
-      }
-      if (
-        originToken?.symbol === 'USDC' &&
-        targetToken?.symbol === 'USDS' &&
-        maxAmountOutForDeposit !== undefined &&
-        maxAmountOutForDeposit !== 0n
-      ) {
-        setTargetAmount(maxAmountOutForDeposit);
-      }
+      if (originAmount === 0n) {
+        setTargetAmount(0n);
+      } else {
+        // stables <-> stables
+        if (
+          originToken?.symbol === 'USDS' &&
+          targetToken?.symbol === 'USDC' &&
+          maxAmountOutForDeposit !== undefined &&
+          maxAmountOutForDeposit !== 0n
+        ) {
+          setTargetAmount(originAmount === 0n ? 0n : maxAmountOutForDeposit);
+        }
+        if (
+          originToken?.symbol === 'USDC' &&
+          targetToken?.symbol === 'USDS' &&
+          maxAmountOutForDeposit !== undefined &&
+          maxAmountOutForDeposit !== 0n
+        ) {
+          setTargetAmount(originAmount === 0n ? 0n : maxAmountOutForDeposit);
+        }
 
-      // stables -> sUSDS
-      if (originToken?.symbol === 'USDS' && targetToken?.symbol === 'sUSDS')
-        setTargetAmount(math.calculateSharesFromAssets(debouncedOriginAmount, updatedChiForDeposit));
+        // stables -> sUSDS
+        if (originToken?.symbol === 'USDS' && targetToken?.symbol === 'sUSDS')
+          setTargetAmount(math.calculateSharesFromAssets(debouncedOriginAmount, updatedChiForDeposit));
 
-      if (originToken?.symbol === 'USDC' && targetToken?.symbol === 'sUSDS')
-        setTargetAmount(
-          math.roundDownLastTwelveDigits(
-            math.calculateSharesFromAssets(math.convertUSDCtoWad(debouncedOriginAmount), updatedChiForDeposit)
-          )
-        );
+        if (originToken?.symbol === 'USDC' && targetToken?.symbol === 'sUSDS')
+          setTargetAmount(
+            math.roundDownLastTwelveDigits(
+              math.calculateSharesFromAssets(
+                math.convertUSDCtoWad(debouncedOriginAmount),
+                updatedChiForDeposit
+              )
+            )
+          );
 
-      // sUSDS -> stables
-      if (
-        originToken?.symbol === 'sUSDS' &&
-        targetToken?.symbol === 'USDS' &&
-        maxAmountOutForDeposit !== undefined &&
-        maxAmountOutForDeposit !== 0n
-      ) {
-        setTargetAmount(maxAmountOutForDeposit);
-      }
-      if (
-        originToken?.symbol === 'sUSDS' &&
-        targetToken?.symbol === 'USDC' &&
-        maxAmountOutForDeposit !== undefined &&
-        maxAmountOutForDeposit !== 0n
-      ) {
-        setTargetAmount(maxAmountOutForDeposit);
+        // sUSDS -> stables
+        if (
+          originToken?.symbol === 'sUSDS' &&
+          targetToken?.symbol === 'USDS' &&
+          maxAmountOutForDeposit !== undefined &&
+          maxAmountOutForDeposit !== 0n
+        ) {
+          setTargetAmount(maxAmountOutForDeposit);
+        }
+        if (
+          originToken?.symbol === 'sUSDS' &&
+          targetToken?.symbol === 'USDC' &&
+          maxAmountOutForDeposit !== undefined &&
+          maxAmountOutForDeposit !== 0n
+        ) {
+          setTargetAmount(maxAmountOutForDeposit);
+        }
       }
     }
 
     if (lastUpdated === TradeSide.OUT) {
-      // stables <-> stables
-      if (
-        originToken?.symbol === 'USDS' &&
-        targetToken?.symbol === 'USDC' &&
-        maxAmountInForWithdraw !== undefined &&
-        maxAmountInForWithdraw !== 0n
-      ) {
-        setOriginAmount(maxAmountInForWithdraw);
-      }
-      if (
-        originToken?.symbol === 'USDC' &&
-        targetToken?.symbol === 'USDS' &&
-        maxAmountInForWithdraw !== undefined &&
-        maxAmountInForWithdraw !== 0n
-      ) {
-        setOriginAmount(maxAmountInForWithdraw);
+      if (targetAmount === 0n) {
+        setOriginAmount(0n);
+      } else {
+        // stables <-> stables
+        if (
+          originToken?.symbol === 'USDS' &&
+          targetToken?.symbol === 'USDC' &&
+          maxAmountInForWithdraw !== undefined &&
+          maxAmountInForWithdraw !== 0n
+        ) {
+          setOriginAmount(maxAmountInForWithdraw);
+        }
+        if (
+          originToken?.symbol === 'USDC' &&
+          targetToken?.symbol === 'USDS' &&
+          maxAmountInForWithdraw !== undefined &&
+          maxAmountInForWithdraw !== 0n
+        ) {
+          setOriginAmount(maxAmountInForWithdraw);
+        }
+
+        // stables -> sUSDS
+        if (originToken?.symbol === 'USDS' && targetToken?.symbol === 'sUSDS')
+          setOriginAmount(math.calculateAssetsFromShares(debouncedTargetAmount, updatedChiForDeposit));
+
+        if (originToken?.symbol === 'USDC' && targetToken?.symbol === 'sUSDS')
+          setOriginAmount(
+            math.roundUpLastTwelveDigits(
+              math.convertWadtoUSDC(
+                math.calculateAssetsFromShares(debouncedTargetAmount, updatedChiForDeposit)
+              )
+            )
+          );
+
+        // sUSDS -> stables
+        if (
+          originToken?.symbol === 'sUSDS' &&
+          targetToken?.symbol === 'USDS' &&
+          maxAmountInForWithdraw !== undefined &&
+          maxAmountInForWithdraw !== 0n
+        ) {
+          setOriginAmount(maxAmountInForWithdraw);
+        }
+        if (
+          originToken?.symbol === 'sUSDS' &&
+          targetToken?.symbol === 'USDC' &&
+          maxAmountInForWithdraw !== undefined &&
+          maxAmountInForWithdraw !== 0n
+        ) {
+          setOriginAmount(maxAmountInForWithdraw);
+        }
       }
 
-      // stables -> sUSDS
-      if (originToken?.symbol === 'USDS' && targetToken?.symbol === 'sUSDS')
-        setOriginAmount(math.calculateAssetsFromShares(debouncedTargetAmount, updatedChiForDeposit));
-
-      if (originToken?.symbol === 'USDC' && targetToken?.symbol === 'sUSDS')
-        setOriginAmount(
-          math.roundUpLastTwelveDigits(
-            math.convertWadtoUSDC(math.calculateAssetsFromShares(debouncedTargetAmount, updatedChiForDeposit))
-          )
-        );
-
-      // sUSDS -> stables
-      if (
-        originToken?.symbol === 'sUSDS' &&
-        targetToken?.symbol === 'USDS' &&
-        maxAmountInForWithdraw !== undefined &&
-        maxAmountInForWithdraw !== 0n
-      ) {
-        setOriginAmount(maxAmountInForWithdraw);
-      }
-      if (
-        originToken?.symbol === 'sUSDS' &&
-        targetToken?.symbol === 'USDC' &&
-        maxAmountInForWithdraw !== undefined &&
-        maxAmountInForWithdraw !== 0n
-      ) {
-        setOriginAmount(maxAmountInForWithdraw);
-      }
       if (originToken) {
         const formattedValue = formatUnits(originAmount, getTokenDecimals(originToken, chainId));
         onWidgetStateChange?.({
-          originAmount: formattedValue,
+          originAmount: Number(formattedValue) !== 0 ? formattedValue : '',
           txStatus,
           widgetState
         });
@@ -431,7 +445,15 @@ function TradeWidgetWrapped({
     maxAmountInForWithdraw
   ]);
 
+  // TODO: This is working with links with the reset param but not without it
   useEffect(() => {
+    // Prevent processing external state changes that originated from internal updates
+    if (isUpdatingFromExternalState.current) {
+      return;
+    }
+
+    isUpdatingFromExternalState.current = true;
+
     const tokensHasChanged =
       externalWidgetState?.token?.toLowerCase() !== originToken?.symbol?.toLowerCase() ||
       externalWidgetState?.targetToken?.toLowerCase() !== targetToken?.symbol?.toLowerCase();
@@ -518,7 +540,6 @@ function TradeWidgetWrapped({
         );
         if (amountHasChanged && newOriginToken !== undefined) {
           const newAmount = parseUnits(externalWidgetState.amount, getTokenDecimals(newOriginToken, chainId));
-
           setTimeout(() => {
             setOriginAmount(newAmount);
             setTargetAmount(0n);
@@ -535,6 +556,11 @@ function TradeWidgetWrapped({
         action: needsAllowance ? TradeAction.APPROVE : TradeAction.TRADE,
         screen: TradeScreen.ACTION
       }));
+
+      // // Clear flag after processing external state change
+      // setTimeout(() => {
+      //   isUpdatingFromExternalState.current = false;
+      // }, 1000);
     }
   }, [
     externalWidgetState?.timestamp,
@@ -1074,7 +1100,7 @@ function TradeWidgetWrapped({
                   const formattedValue = formatUnits(newValue, getTokenDecimals(originToken, chainId));
                   const truncatedValue = truncateStringToFourDecimals(formattedValue);
                   onWidgetStateChange?.({
-                    originAmount: truncatedValue,
+                    originAmount: Number(truncatedValue) !== 0 ? truncatedValue : '',
                     txStatus,
                     widgetState
                   });
@@ -1098,8 +1124,10 @@ function TradeWidgetWrapped({
               setOriginToken={setOriginToken}
               setTargetToken={setTargetToken}
               setTargetAmount={setTargetAmount}
-              onTargetInputChange={newValue => {
-                setTargetAmount(newValue);
+              onTargetInputChange={(newValue: bigint, userTriggered?: boolean) => {
+                if (targetToken && userTriggered) {
+                  setTargetAmount(newValue);
+                }
               }}
               onTargetInputInput={() => {
                 setLastUpdated(TradeSide.OUT);
