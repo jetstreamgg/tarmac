@@ -521,6 +521,7 @@ function TradeWidgetWrapped({
         }
       }
 
+      let timeoutId: NodeJS.Timeout | undefined;
       // Handle amount updates
       if (externalWidgetState?.amount !== undefined) {
         const newOriginToken = tokenList.find(
@@ -529,22 +530,28 @@ function TradeWidgetWrapped({
         if (amountHasChanged && newOriginToken !== undefined) {
           const newAmount = parseUnits(externalWidgetState.amount, getTokenDecimals(newOriginToken, chainId));
 
-          setTimeout(() => {
-            setOriginAmount(newAmount);
-            setTargetAmount(0n);
-            setLastUpdated(TradeSide.IN);
-          }, 500);
+          // Only update if the amount has actually changed
+          if (newAmount !== originAmount) {
+            timeoutId = setTimeout(() => {
+              console.log('Updating side');
+              // Batch all state updates together
+              setOriginAmount(newAmount);
+              // setTargetAmount(0n);
+              setLastUpdated(TradeSide.IN);
+            }, 500);
+          }
         }
       } else {
         setOriginAmount(0n);
         setTargetAmount(0n);
       }
 
-      setWidgetState((prev: WidgetState) => ({
-        ...prev,
-        action: needsAllowance ? TradeAction.APPROVE : TradeAction.TRADE,
-        screen: TradeScreen.ACTION
-      }));
+      // Cleanup the timeout if the component unmounts or dependencies change
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
     }
   }, [
     externalWidgetState?.timestamp,
@@ -553,6 +560,21 @@ function TradeWidgetWrapped({
     externalWidgetState?.targetToken,
     txStatus
   ]);
+
+  // Update external widget state when the debounced origin amount is updated
+  useEffect(() => {
+    if (originToken) {
+      const formattedValue = formatUnits(debouncedOriginAmount, getTokenDecimals(originToken, chainId));
+      const truncatedValue = truncateStringToFourDecimals(formattedValue);
+      if (truncatedValue !== externalWidgetState?.amount) {
+        onWidgetStateChange?.({
+          originAmount: truncatedValue,
+          txStatus,
+          widgetState
+        });
+      }
+    }
+  }, [debouncedOriginAmount]);
 
   const {
     execute: approveExecute,
@@ -1136,17 +1158,8 @@ function TradeWidgetWrapped({
           <CardAnimationWrapper key="widget-inputs">
             <L2TradeInputs
               setOriginAmount={setOriginAmount}
-              onOriginInputChange={(newValue: bigint, userTriggered?: boolean) => {
+              onOriginInputChange={(newValue: bigint) => {
                 setOriginAmount(newValue);
-                if (originToken && userTriggered) {
-                  const formattedValue = formatUnits(newValue, getTokenDecimals(originToken, chainId));
-                  const truncatedValue = truncateStringToFourDecimals(formattedValue);
-                  onWidgetStateChange?.({
-                    originAmount: truncatedValue,
-                    txStatus,
-                    widgetState
-                  });
-                }
               }}
               onOriginInputInput={() => {
                 setLastUpdated(TradeSide.IN);
