@@ -46,7 +46,6 @@ import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
-import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { Heading } from '@widgets/shared/components/ui/Typography';
 import { TradeTransactionStatus } from '../TradeWidget/components/TradeTransactionStatus';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
@@ -271,13 +270,6 @@ function TradeWidgetWrapped({
     setWidgetState,
     setShowStepIndicator
   } = useContext(WidgetContext);
-
-  useNotifyWidgetState({
-    widgetState,
-    txStatus,
-    targetToken: targetToken?.symbol,
-    onWidgetStateChange
-  });
 
   const pairValid = !!originToken && !!targetToken && originToken.symbol !== targetToken.symbol;
 
@@ -569,6 +561,8 @@ function TradeWidgetWrapped({
       if (truncatedValue !== externalWidgetState?.amount) {
         onWidgetStateChange?.({
           originAmount: truncatedValue,
+          originToken: originToken?.symbol,
+          targetToken: targetToken?.symbol,
           txStatus,
           widgetState
         });
@@ -1197,10 +1191,12 @@ function TradeWidgetWrapped({
                 onWidgetStateChange?.({
                   originToken: originSymbol,
                   targetToken: targetSymbol,
+                  originAmount: '',
                   txStatus,
                   widgetState
                 });
               }}
+              lastUpdated={lastUpdated}
               targetAmount={targetAmount}
               originTokenList={originTokenList}
               targetTokenList={targetTokenList}
