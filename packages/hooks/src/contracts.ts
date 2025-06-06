@@ -236,14 +236,6 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
       [mainnet.id]: '0x38E4254bD82ED5Ee97CD1C4278FAae748d998865',
       [TENDERLY_CHAIN_ID]: '0xAf7868a9BB72E16B930D50636519038d7F057470'
     }
-  },
-  // Seal migrator
-  {
-    name: 'lsMigrator',
-    address: {
-      [mainnet.id]: '0x473d777f608C3C24B441AB6bD4bBcA6b7F9AF90B',
-      [TENDERLY_CHAIN_ID]: '0xf4c5C29b14f0237131F7510A51684c8191f98E06'
-    }
   }
 ];
 
@@ -330,17 +322,6 @@ export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string
       [arbitrum.id]: '0xdDb46999F8891663a8F2828d25298f70416d7610',
       [optimism.id]: '0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0',
       [unichain.id]: '0xA06b10Db9F390990364A3984C04FaDf1c13691b5'
-    }
-  },
-  {
-    name: 'skyL2',
-    address: {
-      [base.id]: '0x60e3c701e65DEE30c23c9Fb78c3866479cc0944a',
-      [TENDERLY_BASE_CHAIN_ID]: '0x60e3c701e65DEE30c23c9Fb78c3866479cc0944a',
-      [TENDERLY_ARBITRUM_CHAIN_ID]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-      [arbitrum.id]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', //TODO: placeholder address
-      [optimism.id]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', //TODO: placeholder address
-      [unichain.id]: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' //TODO: placeholder address
     }
   },
   {

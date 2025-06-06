@@ -11,6 +11,7 @@ export { L2TradeWidget as ArbitrumTradeWidget } from './widgets/L2TradeWidget';
 export { L2TradeWidget } from './widgets/L2TradeWidget';
 export { BalancesWidget } from './widgets/BalancesWidget';
 export { SealModuleWidget } from './widgets/SealModuleWidget/index';
+export type { BalancesWidgetProps } from './widgets/BalancesWidget';
 export { StakeModuleWidget } from './widgets/StakeModuleWidget/index';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';
 export { TxStatus, NotificationType } from './shared/constants';

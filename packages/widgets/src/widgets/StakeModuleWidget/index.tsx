@@ -588,7 +588,6 @@ function StakeModuleWidgetWrapped({
 
   const showStep = !!widgetState.action && widgetState.action !== StakeAction.OVERVIEW;
 
-  // AQUI
   useEffect(() => {
     if (currentUrnIndexError) {
       throw new Error('Failed to fetch current urn index');
@@ -869,7 +868,6 @@ function StakeModuleWidgetWrapped({
 
   const resetToOverviewState = () => {
     setActiveUrn(undefined, onStakeUrnChange ?? (() => {}));
-    onStakeUrnChange?.(undefined);
     setWidgetState((prev: WidgetState) => ({
       ...prev,
       flow: StakeFlow.MANAGE,
@@ -886,7 +884,8 @@ function StakeModuleWidgetWrapped({
       widgetState,
       txStatus,
       stakeTab: StakeAction.LOCK,
-      originAmount: ''
+      originAmount: '',
+      urnIndex: undefined
     });
   };
 

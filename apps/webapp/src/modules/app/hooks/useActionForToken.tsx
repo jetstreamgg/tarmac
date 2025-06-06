@@ -27,7 +27,7 @@ export const useActionForToken = () => {
 
   const actionForToken = useCallback(
     (symbol: string, balance: string, tokenChainId: number) => {
-      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details, Network } =
+      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details, Network, Chat } =
         QueryParams;
       const {
         REWARDS_INTENT: REWARD,
@@ -35,7 +35,7 @@ export const useActionForToken = () => {
         TRADE_INTENT: TRADE,
         SAVINGS_INTENT: SAVINGS
       } = IntentMapping;
-      const retainedParams = [Locale, Details];
+      const retainedParams = [Locale, Details, Chat];
 
       const rewardContracts = getRewardContracts(tokenChainId);
 

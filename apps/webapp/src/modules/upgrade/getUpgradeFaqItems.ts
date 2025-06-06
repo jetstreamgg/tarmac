@@ -66,8 +66,6 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
     answer: `MKR will not automatically upgrade to SKY.
 
 Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.sky.money/). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
-
-If you currently have one or more positions in the Seal Engine, you can migrate to the Staking Engine. Your sealed MKR will be upgraded to SKY during the Seal to Staking migration process. The process, via the Sky.money web app, makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible. 
  
 For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`
   },

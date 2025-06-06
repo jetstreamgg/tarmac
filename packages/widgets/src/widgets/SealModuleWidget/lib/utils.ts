@@ -12,22 +12,8 @@ const openFlowSequence = [
 
 const manageFlowSequence = [SealStep.OPEN_BORROW, SealStep.REWARDS, SealStep.DELEGATE, SealStep.SUMMARY];
 
-const migrateFlowSequence = [
-  SealStep.ABOUT,
-  SealStep.REWARDS,
-  SealStep.DELEGATE,
-  SealStep.SUMMARY,
-  SealStep.HOPE_OLD,
-  SealStep.MIGRATE
-];
-
 export function getPreviousStep(step: SealStep, flow: SealFlow = SealFlow.OPEN): SealStep {
-  const sequence =
-    flow === SealFlow.OPEN
-      ? openFlowSequence
-      : flow === SealFlow.MIGRATE
-        ? migrateFlowSequence
-        : manageFlowSequence;
+  const sequence = flow === SealFlow.OPEN ? openFlowSequence : manageFlowSequence;
 
   const currentIndex = sequence.indexOf(step);
   if (currentIndex > 0) {
@@ -37,12 +23,7 @@ export function getPreviousStep(step: SealStep, flow: SealFlow = SealFlow.OPEN):
 }
 
 export function getNextStep(step: SealStep, flow: SealFlow = SealFlow.OPEN): SealStep {
-  const sequence =
-    flow === SealFlow.OPEN
-      ? openFlowSequence
-      : flow === SealFlow.MIGRATE
-        ? migrateFlowSequence
-        : manageFlowSequence;
+  const sequence = flow === SealFlow.OPEN ? openFlowSequence : manageFlowSequence;
 
   const currentIndex = sequence.indexOf(step);
   if (currentIndex >= 0 && currentIndex < sequence.length - 1) {
@@ -52,23 +33,13 @@ export function getNextStep(step: SealStep, flow: SealFlow = SealFlow.OPEN): Sea
 }
 
 export function getStepIndex(step: SealStep, flow: SealFlow): number {
-  const sequence =
-    flow === SealFlow.OPEN
-      ? openFlowSequence
-      : flow === SealFlow.MIGRATE
-        ? migrateFlowSequence
-        : manageFlowSequence;
+  const sequence = flow === SealFlow.OPEN ? openFlowSequence : manageFlowSequence;
   const index = sequence.indexOf(step);
   return index !== -1 ? index : 0;
 }
 
 export function getTotalSteps(flow: SealFlow): number {
-  const sequence =
-    flow === SealFlow.OPEN
-      ? openFlowSequence
-      : flow === SealFlow.MIGRATE
-        ? migrateFlowSequence
-        : manageFlowSequence;
+  const sequence = flow === SealFlow.OPEN ? openFlowSequence : manageFlowSequence;
   return sequence.length;
 }
 

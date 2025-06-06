@@ -6,7 +6,8 @@ import { TOKENS } from '@jetstreamgg/hooks';
 
 export enum StakeFlow {
   OPEN = 'open',
-  MANAGE = 'manage'
+  MANAGE = 'manage',
+  CLAIM = 'claim'
 }
 
 export enum StakeAction {

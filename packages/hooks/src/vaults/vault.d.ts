@@ -15,8 +15,6 @@ export type VaultParams = {
   liquidationRatio?: bigint;
   riskLevel?: RiskLevel;
   minCollateralForDust?: bigint;
-  formattedMinCollateralForDust?: string;
-  formattedMinSkyCollateralForDust?: string;
 };
 
 export type Vault = VaultParams & {

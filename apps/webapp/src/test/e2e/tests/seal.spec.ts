@@ -64,9 +64,5 @@ test('Free all MKR', async ({ page }) => {
 
   await approveOrPerformAction(page, 'Confirm');
   expect(page.getByRole('heading', { name: 'Success!' })).toBeVisible();
-  await expect(
-    page.getByText("You've unsealed 100 MKR to exit your position. An exit fee may have been applied.")
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Manage your staking position(s)' }).last().click();
-  await expect(page.getByText('Position 1')).toBeVisible();
+  await expect(page.getByText("You've unsealed 100 MKR to exit your position.")).toBeVisible();
 });

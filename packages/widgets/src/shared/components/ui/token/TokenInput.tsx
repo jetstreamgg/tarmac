@@ -288,6 +288,8 @@ export function TokenInput({
                       error={shownError}
                       errorTooltip={errorTooltip}
                       data-testid={dataTestId}
+                      step={'any'}
+                      min={0}
                     />
                   </motion.div>
                   <motion.div variants={positionAnimations}>

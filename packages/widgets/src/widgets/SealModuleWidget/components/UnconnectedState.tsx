@@ -6,7 +6,11 @@ import { Free } from './Free';
 import { Repay } from './Repay';
 import { Trans } from '@lingui/react/macro';
 
-export const UnconnectedState = () => {
+export const UnconnectedState = ({
+  onInputAmountChange
+}: {
+  onInputAmountChange?: (val: bigint, userTriggered?: boolean) => void;
+}) => {
   return (
     <div className="mb-8 mt-6 space-y-2">
       <Tabs defaultValue="left">
@@ -20,13 +24,13 @@ export const UnconnectedState = () => {
         </TabsList>
         <TabsContent value="left">
           <VStack gap={2} className="mt-4">
-            <Lock isConnectedAndEnabled={false} />
+            <Lock isConnectedAndEnabled={false} onChange={onInputAmountChange} />
             <Borrow isConnectedAndEnabled={false} />
           </VStack>
         </TabsContent>
         <TabsContent value="right">
           <VStack gap={2} className="mt-4">
-            <Free isConnectedAndEnabled={false} sealedAmount={0n} />
+            <Free isConnectedAndEnabled={false} sealedAmount={0n} onChange={onInputAmountChange} />
             <Repay isConnectedAndEnabled={false} />
           </VStack>
         </TabsContent>

@@ -421,11 +421,10 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
           : undefined;
 
   const inputText = minCollateralNotMet
-    ? `You need to seal at least ${
-        selectedToken === mkr
-          ? simulatedVault?.formattedMinCollateralForDust
-          : simulatedVault?.formattedMinSkyCollateralForDust
-      } ${selectedToken.symbol} to borrow`
+    ? `Minimum borrow amount is ${formatBigInt(simulatedVault?.dust || 0n, {
+        unit: 'wad',
+        compact: true
+      })} USDS`
     : `Limit ${formattedMinBorrowable.slice(0, -5)} <> ${formattedMaxBorrowable}`;
 
   return (

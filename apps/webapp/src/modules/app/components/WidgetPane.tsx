@@ -1,16 +1,9 @@
-import { BalancesWidget } from '@jetstreamgg/widgets';
 import { Balances, Upgrade, Trade, RewardsModule, Savings, Stake } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
-import {
-  CHAIN_WIDGET_MAP,
-  COMING_SOON_MAP,
-  mapIntentToQueryParam,
-  QueryParams,
-  restrictedIntents
-} from '@/lib/constants';
+import { COMING_SOON_MAP, mapIntentToQueryParam, QueryParams } from '@/lib/constants';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -20,18 +13,20 @@ import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPan
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNotification } from '../hooks/useNotification';
 import { useActionForToken } from '../hooks/useActionForToken';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { defaultConfig } from '@/modules/config/default-config';
 import { useChainId } from 'wagmi';
+import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
 import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds, getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
+import { isIntentAllowed } from '@/lib/utils';
 
 export type WidgetContent = [
   Intent,
@@ -59,11 +54,13 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const locale = i18n.locale;
 
   const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
-  const isRestricted = isRestrictedBuild || isRestrictedMiCa;
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   const rightHeaderComponent = <DualSwitcher />;
+
+  const { Locale, Details } = QueryParams;
+  const retainedParams = [Locale, Details];
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const sharedProps = {
     onConnect,
@@ -73,12 +70,9 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     onNotification,
     enabled: isConnectedAndAcceptedTerms,
     onExternalLinkClicked,
-    referralCode
+    referralCode,
+    shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };
-
-  const { Locale, Details } = QueryParams;
-  const retainedParams = [Locale, Details];
-  const [searchParams] = useSearchParams();
 
   const getQueryParams = (url: string) => getRetainedQueryParams(url, retainedParams, searchParams);
 
@@ -112,7 +106,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       'Balances',
       Balances,
       withErrorBoundary(
-        <BalancesWidget
+        <BalancesWidgetPane
           {...sharedProps}
           hideModuleBalances={isRestrictedBuild}
           actionForToken={actionForToken}
@@ -151,17 +145,22 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     ];
   });
 
+  useEffect(() => {
+    if (!searchParams.get(QueryParams.Reset)) return;
+
+    const timer = setTimeout(() => {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.Reset);
+        return prev;
+      });
+    }, 500);
+
+    return () => clearTimeout(timer); // cleanup
+  }, [searchParams, setSearchParams]);
+
   return (
     <WidgetNavigation
-      widgetContent={widgetContent.filter(([widgetIntent]) => {
-        // First check if restricted build
-        if (isRestricted && restrictedIntents.includes(widgetIntent)) {
-          return false;
-        }
-        // Then check if widget is supported on current chain
-        const supportedIntents = CHAIN_WIDGET_MAP[chainId] || [];
-        return supportedIntents.includes(widgetIntent);
-      })}
+      widgetContent={widgetContent.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))}
       intent={intent}
     >
       {children}

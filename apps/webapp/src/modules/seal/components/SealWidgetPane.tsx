@@ -1,4 +1,10 @@
-import { SealModuleWidget, TxStatus, WidgetStateChangeParams, SealFlow } from '@jetstreamgg/widgets';
+import {
+  SealModuleWidget,
+  TxStatus,
+  WidgetStateChangeParams,
+  SealFlow,
+  SealAction
+} from '@jetstreamgg/widgets';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -7,6 +13,8 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useEffect } from 'react';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
+
 import { Error } from '@/modules/layout/components/Error';
 export function SealWidgetPane(sharedProps: SharedProps) {
   let termsLink: any[] = [];
@@ -29,8 +37,14 @@ export function SealWidgetPane(sharedProps: SharedProps) {
   const refreshSealHistory = () => {};
   // const { mutate: refreshSealHistory } = useSealHistory();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { setShouldDisableActionButtons } = useChatContext();
 
   const onSealUrnChange = (urn?: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined }) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SEAL_INTENT]) {
+      return;
+    }
+
     setSearchParams(params => {
       if (urn?.urnAddress && urn?.urnIndex !== undefined) {
         params.set(QueryParams.Widget, IntentMapping[Intent.SEAL_INTENT]);
@@ -44,8 +58,8 @@ export function SealWidgetPane(sharedProps: SharedProps) {
   };
 
   // Reset detail pane urn index when widget is mounted
+  const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   useEffect(() => {
-    const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
     setSelectedSealUrnIndex(
       urnIndexParam ? (isNaN(Number(urnIndexParam)) ? undefined : Number(urnIndexParam)) : undefined
     );
@@ -54,14 +68,57 @@ export function SealWidgetPane(sharedProps: SharedProps) {
     return () => {
       setSelectedSealUrnIndex(undefined);
     };
-  }, []);
+  }, [urnIndexParam]);
 
   const onSealWidgetStateChange = ({
     hash,
     txStatus,
     widgetState,
-    displayToken
+    displayToken,
+    sealTab,
+    originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SEAL_INTENT]) {
+      return;
+    }
+
+    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
+
+    // Set flow search param based on widgetState.flow
+    if (widgetState.flow) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.Flow, widgetState.flow);
+        return prev;
+      });
+    }
+
+    // Set flow search param based on widgetState.flow
+    if (sealTab) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.SealTab, sealTab === SealAction.FREE ? 'free' : 'lock');
+        return prev;
+      });
+    } else if (sealTab === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.SealTab);
+        return prev;
+      });
+    }
+
+    // Update amount in URL if provided and not zero
+    if (originAmount && originAmount !== '0') {
+      setSearchParams(prev => {
+        prev.set(QueryParams.InputAmount, originAmount);
+        return prev;
+      });
+    } else if (originAmount === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.InputAmount);
+        return prev;
+      });
+    }
+
     // Return early so we don't trigger the linked action code below
     if (displayToken && displayToken !== userConfig?.sealToken) {
       return updateUserConfig({ ...userConfig, sealToken: displayToken?.symbol });
@@ -102,12 +159,20 @@ export function SealWidgetPane(sharedProps: SharedProps) {
     return <Error />;
   }
 
+  const sealTab = searchParams.get(QueryParams.SealTab) === 'free' ? SealAction.FREE : SealAction.LOCK;
+  const flow = searchParams.get(QueryParams.Flow) === 'open' ? SealFlow.OPEN : undefined;
+
   return (
     <SealModuleWidget
       {...sharedProps}
       onSealUrnChange={onSealUrnChange}
       onWidgetStateChange={onSealWidgetStateChange}
-      externalWidgetState={{ amount: linkedActionConfig?.inputAmount, urnIndex: selectedSealUrnIndex }}
+      externalWidgetState={{
+        amount: linkedActionConfig?.inputAmount,
+        urnIndex: selectedSealUrnIndex,
+        sealTab,
+        flow
+      }}
       termsLink={Array.isArray(termsLink) && termsLink.length > 0 ? termsLink[0] : undefined}
       mkrSkyUpgradeUrl="https://upgrademkrtosky.sky.money"
     />

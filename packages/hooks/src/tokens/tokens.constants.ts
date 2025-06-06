@@ -13,7 +13,6 @@ import {
   usdcSepoliaAddress,
   usdtSepoliaAddress,
   sUsdsConfig,
-  skyL2Address,
   sUsdsL2Address,
   usdcL2Address,
   usdsL2Address
@@ -76,13 +75,7 @@ export const TOKENS: TokenMapping = {
   },
   sky: {
     address: {
-      ...skyConfig.address,
-      [base.id]: skyL2Address[base.id],
-      [arbitrum.id]: skyL2Address[arbitrum.id],
-      [TENDERLY_BASE_CHAIN_ID]: skyL2Address[TENDERLY_BASE_CHAIN_ID],
-      [TENDERLY_ARBITRUM_CHAIN_ID]: skyL2Address[TENDERLY_ARBITRUM_CHAIN_ID],
-      [optimism.id]: skyL2Address[optimism.id],
-      [unichain.id]: skyL2Address[unichain.id]
+      ...skyConfig.address
     },
     name: 'SKY',
     symbol: 'SKY',

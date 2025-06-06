@@ -18,6 +18,7 @@ import { useGovernanceMigrationToast } from '@/modules/app/hooks/useGovernanceMi
 
 import '@rainbow-me/rainbowkit/styles.css';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
+import { ChatProvider } from '@/modules/chat/context/ChatContext';
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 // Vite sets MODE to production when running vite build
@@ -35,15 +36,17 @@ const AppContent = () => {
 
   return (
     <ConnectedProvider>
-      <TermsModalProvider>
-        <BalanceFiltersProvider>
-          <TooltipProvider delayDuration={300}>
-            <ExternalLinkModal />
-            <Toaster />
-            <RouterProvider router={router} />
-          </TooltipProvider>
-        </BalanceFiltersProvider>
-      </TermsModalProvider>
+      <ChatProvider>
+        <TermsModalProvider>
+          <BalanceFiltersProvider>
+            <TooltipProvider delayDuration={300}>
+              <ExternalLinkModal />
+              <Toaster />
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </BalanceFiltersProvider>
+        </TermsModalProvider>
+      </ChatProvider>
     </ConnectedProvider>
   );
 };

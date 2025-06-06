@@ -9,9 +9,18 @@ import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidg
 import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/hooks';
 import { TxStatus, NotificationType } from '../constants';
+import { SealFlow } from '@widgets/widgets/SealModuleWidget/lib/constants';
 
 export type WidgetState = {
-  flow: InitialFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | StakeFlow;
+  flow:
+    | InitialFlow
+    | BalancesFlow
+    | SavingsFlow
+    | UpgradeFlow
+    | RewardsFlow
+    | TradeFlow
+    | StakeFlow
+    | SealFlow;
   action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction;
   screen: InitialScreen | SavingsScreen | UpgradeScreen | RewardsScreen | TradeScreen;
 };
@@ -21,10 +30,10 @@ type Amount = {
 };
 
 type Flow = {
-  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | StakeFlow;
+  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | StakeFlow | SealFlow;
 };
 
-type BalancesWidgetState = Tab;
+type BalancesWidgetState = Flow;
 
 type UpgradeWidgetState = Amount & {
   initialUpgradeToken?: keyof typeof upgradeTokens;
@@ -37,10 +46,10 @@ type TradeWidgetState = Amount & {
   timestamp?: number;
 };
 
-type SavingsWidgetState = Amount & Tab;
+type SavingsWidgetState = Amount & Flow;
 
 type RewardsWidgetState = Amount &
-  Tab & {
+  Flow & {
     selectedRewardContract?: RewardContract;
   };
 
@@ -49,12 +58,18 @@ type StakeWidgetState = Amount & {
   stakeTab?: StakeAction.LOCK | StakeAction.FREE;
 };
 
+type SealWidgetState = Amount & {
+  urnIndex?: number;
+  sealTab?: SealAction.LOCK | SealAction.FREE;
+};
+
 export type ExternalWidgetState = BalancesWidgetState &
   UpgradeWidgetState &
   TradeWidgetState &
   SavingsWidgetState &
   RewardsWidgetState &
-  StakeWidgetState;
+  StakeWidgetState &
+  SealWidgetState;
 
 type WidgetMessage = {
   title: string;
@@ -74,6 +89,8 @@ export type WidgetStateChangeParams = {
   displayToken?: Token;
   originAmount?: string;
   stakeTab?: StakeAction.LOCK | StakeAction.FREE;
+  sealTab?: SealAction.LOCK | SealAction.FREE;
+  urnIndex?: number;
 };
 
 export type WidgetProps = {

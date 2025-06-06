@@ -4,8 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { WagmiWrapper } from '../../../../test/WagmiWrapper';
 import { StakeModuleWidget } from '..';
-import { StakeAction, StakeFlow, StakeStep } from '../lib/constants';
-import { TxStatus } from '@widgets/shared/constants';
+import { StakeAction, StakeFlow } from '../lib/constants';
 
 const renderWithWagmiWrapper = (ui: any, options?: any) => render(ui, { wrapper: WagmiWrapper, ...options });
 
@@ -296,9 +295,7 @@ describe('StakeModuleWidget tests', () => {
         addRecentTransaction={addRecentTransactionMock}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
-          flow: StakeFlow.OPEN,
-          action: StakeAction.APPROVE,
-          screen: StakeStep.SUMMARY
+          flow: StakeFlow.OPEN
         }}
       />
     );
@@ -349,10 +346,7 @@ describe('StakeModuleWidget tests', () => {
         onNotification={onNotificationMock}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
-          flow: StakeFlow.OPEN,
-          action: StakeAction.MULTICALL,
-          screen: StakeStep.OPEN_BORROW,
-          txStatus: TxStatus.INITIALIZED
+          flow: StakeFlow.OPEN
         }}
       />
     );
@@ -371,10 +365,7 @@ describe('StakeModuleWidget tests', () => {
           onNotification={onNotificationMock}
           onWidgetStateChange={onWidgetStateChangeMock}
           externalWidgetState={{
-            flow: StakeFlow.OPEN,
-            action: StakeAction.MULTICALL,
-            screen: StakeStep.OPEN_BORROW,
-            txStatus: TxStatus.LOADING
+            flow: StakeFlow.OPEN
           }}
         />
       </WagmiWrapper>
@@ -389,10 +380,7 @@ describe('StakeModuleWidget tests', () => {
           onNotification={onNotificationMock}
           onWidgetStateChange={onWidgetStateChangeMock}
           externalWidgetState={{
-            flow: StakeFlow.OPEN,
-            action: StakeAction.MULTICALL,
-            screen: StakeStep.OPEN_BORROW,
-            txStatus: TxStatus.SUCCESS
+            flow: StakeFlow.OPEN
           }}
         />
       </WagmiWrapper>
@@ -431,8 +419,7 @@ describe('StakeModuleWidget tests', () => {
         addRecentTransaction={() => {}}
         onStakeUrnChange={onStakeUrnChangeMock}
         externalWidgetState={{
-          flow: StakeFlow.MANAGE,
-          action: StakeAction.OVERVIEW
+          flow: StakeFlow.MANAGE
         }}
       />
     );

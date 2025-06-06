@@ -2,22 +2,16 @@ import {
   getSaDrawCalldata,
   getSaFreeMkrCalldata,
   getSaFreeSkyCalldata,
-  getSaHopeCalldata,
   getSaLockMkrCalldata,
   getSaLockSkyCalldata,
   getSaOpenCalldata,
-  getSaSelectDelegateCalldata,
-  getSaSelectRewardContractCalldata,
   getSaWipeAllCalldata,
   getSaWipeCalldata,
   Token,
   TOKENS,
   useUrnSelectedRewardContract,
   useUrnSelectedVoteDelegate,
-  ZERO_ADDRESS,
-  lsMigratorAddress,
-  useStakeUrnSelectedRewardContract,
-  useStakeUrnSelectedVoteDelegate
+  ZERO_ADDRESS
 } from '@jetstreamgg/hooks';
 import {
   Dispatch,
@@ -32,7 +26,6 @@ import {
 import { SealFlow, SealStep } from '../lib/constants';
 import { OnSealUrnChange } from '../lib/types';
 import { WidgetContext } from '@widgets/context/WidgetContext';
-import { needsDelegateUpdate, needsRewardUpdate } from '../lib/utils';
 
 export interface SealModuleWidgetContextProps {
   isLockCompleted: boolean;
@@ -92,10 +85,7 @@ export interface SealModuleWidgetContextProps {
   generateAllCalldata: (
     ownerAddress: `0x${string}`,
     urnIndex: bigint,
-    chainId: number,
-    referralCode?: number,
-    newStakeUrnIndex?: bigint,
-    newStakeUrnIndexAddress?: `0x${string}`
+    referralCode?: number
   ) => `0x${string}`[];
 
   currentStep: SealStep;
@@ -249,32 +239,11 @@ export const SealModuleWidgetProvider = ({ children }: { children: ReactNode }):
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
   });
 
-  // Stake
-  const { data: urnStakeSelectedRewardContract } = useStakeUrnSelectedRewardContract({
-    urn: newStakeUrn?.urnAddress || ZERO_ADDRESS
-  });
-  const { data: urnStakeSelectedVoteDelegate } = useStakeUrnSelectedVoteDelegate({
-    urn: newStakeUrn?.urnAddress || ZERO_ADDRESS
-  });
-
   const generateAllCalldata = useCallback(
-    (
-      ownerAddress: `0x${string}`,
-      urnIndex: bigint,
-      chainId: number,
-      referralCode: number = 0,
-      newStakeUrnIndex?: bigint,
-      newStakeUrnIndexAddress?: `0x${string}`
-    ) => {
+    (ownerAddress: `0x${string}`, urnIndex: bigint, referralCode: number = 0) => {
       // --- CALLDATA GENERATION ---
       // If we have an activeUrn address, we're not opening a new one, we're managing an existing one
       const openCalldata = !activeUrn?.urnAddress ? getSaOpenCalldata({ urnIndex }) : undefined;
-
-      const newStakeUrnCreated = !!newStakeUrnIndexAddress && newStakeUrnIndexAddress !== ZERO_ADDRESS;
-      const openStakeCalldata =
-        newStakeUrnIndex !== undefined && !newStakeUrnCreated
-          ? getSaOpenCalldata({ urnIndex: newStakeUrnIndex })
-          : undefined;
 
       // MKR to lock
       const lockMkrCalldata =
@@ -321,44 +290,10 @@ export const SealModuleWidgetProvider = ({ children }: { children: ReactNode }):
           : undefined;
 
       // Select reward
-      const selectRewardContractCalldata =
-        needsRewardUpdate(
-          activeUrn?.urnAddress,
-          selectedRewardContract,
-          widgetState.flow === SealFlow.MIGRATE ? urnStakeSelectedRewardContract : urnSelectedRewardContract
-        ) && newStakeUrnIndex !== undefined
-          ? getSaSelectRewardContractCalldata({
-              ownerAddress,
-              urnIndex: widgetState.flow === SealFlow.MIGRATE ? newStakeUrnIndex : urnIndex,
-              rewardContractAddress: selectedRewardContract || ZERO_ADDRESS,
-              refCode: referralCode
-            })
-          : undefined;
+      const selectRewardContractCalldata = undefined;
 
       // Select delegate
-      const selectDelegateCalldata =
-        needsDelegateUpdate(
-          activeUrn?.urnAddress,
-          selectedDelegate,
-          widgetState.flow === SealFlow.MIGRATE ? urnStakeSelectedVoteDelegate : urnSelectedVoteDelegate
-        ) && // TODO: should be or?
-        newStakeUrnIndex !== undefined
-          ? getSaSelectDelegateCalldata({
-              ownerAddress,
-              urnIndex: widgetState.flow === SealFlow.MIGRATE ? newStakeUrnIndex : urnIndex,
-              delegateAddress: selectedDelegate || ZERO_ADDRESS
-            })
-          : undefined;
-
-      // 'Hope' for migration
-      const hopeCalldata =
-        newStakeUrnIndex !== undefined
-          ? getSaHopeCalldata({
-              ownerAddress,
-              urnIndex: newStakeUrnIndex,
-              usrAddress: lsMigratorAddress[chainId as keyof typeof lsMigratorAddress]
-            })
-          : undefined;
+      const selectDelegateCalldata = undefined;
 
       // Order calldata based on the flow
       const sortedCalldata =
@@ -371,23 +306,21 @@ export const SealModuleWidgetProvider = ({ children }: { children: ReactNode }):
               selectRewardContractCalldata,
               selectDelegateCalldata
             ]
-          : widgetState.flow === SealFlow.MIGRATE
-            ? [openStakeCalldata, selectRewardContractCalldata, selectDelegateCalldata, hopeCalldata]
-            : [
-                /* For the manage flow, we need to sort the calldatas that unseal MKR before the ones that seal it
-                 * to avoid conflicts with the selectDelegate calldata, as the DSChief has a protection that
-                 * prevents `lock`ing and then `free`ing MKR in the same block
-                 * Also, sort repay before free to prevent free from failing due to the position becoming unsafe */
-                repayCalldata,
-                repayAllCalldata,
-                freeMkrCalldata,
-                freeSkyCalldata,
-                selectRewardContractCalldata,
-                selectDelegateCalldata,
-                lockMkrCalldata,
-                lockSkyCalldata,
-                borrowUsdsCalldata
-              ];
+          : [
+              /* For the manage flow, we need to sort the calldatas that unseal MKR before the ones that seal it
+               * to avoid conflicts with the selectDelegate calldata, as the DSChief has a protection that
+               * prevents `lock`ing and then `free`ing MKR in the same block
+               * Also, sort repay before free to prevent free from failing due to the position becoming unsafe */
+              repayCalldata,
+              repayAllCalldata,
+              freeMkrCalldata,
+              freeSkyCalldata,
+              selectRewardContractCalldata,
+              selectDelegateCalldata,
+              lockMkrCalldata,
+              lockSkyCalldata,
+              borrowUsdsCalldata
+            ];
 
       // Filter out undefined calldata
       const filteredCalldata = sortedCalldata.filter(calldata => !!calldata) as `0x${string}`[];

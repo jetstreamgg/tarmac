@@ -7,7 +7,7 @@ import { TOKENS } from '@jetstreamgg/hooks';
 export enum SealFlow {
   OPEN = 'open',
   MANAGE = 'manage',
-  MIGRATE = 'migrate'
+  CLAIM = 'claim'
 }
 
 export enum SealAction {
@@ -27,10 +27,7 @@ export enum SealAction {
   REWARDS = 'rewards',
   DELEGATE = 'delegate',
 
-  CLAIM = 'claim',
-
-  MIGRATE = 'migrate',
-  HOPE = 'hope'
+  CLAIM = 'claim'
 }
 
 export enum SealStep {
@@ -38,13 +35,7 @@ export enum SealStep {
   OPEN_BORROW = 'open_borrow', // TODO: technically lock and borrow
   REWARDS = 'rewards',
   DELEGATE = 'delegate',
-  SUMMARY = 'summary',
-
-  // Migrate-only steps
-  OPEN_NEW = 'open_new',
-  HOPE_NEW = 'hope_new',
-  HOPE_OLD = 'hope_old',
-  MIGRATE = 'migrate'
+  SUMMARY = 'summary'
 }
 
 export enum SealScreen {
@@ -62,16 +53,6 @@ export function getStepTitle(step: SealStep, tab: 'left' | 'right'): MessageDesc
       return msg`Select a delegate`;
     case SealStep.SUMMARY:
       return msg`Confirm your position`;
-
-    // TODO: get final copy for these titles
-    case SealStep.OPEN_NEW:
-      return msg`Open a position in new engine`;
-    case SealStep.HOPE_OLD:
-      return msg`Approve migrator for old position`;
-    case SealStep.HOPE_NEW:
-      return msg`Approve migrator for new position`;
-    case SealStep.MIGRATE:
-      return msg`Migrate position`;
     default:
       return msg``;
   }
@@ -185,27 +166,25 @@ export function getSealSubtitle({
         ? msg`Your transaction is being processed on the blockchain to create your position. Please wait.`
         : msg`Your transaction is being processed on the blockchain. Please wait.`;
     case TxStatus.SUCCESS:
-      return flow === SealFlow.MIGRATE
-        ? msg`Your staking position is now active. Next, start the migration process.`
-        : flow === SealFlow.OPEN
-          ? collateralToLock && borrowAmount
-            ? msg`You've borrowed ${borrowAmount} USDS by sealing ${collateralToLock} ${selectedToken ?? ''}. Your new position is open.`
-            : collateralToLock
-              ? msg`You've sealed ${collateralToLock} ${selectedToken ?? ''}. Your new position is open.`
-              : msg`You just opened your position`
-          : collateralToFree && borrowToRepay
-            ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} and repaid ${borrowToRepay} USDS to exit your position. An exit fee may have been applied.`
-            : collateralToFree
-              ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} to exit your position. An exit fee may have been applied.`
-              : borrowToRepay
-                ? msg`You've repaid ${borrowToRepay} USDS to exit your position.`
-                : collateralToLock && borrowAmount
-                  ? msg`You've borrowed ${borrowAmount} USDS by sealing ${collateralToLock} ${selectedToken ?? ''}. Your position is updated.`
-                  : collateralToLock
-                    ? msg`You've sealed ${collateralToLock} ${selectedToken ?? ''}. Your position is updated.`
-                    : borrowAmount
-                      ? msg`You've borrowed ${borrowAmount} USDS. Your position is updated.`
-                      : msg`You just updated your position`;
+      return flow === SealFlow.OPEN
+        ? collateralToLock && borrowAmount
+          ? msg`You've borrowed ${borrowAmount} USDS by sealing ${collateralToLock} ${selectedToken ?? ''}. Your new position is open.`
+          : collateralToLock
+            ? msg`You've sealed ${collateralToLock} ${selectedToken ?? ''}. Your new position is open.`
+            : msg`You just opened your position`
+        : collateralToFree && borrowToRepay
+          ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} and repaid ${borrowToRepay} USDS to exit your position.`
+          : collateralToFree
+            ? msg`You've unsealed ${collateralToFree} ${selectedToken ?? ''} to exit your position.`
+            : borrowToRepay
+              ? msg`You've repaid ${borrowToRepay} USDS to exit your position.`
+              : collateralToLock && borrowAmount
+                ? msg`You've borrowed ${borrowAmount} USDS by sealing ${collateralToLock} ${selectedToken ?? ''}. Your position is updated.`
+                : collateralToLock
+                  ? msg`You've sealed ${collateralToLock} ${selectedToken ?? ''}. Your position is updated.`
+                  : borrowAmount
+                    ? msg`You've borrowed ${borrowAmount} USDS. Your position is updated.`
+                    : msg`You just updated your position`;
     case TxStatus.ERROR:
     default:
       return msg`Error`;

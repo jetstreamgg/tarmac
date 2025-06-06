@@ -44,6 +44,9 @@ type TradeInputsProps = {
   onUserSwitchTokens?: (originToken?: string, targetToken?: string) => void;
   tradeAnyway: boolean;
   setTradeAnyway: (tradeAnyway: boolean) => void;
+  onOriginTokenChange?: (token: TokenForChain) => void;
+  onTargetTokenChange?: (token: TokenForChain) => void;
+  onOriginInputChange?: (val: bigint, userTriggered?: boolean) => void;
 };
 
 export function TradeInput(props: TokenInputProps) {
@@ -78,7 +81,10 @@ export function TradeInputs({
   isConnectedAndEnabled = true,
   onUserSwitchTokens,
   tradeAnyway,
-  setTradeAnyway
+  setTradeAnyway,
+  onOriginTokenChange,
+  onTargetTokenChange,
+  onOriginInputChange
 }: TradeInputsProps) {
   const separationPx = 12;
   const separationMb = 'mb-[12px]';
@@ -180,9 +186,10 @@ export function TradeInputs({
           label={t`Choose a token to trade, and enter an amount`}
           token={originToken as Token}
           balance={originBalance?.value}
-          onChange={newValue => {
+          onChange={(newValue, event) => {
             setLastUpdated(TradeSide.IN);
             setOriginAmount(BigInt(newValue));
+            onOriginInputChange?.(BigInt(newValue), !!event);
           }}
           value={originAmount}
           dataTestId="trade-input-origin"
@@ -199,6 +206,7 @@ export function TradeInputs({
             }
 
             setOriginToken(option as TokenForChain);
+            onOriginTokenChange?.(option as TokenForChain);
           }}
           error={
             isBalanceError
@@ -264,6 +272,7 @@ export function TradeInputs({
           onTokenSelected={option => {
             setTargetAmount(0n);
             setTargetToken(option as TokenForChain);
+            onTargetTokenChange?.(option as TokenForChain);
           }}
           showPercentageButtons={false}
           enabled={isConnectedAndEnabled}

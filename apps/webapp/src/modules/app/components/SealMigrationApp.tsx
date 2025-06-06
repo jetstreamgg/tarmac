@@ -61,7 +61,7 @@ export function SealMigrationApp() {
     setSearchParams(
       params => {
         // Runs initial validation for globally allowed params
-        const validatedParams = validateSearchParams(params, [], 'seal', () => {}, newChainId);
+        const validatedParams = validateSearchParams(params, [], 'seal', () => {}, newChainId, chains);
         // Runs second validation for linked-action-specific criteria
         const validatedLinkedActionParams = validateLinkedActionSearchParams(validatedParams);
         return validatedLinkedActionParams;

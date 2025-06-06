@@ -368,7 +368,10 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
     collateralData?.debtCeilingUtilization === 1
       ? ''
       : minCollateralNotMet
-        ? `You need to stake at least ${simulatedVault?.formattedMinSkyCollateralForDust} SKY to borrow`
+        ? `Minimum borrow amount is ${formatBigInt(simulatedVault?.dust || 0n, {
+            unit: 'wad',
+            compact: true
+          })} USDS`
         : `Limit ${formattedMinBorrowable.slice(0, -5)} <> ${formattedMaxBorrowable}`;
 
   return (

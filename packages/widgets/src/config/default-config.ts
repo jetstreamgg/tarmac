@@ -19,7 +19,6 @@ import {
   ETH_ADDRESS,
   usdcL2Address,
   usdsL2Address,
-  // skyL2Address,
   sUsdsL2Address
 } from '@jetstreamgg/hooks';
 import {

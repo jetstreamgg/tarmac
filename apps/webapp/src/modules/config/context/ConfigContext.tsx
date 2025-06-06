@@ -55,6 +55,7 @@ const defaultUserConfig: UserConfig = {
   locale: undefined,
   intent: Intent.BALANCES_INTENT,
   sealToken: SealToken.MKR,
+  chatSuggested: false,
   stakeToken: StakeToken.SKY
 };
 

@@ -88,7 +88,7 @@ export const OpenNewUrn = ({
           </Button>
         )}
       </HStack>
-      <Tabs defaultValue={tabSide}>
+      <Tabs value={tabSide}>
         {showTabs && (
           <motion.div variants={positionAnimations}>
             <TabsList className="grid w-full grid-cols-2">

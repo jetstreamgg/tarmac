@@ -9,9 +9,11 @@ import { capitalizeFirstLetter } from '@/lib/helpers/string/capitalizeFirstLette
 import { Text, TextProps } from '@/modules/layout/components/Typography';
 import { useCallback } from 'react';
 import { usePrepareNotification } from './usePrepareNotification';
-import { RewardsModule } from '@/modules/icons';
+import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { isL2ChainId } from '@jetstreamgg/utils';
+import { useChainId } from 'wagmi';
 
 const generateToastConfig = ({
   title,
@@ -66,6 +68,8 @@ const generateToastConfig = ({
 
 export const useNotification = () => {
   const isRestricted = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const chainId = useChainId();
+  const isL2 = isL2ChainId(chainId);
   const { linkedActionConfig } = useConfigContext();
   const {
     navigate,
@@ -76,7 +80,8 @@ export const useNotification = () => {
     isSavingsModule,
     isRewardsModule,
     isTradeModule,
-    isUpgradeModule
+    isUpgradeModule,
+    url
   } = usePrepareNotification();
 
   const handleInsufficientBalance = useCallback(() => {
@@ -116,19 +121,37 @@ export const useNotification = () => {
     (type: NotificationType) => {
       // Don't show the toast if the user is in a LA flow
       if (linkedActionConfig.showLinkedAction) return;
-
-      if (type === NotificationType.USDS_RECEIVED && (isTradeModule || isUpgradeModule) && action) {
+      const urlL2Ready = url && isL2;
+      if (
+        type === NotificationType.USDS_RECEIVED &&
+        (isTradeModule || isUpgradeModule) &&
+        (action || urlL2Ready)
+      ) {
         setTimeout(() => {
           toast(
-            generateToastConfig({
-              title: t`Get rewards with USDS`,
-              description: t`Get rewards with your USDS`,
-              descriptionSub: t`See all rewards`,
-              buttonTxt: t`Get rewards`,
-              onClick: navigate,
-              variant: 'custom',
-              icon: <RewardsModule />
-            })
+            generateToastConfig(
+              isL2
+                ? {
+                    title: t`Get the Sky Savings Rate`,
+                    description: t`With: USDS Get: USDS`,
+                    descriptionSub: savingsRate ? t`Rate: ${savingsRate}` : '',
+                    rateType: savingsRate ? 'ssr' : undefined,
+                    buttonTxt: t`Go to Savings`,
+                    onClick: navigate,
+                    variant: 'custom',
+                    icon: <Savings />
+                  }
+                : {
+                    title: t`Get rewards with USDS`,
+                    description: t`With: USDS Get: SKY`,
+                    descriptionSub: rate ? t`Rate: ${rate}` : '',
+                    rateType: rate ? 'str' : undefined,
+                    buttonTxt: t`Go to Rewards`,
+                    onClick: navigate,
+                    variant: 'custom',
+                    icon: <RewardsModule />
+                  }
+            )
           );
         }, 4000);
       } else if (type === NotificationType.DAI_RECEIVED && action && isTradeModule) {
@@ -150,7 +173,7 @@ export const useNotification = () => {
         }, 4000);
       }
     },
-    [isTradeModule, isUpgradeModule, action, navigate]
+    [isTradeModule, isUpgradeModule, action, navigate, isL2, url]
   );
 
   const onNotification = useCallback(

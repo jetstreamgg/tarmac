@@ -7,7 +7,7 @@ import {
 } from '@jetstreamgg/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
-import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -17,7 +17,9 @@ import { useSearchParams } from 'react-router-dom';
 import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { isL2ChainId, getChainSpecificText } from '@jetstreamgg/utils';
+import { getChainSpecificText, isL2ChainId } from '@jetstreamgg/utils';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Intent } from '@/lib/enums';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
@@ -26,17 +28,65 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { linkedActionConfig, updateLinkedActionConfig } = useConfigContext();
 
   const wagmiConfig = useWagmiConfig();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isL2 = isL2ChainId(chainId);
+  const { setShouldDisableActionButtons } = useChatContext();
 
   const onTradeWidgetStateChange = ({
     hash,
     txStatus,
     widgetState,
-    executedBuyAmount
+    originToken,
+    targetToken,
+    executedBuyAmount,
+    originAmount
   }: WidgetStateChangeParams) => {
+    // Prevent race conditions
+    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.TRADE_INTENT]) {
+      return;
+    }
+
+    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
+
+    // Update search params
+    if (originAmount && originAmount !== '0') {
+      setSearchParams(prev => {
+        prev.set(QueryParams.InputAmount, originAmount);
+        return prev;
+      });
+    } else if (originAmount === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.InputAmount);
+        return prev;
+      });
+    }
+
+    if (originToken) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.SourceToken, originToken);
+        return prev;
+      });
+    } else if (originToken === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.SourceToken);
+        return prev;
+      });
+    }
+
+    if (targetToken) {
+      setSearchParams(prev => {
+        prev.set(QueryParams.TargetToken, targetToken);
+        return prev;
+      });
+    } else if (targetToken === '') {
+      setSearchParams(prev => {
+        prev.delete(QueryParams.TargetToken);
+        return prev;
+      });
+    }
+
     // After a successful trade, set the linked action step to "success"
     if (
       widgetState.action === TradeAction.TRADE &&

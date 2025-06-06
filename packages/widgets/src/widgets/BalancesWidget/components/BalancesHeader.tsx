@@ -12,15 +12,18 @@ import { CopyToClipboard } from '@widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
 import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import { BalancesFlow } from '../constants';
 
 export const BalancesHeader = ({
-  initialTabSide,
+  tabIndex,
   isConnectedAndEnabled,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  onToggle
 }: {
-  initialTabSide?: 'left' | 'right';
+  tabIndex: 0 | 1;
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onToggle: (number: 0 | 1) => void;
 }): React.ReactElement => {
   const chainId = useChainId();
   const { address } = useAccount();
@@ -38,12 +41,12 @@ export const BalancesHeader = ({
 
   return !isConnectedAndEnabled ? (
     <div>
-      <Tabs defaultValue={initialTabSide || 'left'}>
-        <BalancesTabsList />
-        <TabsContent className="mt-4" value="left">
+      <Tabs value={tabIndex === 1 ? BalancesFlow.TX_HISTORY : BalancesFlow.FUNDS}>
+        <BalancesTabsList onToggle={onToggle} />
+        <TabsContent className="mt-4" value={BalancesFlow.FUNDS}>
           <AssetsNoWalletConnected />
         </TabsContent>
-        <TabsContent className="mt-4" value="right">
+        <TabsContent className="mt-4" value={BalancesFlow.TX_HISTORY}>
           <HistoryNoWalletConnected />
         </TabsContent>
       </Tabs>
