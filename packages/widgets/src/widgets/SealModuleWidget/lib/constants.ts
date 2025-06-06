@@ -84,41 +84,6 @@ export const hopeLoadingButtonText: TxCardCopyText = {
   [TxStatus.ERROR]: msg`Error`
 };
 
-export const hopeTitle: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`Approve Migration contract`,
-  [TxStatus.LOADING]: msg`In progress`,
-  [TxStatus.SUCCESS]: msg`Migration contract approved`,
-  [TxStatus.ERROR]: msg`Error`
-};
-
-export const hopeSubtitle: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`Please allow the migration contract to access your SKY and/or MKR tokens in order to migrate your position.`,
-  [TxStatus.LOADING]: msg`Please allow the migration contract to access your SKY and/or MKR tokens in order to migrate your position.`,
-  [TxStatus.SUCCESS]: msg`Next, execute Migration.`,
-  [TxStatus.ERROR]: msg`An error occurred when allowing the migration contract to access your SKY and/or MKR tokens.`
-};
-
-export const migrateLoadingButtonText: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`Waiting for confirmation`,
-  [TxStatus.LOADING]: msg`Processing transaction`,
-  [TxStatus.SUCCESS]: msg`Success`,
-  [TxStatus.ERROR]: msg`Error`
-};
-
-export const migrateTitle: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`Confirm your migration`,
-  [TxStatus.LOADING]: msg`In progress`,
-  [TxStatus.SUCCESS]: msg`Success!`,
-  [TxStatus.ERROR]: msg`Error`
-};
-
-export const migrateSubtitle: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`You will migrate your debt and your sealed MKR/SKY from the Seal Engine and stake directly into the Staking Engine.`,
-  [TxStatus.LOADING]: msg`Your migration is being processed on the blockchain. Please wait.`,
-  [TxStatus.SUCCESS]: msg`You've successfully migrated your MKR (automatically upgraded to SKY) and USDS debt from the Seal Engine to the Staking Engine.`,
-  [TxStatus.ERROR]: msg`An error occurred when allowing the migration contract to access your SKY and/or MKR tokens.`
-};
-
 export const repayApproveDescription: MessageDescriptor = msg`Repaying USDS in the Seal Rewards module`;
 
 export function getSealTitle(

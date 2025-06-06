@@ -133,12 +133,6 @@ SKY is the technical and functional evolution of MKR, inheriting and extending t
 MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,000 SKY). For upgrade details, see the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). For the most current information on all things Sky, join the community conversations in the [Sky Forum](https://forum.sky.money/), [Sky Discord](https://discord.com/invite/skyecosystem), and [Sky Builder Discord](https://discord.gg/skybuilder), where the Sky community dives deep into Sky Stars, the Star Agent Framework and Sky Ecosystem Governance.`
   },
   {
-    question: 'Will the MKR I have locked in Staking Positions be automatically upgraded to SKY?',
-    answer: `No, but your sealed MKR will be upgraded to SKY during the Seal to Staking migration process. The process, via the Sky.money web app, makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible The Staking Engine offers all of the same features as the Seal Engine, but it has no exit fee and only supports SKY, not MKR. 
-
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`
-  },
-  {
     question: 'Will the exchange I use automatically upgrade all of my MKR to SKY?',
     answer: `MKR will not automatically upgrade to SKY. Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.sky.money), Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 

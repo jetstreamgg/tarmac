@@ -235,11 +235,6 @@ msgstr ""
 msgid "Amount exceeds debt"
 msgstr ""
 
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "An error occurred when allowing the migration contract to access your SKY and/or MKR tokens."
-msgstr ""
-
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 msgid "An error occurred when allowing this app to access the {symbol} in your wallet."
 msgstr ""
@@ -328,10 +323,6 @@ msgstr ""
 #. placeholder {0}: tabIndex === 0 ? 'upgrade' : 'revert'
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Approve {0} amount"
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Approve Migration contract"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
@@ -627,6 +618,10 @@ msgstr ""
 msgid "Claiming rewards"
 msgstr ""
 
+#: packages/widgets/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
+msgid "Close your position(s)"
+msgstr ""
+
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Borrow.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
@@ -687,10 +682,6 @@ msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "Confirm your claim"
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Confirm your migration"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
@@ -900,9 +891,6 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
@@ -1142,8 +1130,6 @@ msgstr ""
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
@@ -1293,14 +1279,6 @@ msgstr ""
 msgid "Metrics"
 msgstr ""
 
-#: packages/widgets/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
-msgid "Migrate your position(s) to the Staking Engine"
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Migration contract approved"
-msgstr ""
-
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Borrow.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
@@ -1369,10 +1347,6 @@ msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 msgid "Next, confirm the upgrade transaction."
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Next, execute Migration."
 msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/components/BalancesContent.tsx
@@ -1480,11 +1454,6 @@ msgstr ""
 msgid "Output is estimated. You will receive at least {slippageAdjustedQuote} {0} or the transaction will revert."
 msgstr ""
 
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Please allow the migration contract to access your SKY and/or MKR tokens in order to migrate your position."
-msgstr ""
-
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
@@ -1564,7 +1533,6 @@ msgstr ""
 msgid "Price impact"
 msgstr ""
 
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Processing transaction"
@@ -2065,7 +2033,6 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Success"
 msgstr ""
@@ -2073,7 +2040,6 @@ msgstr ""
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
@@ -2705,7 +2671,6 @@ msgstr ""
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -2985,10 +2950,6 @@ msgstr ""
 msgid "You upgraded {0} {1} into {2}"
 msgstr ""
 
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "You will migrate your debt and your sealed MKR/SKY from the Seal Engine and stake directly into the Staking Engine."
-msgstr ""
-
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 msgid "You will supply"
@@ -3082,10 +3043,6 @@ msgstr ""
 msgid "You've staked {collateralToLock} {0}. Your position is updated."
 msgstr ""
 
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "You've successfully migrated your MKR (automatically upgraded to SKY) and USDS debt from the Seal Engine to the Staking Engine."
-msgstr ""
-
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 msgid "You've supplied {amount} {symbol} to the Sky Savings Rate module"
 msgstr ""
@@ -3140,10 +3097,6 @@ msgstr ""
 
 #: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
 msgid "Your funds"
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Your migration is being processed on the blockchain. Please wait."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
