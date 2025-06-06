@@ -8,6 +8,7 @@ import { TokenForChain, Token, tokenArrayFiltered } from '@jetstreamgg/hooks';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
 import { useState, useRef, useMemo, useEffect } from 'react';
+import { TradeSide } from '@widgets/widgets/TradeWidget/lib/constants';
 
 type TokenBalanceData = Omit<GetBalanceData, 'symbol'> & {
   symbol?: string;
@@ -29,6 +30,7 @@ type TradeInputsProps = {
   isBalanceError: boolean;
   canSwitchTokens: boolean;
   isConnectedAndEnabled: boolean;
+  lastUpdated: TradeSide;
   onUserSwitchTokens?: (originToken?: string, targetToken?: string) => void;
   onOriginInputChange?: (val: bigint, userTriggered?: boolean) => void;
   onTargetInputChange: (val: bigint) => void;
@@ -55,6 +57,7 @@ export function L2TradeInputs({
   isBalanceError,
   canSwitchTokens,
   isConnectedAndEnabled = true,
+  lastUpdated,
   onUserSwitchTokens,
   onOriginInputChange,
   onTargetInputChange,
@@ -182,8 +185,13 @@ export function L2TradeInputs({
               setOriginToken(targetToken);
               setTargetToken(tempToken);
               setTimeout(() => {
-                setOriginAmount(prevTargetAmount);
-                setTargetAmount(prevOriginAmount);
+                if (lastUpdated === TradeSide.IN) {
+                  setTargetAmount(prevOriginAmount);
+                  setOriginAmount(0n);
+                } else {
+                  setOriginAmount(prevTargetAmount);
+                  setTargetAmount(0n);
+                }
                 onUserSwitchTokens?.(targetToken?.symbol, originToken?.symbol);
               }, 500);
             }, 500);
