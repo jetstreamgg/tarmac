@@ -23,6 +23,7 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useEffect, useState } from 'react';
 import { Intent } from '@/lib/enums';
+import { BATCH_TX_ENABLED } from '@/lib/constants';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -207,6 +208,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={[TOKENS.dai, TOKENS.mkr]}
+      batchEnabled={BATCH_TX_ENABLED}
     />
   );
 }
