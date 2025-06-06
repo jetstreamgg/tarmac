@@ -525,7 +525,6 @@ function TradeWidgetWrapped({
           // Only update if the amount has actually changed
           if (newAmount !== originAmount) {
             timeoutId = setTimeout(() => {
-              console.log('Updating side');
               // Batch all state updates together
               setOriginAmount(newAmount);
               // setTargetAmount(0n);
@@ -771,7 +770,9 @@ function TradeWidgetWrapped({
   const prepareError = approvePrepareError;
 
   const isAmountWaitingForDebounce =
-    debouncedOriginAmount !== originAmount || debouncedTargetAmount !== targetAmount;
+    lastUpdated === TradeSide.IN
+      ? debouncedOriginAmount !== originAmount
+      : debouncedTargetAmount !== targetAmount;
 
   const approveDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
