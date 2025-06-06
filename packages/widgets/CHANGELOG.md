@@ -1,5 +1,12 @@
 # @jetstreamgg/widgets
 
+## 4.0.1
+
+### Patch Changes
+
+- Updated dependencies [fb846a3]
+  - @jetstreamgg/hooks@3.3.4
+
 ## 4.0.0
 
 ### Major Changes
