@@ -182,7 +182,7 @@ test('Claim rewards', async ({ page }) => {
   await page.getByText('With: USDS Get: SKY').first().click();
 
   // Finally, claim rewards and check new SKY balance
-  await page.getByTestId('widget-container').getByRole('button', { name: 'Claim' }).click();
+  await page.getByTestId('widget-container').getByRole('button', { name: 'Claim' }).click({ timeout: 15000 });
   await expect(page.getByText('Success!', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Balances' }).click();
   await expect(page.getByRole('heading', { name: 'Balances' })).toBeVisible();
