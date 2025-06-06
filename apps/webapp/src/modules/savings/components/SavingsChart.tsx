@@ -7,6 +7,7 @@ import { useParseSavingsChartData } from '../hooks/useParseSavingsChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChainId } from 'wagmi';
 import { isL2ChainId } from '@jetstreamgg/utils';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 
 export function SavingsChart() {
   const [activeChart, setActiveChart] = useState('tvl');
@@ -14,8 +15,9 @@ export function SavingsChart() {
   const chainId = useChainId();
   const isL2Chain = isL2ChainId(chainId);
   const chartChainId = isL2Chain ? 1 : chainId; // use mainnet for L2s
+  const limit = getDayCountFromTimeFrame(timeFrame);
 
-  const { data: savingsChartInfo, isLoading, error } = useSavingsChartInfo(chartChainId);
+  const { data: savingsChartInfo, isLoading, error } = useSavingsChartInfo(chartChainId, { limit });
   const chartData = useParseSavingsChartData(timeFrame, savingsChartInfo || []);
 
   return (
