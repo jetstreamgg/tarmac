@@ -108,21 +108,3 @@ export type SealPosition = {
   selectedReward: string | undefined;
   barks: Bark[];
 };
-
-export type SealMigrationRaw = {
-  id: `0x${string}`;
-  oldOwner: `0x${string}`;
-  newOwner: `0x${string}`;
-  oldIndex: string;
-  newIndex: string;
-  ink: string;
-  debt: string;
-  blockNumber: string;
-  blockTimestamp: string;
-  transactionHash: `0x${string}`;
-};
-
-export type SealMigration = SealMigrationRaw & {
-  ink: bigint;
-  debt: bigint;
-};

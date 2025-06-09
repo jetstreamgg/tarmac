@@ -72,7 +72,7 @@ export const SealBalanceWarningCard = ({
             <div className="flex w-full justify-start pt-4">
               <div className="flex grow items-center gap-2">
                 <Text variant="captionSm">
-                  <Trans>Migrate your position(s) to the Staking Engine</Trans>
+                  <Trans>Close your position(s)</Trans>
                 </Text>
                 <div className="mt-1 h-4 w-4">
                   <ArrowRight
