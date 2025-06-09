@@ -1,6 +1,6 @@
 {
   "name": "@jetstreamgg/widgets",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "",
   "type": "module",
   "main": "./dist/jetstream-gg-widgets.js",

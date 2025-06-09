@@ -1,5 +1,13 @@
 # @jetstreamgg/webapp
 
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies [fb846a3]
+  - @jetstreamgg/hooks@3.3.4
+  - @jetstreamgg/widgets@4.0.1
+
 ## 1.0.3
 
 ### Patch Changes

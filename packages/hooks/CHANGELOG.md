@@ -1,5 +1,11 @@
 # @jetstreamgg/hooks
 
+## 3.3.4
+
+### Patch Changes
+
+- fb846a3: Allow to sort stake delegates by alignment or total delegated
+
 ## 3.3.3
 
 ### Patch Changes
