@@ -81,7 +81,10 @@ export default ({ mode }: { mode: modeEnum }) => {
       cloudflareinsights.com;
     frame-src 'self'
       https://verify.walletconnect.com
-      https://verify.walletconnect.org
+      https://verify.walletconnect.org;
+    frame-ancestors 'self'
+      'https://app.safe.global'
+      
 `;
 
   // Need to remove whitespaces otherwise the app won't build due to unsupported characters
