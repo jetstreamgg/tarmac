@@ -44,9 +44,6 @@ function determineTimeframeBounds(
   const now = Date.now() / 1000; // Current timestamp in seconds
   let startTimestamp: number;
   switch (timeFrame) {
-    case 'd':
-      startTimestamp = now - 86400; // Last day
-      break;
     case 'w':
       startTimestamp = now - 604800; // Last week
       break;

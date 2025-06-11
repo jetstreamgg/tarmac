@@ -35,12 +35,10 @@ const SealRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${str
     isLoading: historicRewardsTokenIsLoading,
     error: historicRewardsTokenError
   } = useRewardsChartInfo({
-    rewardContractAddress: contractAddress
+    rewardContractAddress: contractAddress,
+    limit: 1
   });
-  const mostRecentReward = useMemo(
-    () => historicRewardsTokenData?.slice().sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0],
-    [historicRewardsTokenData]
-  );
+  const mostRecentReward = historicRewardsTokenData?.[0];
 
   //Get the MKR price from the seal historic data endpoint, since that is used for the total seal TVL
   //and we want the farm TVLs to sum up to the total seal TVL

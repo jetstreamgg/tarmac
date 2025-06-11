@@ -4,7 +4,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { useUsdsDaiData } from '@jetstreamgg/hooks';
 
 export function UsdsTotalSupplyCard(): React.ReactElement {
-  const { data, isLoading, error } = useUsdsDaiData();
+  const { data, isLoading, error } = useUsdsDaiData({ limit: 1 });
   const usdsTotalSupply =
     data &&
     data[0] &&

@@ -54,16 +54,18 @@ async function fetchTokenChartInfo(url: URL): Promise<TokenChartInfoParsed[]> {
 }
 
 export function useTokenChartInfo({
-  tokenAddress
+  tokenAddress,
+  limit = 100
 }: {
   tokenAddress: string;
+  limit?: number;
 }): ReadHook & { data?: TokenChartInfoParsed[] } {
   const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl(chainId) || '';
 
   let url: URL | undefined;
   if (baseUrl && tokenAddress) {
-    const endpoint = `${baseUrl}/tokens/${tokenAddress.toLowerCase()}/historic/`;
+    const endpoint = `${baseUrl}/tokens/${tokenAddress.toLowerCase()}/historic/?p_size=${limit}`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 
