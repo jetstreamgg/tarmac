@@ -6,5 +6,6 @@
   "linked": [],
   "access": "public",
   "baseBranch": "development",
-  "updateInternalDependencies": "patch"
+  "updateInternalDependencies": "patch",
+  "ignore": ["@jetstreamgg/webapp"]
 }
