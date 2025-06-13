@@ -23,7 +23,7 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useEffect, useState } from 'react';
 import { Intent } from '@/lib/enums';
-import { BATCH_TX_ENABLED } from '@/lib/constants';
+import { useIsBatchEnabled } from '@/modules/ui/hooks/useIsBatchEnabled';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -47,6 +47,8 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
 
   // Get source_token from URL params
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
+
+  const batchEnabled = useIsBatchEnabled();
 
   // Set initial currentToken from sourceToken
   useEffect(() => {
@@ -208,7 +210,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={[TOKENS.dai, TOKENS.mkr]}
-      batchEnabled={BATCH_TX_ENABLED}
+      batchEnabled={batchEnabled}
     />
   );
 }

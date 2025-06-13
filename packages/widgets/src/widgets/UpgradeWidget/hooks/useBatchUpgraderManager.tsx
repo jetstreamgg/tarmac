@@ -9,7 +9,7 @@ import {
   TOKENS,
   useSendBatchTransactionFlow,
   useTokenAllowance
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { Call, erc20Abi } from 'viem';
 import { useAccount, useChainId } from 'wagmi';
 
@@ -36,7 +36,7 @@ export function useBatchUpgraderManager({
     spender: upgraderConfig.address
   });
 
-  const hasAllowance = !!allowance && allowance >= amount;
+  const hasAllowance = allowance !== undefined && allowance >= amount;
 
   // Calls for the batch transaction
   const approveCall = getWriteContractCall({

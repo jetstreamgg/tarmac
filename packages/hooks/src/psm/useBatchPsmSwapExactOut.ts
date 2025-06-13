@@ -35,7 +35,7 @@ export function useBatchPsmSwapExactOut({
     spender: psmAddress
   });
 
-  const hasAllowance = !!allowance && allowance >= maxAmountIn;
+  const hasAllowance = allowance !== undefined && allowance >= maxAmountIn;
 
   // Calls for the batch transaction
   const approveCall = getWriteContractCall({
