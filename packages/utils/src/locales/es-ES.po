@@ -1963,6 +1963,11 @@ msgstr ""
 msgid "Stake and Borrow"
 msgstr ""
 
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Stake your {formattedBalance} {upperSymbol} in the Staking Engine {0}"
+msgstr ""
+
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
 msgid "Staked"

@@ -27,13 +27,24 @@ export const useActionForToken = () => {
 
   const actionForToken = useCallback(
     (symbol: string, balance: string, tokenChainId: number) => {
-      const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Locale, Details, Network, Chat } =
-        QueryParams;
+      const {
+        LinkedAction,
+        InputAmount,
+        SourceToken,
+        TargetToken,
+        Widget,
+        Locale,
+        Details,
+        Network,
+        Chat,
+        Flow
+      } = QueryParams;
       const {
         REWARDS_INTENT: REWARD,
         UPGRADE_INTENT: UPGRADE,
         TRADE_INTENT: TRADE,
-        SAVINGS_INTENT: SAVINGS
+        SAVINGS_INTENT: SAVINGS,
+        STAKE_INTENT: STAKE
       } = IntentMapping;
       const retainedParams = [Locale, Details, Chat];
 
@@ -49,7 +60,7 @@ export const useActionForToken = () => {
       const isUnichainChainAction = isUnichainChainId(tokenChainId);
       const isL2ChainAction = isL2ChainId(tokenChainId);
 
-      const networkName = chains.find(c => c.id === tokenChainId)?.name || 'ethereum';
+      const networkName = (chains.find(c => c.id === tokenChainId)?.name || 'ethereum').toLowerCase();
 
       const isDifferentChain = chainId !== tokenChainId;
 
@@ -96,6 +107,21 @@ export const useActionForToken = () => {
               label: t`Upgrade your ${formattedBalance} ${upperSymbol} to SKY ${isDifferentChain ? 'on Mainnet' : ''}`,
               actionUrl: getQueryParams(
                 `?${Network}=${networkName}&${Widget}=${UPGRADE}&${InputAmount}=${balance}&${SourceToken}=MKR`
+              ),
+              image
+            },
+            [base.id]: undefined,
+            [arbitrum.id]: undefined,
+            [optimism.id]: undefined,
+            [unichain.id]: undefined
+          };
+          break;
+        case 'sky':
+          action = {
+            [mainnet.id]: {
+              label: t`Stake your ${formattedBalance} ${upperSymbol} in the Staking Engine ${isDifferentChain ? 'on Mainnet' : ''}`,
+              actionUrl: getQueryParams(
+                `?${Network}=${networkName}&${Widget}=${STAKE}&${InputAmount}=${balance}&${Flow}=open`
               ),
               image
             },
