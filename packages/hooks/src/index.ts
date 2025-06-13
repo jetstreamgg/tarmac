@@ -161,6 +161,8 @@ export { useDelegateOwner } from './delegates/useDelegateOwner';
 // PSM
 export { usePsmSwapExactIn } from './psm/usePsmSwapExactIn';
 export { usePsmSwapExactOut } from './psm/usePsmSwapExactOut';
+export { useBatchPsmSwapExactIn } from './psm/useBatchPsmSwapExactIn';
+export { useBatchPsmSwapExactOut } from './psm/useBatchPsmSwapExactOut';
 export { useL2SavingsHistory } from './psm/useL2SavingsHistory';
 export { useL2TradeHistory } from './psm/useL2TradeHistory';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
