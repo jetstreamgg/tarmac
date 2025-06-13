@@ -1,4 +1,4 @@
-import { RAD_PRECISION, RAY_PRECISION, WAD_PRECISION, math } from '@jetstreamgg/utils';
+import { RAD_PRECISION, RAY_PRECISION, WAD_PRECISION, math } from '@jetstreamgg/sky-utils';
 import { VaultParams } from './vault';
 import { formatUnits } from 'viem';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel } from './vaults.constants';

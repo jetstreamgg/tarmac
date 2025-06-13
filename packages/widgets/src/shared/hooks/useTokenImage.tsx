@@ -6,7 +6,7 @@ import {
   isArbitrumChainId,
   isUnichainChainId,
   isOptimismChainId
-} from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-utils';
 
 const NOT_FOUND = 'image_not_found';
 const EXTENSIONS = ['svg', 'png']; // Add more extensions if needed

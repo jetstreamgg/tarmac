@@ -5,7 +5,7 @@ import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchUpgradeHistory(
   urlSubgraph: string,

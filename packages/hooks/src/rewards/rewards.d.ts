@@ -1,4 +1,4 @@
-import { Token } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
 import { HistoryItem } from '../shared/shared';
 
 export type RewardUserHistoryItem = HistoryItem & {

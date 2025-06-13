@@ -4,7 +4,7 @@ import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapp
 import { t } from '@lingui/core/macro';
 import { RewardsTokenInfo } from './RewardsTokenInfo';
 import { RewardsCharts } from './history/RewardsCharts';
-import { RewardContract, TOKENS } from '@jetstreamgg/hooks';
+import { RewardContract, TOKENS } from '@jetstreamgg/sky-hooks';
 import { RewardsBalanceDetails } from './RewardsBalanceDetails';
 import { RewardsHistory } from './RewardsHistory';
 import { RewardsFaq } from './RewardsFaq';

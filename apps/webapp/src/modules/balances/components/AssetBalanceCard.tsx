@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PriceData } from '@jetstreamgg/hooks';
-import { formatNumber } from '@jetstreamgg/utils';
+import { PriceData } from '@jetstreamgg/sky-hooks';
+import { formatNumber } from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
 import { Text } from '@/modules/layout/components/Typography';
 import { LoadingErrorWrapper } from '@/modules/ui/components/LoadingErrorWrapper';

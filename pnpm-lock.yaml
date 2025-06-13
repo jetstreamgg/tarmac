@@ -86,13 +86,13 @@ importers:
 
   apps/webapp:
     dependencies:
-      '@jetstreamgg/hooks':
+      '@jetstreamgg/sky-hooks':
         specifier: workspace:^
         version: link:../../packages/hooks
-      '@jetstreamgg/utils':
+      '@jetstreamgg/sky-utils':
         specifier: workspace:^
         version: link:../../packages/utils
-      '@jetstreamgg/widgets':
+      '@jetstreamgg/sky-widgets':
         specifier: workspace:^
         version: link:../../packages/widgets
       '@lingui/detect-locale':
@@ -258,7 +258,7 @@ importers:
 
   packages/hooks:
     dependencies:
-      '@jetstreamgg/utils':
+      '@jetstreamgg/sky-utils':
         specifier: workspace:^
         version: link:../utils
       '@wagmi/core':
@@ -368,10 +368,10 @@ importers:
 
   packages/widgets:
     dependencies:
-      '@jetstreamgg/hooks':
+      '@jetstreamgg/sky-hooks':
         specifier: workspace:^
         version: link:../hooks
-      '@jetstreamgg/utils':
+      '@jetstreamgg/sky-utils':
         specifier: workspace:^
         version: link:../utils
       '@lingui/detect-locale':

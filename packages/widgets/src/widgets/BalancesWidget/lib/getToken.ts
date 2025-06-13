@@ -1,4 +1,4 @@
-import { TransactionTypeEnum } from '@jetstreamgg/hooks';
+import { TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 
 export const getToken = ({

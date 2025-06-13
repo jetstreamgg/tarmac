@@ -4,7 +4,7 @@ import { positionAnimations } from '@widgets/shared/animation/presets';
 import { ShiftArrow } from '@widgets/shared/components/icons/Icons';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { TradeInput } from '@widgets/widgets/TradeWidget/components/TradeInputs';
-import { TokenForChain, Token, tokenArrayFiltered } from '@jetstreamgg/hooks';
+import { TokenForChain, Token, tokenArrayFiltered } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
 import { useState, useRef, useMemo, useEffect } from 'react';

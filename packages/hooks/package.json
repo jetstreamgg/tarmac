@@ -1,17 +1,17 @@
 {
-  "name": "@jetstreamgg/hooks",
-  "version": "3.3.3",
+  "name": "@jetstreamgg/sky-hooks",
+  "version": "1.0.0",
   "description": "",
   "type": "module",
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "main": "./dist/jetstream-gg-hooks.js",
+  "main": "./dist/jetstream-gg-sky-hooks.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/jetstream-gg-hooks.js"
+      "default": "./dist/jetstream-gg-sky-hooks.js"
     }
   },
   "scripts": {
@@ -35,7 +35,7 @@
     "wagmi": "^2.15.6"
   },
   "dependencies": {
-    "@jetstreamgg/utils": "workspace:^",
+    "@jetstreamgg/sky-utils": "workspace:^",
     "graphql": "^16.11.0",
     "graphql-request": "^5.1.0"
   },

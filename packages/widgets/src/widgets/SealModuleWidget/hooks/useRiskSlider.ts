@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { Vault } from '@jetstreamgg/hooks';
+import { Vault } from '@jetstreamgg/sky-hooks';
 import { SealModuleWidgetContext } from '../context/context';
 
 type UseRiskSliderProps = {

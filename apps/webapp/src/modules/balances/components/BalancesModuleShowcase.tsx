@@ -3,7 +3,7 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { t } from '@lingui/core/macro';
 import { ModuleCard } from '@/modules/balances/components/ModuleCard';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 
 export function BalancesModuleShowcase() {
   const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';

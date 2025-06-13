@@ -1,5 +1,5 @@
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { getIlkName, useStakeUrnAddress, useVault } from '@jetstreamgg/hooks';
+import { getIlkName, useStakeUrnAddress, useVault } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useContext, useMemo } from 'react';

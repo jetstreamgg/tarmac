@@ -21,9 +21,9 @@ import {
   SealModuleWidget,
   TxStatus,
   WidgetStateChangeParams
-} from '@jetstreamgg/widgets';
-import { useSealCurrentIndex } from '@jetstreamgg/hooks';
-import { isL2ChainId } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-widgets';
+import { useSealCurrentIndex } from '@jetstreamgg/sky-hooks';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 
 import { IntentMapping } from '@/lib/constants';

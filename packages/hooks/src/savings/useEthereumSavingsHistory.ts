@@ -12,8 +12,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
-import { isTestnetId } from '@jetstreamgg/utils';
-import { chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchEthereumSavingsHistory(
   urlSubgraph: string,

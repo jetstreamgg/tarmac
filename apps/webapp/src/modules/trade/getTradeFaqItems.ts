@@ -5,7 +5,7 @@ import {
   isUnichainChainId,
   isL2ChainId,
   isMainnetId
-} from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-utils';
 import {
   L2GeneralFaqItems,
   baseFaqItems,

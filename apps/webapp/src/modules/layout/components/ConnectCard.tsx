@@ -6,7 +6,7 @@ import { t } from '@lingui/core/macro';
 import { GradientShapeCard } from '@/modules/ui/components/GradientShapeCard';
 import { Intent } from '@/lib/enums';
 import { useChainId } from 'wagmi';
-import { getChainSpecificText } from '@jetstreamgg/utils';
+import { getChainSpecificText } from '@jetstreamgg/sky-utils';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 
 export function ConnectCard({ intent }: { intent: Intent }) {
@@ -26,7 +26,7 @@ export function ConnectCard({ intent }: { intent: Intent }) {
   const contentText = {
     [Intent.BALANCES_INTENT]: getChainSpecificText(
       {
-        allL2s: t`Balances displays all of your Sky-related assets available on Layer 2 (L2) scaling solutions for the Ethereum blockchain. When you connect your crypto wallet to Sky.money, you can view your tokens across supported networks on the decentralized Sky Protocol. This visibility is built in for ease of use. Sky.money is non-custodial and permissionless.`,
+        allL2s: t`Balances displays all of your Sky-related assets available on the selected network for the Ethereum blockchain. When you connect your crypto wallet to Sky.money, you can view your tokens across supported networks on the decentralized Sky Protocol. This visibility is built in for ease of use. Sky.money is non-custodial and permissionless.`,
         default: t`Balances displays all of your Sky-related assets. When you connect your crypto wallet to Sky.money to access the decentralised Sky Protocol, only the tokens in the wallet that are relevant to the app are listed. With all of your Sky funds visible in one place, you can better self-manage your funds. Sky.money is non-custodial and permissionless.`
       },
       chainId
@@ -34,18 +34,16 @@ export function ConnectCard({ intent }: { intent: Intent }) {
     [Intent.REWARDS_INTENT]: t`Sky Tokens Rewards are what you access when you supply USDS to the Sky Token Rewards module of the decentralised Sky Protocol. Sky Token Rewards are in the form of SKY governance tokens. No minimum USDS supply amount is required. With the Sky Protocol, you can access rewards without giving up control of your supplied funds.`,
     [Intent.SAVINGS_INTENT]: getChainSpecificText(
       {
-        allL2s: (
-          <Text>
+        default: (
+          <Text variant="small" className="leading-[18px]">
             <Trans>
-              The experience of using the Savings feature on Layer 2 (L2) scaling solutions and Ethereum is
-              very similar. However, given that no native Sky Savings Rate module is currently deployed to
-              L2s, when transacting on them, you always interact with the Peg Stability Module (PSM){' '}
-              <PopoverInfo type="psm" /> for conversions to/from USDS, sUSDS and USDC. The PSM handles
-              conversions programmatically, driven at your direction, between these pairs directly.
+              When you supply USDS to the Sky Savings Rate module of the decentralized Sky Protocol, you
+              access the Sky Savings Rate <PopoverInfo type="ssr" /> and may accumulate additional USDS over
+              time. No minimum supply amount is required, and you always maintain control of your supplied
+              assets, as this feature is non-custodial.
             </Trans>
           </Text>
-        ),
-        default: t`When you supply USDS to the Sky Savings Rate module of the decentralised Sky Protocol, you access the Sky Saving Rate and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied funds, as this feature is non-custodial.`
+        )
       },
       chainId
     ),
@@ -53,12 +51,12 @@ export function ConnectCard({ intent }: { intent: Intent }) {
     [Intent.TRADE_INTENT]: getChainSpecificText(
       {
         allL2s: (
-          <Text>
+          <Text variant="small" className="leading-[18px]">
             <Trans>
               On Layer 2 (L2) scaling solutions for the Ethereum blockchain via Sky.money, you can convert
               between USDS, sUSDS and USDC through a Peg Stability Module (PSM) <PopoverInfo type="psm" />{' '}
-              deployed to the L2 and powered by Spark. The PSM handles conversions programmatically, driven at
-              your direction, between these pairs directly.
+              deployed to the L2. The PSM handles conversions programmatically, driven at your direction,
+              between these pairs directly.
             </Trans>
           </Text>
         ),

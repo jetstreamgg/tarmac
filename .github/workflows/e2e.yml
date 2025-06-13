@@ -14,46 +14,55 @@ jobs:
         include:
           - test: reward-1.spec
             vnet: true
+            chain: mainnet
           - test: reward-2.spec
             vnet: true
+            chain: mainnet,arbitrum,base,optimism,unichain
           - test: upgrade.spec
             vnet: true
+            chain: mainnet
           - test: mainnet-savings.spec
             vnet: true
+            chain: mainnet
           - test: seal.spec
             vnet: true
+            chain: mainnet
           - test: stake.spec
             vnet: true
-          # - test: trade-1.spec
-          #   vnet: true
-          # - test: trade-2.spec
-          #   vnet: true
+            chain: mainnet
           - test: landing.spec
             vnet: true
+            chain: mainnet
           - test: la-u-r.spec
             vnet: true
+            chain: mainnet
           - test: la-u-s.spec
             vnet: true
-          # - test: la-s-r.spec
-          #   vnet: true
-          # - test: la-s-s.spec
-          #   vnet: true
+            chain: mainnet
           - test: base-savings.spec
             vnet: true
+            chain: base
           - test: base-trade.spec
             vnet: true
+            chain: base
           - test: arbitrum-savings.spec
             vnet: true
+            chain: arbitrum
           - test: arbitrum-trade.spec
             vnet: true
+            chain: arbitrum
           - test: optimism-savings.spec
             vnet: true
+            chain: optimism
           - test: optimism-trade.spec
             vnet: true
+            chain: optimism
           - test: unichain-savings.spec
             vnet: true
+            chain: unichain
           - test: unichain-trade.spec
             vnet: true
+            chain: unichain
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -81,13 +90,14 @@ jobs:
       - name: Setup VNet (if required)
         if: ${{ matrix.vnet }}
         run: |
-          pnpm run vnet:fork:ci
+          pnpm run vnet:fork:ci ${{ matrix.chain }}
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
       - name: Run E2E Test
         run: pnpm run e2e:no-vnet ${{ matrix.test }}
         env:
+          TEST_CHAIN: ${{ matrix.chain }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           VITE_ENV_NAME: development
           VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'

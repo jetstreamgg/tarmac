@@ -2,7 +2,7 @@ import { useChainId } from 'wagmi';
 import { PriceData } from './usePrices';
 import { formatEther, stringToHex } from 'viem';
 import { lsMkrAddress, mcdSpotAddress, mcdVatAddress, useReadMcdSpot, useReadMcdVat } from '../generated';
-import { getEtherscanLink, math } from '@jetstreamgg/utils';
+import { getEtherscanLink, math } from '@jetstreamgg/sky-utils';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getIlkName } from '../vaults/helpers';

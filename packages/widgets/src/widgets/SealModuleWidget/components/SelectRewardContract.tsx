@@ -1,4 +1,4 @@
-import { useSaRewardContracts, useUrnSelectedRewardContract, ZERO_ADDRESS } from '@jetstreamgg/hooks';
+import { useSaRewardContracts, useUrnSelectedRewardContract, ZERO_ADDRESS } from '@jetstreamgg/sky-hooks';
 import { SaRewardsCard } from './SaRewardsCard';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { Card } from '@widgets/components/ui/card';

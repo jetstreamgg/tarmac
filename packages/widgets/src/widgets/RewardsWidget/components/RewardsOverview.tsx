@@ -3,7 +3,7 @@ import {
   RewardContract,
   useAvailableTokenRewardContracts,
   useRewardsWithUserBalance
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { useContext, useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { RewardsAction } from '@widgets/widgets/RewardsWidget/lib/constants';

@@ -1,5 +1,5 @@
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
-import { useSealCurrentIndex, TOKENS } from '@jetstreamgg/hooks';
+import { useSealCurrentIndex, TOKENS } from '@jetstreamgg/sky-hooks';
 import { UrnPosition } from './UrnPosition';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';

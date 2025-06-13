@@ -3,13 +3,13 @@
 ## Installation
 
 ```
-npm install @jetstreamgg/hooks
+npm install @jetstreamgg/sky-hooks
 ```
 
 ## Example Usage
 
 ```tsx
-import { useRestrictedAddressCheck } from '@jetstreamgg/hooks';
+import { useRestrictedAddressCheck } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useRestrictedAddressCheck({

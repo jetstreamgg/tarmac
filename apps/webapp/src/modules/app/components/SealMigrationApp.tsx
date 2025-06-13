@@ -9,7 +9,7 @@ import { useAccount, useAccountEffect, useChainId, useChains, useSwitchChain } f
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { SealMigrationWidgetPane } from './SealMigrationWidgetPane';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 
 export function SealMigrationApp() {
   const { bpi } = useBreakpointIndex();

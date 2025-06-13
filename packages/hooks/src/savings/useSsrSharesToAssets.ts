@@ -1,5 +1,5 @@
 import { TokenBalance } from '../tokens/useTokenBalance';
-import { formatBigInt } from '@jetstreamgg/utils';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { Token } from '../tokens/types';
 import { useChainId } from 'wagmi';

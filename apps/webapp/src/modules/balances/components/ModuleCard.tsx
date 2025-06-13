@@ -9,7 +9,12 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
-import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@jetstreamgg/utils';
+import {
+  isBaseChainId,
+  isArbitrumChainId,
+  isOptimismChainId,
+  isUnichainChainId
+} from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 import { QueryParams } from '@/lib/constants';
 

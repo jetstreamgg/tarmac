@@ -1,7 +1,7 @@
 {
   "name": "@jetstreamgg/webapp",
   "type": "module",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "vite --host --config vite.config.ts",
@@ -26,9 +26,9 @@
     "typecheck": "tsc --noEmit --project tsconfig.production.json"
   },
   "dependencies": {
-    "@jetstreamgg/hooks": "workspace:^",
-    "@jetstreamgg/utils": "workspace:^",
-    "@jetstreamgg/widgets": "workspace:^",
+    "@jetstreamgg/sky-hooks": "workspace:^",
+    "@jetstreamgg/sky-utils": "workspace:^",
+    "@jetstreamgg/sky-widgets": "workspace:^",
     "@lingui/detect-locale": "^5.3.2",
     "@lingui/macro": "^5.3.2",
     "@lingui/react": "^5.3.2",

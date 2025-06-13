@@ -1,6 +1,7 @@
 import { Chain, defineChain } from 'viem';
 import tenderlyTestnetData from '../../../../../../tenderlyTestnetData.json' with { type: 'json' };
 import { optimism, unichain } from 'viem/chains';
+import { NetworkName } from '../../../test/e2e/utils/constants';
 
 export const TENDERLY_CHAIN_ID = 314310;
 export const TENDERLY_BASE_CHAIN_ID = 8555;
@@ -19,7 +20,15 @@ export const TENDERLY_ARBITRUM_RPC_URL =
   'https://virtual.arbitrum.rpc.tenderly.co/5a2a28a6-322f-4506-acf8-1151a13b5ccf';
 
 export const getTestTenderlyChains = () => {
-  const [mainnetData, baseData, arbitrumData, optimismData, unichainData] = tenderlyTestnetData;
+  const mainnetData = tenderlyTestnetData.find(data => data.NETWORK === NetworkName.mainnet);
+  const baseData = tenderlyTestnetData.find(data => data.NETWORK === NetworkName.base);
+  const arbitrumData = tenderlyTestnetData.find(data => data.NETWORK === NetworkName.arbitrum);
+  const optimismData = tenderlyTestnetData.find(data => data.NETWORK === NetworkName.optimism);
+  const unichainData = tenderlyTestnetData.find(data => data.NETWORK === NetworkName.unichain);
+
+  if (!mainnetData || !baseData || !arbitrumData || !optimismData || !unichainData) {
+    throw new Error('Missing required network data from tenderlyTestnetData file');
+  }
 
   return [
     defineChain({

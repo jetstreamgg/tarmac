@@ -5,13 +5,13 @@ Hook for fetching token price data from the BA Labs API.
 ## Import
 
 ```ts
-import { usePrices } from '@jetstreamgg/hooks';
+import { usePrices } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { usePrices } from '@jetstreamgg/hooks';
+import { usePrices } from '@jetstreamgg/sky-hooks';
 
 function PriceComponent() {
   const { data, error, isLoading } = usePrices();
@@ -38,7 +38,7 @@ function PriceComponent() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -53,7 +53,7 @@ type Props = ReadHookParams<Record<string, PriceData>>;
 ## Return Type
 
 ```ts
-import { type PriceData } from '@jetstreamgg/hooks';
+import { type PriceData } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

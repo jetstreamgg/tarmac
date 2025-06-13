@@ -1,8 +1,8 @@
-import { useSavingsData } from '@jetstreamgg/hooks';
+import { useSavingsData } from '@jetstreamgg/sky-hooks';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
-import { useTokenBalance, usdcL2Address, sUsdsL2Address } from '@jetstreamgg/hooks';
+import { useTokenBalance, usdcL2Address, sUsdsL2Address } from '@jetstreamgg/sky-hooks';
 import { useChainId, useAccount } from 'wagmi';
-import { isL2ChainId, formatBigInt } from '@jetstreamgg/utils';
+import { isL2ChainId, formatBigInt } from '@jetstreamgg/sky-utils';
 
 export function SavingsBalanceDetails() {
   const chainId = useChainId();

@@ -25,7 +25,7 @@ import {
   getTokenDecimals,
   useCreatePreSignTradeOrder,
   useOnChainCancelOrder
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   formatBigInt,
@@ -34,7 +34,7 @@ import {
   useIsSafeWallet,
   useDebounce,
   useIsSmartContractWallet
-} from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-utils';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';

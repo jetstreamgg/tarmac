@@ -1,4 +1,4 @@
-import { NotificationType, TxStatus } from '@jetstreamgg/widgets';
+import { NotificationType, TxStatus } from '@jetstreamgg/sky-widgets';
 import { Toast, toast } from '@/components/ui/use-toast';
 import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -12,7 +12,7 @@ import { usePrepareNotification } from './usePrepareNotification';
 import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 
 const generateToastConfig = ({

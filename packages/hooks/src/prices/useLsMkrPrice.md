@@ -5,13 +5,13 @@ Hook for fetching the price of the Lockstake MKR token from the Sky Ecosystem co
 ## Import
 
 ```ts
-import { useLsMkrPrice } from '@jetstreamgg/hooks';
+import { useLsMkrPrice } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useLsMkrPrice } from '@jetstreamgg/hooks';
+import { useLsMkrPrice } from '@jetstreamgg/sky-hooks';
 
 function lsMkrPriceComponent() {
   const { data, error, isLoading, mutate } = useLsMkrPrice();
@@ -37,7 +37,7 @@ function lsMkrPriceComponent() {
 ## Return Type
 
 ```ts
-import { type PriceData } from '@jetstreamgg/hooks';
+import { type PriceData } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

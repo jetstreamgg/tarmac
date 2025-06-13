@@ -11,10 +11,10 @@ import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
-import { formatBigInt, formatNumber, getChainIcon } from '@jetstreamgg/utils';
+import { formatBigInt, formatNumber, getChainIcon } from '@jetstreamgg/sky-utils';
 import { Link } from 'react-router-dom';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
-import { PriceData } from '@jetstreamgg/hooks';
+import { PriceData } from '@jetstreamgg/sky-hooks';
 
 export const InteractiveStatsCardWithAccordion = ({
   title,

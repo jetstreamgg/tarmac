@@ -11,7 +11,7 @@ import { Card } from '@widgets/components/ui/card';
 import { CopyToClipboard } from '@widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
-import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/utils';
+import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/sky-utils';
 import { BalancesFlow } from '../constants';
 
 export const BalancesHeader = ({

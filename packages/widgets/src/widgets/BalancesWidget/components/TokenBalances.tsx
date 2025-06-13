@@ -1,5 +1,5 @@
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
-import { PriceData, TokenForChain } from '@jetstreamgg/hooks';
+import { PriceData, TokenForChain } from '@jetstreamgg/sky-hooks';
 import { AssetBalance } from './AssetBalance';
 
 export const TokenBalances = ({

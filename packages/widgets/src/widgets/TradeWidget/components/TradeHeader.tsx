@@ -4,7 +4,7 @@ import { TradeConfigMenu } from './TradeConfigMenu';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useAccount } from 'wagmi';
-import { TokenForChain } from '@jetstreamgg/hooks';
+import { TokenForChain } from '@jetstreamgg/sky-hooks';
 import { sepolia } from 'viem/chains';
 
 type PropTypes = {

@@ -1,8 +1,8 @@
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { formatNumber } from '@jetstreamgg/utils';
+import { formatNumber } from '@jetstreamgg/sky-utils';
 import { Card } from '@widgets/components/ui/card';
-import { PriceData } from '@jetstreamgg/hooks';
+import { PriceData } from '@jetstreamgg/sky-hooks';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { motion } from 'framer-motion';

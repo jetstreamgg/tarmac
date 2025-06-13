@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures.js';
 import { approveOrPerformAction } from '../utils/approveOrPerformAction.js';
 import { setErc20Balance } from '../utils/setBalance.js';
-import { skyAddress, usdsAddress } from '@jetstreamgg/hooks';
+import { skyAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.js';
 

@@ -4,12 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WagmiWrapper } from '../../../../test/WagmiWrapper';
 import { RewardsWidget } from '..';
-import { TOKENS } from '@jetstreamgg/hooks';
+import { TOKENS } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@widgets/shared/constants';
 
 const renderWithWagmiWrapper = (ui: any, options?: any) => render(ui, { wrapper: WagmiWrapper, ...options });
 
-vi.mock('@jetstreamgg/hooks', async importOriginal => {
+vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
   const actual = await importOriginal();
   return {
     ...(actual as any),

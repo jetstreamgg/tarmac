@@ -3,7 +3,7 @@ import { useEthereumCombinedHistory } from './useEthereumCombinedHistory';
 import { CombinedHistoryItem } from './shared';
 import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 export function useAllNetworksCombinedHistory() {
   const chainId = useChainId();

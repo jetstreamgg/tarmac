@@ -2,7 +2,7 @@ import { usdsSkyRewardAbi } from '../generated';
 import { useReadContract } from 'wagmi';
 import { type Address } from 'viem';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { TRUST_LEVELS } from '../constants';
 
 type UseRewardsTotalSuppliedResponse = ReadHook & {

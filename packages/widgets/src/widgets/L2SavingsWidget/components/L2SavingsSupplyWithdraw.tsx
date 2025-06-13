@@ -3,13 +3,13 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
-import { Token, useOverallSkyData, getTokenDecimals } from '@jetstreamgg/hooks';
+import { Token, useOverallSkyData, getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { L2SavingsStatsCard } from './L2SavingsStatsCard';
-import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/utils';
+import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 
 type Props = WidgetProps & {

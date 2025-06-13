@@ -3,17 +3,17 @@ import { Trans } from '@lingui/react/macro';
 import { ExternalLinkIcon } from 'lucide-react';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Heading, Text } from '@/modules/layout/components/Typography';
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
-import { sealModuleAddress } from '@jetstreamgg/hooks';
+import { stakeModuleAddress } from '@jetstreamgg/sky-hooks';
 import { GradientShapeCard } from './GradientShapeCard';
 
 export const AboutStakeModule = () => {
   const chainId = useChainId();
 
-  const sealEtherscanLink = getEtherscanLink(
+  const stakeEtherscanLink = getEtherscanLink(
     chainId,
-    sealModuleAddress[chainId as keyof typeof sealModuleAddress],
+    stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
     'address'
   );
 
@@ -37,7 +37,7 @@ export const AboutStakeModule = () => {
           </Trans>
         </Text>
       </div>
-      <ExternalLink href={sealEtherscanLink} showIcon={false} className="mt-3 w-fit lg:mt-0">
+      <ExternalLink href={stakeEtherscanLink} showIcon={false} className="mt-3 w-fit lg:mt-0">
         <Button variant="outline" className="border-border gap-2">
           <Trans>View contract</Trans>
           <ExternalLinkIcon size={16} />

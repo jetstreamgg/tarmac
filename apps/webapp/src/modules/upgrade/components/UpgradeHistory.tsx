@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useUpgradeHistory, UpgradeHistoryRow } from '@jetstreamgg/hooks';
-import { formatBigInt, useFormatDates } from '@jetstreamgg/utils';
+import { useUpgradeHistory, UpgradeHistoryRow } from '@jetstreamgg/sky-hooks';
+import { formatBigInt, useFormatDates } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';

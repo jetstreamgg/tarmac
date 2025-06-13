@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter } from '@widgets/components/ui/card';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
+import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Warning } from '@widgets/shared/components/icons/Warning';

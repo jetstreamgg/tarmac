@@ -1,8 +1,8 @@
 import { Input } from '@widgets/components/ui/input';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { ZERO_ADDRESS, useSaUserDelegates, useUrnSelectedVoteDelegate } from '@jetstreamgg/hooks';
-import { useDebounce } from '@jetstreamgg/utils';
+import { ZERO_ADDRESS, useSaUserDelegates, useUrnSelectedVoteDelegate } from '@jetstreamgg/sky-hooks';
+import { useDebounce } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { DelegateCard } from './DelegateCard';

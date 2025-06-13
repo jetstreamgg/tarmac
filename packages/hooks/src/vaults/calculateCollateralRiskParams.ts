@@ -1,7 +1,7 @@
-import { math } from '@jetstreamgg/utils';
+import { math } from '@jetstreamgg/sky-utils';
 import { CollateralRiskParameters } from './vault';
 import { formatUnits } from 'viem';
-import { RAD_PRECISION, WAD_PRECISION } from '@jetstreamgg/utils';
+import { RAD_PRECISION, WAD_PRECISION } from '@jetstreamgg/sky-utils';
 
 type RiskParamInputs = {
   par: bigint;

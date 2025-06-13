@@ -5,13 +5,13 @@ Hook for fetching data from a specific oracle.
 ## Import
 
 ```ts
-import { useOracle } from '@jetstreamgg/hooks';
+import { useOracle } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useOracle } from '@jetstreamgg/hooks';
+import { useOracle } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useOracle('0xOracleAddress...');
@@ -30,7 +30,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -47,7 +47,7 @@ type Props = ReadHookParams<OracleData> & { oracleAddress: `0x${string}` };
 ## Return Type
 
 ```ts
-import { type OracleData } from '@jetstreamgg/hooks';
+import { type OracleData } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

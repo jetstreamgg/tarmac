@@ -1,6 +1,6 @@
 require('dotenv').config();
-
-const { writeFile } = require('fs/promises');
+//@ts-expect-error readFile is already declared
+const { writeFile, readFile } = require('fs/promises');
 
 // corresponds to https://dashboard.tenderly.co/jetstreamgg/jetstream/testnet/67d03866-3483-455a-a001-7f9f69b1c5d4
 const MAINNET_FORK_CONTAINER_ID = '67d03866-3483-455a-a001-7f9f69b1c5d4';
@@ -20,48 +20,102 @@ const UNICHAIN_CONFIG = {
   forkBlock: '18140271'
 };
 
-const forkVnets = async () => {
+//@ts-expect-error script doesn't work with TS
+const forkVnets = async chainType => {
   const currentTime = Date.now();
 
-  const responses = await Promise.all([
-    ...[MAINNET_FORK_CONTAINER_ID, BASE_FORK_CONTAINER_ID, ARBITRUM_FORK_CONTAINER_ID].map(containerId =>
-      fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
-        headers: [
-          ['accept', 'application/json, text/plain, */*'],
-          ['content-type', 'application/json'],
-          ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
-        ],
-        method: 'POST',
-        body: JSON.stringify({
-          vnet_id: containerId,
-          display_name: 'ci-tests-testnet'
-        })
-      })
-    ),
-    ...[OPTIMISM_CONFIG, UNICHAIN_CONFIG].map(({ chainId, forkBlock }) =>
-      fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets', {
-        headers: [
-          ['accept', 'application/json, text/plain, */*'],
-          ['content-type', 'application/json'],
-          ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
-        ],
-        method: 'POST',
-        body: JSON.stringify({
-          slug: `ci-tests-testnet-${chainId}-${currentTime}`,
-          display_name: 'ci-tests-testnet',
-          fork_config: {
-            network_id: chainId,
-            block_number: forkBlock
-          },
-          virtual_network_config: {
-            chain_config: {
-              chain_id: chainId
-            }
-          }
-        })
-      })
-    )
-  ]);
+  const chainsToFork = chainType ?? ['mainnet', 'base', 'arbitrum' /*'optimism', 'unichain'*/]; // Re-enable when we add tests for these chains
+
+  const responses = await Promise.all(
+    //@ts-expect-error script doesn't work with TS
+    chainsToFork.map(chain => {
+      switch (chain) {
+        case 'mainnet':
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
+            headers: [
+              ['accept', 'application/json, text/plain, */*'],
+              ['content-type', 'application/json'],
+              ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+            ],
+            method: 'POST',
+            body: JSON.stringify({
+              vnet_id: MAINNET_FORK_CONTAINER_ID,
+              display_name: 'ci-tests-testnet'
+            })
+          });
+        case 'base':
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
+            headers: [
+              ['accept', 'application/json, text/plain, */*'],
+              ['content-type', 'application/json'],
+              ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+            ],
+            method: 'POST',
+            body: JSON.stringify({
+              vnet_id: BASE_FORK_CONTAINER_ID,
+              display_name: 'ci-tests-testnet'
+            })
+          });
+        case 'arbitrum':
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
+            headers: [
+              ['accept', 'application/json, text/plain, */*'],
+              ['content-type', 'application/json'],
+              ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+            ],
+            method: 'POST',
+            body: JSON.stringify({
+              vnet_id: ARBITRUM_FORK_CONTAINER_ID,
+              display_name: 'ci-tests-testnet'
+            })
+          });
+        case 'optimism':
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets', {
+            headers: [
+              ['accept', 'application/json, text/plain, */*'],
+              ['content-type', 'application/json'],
+              ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+            ],
+            method: 'POST',
+            body: JSON.stringify({
+              slug: `ci-tests-testnet-${OPTIMISM_CONFIG.chainId}-${currentTime}`,
+              display_name: 'ci-tests-testnet',
+              fork_config: {
+                network_id: OPTIMISM_CONFIG.chainId,
+                block_number: OPTIMISM_CONFIG.forkBlock
+              },
+              virtual_network_config: {
+                chain_config: {
+                  chain_id: OPTIMISM_CONFIG.chainId
+                }
+              }
+            })
+          });
+        case 'unichain':
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets', {
+            headers: [
+              ['accept', 'application/json, text/plain, */*'],
+              ['content-type', 'application/json'],
+              ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+            ],
+            method: 'POST',
+            body: JSON.stringify({
+              slug: `ci-tests-testnet-${UNICHAIN_CONFIG.chainId}-${currentTime}`,
+              display_name: 'ci-tests-testnet',
+              fork_config: {
+                network_id: UNICHAIN_CONFIG.chainId,
+                block_number: UNICHAIN_CONFIG.forkBlock
+              },
+              virtual_network_config: {
+                chain_config: {
+                  chain_id: UNICHAIN_CONFIG.chainId
+                }
+              }
+            })
+          });
+      }
+    })
+  );
 
   const testnetsData = await Promise.all(responses.map(response => response.json()));
 
@@ -72,19 +126,38 @@ const forkVnets = async () => {
     }
   }
 
-  const testnetDataToWrite = testnetsData.map(testnetData => {
-    const adminEndpoint = testnetData.rpcs.find(
-      //@ts-expect-error TypeScript syntax is not supported when running this script
-      x => x.name === 'Admin RPC'
-    );
+  // Read existing data if file exists
+  let existingData = [];
+  try {
+    const existingFile = await readFile('./tenderlyTestnetData.json', 'utf-8');
+    existingData = JSON.parse(existingFile);
+  } catch (error) {
+    console.warn('There was an error reading the tenderlyTestnetData.json file', error);
+    // File doesn't exist or is invalid JSON, start with empty array
+    existingData = [];
+  }
 
-    return {
+  // Update or add new chain data
+  const updatedData = existingData.filter(item => !chainsToFork.includes(item.NETWORK));
+
+  // Add the newly forked chains
+  chainsToFork.forEach((chain, index) => {
+    const testnetData = testnetsData[index];
+    const adminEndpoint = testnetData.rpcs.find(x => x.name === 'Admin RPC');
+
+    updatedData.push({
+      NETWORK: chain,
       TENDERLY_TESTNET_ID: testnetData.id,
       TENDERLY_RPC_URL: adminEndpoint.url
-    };
+    });
   });
 
-  await writeFile('./tenderlyTestnetData.json', JSON.stringify(testnetDataToWrite));
+  await writeFile('./tenderlyTestnetData.json', JSON.stringify(updatedData));
 };
 
-forkVnets();
+// Get chain type from command line argument
+const chainType = process.argv[2];
+const chainsToFork = chainType
+  ? chainType.split(',').map(chain => chain.trim())
+  : ['mainnet', 'base', 'arbitrum', 'optimism', 'unichain'];
+forkVnets(chainsToFork);

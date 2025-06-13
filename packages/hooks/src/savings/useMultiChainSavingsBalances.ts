@@ -3,7 +3,7 @@ import { useAccount } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';
 import { usePreviewSwapExactIn } from '../psm/usePreviewSwapExactIn';
@@ -13,7 +13,7 @@ import {
   isArbitrumChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-utils';
 
 export type MultiChainSavingsBalancesHook = ReadHook & {
   data?: Record<number, bigint>;

@@ -1,4 +1,4 @@
-import { chainId } from '@jetstreamgg/utils';
+import { chainId } from '@jetstreamgg/sky-utils';
 
 export const SAFE_CONNECTOR_ID = 'safe';
 

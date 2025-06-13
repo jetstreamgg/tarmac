@@ -5,13 +5,13 @@ The **Rewards Widget** is a React component that allows users to participate in 
 ## Installation
 
 ```shell
-npm install @jetstreamgg/widgets
+npm install @jetstreamgg/sky-widgets
 ```
 
 ## Example Usage
 
 ```jsx
-import { RewardsWidget } from '@jetstreamgg/widgets';
+import { RewardsWidget } from '@jetstreamgg/sky-widgets';
 
 function RewardsPage() {
   return (

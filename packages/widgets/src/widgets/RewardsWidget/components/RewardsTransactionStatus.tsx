@@ -23,8 +23,8 @@ import { TransactionStatus } from '@widgets/shared/components/ui/transaction/Tra
 import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { approveLoadingButtonText } from '@widgets/shared/constants';
-import { getTokenDecimals, RewardContract, Token } from '@jetstreamgg/hooks';
-import { formatBigInt } from '@jetstreamgg/utils';
+import { getTokenDecimals, RewardContract, Token } from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 
 // TX Status wrapper to update copy

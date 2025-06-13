@@ -4,7 +4,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { ArrowRightLong } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { formatAddress, getCowExplorerLink, getEtherscanLink, getExplorerName } from '@jetstreamgg/utils';
+import { formatAddress, getCowExplorerLink, getEtherscanLink, getExplorerName } from '@jetstreamgg/sky-utils';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { CopyToClipboard } from '../CopyToClipboard';
 import { HighlightColor, HistoryRow as HistoryRowType } from './types';

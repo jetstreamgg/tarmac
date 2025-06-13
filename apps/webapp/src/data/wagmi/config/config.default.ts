@@ -16,7 +16,7 @@ import {
   TENDERLY_ARBITRUM_RPC_URL,
   TENDERLY_ARBITRUM_CHAIN_ID
 } from './testTenderlyChain';
-import { isTestnetId } from '@jetstreamgg/utils';
+import { isTestnetId } from '@jetstreamgg/sky-utils';
 
 export const tenderly = {
   id: TENDERLY_CHAIN_ID,

@@ -3,13 +3,13 @@
 ## Installation
 
 ```
-npm install @jetstreamgg/utils
+npm install @jetstreamgg/sky-utils
 ```
 
 ## Documentation
 
 ```ts
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 
 const link = getEtherscanLink(chainId, contractAddress, 'address');
 ```

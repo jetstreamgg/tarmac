@@ -12,7 +12,7 @@ import {
   SealHistoryKick,
   getIlkName,
   useStakeHistory
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { StakeModuleWidgetContext } from '../context/context';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeAction, StakeStep } from '../lib/constants';

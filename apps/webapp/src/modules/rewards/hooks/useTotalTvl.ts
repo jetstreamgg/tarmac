@@ -3,7 +3,7 @@ import {
   RewardContractInfo,
   useAvailableTokenRewardContracts,
   useRewardContractsInfo
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 export const useTotalTvl = () => {

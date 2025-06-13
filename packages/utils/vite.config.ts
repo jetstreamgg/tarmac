@@ -20,8 +20,8 @@ export default defineConfig({
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'jetstream-gg-utils',
-      fileName: 'jetstream-gg-utils',
+      name: 'jetstream-gg-sky-utils',
+      fileName: 'jetstream-gg-sky-utils',
       formats: ['es']
     },
     rollupOptions: {

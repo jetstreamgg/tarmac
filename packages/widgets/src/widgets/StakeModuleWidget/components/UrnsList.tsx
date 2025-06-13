@@ -1,5 +1,5 @@
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
-import { useCurrentUrnIndex } from '@jetstreamgg/hooks';
+import { useCurrentUrnIndex } from '@jetstreamgg/sky-hooks';
 import { UrnPosition } from './UrnPosition';
 import { Heading } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';

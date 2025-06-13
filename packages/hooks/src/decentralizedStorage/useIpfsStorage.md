@@ -5,13 +5,13 @@ Hook for fetching a file from decentralized storage (IPFS). It returns the file 
 ## Import
 
 ```ts
-import { useIpfsStorage } from '@jetstreamgg/hooks';
+import { useIpfsStorage } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useIpfsStorage } from '@jetstreamgg/hooks';
+import { useIpfsStorage } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useIpfsStorage('QmHash...');
@@ -26,7 +26,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -43,7 +43,7 @@ type Props = ReadHookParams<string | Blob> & { fileHash: string };
 ## Return Type
 
 ```ts
-import { type ReadHook } from '@jetstreamgg/hooks';
+import { type ReadHook } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

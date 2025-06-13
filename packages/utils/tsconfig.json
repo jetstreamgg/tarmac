@@ -3,7 +3,7 @@
   "include": ["src"],
   "compilerOptions": {
     "paths": {
-      "@jetstreamgg/*": ["../../packages/*/src"]
+      "@jetstreamgg/sky-*": ["../../packages/*/src"]
     }
   }
 }

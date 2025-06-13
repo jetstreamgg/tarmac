@@ -2,7 +2,7 @@ import { useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { stakeModuleAddress, skyAddress, usdsAddress } from '../generated';
 import { useApproveToken } from '../tokens/useApproveToken';
-import { math } from '@jetstreamgg/utils';
+import { math } from '@jetstreamgg/sky-utils';
 
 export function useStakeSkyApprove({
   amount,

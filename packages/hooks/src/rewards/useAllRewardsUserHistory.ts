@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
 import { useAccount, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchAllRewardsUserHistory(
   urlSubgraph: string,

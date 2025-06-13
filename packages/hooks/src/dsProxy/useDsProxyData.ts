@@ -1,7 +1,7 @@
 import { useAccount, useChainId } from 'wagmi';
 import { proxyRegistryAddress, useReadProxyRegistry } from '../generated';
 import { ReadHook } from '../hooks';
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { TrustLevelEnum, TRUST_LEVELS, ZERO_ADDRESS } from '../constants';
 
 export type DsProxyHookData = {

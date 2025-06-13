@@ -1,7 +1,7 @@
 import { useL2CombinedHistory } from './useL2CombinedHistory';
 import { useEthereumCombinedHistory } from './useEthereumCombinedHistory';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { CombinedHistoryItem } from './shared';
 
 export const useCombinedHistory = (): {

@@ -13,7 +13,7 @@ import {
 } from '../generated';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel } from '../vaults/vaults.constants';
 import { stringToHex } from 'viem';
-import { getEtherscanLink, math } from '@jetstreamgg/utils';
+import { getEtherscanLink, math } from '@jetstreamgg/sky-utils';
 import { stakeDataSource } from './datasources';
 import { getIlkName } from '../vaults/helpers';
 

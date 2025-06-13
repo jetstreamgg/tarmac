@@ -3,7 +3,7 @@ import { WidgetState } from '@widgets/shared/types/widgetState';
 import { TxStatus } from '@widgets/shared/constants';
 import { I18nWidgetProvider } from './I18nWidgetProvider';
 import { TooltipProvider } from '@widgets/components/ui/tooltip';
-import { Token } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
 
 export interface WidgetContextProps {
   // Button state

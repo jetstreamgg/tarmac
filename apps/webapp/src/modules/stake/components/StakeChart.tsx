@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { useParseSavingsChartData } from '@/modules/savings/hooks/useParseSavingsChartData';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
-import { useStakeHistoricData } from '@jetstreamgg/hooks';
+import { useStakeHistoricData } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
 import { useState } from 'react';
 import { parseEther } from 'viem';

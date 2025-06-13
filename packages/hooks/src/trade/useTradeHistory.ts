@@ -1,6 +1,6 @@
 import { useEthereumTradeHistory } from './useEthereumTradeHistory';
 import { useL2TradeHistory } from '../psm/useL2TradeHistory';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 
 export function useTradeHistory(subgraphUrl?: string) {

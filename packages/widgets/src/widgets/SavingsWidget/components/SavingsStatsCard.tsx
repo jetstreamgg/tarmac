@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { formatBigInt, formatNumber } from '@jetstreamgg/utils';
+import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -8,7 +8,7 @@ import { Skeleton } from '@widgets/components/ui/skeleton';
 import { SavingsStatsCardCore } from './SavingsStatsCardCore';
 import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard'; // Import StatsAccordionCard
 import { positionAnimations } from '@widgets/shared/animation/presets';
-import { useOverallSkyData } from '@jetstreamgg/hooks';
+import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 
 export type SavingsStats = {
   savingsTvl: bigint;

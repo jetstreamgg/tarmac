@@ -1,4 +1,4 @@
-import { useAvailableTokenRewardContracts, useRewardsChartInfo } from '@jetstreamgg/hooks';
+import { useAvailableTokenRewardContracts, useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 export const useRewardsSuppliersCount = (overrideChainId?: number) => {

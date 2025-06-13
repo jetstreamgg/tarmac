@@ -5,13 +5,13 @@ Hook for fetching the USDS token allowance for the savings contract.
 ## Import
 
 ```ts
-import { useSavingsAllowance } from '@jetstreamgg/hooks';
+import { useSavingsAllowance } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsAllowance } from '@jetstreamgg/hooks';
+import { useSavingsAllowance } from '@jetstreamgg/sky-hooks';
 
 function AllowanceComponent() {
   const { data, error, isLoading, mutate } = useSavingsAllowance();
@@ -31,7 +31,7 @@ function AllowanceComponent() {
 ## Return Type
 
 ```ts
-import { type DSRAllowanceHookResponse } from '@jetstreamgg/hooks';
+import { type DSRAllowanceHookResponse } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

@@ -5,13 +5,13 @@ The **Savings Widget** is a React component that provides interactions with the 
 ## Installation
 
 ```shell
-npm install @jetstreamgg/widgets
+npm install @jetstreamgg/sky-widgets
 ```
 
 ## Example Usage
 
 ```jsx
-import { SavingsWidget } from '@jetstreamgg/widgets';
+import { SavingsWidget } from '@jetstreamgg/sky-widgets';
 
 function SavingsPage() {
   return (

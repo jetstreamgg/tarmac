@@ -92,21 +92,12 @@ const content = {
     title: 'Peg Stability Module (PSM)',
     description: (
       <Text className="leading-5 text-white/80" variant="small">
-        Peg Stability Modules (PSMs) are smart contracts that allow users to convert certain stablecoins
-        directly with the Sky Protocol for USDS or DAI at a fixed rate and with relatively low fees. They are
-        designed to maintain the stability of USDS and DAI. Unlike decentralized exchange (DEX) transactions,
-        PSM operations do not involve trading between users. Instead, they are direct, non-custodial
-        conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.
-        <br />
-        <br />
-        Through PSMs, USDS or DAI is obtained via predictable-rate conversion (typically a 1:1 ratio with
-        certain stablecoins, or, in the case of sUSDS, for an amount reflecting its current price) rather than
-        through borrowing. For example, given the existence of a USDC-backed PSM, a user could supply 100 USDC
-        stablecoins to generate100 USDS or 100 DAI (minus fees), without taking on any debt. Given that PSM
-        operations are facilitated on the Sky Protocol directly and not on a DEX, price slippage (i.e., the
-        difference between the expected price of a token and the actual price when traded) is not a concern.
-        Zero Sky Protocol fees and no slippage are some of the benefits of using PSM, which adds liquidity to
-        the assets backing the PSM. That liquidity helps to keep the value of USDS and DAI stable.
+        PSMs are smart contracts that allow users to convert certain stablecoins directly with the Sky
+        Protocol for USDS or DAI at a fixed rate, with zero protocol fees; however, gas fees will apply. They
+        are designed to maintain the stability of USDS and DAI. Unlike decentralized exchange (DEX)
+        transactions, PSM operations do not involve trading between users. Instead, they are direct,
+        non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the
+        Sky Protocol.
       </Text>
     )
   }

@@ -5,7 +5,7 @@ import { distributeRewards } from '../utils/distributeRewards.ts';
 import { parseNumberFromString } from '@/lib/helpers/string/parseNumberFromString.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { skyAddress } from '@jetstreamgg/hooks';
+import { skyAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 
 test.beforeEach(async ({ page }) => {

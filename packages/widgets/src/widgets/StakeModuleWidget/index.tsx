@@ -39,8 +39,8 @@ import {
   TOKENS,
   getTokenDecimals,
   getIlkName
-} from '@jetstreamgg/hooks';
-import { formatBigInt, getTransactionLink, useDebounce, useIsSafeWallet } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { formatBigInt, getTransactionLink, useDebounce, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { Button } from '@widgets/components/ui/button';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';

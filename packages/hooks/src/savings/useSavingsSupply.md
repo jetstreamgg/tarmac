@@ -5,13 +5,13 @@ Hook for supplying an amount into the savings contract.
 ## Import
 
 ```ts
-import { useSavingsSupply } from '@jetstreamgg/hooks';
+import { useSavingsSupply } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsSupply } from '@jetstreamgg/hooks';
+import { useSavingsSupply } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { execute, isLoading, error, data } = useSavingsSupply({
@@ -36,7 +36,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type WriteHookParams } from '@jetstreamgg/hooks';
+import { type WriteHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -63,7 +63,7 @@ type Props = WriteHookParams & {
 ## Return Type
 
 ```ts
-import { type WriteHook } from '@jetstreamgg/hooks';
+import { type WriteHook } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

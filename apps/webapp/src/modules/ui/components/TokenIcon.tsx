@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Token } from '@jetstreamgg/hooks';
-import { getChainSpecificText } from '@jetstreamgg/utils';
+import { Token } from '@jetstreamgg/sky-hooks';
+import { getChainSpecificText } from '@jetstreamgg/sky-utils';
 
 import React from 'react';
 import { useChainId } from 'wagmi';

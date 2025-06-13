@@ -15,7 +15,7 @@ import {
   skyAddress,
   usdcL2Address,
   usdsL2Address
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { tenderly, tenderlyBase, tenderlyArbitrum } from '@/data/wagmi/config/config.default';
 import {
   TENDERLY_CHAIN_ID,

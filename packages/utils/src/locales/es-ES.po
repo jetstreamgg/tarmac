@@ -460,7 +460,7 @@ msgid "Balances"
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "Balances displays all of your Sky-related assets available on Layer 2 (L2) scaling solutions for the Ethereum blockchain. When you connect your crypto wallet to Sky.money, you can view your tokens across supported networks on the decentralized Sky Protocol. This visibility is built in for ease of use. Sky.money is non-custodial and permissionless."
+msgid "Balances displays all of your Sky-related assets available on the selected network for the Ethereum blockchain. When you connect your crypto wallet to Sky.money, you can view your tokens across supported networks on the decentralized Sky Protocol. This visibility is built in for ease of use. Sky.money is non-custodial and permissionless."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
@@ -1329,6 +1329,10 @@ msgstr ""
 msgid "Network Error"
 msgstr ""
 
+#: apps/webapp/src/modules/ui/components/ChainModal.tsx
+msgid "Network switching is managed by your Safe app. Switch networks there, then visit this app again from the Safe apps menu."
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "New positions disabled"
@@ -1395,7 +1399,7 @@ msgid "Note that reverted transactions may still incur gas fees."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "On Layer 2 (L2) scaling solutions for the Ethereum blockchain via Sky.money, you can convert between USDS, sUSDS and USDC through a Peg Stability Module (PSM) <0/> deployed to the L2 and powered by Spark. The PSM handles conversions programmatically, driven at your direction, between these pairs directly."
+msgid "On Layer 2 (L2) scaling solutions for the Ethereum blockchain via Sky.money, you can convert between USDS, sUSDS and USDC through a Peg Stability Module (PSM) <0/> deployed to the L2. The PSM handles conversions programmatically, driven at your direction, between these pairs directly."
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/UnsupportedNetworkPage.tsx
@@ -2144,10 +2148,6 @@ msgstr ""
 msgid "Terms of Use."
 msgstr ""
 
-#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "The experience of using the Savings feature on Layer 2 (L2) scaling solutions and Ethereum is very similar. However, given that no native Sky Savings Rate module is currently deployed to L2s, when transacting on them, you always interact with the Peg Stability Module (PSM) <0/> for conversions to/from USDS, sUSDS and USDC. The PSM handles conversions programmatically, driven at your direction, between these pairs directly."
-msgstr ""
-
 #: packages/widgets/src/widgets/SealModuleWidget/components/About.tsx
 msgid "The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee"
 msgstr ""
@@ -2731,7 +2731,7 @@ msgid "When you hold SKY tokens, you maintain the right to participate in the pr
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "When you supply USDS to the Sky Savings Rate module of the decentralised Sky Protocol, you access the Sky Saving Rate and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied funds, as this feature is non-custodial."
+msgid "When you supply USDS to the Sky Savings Rate module of the decentralized Sky Protocol, you access the Sky Savings Rate <0/> and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied assets, as this feature is non-custodial."
 msgstr ""
 
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx

@@ -11,7 +11,7 @@ The hook returns an object with the following properties:
 ## Usage
 
 ```tsx
-import { useTotalSavingsSuppliers } from '@jetstreamgg/hooks';
+import { useTotalSavingsSuppliers } from '@jetstreamgg/sky-hooks';
 
 function TotalSuppliersComponent() {
   const { data, isLoading, error } = useTotalSavingsSuppliers({

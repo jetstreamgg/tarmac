@@ -4,7 +4,7 @@ import {
   BalancesWidget,
   BalancesWidgetProps,
   TxStatus
-} from '@jetstreamgg/widgets';
+} from '@jetstreamgg/sky-widgets';
 import { useSearchParams } from 'react-router-dom';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { IntentMapping, QueryParams } from '@/lib/constants';

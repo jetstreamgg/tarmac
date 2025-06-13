@@ -1,4 +1,4 @@
-import { dynamicActivate } from '@jetstreamgg/utils';
+import { dynamicActivate } from '@jetstreamgg/sky-utils';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { useEffect } from 'react';

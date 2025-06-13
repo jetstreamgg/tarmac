@@ -1,6 +1,6 @@
 {
   "name": "@jetstreamgg/tarmac",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Tarmac is a web3 application framework for building decentralized applications",
   "engines": {
     "pnpm": ">=8",

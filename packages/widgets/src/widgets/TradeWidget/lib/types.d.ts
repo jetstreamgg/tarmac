@@ -1,4 +1,4 @@
-import { Token } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
 import { EthFlowTxStatus } from './constants';
 import { MessageDescriptor } from '@lingui/core';
 

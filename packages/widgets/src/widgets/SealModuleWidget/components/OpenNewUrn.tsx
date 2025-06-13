@@ -1,7 +1,7 @@
 import { Checkbox } from '@widgets/components/ui/checkbox';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { TOKENS, useUrnAddress, useVault } from '@jetstreamgg/hooks';
+import { TOKENS, useUrnAddress, useVault } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useContext, useMemo } from 'react';

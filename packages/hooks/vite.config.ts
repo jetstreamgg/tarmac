@@ -21,8 +21,8 @@ export default defineConfig({
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'jetstream-gg-hooks',
-      fileName: 'jetstream-gg-hooks',
+      name: 'jetstream-gg-sky-hooks',
+      fileName: 'jetstream-gg-sky-hooks',
       formats: ['es']
     },
     rollupOptions: {

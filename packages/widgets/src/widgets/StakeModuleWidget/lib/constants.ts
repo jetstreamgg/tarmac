@@ -2,7 +2,7 @@ import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 import { TxStatus } from '@widgets/shared/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
-import { TOKENS } from '@jetstreamgg/hooks';
+import { TOKENS } from '@jetstreamgg/sky-hooks';
 
 export enum StakeFlow {
   OPEN = 'open',

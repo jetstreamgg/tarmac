@@ -5,13 +5,13 @@ The **Trade Widget** is a React component that allows users to trade between dif
 ## Installation
 
 ```shell
-npm install @jetstreamgg/widgets
+npm install @jetstreamgg/sky-widgets
 ```
 
 ## Example Usage
 
 ```jsx
-import { TradeWidget } from '@jetstreamgg/widgets';
+import { TradeWidget } from '@jetstreamgg/sky-widgets';
 
 function TradePage() {
   return (

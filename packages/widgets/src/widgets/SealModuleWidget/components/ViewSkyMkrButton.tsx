@@ -1,6 +1,6 @@
 import { Button } from '@widgets/components/ui/button';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { Token } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
 import { ArrowLeftRight } from 'lucide-react';
 import {
   Tooltip,

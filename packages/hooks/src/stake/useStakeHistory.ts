@@ -16,7 +16,7 @@ import {
 } from './stakeModule';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchStakeHistory(
   urlSubgraph: string,

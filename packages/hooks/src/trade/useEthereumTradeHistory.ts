@@ -13,7 +13,7 @@ import { cowApiClient, OrderStatus } from './constants';
 import { TokenForChain } from '../tokens/types';
 import { ETH_ADDRESS, TRADE_TOKENS } from '../tokens/tokens.constants';
 import { formatOrderStatus } from './formatOrderStatus';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchEthereumTradeHistory(
   chainId: number,

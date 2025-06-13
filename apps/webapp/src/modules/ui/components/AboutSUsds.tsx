@@ -3,9 +3,9 @@ import { Trans } from '@lingui/react/macro';
 import { ExternalLinkIcon } from 'lucide-react';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Heading, Text } from '@/modules/layout/components/Typography';
-import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/utils';
+import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
-import { sUsdsAddress, sUsdsL2Address } from '@jetstreamgg/hooks';
+import { sUsdsAddress, sUsdsL2Address } from '@jetstreamgg/sky-hooks';
 import { GradientShapeCard } from './GradientShapeCard';
 
 export const AboutSUsds = () => {

@@ -1,6 +1,6 @@
 import { useEthereumSavingsHistory } from './useEthereumSavingsHistory';
 import { useL2SavingsHistory } from '../psm/useL2SavingsHistory';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 
 export function useSavingsHistory(subgraphUrl?: string) {

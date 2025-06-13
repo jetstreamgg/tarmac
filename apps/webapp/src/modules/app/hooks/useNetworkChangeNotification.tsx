@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useChainId, useChains } from 'wagmi';
 import { toast } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
-import { getChainIcon } from '@jetstreamgg/utils';
+import { getChainIcon } from '@jetstreamgg/sky-utils';
 import { ArrowRightLong } from '@/modules/icons';
 
 export function useNetworkChangeNotification() {

@@ -12,7 +12,7 @@ import { Logo } from './HighlightLogo';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { Trans } from '@lingui/react/macro';
-import { formatNumber } from '@jetstreamgg/utils';
+import { formatNumber } from '@jetstreamgg/sky-utils';
 import { useEffect, useState } from 'react';
 
 const secondaryTagline = {

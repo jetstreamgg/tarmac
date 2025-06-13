@@ -1,5 +1,5 @@
-import { useOverallSkyData, usePrices } from '@jetstreamgg/hooks';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
+import { useOverallSkyData, usePrices } from '@jetstreamgg/sky-hooks';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCardWithAccordion } from '@widgets/shared/components/ui/card/InteractiveStatsCardWithAccordion';

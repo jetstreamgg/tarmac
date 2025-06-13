@@ -20,7 +20,7 @@ import {
   usdcL2Address,
   usdsL2Address,
   sUsdsL2Address
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import {
   TENDERLY_ARBITRUM_CHAIN_ID,
   TENDERLY_BASE_CHAIN_ID,

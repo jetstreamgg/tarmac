@@ -1,7 +1,7 @@
-import { CombinedHistoryItem, TransactionTypeEnum } from '@jetstreamgg/hooks';
+import { CombinedHistoryItem, TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
 import { getAmount } from './getAmount';
 import { getToken } from './getToken';
-import { formatAddress } from '@jetstreamgg/utils';
+import { formatAddress } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 
 export const getHistoryRightText = ({

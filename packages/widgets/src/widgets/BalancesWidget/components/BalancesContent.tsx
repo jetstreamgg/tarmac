@@ -16,7 +16,7 @@ import {
   useTotalUserSealed,
   useMultiChainSavingsBalances,
   useTotalUserStaked
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
 import { BalancesFlow } from '../constants';
@@ -24,10 +24,10 @@ import { BalancesFilter } from './BalancesFilter';
 import { useState } from 'react';
 import { defaultConfig } from '@widgets/config/default-config';
 import { useAccount, useChainId } from 'wagmi';
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
-import { useRewardsSuppliedBalance } from '@jetstreamgg/hooks';
-import { isTestnetId, isMainnetId } from '@jetstreamgg/utils';
-import { TOKENS } from '@jetstreamgg/hooks';
+import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
+import { useRewardsSuppliedBalance } from '@jetstreamgg/sky-hooks';
+import { isTestnetId, isMainnetId } from '@jetstreamgg/sky-utils';
+import { TOKENS } from '@jetstreamgg/sky-hooks';
 import { NoResults } from '@widgets/shared/components/icons/NoResults';
 
 export interface TokenBalanceResponse extends GetBalanceData {
