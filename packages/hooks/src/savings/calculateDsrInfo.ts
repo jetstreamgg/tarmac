@@ -1,4 +1,4 @@
-import { math } from '@jetstreamgg/utils';
+import { math } from '@jetstreamgg/sky-utils';
 
 type DsrCalcInputs = {
   dsr: bigint;

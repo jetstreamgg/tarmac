@@ -7,8 +7,8 @@ import {
   WriteHook,
   useRewardContractInfo,
   useRewardsSuppliedBalance
-} from '@jetstreamgg/hooks';
-import { formatBigInt } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useAccount } from 'wagmi';
 import { RewardsStatsCardCore } from './RewardsStatsCardCore';

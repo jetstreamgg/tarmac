@@ -5,13 +5,13 @@ Hook for fetching chart information for a specific reward contract.
 ## Import
 
 ```ts
-import { useRewardChartInfo } from '@jetstreamgg/hooks';
+import { useRewardChartInfo } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useRewardChartInfo } from '@jetstreamgg/hooks';
+import { useRewardChartInfo } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useRewardChartInfo('0xRewardContractAddress...');
@@ -30,7 +30,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -47,7 +47,7 @@ type Props = ReadHookParams<RewardChartInfo> & { rewardContractAddress: `0x${str
 ## Return Type
 
 ```ts
-import { type RewardChartInfo } from '@jetstreamgg/hooks';
+import { type RewardChartInfo } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

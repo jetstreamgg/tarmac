@@ -5,13 +5,13 @@ Hook for approving the USDS token for the savings contract.
 ## Import
 
 ```ts
-import { useSavingsApprove } from '@jetstreamgg/hooks';
+import { useSavingsApprove } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsApprove } from '@jetstreamgg/hooks';
+import { useSavingsApprove } from '@jetstreamgg/sky-hooks';
 
 function ApproveComponent() {
   const { execute, isLoading, error } = useSavingsApprove({
@@ -35,7 +35,7 @@ function ApproveComponent() {
 ## Parameters
 
 ```ts
-import { type WriteHookParams } from '@jetstreamgg/hooks';
+import { type WriteHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -60,7 +60,7 @@ type Props = WriteHookParams & {
 ## Return Type
 
 ```ts
-import { type WriteHook } from '@jetstreamgg/hooks';
+import { type WriteHook } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

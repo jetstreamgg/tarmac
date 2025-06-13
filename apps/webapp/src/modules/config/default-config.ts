@@ -1,6 +1,6 @@
 // Default configuration used site-wide
 
-import { defaultConfig as widgetsConfig } from '@jetstreamgg/widgets';
+import { defaultConfig as widgetsConfig } from '@jetstreamgg/sky-widgets';
 import { SiteConfig } from './types/site-config';
 import {
   restrictedTokenList,

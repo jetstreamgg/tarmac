@@ -1,6 +1,6 @@
-import { Token } from '@jetstreamgg/hooks';
-import { useDaiUsdsApprove, useMkrSkyApprove } from '@jetstreamgg/hooks';
-import { WriteHookParams } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
+import { useDaiUsdsApprove, useMkrSkyApprove } from '@jetstreamgg/sky-hooks';
+import { WriteHookParams } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 export function useApproveManager({

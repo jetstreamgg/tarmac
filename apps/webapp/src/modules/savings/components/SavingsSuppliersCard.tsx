@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
-import { useOverallSkyData } from '@jetstreamgg/hooks';
+import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 
 export function SavingsSuppliersCard(): React.ReactElement {
   const { data, isLoading, error } = useOverallSkyData();

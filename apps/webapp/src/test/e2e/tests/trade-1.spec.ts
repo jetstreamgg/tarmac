@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures.ts';
 import { getMinimumOutput } from '../utils/trade.ts';
 import { setErc20Balance, setEthBalance } from '../utils/setBalance.ts';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
-import { usdtAddress } from '@jetstreamgg/hooks';
+import { usdtAddress } from '@jetstreamgg/sky-hooks';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 
 test.beforeEach(async ({ page }) => {

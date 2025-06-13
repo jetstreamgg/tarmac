@@ -1,6 +1,6 @@
-import { Token } from '@jetstreamgg/hooks';
-import { useDaiToUsds, useMkrToSky, useUsdsToDai, useSkyToMkr } from '@jetstreamgg/hooks';
-import { WriteHookParams } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
+import { useDaiToUsds, useMkrToSky, useUsdsToDai, useSkyToMkr } from '@jetstreamgg/sky-hooks';
+import { WriteHookParams } from '@jetstreamgg/sky-hooks';
 
 export function useUpgraderManager({
   enabled = true,

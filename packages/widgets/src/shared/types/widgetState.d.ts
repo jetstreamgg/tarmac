@@ -7,7 +7,7 @@ import {
 } from '@/widgets/UpgradeWidget/lib/constants';
 import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidget/lib/constants';
 import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
-import { RewardContract } from '@jetstreamgg/hooks';
+import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { TxStatus, NotificationType } from '../constants';
 import { SealFlow } from '@widgets/widgets/SealModuleWidget/lib/constants';
 

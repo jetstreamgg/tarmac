@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
 
 import { useConfig as useWagmiConfig } from 'wagmi';
-import { TOKENS, useUpgradeHistory } from '@jetstreamgg/hooks';
+import { TOKENS, useUpgradeHistory } from '@jetstreamgg/sky-hooks';
 import {
   TxStatus,
   UpgradeAction,
@@ -10,7 +10,7 @@ import {
   UpgradeFlow,
   UpgradeScreen,
   upgradeTokens
-} from '@jetstreamgg/widgets';
+} from '@jetstreamgg/sky-widgets';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';

@@ -14,7 +14,7 @@ import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { TokenForChain } from '@jetstreamgg/hooks';
+import { TokenForChain } from '@jetstreamgg/sky-hooks';
 import { BalancesFlow } from './constants';
 
 export type BalancesWidgetProps = WidgetProps & {

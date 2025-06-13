@@ -11,7 +11,7 @@ import {
   useUrnSelectedVoteDelegate,
   useVault,
   SealHistoryKick
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { SealModuleWidgetContext } from '../context/context';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SealAction, SealStep } from '../lib/constants';

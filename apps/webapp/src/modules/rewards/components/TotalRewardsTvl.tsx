@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useTotalTvl } from '../hooks/useTotalTvl';
-import { formatBigInt } from '@jetstreamgg/utils';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 
 export function TotalRewardsTvl() {
   const { data: totalTvl, isLoading, error } = useTotalTvl();

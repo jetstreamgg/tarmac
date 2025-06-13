@@ -1,5 +1,10 @@
-import { useAvailableTokenRewardContracts, useRewardsChartInfo, TOKENS, usePrices } from '@jetstreamgg/hooks';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
+import {
+  useAvailableTokenRewardContracts,
+  useRewardsChartInfo,
+  TOKENS,
+  usePrices
+} from '@jetstreamgg/sky-hooks';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -8,7 +13,7 @@ import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
 import { useChainId } from 'wagmi';
-import { isTestnetId } from '@jetstreamgg/utils';
+import { isTestnetId } from '@jetstreamgg/sky-utils';
 
 export const RewardsBalanceCard = ({
   url,

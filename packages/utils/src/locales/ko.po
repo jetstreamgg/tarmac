@@ -1329,6 +1329,10 @@ msgstr ""
 msgid "Network Error"
 msgstr ""
 
+#: apps/webapp/src/modules/ui/components/ChainModal.tsx
+msgid "Network switching is managed by your Safe app. Switch networks there, then visit this app again from the Safe apps menu."
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "New positions disabled"
@@ -1957,6 +1961,11 @@ msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 msgid "Stake and Borrow"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Stake your {formattedBalance} {upperSymbol} in the Staking Engine {0}"
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx

@@ -10,7 +10,7 @@ import {
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import {
   Dispatch,
   ReactElement,

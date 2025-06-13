@@ -5,7 +5,7 @@ import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, RewardUserHistoryResponse } from './rewards';
 import { useAccount, useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/utils';
+import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchRewardsUserHistory(
   urlSubgraph: string,

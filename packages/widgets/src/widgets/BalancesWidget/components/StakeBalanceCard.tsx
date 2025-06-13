@@ -1,5 +1,5 @@
-import { lsSkyUsdsRewardAddress, usePrices, useRewardsChartInfo } from '@jetstreamgg/hooks';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/utils';
+import { lsSkyUsdsRewardAddress, usePrices, useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -27,10 +27,6 @@ export const StakeBalanceCard = ({ loading, stakeBalance, url, onExternalLinkCli
     () => rewardsChartInfoData?.slice().sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0],
     [rewardsChartInfoData]
   );
-
-  if (totalStakedValue === 0) {
-    return null;
-  }
 
   return (
     <InteractiveStatsCard

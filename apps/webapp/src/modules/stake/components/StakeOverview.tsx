@@ -1,5 +1,5 @@
-import { useStakeHistoricData, useCollateralData, getIlkName } from '@jetstreamgg/hooks';
-import { formatDecimalPercentage, formatNumber, formatBigInt } from '@jetstreamgg/utils';
+import { useStakeHistoricData, useCollateralData, getIlkName } from '@jetstreamgg/sky-hooks';
+import { formatDecimalPercentage, formatNumber, formatBigInt } from '@jetstreamgg/sky-utils';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSection } from '@/modules/ui/components/DetailSection';

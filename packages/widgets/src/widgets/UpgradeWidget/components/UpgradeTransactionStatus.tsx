@@ -18,8 +18,8 @@ import {
 } from '../lib/constants';
 import { i18n } from '@lingui/core';
 import { t } from '@lingui/core/macro';
-import { getTokenDecimals, Token } from '@jetstreamgg/hooks';
-import { formatBigInt } from '@jetstreamgg/utils';
+import { getTokenDecimals, Token } from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { approveLoadingButtonText } from '@widgets/shared/constants';
 import { useChainId } from 'wagmi';
 

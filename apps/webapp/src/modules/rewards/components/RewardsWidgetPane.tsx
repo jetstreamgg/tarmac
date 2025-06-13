@@ -6,14 +6,14 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { RewardContract, useRewardsUserHistory } from '@jetstreamgg/hooks';
+import { RewardContract, useRewardsUserHistory } from '@jetstreamgg/sky-hooks';
 import {
   RewardsAction,
   RewardsFlow,
   RewardsWidget,
   TxStatus,
   WidgetStateChangeParams
-} from '@jetstreamgg/widgets';
+} from '@jetstreamgg/sky-widgets';
 import { useSearchParams } from 'react-router-dom';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {

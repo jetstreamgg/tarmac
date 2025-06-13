@@ -6,7 +6,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@jetstreamgg/*": ["../../packages/*/src"]
+      "@jetstreamgg/sky-*": ["../../packages/*/src"]
     }
     // ...
   },

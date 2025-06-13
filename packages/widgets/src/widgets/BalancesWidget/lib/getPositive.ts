@@ -1,4 +1,4 @@
-import { TransactionTypeEnum } from '@jetstreamgg/hooks';
+import { TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
 
 export const getPositive = ({ type }: { type: TransactionTypeEnum }) => {
   switch (type) {

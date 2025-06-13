@@ -8,7 +8,7 @@ import { HStack } from '../layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { Trans } from '@lingui/react/macro';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { motion } from 'framer-motion';

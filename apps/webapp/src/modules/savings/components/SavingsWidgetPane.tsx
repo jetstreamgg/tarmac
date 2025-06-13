@@ -5,10 +5,10 @@ import {
   SavingsAction,
   WidgetStateChangeParams,
   SavingsFlow
-} from '@jetstreamgg/widgets';
-import { TOKENS, useSavingsHistory } from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-widgets';
+import { TOKENS, useSavingsHistory } from '@jetstreamgg/sky-hooks';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';

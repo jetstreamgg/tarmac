@@ -16,7 +16,7 @@
 @import 'tailwindcss';
 
 /* This forces tailwind to scan imported components for classes  */
-@source "../node_modules/@jetstreamgg/widgets";
+@source "../node_modules/@jetstreamgg/sky-widgets";
 
 @plugin 'tailwindcss-animate';
 

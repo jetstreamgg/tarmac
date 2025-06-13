@@ -4,8 +4,8 @@ import {
   useDelegateName,
   useRewardContractTokens,
   useStakeHistory
-} from '@jetstreamgg/hooks';
-import { formatBigInt, useFormatDates } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { formatBigInt, useFormatDates } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import {
@@ -21,7 +21,7 @@ import {
 } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 import { Text } from '@/modules/layout/components/Typography';
-import { StakeHistoryItem } from 'node_modules/@jetstreamgg/hooks/src/stake/stakeModule';
+import { StakeHistoryItem } from 'node_modules/@jetstreamgg/sky-hooks/src/stake/stakeModule';
 import { HighlightColor } from '@/modules/ui/components/historyTable/types';
 
 const mapTypeEnumToColumn = (type: TransactionTypeEnum) => {

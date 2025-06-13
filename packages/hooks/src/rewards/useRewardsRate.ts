@@ -3,7 +3,7 @@ import { useReadContract } from 'wagmi';
 import { parseUnits, type Address } from 'viem';
 import { DataSource, ReadHook } from '../hooks';
 import { useRewardsTotalSupplied } from './useRewardsTotalSupplied';
-import { formatPercent, getEtherscanLink, math } from '@jetstreamgg/utils';
+import { formatPercent, getEtherscanLink, math } from '@jetstreamgg/sky-utils';
 import { TRUST_LEVELS } from '../constants';
 import { usePrices } from '../prices/usePrices';
 import { useTokens } from '../tokens/useTokens';

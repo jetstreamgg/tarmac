@@ -1,4 +1,4 @@
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { stakeModuleAddress } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 

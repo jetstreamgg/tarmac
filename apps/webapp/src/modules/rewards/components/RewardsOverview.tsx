@@ -9,7 +9,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { RewardsFaq } from './RewardsFaq';
 import { RewardsOverviewCharts } from './history/RewardsOverviewCharts';
 import { RewardsOverviewInfo } from './RewardsOverviewInfo';
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
+import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
 import { filterActionsByIntent } from '@/lib/utils';

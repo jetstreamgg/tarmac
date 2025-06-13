@@ -6,7 +6,7 @@ import { t } from '@lingui/core/macro';
 import { GradientShapeCard } from '@/modules/ui/components/GradientShapeCard';
 import { Intent } from '@/lib/enums';
 import { useChainId } from 'wagmi';
-import { getChainSpecificText } from '@jetstreamgg/utils';
+import { getChainSpecificText } from '@jetstreamgg/sky-utils';
 import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
 
 export function ConnectCard({ intent }: { intent: Intent }) {

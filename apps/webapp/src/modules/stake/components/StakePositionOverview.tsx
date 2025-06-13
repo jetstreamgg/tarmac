@@ -10,8 +10,8 @@ import {
   // useUrnAddress,
   useVault,
   ZERO_ADDRESS
-} from '@jetstreamgg/hooks';
-import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { StakeToken } from '../constants';
@@ -26,9 +26,9 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { StakeDelegateCard } from './StakeDelegateCard';
 import { StakeRewardCard } from './StakeRewardCard';
 // import { useMemo } from 'react';
-import { formatUrnIndex } from '@jetstreamgg/widgets';
+import { formatUrnIndex } from '@jetstreamgg/sky-widgets';
 import { useChainId } from 'wagmi';
-import { formatPercent } from '@jetstreamgg/utils';
+import { formatPercent } from '@jetstreamgg/sky-utils';
 
 const RISK_COLORS = {
   [RiskLevel.LIQUIDATION]: { text: 'text-red-400', bg: 'bg-red-400' },

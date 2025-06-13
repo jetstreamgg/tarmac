@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader } from '@widgets/components/ui/card';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { getTokenDecimals, OrderQuoteResponse } from '@jetstreamgg/hooks';
-import { formatNumber } from '@jetstreamgg/utils';
+import { getTokenDecimals, OrderQuoteResponse } from '@jetstreamgg/sky-hooks';
+import { formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { ArrowRight } from 'lucide-react';
@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
 import { formatUnits } from 'viem';
-import { TokenForChain } from '@jetstreamgg/hooks';
+import { TokenForChain } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 type TradeSummaryProps = {

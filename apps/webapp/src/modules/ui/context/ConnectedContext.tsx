@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { useAccount } from 'wagmi';
-import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/hooks';
+import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { sanitizeUrl } from '@/lib/utils';
 
 interface ConnectedContextType {

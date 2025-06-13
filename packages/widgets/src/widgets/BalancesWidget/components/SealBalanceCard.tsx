@@ -1,4 +1,4 @@
-import { usePrices } from '@jetstreamgg/hooks';
+import { usePrices } from '@jetstreamgg/sky-hooks';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
 import { SealBalanceWarningCard } from './SealBalanceWarningCard';

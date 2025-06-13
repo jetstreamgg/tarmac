@@ -5,7 +5,7 @@ import { mcdPotAddress, usdsAddress, usdsL2Address } from '../generated';
 import { useReadMcdPot } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/utils';
+import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { calculateDsrInfo } from './calculateDsrInfo';
 import { useReadSavingsUsds, sUsdsAddress } from './useReadSavingsUsds';
 import { TOKENS } from '../tokens/tokens.constants';

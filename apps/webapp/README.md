@@ -84,6 +84,14 @@ The VS code extension can also help with [generating tests](https://playwright.d
 
 Note that when you try to initiate a transaction using this feature, the transaction will fail because the RPC interception has not been setup to add the gas parameter. You'll run into the same issue if you run `pnpm dev:mock`.
 
+### Running a single test
+
+In addition to the above, you can also run only a single e2e test by passing along an argument for the test file:
+
+`pnpm e2e upgrade.spec.ts`
+
+You will need to have the `TEST_CHAIN` env var set. You can set it locally by entering this command: `export TEST_CHAIN=mainnet`
+
 ## Building the App
 
 To build the application for production, run `pnpm build`.

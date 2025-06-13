@@ -4,7 +4,7 @@ import { TradeSide } from '../lib/constants';
 import { ShiftArrow } from '@widgets/shared/components/icons/Icons';
 import { TradeDetails } from './TradeDetails';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { OrderQuoteResponse, Token, tokenArrayFiltered, TokenForChain } from '@jetstreamgg/hooks';
+import { OrderQuoteResponse, Token, tokenArrayFiltered, TokenForChain } from '@jetstreamgg/sky-hooks';
 import { TokenInput, TokenInputProps } from '@widgets/shared/components/ui/token/TokenInput';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { Text } from '@widgets/shared/components/ui/Typography';

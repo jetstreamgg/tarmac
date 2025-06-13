@@ -1,5 +1,5 @@
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
-import { TOKENS, useVault, useSimulatedVault, getIlkName } from '@jetstreamgg/hooks';
+import { TOKENS, useVault, useSimulatedVault, getIlkName } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect } from 'react';
 import { useAccount, useChainId } from 'wagmi';

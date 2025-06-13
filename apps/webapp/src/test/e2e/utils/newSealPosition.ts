@@ -7,7 +7,7 @@ import {
   getSaSelectDelegateCalldata,
   getSaSelectRewardContractCalldata,
   sealModuleAddress
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { parseEther } from 'viem';
 import { NetworkName, TEST_ADDRESS } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';

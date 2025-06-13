@@ -11,8 +11,8 @@ import {
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
-} from '@jetstreamgg/hooks';
-import { formatBigInt } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { approveLoadingButtonText } from '@widgets/shared/constants';
 import {
   claimLoadingButtonText,
@@ -36,7 +36,7 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { StakeModuleWidgetContext } from '../context/context';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { useDelegateName } from '@jetstreamgg/hooks';
+import { useDelegateName } from '@jetstreamgg/sky-hooks';
 import { JazziconComponent } from './Jazzicon';
 import { needsDelegateUpdate, needsRewardUpdate } from '../lib/utils';
 import React from 'react';

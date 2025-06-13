@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { mcdDaiAddress, usdsAddress, wethAddress } from '@jetstreamgg/hooks';
+import { mcdDaiAddress, usdsAddress, wethAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';

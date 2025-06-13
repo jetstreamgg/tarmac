@@ -7,7 +7,7 @@ import { TradeWidget } from '..';
 
 const renderWithWagmiWrapper = (ui: any, options?: any) => render(ui, { wrapper: WagmiWrapper, ...options });
 
-vi.mock('@jetstreamgg/hooks', async importOriginal => {
+vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
   const actual = await importOriginal();
   return {
     ...(actual as any),

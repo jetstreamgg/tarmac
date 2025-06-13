@@ -5,13 +5,13 @@ Hook for fetching data related to the USDS Savings Rate, including total value l
 ## Import
 
 ```ts
-import { useSavingsData } from '@jetstreamgg/hooks';
+import { useSavingsData } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsData } from '@jetstreamgg/hooks';
+import { useSavingsData } from '@jetstreamgg/sky-hooks';
 
 function SavingsDataComponent() {
   const { data, error, isLoading, mutate } = useSavingsData();
@@ -38,7 +38,7 @@ function SavingsDataComponent() {
 ## Return Type
 
 ```ts
-import { type SavingsHookData } from '@jetstreamgg/hooks';
+import { type SavingsHookData } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

@@ -26,8 +26,8 @@ export default defineConfig({
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'jetstream-gg-widgets',
-      fileName: 'jetstream-gg-widgets',
+      name: 'jetstream-gg-sky-widgets',
+      fileName: 'jetstream-gg-sky-widgets',
       cssFileName: 'globals',
       formats: ['es']
     },

@@ -5,13 +5,13 @@ Hook for fetching delegate information based on various parameters.
 ## Import
 
 ```ts
-import { useDelegates } from '@jetstreamgg/hooks';
+import { useDelegates } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useDelegates } from '@jetstreamgg/hooks';
+import { useDelegates } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useDelegates({
@@ -42,7 +42,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -74,7 +74,7 @@ type Props = ReadHookParams<DelegateInfo[]> & {
 ## Return Type
 
 ```ts
-import { type DelegateInfo } from '@jetstreamgg/hooks';
+import { type DelegateInfo } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

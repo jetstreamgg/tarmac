@@ -5,13 +5,13 @@ Hook for checking if a user is connected to a VPN and if they are in a restricte
 ## Import
 
 ```ts
-import { useVpnCheck } from '@jetstreamgg/hooks';
+import { useVpnCheck } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useVpnCheck } from '@jetstreamgg/hooks';
+import { useVpnCheck } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useVpnCheck({
@@ -35,7 +35,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -54,7 +54,7 @@ type Props = ReadHookParams<VpnResponse> & { authUrl: string };
 ## Return Type
 
 ```ts
-import { type VpnResponse } from '@jetstreamgg/hooks';
+import { type VpnResponse } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

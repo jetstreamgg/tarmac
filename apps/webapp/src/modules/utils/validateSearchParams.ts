@@ -1,5 +1,5 @@
-import { RewardContract } from '@jetstreamgg/hooks';
-import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/widgets';
+import { RewardContract } from '@jetstreamgg/sky-hooks';
+import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/sky-widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -10,7 +10,7 @@ import {
 } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Chain } from 'viem';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 

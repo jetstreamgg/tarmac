@@ -5,8 +5,8 @@ import {
   useAvailableTokenRewardContracts,
   RewardContract,
   TOKENS
-} from '@jetstreamgg/hooks';
-import { isL2ChainId } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useChainId } from 'wagmi';

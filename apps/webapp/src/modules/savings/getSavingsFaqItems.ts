@@ -4,7 +4,7 @@ import {
   isOptimismChainId,
   isUnichainChainId,
   isL2ChainId
-} from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-utils';
 import {
   L2GeneralFaqItems,
   baseFaqItems,

@@ -4,7 +4,7 @@ import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
 import { calculateVaultInfo } from './calculateVaultInfo';
-import { getEtherscanLink, math } from '@jetstreamgg/utils';
+import { getEtherscanLink, math } from '@jetstreamgg/sky-utils';
 import { TRUST_LEVELS } from '../constants';
 import { SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';

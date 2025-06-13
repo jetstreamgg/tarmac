@@ -1,5 +1,5 @@
-import { useTokenChartInfo, usdsAddress, skyAddress } from '@jetstreamgg/hooks';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { useTokenChartInfo, usdsAddress, skyAddress } from '@jetstreamgg/sky-hooks';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

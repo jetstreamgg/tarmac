@@ -1,5 +1,5 @@
 import { RewardsBalanceCard } from '@/modules/ui/components/BalanceCards';
-import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/hooks';
+import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/sky-hooks';
 import { useAccount, useChainId } from 'wagmi';
 
 export function SealPositionRewardsCard({ rewardContractAddress }: { rewardContractAddress: `0x${string}` }) {

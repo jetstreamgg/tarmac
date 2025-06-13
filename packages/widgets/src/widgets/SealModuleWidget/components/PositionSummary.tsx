@@ -16,7 +16,7 @@ import {
   useDelegateName,
   useDelegateOwner,
   useCollateralData
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 import { Card, CardContent } from '@widgets/components/ui/card';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -24,7 +24,13 @@ import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack'
 import { motion } from 'framer-motion';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { WAD_PRECISION, captitalizeFirstLetter, formatBigInt, formatPercent, math } from '@jetstreamgg/utils';
+import {
+  WAD_PRECISION,
+  captitalizeFirstLetter,
+  formatBigInt,
+  formatPercent,
+  math
+} from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
 import { cn } from '@widgets/lib/utils';
 import { getRiskTextColor } from '../lib/utils';

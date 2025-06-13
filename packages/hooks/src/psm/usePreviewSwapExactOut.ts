@@ -1,4 +1,4 @@
-import { formatBigInt } from '@jetstreamgg/utils';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { Token } from '../tokens/types';
 import { getTokenDecimals } from '../tokens/tokens.constants';
 import { useChainId } from 'wagmi';

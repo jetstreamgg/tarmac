@@ -5,13 +5,13 @@ Hook for fetching rewards data for a specific reward contract from the BA Labs A
 ## Import
 
 ```ts
-import { useUserRewardsBalance } from '@jetstreamgg/hooks';
+import { useUserRewardsBalance } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useUserRewardsBalance } from '@jetstreamgg/hooks';
+import { useUserRewardsBalance } from '@jetstreamgg/sky-hooks';
 
 function RewardsDataComponent() {
   const { data, error, isLoading, mutate } = useUserRewardsBalance();
@@ -35,7 +35,7 @@ function RewardsDataComponent() {
 ## Return Type
 
 ```ts
-import { type RewardsData } from '@jetstreamgg/hooks';
+import { type RewardsData } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

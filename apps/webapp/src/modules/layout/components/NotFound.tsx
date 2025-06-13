@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { Layout } from './Layout';
 import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
-import { NoResults } from '@jetstreamgg/widgets';
+import { NoResults } from '@jetstreamgg/sky-widgets';
 
 export function NotFound() {
   const navigate = useNavigate();

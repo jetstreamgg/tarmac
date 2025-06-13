@@ -5,7 +5,7 @@ The **widgets** package serves as a repository for portable widgets that allow p
 ## Installation
 
 ```shell
-npm install @jetstreamgg/widgets
+npm install @jetstreamgg/sky-widgets
 ```
 
 ## Example Usage
@@ -14,7 +14,7 @@ Below is an example of how to use the SavingsWidget in your React application. T
 
 ```jsx
 import React from 'react';
-import { SavingsWidget } from '@jetstreamgg/widgets';
+import { SavingsWidget } from '@jetstreamgg/sky-widgets';
 
 function onConnect() {
   // Handle wallet connection

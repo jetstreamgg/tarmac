@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
 import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
-import { RewardsChartInfoParsed } from '@jetstreamgg/hooks';
+import { RewardsChartInfoParsed } from '@jetstreamgg/sky-hooks';
 
 export function useParseRewardsChartData(
   timeFrame: TimeFrame,

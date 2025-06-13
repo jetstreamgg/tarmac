@@ -5,13 +5,13 @@ Hook for fetching available token reward contracts.
 ## Import
 
 ```ts
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
+import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/hooks';
+import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useAvailableTokenRewardContracts();
@@ -35,7 +35,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -50,7 +50,7 @@ type Props = ReadHookParams<RewardContract[]>;
 ## Return Type
 
 ```ts
-import { type RewardContract } from '@jetstreamgg/hooks';
+import { type RewardContract } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

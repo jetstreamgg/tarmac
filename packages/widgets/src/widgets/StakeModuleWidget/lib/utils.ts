@@ -1,4 +1,4 @@
-import { RiskLevel, ZERO_ADDRESS } from '@jetstreamgg/hooks';
+import { RiskLevel, ZERO_ADDRESS } from '@jetstreamgg/sky-hooks';
 import { StakeFlow, StakeStep } from './constants';
 
 const openFlowSequence = [StakeStep.OPEN_BORROW, StakeStep.REWARDS, StakeStep.DELEGATE, StakeStep.SUMMARY];

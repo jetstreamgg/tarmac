@@ -11,7 +11,7 @@ import {
   Vault,
   CollateralRiskParameters,
   useSealExitFee
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
 import { SealModuleWidgetContext } from '../context/context';
@@ -23,7 +23,7 @@ import {
   formatPercent,
   useDebounce,
   math
-} from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
 import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor, getCeilingTextColor } from '../lib/utils';

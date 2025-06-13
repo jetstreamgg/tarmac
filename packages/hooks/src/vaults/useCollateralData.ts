@@ -6,7 +6,7 @@ import {
   mcdJugAddress,
   mcdSpotAddress
 } from '../generated';
-import { getEtherscanLink } from '@jetstreamgg/utils';
+import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { stringToHex } from 'viem';
 
 import { TRUST_LEVELS } from '../constants';

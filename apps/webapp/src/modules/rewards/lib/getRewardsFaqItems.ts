@@ -1,4 +1,4 @@
-import { isBaseChainId } from '@jetstreamgg/utils';
+import { isBaseChainId } from '@jetstreamgg/sky-utils';
 
 export const getRewardsFaqItems = (chainId: number) => [
   ...mainnetFaqItems,

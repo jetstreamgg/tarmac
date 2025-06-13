@@ -5,13 +5,13 @@ Hook for fetching DS Proxy data for a given owner address.
 ## Import
 
 ```ts
-import { useDsProxyData } from '@jetstreamgg/hooks';
+import { useDsProxyData } from '@jetstreamgg/sky-hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useDsProxyData } from '@jetstreamgg/hooks';
+import { useDsProxyData } from '@jetstreamgg/sky-hooks';
 
 function App() {
   const { data, error, isLoading } = useDsProxyData('0x123...');
@@ -31,7 +31,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/hooks';
+import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ```
 
 ### Props
@@ -48,7 +48,7 @@ type Props = ReadHookParams<DsProxyHookData> & { owner?: `0x${string}` };
 ## Return Type
 
 ```ts
-import { type DsProxyHookData } from '@jetstreamgg/hooks';
+import { type DsProxyHookData } from '@jetstreamgg/sky-hooks';
 ```
 
 Returns an object containing:

@@ -1,11 +1,11 @@
-import { useUpgradeTotals } from '@jetstreamgg/hooks';
-import { formatBigInt } from '@jetstreamgg/utils';
+import { useUpgradeTotals } from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/utils';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
 
 export function UpgradedDaiToUsds() {
   const chainId = useChainId();

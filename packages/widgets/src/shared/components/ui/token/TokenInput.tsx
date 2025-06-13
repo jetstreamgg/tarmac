@@ -1,12 +1,12 @@
 import { MotionCard, MotionCardContent } from '@widgets/components/ui/card';
 import { Popover, PopoverAnchor, PopoverContent, PopoverPortal } from '@widgets/components/ui/popover';
 import { Input } from '@widgets/components/ui/input';
-import { getTokenDecimals, Token } from '@jetstreamgg/hooks';
+import { getTokenDecimals, Token } from '@jetstreamgg/sky-hooks';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@widgets/components/ui/button';
 import { cn } from '@widgets/lib/utils';
 import { formatUnits, parseUnits } from 'viem';
-import { formatBigInt, truncateStringToFourDecimals } from '@jetstreamgg/utils';
+import { formatBigInt, truncateStringToFourDecimals } from '@jetstreamgg/sky-utils';
 import { HStack } from '../layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { VStack } from '../layout/VStack';

@@ -9,8 +9,8 @@ import {
   useTokenAllowance,
   useTokenBalance,
   getTokenDecimals
-} from '@jetstreamgg/hooks';
-import { getTransactionLink, useDebounce, formatBigInt, math, useIsSafeWallet } from '@jetstreamgg/utils';
+} from '@jetstreamgg/sky-hooks';
+import { getTransactionLink, useDebounce, formatBigInt, math, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
@@ -31,12 +31,12 @@ import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
-import { usePreviewSwapExactIn, usePreviewSwapExactOut } from '@jetstreamgg/hooks';
+import { usePreviewSwapExactIn, usePreviewSwapExactOut } from '@jetstreamgg/sky-hooks';
 import {
   useReadSsrAuthOracleGetChi,
   useReadSsrAuthOracleGetRho,
   useReadSsrAuthOracleGetSsr
-} from '@jetstreamgg/hooks';
+} from '@jetstreamgg/sky-hooks';
 
 const defaultDepositOptions = [TOKENS.usds, TOKENS.usdc];
 const defaultWithdrawOptions = [TOKENS.usds, TOKENS.usdc];

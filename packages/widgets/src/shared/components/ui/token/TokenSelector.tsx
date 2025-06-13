@@ -4,7 +4,7 @@ import { HStack } from '../layout/HStack';
 import { TokenIcon } from './TokenIcon';
 import { ChevronDown } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { Token } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
 
 interface TokenSelectorProps {
   token?: Token;

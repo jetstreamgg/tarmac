@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import { HStack } from '@/modules/layout/components/HStack';
-import { usePrices, useTokenBalances } from '@jetstreamgg/hooks';
+import { usePrices, useTokenBalances } from '@jetstreamgg/sky-hooks';
 import { useAccount, useChainId } from 'wagmi';
 import { LoadingAssetBalanceCard } from './LoadingAssetBalanceCard';
 import { AssetBalanceCard } from './AssetBalanceCard';
@@ -8,7 +8,7 @@ import { LoadingErrorWrapper } from '@/modules/ui/components/LoadingErrorWrapper
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { defaultConfig } from '@/modules/config/default-config';
-import { TokenItem } from '@jetstreamgg/hooks';
+import { TokenItem } from '@jetstreamgg/sky-hooks';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 
 type BalancesAssetsProps = {

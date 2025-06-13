@@ -4,12 +4,12 @@ import { t } from '@lingui/core/macro';
 import { Card, CardTitle } from '@/components/ui/card';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { Supplied, SuppliedEmpty, WithdrawnEmpty, Withdrawn, Rewards, RewardsEmpty } from '@/modules/icons';
-import { formatBigInt } from '@jetstreamgg/utils';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
 import { Text } from '@/modules/layout/components/Typography';
-import { Token } from '@jetstreamgg/hooks';
+import { Token } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 interface BalanceCardProps {

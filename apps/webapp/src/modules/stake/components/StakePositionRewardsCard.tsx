@@ -1,5 +1,5 @@
 import { RewardsBalanceCard } from '@/modules/ui/components/BalanceCards';
-import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/hooks';
+import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useChainId } from 'wagmi';
 

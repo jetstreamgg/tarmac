@@ -1,5 +1,5 @@
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
-import { RewardContract, WriteHook } from '@jetstreamgg/hooks';
+import { RewardContract, WriteHook } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
