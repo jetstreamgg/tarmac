@@ -214,7 +214,7 @@ importers:
         specifier: ^5.3.2
         version: 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
       '@lingui/swc-plugin':
-        specifier: ^5.5.2
+        specifier: ^5.3.2
         version: 5.5.2(@lingui/core@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0))
       '@lingui/vite-plugin':
         specifier: ^5.3.2
@@ -375,14 +375,14 @@ importers:
         specifier: workspace:^
         version: link:../utils
       '@lingui/detect-locale':
-        specifier: ^5.3.1
-        version: 5.3.1
+        specifier: ^5.3.2
+        version: 5.3.2
       '@lingui/macro':
-        specifier: ^5.3.1
-        version: 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
+        specifier: ^5.3.2
+        version: 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
       '@lingui/react':
-        specifier: ^5.3.1
-        version: 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
+        specifier: ^5.3.2
+        version: 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
       '@radix-ui/react-accordion':
         specifier: ^1.2.11
         version: 1.2.11(@types/react-dom@19.1.6(@types/react@19.1.6))(@types/react@19.1.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -448,7 +448,7 @@ importers:
         specifier: ^5.3.2
         version: 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
       '@lingui/swc-plugin':
-        specifier: ^5.5.2
+        specifier: ^5.3.2
         version: 5.5.2(@lingui/core@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0))
       '@lingui/vite-plugin':
         specifier: ^5.3.2
@@ -1148,18 +1148,6 @@ packages:
     resolution: {integrity: sha512-c0Dfovr9BLuwAnY5GADxKcwBUQdVl0Jo/JUa3cumIXFhHzZGb78kfhCHjWWQdX8+WQD8qzSl/YkVDbxhcQJGmg==}
     engines: {node: '>=20.0.0'}
 
-  '@lingui/core@5.3.1':
-    resolution: {integrity: sha512-Y6WdhTlzzz+HzE6rn34rVoyXuKvTHTF5JmKdevTRu5x7ZfURaEtcoT9y6k9jgA2QMaP8YblcnU50M0svn/UZTA==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      '@lingui/babel-plugin-lingui-macro': 5.3.1
-      babel-plugin-macros: 2 || 3
-    peerDependenciesMeta:
-      '@lingui/babel-plugin-lingui-macro':
-        optional: true
-      babel-plugin-macros:
-        optional: true
-
   '@lingui/core@5.3.2':
     resolution: {integrity: sha512-rLtpZvs5RYlebwjb047PldmiuFBbbVOhEofA90N8pgTCIlfnJRTxfevd6gx3Qp0/uG+AV0DWcZxtba6H/MPYug==}
     engines: {node: '>=20.0.0'}
@@ -1172,10 +1160,6 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  '@lingui/detect-locale@5.3.1':
-    resolution: {integrity: sha512-uHVjHDtgEMf80Gj/WZpmHAUqxQwyYFMZk/IFNWco3tTlJ/I55Mul312yiVPxQoYraEK+OCkb3eIs6E9rRxDxGA==}
-    engines: {node: '>=20.0.0'}
-
   '@lingui/detect-locale@5.3.2':
     resolution: {integrity: sha512-UNZcl7k84uHIfOojlP7SKglRsB3I4pUcCDyn2fJvViMjAWWlFSiXWWNPro51GX2uwOGAqad0Uu1yQ8j8pzo5AA==}
     engines: {node: '>=20.0.0'}
@@ -1183,18 +1167,6 @@ packages:
   '@lingui/format-po@5.3.2':
     resolution: {integrity: sha512-YZxk0CqdTNV6Mwo/PRsx4SHoNxfGEMEK6OHDk42/MGJiUQ6/Od6+2qlAW5z9TvapHnzWbDbU3EdBcqLvgD7Rqw==}
     engines: {node: '>=20.0.0'}
-
-  '@lingui/macro@5.3.1':
-    resolution: {integrity: sha512-8n6dcziAVuNDtVdjuCqbrcmspqFrzK5aRlYP14R3XrCaKb4mcP5UdHD8+nk4yvLDABoMJgZUQrnWB5Ca2vpHvQ==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      '@lingui/babel-plugin-lingui-macro': 5.3.1
-      babel-plugin-macros: 2 || 3
-    peerDependenciesMeta:
-      '@lingui/babel-plugin-lingui-macro':
-        optional: true
-      babel-plugin-macros:
-        optional: true
 
   '@lingui/macro@5.3.2':
     resolution: {integrity: sha512-K+G24xhbWFaYVxJRz+I8qXUISfXJ+T9BN+b9RMR+0pwsIshK4TWJNti8WiG8cnPxQmMeQ2waZqCJUPVObGbGvw==}
@@ -1208,30 +1180,11 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  '@lingui/message-utils@5.3.1':
-    resolution: {integrity: sha512-/nwO/uXHYNO4pT+gor7iFdvNHSIjhGhJnqGeWMndSAAqmx0LstrFp9yWhcUU3XaTceyy7AtgVZh0ter7ghOw/Q==}
-    engines: {node: '>=20.0.0'}
-    bundledDependencies:
-      - '@messageformat/date-skeleton'
-
   '@lingui/message-utils@5.3.2':
     resolution: {integrity: sha512-YUBrXApa3kxcL9oimJdw7oiAJ2ESkI24uyTMaRp9XYNaWgWqpEgoxC5bDN2Fwnk5THFjUp/l64kAD5LJGQhJxQ==}
     engines: {node: '>=20.0.0'}
     bundledDependencies:
       - '@messageformat/date-skeleton'
-
-  '@lingui/react@5.3.1':
-    resolution: {integrity: sha512-hxyTm+/iRjsshPC/iuU/7Lc2Q6sfLWSaRUoaKVp4FDZgwcYwjVW+1IuTMG8sANdmzGX2ehOoutUOroIoYOEQWw==}
-    engines: {node: '>=20.0.0'}
-    peerDependencies:
-      '@lingui/babel-plugin-lingui-macro': 5.3.1
-      babel-plugin-macros: 2 || 3
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@lingui/babel-plugin-lingui-macro':
-        optional: true
-      babel-plugin-macros:
-        optional: true
 
   '@lingui/react@5.3.2':
     resolution: {integrity: sha512-wKvgVIKmlz4pIu+mlixjKDLXJoqyG3N3WPB76EScNuDMN0L9T1xMA/bjO9SxgEaUypflALHRsTA2rzViskLFHg==}
@@ -7354,15 +7307,6 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@lingui/core@5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)':
-    dependencies:
-      '@babel/runtime': 7.27.6
-      '@lingui/message-utils': 5.3.1
-      unraw: 3.0.0
-    optionalDependencies:
-      '@lingui/babel-plugin-lingui-macro': 5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3)
-      babel-plugin-macros: 3.1.0
-
   '@lingui/core@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)':
     dependencies:
       '@babel/runtime': 7.27.6
@@ -7371,8 +7315,6 @@ snapshots:
     optionalDependencies:
       '@lingui/babel-plugin-lingui-macro': 5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3)
       babel-plugin-macros: 3.1.0
-
-  '@lingui/detect-locale@5.3.1': {}
 
   '@lingui/detect-locale@5.3.2': {}
 
@@ -7385,16 +7327,6 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@lingui/macro@5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
-    dependencies:
-      '@lingui/core': 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
-      '@lingui/react': 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
-    optionalDependencies:
-      '@lingui/babel-plugin-lingui-macro': 5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3)
-      babel-plugin-macros: 3.1.0
-    transitivePeerDependencies:
-      - react
-
   '@lingui/macro@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
     dependencies:
       '@lingui/core': 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
@@ -7405,24 +7337,10 @@ snapshots:
     transitivePeerDependencies:
       - react
 
-  '@lingui/message-utils@5.3.1':
-    dependencies:
-      '@messageformat/parser': 5.1.1
-      js-sha256: 0.10.1
-
   '@lingui/message-utils@5.3.2':
     dependencies:
       '@messageformat/parser': 5.1.1
       js-sha256: 0.10.1
-
-  '@lingui/react@5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
-    dependencies:
-      '@babel/runtime': 7.26.7
-      '@lingui/core': 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
-      react: 19.1.0
-    optionalDependencies:
-      '@lingui/babel-plugin-lingui-macro': 5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3)
-      babel-plugin-macros: 3.1.0
 
   '@lingui/react@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.2(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
     dependencies:
