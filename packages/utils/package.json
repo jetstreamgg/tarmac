@@ -25,22 +25,22 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "@tanstack/react-query": "^5.75.2",
+    "@tanstack/react-query": "^5.80.7",
     "react": "^19.1.0",
     "react-dom": "^19.0.0",
-    "viem": "^2.28.4",
-    "wagmi": "^2.15.2"
+    "viem": "^2.31.2",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
-    "@lingui/core": "^5.3.1",
-    "@tanstack/react-query": "^5.75.2",
-    "@types/react": "^19.1.2",
+    "@lingui/core": "^5.3.2",
+    "@tanstack/react-query": "^5.80.7",
+    "@types/react": "^19.1.8",
     "typescript": "5.8.3",
-    "viem": "^2.28.4",
-    "vite": "^6.3.4",
-    "vite-plugin-dts": "^4.5.3",
-    "vitest": "^3.1.2",
-    "wagmi": "^2.15.2"
+    "viem": "^2.31.2",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.3",
+    "wagmi": "^2.15.6"
   },
   "keywords": [
     "makerdao",
@@ -50,7 +50,7 @@
   "license": "ISC",
   "dependencies": {
     "date-fns": "^2.30.0",
-    "ethers": "^6.13.7",
+    "ethers": "^6.14.4",
     "tiny-invariant": "^1.3.1"
   }
 }
