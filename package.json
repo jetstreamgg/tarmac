@@ -38,7 +38,8 @@
     "messages:compile": "lingui compile",
     "messages": "pnpm messages:extract && pnpm messages:compile",
     "changeset:release": "pnpm build && changeset publish",
-    "knip": "knip"
+    "knip": "knip",
+    "pr:desc": "bash ./scripts/generate_pr_description.sh"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

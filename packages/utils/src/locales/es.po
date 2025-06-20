@@ -2040,7 +2040,6 @@ msgstr ""
 msgid "Stop generating"
 msgstr ""
 
-#: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Success"
@@ -2210,6 +2209,7 @@ msgstr ""
 msgid "Token access approval in progress."
 msgstr ""
 
+#: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts

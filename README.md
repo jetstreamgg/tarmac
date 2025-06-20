@@ -47,6 +47,8 @@ pnpm build -> Builds all packages
 pnpm dev -> Runs dev mode and launches the webapp in the port 3000
 pnpm test -> Runs the unit tests suite across the different packages
 pnpm test:hooks -> Manages the lifecycle of forking a new Tenderly testnet, running the 'hooks' tests, and then deleting the forked testnet.
+pnpm pr:desc [base-branch] -> Copies all code diffs and pull request template to clipboard by analyzing changes between the current branch and the specified base branch (defaults to main if not provided)
+
 ```
 
 #### Environment Variables for Testing

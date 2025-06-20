@@ -1,5 +1,11 @@
 # @jetstreamgg/sky-widgets
 
+## 1.0.2
+
+### Patch Changes
+
+- 647165c: Fix issue showing duplicated staking engine widget when not connected
+
 ## 1.0.1
 
 ### Patch Changes

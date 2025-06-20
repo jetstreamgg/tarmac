@@ -39,7 +39,7 @@ export enum EthFlowTxStatus {
 export const tradeApproveTitle: TxCardCopyTextWithCancel = {
   [TxStatus.INITIALIZED]: msg`Approve token access`,
   [TxStatus.LOADING]: msg`In progress`,
-  [TxStatus.SUCCESS]: msg`Success`,
+  [TxStatus.SUCCESS]: msg`Token access approved`,
   [TxStatus.ERROR]: msg`Error`,
   [TxStatus.CANCELLED]: msg`Cancelled`
 };
