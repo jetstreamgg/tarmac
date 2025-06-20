@@ -1,27 +1,21 @@
 import { Token } from '@jetstreamgg/sky-hooks';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useLingui } from '@lingui/react/macro';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
 import { BatchStatus } from '@widgets/shared/constants';
-import {
-  getSavingsSupplyReviewSubtitle,
-  getSavingsWithdrawReviewSubtitle,
-  savingsActionDescription,
-  SavingsFlow,
-  savingsSupplyReviewTitle,
-  savingsWithdrawReviewTitle
-} from '@widgets/widgets/SavingsWidget/lib/constants';
+import { getL2TradeReviewSubtitle, l2TradeDescription, l2TradeReviewTitle } from '../lib/constants';
+import { TradeFlow } from '@widgets/widgets/TradeWidget/lib/constants';
 import { useContext, useEffect } from 'react';
-import { useChainId } from 'wagmi';
 
-export const L2SavingsTransactionReview = ({
+export const L2TradeTransactionReview = ({
   onExternalLinkClicked,
   batchEnabled,
   setBatchEnabled,
   isBatchTransaction,
   originToken,
   originAmount,
+  targetToken,
+  targetAmount,
   needsAllowance
 }: {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -30,18 +24,19 @@ export const L2SavingsTransactionReview = ({
   isBatchTransaction: boolean;
   originToken: Token;
   originAmount: bigint;
+  targetToken: Token;
+  targetAmount: bigint;
   needsAllowance: boolean;
 }) => {
   const { i18n } = useLingui();
-  const chainId = useChainId();
-  const isL2Chain = isL2ChainId(chainId);
   const {
     setTxTitle,
     setTxSubtitle,
     setOriginToken,
     setOriginAmount,
+    setTargetToken,
+    setTargetAmount,
     setTxDescription,
-    txStatus,
     widgetState
   } = useContext(WidgetContext);
   const { flow, action, screen } = widgetState;
@@ -49,34 +44,26 @@ export const L2SavingsTransactionReview = ({
   useEffect(() => {
     setOriginToken(originToken);
     setOriginAmount(originAmount);
-  }, [originToken, originAmount]);
+    setTargetToken(targetToken);
+    setTargetAmount(targetAmount);
+  }, [originToken, originAmount, targetToken, targetAmount]);
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    if (flow === SavingsFlow.SUPPLY) {
-      setTxTitle(i18n._(savingsSupplyReviewTitle));
+    if (flow === TradeFlow.TRADE) {
+      setTxTitle(i18n._(l2TradeReviewTitle));
       setTxSubtitle(
         i18n._(
-          getSavingsSupplyReviewSubtitle({
+          getL2TradeReviewSubtitle({
             batchStatus: batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED,
-            symbol: originToken.symbol,
-            needsAllowance
-          })
-        )
-      );
-    } else if (flow === SavingsFlow.WITHDRAW) {
-      setTxTitle(i18n._(savingsWithdrawReviewTitle));
-      setTxSubtitle(
-        i18n._(
-          getSavingsWithdrawReviewSubtitle({
-            batchStatus: batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED,
-            symbol: 'sUSDS',
+            originToken,
+            targetToken,
             needsAllowance
           })
         )
       );
     }
-    setTxDescription(i18n._(savingsActionDescription({ flow, action, txStatus, needsAllowance, isL2Chain })));
+    setTxDescription(i18n._(l2TradeDescription({ originToken, targetToken })));
   }, [flow, action, screen, i18n.locale, isBatchTransaction, batchEnabled]);
 
   return (

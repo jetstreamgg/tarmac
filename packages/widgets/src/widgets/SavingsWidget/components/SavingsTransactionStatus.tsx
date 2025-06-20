@@ -117,7 +117,7 @@ export const SavingsTransactionStatus = ({
             withdrawSubtitle({
               txStatus: flowTxStatus,
               amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
-              symbol: 'sUSDS',
+              symbol: isL2Chain ? 'sUSDS' : 'USDS',
               needsAllowance: flowNeedsAllowance,
               isL2Chain
             })

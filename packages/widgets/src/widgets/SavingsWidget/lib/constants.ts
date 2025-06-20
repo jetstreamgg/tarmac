@@ -61,13 +61,15 @@ export function getSavingsSupplyReviewSubtitle({
 export function getSavingsWithdrawReviewSubtitle({
   batchStatus,
   symbol,
-  needsAllowance
+  needsAllowance,
+  isL2Chain
 }: {
   batchStatus: BatchStatus;
   symbol: string;
   needsAllowance: boolean;
+  isL2Chain: boolean;
 }): MessageDescriptor {
-  if (!needsAllowance) {
+  if (!isL2Chain || !needsAllowance) {
     return msg`You will withdraw your ${symbol} from the Sky Savings Rate module.`;
   }
 

@@ -47,8 +47,9 @@ import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { Heading } from '@widgets/shared/components/ui/Typography';
-import { TradeTransactionStatus } from '../TradeWidget/components/TradeTransactionStatus';
+import { L2TradeTransactionStatus } from './components/L2TradeTransactionStatus';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
+import { L2TradeTransactionReview } from './components/L2TradeTransactionReview';
 
 const useMaxInForWithdraw = (
   targetAmount: bigint,
@@ -93,6 +94,7 @@ export type TradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
   batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 export const L2TradeWidget = ({
@@ -113,7 +115,8 @@ export const L2TradeWidget = ({
   referralCode,
   widgetTitle,
   shouldReset = false,
-  batchEnabled
+  batchEnabled,
+  setBatchEnabled
 }: TradeWidgetProps) => {
   const key = shouldReset ? 'reset' : undefined;
   return (
@@ -138,6 +141,7 @@ export const L2TradeWidget = ({
           referralCode={referralCode}
           widgetTitle={widgetTitle}
           batchEnabled={batchEnabled}
+          setBatchEnabled={setBatchEnabled}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -161,7 +165,8 @@ function TradeWidgetWrapped({
   enabled = true,
   referralCode,
   widgetTitle,
-  batchEnabled
+  batchEnabled,
+  setBatchEnabled
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
@@ -826,7 +831,7 @@ function TradeWidgetWrapped({
     if (
       isConnectedAndEnabled &&
       widgetState.flow === TradeFlow.TRADE &&
-      widgetState.screen === TradeScreen.ACTION
+      (widgetState.screen === TradeScreen.ACTION || widgetState.screen === TradeScreen.REVIEW)
     ) {
       setWidgetState((prev: WidgetState) => ({
         ...prev,
@@ -849,9 +854,7 @@ function TradeWidgetWrapped({
   // Update button state according to action and tx
   useEffect(() => {
     if (isConnectedAndEnabled) {
-      if (widgetState.action === TradeAction.APPROVE && txStatus === TxStatus.SUCCESS) {
-        setButtonText(t`Continue`);
-      } else if (txStatus === TxStatus.SUCCESS) {
+      if (txStatus === TxStatus.SUCCESS && widgetState.action !== TradeAction.APPROVE) {
         if (showAddToken) {
           setButtonText(t`Add ${targetToken?.symbol || ''} to wallet`);
           // This should run after adding the token
@@ -862,14 +865,24 @@ function TradeWidgetWrapped({
         }
       } else if (txStatus === TxStatus.ERROR) {
         setButtonText(t`Retry`);
-      } else if (widgetState.screen === TradeScreen.ACTION && !targetToken) {
-        setButtonText(t`Select a token`);
-      } else if (widgetState.screen === TradeScreen.ACTION && originAmount === 0n) {
-        setButtonText(t`Enter amount`);
-      } else if (widgetState.screen === TradeScreen.ACTION && widgetState.action === TradeAction.APPROVE) {
-        setButtonText(t`Approve trade amount`);
-      } else if (widgetState.screen === TradeScreen.ACTION && widgetState.action === TradeAction.TRADE) {
-        setButtonText(t`Trade`);
+      } else if (widgetState.screen === TradeScreen.ACTION) {
+        if (!targetToken) {
+          setButtonText(t`Select a token`);
+        } else if (originAmount === 0n) {
+          setButtonText(t`Enter amount`);
+        } else {
+          setButtonText(t`Review`);
+        }
+      } else if (widgetState.screen === TradeScreen.REVIEW) {
+        if (widgetState.action === TradeAction.APPROVE) {
+          setButtonText(t`Confirm 2 transactions`);
+        } else if (widgetState.action === TradeAction.TRADE) {
+          if (shouldUseBatch) {
+            setButtonText(t`Confirm bundled transaction`);
+          } else {
+            setButtonText(t`Confirm trade`);
+          }
+        }
       }
     } else {
       setButtonText(t`Connect Wallet`);
@@ -897,10 +910,29 @@ function TradeWidgetWrapped({
     );
   }, [isConnectedAndEnabled, approveDisabled, tradeDisabled, widgetState.action]);
 
+  // After a successful approval, wait for the next hook to be prepared and send the transaction
+  useEffect(() => {
+    const nextActionPrepared = lastUpdated === TradeSide.IN ? tradePrepared : tradeOutPrepared;
+
+    if (widgetState.action === TradeAction.APPROVE && txStatus === TxStatus.SUCCESS && nextActionPrepared) {
+      setWidgetState((prev: WidgetState) => ({
+        ...prev,
+        action: TradeAction.TRADE
+      }));
+      tradeOnClick();
+    }
+  }, [widgetState.action, txStatus, tradePrepared, tradeOutPrepared, lastUpdated]);
+
   // set isLoading to be consumed by WidgetButton
   useEffect(() => {
-    setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
-  }, [isConnecting, txStatus]);
+    setIsLoading(
+      isConnecting ||
+        txStatus === TxStatus.LOADING ||
+        txStatus === TxStatus.INITIALIZED ||
+        // Keep the loading state after a successful approval as a new transaction will automatically pop up
+        (widgetState.action === TradeAction.APPROVE && txStatus === TxStatus.SUCCESS)
+    );
+  }, [isConnecting, txStatus, widgetState.action]);
 
   useEffect(() => {
     setOriginToken(initialOriginToken);
@@ -1026,6 +1058,13 @@ function TradeWidgetWrapped({
     }));
   };
 
+  const reviewOnClick = () => {
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      screen: TradeScreen.REVIEW
+    }));
+  };
+
   const onClickBack = () => {
     if (widgetState.action === TradeAction.TRADE && txStatus === TxStatus.SUCCESS) {
       // If success trade we restart the flow
@@ -1108,20 +1147,19 @@ function TradeWidgetWrapped({
           ? nextOnClick
           : txStatus === TxStatus.ERROR
             ? errorOnClick
-            : widgetState.action === TradeAction.APPROVE
-              ? approveOnClick
-              : widgetState.action === TradeAction.TRADE
-                ? tradeOnClick
-                : undefined;
+            : widgetState.screen === TradeScreen.ACTION
+              ? reviewOnClick
+              : widgetState.action === TradeAction.APPROVE
+                ? approveOnClick
+                : widgetState.action === TradeAction.TRADE
+                  ? tradeOnClick
+                  : undefined;
 
   const showSecondaryButton =
     !!customNavigationLabel ||
     txStatus === TxStatus.ERROR ||
     (widgetState.action === TradeAction.TRADE && txStatus === TxStatus.SUCCESS) ||
-    // After a successful approve transaction, show the back button
-    (txStatus === TxStatus.SUCCESS &&
-      widgetState.action === TradeAction.APPROVE &&
-      widgetState.screen === TradeScreen.TRANSACTION);
+    widgetState.screen === TradeScreen.REVIEW;
 
   return (
     <WidgetContainer
@@ -1140,13 +1178,28 @@ function TradeWidgetWrapped({
       <AnimatePresence mode="popLayout" initial={false}>
         {originToken && targetToken && txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="widget-transaction-status">
-            <TradeTransactionStatus
+            <L2TradeTransactionStatus
               originToken={originToken as Token}
               originAmount={originAmount}
               targetToken={targetToken as Token}
               targetAmount={targetAmount}
-              isEthFlow={false}
               onExternalLinkClicked={onExternalLinkClicked}
+              isBatchTransaction={shouldUseBatch}
+              needsAllowance={needsAllowance}
+            />
+          </CardAnimationWrapper>
+        ) : widgetState.screen === TradeScreen.REVIEW ? (
+          <CardAnimationWrapper key="widget-transaction-review">
+            <L2TradeTransactionReview
+              onExternalLinkClicked={onExternalLinkClicked}
+              batchEnabled={batchEnabled}
+              setBatchEnabled={setBatchEnabled}
+              isBatchTransaction={shouldUseBatch}
+              originToken={originToken as Token}
+              originAmount={debouncedOriginAmount}
+              targetToken={targetToken as Token}
+              targetAmount={debouncedTargetAmount}
+              needsAllowance={needsAllowance}
             />
           </CardAnimationWrapper>
         ) : (

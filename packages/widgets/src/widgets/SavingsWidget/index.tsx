@@ -30,10 +30,12 @@ import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
+import { SavingsTransactionReview } from './components/SavingsTransactionReview';
 
 export type SavingsWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 export const SavingsWidget = ({
@@ -49,7 +51,8 @@ export const SavingsWidget = ({
   enabled = true,
   referralCode,
   shouldReset = false,
-  batchEnabled
+  batchEnabled,
+  setBatchEnabled
 }: SavingsWidgetProps) => {
   const key = shouldReset ? 'reset' : undefined;
   return (
@@ -68,6 +71,7 @@ export const SavingsWidget = ({
           enabled={enabled}
           referralCode={referralCode}
           batchEnabled={batchEnabled}
+          setBatchEnabled={setBatchEnabled}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -86,7 +90,8 @@ const SavingsWidgetWrapped = ({
   onExternalLinkClicked,
   enabled = true,
   referralCode,
-  batchEnabled
+  batchEnabled,
+  setBatchEnabled
 }: SavingsWidgetProps) => {
   const validatedExternalState = getValidatedState(externalWidgetState);
 
@@ -297,7 +302,10 @@ const SavingsWidgetWrapped = ({
 
   // If we're in the supply flow, need allowance and  batch transactions are not supported, set the action to approve,
   useEffect(() => {
-    if (widgetState.flow === SavingsFlow.SUPPLY && widgetState.screen === SavingsScreen.ACTION) {
+    if (
+      widgetState.flow === SavingsFlow.SUPPLY &&
+      (widgetState.screen === SavingsScreen.ACTION || widgetState.screen === SavingsScreen.REVIEW)
+    ) {
       setWidgetState((prev: WidgetState) => ({
         ...prev,
         action:
@@ -453,6 +461,13 @@ const SavingsWidgetWrapped = ({
     }
   };
 
+  const reviewOnClick = () => {
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      screen: SavingsScreen.REVIEW
+    }));
+  };
+
   const onClickBack = () => {
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({
@@ -476,14 +491,12 @@ const SavingsWidgetWrapped = ({
 
   const onClickAction = !isConnectedAndEnabled
     ? onConnect
-    : widgetState.flow === SavingsFlow.SUPPLY &&
-        widgetState.action === SavingsAction.APPROVE &&
-        txStatus === TxStatus.SUCCESS
+    : txStatus === TxStatus.SUCCESS
       ? nextOnClick
-      : txStatus === TxStatus.SUCCESS
-        ? nextOnClick
-        : txStatus === TxStatus.ERROR
-          ? errorOnClick
+      : txStatus === TxStatus.ERROR
+        ? errorOnClick
+        : widgetState.screen === SavingsScreen.ACTION
+          ? reviewOnClick
           : widgetState.flow === SavingsFlow.SUPPLY
             ? shouldUseBatch
               ? batchSupplyOnClick
@@ -494,12 +507,7 @@ const SavingsWidgetWrapped = ({
               ? withdrawOnClick
               : undefined;
 
-  const showSecondaryButton =
-    txStatus === TxStatus.ERROR ||
-    // After a successful approve transaction, show the back button
-    (txStatus === TxStatus.SUCCESS &&
-      widgetState.action === SavingsAction.APPROVE &&
-      widgetState.screen === SavingsScreen.TRANSACTION);
+  const showSecondaryButton = txStatus === TxStatus.ERROR || widgetState.screen === SavingsScreen.REVIEW;
 
   useEffect(() => {
     if (savingsSupply.prepareError) {
@@ -527,24 +535,24 @@ const SavingsWidgetWrapped = ({
   // Ref: https://lingui.dev/tutorials/react-patterns#memoization-pitfall
   useEffect(() => {
     if (isConnectedAndEnabled) {
-      if (
-        widgetState.flow === SavingsFlow.SUPPLY &&
-        widgetState.action === SavingsAction.APPROVE &&
-        txStatus === TxStatus.SUCCESS
-      ) {
-        setButtonText(t`Continue`);
-      } else if (txStatus === TxStatus.SUCCESS) {
+      if (txStatus === TxStatus.SUCCESS && widgetState.action !== SavingsAction.APPROVE) {
         setButtonText(t`Back to Savings`);
       } else if (txStatus === TxStatus.ERROR) {
         setButtonText(t`Retry`);
       } else if (widgetState.screen === SavingsScreen.ACTION && amount === 0n) {
         setButtonText(t`Enter amount`);
-      } else if (widgetState.flow === SavingsFlow.SUPPLY && widgetState.action === SavingsAction.APPROVE) {
-        setButtonText(t`Approve supply amount`);
-      } else if (widgetState.flow === SavingsFlow.SUPPLY && widgetState.action === SavingsAction.SUPPLY) {
-        setButtonText(t`Supply`);
-      } else if (widgetState.flow === SavingsFlow.WITHDRAW && widgetState.action === SavingsAction.WITHDRAW) {
-        setButtonText(t`Withdraw`);
+      } else if (widgetState.screen === SavingsScreen.ACTION) {
+        setButtonText(t`Review`);
+      } else if (widgetState.screen === SavingsScreen.REVIEW) {
+        if (shouldUseBatch) {
+          setButtonText(t`Confirm bundled transaction`);
+        } else if (widgetState.action === SavingsAction.APPROVE) {
+          setButtonText(t`Confirm 2 transactions`);
+        } else if (widgetState.flow === SavingsFlow.SUPPLY) {
+          setButtonText(t`Confirm supply`);
+        } else if (widgetState.flow === SavingsFlow.WITHDRAW) {
+          setButtonText(t`Confirm withdrawal`);
+        }
       }
     } else {
       setButtonText(t`Connect Wallet`);
@@ -570,10 +578,31 @@ const SavingsWidgetWrapped = ({
     batchSupplyDisabled
   ]);
 
+  // After a successful approval, wait for the next hook (supply) to be prepared and send the transaction
+  useEffect(() => {
+    if (
+      widgetState.action === SavingsAction.APPROVE &&
+      txStatus === TxStatus.SUCCESS &&
+      savingsSupply.prepared
+    ) {
+      setWidgetState((prev: WidgetState) => ({
+        ...prev,
+        action: SavingsAction.SUPPLY
+      }));
+      supplyOnClick();
+    }
+  }, [widgetState.action, txStatus, savingsSupply.prepared]);
+
   // Set isLoading to be consumed by WidgetButton
   useEffect(() => {
-    setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
-  }, [isConnecting, txStatus]);
+    setIsLoading(
+      isConnecting ||
+        txStatus === TxStatus.LOADING ||
+        txStatus === TxStatus.INITIALIZED ||
+        // Keep the loading state after a successful approval as a new transaction will automatically pop up
+        (widgetState.action === SavingsAction.APPROVE && txStatus === TxStatus.SUCCESS)
+    );
+  }, [isConnecting, txStatus, widgetState.action]);
 
   const debouncedBalanceError = useDebounce(isSupplyBalanceError, 2000);
   useEffect(() => {
@@ -641,6 +670,18 @@ const SavingsWidgetWrapped = ({
               originAmount={debouncedAmount}
               onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
+              needsAllowance={needsAllowance}
+            />
+          </CardAnimationWrapper>
+        ) : widgetState.screen === SavingsScreen.REVIEW ? (
+          <CardAnimationWrapper key="widget-transaction-review">
+            <SavingsTransactionReview
+              onExternalLinkClicked={onExternalLinkClicked}
+              batchEnabled={batchEnabled}
+              setBatchEnabled={setBatchEnabled}
+              isBatchTransaction={shouldUseBatch}
+              originToken={usds}
+              originAmount={debouncedAmount}
               needsAllowance={needsAllowance}
             />
           </CardAnimationWrapper>

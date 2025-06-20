@@ -40,7 +40,7 @@ import {
   useReadSsrAuthOracleGetRho,
   useReadSsrAuthOracleGetSsr
 } from '@jetstreamgg/sky-hooks';
-import { L2SavingsTransactionReview } from './components/L2SavingsTransactionReview';
+import { SavingsTransactionReview } from '../SavingsWidget/components/SavingsTransactionReview';
 
 const defaultDepositOptions = [TOKENS.usds, TOKENS.usdc];
 const defaultWithdrawOptions = [TOKENS.usds, TOKENS.usdc];
@@ -1008,7 +1008,7 @@ const SavingsWidgetWrapped = ({
           </CardAnimationWrapper>
         ) : widgetState.screen === SavingsScreen.REVIEW ? (
           <CardAnimationWrapper key="widget-transaction-review">
-            <L2SavingsTransactionReview
+            <SavingsTransactionReview
               onExternalLinkClicked={onExternalLinkClicked}
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
