@@ -4,17 +4,23 @@ import { LinkedAction, useUserSuggestedActions } from '../hooks/useUserSuggested
 import { LoadingActionCard } from './LoadingActionCard';
 import { LinkedActionCard } from './LinkedActionCard';
 import { filterActionsByIntent } from '@/lib/utils';
+import { RewardContract } from '@jetstreamgg/sky-hooks';
 
-export function ActionsShowcase({ widget }: { widget: string }) {
+export function ActionsShowcase({
+  widget,
+  currentRewardContract
+}: {
+  widget: string;
+  currentRewardContract?: RewardContract;
+}) {
   // TODO: update loading/error cards to reflect the new layout
-  const { data, isLoading, error } = useUserSuggestedActions();
+  const { data, isLoading, error } = useUserSuggestedActions(currentRewardContract);
 
   // we can create an algorithm to sort the actions by relevance
   // for now, just sorting by weight
   // but in future, may want to consider the module the action is related to and create a mix
-  const linkedActions = (data?.linkedActions || []).sort((a, b) => b.weight - a.weight).slice(0, 4);
+  const linkedActions = (data?.linkedActions || []).sort((a, b) => b.weight - a.weight).slice(0, 6);
   const filteredActions = filterActionsByIntent(linkedActions, widget);
-
   if (isLoading) {
     return (
       <HStack gap={0} className="scrollbar-thin w-full flex-col gap-4 overflow-auto xl:flex-row">

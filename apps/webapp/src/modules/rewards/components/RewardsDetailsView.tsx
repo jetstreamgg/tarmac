@@ -16,11 +16,12 @@ import { AboutCle } from '@/modules/ui/components/AboutCle';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
 import { filterActionsByIntent } from '@/lib/utils';
+import { AboutSpk } from '@/modules/ui/components/AboutSpk';
 
 export function RewardsDetailsView({ rewardContract }: { rewardContract?: RewardContract }) {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { linkedActionConfig } = useConfigContext();
-  const { data: actionData } = useUserSuggestedActions();
+  const { data: actionData } = useUserSuggestedActions(rewardContract);
   if (!rewardContract) {
     return null;
   }
@@ -43,7 +44,7 @@ export function RewardsDetailsView({ rewardContract }: { rewardContract?: Reward
         (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
           <DetailSection title={t`Combined actions`}>
             <DetailSectionRow>
-              <ActionsShowcase widget={widget} />
+              <ActionsShowcase widget={widget} currentRewardContract={rewardContract} />
             </DetailSectionRow>
           </DetailSection>
         )}
@@ -63,6 +64,13 @@ export function RewardsDetailsView({ rewardContract }: { rewardContract?: Reward
         <DetailSection title={t`About Native Sky Protocol Tokens`}>
           <DetailSectionRow>
             <RewardsOverviewAbout />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
+      {rewardContract.rewardToken.symbol === TOKENS.spk.symbol && (
+        <DetailSection title={t`About the Spark Token`}>
+          <DetailSectionRow>
+            <AboutSpk />
           </DetailSectionRow>
         </DetailSection>
       )}

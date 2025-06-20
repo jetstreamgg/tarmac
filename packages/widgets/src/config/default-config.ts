@@ -19,7 +19,8 @@ import {
   ETH_ADDRESS,
   usdcL2Address,
   usdsL2Address,
-  sUsdsL2Address
+  sUsdsL2Address,
+  spkAddress
 } from '@jetstreamgg/sky-hooks';
 import {
   TENDERLY_ARBITRUM_CHAIN_ID,
@@ -28,7 +29,7 @@ import {
 } from '@widgets/shared/constants';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 
-const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai } = TOKENS;
+const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk } = TOKENS;
 
 // It stores all the RPCs the application will use, and also the user configured-ones
 export const defaultConfig: WidgetsConfig = {
@@ -41,7 +42,8 @@ export const defaultConfig: WidgetsConfig = {
       { ...dai, address: mcdDaiAddress[mainnet.id] },
       { ...usds, address: usdsAddress[mainnet.id] },
       { ...mkr, address: mkrAddress[mainnet.id] },
-      { ...sky, address: skyAddress[mainnet.id] }
+      { ...sky, address: skyAddress[mainnet.id] },
+      { ...spk, address: spkAddress[mainnet.id] }
     ],
     [TENDERLY_CHAIN_ID]: [
       eth,
@@ -51,7 +53,8 @@ export const defaultConfig: WidgetsConfig = {
       { ...dai, address: mcdDaiAddress[TENDERLY_CHAIN_ID] },
       { ...usds, address: usdsAddress[TENDERLY_CHAIN_ID] },
       { ...mkr, address: mkrAddress[TENDERLY_CHAIN_ID] },
-      { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] }
+      { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] },
+      { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] }
     ],
     [base.id]: [
       eth,

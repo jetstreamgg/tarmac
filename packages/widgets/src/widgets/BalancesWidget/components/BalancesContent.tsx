@@ -148,6 +148,9 @@ export const BalancesContent = ({
   const usdsCleRewardContract = rewardContracts.find(
     f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.cle.symbol
   );
+  const usdsSpkRewardContract = rewardContracts.find(
+    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.spk.symbol
+  );
 
   const {
     data: usdsSkySuppliedBalance,
@@ -160,6 +163,16 @@ export const BalancesContent = ({
   });
 
   const {
+    data: usdsSpkSuppliedBalance,
+    isLoading: usdsSpkSuppliedBalanceLoading,
+    error: usdsSpkSuppliedBalanceError
+  } = useRewardsSuppliedBalance({
+    chainId: mainnetChainId,
+    address,
+    contractAddress: usdsSpkRewardContract?.contractAddress as `0x${string}`
+  });
+
+  const {
     data: usdsCleSuppliedBalance,
     isLoading: usdsCleSuppliedBalanceIsLoading,
     error: usdsCleSuppliedBalanceError
@@ -169,10 +182,22 @@ export const BalancesContent = ({
     contractAddress: usdsCleRewardContract?.contractAddress as `0x${string}`
   });
 
+  const rewardsLoading =
+    usdsSkySuppliedBalanceLoading || usdsSpkSuppliedBalanceLoading || usdsCleSuppliedBalanceIsLoading;
+
+  const suppliedBalanceError =
+    usdsSkySuppliedBalanceError || usdsCleSuppliedBalanceError || usdsSpkSuppliedBalanceError;
+
+  const totalUserRewardsSupplied =
+    usdsSkySuppliedBalance !== undefined &&
+    usdsCleSuppliedBalance !== undefined &&
+    usdsSpkSuppliedBalance !== undefined
+      ? usdsSkySuppliedBalance + usdsCleSuppliedBalance + usdsSpkSuppliedBalance
+      : 0n;
+
   const hideRewards = Boolean(
-    usdsSkySuppliedBalanceError ||
-      usdsCleSuppliedBalanceError ||
-      (usdsSkySuppliedBalance === 0n && usdsCleSuppliedBalance === 0n && hideZeroBalances) ||
+    suppliedBalanceError ||
+      (totalUserRewardsSupplied === 0n && hideZeroBalances) ||
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
@@ -256,15 +281,14 @@ export const BalancesContent = ({
               hideModuleBalances={hideModuleBalances}
               chainIds={chainIds}
               hideRewards={hideRewards}
-              rewardsLoading={usdsSkySuppliedBalanceLoading || usdsCleSuppliedBalanceIsLoading}
+              rewardsLoading={rewardsLoading}
               hideSeal={hideSeal}
               sealLoading={sealLoading}
               sealBalance={totalUserSealed}
               hideStake={hideStake}
               stakeLoading={stakeLoading}
               stakeBalance={totalUserStaked}
-              usdsSkySuppliedBalance={usdsSkySuppliedBalance}
-              usdsCleSuppliedBalance={usdsCleSuppliedBalance}
+              totalUserRewardsSupplied={totalUserRewardsSupplied}
               hideSavings={hideSavings}
               savingsLoading={multichainSavingsBalancesLoading}
               savingsBalances={filteredAndSortedSavingsBalances}
