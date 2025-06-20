@@ -11,13 +11,16 @@ export function useIsBatchSupported(): ReadHook & {
   const { data: capabilities, isLoading, error, refetch } = useCapabilities();
 
   const atomicCapabilityStatus = capabilities?.[chainId]?.atomic?.status;
+  // Safe wallets use `atomicBatch` capabilities
+  const atomicBatchSupported: boolean | undefined = capabilities?.[chainId]?.atomicBatch?.supported;
 
   return {
     data:
       isLoading || error
         ? undefined
         : atomicCapabilityStatus === CapabilitySupportStatus.supported ||
-          atomicCapabilityStatus === CapabilitySupportStatus.ready,
+          atomicCapabilityStatus === CapabilitySupportStatus.ready ||
+          atomicBatchSupported,
     isLoading,
     error,
     mutate: refetch,

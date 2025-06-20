@@ -56,3 +56,10 @@ export const approveOrPerformAction = async (
     await page.locator(`role=button[name="${buttonName}"]`).first().click(); //for some reason there's another button named Next
   }
 };
+
+export const performAction = async (page: Page, action: Action) => {
+  const actionButton = page.locator(`role=button >> text=/^${action}$/`).nth(0);
+  await actionButton.waitFor({ state: 'attached' }); // Ensure the button is in the DOM
+  await expect(actionButton).toBeEnabled(); // Wait for the button to be enabled
+  await actionButton.click();
+};

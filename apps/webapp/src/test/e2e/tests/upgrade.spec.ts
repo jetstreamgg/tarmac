@@ -3,7 +3,7 @@ import { setErc20Balance } from '../utils/setBalance.ts';
 import { mcdDaiAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { getTestWalletAddress } from '../utils/testWallets.ts';
 import { NetworkName } from '../utils/constants.ts';
@@ -390,4 +390,27 @@ test('Details pane shows right data', async ({ page }) => {
 
   // FAQ section is present
   await expect(page.getByRole('button', { name: 'FAQs', exact: true })).toBeVisible();
+});
+
+test('Batch - Upgrade DAI and revert USDS', async ({ page }) => {
+  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.getByRole('tab', { name: 'Upgrade' }).click();
+
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+
+  await page.getByTestId('upgrade-input-origin').click();
+  await page.getByTestId('upgrade-input-origin').fill('4');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+  await performAction(page, 'Upgrade');
+  await page.getByRole('button', { name: 'Back to Upgrade' }).click();
+  await expect(page.getByTestId('upgrade-input-origin-balance')).toHaveText('6 DAI');
+  await page.getByRole('tab', { name: 'Revert' }).click();
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+  await page.getByTestId('upgrade-input-origin').click();
+  await page.getByTestId('upgrade-input-origin').fill('4');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+  await performAction(page, 'Revert');
+  await page.getByRole('button', { name: 'Back to Upgrade' }).click();
 });
