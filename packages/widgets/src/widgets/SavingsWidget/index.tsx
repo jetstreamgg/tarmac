@@ -640,6 +640,8 @@ const SavingsWidgetWrapped = ({
               originToken={usds}
               originAmount={debouncedAmount}
               onExternalLinkClicked={onExternalLinkClicked}
+              isBatchTransaction={shouldUseBatch}
+              needsAllowance={needsAllowance}
             />
           </CardAnimationWrapper>
         ) : (

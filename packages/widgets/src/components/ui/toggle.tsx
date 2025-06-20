@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as TogglePrimitive from '@radix-ui/react-toggle';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@widgets/lib/utils';
 
 const toggleVariants = cva(
   'inline-flex flex-col items-center rounded-xl justify-center text-sm text-textSecondary font-medium ring-offset-background transition after:bg-muted disabled:pointer-events-none disabled:opacity-50 overflow-hidden',
@@ -13,9 +13,7 @@ const toggleVariants = cva(
           'bg-transparent data-[state=on]:bg-radial-(--gradient-position) data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 after:bg-primaryHover active:bg-primaryActive hover:data-[state=on]:bg-white',
         outline: 'border border-input bg-transparent after:bg-accent hover:text-accent-foreground',
         singleSwitcher:
-          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 bg-blend-overlay hover:from-primary-start/50 hover:to-primary-end/50 data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 data-[state=on]:text-text data-[state=on]:hover:bg-white/10 data-[state=on]:border-transparent transition transition-bg duration-250 ease-out-expo border border-[rgb(61,47,164)]',
-        singleSwitcherBright:
-          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-bright-start/0 to-primary-bright-end/0 bg-blend-overlay hover:from-primary-bright-start/50 hover:to-primary-bright-end/50 data-[state=on]:from-primary-bright-start/100 data-[state=on]:to-primary-bright-end/100 data-[state=on]:text-text data-[state=on]:hover:from-primary-bright-start/50 data-[state=on]:hover:to-primary-bright-end/50 transition transition-bg duration-250 ease-out-expo border border-[rgb(127,92,246)]'
+          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 bg-blend-overlay hover:from-primary-start/50 hover:to-primary-end/50 data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 data-[state=on]:text-text data-[state=on]:hover:bg-white/10 data-[state=on]:border-transparent transition transition-bg duration-250 ease-out-expo border border-[rgb(61,47,164)]'
       },
       size: {
         default: '',
@@ -37,7 +35,7 @@ const toggleVariants = cva(
 );
 
 const Toggle = React.forwardRef<
-  React.ElementRef<typeof TogglePrimitive.Root>,
+  React.ComponentRef<typeof TogglePrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> & VariantProps<typeof toggleVariants>
 >(({ className, variant, size, position, ...props }, ref) => (
   <TogglePrimitive.Root

@@ -60,6 +60,8 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     if (mutationData?.id) {
       if (isSuccess && data.status === 'success') {
         onSuccess(data.receipts?.[0].transactionHash);
+      } else if (isSuccess && data.status === 'failure') {
+        onError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {
         onError(miningError, data?.receipts?.[0].transactionHash);
       } else if (failureReason && txReverted) {
