@@ -7,7 +7,7 @@ import {
 } from '@jetstreamgg/sky-widgets';
 import { defaultConfig } from '../../config/default-config';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
-import { BATCH_TX_ENABLED, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -20,6 +20,7 @@ import { useMemo } from 'react';
 import { getChainSpecificText, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Intent } from '@/lib/enums';
+import { useIsBatchEnabled } from '@/modules/ui/hooks/useIsBatchEnabled';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
@@ -33,6 +34,8 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isL2 = isL2ChainId(chainId);
   const { setShouldDisableActionButtons } = useChatContext();
+
+  const batchEnabled = useIsBatchEnabled();
 
   const onTradeWidgetStateChange = ({
     hash,
@@ -168,7 +171,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         },
         chainId
       )}
-      batchEnabled={BATCH_TX_ENABLED}
+      batchEnabled={batchEnabled}
     />
   );
 }

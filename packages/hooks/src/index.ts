@@ -16,6 +16,7 @@ export { useTotalSavingsSuppliers } from './savings/useTotalSavingsSuppliers';
 export { useSsrSharesToAssets } from './savings/useSsrSharesToAssets';
 export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
 export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
+export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
 
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
@@ -39,6 +40,7 @@ export { useRewardsChartInfo } from './rewards/useRewardsChartInfo';
 export { useRewardContractTokens } from './rewards/useRewardContractTokens';
 export { useUserRewardsBalance } from './rewards/useUserRewardsBalance';
 export { useRewardsWithUserBalance } from './rewards/useRewardsWithUserBalance';
+export { useBatchRewardsSupply } from './rewards/useBatchRewardsSupply';
 
 // Rewards
 export { useRewardsSupply } from './rewards/useRewardsSupply';
@@ -143,6 +145,7 @@ export { useStakeSkyApprove, useStakeUsdsApprove } from './stake/useStakeApprove
 export { useClaimRewards as useStakeClaimRewards } from './stake/useClaimRewards';
 export { useStakeRewardsData } from './stake/useStakeRewardsData';
 export { useStakePosition } from './stake/useStakePosition';
+export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';
 export * from './stake/calldata';
 
 //Vaults

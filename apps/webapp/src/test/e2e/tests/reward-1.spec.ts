@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { withdrawAllAndReset } from '../utils/rewards.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 
@@ -137,4 +137,38 @@ test('Enter amount button only gets enabled with a valid amount', async ({ page 
   await expect(widgetButton).toBeDisabled();
   await page.getByTestId('withdraw-input-rewards').fill('0');
   await expect(widgetButton).toBeDisabled();
+});
+
+test('Batch - Balances change after successfully supplying and withdrawing', async ({ page }) => {
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.getByRole('tab', { name: 'Rewards' }).click();
+  await page.getByText('With: USDS Get: SKY').first().click();
+
+  const rewardsCardSuppliedBalance = page
+    .getByTestId('widget-container')
+    .getByText('Supplied balance', { exact: true })
+    .locator('xpath=ancestor::div[1]')
+    .getByText(/^\d.*USDS$/);
+  await expect(rewardsCardSuppliedBalance).toHaveText('0 USDS');
+
+  await page.getByTestId('supply-input-rewards').fill('2');
+
+  await expect(page.getByTestId('widget-button')).toBeEnabled();
+  await performAction(page, 'Supply');
+  await page.getByRole('button', { name: 'Back to Rewards' }).click();
+  await expect(page.getByTestId('supply-input-rewards-balance')).toHaveText('98 USDS');
+  await expect(rewardsCardSuppliedBalance).toHaveText('2 USDS');
+
+  await page.getByRole('tab', { name: 'Withdraw' }).click();
+  await expect(page.getByTestId('withdraw-input-rewards-balance')).toHaveText('2 USDS');
+  await page.getByTestId('withdraw-input-rewards').fill('2');
+
+  await performAction(page, 'Withdraw');
+  await page.getByRole('button', { name: 'Back to Rewards' }).click();
+  await expect(page.getByTestId('withdraw-input-rewards-balance')).toHaveText('0 USDS');
+  await expect(rewardsCardSuppliedBalance).toHaveText('0 USDS');
+
+  await page.getByRole('tab', { name: 'Supply', exact: true }).click();
+  await expect(page.getByTestId('supply-input-rewards-balance')).toHaveText('100 USDS');
 });

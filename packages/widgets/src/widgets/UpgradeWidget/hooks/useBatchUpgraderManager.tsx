@@ -36,7 +36,7 @@ export function useBatchUpgraderManager({
     spender: upgraderConfig.address
   });
 
-  const hasAllowance = !!allowance && allowance >= amount;
+  const hasAllowance = allowance !== undefined && allowance >= amount;
 
   // Calls for the batch transaction
   const approveCall = getWriteContractCall({

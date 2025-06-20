@@ -3,7 +3,7 @@ import { setErc20Balance } from '../utils/setBalance.ts';
 import { usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 
 test('Supply and withdraw from Savings', async ({ page }) => {
@@ -378,4 +378,18 @@ test('Details pane shows right data', async ({ page }) => {
 
   // History is present
   await expect(page.getByTestId('savings-history')).toBeVisible();
+});
+
+test('Batch - Supply to Savings', async ({ page }) => {
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.getByRole('tab', { name: 'Savings' }).click();
+
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+
+  await page.getByTestId('supply-input-savings').click();
+  await page.getByTestId('supply-input-savings').fill('.02');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+  await performAction(page, 'Supply');
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
 });
