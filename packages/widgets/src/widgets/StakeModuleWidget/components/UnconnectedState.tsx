@@ -10,9 +10,10 @@ export const UnconnectedState = ({
   onInputAmountChange
 }: {
   onInputAmountChange: (val: bigint, userTriggered?: boolean) => void;
+  onShowHelpModal?: () => void;
 }) => {
   return (
-    <div className="mb-8 mt-6 space-y-2">
+    <div className={'mb-8 mt-6 space-y-2'}>
       <Tabs defaultValue="left">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger position="left" value="left">

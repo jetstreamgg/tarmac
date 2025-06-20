@@ -58,6 +58,7 @@ export type OnStakeUrnChange = (
 type StakeModuleWidgetProps = WidgetProps & {
   onStakeUrnChange?: OnStakeUrnChange;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onShowHelpModal?: () => void;
   addRecentTransaction: any;
 };
 
@@ -70,6 +71,7 @@ export const StakeModuleWidget = ({
   onNotification,
   onWidgetStateChange,
   onExternalLinkClicked,
+  onShowHelpModal,
   addRecentTransaction,
   referralCode,
   shouldReset = false
@@ -88,6 +90,7 @@ export const StakeModuleWidget = ({
             onNotification={onNotification}
             onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
             onExternalLinkClicked={onExternalLinkClicked}
+            onShowHelpModal={onShowHelpModal}
             addRecentTransaction={addRecentTransaction}
             referralCode={referralCode}
           />
@@ -106,6 +109,7 @@ function StakeModuleWidgetWrapped({
   onNotification,
   onWidgetStateChange,
   onExternalLinkClicked,
+  onShowHelpModal,
   addRecentTransaction,
   referralCode
 }: StakeModuleWidgetProps) {
@@ -968,6 +972,7 @@ function StakeModuleWidgetWrapped({
                   step={stepIndex}
                   totalSteps={totalSteps}
                   title={i18n._(getStepTitle(currentStep, tabSide))}
+                  onShowHelpModal={onShowHelpModal}
                 />
               </motion.div>
             )}
