@@ -193,7 +193,15 @@ export {
 
 // Export types
 export type { DsProxyHookResponse } from './dsProxy/useDsProxyData';
-export type { WriteHookParams, ReadHook, WriteHook, TrustLevel, DataSource, ReadHookParams } from './hooks';
+export type {
+  WriteHookParams,
+  ReadHook,
+  WriteHook,
+  TrustLevel,
+  DataSource,
+  ReadHookParams,
+  BatchWriteHookParams
+} from './hooks';
 export type { PaginationOption } from './filters';
 export type { RewardContract, RewardContractInfo, RewardContractChange } from './rewards/rewards';
 export type { SavingsHistory } from './savings/savings';
@@ -255,3 +263,7 @@ export {
   lsSkyUsdsRewardAddress
 } from './generated';
 export { contracts, /*tenderlyContracts,*/ sepoliaContracts, l2Contracts } from './contracts';
+
+export { useSendBatchTransactionFlow } from './shared/useSendBatchTransactionFlow';
+export { getWriteContractCall } from './shared/getWriteContractCall';
+export { useIsBatchSupported } from './shared/useIsBatchSupported';

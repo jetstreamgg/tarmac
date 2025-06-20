@@ -1622,9 +1622,11 @@ msgid "Revert {0} into {1}"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Revert failed"
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Revert successful"
 msgstr ""
@@ -1917,6 +1919,7 @@ msgstr ""
 msgid "Something went wrong when trying to sign the message. Please try again."
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
@@ -2562,6 +2565,7 @@ msgid "Upgrade DAI to USDS"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Upgrade failed"
 msgstr ""
 
@@ -2573,6 +2577,7 @@ msgstr ""
 msgid "Upgrade stats"
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Upgrade successful"
 msgstr ""
@@ -2892,6 +2897,7 @@ msgstr ""
 #. placeholder {1}: originToken.symbol
 #. placeholder {2}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "You reverted {0} {1} into {2}"
 msgstr ""
 
@@ -2951,6 +2957,7 @@ msgstr ""
 #. placeholder {0}: formatUnits(debouncedOriginAmount, 18)
 #. placeholder {1}: originToken.symbol
 #. placeholder {2}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "You upgraded {0} {1} into {2}"
 msgstr ""
