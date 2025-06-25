@@ -85,7 +85,7 @@
     "globals": "^15.15.0",
     "happy-dom": "^15.11.7",
     "husky": "^9.0.11",
-    "knip": "^5.53.0",
+    "knip": "^5.61.2",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.10",
