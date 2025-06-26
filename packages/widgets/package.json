@@ -75,7 +75,7 @@
     "@vitejs/plugin-react-swc": "^3.9.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tailwindcss": "^4.1.5",
+    "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.8.3",
     "viem": "^2.30.0",
