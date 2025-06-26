@@ -1,42 +1,46 @@
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import {
   SavingsFlow,
   SavingsAction,
   SavingsScreen,
-  getSavingsApproveSubtitle,
   supplySubtitle,
   withdrawSubtitle,
   savingsActionDescription,
   supplyLoadingButtonText,
   withdrawLoadingButtonText,
-  savingsApproveTitle,
   savingsSupplyTitle,
   savingsWithdrawTitle
 } from '../lib/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@widgets/context/WidgetContext';
-import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
+import { BatchTransactionStatus } from '@widgets/shared/components/ui/transaction/BatchTransactionStatus';
 import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { Token } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { approveLoadingButtonText } from '@widgets/shared/constants';
+import { formatBigInt, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { TxStatus } from '@widgets/shared/constants';
 
 // TX Status wrapper to update copy
 export const SavingsTransactionStatus = ({
   originToken,
   originAmount,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  isBatchTransaction,
+  needsAllowance
 }: {
   originAmount: bigint;
   originToken: Token;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  isBatchTransaction?: boolean;
+  needsAllowance: boolean;
 }) => {
+  const [flowNeedsAllowance] = useState(needsAllowance);
+
   const { i18n } = useLingui();
   const chainId = useChainId();
+  const isL2Chain = isL2ChainId(chainId);
   const {
     setLoadingText,
     setTxTitle,
@@ -58,74 +62,97 @@ export const SavingsTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    if (flow === SavingsFlow.SUPPLY) setStepTwoTitle(t`Supply`);
-    if (flow === SavingsFlow.WITHDRAW) setStepTwoTitle(t`Withdraw`);
-    if (action === SavingsAction.APPROVE && screen === SavingsScreen.TRANSACTION) {
-      setStep(1);
-      setTxTitle(i18n._(savingsApproveTitle[txStatus as keyof TxCardCopyText]));
-      setTxSubtitle(
-        i18n._(
-          getSavingsApproveSubtitle(
-            txStatus,
-            isL2ChainId(chainId) ? (flow === SavingsFlow.WITHDRAW ? 'sUSDS' : originToken.symbol) : 'USDS'
+    const isApprovalSuccess = txStatus === TxStatus.SUCCESS && action === SavingsAction.APPROVE;
+    const isWaitingForSecondTransaction =
+      txStatus === TxStatus.INITIALIZED && action !== SavingsAction.APPROVE && flowNeedsAllowance;
+    const flowTxStatus: TxStatus =
+      isApprovalSuccess || isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
+
+    if (flow === SavingsFlow.SUPPLY) {
+      setStepTwoTitle(t`Supply`);
+
+      if (screen === SavingsScreen.TRANSACTION) {
+        setTxTitle(i18n._(savingsSupplyTitle[flowTxStatus as keyof TxCardCopyText]));
+        setTxSubtitle(
+          i18n._(
+            supplySubtitle({
+              txStatus: flowTxStatus,
+              amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
+              symbol: originToken.symbol,
+              needsAllowance: flowNeedsAllowance
+            })
           )
-        )
-      );
-      setTxDescription(i18n._(savingsActionDescription({ flow, action, txStatus })));
-      setLoadingText(i18n._(approveLoadingButtonText[txStatus as keyof TxCardCopyText]));
-    } else if (
-      flow === SavingsFlow.SUPPLY &&
-      action === SavingsAction.SUPPLY &&
-      screen === SavingsScreen.TRANSACTION
-    ) {
-      setStep(2);
-      setTxTitle(i18n._(savingsSupplyTitle[txStatus as keyof TxCardCopyText]));
-      setTxSubtitle(
-        i18n._(
-          supplySubtitle({
-            txStatus,
-            amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
-            symbol: originToken.symbol
-          })
-        )
-      );
-      setTxDescription(i18n._(savingsActionDescription({ flow, action, txStatus })));
-      setLoadingText(
-        i18n._(
-          supplyLoadingButtonText({
-            txStatus,
-            amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
-            symbol: originToken.symbol
-          })
-        )
-      );
-    } else if (
-      flow === SavingsFlow.WITHDRAW &&
-      action === SavingsAction.WITHDRAW &&
-      screen === SavingsScreen.TRANSACTION
-    ) {
-      setStep(2);
-      setTxTitle(i18n._(savingsWithdrawTitle[txStatus as keyof TxCardCopyText]));
-      setTxSubtitle(
-        i18n._(
-          withdrawSubtitle({
-            txStatus,
-            amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
-            symbol: originToken.symbol
-          })
-        )
-      );
-      setTxDescription(i18n._(savingsActionDescription({ flow, action, txStatus })));
-      setLoadingText(
-        i18n._(
-          withdrawLoadingButtonText({
-            txStatus,
-            amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
-            symbol: originToken.symbol
-          })
-        )
-      );
+        );
+        setTxDescription(
+          i18n._(
+            savingsActionDescription({
+              flow,
+              action,
+              txStatus: flowTxStatus,
+              needsAllowance: flowNeedsAllowance,
+              isL2Chain
+            })
+          )
+        );
+        setLoadingText(
+          i18n._(
+            supplyLoadingButtonText({
+              txStatus: flowTxStatus,
+              amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
+              symbol: originToken.symbol
+            })
+          )
+        );
+
+        if (action === SavingsAction.APPROVE) setStep(1);
+        else if (action === SavingsAction.SUPPLY) setStep(2);
+      }
+    } else if (flow === SavingsFlow.WITHDRAW) {
+      setStepTwoTitle(t`Withdraw`);
+
+      if (screen === SavingsScreen.TRANSACTION) {
+        setTxTitle(i18n._(savingsWithdrawTitle[flowTxStatus as keyof TxCardCopyText]));
+        setTxSubtitle(
+          i18n._(
+            withdrawSubtitle({
+              txStatus: flowTxStatus,
+              amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
+              symbol: isL2Chain ? 'sUSDS' : 'USDS',
+              needsAllowance: flowNeedsAllowance,
+              isL2Chain
+            })
+          )
+        );
+        setTxDescription(
+          i18n._(
+            savingsActionDescription({
+              flow,
+              action,
+              txStatus: flowTxStatus,
+              needsAllowance: flowNeedsAllowance,
+              isL2Chain
+            })
+          )
+        );
+        setLoadingText(
+          i18n._(
+            withdrawLoadingButtonText({
+              txStatus: flowTxStatus,
+              amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
+              symbol: originToken.symbol
+            })
+          )
+        );
+
+        if (action === SavingsAction.APPROVE) setStep(1);
+        else if (action === SavingsAction.WITHDRAW) setStep(2);
+      }
     }
   }, [txStatus, flow, action, screen, i18n.locale]);
-  return <TransactionStatus onExternalLinkClicked={onExternalLinkClicked} />;
+  return (
+    <BatchTransactionStatus
+      onExternalLinkClicked={onExternalLinkClicked}
+      isBatchTransaction={isBatchTransaction}
+    />
+  );
 };

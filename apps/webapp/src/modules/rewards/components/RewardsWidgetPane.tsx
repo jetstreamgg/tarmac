@@ -5,6 +5,7 @@ import { SharedProps } from '@/modules/app/types/Widgets';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { RewardContract, useRewardsUserHistory } from '@jetstreamgg/sky-hooks';
 import {
@@ -19,6 +20,7 @@ import { useSearchParams } from 'react-router-dom';
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
   const { setShouldDisableActionButtons } = useChatContext();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const {
     selectedRewardContract,
     setSelectedRewardContract,
@@ -121,6 +123,8 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
       onRewardContractChange={onRewardContractChange}
       externalWidgetState={{ selectedRewardContract, amount: linkedActionConfig?.inputAmount, flow }}
       onWidgetStateChange={onRewardsWidgetStateChange}
+      batchEnabled={batchEnabled}
+      setBatchEnabled={setBatchEnabled}
     />
   );
 }

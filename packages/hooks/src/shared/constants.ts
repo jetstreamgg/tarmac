@@ -13,3 +13,9 @@ export const SAFE_TRANSACTION_SERVICE_URL: Record<number, string> = {
   [chainId.optimism]: 'https://safe-transaction-optimism.safe.global',
   [chainId.unichain]: 'https://safe-transaction-unichain.safe.global'
 };
+
+export enum CapabilitySupportStatus {
+  supported = 'supported',
+  ready = 'ready',
+  unsupported = 'unsupported'
+}

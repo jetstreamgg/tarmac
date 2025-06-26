@@ -1,4 +1,4 @@
-import { encodeFunctionData, parseEther } from 'viem';
+import { encodeFunctionData, erc20Abi, parseEther } from 'viem';
 import { NetworkName, TEST_ADDRESS } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
@@ -6,7 +6,6 @@ export const approveToken = async (
   tokenAddress: `0x${string}`,
   spenderAddress: `0x${string}`,
   amount: string,
-  abi: any,
   network = NetworkName.mainnet
 ) => {
   const rpcUrl = await getRpcUrlFromFile(network);
@@ -14,7 +13,7 @@ export const approveToken = async (
   const amountToApprove = parseEther(amount);
 
   const calldata = encodeFunctionData({
-    abi,
+    abi: erc20Abi,
     functionName: 'approve',
     args: [spenderAddress, amountToApprove]
   });

@@ -2,7 +2,7 @@ import { test } from '../fixtures.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { switchToL2 } from '../utils/switchToL2.ts';
 import { NetworkName } from '../utils/constants.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 
 export const runL2TradeTests = async ({ networkName }: { networkName: NetworkName }) => {
   test('trade usdc to usds, then trade usds back to usdc', async ({ page }) => {
@@ -105,6 +105,25 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await page.getByTestId('trade-input-origin').fill('5');
 
     await approveOrPerformAction(page, 'Trade');
+
+    await page.locator('button', { hasText: 'Add USDS to wallet' }).first().click();
+  });
+
+  test('Batch - trade usdc to usds', async ({ page }) => {
+    await page.goto('/');
+    await connectMockWalletAndAcceptTerms(page, { batch: true });
+    await switchToL2(page, networkName);
+
+    await page.getByRole('tab', { name: 'Trade' }).click();
+
+    //select usds for target token; usdc is origin by default
+    await page.getByRole('button', { name: 'Select token' }).click();
+    await page.getByRole('button', { name: 'USDS USDS USDS' }).click();
+
+    await page.getByTestId('trade-input-origin').click();
+    await page.getByTestId('trade-input-origin').fill('10');
+
+    await performAction(page, 'Trade');
 
     await page.locator('button', { hasText: 'Add USDS to wallet' }).first().click();
   });

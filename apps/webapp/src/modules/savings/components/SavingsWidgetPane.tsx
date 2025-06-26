@@ -18,6 +18,7 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Intent } from '@/lib/enums';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -26,6 +27,8 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
   const { setShouldDisableActionButtons } = useChatContext();
+
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
 
   const isL2 = isL2ChainId(chainId);
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
@@ -124,6 +127,8 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
         flow
       }}
       disallowedTokens={disallowedTokens}
+      batchEnabled={batchEnabled}
+      setBatchEnabled={setBatchEnabled}
     />
   );
 }

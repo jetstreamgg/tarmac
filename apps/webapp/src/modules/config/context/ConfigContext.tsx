@@ -56,7 +56,8 @@ const defaultUserConfig: UserConfig = {
   intent: Intent.BALANCES_INTENT,
   sealToken: SealToken.MKR,
   chatSuggested: false,
-  stakeToken: StakeToken.SKY
+  stakeToken: StakeToken.SKY,
+  batchEnabled: true
 };
 
 const defaultLinkedActionConfig = {

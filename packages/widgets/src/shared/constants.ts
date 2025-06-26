@@ -10,6 +10,11 @@ export enum TxStatus {
   ERROR = 'error'
 }
 
+export enum BatchStatus {
+  ENABLED = 'enabled',
+  DISABLED = 'disabled'
+}
+
 export enum InitialFlow {
   INITIAL = 'initial'
 }

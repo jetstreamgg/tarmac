@@ -1,15 +1,10 @@
 import { expect, test } from '../fixtures.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
 import { mkrAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { newSealPosition } from '../utils/newSealPosition.ts';
-import {
-  lsMkrUsdsRewardAddress,
-  mkrAbi,
-  sealModuleAddress
-} from 'node_modules/@jetstreamgg/sky-hooks/src/generated.ts';
+import { lsMkrUsdsRewardAddress, sealModuleAddress } from '@jetstreamgg/sky-hooks';
 import { approveToken } from '../utils/approveToken.ts';
 import { NetworkName } from '../utils/constants.ts';
 import { getTestWalletAddress } from '../utils/testWallets.ts';
@@ -18,7 +13,7 @@ test.beforeAll(async () => {
   await Promise.all([
     setErc20Balance(mkrAddress[TENDERLY_CHAIN_ID], '1000'),
     setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '38100'),
-    approveToken(mkrAddress[TENDERLY_CHAIN_ID], sealModuleAddress[TENDERLY_CHAIN_ID], '100', mkrAbi)
+    approveToken(mkrAddress[TENDERLY_CHAIN_ID], sealModuleAddress[TENDERLY_CHAIN_ID], '100')
   ]);
   // Create a new Seal position in the forked testnet before running the tests. Seal widget has the "Open new position" button disabled for the migration.
   await newSealPosition(
@@ -62,7 +57,7 @@ test('Free all MKR', async ({ page }) => {
 
   await expect(page.getByText('Confirm your position').nth(0)).toBeVisible();
 
-  await approveOrPerformAction(page, 'Confirm');
+  await page.getByRole('button', { name: 'Confirm' }).click();
   expect(page.getByRole('heading', { name: 'Success!' })).toBeVisible();
   await expect(page.getByText("You've unsealed 100 MKR to exit your position.")).toBeVisible();
 });

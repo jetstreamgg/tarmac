@@ -4,6 +4,7 @@ import {
   daiUsdsAddress,
   getTokenDecimals,
   mkrSkyAddress,
+  useIsBatchSupported,
   useTokenBalance
 } from '@jetstreamgg/sky-hooks';
 import { UpgradeRevert } from './components/UpgradeRevert';
@@ -16,7 +17,7 @@ import { Heading } from '@widgets/shared/components/ui/Typography';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useAccount, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDebounce, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { useDebounce, getTransactionLink, useIsSafeWallet, math } from '@jetstreamgg/sky-utils';
 import { useTokenAllowance } from '@jetstreamgg/sky-hooks';
 import { useUpgraderManager } from './hooks/useUpgraderManager';
 import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';
@@ -31,7 +32,8 @@ import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
-import { math } from '@jetstreamgg/sky-utils';
+import { useBatchUpgraderManager } from './hooks/useBatchUpgraderManager';
+import { UpgradeTransactionReview } from './components/UpgradeTransactionReview';
 
 const defaultUpgradeOptions = [TOKENS.dai, TOKENS.mkr];
 const defaultRevertOptions = [TOKENS.usds];
@@ -81,6 +83,8 @@ const targetTokenForSymbol = (symbol: keyof typeof upgradeTokens) => {
 export type UpgradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   upgradeOptions?: Token[];
+  batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 export const UpgradeWidget = ({
@@ -95,6 +99,8 @@ export const UpgradeWidget = ({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
+  batchEnabled,
+  setBatchEnabled,
   upgradeOptions = defaultUpgradeOptions,
   enabled = true,
   shouldReset = false
@@ -117,6 +123,8 @@ export const UpgradeWidget = ({
           onExternalLinkClicked={onExternalLinkClicked}
           enabled={enabled}
           upgradeOptions={upgradeOptions}
+          batchEnabled={batchEnabled}
+          setBatchEnabled={setBatchEnabled}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -135,6 +143,8 @@ export function UpgradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   upgradeOptions,
+  batchEnabled,
+  setBatchEnabled,
   enabled = true
 }: UpgradeWidgetProps): React.ReactElement {
   const validatedExternalState = getValidatedState(externalWidgetState);
@@ -237,6 +247,8 @@ export function UpgradeWidgetWrapped({
     token: originToken.address[chainId]
   });
 
+  const { data: batchSupported, isLoading: isBatchSupportLoading } = useIsBatchSupported();
+
   const {
     data: allowance,
     mutate: mutateAllowance,
@@ -251,6 +263,7 @@ export function UpgradeWidgetWrapped({
         : mkrSkyAddress[chainId as keyof typeof mkrSkyAddress]
   });
   const hasAllowance = !!(allowance && debouncedOriginAmount !== 0n && allowance >= debouncedOriginAmount);
+  const shouldUseBatch = !!batchEnabled && !!batchSupported && !hasAllowance;
 
   const actionManager = useUpgraderManager({
     token: originToken,
@@ -298,7 +311,7 @@ export function UpgradeWidgetWrapped({
       setTxStatus(TxStatus.ERROR);
       mutateAllowance();
       mutateOriginBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
       console.log(error);
     }
   });
@@ -337,8 +350,53 @@ export function UpgradeWidgetWrapped({
     }
   });
 
+  const batchActionManager = useBatchUpgraderManager({
+    token: originToken,
+    amount: debouncedOriginAmount,
+    // Only enable batch flow when the user needs allowance, otherwise default to individual Upgrade/Revert transaction
+    enabled: shouldUseBatch,
+    onStart: () => {
+      setTxStatus(TxStatus.LOADING);
+      onWidgetStateChange?.({ widgetState, txStatus: TxStatus.LOADING });
+    },
+    onSuccess: (hash: string | undefined) => {
+      onNotification?.({
+        title: tabIndex === 0 ? t`Upgrade successful` : t`Revert successful`,
+        description:
+          tabIndex === 0
+            ? t`You upgraded ${formatUnits(debouncedOriginAmount, 18)} ${originToken.symbol} into ${
+                targetToken.symbol
+              }`
+            : t`You reverted ${formatUnits(debouncedOriginAmount, 18)} ${originToken.symbol} into ${
+                targetToken.symbol
+              }`,
+        status: TxStatus.SUCCESS,
+        type: notificationTypeMaping[targetToken?.symbol?.toUpperCase() || 'none']
+      });
+      setExternalLink(hash && getTransactionLink(chainId, address, hash, isSafeWallet));
+      setTxStatus(TxStatus.SUCCESS);
+      mutateAllowance();
+      mutateOriginBalance();
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
+    },
+    onError: (error: Error, hash: string | undefined) => {
+      onNotification?.({
+        title: tabIndex === 0 ? t`Upgrade failed` : t`Revert failed`,
+        description: t`Something went wrong with your transaction. Please try again.`,
+        status: TxStatus.ERROR
+      });
+      setExternalLink(hash && getTransactionLink(chainId, address, hash, isSafeWallet));
+      setTxStatus(TxStatus.ERROR);
+      mutateAllowance();
+      mutateOriginBalance();
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
+      console.log(error);
+    }
+  });
+
   useEffect(() => {
-    if (widgetState.screen === UpgradeScreen.TRANSACTION) return;
+    if (widgetState.screen === UpgradeScreen.TRANSACTION || widgetState.screen === UpgradeScreen.REVIEW)
+      return;
     const flow = validatedExternalState?.flow || (tabIndex === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT);
     if (isConnectedAndEnabled) {
       // Use external flow if available, otherwise use tabIndex
@@ -365,20 +423,39 @@ export function UpgradeWidgetWrapped({
     }
   }, [isConnectedAndEnabled, validatedExternalState?.flow, tabIndex, widgetState.screen]);
 
-  // If we're in the upgrade or revert flow and we need allowance, set the action to approve,
+  // If we're in the upgrade or revert flow and we need allowance and  batch transactions are not supported, set the action to approve
   useEffect(() => {
-    if (widgetState.flow === UpgradeFlow.UPGRADE && widgetState.screen === UpgradeScreen.ACTION) {
-      setWidgetState((prev: any) => ({
+    if (
+      widgetState.flow === UpgradeFlow.UPGRADE &&
+      (widgetState.screen === UpgradeScreen.ACTION || widgetState.screen === UpgradeScreen.REVIEW)
+    ) {
+      setWidgetState((prev: WidgetState) => ({
         ...prev,
-        action: !hasAllowance && !allowanceLoading ? UpgradeAction.APPROVE : UpgradeAction.UPGRADE
+        action:
+          !hasAllowance && !allowanceLoading && !shouldUseBatch && !isBatchSupportLoading
+            ? UpgradeAction.APPROVE
+            : UpgradeAction.UPGRADE
       }));
-    } else if (widgetState.flow === UpgradeFlow.REVERT && widgetState.screen === UpgradeScreen.ACTION) {
-      setWidgetState((prev: any) => ({
+    } else if (
+      widgetState.flow === UpgradeFlow.REVERT &&
+      (widgetState.screen === UpgradeScreen.ACTION || widgetState.screen === UpgradeScreen.REVIEW)
+    ) {
+      setWidgetState((prev: WidgetState) => ({
         ...prev,
-        action: !hasAllowance && !allowanceLoading ? UpgradeAction.APPROVE : UpgradeAction.REVERT
+        action:
+          !hasAllowance && !allowanceLoading && !shouldUseBatch && !isBatchSupportLoading
+            ? UpgradeAction.APPROVE
+            : UpgradeAction.REVERT
       }));
     }
-  }, [widgetState.flow, widgetState.screen, hasAllowance, allowanceLoading]);
+  }, [
+    widgetState.flow,
+    widgetState.screen,
+    hasAllowance,
+    allowanceLoading,
+    shouldUseBatch,
+    isBatchSupportLoading
+  ]);
 
   const isBalanceError =
     txStatus === TxStatus.IDLE &&
@@ -413,7 +490,8 @@ export function UpgradeWidgetWrapped({
     allowance === undefined ||
     allowanceLoading ||
     (txStatus === TxStatus.SUCCESS && !actionManager.prepared) || //disable next button if action not prepared
-    isAmountWaitingForDebounce;
+    isAmountWaitingForDebounce ||
+    (!!batchEnabled && isBatchSupportLoading);
 
   const upgradeDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
@@ -423,6 +501,17 @@ export function UpgradeWidgetWrapped({
     allowanceLoading ||
     isBalanceError ||
     isAmountWaitingForDebounce;
+
+  const batchCallDisabled =
+    [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
+    !batchActionManager.prepared ||
+    batchActionManager.isLoading ||
+    // If the user has allowance, don't send a batch transaction as it's only 1 contract call
+    hasAllowance ||
+    allowanceLoading ||
+    isBalanceError ||
+    isAmountWaitingForDebounce ||
+    !batchSupported;
 
   const approveOnClick = () => {
     shouldAllowExternalUpdate.current = false;
@@ -494,13 +583,42 @@ export function UpgradeWidgetWrapped({
 
   // Handle the error onClicks separately to keep it clear
   const errorOnClick = () => {
-    return widgetState.action === UpgradeAction.UPGRADE
-      ? upgradeOnClick()
-      : widgetState.action === UpgradeAction.REVERT
-        ? revertOnClick()
-        : widgetState.action === UpgradeAction.APPROVE
-          ? approveOnClick()
-          : undefined;
+    return shouldUseBatch
+      ? batchTransactionOnClick()
+      : widgetState.action === UpgradeAction.UPGRADE
+        ? upgradeOnClick()
+        : widgetState.action === UpgradeAction.REVERT
+          ? revertOnClick()
+          : widgetState.action === UpgradeAction.APPROVE
+            ? approveOnClick()
+            : undefined;
+  };
+
+  const batchTransactionOnClick = () => {
+    if (hasAllowance) {
+      // If the user has allowance, just send the individual transaction as it will be more gas efficient
+      if (widgetState.flow === UpgradeFlow.UPGRADE) {
+        upgradeOnClick();
+      } else {
+        revertOnClick();
+      }
+    } else {
+      setWidgetState((prev: WidgetState) => ({
+        ...prev,
+        action: prev.flow === UpgradeFlow.UPGRADE ? UpgradeAction.UPGRADE : UpgradeAction.REVERT,
+        screen: UpgradeScreen.TRANSACTION
+      }));
+      setTxStatus(TxStatus.INITIALIZED);
+      setExternalLink(undefined);
+      batchActionManager.execute();
+    }
+  };
+
+  const reviewOnClick = () => {
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      screen: UpgradeScreen.REVIEW
+    }));
   };
 
   const onClickAction = !isConnectedAndEnabled
@@ -511,14 +629,18 @@ export function UpgradeWidgetWrapped({
         ? nextOnClick
         : txStatus === TxStatus.ERROR
           ? errorOnClick
-          : (widgetState.flow === UpgradeFlow.UPGRADE && widgetState.action === UpgradeAction.APPROVE) ||
-              (widgetState.flow === UpgradeFlow.REVERT && widgetState.action === UpgradeAction.APPROVE)
-            ? approveOnClick
-            : widgetState.flow === UpgradeFlow.UPGRADE && widgetState.action === UpgradeAction.UPGRADE
-              ? upgradeOnClick
-              : widgetState.flow === UpgradeFlow.REVERT && widgetState.action === UpgradeAction.REVERT
-                ? revertOnClick
-                : undefined;
+          : widgetState.screen === UpgradeScreen.ACTION
+            ? reviewOnClick
+            : shouldUseBatch
+              ? batchTransactionOnClick
+              : (widgetState.flow === UpgradeFlow.UPGRADE && widgetState.action === UpgradeAction.APPROVE) ||
+                  (widgetState.flow === UpgradeFlow.REVERT && widgetState.action === UpgradeAction.APPROVE)
+                ? approveOnClick
+                : widgetState.flow === UpgradeFlow.UPGRADE && widgetState.action === UpgradeAction.UPGRADE
+                  ? upgradeOnClick
+                  : widgetState.flow === UpgradeFlow.REVERT && widgetState.action === UpgradeAction.REVERT
+                    ? revertOnClick
+                    : undefined;
 
   const onClickBack = () => {
     shouldAllowExternalUpdate.current = true;
@@ -531,19 +653,12 @@ export function UpgradeWidgetWrapped({
   };
 
   const showSecondaryButton =
-    !!customNavigationLabel ||
-    txStatus === TxStatus.ERROR ||
-    // After a successful approve transaction, show the back button
-    (txStatus === TxStatus.SUCCESS &&
-      widgetState.action === UpgradeAction.APPROVE &&
-      widgetState.screen === UpgradeScreen.TRANSACTION);
+    !!customNavigationLabel || txStatus === TxStatus.ERROR || widgetState.screen === UpgradeScreen.REVIEW;
 
   // Update button state according to action and tx
   useEffect(() => {
     if (isConnectedAndEnabled) {
-      if (widgetState.action === UpgradeAction.APPROVE && txStatus === TxStatus.SUCCESS) {
-        setButtonText(t`Continue`);
-      } else if (txStatus === TxStatus.SUCCESS) {
+      if (txStatus === TxStatus.SUCCESS) {
         if (customNavigationLabel) {
           setButtonText(customNavigationLabel);
         } else {
@@ -553,12 +668,18 @@ export function UpgradeWidgetWrapped({
         setButtonText(t`Retry`);
       } else if (widgetState.screen === UpgradeScreen.ACTION && debouncedOriginAmount === 0n) {
         setButtonText(t`Enter amount`);
-      } else if (widgetState.action === UpgradeAction.APPROVE) {
-        setButtonText(t`Approve ${tabIndex === 0 ? 'upgrade' : 'revert'} amount`);
-      } else if (widgetState.flow === UpgradeFlow.UPGRADE && widgetState.action === UpgradeAction.UPGRADE) {
-        setButtonText(t`Upgrade`);
-      } else if (widgetState.flow === UpgradeFlow.REVERT && widgetState.action === UpgradeAction.REVERT) {
-        setButtonText(t`Revert`);
+      } else if (widgetState.screen === UpgradeScreen.ACTION) {
+        setButtonText(t`Review`);
+      } else if (widgetState.screen === UpgradeScreen.REVIEW) {
+        if (shouldUseBatch) {
+          setButtonText(t`Confirm bundled transaction`);
+        } else if (widgetState.action === UpgradeAction.APPROVE) {
+          setButtonText(t`Confirm 2 transactions`);
+        } else if (widgetState.flow === UpgradeFlow.UPGRADE) {
+          setButtonText(t`Confirm upgrade`);
+        } else if (widgetState.flow === UpgradeFlow.REVERT) {
+          setButtonText(t`Confirm revert`);
+        }
       }
     } else {
       setButtonText(t`Connect Wallet`);
@@ -566,6 +687,7 @@ export function UpgradeWidgetWrapped({
   }, [
     widgetState.action,
     widgetState.flow,
+    widgetState.screen,
     txStatus,
     debouncedOriginAmount,
     linguiCtx,
@@ -577,16 +699,48 @@ export function UpgradeWidgetWrapped({
   useEffect(() => {
     setIsDisabled(
       isConnectedAndEnabled &&
-        ((widgetState.action === UpgradeAction.APPROVE && approveDisabled) ||
-          ((widgetState.action === UpgradeAction.UPGRADE || widgetState.action === UpgradeAction.REVERT) &&
-            upgradeDisabled))
+        (shouldUseBatch
+          ? batchCallDisabled
+          : (widgetState.action === UpgradeAction.APPROVE && approveDisabled) ||
+            ((widgetState.action === UpgradeAction.UPGRADE || widgetState.action === UpgradeAction.REVERT) &&
+              upgradeDisabled))
     );
-  }, [approveDisabled, upgradeDisabled, widgetState.action, isConnectedAndEnabled]);
+  }, [
+    approveDisabled,
+    upgradeDisabled,
+    widgetState.action,
+    isConnectedAndEnabled,
+    shouldUseBatch,
+    batchCallDisabled
+  ]);
+
+  // After a successful approval, wait for the next hook (upgrade, revert) to be prepared and send the transaction
+  useEffect(() => {
+    const nextActionOnClick = widgetState.flow === UpgradeFlow.UPGRADE ? upgradeOnClick : revertOnClick;
+
+    if (
+      widgetState.action === UpgradeAction.APPROVE &&
+      txStatus === TxStatus.SUCCESS &&
+      actionManager.prepared
+    ) {
+      setWidgetState((prev: WidgetState) => ({
+        ...prev,
+        action: widgetState.flow === UpgradeFlow.UPGRADE ? UpgradeAction.UPGRADE : UpgradeAction.REVERT
+      }));
+      nextActionOnClick();
+    }
+  }, [widgetState.flow, widgetState.action, txStatus, actionManager.prepared]);
 
   // Set isLoading to be consumed by WidgetButton
   useEffect(() => {
-    setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
-  }, [txStatus, isConnecting]);
+    setIsLoading(
+      isConnecting ||
+        txStatus === TxStatus.LOADING ||
+        txStatus === TxStatus.INITIALIZED ||
+        // Keep the loading state after a successful approval as a new transaction will automatically pop up
+        (widgetState.action === UpgradeAction.APPROVE && txStatus === TxStatus.SUCCESS)
+    );
+  }, [txStatus, isConnecting, widgetState.action]);
 
   // Reset widget state after switching network
   useEffect(() => {
@@ -652,6 +806,21 @@ export function UpgradeWidgetWrapped({
               targetToken={targetToken}
               targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
               onExternalLinkClicked={onExternalLinkClicked}
+              isBatchTransaction={shouldUseBatch}
+              needsAllowance={!hasAllowance}
+            />
+          </CardAnimationWrapper>
+        ) : widgetState.screen === UpgradeScreen.REVIEW ? (
+          <CardAnimationWrapper key="widget-transaction-review">
+            <UpgradeTransactionReview
+              batchEnabled={batchEnabled}
+              setBatchEnabled={setBatchEnabled}
+              isBatchTransaction={shouldUseBatch}
+              originToken={originToken}
+              originAmount={debouncedOriginAmount}
+              targetToken={targetToken}
+              targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
+              needsAllowance={!hasAllowance}
             />
           </CardAnimationWrapper>
         ) : (
