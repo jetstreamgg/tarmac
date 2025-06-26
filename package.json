@@ -87,7 +87,7 @@
     "husky": "^9.0.11",
     "knip": "^5.53.0",
     "lint-staged": "^15.5.1",
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.1",
     "prettier-plugin-tailwindcss": "^0.6.10",
     "rollup-plugin-visualizer": "^5.14.0",
     "typescript": "5.8.3",
