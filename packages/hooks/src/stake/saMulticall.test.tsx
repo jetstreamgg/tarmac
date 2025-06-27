@@ -27,8 +27,6 @@ import { MAX_UINT_256 } from '../../test/constants';
 import { useRewardsSuppliedBalance } from '../rewards/useRewardsBalance';
 import { useUrnAddress } from './useUrnAddress';
 import { getIlkName } from '../vaults/helpers';
-import { useStakeSkyAllowance } from './useStakeAllowance';
-import { useBatchStakeMulticall } from './useBatchStakeMulticall';
 
 describe('Stake Module Multicall tests', async () => {
   const wrapper = WagmiWrapper;
@@ -454,94 +452,6 @@ describe('Stake Module Multicall tests', async () => {
       () => {
         // SKY balance is the full amount locked since there is no exit fee
         expect(resultSkyBalance.current.data?.value).toBe(SKY_TO_LOCK * 2n);
-        return;
-      },
-      { timeout: 5000 }
-    );
-  });
-
-  it('Batch - Can lock additional SKY in position', async () => {
-    // Set initial SKY balance
-    await setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], '480000');
-
-    // Reset SKY allowance
-    const { result: resultApproveSky } = renderHook(
-      () =>
-        useStakeSkyApprove({
-          // Minimum allowance
-          amount: 1n,
-          gas: GAS
-        }),
-      {
-        wrapper
-      }
-    );
-    await waitForPreparedExecuteAndMine(resultApproveSky, LOADING_TIMEOUT);
-
-    // Refetch SKY allowance
-    const { result: resultAllowanceSky } = renderHook(() => useStakeSkyAllowance(TEST_WALLET_ADDRESS), {
-      wrapper: WagmiWrapper
-    });
-
-    resultAllowanceSky.current.mutate();
-    await waitFor(
-      () => {
-        expect(resultAllowanceSky.current.data).toEqual(1n);
-        return;
-      },
-      { timeout: 15000 }
-    );
-
-    // First check the current collateral amount before adding SKY
-    const urnAddress = await getUrnAddress(URN_INDEX, useUrnAddress);
-    const { result: resultInitialLocked } = renderHook(() => useVault(urnAddress, ILK_NAME), {
-      wrapper
-    });
-    resultInitialLocked.current.mutate();
-
-    let initialCollateralAmount: bigint | undefined;
-    await waitFor(
-      () => {
-        initialCollateralAmount = resultInitialLocked.current.data?.collateralAmount;
-        expect(resultInitialLocked.current.isLoading).toBe(false);
-        expect(initialCollateralAmount).toBe(0n);
-        return;
-      },
-      { timeout: 5000 }
-    );
-
-    // Generate calldata for locking SKY
-    const calldataLockSky = getStakeLockCalldata({
-      ownerAddress: TEST_WALLET_ADDRESS,
-      urnIndex: URN_INDEX,
-      amount: SKY_TO_LOCK
-    });
-
-    // Call multicall with the lock SKY calldata
-    const { result: resultMulticall } = renderHook(
-      () =>
-        useBatchStakeMulticall({
-          calldata: [calldataLockSky],
-          skyAmount: SKY_TO_LOCK,
-          usdsAmount: 0n,
-          gas: GAS
-        }),
-      { wrapper }
-    );
-
-    await waitForPreparedExecuteAndMine(resultMulticall, LOADING_TIMEOUT);
-
-    // Check Urn locked SKY equivalent amount
-    const { result: resultSkyLocked } = renderHook(() => useVault(urnAddress, ILK_NAME), {
-      wrapper
-    });
-    resultSkyLocked.current.mutate();
-
-    await waitFor(
-      () => {
-        expect(resultSkyLocked.current.data?.collateralAmount).toBe(
-          (initialCollateralAmount || 0n) + SKY_TO_LOCK
-        );
         return;
       },
       { timeout: 5000 }

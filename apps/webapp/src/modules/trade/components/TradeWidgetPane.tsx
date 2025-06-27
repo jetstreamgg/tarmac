@@ -20,7 +20,6 @@ import { useMemo } from 'react';
 import { getChainSpecificText, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
@@ -34,8 +33,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isL2 = isL2ChainId(chainId);
   const { setShouldDisableActionButtons } = useChatContext();
-
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
 
   const onTradeWidgetStateChange = ({
     hash,
@@ -171,8 +168,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         },
         chainId
       )}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
     />
   );
 }

@@ -19,8 +19,7 @@ export const RewardsBalanceCard = ({
   url,
   onExternalLinkClicked,
   loading,
-  usdsSkySuppliedBalance,
-  usdsCleSuppliedBalance
+  totalUserRewardsSupplied
 }: CardProps) => {
   const currentChainId = useChainId();
   const chainId = isTestnetId(currentChainId) ? 314310 : 1; //TODO: update once we add non-mainnet rewards
@@ -49,11 +48,7 @@ export const RewardsBalanceCard = ({
           <Skeleton className="w-32" />
         ) : (
           <Text>
-            {`${
-              usdsSkySuppliedBalance !== undefined && usdsCleSuppliedBalance !== undefined
-                ? formatBigInt(usdsSkySuppliedBalance + usdsCleSuppliedBalance)
-                : '0'
-            }`}
+            {`${totalUserRewardsSupplied !== undefined ? formatBigInt(totalUserRewardsSupplied) : '0'}`}
           </Text>
         )
       }
@@ -78,14 +73,11 @@ export const RewardsBalanceCard = ({
       footerRightContent={
         loading || pricesLoading ? (
           <Skeleton className="h-[13px] w-20" />
-        ) : usdsSkySuppliedBalance !== undefined &&
-          usdsCleSuppliedBalance !== undefined &&
-          !!pricesData?.USDS ? (
+        ) : totalUserRewardsSupplied !== undefined && !!pricesData?.USDS ? (
           <Text variant="small" className="text-textSecondary">
             $
             {formatNumber(
-              parseFloat(formatUnits(usdsSkySuppliedBalance + usdsCleSuppliedBalance, 18)) *
-                parseFloat(pricesData.USDS.price),
+              parseFloat(formatUnits(totalUserRewardsSupplied, 18)) * parseFloat(pricesData.USDS.price),
               {
                 maxDecimals: 2
               }

@@ -465,7 +465,7 @@ export const PositionSummary = () => {
             {hasPositions && lineItemsUpdated.length > 0 && (
               <motion.div key="updates" variants={positionAnimations}>
                 <Text variant="medium" className="mb-1 font-medium">
-                  Position changes
+                  Position updates
                 </Text>
                 {lineItemsUpdated.map(({ label, value, icon, className, tooltipText }) => {
                   return (

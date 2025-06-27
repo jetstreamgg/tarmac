@@ -101,7 +101,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           VITE_ENV_NAME: development
           VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
-          VITE_BATCH_TX_ENABLED: 'true'
 
       - name: Teardown VNet (if required)
         if: ${{always() && matrix.vnet}}

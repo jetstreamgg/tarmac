@@ -73,7 +73,7 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
         error={rewardContractInfoError}
         content={
           <Text className="mt-2" variant="large">
-            {mostRecentReward?.suppliers || ''}
+            {mostRecentReward?.suppliers || 0}
           </Text>
         }
       />

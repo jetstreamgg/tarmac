@@ -2,10 +2,9 @@ import { expect } from 'vitest';
 import { WriteHook } from '../src';
 import { renderHook, waitFor } from '@testing-library/react';
 import { WagmiWrapper } from './WagmiWrapper';
-import { BatchWriteHook } from '../src/hooks';
 
 export const waitForPreparedExecuteAndMine = async (
-  result: { current: WriteHook | BatchWriteHook },
+  result: { current: WriteHook },
   loadingTimeout: number = 3000
 ) => {
   await waitFor(

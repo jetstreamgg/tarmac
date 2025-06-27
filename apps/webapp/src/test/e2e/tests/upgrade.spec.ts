@@ -1,13 +1,12 @@
 import { expect, test } from '../fixtures.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { daiUsdsAddress, mcdDaiAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
+import { mcdDaiAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
-import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { getTestWalletAddress } from '../utils/testWallets.ts';
 import { NetworkName } from '../utils/constants.ts';
-import { approveToken } from '../utils/approveToken.ts';
 
 const setTestBalance = async (tokenAddress: string, amount: string, decimals = 18) => {
   const workerIndex = Number(process.env.VITE_TEST_WORKER_INDEX ?? 1);
@@ -70,7 +69,7 @@ test('Upgrade and revert with insufficient balance', async ({ page }) => {
   // Upgrade an amount greater than the balance
   await page.getByTestId('upgrade-input-origin').fill(`${daiBalanceText}0`);
   await expect(page.getByText('Insufficient funds')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Review' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Approve' })).toBeDisabled();
 
   await page.getByRole('tab', { name: 'Revert' }).click();
   await expect(page.getByTestId('upgrade-input-origin-balance')).not.toHaveText('No wallet connected');
@@ -81,7 +80,7 @@ test('Upgrade and revert with insufficient balance', async ({ page }) => {
   // Upgrade an amount greater than the balance
   await page.getByTestId('upgrade-input-origin').fill(`${uSDSBalanceText}0`);
   await expect(page.getByText('Insufficient funds')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Review' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Approve' })).toBeDisabled();
 });
 
 test('Balances change after successfully upgrading and reverting', async ({ page }) => {
@@ -130,28 +129,20 @@ test('Insufficient token allowance triggers approval flow', async ({ page }) => 
   await page.getByRole('tab', { name: 'Upgrade' }).click();
   await page.getByTestId('upgrade-input-origin').click();
   await page.getByTestId('upgrade-input-origin').fill('90');
-  await page.getByTestId('widget-button').getByText('Review').click();
-  // Not enough allowance, so the 'confirm 2 transactions' button should be visible
-  await expect(page.getByRole('button', { name: 'Confirm 2 transactions' }).last()).toBeVisible();
-  await approveToken(
-    mcdDaiAddress[TENDERLY_CHAIN_ID],
-    daiUsdsAddress[TENDERLY_CHAIN_ID],
-    '90',
-    NetworkName.mainnet
-  );
+  // Not enough allowance, so approve button should be visible
+  await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
+  await page.getByRole('button', { name: 'Approve' }).click();
+  await page.getByRole('button', { name: 'Back' }).click();
 
   // Restart
   await page.reload();
   await connectMockWalletAndAcceptTerms(page);
   await page.getByTestId('upgrade-input-origin').click();
   await page.getByTestId('upgrade-input-origin').fill('90');
-  await page.getByTestId('widget-button').getByText('Review').click();
   // It should not ask for approval
-  await expect(
-    page.getByTestId('widget-container').getByRole('button', { name: 'Confirm upgrade' }).last()
-  ).toBeVisible();
+  await expect(page.getByTestId('widget-container').getByRole('button', { name: 'Upgrade' })).toBeVisible();
   // Upgrade and reset approval
-  await page.getByTestId('widget-container').getByRole('button', { name: 'Confirm upgrade' }).last().click();
+  await page.getByTestId('widget-container').getByRole('button', { name: 'Upgrade' }).click();
   await page.getByRole('button', { name: 'Back to Upgrade' }).click();
 
   // Restart
@@ -159,9 +150,8 @@ test('Insufficient token allowance triggers approval flow', async ({ page }) => 
   await connectMockWalletAndAcceptTerms(page);
   await page.getByTestId('upgrade-input-origin').click();
   await page.getByTestId('upgrade-input-origin').fill('10');
-  await page.getByTestId('widget-button').getByText('Review').click();
-  // Allowance should be reset, so the 2 transactions button should be visible again
-  await expect(page.getByRole('button', { name: 'Confirm 2 transactions' }).last()).toBeVisible();
+  // Allowance should be reset, so approve button should be visible again
+  await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
 });
 
 test('if not connected it should show a connect button', async ({ page }) => {
@@ -240,13 +230,12 @@ test('An approval error redirects to the error screen', async ({ page }) => {
   await page.getByRole('tab', { name: 'Upgrade' }).click();
   await page.getByTestId('upgrade-input-origin').click();
   await page.getByTestId('upgrade-input-origin').fill('100');
-  await page.getByTestId('widget-button').getByText('Review').click();
 
   // Intercept the tenderly RPC call to reject the transaction. Waits for 200ms for UI to update
   await interceptAndRejectTransactions(page, 200, true);
-  await page.getByRole('button', { name: 'Confirm 2 transactions' }).last().click();
+  await page.getByRole('button', { name: 'Approve' }).click();
 
-  expect(page.getByText('An error occurred during the upgrade flow.').last()).toBeVisible();
+  expect(page.getByText('An error occurred ')).toBeVisible();
   expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
@@ -254,17 +243,16 @@ test('An approval error redirects to the error screen', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Retry' }).last().click();
 
-  await expect(page.getByText('An error occurred during the upgrade flow.').last()).toBeVisible();
+  await expect(page.getByText('An error occurred while approving access to your DAI.')).toBeVisible();
 
   page.getByRole('button', { name: 'Back', exact: true }).last().click();
   await page.getByRole('tab', { name: 'Revert' }).click();
   await page.getByTestId('upgrade-input-origin').click();
   await page.getByTestId('upgrade-input-origin').fill('100');
-  await page.getByTestId('widget-button').getByText('Review').click();
 
-  await page.getByRole('button', { name: 'Confirm 2 transactions' }).last().click();
+  await page.getByRole('button', { name: 'Approve' }).click();
 
-  expect(page.getByText('An error occurred during the revert flow.').last()).toBeVisible();
+  expect(page.getByText('An error occurred while approving access to your USDS.')).toBeVisible();
   expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back', exact: true }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
@@ -272,7 +260,7 @@ test('An approval error redirects to the error screen', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Retry' }).last().click();
 
-  await expect(page.getByText('An error occurred during the revert flow.').last()).toBeVisible();
+  await expect(page.getByText('An error occurred while approving access to your USDS.')).toBeVisible();
 });
 
 test('An upgrade error redirects to the error screen', async ({ page }) => {
@@ -284,7 +272,7 @@ test('An upgrade error redirects to the error screen', async ({ page }) => {
 
   await approveOrPerformAction(page, 'Upgrade', { reject: true });
 
-  await expect(page.getByText('An error occurred during the upgrade flow.').last()).toBeVisible();
+  await expect(page.getByText('An error occurred while upgrading your tokens')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
@@ -292,7 +280,7 @@ test('An upgrade error redirects to the error screen', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Retry' }).last().click();
 
-  await expect(page.getByText('An error occurred during the upgrade flow.').last()).toBeVisible();
+  await expect(page.getByText('An error occurred while upgrading your tokens')).toBeVisible();
 });
 
 test('A revert error redirects to the error screen', async ({ page }) => {
@@ -305,8 +293,8 @@ test('A revert error redirects to the error screen', async ({ page }) => {
 
   await interceptAndRejectTransactions(page, 200, true);
 
-  await approveOrPerformAction(page, 'Revert', { reject: true });
-  expect(page.getByText('An error occurred during the revert flow.').last()).toBeVisible();
+  await approveOrPerformAction(page, 'Revert', { buttonName: 'Retry' });
+  expect(page.getByText('An error occurred while approving access to your USDS.')).toBeVisible();
   expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
@@ -314,7 +302,7 @@ test('A revert error redirects to the error screen', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Retry' }).last().click();
 
-  await expect(page.getByText('An error occurred during the revert flow.').last()).toBeVisible();
+  await expect(page.getByText('An error occurred while approving access to your USDS.')).toBeVisible();
 });
 
 test('Details pane shows right data', async ({ page }) => {
@@ -402,27 +390,4 @@ test('Details pane shows right data', async ({ page }) => {
 
   // FAQ section is present
   await expect(page.getByRole('button', { name: 'FAQs', exact: true })).toBeVisible();
-});
-
-test('Batch - Upgrade DAI and revert USDS', async ({ page }) => {
-  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
-  await page.goto('/');
-  await connectMockWalletAndAcceptTerms(page, { batch: true });
-  await page.getByRole('tab', { name: 'Upgrade' }).click();
-
-  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
-
-  await page.getByTestId('upgrade-input-origin').click();
-  await page.getByTestId('upgrade-input-origin').fill('4');
-  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-  await performAction(page, 'Upgrade');
-  await page.getByRole('button', { name: 'Back to Upgrade' }).click();
-  await expect(page.getByTestId('upgrade-input-origin-balance')).toHaveText('6 DAI');
-  await page.getByRole('tab', { name: 'Revert' }).click();
-  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
-  await page.getByTestId('upgrade-input-origin').click();
-  await page.getByTestId('upgrade-input-origin').fill('4');
-  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-  await performAction(page, 'Revert');
-  await page.getByRole('button', { name: 'Back to Upgrade' }).click();
 });

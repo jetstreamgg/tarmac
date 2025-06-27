@@ -1,7 +1,8 @@
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { BatchStatus, TxStatus } from '@widgets/shared/constants';
+import { TxStatus } from '@widgets/shared/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
+import { TOKENS } from '@jetstreamgg/sky-hooks';
 
 export enum StakeFlow {
   OPEN = 'open',
@@ -56,6 +57,27 @@ export function getStepTitle(step: StakeStep, tab: 'left' | 'right'): MessageDes
   }
 }
 
+export const stakeApproveTitle: TxCardCopyText = {
+  [TxStatus.INITIALIZED]: msg`Approve token access`,
+  [TxStatus.LOADING]: msg`In progress`,
+  [TxStatus.SUCCESS]: msg`Token access approved`,
+  [TxStatus.ERROR]: msg`Error`
+};
+
+export const stakeApproveSubtitle: TxCardCopyText = {
+  [TxStatus.INITIALIZED]: msg`Please allow this app to access the tokens in your wallet.`,
+  [TxStatus.LOADING]: msg`Token access approval in progress.`,
+  [TxStatus.SUCCESS]: msg`Next, confirm the transaction in your wallet.`,
+  [TxStatus.ERROR]: msg`An error occurred when allowing this app to access the tokens in your wallet.`
+};
+
+export const stakeApproveDescription: Record<string, MessageDescriptor> = {
+  [TOKENS.mkr.symbol]: msg`Staking MKR in the Stake Rewards module`,
+  [TOKENS.sky.symbol]: msg`Staking SKY in the Staking Rewards Engine`
+};
+
+export const repayApproveDescription: MessageDescriptor = msg`Repaying USDS in the Stake Rewards module`;
+
 export function getStakeTitle(
   txStatus: Omit<TxStatus, TxStatus.CANCELLED>,
   flow: StakeFlow
@@ -73,55 +95,6 @@ export function getStakeTitle(
     case TxStatus.CANCELLED:
     default:
       return msg`Error`;
-  }
-}
-
-export const stakeOpenReviewTitle = msg`Begin the open position process`;
-export const stakeManageReviewTitle = msg`Begin the change position process`;
-
-export function getStakeOpenReviewSubtitle({
-  batchStatus,
-  symbol,
-  needsAllowance
-}: {
-  batchStatus: BatchStatus;
-  symbol?: string;
-  needsAllowance: boolean;
-}): MessageDescriptor {
-  if (!needsAllowance || !symbol) {
-    return msg`You will open a new Staking Rewards Engine position.`;
-  }
-
-  switch (batchStatus) {
-    case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and open a new Staking Rewards Engine position in one bundled transaction.`;
-    case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and open a new Staking Rewards Engine position in multiple transactions.`;
-    default:
-      return msg``;
-  }
-}
-
-export function getStakeManageReviewSubtitle({
-  batchStatus,
-  symbol,
-  needsAllowance
-}: {
-  batchStatus: BatchStatus;
-  symbol?: string;
-  needsAllowance: boolean;
-}): MessageDescriptor {
-  if (!needsAllowance || !symbol) {
-    return msg`You will update your Staking Rewards Engine position.`;
-  }
-
-  switch (batchStatus) {
-    case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and update your Staking Rewards Engine position in one bundled transaction.`;
-    case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and update your Staking Rewards Engine position in multiple transactions.`;
-    default:
-      return msg``;
   }
 }
 

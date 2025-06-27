@@ -15,7 +15,7 @@ export const useWaitForSafeTxHash = ({
   isSafeConnector
 }: {
   chainId: number | undefined;
-  safeTxHash: string | undefined;
+  safeTxHash: `0x${string}` | undefined;
   isSafeConnector: boolean;
 }) => {
   const hookChainId = useChainId();

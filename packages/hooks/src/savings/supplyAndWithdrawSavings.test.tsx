@@ -4,14 +4,11 @@ import { WagmiWrapper, TEST_WALLET_ADDRESS, GAS } from '../../test';
 import { parseEther } from 'viem';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { useSavingsApprove } from './useSavingsApprove';
-import { sUsdsAddress, usdsAddress } from '../generated';
+import { usdsAddress } from '../generated';
 import { useSavingsSupply } from './useSavingsSupply';
 import { useSavingsWithdraw } from './useSavingsWithdraw';
 import { TENDERLY_CHAIN_ID } from '../constants';
 import { waitForPreparedExecuteAndMine } from '../../test/helpers';
-import { useTokenAllowance } from '../tokens/useTokenAllowance';
-import { TOKENS } from '../tokens/tokens.constants';
-import { useBatchSavingsSupply } from './useBatchSavingsSupply';
 
 describe('Savings - Supply and withdraw', async () => {
   it(
@@ -130,67 +127,6 @@ describe('Savings - Supply and withdraw', async () => {
       );
     }
   );
-
-  it('Batch - Should supply', { timeout: 90000 }, async () => {
-    // Refetch USDS allowance
-    const { result: resultAllowanceUsds } = renderHook(
-      () =>
-        useTokenAllowance({
-          chainId: TENDERLY_CHAIN_ID,
-          contractAddress: TOKENS.usds.address[TENDERLY_CHAIN_ID],
-          owner: TEST_WALLET_ADDRESS,
-          spender: sUsdsAddress[TENDERLY_CHAIN_ID]
-        }),
-      {
-        wrapper: WagmiWrapper
-      }
-    );
-
-    resultAllowanceUsds.current.mutate();
-    await waitFor(
-      () => {
-        expect(resultAllowanceUsds.current.data).toEqual(0n);
-        return;
-      },
-      { timeout: 15000 }
-    );
-
-    // Supply
-    const { result: resultBatchSupply } = renderHook(
-      () =>
-        useBatchSavingsSupply({
-          amount: parseEther('10'),
-          enabled: true,
-          gas: GAS
-        }),
-      {
-        wrapper: WagmiWrapper
-      }
-    );
-    await waitForPreparedExecuteAndMine(resultBatchSupply);
-
-    // Get the balance of tokens for that user
-    const { result: resultBalanceAfterSupply } = renderHook(
-      () =>
-        useTokenBalance({
-          address: TEST_WALLET_ADDRESS,
-          token: usdsAddress[TENDERLY_CHAIN_ID],
-          chainId: TENDERLY_CHAIN_ID
-        }),
-      {
-        wrapper: WagmiWrapper
-      }
-    );
-
-    // The user should have less tokens after supply
-    await waitFor(
-      () => {
-        expect(resultBalanceAfterSupply.current.data?.formatted).toEqual('85');
-        return;
-      },
-      { timeout: 5000 }
-    );
-  });
 
   afterAll(() => {
     cleanup();

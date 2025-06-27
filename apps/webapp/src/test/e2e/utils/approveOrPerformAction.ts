@@ -7,20 +7,22 @@ export type Action =
   | 'Upgrade'
   | 'Revert'
   | 'Trade'
+  | 'Approve'
+  | 'Approve supply amount'
+  | 'Approve seal amount'
+  | 'Approve staking amount'
+  | 'Approve repay amount'
   | 'Continue'
   | 'Confirm'
   | 'Submit'
   | 'Begin migration'
   | 'Migrate'
-  | 'Continue to migrate'
-  | 'Open a position'
-  | 'Change Position'
-  | 'Confirm your position';
+  | 'Continue to migrate';
 
 type approveOrPerformActionOptions = {
   reject?: boolean;
+  buttonName?: 'Retry' | 'Continue';
   buttonPosition?: number;
-  review?: boolean;
 };
 
 export const approveOrPerformAction = async (
@@ -28,48 +30,29 @@ export const approveOrPerformAction = async (
   action: Action,
   options?: approveOrPerformActionOptions
 ) => {
-  const { reject = false, buttonPosition = 0, review = true } = options || {};
+  const { reject = false, buttonName = 'Continue', buttonPosition = 0 } = options || {};
 
-  if (review) {
-    await page.getByTestId('widget-button').getByText('Review').click();
-  }
-
-  const widgetButton = page.getByTestId('widget-button').nth(buttonPosition);
-  await widgetButton.waitFor({ state: 'attached' }); // Ensure the button is in the DOM
-  await expect(widgetButton).toHaveText(/^Confirm/);
-  await expect(widgetButton).toBeEnabled(); // Wait for the button to be enabled
-
-  if (reject) {
-    await interceptAndRejectTransactions(page, 200, true);
-  }
-  await widgetButton.click();
-  const stepIndicator = page.getByTestId('step-indicator').last();
-  const isStepIndicatorVisible = await stepIndicator.isVisible();
-  // Some flows that don't require approval like rewards withdraw and mainnet savings withdraw don't show the step indicator
-  if (isStepIndicatorVisible) {
-    await expect(stepIndicator).toHaveText(action);
-  }
-};
-
-export const performAction = async (page: Page, action: Action, options?: approveOrPerformActionOptions) => {
-  const { review = true } = options || {};
-  if (review) {
-    await page.getByTestId('widget-button').getByText('Review').click();
-  }
   const actionButton = page
-    // 'Confirm bundled transaction' is the expected value for approve + action flows
-    // The alternative is 'Confirm' + [single action], but never 'Confirm 2 transactions' as that
-    // would be a non batch flow
-    .locator('role=button >> text=/^(Confirm bundled transaction|Confirm(?! 2 transactions).*)$/')
-    .nth(0);
+    .locator(`role=button >> text=/^(${action}|Approve ${action.toLowerCase()} amount)$/`)
+    .nth(buttonPosition);
   await actionButton.waitFor({ state: 'attached' }); // Ensure the button is in the DOM
   await expect(actionButton).toBeEnabled(); // Wait for the button to be enabled
-  await actionButton.click();
+  const buttonText = await actionButton.innerText(); // Get the text of the button
 
-  const stepIndicator = page.getByTestId('step-indicator').last();
-  const isStepIndicatorVisible = await stepIndicator.isVisible();
-  // Some flows that don't require approval like rewards withdraw and mainnet savings withdraw don't show the step indicator
-  if (isStepIndicatorVisible) {
-    await expect(stepIndicator).toHaveText(action);
+  if (buttonText === action) {
+    //already have allowance
+    if (reject) {
+      await interceptAndRejectTransactions(page, 200, true);
+    }
+    await actionButton.click();
+  } else {
+    //need allowance
+    await page.getByRole('button', { name: 'Approve' }).click();
+
+    if (reject) {
+      await expect(page.locator('role=button[name="Continue"]').first()).toBeEnabled();
+      await interceptAndRejectTransactions(page, 200, true);
+    }
+    await page.locator(`role=button[name="${buttonName}"]`).first().click(); //for some reason there's another button named Next
   }
 };

@@ -1,10 +1,7 @@
 import { type Page } from '@playwright/test';
 
-export const connectMockWalletAndAcceptTerms = async (page: Page, { batch }: { batch?: boolean } = {}) => {
-  await page
-    .getByRole('button', { name: batch ? 'Connect Batch Mock Wallet' : 'Connect Mock Wallet' })
-    .first()
-    .click();
+export const connectMockWalletAndAcceptTerms = async (page: Page) => {
+  await page.getByRole('button', { name: 'Connect Mock Wallet' }).first().click();
 
   try {
     await page.getByTestId('end-of-terms').scrollIntoViewIfNeeded({ timeout: 2000 });

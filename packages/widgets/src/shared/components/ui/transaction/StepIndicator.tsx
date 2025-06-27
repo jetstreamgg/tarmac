@@ -11,7 +11,6 @@ export interface StepIndicatorProps {
   currentStep: boolean;
   text: string;
   className?: string;
-  circleIndicator?: boolean;
 }
 
 const ProgressBar = ({ txStatus, currentStep }: { txStatus: TxStatus; currentStep: boolean }) => {
@@ -73,50 +72,21 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
   txStatus,
   currentStep,
   text,
-  className,
-  circleIndicator
+  className
 }) => {
   return (
     <div className={cn(className, '')}>
-      <div className={cn('flex items-center', circleIndicator ? 'mt-4' : 'mt-8')}>
-        <div className="relative inline-flex h-5 w-5 items-center justify-center">
-          {circleIndicator && txStatus === TxStatus.LOADING && (
-            <span className="absolute inset-0 flex items-center justify-center">
-              <svg className="h-5 w-5 animate-spin text-white" viewBox="0 0 20 20">
-                <circle
-                  className="text-white/30"
-                  cx="10"
-                  cy="10"
-                  r="9"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  fill="none"
-                />
-                <path className="text-white" fill="none" stroke="currentColor" d="M10 1 A9 9 0 1 1 1 10" />
-              </svg>
-            </span>
-          )}
-          <Text
-            className={`inline-flex h-5 w-5 items-center justify-center rounded-full border-2 text-center text-xs ${
-              currentStep
-                ? cn(
-                    'text-white',
-                    txStatus === TxStatus.LOADING && circleIndicator ? 'border-transparent' : 'border-white'
-                  )
-                : 'border-white/60 text-white/60'
-            }`}
-          >
-            {txStatus === TxStatus.SUCCESS ? <SuccessCheckSolidColor /> : stepNumber}
-          </Text>
-        </div>
+      <div className="mt-8 flex items-center">
         <Text
-          className={`ml-3 inline-flex ${currentStep ? 'text-white' : 'text-white/60'}`}
-          dataTestId="step-indicator"
+          className={`inline-flex h-5 w-5 items-center justify-center rounded-full border-2 text-center text-xs ${
+            currentStep ? 'border-white text-white' : 'border-white/60 text-white/60'
+          }`}
         >
-          {text}
+          {txStatus === TxStatus.SUCCESS ? <SuccessCheckSolidColor /> : stepNumber}
         </Text>
+        <Text className={`ml-3 inline-flex ${currentStep ? 'text-white' : 'text-white/60'}`}>{text}</Text>
       </div>
-      {!circleIndicator && <ProgressBar txStatus={txStatus} currentStep={currentStep} />}
+      <ProgressBar txStatus={txStatus} currentStep={currentStep} />
     </div>
   );
 };

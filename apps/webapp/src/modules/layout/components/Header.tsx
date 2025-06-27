@@ -6,8 +6,6 @@ import { CustomConnectButton } from './CustomConnectButton';
 import { MockConnectButton } from './MockConnectButton';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { BATCH_TX_ENABLED } from '@/lib/constants';
-import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 
@@ -29,7 +27,6 @@ export function Header(): React.ReactElement {
           <ChainModal dataTestId="chain-modal-trigger-header" showLabel={!isMobile} />
           <CustomConnectButton />
           {useMock ? <MockConnectButton /> : null}
-          {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
         </div>
       </div>
     </div>

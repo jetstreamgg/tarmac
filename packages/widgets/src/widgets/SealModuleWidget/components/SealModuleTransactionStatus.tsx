@@ -220,7 +220,7 @@ export const SealModuleTransactionStatus = ({ onExternalLinkClicked }: SealModul
   // Sets the title and subtitle of the card
   useEffect(() => {
     if (flow === SealFlow.OPEN) setStepTwoTitle(t`Open a position`);
-    if (flow === SealFlow.MANAGE) setStepTwoTitle(t`Change Position`);
+    if (flow === SealFlow.MANAGE) setStepTwoTitle(t`Update Position`);
 
     if (action === SealAction.APPROVE && screen === SealScreen.TRANSACTION) {
       // Both flows will have the same approval copy

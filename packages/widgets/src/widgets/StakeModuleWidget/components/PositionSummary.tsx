@@ -1,6 +1,7 @@
-import { Text } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
-import { JSX, useContext, useEffect, useMemo } from 'react';
+import { Trans } from '@lingui/react/macro';
+import { JSX, useContext, useMemo } from 'react';
 import { StakeModuleWidgetContext } from '../context/context';
 import {
   TOKENS,
@@ -14,11 +15,10 @@ import {
   useSealExitFee,
   useDelegateName,
   useDelegateOwner,
-  useCollateralData,
-  Token,
-  useIsBatchSupported
+  useCollateralData
 } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
+import { Card, CardContent } from '@widgets/components/ui/card';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { motion } from 'framer-motion';
@@ -36,17 +36,8 @@ import {
   collateralizationRatioTooltipText,
   liquidationPriceTooltipText,
   riskLevelTooltipText,
-  borrowRateTooltipText,
-  StakeFlow,
-  stakeOpenReviewTitle,
-  getStakeOpenReviewSubtitle,
-  stakeManageReviewTitle,
-  getStakeManageReviewSubtitle
+  borrowRateTooltipText
 } from '../lib/constants';
-import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
-import { useLingui } from '@lingui/react/macro';
-import { WidgetContext } from '@widgets/context/WidgetContext';
-import { BatchStatus } from '@widgets/shared/constants';
 
 const { usds } = TOKENS;
 
@@ -121,23 +112,9 @@ const LineItem = ({
   );
 };
 
-export const PositionSummary = ({
-  needsAllowance,
-  allowanceToken,
-  batchEnabled,
-  setBatchEnabled,
-  isBatchTransaction
-}: {
-  needsAllowance: boolean;
-  allowanceToken?: Token;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
-  isBatchTransaction: boolean;
-}) => {
+export const PositionSummary = () => {
   const chainId = useChainId();
   const ilkName = getIlkName(chainId, 2);
-  const { i18n } = useLingui();
-  const { data: batchSupported } = useIsBatchSupported();
 
   const {
     activeUrn,
@@ -148,37 +125,6 @@ export const PositionSummary = ({
     selectedDelegate,
     selectedRewardContract
   } = useContext(StakeModuleWidgetContext);
-  const { setTxTitle, setTxSubtitle, setStepTwoTitle, widgetState } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
-
-  // Sets the title and subtitle of the card
-  useEffect(() => {
-    if (flow === StakeFlow.OPEN) {
-      setStepTwoTitle(t`Open a position`);
-      setTxTitle(i18n._(stakeOpenReviewTitle));
-      setTxSubtitle(
-        i18n._(
-          getStakeOpenReviewSubtitle({
-            batchStatus: !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED,
-            symbol: allowanceToken?.symbol,
-            needsAllowance
-          })
-        )
-      );
-    } else if (flow === StakeFlow.MANAGE) {
-      setStepTwoTitle(t`Change Position`);
-      setTxTitle(i18n._(stakeManageReviewTitle));
-      setTxSubtitle(
-        i18n._(
-          getStakeManageReviewSubtitle({
-            batchStatus: !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED,
-            symbol: allowanceToken?.symbol,
-            needsAllowance
-          })
-        )
-      );
-    }
-  }, [flow, action, screen, i18n.locale, isBatchTransaction, batchEnabled, batchSupported]);
 
   const { data: existingRewardContract } = useStakeUrnSelectedRewardContract({
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
@@ -464,60 +410,54 @@ export const PositionSummary = ({
   const lineItemsUpdated = lineItemsFiltered.filter(item => item.updated);
 
   return (
-    <TransactionReview
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
-      transactionDetail={
-        <MotionVStack gap={2} variants={positionAnimations} className="mt-6 space-y-3">
-          <motion.div
-            key="overview"
-            variants={positionAnimations}
-            data-testid="position-summary-card"
-            className="border-selectActive mt-2 border-t pt-7"
-          >
-            <Text variant="medium" className="mb-1 font-medium">
-              Position overview
-            </Text>
-            {lineItemsFiltered
-              .filter(item => !item.updated && !!item.value)
-              .map(({ label, value, icon, className, tooltipText }) => {
-                return (
-                  <LineItem
-                    key={label}
-                    label={label}
-                    value={value}
-                    tooltipText={tooltipText}
-                    icon={icon}
-                    className={className}
-                  />
-                );
-              })}
-          </motion.div>
-          {hasPositions && lineItemsUpdated.length > 0 && (
-            <motion.div
-              key="updates"
-              variants={positionAnimations}
-              className="border-selectActive mt-3 border-t pt-7"
-            >
+    <motion.div variants={positionAnimations}>
+      <Heading className="mb-4">
+        <Trans>Position summary</Trans>
+      </Heading>
+      <Card>
+        <CardContent>
+          <MotionVStack gap={2} variants={positionAnimations} className="space-y-3">
+            <motion.div key="overview" variants={positionAnimations} data-testid="position-summary-card">
               <Text variant="medium" className="mb-1 font-medium">
-                Position changes
+                Position overview
               </Text>
-              {lineItemsUpdated.map(({ label, value, icon, className, tooltipText }) => {
-                return (
-                  <LineItem
-                    key={label}
-                    label={label}
-                    value={value}
-                    tooltipText={tooltipText}
-                    icon={icon}
-                    className={className}
-                  />
-                );
-              })}
+              {lineItemsFiltered
+                .filter(item => !item.updated && !!item.value)
+                .map(({ label, value, icon, className, tooltipText }) => {
+                  return (
+                    <LineItem
+                      key={label}
+                      label={label}
+                      value={value}
+                      tooltipText={tooltipText}
+                      icon={icon}
+                      className={className}
+                    />
+                  );
+                })}
             </motion.div>
-          )}
-        </MotionVStack>
-      }
-    />
+            {hasPositions && lineItemsUpdated.length > 0 && (
+              <motion.div key="updates" variants={positionAnimations}>
+                <Text variant="medium" className="mb-1 font-medium">
+                  Position updates
+                </Text>
+                {lineItemsUpdated.map(({ label, value, icon, className, tooltipText }) => {
+                  return (
+                    <LineItem
+                      key={label}
+                      label={label}
+                      value={value}
+                      tooltipText={tooltipText}
+                      icon={icon}
+                      className={className}
+                    />
+                  );
+                })}
+              </motion.div>
+            )}
+          </MotionVStack>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };

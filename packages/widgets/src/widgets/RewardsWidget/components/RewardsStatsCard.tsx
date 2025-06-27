@@ -62,7 +62,9 @@ export const RewardsStatsCard = ({
               <Skeleton className="bg-textSecondary h-5 w-10" />
             ) : errorChart ? (
               <Warning boxSize={16} viewBox="0 0 16 16" />
-            ) : null}
+            ) : (
+              <Text>0</Text>
+            )}
           </MotionVStack>
         </HStack>
       }

@@ -2228,6 +2228,336 @@ export const lsSkyAddress = {
 export const lsSkyConfig = { address: lsSkyAddress, abi: lsSkyAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// lsSkySpkReward
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const lsSkySpkRewardAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: '_rewardsDistribution', internalType: 'address', type: 'address' },
+      { name: '_rewardsToken', internalType: 'address', type: 'address' },
+      { name: '_stakingToken', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'oldOwner', internalType: 'address', type: 'address', indexed: false },
+      { name: 'newOwner', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'OwnerChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address', indexed: false }],
+    name: 'OwnerNominated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'isPaused', internalType: 'bool', type: 'bool', indexed: false }],
+    name: 'PauseChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'token', internalType: 'address', type: 'address', indexed: false },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Recovered'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'referral', internalType: 'uint16', type: 'uint16', indexed: true },
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Referral'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'reward', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'RewardAdded'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'reward', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'RewardPaid'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newRewardsDistribution', internalType: 'address', type: 'address', indexed: false }],
+    name: 'RewardsDistributionUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'RewardsDurationUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Staked'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Withdrawn'
+  },
+  { type: 'function', inputs: [], name: 'acceptOwnership', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'earned',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'exit', outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', inputs: [], name: 'getReward', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getRewardForDuration',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastPauseTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastTimeRewardApplicable',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastUpdateTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_owner', internalType: 'address', type: 'address' }],
+    name: 'nominateNewOwner',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'nominatedOwner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'reward', internalType: 'uint256', type: 'uint256' }],
+    name: 'notifyRewardAmount',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'paused',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'periodFinish',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+      { name: 'tokenAmount', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'recoverERC20',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardPerToken',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardPerTokenStored',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardRate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'rewards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsDistribution',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsDuration',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_paused', internalType: 'bool', type: 'bool' }],
+    name: 'setPaused',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_rewardsDistribution', internalType: 'address', type: 'address' }],
+    name: 'setRewardsDistribution',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_rewardsDuration', internalType: 'uint256', type: 'uint256' }],
+    name: 'setRewardsDuration',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'referral', internalType: 'uint16', type: 'uint16' }
+    ],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'stakingToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'userRewardPerTokenPaid',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'withdraw',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const lsSkySpkRewardAddress = {
+  1: '0x99cBC0e4E6427F6939536eD24d1275B95ff77404',
+  314310: '0x99cBC0e4E6427F6939536eD24d1275B95ff77404'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const lsSkySpkRewardConfig = { address: lsSkySpkRewardAddress, abi: lsSkySpkRewardAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // lsSkyUsdsReward
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -5208,6 +5538,8 @@ export const proxyRegistryConfig = { address: proxyRegistryAddress, abi: proxyRe
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -5500,19 +5832,23 @@ export const psm3L2Abi = [
 ] as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
 export const psm3L2Address = {
+  10: '0xe0F9978b907853F354d79188A3dEfbD41978af62',
+  130: '0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f',
   8453: '0x1601843c5E9bC251A3272907010AFa41Fa18347E',
   8555: '0x1601843c5E9bC251A3272907010AFa41Fa18347E',
   42012: '0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266',
-  42161: '0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266',
-  10: '0xe0F9978b907853F354d79188A3dEfbD41978af62',
-  130: '0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f'
+  42161: '0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266'
 } as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -6122,6 +6458,8 @@ export const sUsdsImplementationConfig = {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0xA06b10Db9F390990364A3984C04FaDf1c13691b5)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x5875eEE11Cf8398102FdAd704C9E96607675467a)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xdDb46999F8891663a8F2828d25298f70416d7610)
  */
@@ -6156,19 +6494,23 @@ export const sUsdsL2Abi = [
 ] as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0xA06b10Db9F390990364A3984C04FaDf1c13691b5)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x5875eEE11Cf8398102FdAd704C9E96607675467a)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xdDb46999F8891663a8F2828d25298f70416d7610)
  */
 export const sUsdsL2Address = {
+  10: '0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0',
+  130: '0xA06b10Db9F390990364A3984C04FaDf1c13691b5',
   8453: '0x5875eEE11Cf8398102FdAd704C9E96607675467a',
   8555: '0x5875eEE11Cf8398102FdAd704C9E96607675467a',
   42012: '0xdDb46999F8891663a8F2828d25298f70416d7610',
-  42161: '0xdDb46999F8891663a8F2828d25298f70416d7610',
-  10: '0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0',
-  130: '0xA06b10Db9F390990364A3984C04FaDf1c13691b5'
+  42161: '0xdDb46999F8891663a8F2828d25298f70416d7610'
 } as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0xA06b10Db9F390990364A3984C04FaDf1c13691b5)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x5875eEE11Cf8398102FdAd704C9E96607675467a)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xdDb46999F8891663a8F2828d25298f70416d7610)
  */
@@ -7073,10 +7415,274 @@ export const skyAddress = {
 export const skyConfig = { address: skyAddress, abi: skyAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// spk
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const spkAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_name', internalType: 'string', type: 'string' },
+      { name: '_symbol', internalType: 'string', type: 'string' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'value', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Approval'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Deny'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'data', internalType: 'string', type: 'string', indexed: false }
+    ],
+    name: 'File'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Rely'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: true },
+      { name: 'value', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Transfer'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'PERMIT_TYPEHASH',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'burn',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'deny',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'deploymentChainId',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'data', internalType: 'string', type: 'string' }
+    ],
+    name: 'file',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'mint',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'signature', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'rely',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'version',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'wards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const spkAddress = {
+  1: '0xc20059e0317DE91738d13af027DfC4a50781b066',
+  314310: '0xc20059e0317DE91738d13af027DfC4a50781b066'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const spkConfig = { address: spkAddress, abi: spkAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // ssrAuthOracle
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -7336,19 +7942,23 @@ export const ssrAuthOracleAbi = [
 ] as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
 export const ssrAuthOracleAddress = {
+  10: '0x6E53585449142A5E6D5fC918AE6BEa341dC81C68',
+  130: '0x1566BFA55D95686a823751298533D42651183988',
   8453: '0x65d946e533748A998B1f0E430803e39A6388f7a1',
   8555: '0x65d946e533748A998B1f0E430803e39A6388f7a1',
   42012: '0xEE2816c1E1eed14d444552654Ed3027abC033A36',
-  42161: '0xEE2816c1E1eed14d444552654Ed3027abC033A36',
-  10: '0x6E53585449142A5E6D5fC918AE6BEa341dC81C68',
-  130: '0x1566BFA55D95686a823751298533D42651183988'
+  42161: '0xEE2816c1E1eed14d444552654Ed3027abC033A36'
 } as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -8028,6 +8638,8 @@ export const usdcConfig = { address: usdcAddress, abi: usdcAbi } as const;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -8094,19 +8706,23 @@ export const usdcL2Abi = [
 ] as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
 export const usdcL2Address = {
+  10: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
+  130: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
   8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   8555: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   42012: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-  42161: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-  10: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-  130: '0x078D782b760474a361dDA0AF3839290b0EF57AD6'
+  42161: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'
 } as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -8462,6 +9078,8 @@ export const usdsConfig = { address: usdsAddress, abi: usdsAbi } as const;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x820C137fa70C8691f0e44Dc420a5e53c168921Dc)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x6491c05A82219b8D1479057361ff1654749b876b)
  */
@@ -8496,19 +9114,23 @@ export const usdsL2Abi = [
 ] as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x820C137fa70C8691f0e44Dc420a5e53c168921Dc)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x6491c05A82219b8D1479057361ff1654749b876b)
  */
 export const usdsL2Address = {
+  10: '0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3',
+  130: '0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C',
   8453: '0x820C137fa70C8691f0e44Dc420a5e53c168921Dc',
   8555: '0x820C137fa70C8691f0e44Dc420a5e53c168921Dc',
   42012: '0x6491c05A82219b8D1479057361ff1654749b876b',
-  42161: '0x6491c05A82219b8D1479057361ff1654749b876b',
-  10: '0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3',
-  130: '0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C'
+  42161: '0x6491c05A82219b8D1479057361ff1654749b876b'
 } as const;
 
 /**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x820C137fa70C8691f0e44Dc420a5e53c168921Dc)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x6491c05A82219b8D1479057361ff1654749b876b)
  */
@@ -8843,6 +9465,336 @@ export const usdsSkyRewardAddress = {
  * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0650CAF159C5A49f711e8169D4336ECB9b950275)
  */
 export const usdsSkyRewardConfig = { address: usdsSkyRewardAddress, abi: usdsSkyRewardAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// usdsSpkReward
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const usdsSpkRewardAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: '_rewardsDistribution', internalType: 'address', type: 'address' },
+      { name: '_rewardsToken', internalType: 'address', type: 'address' },
+      { name: '_stakingToken', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'oldOwner', internalType: 'address', type: 'address', indexed: false },
+      { name: 'newOwner', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'OwnerChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address', indexed: false }],
+    name: 'OwnerNominated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'isPaused', internalType: 'bool', type: 'bool', indexed: false }],
+    name: 'PauseChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'token', internalType: 'address', type: 'address', indexed: false },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Recovered'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'referral', internalType: 'uint16', type: 'uint16', indexed: true },
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Referral'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'reward', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'RewardAdded'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'reward', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'RewardPaid'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newRewardsDistribution', internalType: 'address', type: 'address', indexed: false }],
+    name: 'RewardsDistributionUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'RewardsDurationUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Staked'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Withdrawn'
+  },
+  { type: 'function', inputs: [], name: 'acceptOwnership', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'earned',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'exit', outputs: [], stateMutability: 'nonpayable' },
+  { type: 'function', inputs: [], name: 'getReward', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getRewardForDuration',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastPauseTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastTimeRewardApplicable',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastUpdateTime',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_owner', internalType: 'address', type: 'address' }],
+    name: 'nominateNewOwner',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'nominatedOwner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'reward', internalType: 'uint256', type: 'uint256' }],
+    name: 'notifyRewardAmount',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'paused',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'periodFinish',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+      { name: 'tokenAmount', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'recoverERC20',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardPerToken',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardPerTokenStored',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardRate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'rewards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsDistribution',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsDuration',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'rewardsToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_paused', internalType: 'bool', type: 'bool' }],
+    name: 'setPaused',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_rewardsDistribution', internalType: 'address', type: 'address' }],
+    name: 'setRewardsDistribution',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_rewardsDuration', internalType: 'uint256', type: 'uint256' }],
+    name: 'setRewardsDuration',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'amount', internalType: 'uint256', type: 'uint256' },
+      { name: 'referral', internalType: 'uint16', type: 'uint16' }
+    ],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'stake',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'stakingToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'userRewardPerTokenPaid',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
+    name: 'withdraw',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const usdsSpkRewardAddress = {
+  1: '0x173e314C7635B45322cd8Cb14f44b312e079F3af',
+  314310: '0x173e314C7635B45322cd8Cb14f44b312e079F3af'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const usdsSpkRewardConfig = { address: usdsSpkRewardAddress, abi: usdsSpkRewardAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // usdt
@@ -13447,6 +14399,629 @@ export const useWatchLsSkyTransfer = /*#__PURE__*/ createUseWatchContractEvent({
 });
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkReward = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"earned"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardEarned = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'earned'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"getRewardForDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardGetRewardForDuration = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'getRewardForDuration'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"lastPauseTime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardLastPauseTime = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'lastPauseTime'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"lastTimeRewardApplicable"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardLastTimeRewardApplicable = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'lastTimeRewardApplicable'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"lastUpdateTime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardLastUpdateTime = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'lastUpdateTime'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"nominatedOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardNominatedOwner = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'nominatedOwner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"owner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardOwner = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'owner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"paused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardPaused = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'paused'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"periodFinish"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardPeriodFinish = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'periodFinish'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewardPerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewardPerToken = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewardPerToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewardPerTokenStored"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewardPerTokenStored = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewardPerTokenStored'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewardRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewardRate = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewardRate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewards = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewards'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewardsDistribution = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewardsDuration = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewardsDuration'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"rewardsToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardRewardsToken = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'rewardsToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"stakingToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardStakingToken = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'stakingToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"userRewardPerTokenPaid"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useReadLsSkySpkRewardUserRewardPerTokenPaid = /*#__PURE__*/ createUseReadContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'userRewardPerTokenPaid'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkReward = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"acceptOwnership"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardAcceptOwnership = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'acceptOwnership'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"exit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardExit = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'exit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"getReward"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardGetReward = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'getReward'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"nominateNewOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardNominateNewOwner = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'nominateNewOwner'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"notifyRewardAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardNotifyRewardAmount = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'notifyRewardAmount'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardRecoverErc20 = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"setPaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardSetPaused = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'setPaused'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"setRewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardSetRewardsDistribution = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'setRewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"setRewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardSetRewardsDuration = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'setRewardsDuration'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"stake"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardStake = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'stake'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWriteLsSkySpkRewardWithdraw = /*#__PURE__*/ createUseWriteContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkReward = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"acceptOwnership"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardAcceptOwnership = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'acceptOwnership'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"exit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardExit = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'exit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"getReward"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardGetReward = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'getReward'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"nominateNewOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardNominateNewOwner = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'nominateNewOwner'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"notifyRewardAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardNotifyRewardAmount = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'notifyRewardAmount'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardRecoverErc20 = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"setPaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardSetPaused = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'setPaused'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"setRewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardSetRewardsDistribution = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'setRewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"setRewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardSetRewardsDuration = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'setRewardsDuration'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"stake"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardStake = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'stake'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useSimulateLsSkySpkRewardWithdraw = /*#__PURE__*/ createUseSimulateContract({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkReward = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"OwnerChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardOwnerChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'OwnerChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"OwnerNominated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardOwnerNominated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'OwnerNominated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"PauseChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardPauseChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'PauseChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"Recovered"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardRecovered = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'Recovered'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"Referral"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardReferral = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'Referral'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"RewardAdded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardRewardAdded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'RewardAdded'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"RewardPaid"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardRewardPaid = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'RewardPaid'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"RewardsDistributionUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardRewardsDistributionUpdated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'RewardsDistributionUpdated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"RewardsDurationUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardRewardsDurationUpdated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'RewardsDurationUpdated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"Staked"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardStaked = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'Staked'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link lsSkySpkRewardAbi}__ and `eventName` set to `"Withdrawn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x99cBC0e4E6427F6939536eD24d1275B95ff77404)
+ */
+export const useWatchLsSkySpkRewardWithdrawn = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: lsSkySpkRewardAbi,
+  address: lsSkySpkRewardAddress,
+  eventName: 'Withdrawn'
+});
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link lsSkyUsdsRewardAbi}__
  *
  * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x38E4254bD82ED5Ee97CD1C4278FAae748d998865)
@@ -17942,6 +19517,8 @@ export const useSimulateProxyRegistryBuild = /*#__PURE__*/ createUseSimulateCont
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -17950,6 +19527,8 @@ export const useReadPsm3L2 = /*#__PURE__*/ createUseReadContract({ abi: psm3L2Ab
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"convertToAssetValue"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -17962,6 +19541,8 @@ export const useReadPsm3L2ConvertToAssetValue = /*#__PURE__*/ createUseReadContr
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"convertToAssets"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -17974,6 +19555,8 @@ export const useReadPsm3L2ConvertToAssets = /*#__PURE__*/ createUseReadContract(
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"convertToShares"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -17986,6 +19569,8 @@ export const useReadPsm3L2ConvertToShares = /*#__PURE__*/ createUseReadContract(
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"owner"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -17998,6 +19583,8 @@ export const useReadPsm3L2Owner = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"pocket"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18010,6 +19597,8 @@ export const useReadPsm3L2Pocket = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"previewDeposit"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18022,6 +19611,8 @@ export const useReadPsm3L2PreviewDeposit = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"previewSwapExactIn"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18034,6 +19625,8 @@ export const useReadPsm3L2PreviewSwapExactIn = /*#__PURE__*/ createUseReadContra
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"previewSwapExactOut"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18046,6 +19639,8 @@ export const useReadPsm3L2PreviewSwapExactOut = /*#__PURE__*/ createUseReadContr
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"previewWithdraw"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18058,6 +19653,8 @@ export const useReadPsm3L2PreviewWithdraw = /*#__PURE__*/ createUseReadContract(
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"rateProvider"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18070,6 +19667,8 @@ export const useReadPsm3L2RateProvider = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"shares"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18082,6 +19681,8 @@ export const useReadPsm3L2Shares = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"susds"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18094,6 +19695,8 @@ export const useReadPsm3L2Susds = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"totalAssets"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18106,6 +19709,8 @@ export const useReadPsm3L2TotalAssets = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"totalShares"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18118,6 +19723,8 @@ export const useReadPsm3L2TotalShares = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"usdc"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18130,6 +19737,8 @@ export const useReadPsm3L2Usdc = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"usds"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18142,6 +19751,8 @@ export const useReadPsm3L2Usds = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18153,6 +19764,8 @@ export const useWritePsm3L2 = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"deposit"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18165,6 +19778,8 @@ export const useWritePsm3L2Deposit = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"renounceOwnership"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18177,6 +19792,8 @@ export const useWritePsm3L2RenounceOwnership = /*#__PURE__*/ createUseWriteContr
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"setPocket"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18189,6 +19806,8 @@ export const useWritePsm3L2SetPocket = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"swapExactIn"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18201,6 +19820,8 @@ export const useWritePsm3L2SwapExactIn = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"swapExactOut"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18213,6 +19834,8 @@ export const useWritePsm3L2SwapExactOut = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"transferOwnership"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18225,6 +19848,8 @@ export const useWritePsm3L2TransferOwnership = /*#__PURE__*/ createUseWriteContr
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"withdraw"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18237,6 +19862,8 @@ export const useWritePsm3L2Withdraw = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18248,6 +19875,8 @@ export const useSimulatePsm3L2 = /*#__PURE__*/ createUseSimulateContract({
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"deposit"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18260,6 +19889,8 @@ export const useSimulatePsm3L2Deposit = /*#__PURE__*/ createUseSimulateContract(
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"renounceOwnership"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18272,6 +19903,8 @@ export const useSimulatePsm3L2RenounceOwnership = /*#__PURE__*/ createUseSimulat
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"setPocket"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18284,6 +19917,8 @@ export const useSimulatePsm3L2SetPocket = /*#__PURE__*/ createUseSimulateContrac
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"swapExactIn"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18296,6 +19931,8 @@ export const useSimulatePsm3L2SwapExactIn = /*#__PURE__*/ createUseSimulateContr
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"swapExactOut"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18308,6 +19945,8 @@ export const useSimulatePsm3L2SwapExactOut = /*#__PURE__*/ createUseSimulateCont
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"transferOwnership"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18320,6 +19959,8 @@ export const useSimulatePsm3L2TransferOwnership = /*#__PURE__*/ createUseSimulat
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link psm3L2Abi}__ and `functionName` set to `"withdraw"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18332,6 +19973,8 @@ export const useSimulatePsm3L2Withdraw = /*#__PURE__*/ createUseSimulateContract
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link psm3L2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18343,6 +19986,8 @@ export const useWatchPsm3L2 = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link psm3L2Abi}__ and `eventName` set to `"Deposit"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18355,6 +20000,8 @@ export const useWatchPsm3L2Deposit = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link psm3L2Abi}__ and `eventName` set to `"OwnershipTransferred"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18367,6 +20014,8 @@ export const useWatchPsm3L2OwnershipTransferred = /*#__PURE__*/ createUseWatchCo
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link psm3L2Abi}__ and `eventName` set to `"PocketSet"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18379,6 +20028,8 @@ export const useWatchPsm3L2PocketSet = /*#__PURE__*/ createUseWatchContractEvent
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link psm3L2Abi}__ and `eventName` set to `"Swap"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -18391,6 +20042,8 @@ export const useWatchPsm3L2Swap = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link psm3L2Abi}__ and `eventName` set to `"Withdraw"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xe0F9978b907853F354d79188A3dEfbD41978af62)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7b42Ed932f26509465F7cE3FAF76FfCe1275312f)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x1601843c5E9bC251A3272907010AFa41Fa18347E)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x2B05F8e1cACC6974fD79A673a341Fe1f58d27266)
  */
@@ -19256,6 +20909,8 @@ export const useWatchSUsdsImplementationWithdraw = /*#__PURE__*/ createUseWatchC
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link sUsdsL2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0xA06b10Db9F390990364A3984C04FaDf1c13691b5)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x5875eEE11Cf8398102FdAd704C9E96607675467a)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xdDb46999F8891663a8F2828d25298f70416d7610)
  */
@@ -19267,6 +20922,8 @@ export const useWatchSUsdsL2 = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link sUsdsL2Abi}__ and `eventName` set to `"Upgraded"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0xb5B2dc7fd34C249F4be7fB1fCea07950784229e0)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0xA06b10Db9F390990364A3984C04FaDf1c13691b5)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x5875eEE11Cf8398102FdAd704C9E96607675467a)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xdDb46999F8891663a8F2828d25298f70416d7610)
  */
@@ -20687,8 +22344,423 @@ export const useWatchSkyTransfer = /*#__PURE__*/ createUseWatchContractEvent({
 });
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpk = /*#__PURE__*/ createUseReadContract({ abi: spkAbi, address: spkAddress });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkDomainSeparator = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'DOMAIN_SEPARATOR'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"PERMIT_TYPEHASH"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkPermitTypehash = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'PERMIT_TYPEHASH'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"allowance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkAllowance = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'allowance'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"decimals"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkDecimals = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'decimals'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"deploymentChainId"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkDeploymentChainId = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'deploymentChainId'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"name"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkName = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'name'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"nonces"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkNonces = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'nonces'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"symbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkSymbol = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'symbol'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"version"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkVersion = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'version'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"wards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useReadSpkWards = /*#__PURE__*/ createUseReadContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'wards'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpk = /*#__PURE__*/ createUseWriteContract({ abi: spkAbi, address: spkAddress });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkApprove = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"burn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkBurn = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'burn'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkDeny = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkFile = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkMint = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkRely = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWriteSpkTransferFrom = /*#__PURE__*/ createUseWriteContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpk = /*#__PURE__*/ createUseSimulateContract({ abi: spkAbi, address: spkAddress });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkApprove = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"burn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkBurn = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'burn'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkDeny = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkFile = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkMint = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkPermit = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkRely = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkTransfer = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link spkAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useSimulateSpkTransferFrom = /*#__PURE__*/ createUseSimulateContract({
+  abi: spkAbi,
+  address: spkAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link spkAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWatchSpk = /*#__PURE__*/ createUseWatchContractEvent({ abi: spkAbi, address: spkAddress });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link spkAbi}__ and `eventName` set to `"Approval"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWatchSpkApproval = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: spkAbi,
+  address: spkAddress,
+  eventName: 'Approval'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link spkAbi}__ and `eventName` set to `"Deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWatchSpkDeny = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: spkAbi,
+  address: spkAddress,
+  eventName: 'Deny'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link spkAbi}__ and `eventName` set to `"File"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWatchSpkFile = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: spkAbi,
+  address: spkAddress,
+  eventName: 'File'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link spkAbi}__ and `eventName` set to `"Rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWatchSpkRely = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: spkAbi,
+  address: spkAddress,
+  eventName: 'Rely'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link spkAbi}__ and `eventName` set to `"Transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xc20059e0317DE91738d13af027DfC4a50781b066)
+ */
+export const useWatchSpkTransfer = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: spkAbi,
+  address: spkAddress,
+  eventName: 'Transfer'
+});
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20700,6 +22772,8 @@ export const useReadSsrAuthOracle = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"DATA_PROVIDER_ROLE"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20712,6 +22786,8 @@ export const useReadSsrAuthOracleDataProviderRole = /*#__PURE__*/ createUseReadC
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"DEFAULT_ADMIN_ROLE"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20724,6 +22800,8 @@ export const useReadSsrAuthOracleDefaultAdminRole = /*#__PURE__*/ createUseReadC
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getAPR"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20736,6 +22814,8 @@ export const useReadSsrAuthOracleGetApr = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getChi"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20748,6 +22828,8 @@ export const useReadSsrAuthOracleGetChi = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getConversionRate"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20760,6 +22842,8 @@ export const useReadSsrAuthOracleGetConversionRate = /*#__PURE__*/ createUseRead
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getConversionRateBinomialApprox"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20772,6 +22856,8 @@ export const useReadSsrAuthOracleGetConversionRateBinomialApprox = /*#__PURE__*/
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getConversionRateLinearApprox"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20784,6 +22870,8 @@ export const useReadSsrAuthOracleGetConversionRateLinearApprox = /*#__PURE__*/ c
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getRho"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20796,6 +22884,8 @@ export const useReadSsrAuthOracleGetRho = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getRoleAdmin"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20808,6 +22898,8 @@ export const useReadSsrAuthOracleGetRoleAdmin = /*#__PURE__*/ createUseReadContr
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getSSR"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20820,6 +22912,8 @@ export const useReadSsrAuthOracleGetSsr = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"getSUSDSData"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20832,6 +22926,8 @@ export const useReadSsrAuthOracleGetSusdsData = /*#__PURE__*/ createUseReadContr
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"hasRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20844,6 +22940,8 @@ export const useReadSsrAuthOracleHasRole = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"maxSSR"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20856,6 +22954,8 @@ export const useReadSsrAuthOracleMaxSsr = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"supportsInterface"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20868,6 +22968,8 @@ export const useReadSsrAuthOracleSupportsInterface = /*#__PURE__*/ createUseRead
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20879,6 +22981,8 @@ export const useWriteSsrAuthOracle = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"grantRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20891,6 +22995,8 @@ export const useWriteSsrAuthOracleGrantRole = /*#__PURE__*/ createUseWriteContra
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"renounceRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20903,6 +23009,8 @@ export const useWriteSsrAuthOracleRenounceRole = /*#__PURE__*/ createUseWriteCon
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"revokeRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20915,6 +23023,8 @@ export const useWriteSsrAuthOracleRevokeRole = /*#__PURE__*/ createUseWriteContr
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"setMaxSSR"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20927,6 +23037,8 @@ export const useWriteSsrAuthOracleSetMaxSsr = /*#__PURE__*/ createUseWriteContra
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"setSUSDSData"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20939,6 +23051,8 @@ export const useWriteSsrAuthOracleSetSusdsData = /*#__PURE__*/ createUseWriteCon
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20950,6 +23064,8 @@ export const useSimulateSsrAuthOracle = /*#__PURE__*/ createUseSimulateContract(
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"grantRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20962,6 +23078,8 @@ export const useSimulateSsrAuthOracleGrantRole = /*#__PURE__*/ createUseSimulate
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"renounceRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20974,6 +23092,8 @@ export const useSimulateSsrAuthOracleRenounceRole = /*#__PURE__*/ createUseSimul
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"revokeRole"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20986,6 +23106,8 @@ export const useSimulateSsrAuthOracleRevokeRole = /*#__PURE__*/ createUseSimulat
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"setMaxSSR"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -20998,6 +23120,8 @@ export const useSimulateSsrAuthOracleSetMaxSsr = /*#__PURE__*/ createUseSimulate
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `functionName` set to `"setSUSDSData"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -21010,6 +23134,8 @@ export const useSimulateSsrAuthOracleSetSusdsData = /*#__PURE__*/ createUseSimul
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ssrAuthOracleAbi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -21021,6 +23147,8 @@ export const useWatchSsrAuthOracle = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `eventName` set to `"RoleAdminChanged"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -21033,6 +23161,8 @@ export const useWatchSsrAuthOracleRoleAdminChanged = /*#__PURE__*/ createUseWatc
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `eventName` set to `"RoleGranted"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -21045,6 +23175,8 @@ export const useWatchSsrAuthOracleRoleGranted = /*#__PURE__*/ createUseWatchCont
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `eventName` set to `"RoleRevoked"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -21057,6 +23189,8 @@ export const useWatchSsrAuthOracleRoleRevoked = /*#__PURE__*/ createUseWatchCont
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `eventName` set to `"SetMaxSSR"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -21069,6 +23203,8 @@ export const useWatchSsrAuthOracleSetMaxSsr = /*#__PURE__*/ createUseWatchContra
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link ssrAuthOracleAbi}__ and `eventName` set to `"SetSUSDSData"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x6E53585449142A5E6D5fC918AE6BEa341dC81C68)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x1566BFA55D95686a823751298533D42651183988)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x65d946e533748A998B1f0E430803e39A6388f7a1)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xEE2816c1E1eed14d444552654Ed3027abC033A36)
  */
@@ -22153,6 +24289,8 @@ export const useWatchUsdcUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcL2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22161,6 +24299,8 @@ export const useReadUsdcL2 = /*#__PURE__*/ createUseReadContract({ abi: usdcL2Ab
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"admin"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22173,6 +24313,8 @@ export const useReadUsdcL2Admin = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"implementation"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22185,6 +24327,8 @@ export const useReadUsdcL2Implementation = /*#__PURE__*/ createUseReadContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcL2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22196,6 +24340,8 @@ export const useWriteUsdcL2 = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"changeAdmin"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22208,6 +24354,8 @@ export const useWriteUsdcL2ChangeAdmin = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"upgradeTo"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22220,6 +24368,8 @@ export const useWriteUsdcL2UpgradeTo = /*#__PURE__*/ createUseWriteContract({
 /**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"upgradeToAndCall"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22232,6 +24382,8 @@ export const useWriteUsdcL2UpgradeToAndCall = /*#__PURE__*/ createUseWriteContra
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcL2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22243,6 +24395,8 @@ export const useSimulateUsdcL2 = /*#__PURE__*/ createUseSimulateContract({
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"changeAdmin"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22255,6 +24409,8 @@ export const useSimulateUsdcL2ChangeAdmin = /*#__PURE__*/ createUseSimulateContr
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"upgradeTo"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22267,6 +24423,8 @@ export const useSimulateUsdcL2UpgradeTo = /*#__PURE__*/ createUseSimulateContrac
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcL2Abi}__ and `functionName` set to `"upgradeToAndCall"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22279,6 +24437,8 @@ export const useSimulateUsdcL2UpgradeToAndCall = /*#__PURE__*/ createUseSimulate
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcL2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22290,6 +24450,8 @@ export const useWatchUsdcL2 = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcL2Abi}__ and `eventName` set to `"AdminChanged"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22302,6 +24464,8 @@ export const useWatchUsdcL2AdminChanged = /*#__PURE__*/ createUseWatchContractEv
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcL2Abi}__ and `eventName` set to `"Upgraded"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
@@ -22812,6 +24976,8 @@ export const useWatchUsdsUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsL2Abi}__
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x820C137fa70C8691f0e44Dc420a5e53c168921Dc)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x6491c05A82219b8D1479057361ff1654749b876b)
  */
@@ -22823,6 +24989,8 @@ export const useWatchUsdsL2 = /*#__PURE__*/ createUseWatchContractEvent({
 /**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsL2Abi}__ and `eventName` set to `"Upgraded"`
  *
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x4F13a96EC5C4Cf34e442b46Bbd98a0791F20edC3)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x7E10036Acc4B56d4dFCa3b77810356CE52313F9C)
  * - [__View Contract on Base Basescan__](https://basescan.org/address/0x820C137fa70C8691f0e44Dc420a5e53c168921Dc)
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0x6491c05A82219b8D1479057361ff1654749b876b)
  */
@@ -23452,6 +25620,629 @@ export const useWatchUsdsSkyRewardStaked = /*#__PURE__*/ createUseWatchContractE
 export const useWatchUsdsSkyRewardWithdrawn = /*#__PURE__*/ createUseWatchContractEvent({
   abi: usdsSkyRewardAbi,
   address: usdsSkyRewardAddress,
+  eventName: 'Withdrawn'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkReward = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"earned"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardEarned = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'earned'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"getRewardForDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardGetRewardForDuration = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'getRewardForDuration'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"lastPauseTime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardLastPauseTime = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'lastPauseTime'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"lastTimeRewardApplicable"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardLastTimeRewardApplicable = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'lastTimeRewardApplicable'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"lastUpdateTime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardLastUpdateTime = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'lastUpdateTime'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"nominatedOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardNominatedOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'nominatedOwner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"owner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'owner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"paused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardPaused = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'paused'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"periodFinish"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardPeriodFinish = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'periodFinish'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewardPerToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewardPerToken = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewardPerToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewardPerTokenStored"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewardPerTokenStored = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewardPerTokenStored'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewardRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewardRate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewardRate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewards = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewards'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewardsDistribution = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewardsDuration = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewardsDuration'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"rewardsToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardRewardsToken = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'rewardsToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"stakingToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardStakingToken = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'stakingToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"userRewardPerTokenPaid"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useReadUsdsSpkRewardUserRewardPerTokenPaid = /*#__PURE__*/ createUseReadContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'userRewardPerTokenPaid'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkReward = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"acceptOwnership"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardAcceptOwnership = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'acceptOwnership'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"exit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardExit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'exit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"getReward"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardGetReward = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'getReward'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"nominateNewOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardNominateNewOwner = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'nominateNewOwner'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"notifyRewardAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardNotifyRewardAmount = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'notifyRewardAmount'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardRecoverErc20 = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"setPaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardSetPaused = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'setPaused'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"setRewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardSetRewardsDistribution = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'setRewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"setRewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardSetRewardsDuration = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'setRewardsDuration'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"stake"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardStake = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'stake'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWriteUsdsSpkRewardWithdraw = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkReward = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"acceptOwnership"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardAcceptOwnership = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'acceptOwnership'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"exit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardExit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'exit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"getReward"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardGetReward = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'getReward'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"nominateNewOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardNominateNewOwner = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'nominateNewOwner'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"notifyRewardAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardNotifyRewardAmount = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'notifyRewardAmount'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardRecoverErc20 = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"setPaused"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardSetPaused = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'setPaused'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"setRewardsDistribution"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardSetRewardsDistribution = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'setRewardsDistribution'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"setRewardsDuration"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardSetRewardsDuration = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'setRewardsDuration'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"stake"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardStake = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'stake'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useSimulateUsdsSpkRewardWithdraw = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkReward = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"OwnerChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardOwnerChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'OwnerChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"OwnerNominated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardOwnerNominated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'OwnerNominated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"PauseChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardPauseChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'PauseChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"Recovered"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardRecovered = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'Recovered'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"Referral"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardReferral = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'Referral'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"RewardAdded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardRewardAdded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'RewardAdded'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"RewardPaid"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardRewardPaid = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'RewardPaid'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"RewardsDistributionUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardRewardsDistributionUpdated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'RewardsDistributionUpdated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"RewardsDurationUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardRewardsDurationUpdated = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'RewardsDurationUpdated'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"Staked"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardStaked = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
+  eventName: 'Staked'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsSpkRewardAbi}__ and `eventName` set to `"Withdrawn"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x173e314C7635B45322cd8Cb14f44b312e079F3af)
+ */
+export const useWatchUsdsSpkRewardWithdrawn = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsSpkRewardAbi,
+  address: usdsSpkRewardAddress,
   eventName: 'Withdrawn'
 });
 

@@ -1,10 +1,12 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import {
   RewardsFlow,
   RewardsAction,
   RewardsScreen,
+  rewardsApproveTitle,
   rewardsSupplyTitle,
   rewardsWithdrawTitle,
+  rewardsApproveSubtitle,
   rewardsSupplySubtitle,
   rewardsWithdrawSubtitle,
   rewardsSupplyLoadingButtonText,
@@ -17,10 +19,10 @@ import {
 } from '../lib/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@widgets/context/WidgetContext';
-import { BatchTransactionStatus } from '@widgets/shared/components/ui/transaction/BatchTransactionStatus';
+import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
 import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
-import { TxStatus } from '@widgets/shared/constants';
+import { approveLoadingButtonText } from '@widgets/shared/constants';
 import { getTokenDecimals, RewardContract, Token } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
@@ -30,19 +32,13 @@ export const RewardsTransactionStatus = ({
   rewardToken,
   rewardAmount,
   selectedRewardContract,
-  onExternalLinkClicked,
-  isBatchTransaction,
-  needsAllowance
+  onExternalLinkClicked
 }: {
   rewardAmount: bigint;
   rewardToken: Token;
   selectedRewardContract?: RewardContract;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  isBatchTransaction?: boolean;
-  needsAllowance: boolean;
 }) => {
-  const [flowNeedsAllowance] = useState(needsAllowance);
-
   const { i18n } = useLingui();
   const chainId = useChainId();
   const {
@@ -66,13 +62,88 @@ export const RewardsTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    const isApprovalSuccess = txStatus === TxStatus.SUCCESS && action === RewardsAction.APPROVE;
-    const isWaitingForSecondTransaction =
-      txStatus === TxStatus.INITIALIZED && action !== RewardsAction.APPROVE && flowNeedsAllowance;
-    const flowTxStatus: TxStatus =
-      isApprovalSuccess || isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
-
+    if (flow === RewardsFlow.SUPPLY) setStepTwoTitle(t`Supply`);
+    if (flow === RewardsFlow.WITHDRAW) setStepTwoTitle(t`Withdraw`);
+    // Supply & Approve transaction state
     if (
+      flow === RewardsFlow.SUPPLY &&
+      action === RewardsAction.APPROVE &&
+      screen === RewardsScreen.TRANSACTION
+    ) {
+      setStep(1);
+      setLoadingText(i18n._(approveLoadingButtonText[txStatus as keyof TxCardCopyText]));
+      setTxTitle(i18n._(rewardsApproveTitle[txStatus as keyof TxCardCopyText]));
+      setTxSubtitle(i18n._(rewardsApproveSubtitle(txStatus, rewardToken.symbol)));
+      if (selectedRewardContract) {
+        setTxDescription(i18n._(rewardsActionDescription({ flow, txStatus, selectedRewardContract })));
+      }
+      // Supply & Supply transaction state
+    } else if (
+      flow === RewardsFlow.SUPPLY &&
+      action === RewardsAction.SUPPLY &&
+      screen === RewardsScreen.TRANSACTION
+    ) {
+      setStep(2);
+      setLoadingText(
+        i18n._(
+          rewardsSupplyLoadingButtonText({
+            txStatus,
+            amount: formatBigInt(rewardAmount, {
+              unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
+            }),
+            symbol: rewardToken.symbol
+          })
+        )
+      );
+      setTxTitle(i18n._(rewardsSupplyTitle[txStatus as keyof TxCardCopyText]));
+      setTxSubtitle(
+        i18n._(
+          rewardsSupplySubtitle({
+            txStatus,
+            amount: formatBigInt(rewardAmount, {
+              unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
+            }),
+            symbol: rewardToken.symbol
+          })
+        )
+      );
+      if (selectedRewardContract) {
+        setTxDescription(i18n._(rewardsActionDescription({ flow, txStatus, selectedRewardContract })));
+      }
+    } else if (
+      // Withdraw & Withdraw transaction state
+      flow === RewardsFlow.WITHDRAW &&
+      action === RewardsAction.WITHDRAW &&
+      screen === RewardsScreen.TRANSACTION
+    ) {
+      setStep(2);
+      setLoadingText(
+        i18n._(
+          rewardsWithdrawLoadingButtonText({
+            txStatus,
+            amount: formatBigInt(rewardAmount, {
+              unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
+            }),
+            symbol: rewardToken.symbol
+          })
+        )
+      );
+      setTxTitle(i18n._(rewardsWithdrawTitle[txStatus as keyof TxCardCopyText]));
+      setTxSubtitle(
+        i18n._(
+          rewardsWithdrawSubtitle({
+            txStatus,
+            amount: formatBigInt(rewardAmount, {
+              unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
+            }),
+            symbol: rewardToken.symbol
+          })
+        )
+      );
+      if (selectedRewardContract) {
+        setTxDescription(i18n._(rewardsActionDescription({ flow, txStatus, selectedRewardContract })));
+      }
+    } else if (
       // Claim rewards
       action === RewardsAction.CLAIM &&
       screen === RewardsScreen.TRANSACTION
@@ -103,100 +174,7 @@ export const RewardsTransactionStatus = ({
       if (selectedRewardContract) {
         setTxDescription(i18n._(rewardsClaimTxDescription({ txStatus, selectedRewardContract })));
       }
-    } else if (flow === RewardsFlow.SUPPLY) {
-      setStepTwoTitle(t`Supply`);
-
-      if (screen === RewardsScreen.TRANSACTION) {
-        setLoadingText(
-          i18n._(
-            rewardsSupplyLoadingButtonText({
-              txStatus: flowTxStatus,
-              amount: formatBigInt(rewardAmount, {
-                unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
-              }),
-              symbol: rewardToken.symbol
-            })
-          )
-        );
-        setTxTitle(i18n._(rewardsSupplyTitle[flowTxStatus as keyof TxCardCopyText]));
-        setTxSubtitle(
-          i18n._(
-            rewardsSupplySubtitle({
-              txStatus: flowTxStatus,
-              amount: formatBigInt(rewardAmount, {
-                unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
-              }),
-              symbol: rewardToken.symbol,
-              needsAllowance: flowNeedsAllowance
-            })
-          )
-        );
-        if (selectedRewardContract) {
-          setTxDescription(
-            i18n._(
-              rewardsActionDescription({
-                flow,
-                action,
-                txStatus: flowTxStatus,
-                selectedRewardContract,
-                needsAllowance: flowNeedsAllowance
-              })
-            )
-          );
-        }
-
-        if (action === RewardsAction.APPROVE) setStep(1);
-        else if (action === RewardsAction.SUPPLY) setStep(2);
-      }
-    } else if (flow === RewardsFlow.WITHDRAW) {
-      setStepTwoTitle(t`Withdraw`);
-
-      if (screen === RewardsScreen.TRANSACTION) {
-        setLoadingText(
-          i18n._(
-            rewardsWithdrawLoadingButtonText({
-              txStatus,
-              amount: formatBigInt(rewardAmount, {
-                unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
-              }),
-              symbol: rewardToken.symbol
-            })
-          )
-        );
-        setTxTitle(i18n._(rewardsWithdrawTitle[txStatus as keyof TxCardCopyText]));
-        setTxSubtitle(
-          i18n._(
-            rewardsWithdrawSubtitle({
-              txStatus,
-              amount: formatBigInt(rewardAmount, {
-                unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
-              }),
-              symbol: rewardToken.symbol
-            })
-          )
-        );
-        if (selectedRewardContract) {
-          setTxDescription(
-            i18n._(
-              rewardsActionDescription({
-                flow,
-                action,
-                txStatus,
-                selectedRewardContract,
-                needsAllowance: false // Withdraw flows don't need allowance
-              })
-            )
-          );
-        }
-
-        setStep(2);
-      }
     }
   }, [txStatus, flow, action, screen, i18n.locale]);
-  return (
-    <BatchTransactionStatus
-      onExternalLinkClicked={onExternalLinkClicked}
-      isBatchTransaction={isBatchTransaction}
-    />
-  );
+  return <TransactionStatus onExternalLinkClicked={onExternalLinkClicked} />;
 };

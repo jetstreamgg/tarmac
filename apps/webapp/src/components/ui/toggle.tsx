@@ -13,9 +13,7 @@ const toggleVariants = cva(
           'bg-transparent data-[state=on]:bg-radial-(--gradient-position) data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 after:bg-primaryHover active:bg-primaryActive hover:data-[state=on]:bg-white',
         outline: 'border border-input bg-transparent after:bg-accent hover:text-accent-foreground',
         singleSwitcher:
-          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 bg-blend-overlay hover:from-primary-start/50 hover:to-primary-end/50 data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 data-[state=on]:text-text data-[state=on]:hover:bg-white/10 data-[state=on]:border-transparent transition transition-bg duration-250 ease-out-expo border border-[rgb(61,47,164)]',
-        singleSwitcherBright:
-          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-bright-start/0 to-primary-bright-end/0 bg-blend-overlay hover:from-primary-bright-start/50 hover:to-primary-bright-end/50 data-[state=on]:from-primary-bright-start/100 data-[state=on]:to-primary-bright-end/100 data-[state=on]:text-text data-[state=on]:hover:from-primary-bright-start/50 data-[state=on]:hover:to-primary-bright-end/50 transition transition-bg duration-250 ease-out-expo border border-[rgb(127,92,246)]'
+          'rounded-md px-4 py-2 w-[64px] bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 bg-blend-overlay hover:from-primary-start/50 hover:to-primary-end/50 data-[state=on]:from-primary-start/100 data-[state=on]:to-primary-end/100 data-[state=on]:text-text data-[state=on]:hover:bg-white/10 data-[state=on]:border-transparent transition transition-bg duration-250 ease-out-expo border border-[rgb(61,47,164)]'
       },
       size: {
         default: '',
