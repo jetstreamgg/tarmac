@@ -77,7 +77,7 @@ export const SelectDelegate = ({
   const delegateTitle = useMemo(
     () =>
       widgetState.flow === StakeFlow.MANAGE && selectedDelegate && selectedDelegate !== ZERO_ADDRESS
-        ? t`Update your delegate`
+        ? t`Change your delegate`
         : t`Choose your delegate`,
     []
   );

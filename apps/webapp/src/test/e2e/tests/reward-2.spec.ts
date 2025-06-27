@@ -1,12 +1,13 @@
 import { expect, test } from '../fixtures.ts';
 import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
-import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
 import { distributeRewards } from '../utils/distributeRewards.ts';
 import { parseNumberFromString } from '@/lib/helpers/string/parseNumberFromString.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { skyAddress } from '@jetstreamgg/sky-hooks';
+import { skyAddress, usdsAddress, usdsSkyRewardAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
+import { NetworkName } from '../utils/constants.ts';
+import { approveToken } from '../utils/approveToken.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -17,30 +18,34 @@ test.beforeEach(async ({ page }) => {
 
 test('An approval error redirects to the error screen', async ({ page }) => {
   await page.getByTestId('supply-input-rewards').fill('100');
-  await interceptAndRejectTransactions(page, 200, true);
-  await page.getByRole('button', { name: 'Approve' }).click();
-  await expect(
-    page.getByText('An error occurred when giving permissions to access the tokens in your wallet')
-  ).toBeVisible();
+  await approveOrPerformAction(page, 'Supply', { reject: true });
+  await expect(page.getByText('An error occurred during the supply flow.').last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeEnabled();
   await page.getByRole('button', { name: 'Retry' }).last().click();
-  await expect(
-    page.getByText('An error occurred when giving permissions to access the tokens in your wallet')
-  ).toBeVisible();
+  await expect(page.getByText('An error occurred during the supply flow.').last()).toBeVisible();
 });
 
 test('A supply error redirects to the error screen', async ({ page }) => {
+  await approveToken(
+    usdsAddress[TENDERLY_CHAIN_ID],
+    usdsSkyRewardAddress[TENDERLY_CHAIN_ID],
+    '90',
+    NetworkName.mainnet
+  );
+  // Restart
+  await page.reload();
+  await connectMockWalletAndAcceptTerms(page);
+  await page.getByRole('tab', { name: 'Rewards' }).click();
+  await page.getByText('With: USDS Get: SKY').first().click();
+
   await page.getByTestId('supply-input-rewards').fill('1');
-  await page.getByRole('button', { name: 'Approve' }).click();
-  await expect(page.locator('role=button[name="Continue"]').first()).toBeVisible();
-  await interceptAndRejectTransactions(page, 200, true);
-  await page.locator('role=button[name="Continue"]').first().click();
-  await expect(page.getByText('An error occurred while supplying')).toBeVisible();
+  await approveOrPerformAction(page, 'Supply', { reject: true });
+  await expect(page.getByText('An error occurred during the supply flow.').last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeEnabled();
   await page.getByRole('button', { name: 'Retry' }).last().click();
-  await expect(page.getByText('An error occurred while supplying')).toBeVisible();
+  await expect(page.getByText('An error occurred during the supply flow.').last()).toBeVisible();
 });
 
 test('A withdraw error redirects to the error screen', async ({ page }) => {
@@ -52,11 +57,11 @@ test('A withdraw error redirects to the error screen', async ({ page }) => {
   await page.getByRole('tab', { name: 'Withdraw' }).click();
   await page.getByTestId('withdraw-input-rewards').fill('1');
   await approveOrPerformAction(page, 'Withdraw', { reject: true });
-  await expect(page.getByText('An error occurred while withdrawing USDS')).toBeVisible();
+  await expect(page.getByText('An error occurred while withdrawing USDS').last()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeEnabled();
   await page.getByRole('button', { name: 'Retry' }).last().click();
-  await expect(page.getByText('An error occurred while withdrawing USDS')).toBeVisible();
+  await expect(page.getByText('An error occurred while withdrawing USDS').last()).toBeVisible();
 });
 
 test('Details pane shows correct history data and layout subsections', async ({ page }) => {
