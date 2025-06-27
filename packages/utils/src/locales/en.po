@@ -100,6 +100,7 @@ msgid "{chart}"
 msgstr ""
 
 #: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
 msgid "{label}"
 msgstr ""
 
@@ -160,6 +161,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "About the Sky Savings Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+msgid "About the Spark Token"
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
@@ -1012,6 +1017,15 @@ msgstr ""
 msgid "Funds"
 msgstr ""
 
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Get Chronicle Points with USDS"
+msgstr ""
+
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
 msgid "Get rewards with USDS"
 msgstr ""
@@ -1024,7 +1038,19 @@ msgstr ""
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Get SKY rewards with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Get SPK rewards with USDS"
 msgstr ""
 
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
@@ -1285,6 +1311,10 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/components/TradeSummary.tsx
 #: packages/widgets/src/widgets/TradeWidget/components/TradeDetails.tsx
 msgid "Maximum input"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+msgid "Menu"
 msgstr ""
 
 #: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
@@ -1950,6 +1980,7 @@ msgid "Something went wrong with your withdraw. Please try again."
 msgstr ""
 
 #: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
 msgid "Soon"
 msgstr ""
 
@@ -1960,6 +1991,14 @@ msgstr ""
 
 #: apps/webapp/src/modules/chat/hooks/useSendMessage.tsx
 msgid "Sorry, something went wrong. Can you repeat your question?"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutSpk.tsx
+msgid "Spark"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutSpk.tsx
+msgid "SPK is a token. Yup it sure is."
 msgstr ""
 
 #: apps/webapp/src/lib/constants.ts
@@ -2034,6 +2073,12 @@ msgstr ""
 msgid "Start Chatting"
 msgstr ""
 
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Start earning Chronicle Points"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Start getting rewards"
 msgstr ""
@@ -2321,6 +2366,8 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Trade and get rewards"
 msgstr ""
 
@@ -2354,9 +2401,11 @@ msgstr ""
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Trade USDC for USDS"
 msgstr ""
 
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
@@ -2573,6 +2622,7 @@ msgid "Upgrade {0} into {1}"
 msgstr ""
 
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
 #: apps/webapp/src/modules/app/hooks/useNotification.tsx
 msgid "Upgrade and get rewards"
@@ -2582,6 +2632,7 @@ msgstr ""
 msgid "Upgrade and Save"
 msgstr ""
 
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
@@ -2665,6 +2716,7 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/components/AboutUsds.tsx
 #: apps/webapp/src/modules/ui/components/AboutStakeModule.tsx
+#: apps/webapp/src/modules/ui/components/AboutSpk.tsx
 #: apps/webapp/src/modules/ui/components/AboutSky.tsx
 #: apps/webapp/src/modules/ui/components/AboutSealModule.tsx
 #: apps/webapp/src/modules/ui/components/AboutSUsds.tsx
