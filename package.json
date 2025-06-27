@@ -74,7 +74,7 @@
     "@lingui/cli": "^5.3.1",
     "@lingui/conf": "^5.3.1",
     "@lingui/format-po": "^5.3.1",
-    "@tanstack/eslint-plugin-query": "^5.74.7",
+    "@tanstack/eslint-plugin-query": "^5.81.2",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vitest/coverage-v8": "^3.1.2",
