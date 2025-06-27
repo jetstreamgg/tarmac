@@ -9,8 +9,7 @@ export interface CardProps {
   chainIds?: number[];
   loading?: boolean;
   error?: string;
-  usdsSkySuppliedBalance?: bigint;
-  usdsCleSuppliedBalance?: bigint;
+  totalUserRewardsSupplied?: bigint;
   savingsBalances?: { chainId: number; balance: bigint }[];
   sealBalance?: bigint;
   stakeBalance?: bigint;
@@ -27,8 +26,7 @@ interface ModulesBalancesProps {
   rewardsLoading?: boolean;
   hideSeal?: boolean;
   sealLoading?: boolean;
-  usdsSkySuppliedBalance?: bigint;
-  usdsCleSuppliedBalance?: bigint;
+  totalUserRewardsSupplied?: bigint;
   hideSavings?: boolean;
   totalUserSealed?: bigint;
   savingsBalances?: { chainId: number; balance: bigint }[];
@@ -51,8 +49,7 @@ export const ModulesBalances = ({
   hideSeal,
   sealLoading,
   sealBalance,
-  usdsSkySuppliedBalance,
-  usdsCleSuppliedBalance,
+  totalUserRewardsSupplied,
   hideSavings,
   savingsBalances,
   savingsLoading,
@@ -68,8 +65,7 @@ export const ModulesBalances = ({
           url={rewardsCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
           loading={rewardsLoading}
-          usdsSkySuppliedBalance={usdsSkySuppliedBalance}
-          usdsCleSuppliedBalance={usdsCleSuppliedBalance}
+          totalUserRewardsSupplied={totalUserRewardsSupplied}
         />
       )}
       {!hideModuleBalances && !hideSavings && (

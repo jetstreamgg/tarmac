@@ -14,6 +14,8 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { Trans } from '@lingui/react/macro';
 import { formatNumber } from '@jetstreamgg/sky-utils';
 import { useEffect, useState } from 'react';
+import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
+import { useChainId } from 'wagmi';
 
 const secondaryTagline = {
   [IntentMapping.SAVINGS_INTENT]: 'to get the Sky Savings Rate',
@@ -44,6 +46,15 @@ export const LinkedActionCard = ({
   const { linkedActionConfig, updateLinkedActionConfig } = useConfigContext();
   const navigate = useNavigate();
   const [isLastStep, setIsLastStep] = useState<boolean>();
+  const chainId = useChainId();
+  const rewardContracts = useAvailableTokenRewardContracts(chainId);
+
+  // Extract reward contract address
+  const urlObj = new URL(urlWithRetainedParams, window.location.origin);
+  const rewardContractAddress = urlObj.searchParams.get(QueryParams.Reward);
+  const selectedRewardContract = rewardContracts.find(
+    contract => contract.contractAddress?.toLowerCase() === rewardContractAddress?.toLowerCase()
+  );
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     event.preventDefault();
@@ -71,7 +82,11 @@ export const LinkedActionCard = ({
               {secondaryTagline[la]}
             </Trans>
           </Heading>
-          {la === IntentMapping.REWARDS_INTENT ? <RewardsRate token={secondaryToken} /> : <SavingsRate />}
+          {la === IntentMapping.REWARDS_INTENT ? (
+            <RewardsRate token={secondaryToken} currentRewardContract={selectedRewardContract} />
+          ) : (
+            <SavingsRate />
+          )}
           <Link to={urlWithRetainedParams} onClick={handleClick}>
             <Button variant="light" className="w-fit px-5">
               {buttonText}

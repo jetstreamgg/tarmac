@@ -5,14 +5,17 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  # Combined updates with prioritization for security updates
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "development"
     schedule:
-      interval: "weekly"
-    groups:
-      all-dependencies:
-        patterns:
-          - "*"
+      interval: "daily"
+      time: "14:00"
+      timezone: "Europe/Stockholm"
+    allow:
+      - dependency-type: "direct"
+    open-pull-requests-limit: 15
     ignore:
-      - dependency-name: "*" # Apply to all dependencies
-        update-types: ["version-update:semver-major"] # Ignore major version updates
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
