@@ -43,19 +43,6 @@ jobs:
           ref: ${{ steps.pr-info.outputs.pr-base-sha }}  # Use base branch, not PR branch
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Apply dependency changes from PR
-        run: |
-          echo "📦 Applying dependency changes from Dependabot PR..."
-          
-          # Get the PR branch content for dependency files only
-          PR_BRANCH="${{ steps.pr-info.outputs.pr-head-sha }}"
-          
-          # Apply only package.json and lock files from the PR
-          git fetch origin $PR_BRANCH
-          git checkout FETCH_HEAD -- package.json pnpm-lock.yaml
-          
-          echo "✅ Applied dependency changes from PR"
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -139,6 +126,8 @@ jobs:
             - ✅ E2E Tests: ${conclusion === 'success' ? 'Passed' : 'Failed'}
             
             **Security Status:** ✅ All tests run with full secret access in trusted environment (base branch code only)
+            
+            **Note:** This workflow tests the current base branch with existing dependencies. The dependency updates from the PR will be tested when the PR is merged.
             
             ${conclusion === 'success' ? 'This PR is ready for review and merging.' : 'Please review the test failures before merging.'}`
             })

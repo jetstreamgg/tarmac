@@ -87,9 +87,9 @@ jobs:
           }
           echo "✅ No moderate or higher vulnerabilities found"
 
-      - name: Build validation
+      - name: Test dependency updates
         run: |
-          echo "🔨 Validating build..."
+          echo "🧪 Testing dependency updates..."
           
           # Install dependencies
           npm ci
@@ -100,7 +100,18 @@ jobs:
             exit 1
           }
           
-          echo "✅ Build validation passed"
+          # Run basic tests that don't require secrets
+          npm run lint || {
+            echo "❌ Linting failed"
+            exit 1
+          }
+          
+          npm run typecheck || {
+            echo "❌ Type checking failed"
+            exit 1
+          }
+          
+          echo "✅ Dependency updates tested successfully"
 
       - name: Comment on PR
         uses: actions/github-script@v7
@@ -112,15 +123,20 @@ jobs:
               repo: context.repo.repo,
               body: `## ✅ Dependabot PR Validation Complete
             
-            This PR has passed initial validation and will now trigger the full test suite with secrets access.
+            This PR has passed initial validation and will now trigger the trusted test suite.
             
             **Validated:**
             - ✅ Only dependency files changed
             - ✅ No security issues detected
             - ✅ No moderate+ vulnerabilities
             - ✅ Build validation passed
+            - ✅ Linting passed
+            - ✅ Type checking passed
             
-            The trusted workflow will now run with full access to secrets for comprehensive testing.`
+            **Next Steps:**
+            The trusted workflow will now run with full access to secrets to test the current codebase. The dependency updates will be tested when this PR is merged.
+            
+            **Security:** This workflow runs from the PR branch without access to secrets. The trusted workflow runs from the base branch with full secret access.`
             })
 
   # Trigger the trusted workflow for comprehensive testing
