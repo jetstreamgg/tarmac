@@ -1,7 +1,7 @@
 name: Webapp E2E tests
 
 on:
-  pull_request_target:  # This gives access to secrets for Dependabot
+  pull_request:
   push:
     branches:
       - main

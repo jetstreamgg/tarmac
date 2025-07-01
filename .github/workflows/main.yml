@@ -1,7 +1,7 @@
 name: Packages
 
 on:
-  pull_request_target:  # This gives access to secrets for Dependabot
+  pull_request:
   push:
     branches: [main]
   workflow_dispatch:
@@ -11,25 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Security validation for Dependabot PRs
-  security-check:
-    name: Security Check
-    runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # Checkout the PR branch to scan the actual changes
-          ref: ${{ github.head_ref }}
-      
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Run Security Validator
-        run: node scripts/security-validator.js
-
   install:
     name: Install
     runs-on: ubuntu-latest
@@ -126,7 +107,6 @@ jobs:
             packages/**/dist
           key: build-${{ github.run_id }}-${{ hashFiles('**/pnpm-lock.yaml') }}
 
-      # Now we can run full tests for Dependabot PRs with security measures in place
       - name: Fork Tenderly virtual testnet
         run: pnpm vnet:fork:ci
         env:
@@ -138,7 +118,7 @@ jobs:
           REACT_VERSION: ${{ matrix.react-version }}
 
       - name: Delete Tenderly virtual testnet fork
-        if: always()
         run: pnpm vnet:delete:ci
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+        if: always()
