@@ -2,6 +2,7 @@ name: Packages
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
   push:
     branches: [main]
   workflow_dispatch:
@@ -14,6 +15,7 @@ jobs:
   install:
     name: Install
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     strategy:
       matrix:
         node-version: [20]
@@ -47,6 +49,7 @@ jobs:
     name: Lint
     needs: install
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     strategy:
       matrix:
         node-version: [20]
@@ -80,6 +83,7 @@ jobs:
     name: Test
     needs: install
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
 
     strategy:
       matrix:

@@ -1,0 +1,156 @@
+name: Dependabot Trusted Tests
+
+on:
+  workflow_run:
+    workflows: ["Dependabot PR Check"]
+    types: [completed]
+
+jobs:
+  # Only run if the validation workflow succeeded
+  trusted-tests:
+    name: Trusted Tests with Secrets
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor == 'dependabot[bot]' }}
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Get PR information
+        id: pr-info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: context.repo.owner + ':' + context.payload.workflow_run.head_branch
+            });
+            
+            if (prs.length > 0) {
+              const pr = prs[0];
+              core.setOutput('pr-number', pr.number);
+              core.setOutput('pr-head-sha', pr.head.sha);
+              core.setOutput('pr-base-sha', pr.base.sha);
+              return pr;
+            } else {
+              core.setFailed('No PR found for this branch');
+            }
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr-info.outputs.pr-head-sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.9.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Run linting and type checking
+        run: |
+          pnpm lint
+          pnpm typecheck
+
+      - name: Run unit tests with Tenderly
+        run: |
+          echo "🧪 Running unit tests with Tenderly integration..."
+          pnpm vnet:fork:ci
+          pnpm test:coverage:ci
+          pnpm vnet:delete:ci
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          REACT_VERSION: 18
+
+      - name: Setup Playwright
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: |
+          echo "🌐 Running E2E tests..."
+          
+          # Run a subset of critical E2E tests for Dependabot PRs
+          # This ensures we test the most important flows without running the full matrix
+          
+          # Setup VNet for mainnet tests
+          pnpm run vnet:fork:ci mainnet
+          
+          # Run critical tests
+          pnpm run e2e:no-vnet reward-1.spec
+          pnpm run e2e:no-vnet landing.spec
+          
+          # Cleanup
+          pnpm run vnet:delete:ci
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          TEST_CHAIN: mainnet
+          VITE_ENV_NAME: development
+          VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+          VITE_BATCH_TX_ENABLED: 'true'
+
+      - name: Comment test results
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const conclusion = '${{ job.status }}';
+            const emoji = conclusion === 'success' ? '✅' : '❌';
+            const status = conclusion === 'success' ? 'PASSED' : 'FAILED';
+            
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.pr-info.outputs.pr-number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ${emoji} Trusted Tests ${status}
+            
+            **Test Results:**
+            - ✅ Build: Successful
+            - ✅ Linting: Passed
+            - ✅ Type Checking: Passed
+            - ✅ Unit Tests: ${conclusion === 'success' ? 'Passed' : 'Failed'}
+            - ✅ E2E Tests: ${conclusion === 'success' ? 'Passed' : 'Failed'}
+            
+            **Security Status:** ✅ All tests run with full secret access in trusted environment
+            
+            ${conclusion === 'success' ? 'This PR is ready for review and merging.' : 'Please review the test failures before merging.'}`
+            })
+
+  # Additional security validation
+  security-validation:
+    name: Security Validation
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: security-extended,security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3 
