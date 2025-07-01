@@ -138,10 +138,29 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.actor == 'dependabot[bot]' }}
     steps:
+      - name: Get PR information
+        id: pr-info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: context.repo.owner + ':' + context.payload.workflow_run.head_branch
+            });
+            
+            if (prs.length > 0) {
+              const pr = prs[0];
+              core.setOutput('pr-base-sha', pr.base.sha);
+              return pr;
+            } else {
+              core.setFailed('No PR found for this branch');
+            }
+
       - name: Checkout base branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+          ref: ${{ steps.pr-info.outputs.pr-base-sha }}
 
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
