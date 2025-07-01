@@ -1,7 +1,6 @@
 name: Webapp E2E tests
 
 on:
-  pull_request:
   push:
     branches:
       - main

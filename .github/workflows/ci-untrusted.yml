@@ -1,17 +1,16 @@
-name: Packages
+name: CI - Untrusted (Dependabot Safe)
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ci-untrusted-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
   install:
-    name: Install
+    name: Install Dependencies
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -43,7 +42,7 @@ jobs:
           key: build-${{ github.run_id }}-${{ hashFiles('**/pnpm-lock.yaml') }}
 
   lint:
-    name: Lint
+    name: Lint and Type Check
     needs: install
     runs-on: ubuntu-latest
     strategy:
@@ -75,16 +74,15 @@ jobs:
           pnpm lint
           pnpm typecheck
 
-  test:
-    name: Test
+  # Unit tests that don't require secrets
+  test-unit:
+    name: Unit Tests (No Secrets)
     needs: install
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [20]
         pnpm-version: [9.9.0]
-        react-version: [18]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,19 +103,24 @@ jobs:
           path: |
             packages/**/dist
           key: build-${{ github.run_id }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+      - name: Test utils package (no secrets needed)
+        run: pnpm test:utils
 
-      - name: Fork Tenderly virtual testnet
-        run: pnpm vnet:fork:ci
-        env:
-          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-
-      - name: Test packages
-        run: pnpm test:coverage:ci
-        env:
-          REACT_VERSION: ${{ matrix.react-version }}
-
-      - name: Delete Tenderly virtual testnet fork
-        run: pnpm vnet:delete:ci
-        env:
-          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-        if: always()
+  # Create an artifact that signals tests passed
+  create-test-signal:
+    name: Create Test Signal
+    needs: [lint, test-unit]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Create signal file
+        run: |
+          echo "untrusted-tests-passed" > test-signal.txt
+          echo "sha=${{ github.event.pull_request.head.sha || github.sha }}" >> test-signal.txt
+          echo "run_id=${{ github.run_id }}" >> test-signal.txt
+      - name: Upload signal artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-signal-${{ github.run_id }}
+          path: test-signal.txt
+          retention-days: 1
