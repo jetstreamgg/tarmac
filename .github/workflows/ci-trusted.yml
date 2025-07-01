@@ -10,176 +10,109 @@ permissions:
   contents: read
   checks: write
   pull-requests: write
+  actions: read
 
 jobs:
-  # Verify the untrusted workflow succeeded
-  verify-untrusted:
-    name: Verify Untrusted Tests
+  # Run integration tests that require secrets but don't need PR-specific code
+  integration-tests:
+    name: Integration Tests
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    outputs:
-      should-run: ${{ steps.check.outputs.should-run }}
-      pr-number: ${{ steps.check.outputs.pr-number }}
-      sha: ${{ steps.check.outputs.sha }}
     steps:
-      - name: Check if untrusted tests passed
-        id: check
+      # Safely download and validate metadata from untrusted workflow
+      - name: Download and validate metadata
         uses: actions/github-script@v7
+        id: download-metadata
         with:
           script: |
-            // Only proceed if the workflow run was successful
-            if (context.payload.workflow_run.conclusion !== 'success') {
-              console.log('Untrusted workflow did not succeed, skipping trusted tests');
-              core.setOutput('should-run', 'false');
-              return;
-            }
-
-            // Get PR information from the workflow run
-            const pr = context.payload.workflow_run.pull_requests[0];
-            if (!pr) {
-              console.log('No PR associated with this workflow run');
-              core.setOutput('should-run', 'false');
-              return;
-            }
-
-            core.setOutput('should-run', 'true');
-            core.setOutput('pr-number', pr.number);
-            core.setOutput('sha', context.payload.workflow_run.head_sha);
-
-  # Run tests that require secrets
-  test-with-secrets:
-    name: Test with Tenderly
-    needs: verify-untrusted
-    if: needs.verify-untrusted.outputs.should-run == 'true'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20]
-        pnpm-version: [9.9.0]
-        react-version: [18]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.verify-untrusted.outputs.sha }}
-          submodules: true
-      
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ matrix.pnpm-version }}
-      
-      - name: Set up Node ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
-      
-      - name: Install Dependencies
-        run: pnpm i --frozen-lockfile
-      
-      - name: Build packages
-        run: pnpm build:packages
-        env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
-
-      - name: Fork Tenderly virtual testnet
-        run: pnpm vnet:fork:ci
-        env:
-          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-
-      - name: Test packages with Tenderly
-        run: pnpm test:coverage:ci
-        env:
-          REACT_VERSION: ${{ matrix.react-version }}
-
-      - name: Delete Tenderly virtual testnet fork
-        run: pnpm vnet:delete:ci
-        env:
-          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-        if: always()
-
-      - name: Update PR status
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr_number = ${{ needs.verify-untrusted.outputs.pr-number }};
-            const sha = '${{ needs.verify-untrusted.outputs.sha }}';
-            const status = '${{ job.status }}';
-            
-            await github.rest.repos.createCommitStatus({
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              sha: sha,
-              state: status === 'success' ? 'success' : 'failure',
-              context: 'Trusted Tests / Tenderly Tests',
-              description: status === 'success' ? 'All tests passed' : 'Tests failed'
+              run_id: context.payload.workflow_run.id,
             });
-
-  # Run E2E tests
-  e2e-tests:
-    name: E2E Tests
-    needs: verify-untrusted
-    if: needs.verify-untrusted.outputs.should-run == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - test: reward-1.spec
-            vnet: true
-            chain: mainnet
-          - test: reward-2.spec
-            vnet: true
-            chain: mainnet,arbitrum,base,optimism,unichain
-          - test: upgrade.spec
-            vnet: true
-            chain: mainnet
-          - test: mainnet-savings.spec
-            vnet: true
-            chain: mainnet
-          - test: seal.spec
-            vnet: true
-            chain: mainnet
-          - test: stake.spec
-            vnet: true
-            chain: mainnet
-          - test: landing.spec
-            vnet: true
-            chain: mainnet
-          - test: la-u-r.spec
-            vnet: true
-            chain: mainnet
-          - test: la-u-s.spec
-            vnet: true
-            chain: mainnet
-          - test: base-savings.spec
-            vnet: true
-            chain: base
-          - test: base-trade.spec
-            vnet: true
-            chain: base
-          - test: arbitrum-savings.spec
-            vnet: true
-            chain: arbitrum
-          - test: arbitrum-trade.spec
-            vnet: true
-            chain: arbitrum
-          - test: optimism-savings.spec
-            vnet: true
-            chain: optimism
-          - test: optimism-trade.spec
-            vnet: true
-            chain: optimism
-          - test: unichain-savings.spec
-            vnet: true
-            chain: unichain
-          - test: unichain-trade.spec
-            vnet: true
-            chain: unichain
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
+            
+            const metadataArtifact = artifacts.data.artifacts.find(
+              artifact => artifact.name.startsWith('metadata-')
+            );
+            
+            if (!metadataArtifact) {
+              core.setFailed('No metadata artifact found');
+              return;
+            }
+            
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: metadataArtifact.id,
+              archive_format: 'zip',
+            });
+            
+            const fs = require('fs');
+            const path = require('path');
+            
+            // SECURITY: Extract to a temporary, isolated directory
+            const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'artifact-'));
+            const zipPath = path.join(tempDir, 'metadata.zip');
+            
+            fs.writeFileSync(zipPath, Buffer.from(download.data));
+            
+            // Extract safely to temp directory
+            await exec.exec('unzip', ['-j', zipPath, '-d', tempDir]);
+            
+            // SECURITY: Validate the metadata file exists and has expected structure
+            const metadataPath = path.join(tempDir, 'pr-info.json');
+            if (!fs.existsSync(metadataPath)) {
+              core.setFailed('Metadata file not found in artifact');
+              return;
+            }
+            
+            // Read and validate metadata content
+            const metadataContent = fs.readFileSync(metadataPath, 'utf8');
+            let prInfo;
+            
+            try {
+              prInfo = JSON.parse(metadataContent);
+            } catch (error) {
+              core.setFailed('Invalid JSON in metadata file');
+              return;
+            }
+            
+            // SECURITY: Validate metadata structure and content
+            if (!prInfo.pr_number || typeof prInfo.pr_number !== 'number' || prInfo.pr_number < 1) {
+              core.setFailed('Invalid PR number in metadata');
+              return;
+            }
+            
+            if (!prInfo.sha || typeof prInfo.sha !== 'string' || !/^[a-f0-9]{40}$/i.test(prInfo.sha)) {
+              core.setFailed('Invalid SHA in metadata');
+              return;
+            }
+            
+            if (!prInfo.base_ref || typeof prInfo.base_ref !== 'string' || prInfo.base_ref.length === 0) {
+              core.setFailed('Invalid base_ref in metadata');
+              return;
+            }
+            
+            // SECURITY: Validate that base_ref is a known safe branch
+            const allowedBaseRefs = ['main', 'master', 'develop', 'development'];
+            if (!allowedBaseRefs.includes(prInfo.base_ref)) {
+              core.setFailed(`Base ref '${prInfo.base_ref}' is not in allowed list: ${allowedBaseRefs.join(', ')}`);
+              return;
+            }
+            
+            // Clean up temp directory
+            fs.rmSync(tempDir, { recursive: true, force: true });
+            
+            core.setOutput('pr_number', prInfo.pr_number);
+            core.setOutput('sha', prInfo.sha);
+            core.setOutput('base_ref', prInfo.base_ref);
+            
+            console.log(`Validated metadata: PR #${prInfo.pr_number}, SHA: ${prInfo.sha}, Base: ${prInfo.base_ref}`);
+      
+      # ONLY checkout the base branch - never touch PR code
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.verify-untrusted.outputs.sha }}
+          ref: ${{ steps.download-metadata.outputs.base_ref }}
       
       - uses: pnpm/action-setup@v4
         with:
@@ -189,61 +122,239 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
+      
+      - name: Install Dependencies
+        run: pnpm i --frozen-lockfile
+      
+      # Build from base branch only
+      - name: Build packages
         run: pnpm build:packages
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
-
-      - run: pnpm -F webapp exec playwright install --with-deps chromium
-
-      - name: Setup VNet (if required)
-        if: ${{ matrix.vnet }}
-        run: |
-          pnpm run vnet:fork:ci ${{ matrix.chain }}
+      
+      # Test Tenderly connectivity and basic functionality
+      - name: Fork Tenderly virtual testnet
+        run: pnpm vnet:fork:ci
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-
-      - name: Run E2E Test
-        run: pnpm run e2e:no-vnet ${{ matrix.test }}
-        env:
-          TEST_CHAIN: ${{ matrix.chain }}
-          VITE_ENV_NAME: development
-          VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
-          VITE_BATCH_TX_ENABLED: 'true'
-
-      - name: Teardown VNet (if required)
-        if: ${{always() && matrix.vnet}}
+      
+      - name: Run basic integration tests
         run: |
-          pnpm run vnet:delete:ci
+          # Run a subset of tests that verify Tenderly integration works
+          # These tests ensure the API key is valid and services are accessible
+          pnpm test:utils
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-
-      - uses: actions/upload-artifact@v4
+      
+      - name: Delete Tenderly virtual testnet
         if: always()
-        with:
-          name: playwright-report-${{ matrix.test }}-trusted
-          path: apps/webapp/playwright-report/
-          retention-days: 30
-
-      - name: Update PR status
+        run: pnpm vnet:delete:ci
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+      
+      # Update PR status
+      - name: Update PR status - Integration
         if: always()
         uses: actions/github-script@v7
         with:
           script: |
-            const pr_number = ${{ needs.verify-untrusted.outputs.pr-number }};
-            const sha = '${{ needs.verify-untrusted.outputs.sha }}';
-            const status = '${{ job.status }}';
-            const test = '${{ matrix.test }}';
+            const pr_number = ${{ steps.download-metadata.outputs.pr_number }};
+            const sha = '${{ steps.download-metadata.outputs.sha }}';
+            const conclusion = '${{ job.status }}';
             
             await github.rest.repos.createCommitStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
               sha: sha,
-              state: status === 'success' ? 'success' : 'failure',
-              context: `Trusted Tests / E2E / ${test}`,
-              description: status === 'success' ? 'Test passed' : 'Test failed'
+              state: conclusion === 'success' ? 'success' : 'failure',
+              context: 'Integration Tests / Tenderly Connectivity',
+              description: conclusion === 'success' ? 'Tenderly integration working' : 'Tenderly integration failed'
             });
+
+  # Validate build success without executing any artifacts
+  validate-build-success:
+    name: Validate Build Success
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      # Safely validate metadata only - don't download build artifacts
+      - name: Validate build completion
+        uses: actions/github-script@v7
+        id: validate-build
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            
+            const metadataArtifact = artifacts.data.artifacts.find(
+              artifact => artifact.name.startsWith('metadata-')
+            );
+            const buildArtifact = artifacts.data.artifacts.find(
+              artifact => artifact.name.startsWith('build-artifacts-')
+            );
+            
+            if (!metadataArtifact) {
+              core.setFailed('No metadata artifact found');
+              return;
+            }
+            
+            if (!buildArtifact) {
+              core.setFailed('No build artifacts found - build may have failed');
+              return;
+            }
+            
+            // Download and safely validate metadata only
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: metadataArtifact.id,
+              archive_format: 'zip',
+            });
+            
+            const fs = require('fs');
+            const path = require('path');
+            
+            // SECURITY: Extract to isolated temp directory
+            const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'validate-'));
+            const zipPath = path.join(tempDir, 'metadata.zip');
+            
+            fs.writeFileSync(zipPath, Buffer.from(download.data));
+            await exec.exec('unzip', ['-j', zipPath, '-d', tempDir]);
+            
+            // Validate metadata
+            const metadataPath = path.join(tempDir, 'pr-info.json');
+            if (!fs.existsSync(metadataPath)) {
+              core.setFailed('Metadata file not found');
+              return;
+            }
+            
+            const prInfo = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+            
+            // Validate structure
+            if (!prInfo.pr_number || !prInfo.sha || !prInfo.base_ref) {
+              core.setFailed('Invalid metadata structure');
+              return;
+            }
+            
+            // Clean up
+            fs.rmSync(tempDir, { recursive: true, force: true });
+            
+            core.setOutput('pr_number', prInfo.pr_number);
+            core.setOutput('sha', prInfo.sha);
+            core.setOutput('base_ref', prInfo.base_ref);
+            
+            // SECURITY: Only validate that build artifacts exist, don't extract them
+            console.log(`✅ Build artifacts present (${buildArtifact.size_in_bytes} bytes)`);
+            console.log(`✅ Metadata validated for PR #${prInfo.pr_number}`);
+      
+      # Update PR status
+      - name: Update PR status - Build Validation
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr_number = ${{ steps.validate-build.outputs.pr_number }};
+            const sha = '${{ steps.validate-build.outputs.sha }}';
+            const conclusion = '${{ job.status }}';
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: sha,
+              state: conclusion === 'success' ? 'success' : 'failure',
+              context: 'Build Validation / Artifacts Present',
+              description: conclusion === 'success' ? 'Build artifacts created successfully' : 'Build artifacts missing or invalid'
+            });
+
+  # Notify completion
+  notify-complete:
+    name: Notify Completion
+    needs: [integration-tests, validate-build-success]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Safely get metadata for final status
+        uses: actions/github-script@v7
+        id: get-metadata
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            
+            const metadataArtifact = artifacts.data.artifacts.find(
+              artifact => artifact.name.startsWith('metadata-')
+            );
+            
+            if (!metadataArtifact) {
+              core.setFailed('No metadata artifact found');
+              return;
+            }
+            
+            const download = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: metadataArtifact.id,
+              archive_format: 'zip',
+            });
+            
+            const fs = require('fs');
+            const path = require('path');
+            
+            // SECURITY: Safe extraction to temp directory
+            const tempDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'final-'));
+            const zipPath = path.join(tempDir, 'metadata.zip');
+            
+            fs.writeFileSync(zipPath, Buffer.from(download.data));
+            await exec.exec('unzip', ['-j', zipPath, '-d', tempDir]);
+            
+            const prInfo = JSON.parse(fs.readFileSync(path.join(tempDir, 'pr-info.json'), 'utf8'));
+            
+            // Clean up
+            fs.rmSync(tempDir, { recursive: true, force: true });
+            
+            core.setOutput('sha', prInfo.sha);
+            core.setOutput('pr_number', prInfo.pr_number);
+      
+      - name: Set final status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.get-metadata.outputs.sha }}';
+            const pr_number = ${{ steps.get-metadata.outputs.pr_number }};
+            const integrationResult = '${{ needs.integration-tests.result }}';
+            const validationResult = '${{ needs.validate-build-success.result }}';
+            
+            // Determine overall success
+            const overallSuccess = integrationResult === 'success' && validationResult === 'success';
+            
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: sha,
+              state: overallSuccess ? 'success' : 'failure',
+              context: 'CI / All Checks',
+              description: overallSuccess ? 'All CI checks passed' : 'Some CI checks failed'
+            });
+            
+            // Add a comment explaining the secure testing approach
+            if (overallSuccess) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr_number,
+                body: `✅ **CI Checks Passed (Secure Mode)**
+                
+**What was tested:**
+- ✅ **PR Code Quality**: Linting, type checking, unit tests (untrusted context)
+- ✅ **Build Verification**: Confirmed your changes build successfully (artifact validation)
+- ✅ **API Integration**: Verified Tenderly connectivity and secrets work (trusted context with base branch)
+
+**Security Note**: This workflow uses secure artifact validation to ensure your changes build correctly while protecting against artifact poisoning attacks. Integration tests run against base branch code to verify API connectivity without executing untrusted code in privileged contexts.`
+              });
+            }

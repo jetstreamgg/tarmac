@@ -5,119 +5,56 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  statuses: write
-  checks: write
-  pull-requests: write
+  contents: read
+  statuses: read
+  checks: read
 
 jobs:
-  # This job ensures all CI checks pass
-  status-check:
-    name: Overall CI Status
+  # This job provides a required check that waits for all CI to complete
+  wait-for-ci:
+    name: Wait for CI
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for workflows to complete
+      - name: Wait for all CI checks
         uses: actions/github-script@v7
         with:
           script: |
-            // Wait up to 30 minutes for all workflows to complete
-            const maxWaitTime = 30 * 60 * 1000; // 30 minutes
-            const checkInterval = 30 * 1000; // 30 seconds
-            const startTime = Date.now();
-            
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const sha = context.payload.pull_request.head.sha;
             
-            console.log(`Checking status for SHA: ${sha}`);
+            // Wait up to 30 minutes
+            const maxWaitTime = 30 * 60 * 1000;
+            const checkInterval = 30 * 1000;
+            const startTime = Date.now();
+            
+            console.log(`Waiting for CI checks on SHA: ${sha}`);
             
             while (Date.now() - startTime < maxWaitTime) {
-              // Get all check runs for this SHA
-              const { data: checkRuns } = await github.rest.checks.listForRef({
-                owner,
-                repo,
-                ref: sha
-              });
-              
-              // Get all status contexts
               const { data: statuses } = await github.rest.repos.getCombinedStatusForRef({
                 owner,
                 repo,
                 ref: sha
               });
               
-              // Check if all required workflows have completed
-              const untrustedCheck = checkRuns.check_runs.find(run => 
-                run.name.includes('CI - Untrusted') || run.name.includes('create-test-signal')
+              // Look for our final CI status
+              const finalStatus = statuses.statuses.find(status => 
+                status.context === 'CI / All Checks'
               );
               
-              const trustedChecks = statuses.statuses.filter(status => 
-                status.context.includes('Trusted Tests')
-              );
-              
-              console.log(`Found ${checkRuns.check_runs.length} check runs and ${statuses.statuses.length} statuses`);
-              
-              // If untrusted workflow hasn't started yet, wait
-              if (!untrustedCheck) {
-                console.log('Waiting for untrusted workflow to start...');
-                await new Promise(resolve => setTimeout(resolve, checkInterval));
-                continue;
-              }
-              
-              // If untrusted workflow is still running, wait
-              if (untrustedCheck.status !== 'completed') {
-                console.log('Untrusted workflow still running...');
-                await new Promise(resolve => setTimeout(resolve, checkInterval));
-                continue;
-              }
-              
-              // If untrusted workflow failed, we can fail immediately
-              if (untrustedCheck.conclusion !== 'success') {
-                core.setFailed('Untrusted workflow failed');
-                return;
-              }
-              
-              // If we're dealing with a Dependabot PR, wait for trusted tests
-              const isDependabot = context.payload.pull_request.user.login === 'dependabot[bot]';
-              if (isDependabot && trustedChecks.length === 0) {
-                console.log('Waiting for trusted tests to start (Dependabot PR)...');
-                await new Promise(resolve => setTimeout(resolve, checkInterval));
-                continue;
-              }
-              
-              // Check if all trusted tests have completed
-              if (isDependabot) {
-                const allTrustedComplete = trustedChecks.every(check => 
-                  check.state === 'success' || check.state === 'failure'
-                );
-                
-                if (!allTrustedComplete) {
-                  console.log('Waiting for all trusted tests to complete...');
-                  await new Promise(resolve => setTimeout(resolve, checkInterval));
-                  continue;
-                }
-                
-                // Check if any trusted test failed
-                const anyTrustedFailed = trustedChecks.some(check => check.state === 'failure');
-                if (anyTrustedFailed) {
-                  core.setFailed('One or more trusted tests failed');
+              if (finalStatus) {
+                console.log(`Final CI status: ${finalStatus.state}`);
+                if (finalStatus.state === 'failure') {
+                  core.setFailed('CI checks failed');
+                  return;
+                } else if (finalStatus.state === 'success') {
+                  console.log('All CI checks passed!');
                   return;
                 }
               }
               
-              // All checks passed!
-              console.log('All required checks have passed!');
-              
-              // Create a success status
-              await github.rest.repos.createCommitStatus({
-                owner,
-                repo,
-                sha,
-                state: 'success',
-                context: 'CI / Overall Status',
-                description: 'All CI checks passed'
-              });
-              
-              return;
+              console.log('Waiting for CI to complete...');
+              await new Promise(resolve => setTimeout(resolve, checkInterval));
             }
             
-            core.setFailed('Timeout waiting for workflows to complete');
+            core.setFailed('Timeout waiting for CI checks to complete');

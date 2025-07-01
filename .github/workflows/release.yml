@@ -5,6 +5,11 @@ on:
     branches:
       - development
 
+permissions:
+  contents: write  # Needed for creating releases
+  packages: write  # Needed for publishing packages
+  pull-requests: write  # Needed for changeset PRs
+
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
