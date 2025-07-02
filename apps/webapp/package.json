@@ -69,7 +69,7 @@
     "wagmi": "^2.15.4"
   },
   "devDependencies": {
-    "@lingui/core": "^5.3.1",
+    "@lingui/core": "^5.3.2",
     "@lingui/swc-plugin": "^5.5.2",
     "@lingui/vite-plugin": "^5.3.1",
     "@playwright/test": "^1.52.0",
