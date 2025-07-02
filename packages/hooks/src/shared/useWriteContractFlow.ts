@@ -12,6 +12,9 @@ import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
 import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
 import type { Abi, ContractFunctionArgs, ContractFunctionName } from 'viem';
+import debug from 'debug';
+
+const log = debug('sky-hooks:useWriteContractFlow');
 
 export function useWriteContractFlow<
   const abi extends Abi | readonly unknown[],
@@ -39,6 +42,22 @@ export function useWriteContractFlow<
     ...useSimulateContractParamters,
     query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
   } as UseSimulateContractParameters);
+
+  log('This is a test log', { ...useSimulateContractParamters });
+
+  // Log simulation error if present
+  useEffect(() => {
+    if (simulationError) {
+      log('Error simulating the transaction:', {
+        error: simulationError,
+        message: simulationError.message,
+        contractAddress: useSimulateContractParamters.address,
+        functionName: useSimulateContractParamters.functionName,
+        args: useSimulateContractParamters.args,
+        chainId: useSimulateContractParamters.chainId
+      });
+    }
+  }, [simulationError, useSimulateContractParamters]);
 
   const {
     writeContract,
@@ -105,13 +124,14 @@ export function useWriteContractFlow<
       if (simulationData?.request) {
         writeContract(simulationData.request);
       } else {
-        console.log(`ERROR: the contract interaction was triggered before the call was ready.
-          contract address: ${useSimulateContractParamters.address}
-          function name: ${useSimulateContractParamters.functionName}
-          function arguments: ${useSimulateContractParamters.args}
-          isSimulationLoading: ${isSimulationLoading}
-          simulationError: ${simulationError}
-          enabled: ${enabled}`);
+        log('ERROR: Contract interaction triggered before call was ready', {
+          contractAddress: useSimulateContractParamters.address,
+          functionName: useSimulateContractParamters.functionName,
+          args: useSimulateContractParamters.args,
+          isSimulationLoading,
+          simulationError,
+          enabled
+        });
       }
     },
     data: txHash,
