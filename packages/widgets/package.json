@@ -65,7 +65,7 @@
   "devDependencies": {
     "@lingui/core": "^5.3.1",
     "@lingui/swc-plugin": "^5.5.2",
-    "@lingui/vite-plugin": "^5.3.1",
+    "@lingui/vite-plugin": "^5.3.2",
     "@tailwindcss/vite": "^4.1.5",
     "@tanstack/react-query": "^5.75.2",
     "@testing-library/dom": "^10.4.0",
