@@ -27,15 +27,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { isIntentAllowed } from '@/lib/utils';
-
-export type WidgetContent = [
-  Intent,
-  string,
-  (props: IconProps) => React.ReactNode,
-  React.ReactNode | null,
-  boolean,
-  { disabled?: boolean }?
-][];
+import { WidgetContent, WidgetItem } from '../types/Widgets';
 
 type WidgetPaneProps = {
   intent: Intent;
@@ -100,7 +92,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`
   );
 
-  const widgetContent: WidgetContent = [
+  const widgetItems: WidgetItem[] = [
     [
       Intent.BALANCES_INTENT,
       'Balances',
@@ -143,7 +135,30 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       comingSoon,
       comingSoon ? { disabled: true } : undefined
     ];
-  });
+  }) as WidgetItem[];
+
+  // Group the widgets in categories
+  const widgetContent: WidgetContent = [
+    {
+      id: 'group-1',
+      items: widgetItems.filter(([intent]) => intent === Intent.BALANCES_INTENT)
+    },
+    {
+      id: 'group-2',
+      items: widgetItems.filter(
+        ([intent]) =>
+          intent === Intent.REWARDS_INTENT ||
+          intent === Intent.SAVINGS_INTENT ||
+          intent === Intent.STAKE_INTENT
+      )
+    },
+    {
+      id: 'group-3',
+      items: widgetItems.filter(
+        ([intent]) => intent === Intent.UPGRADE_INTENT || intent === Intent.TRADE_INTENT
+      )
+    }
+  ];
 
   useEffect(() => {
     if (!searchParams.get(QueryParams.Reset)) return;
@@ -158,11 +173,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     return () => clearTimeout(timer); // cleanup
   }, [searchParams, setSearchParams]);
 
+  // Filter widget groups to only include allowed intents
+  const filteredWidgetContent: WidgetContent = widgetContent
+    .map(group => ({
+      ...group,
+      items: group.items.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))
+    }))
+    .filter(group => group.items.length > 0);
+
   return (
-    <WidgetNavigation
-      widgetContent={widgetContent.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))}
-      intent={intent}
-    >
+    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent}>
       {children}
     </WidgetNavigation>
   );

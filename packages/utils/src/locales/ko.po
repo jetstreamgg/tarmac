@@ -116,6 +116,7 @@ msgid "{chart}"
 msgstr ""
 
 #: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
 msgid "{label}"
 msgstr ""
 
@@ -1368,6 +1369,10 @@ msgstr ""
 msgid "Maximum input"
 msgstr ""
 
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+msgid "Menu"
+msgstr ""
+
 #: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
 #: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
 #: apps/webapp/src/modules/stake/components/StakeOverview.tsx
@@ -2055,6 +2060,7 @@ msgstr ""
 msgid "Something went wrong with your withdraw. Please try again."
 msgstr ""
 
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
 #: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
 msgid "Soon"
 msgstr ""
