@@ -30,7 +30,7 @@
     "@jetstreamgg/sky-utils": "workspace:^",
     "@jetstreamgg/sky-widgets": "workspace:^",
     "@lingui/detect-locale": "^5.3.2",
-    "@lingui/macro": "^5.3.1",
+    "@lingui/macro": "^5.3.2",
     "@lingui/react": "^5.3.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-avatar": "^1.1.10",

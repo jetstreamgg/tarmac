@@ -99,8 +99,8 @@ importers:
         specifier: ^5.3.2
         version: 5.3.2
       '@lingui/macro':
-        specifier: ^5.3.1
-        version: 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
+        specifier: ^5.3.2
+        version: 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
       '@lingui/react':
         specifier: ^5.3.1
         version: 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
@@ -1040,6 +1040,18 @@ packages:
       babel-plugin-macros:
         optional: true
 
+  '@lingui/core@5.3.2':
+    resolution: {integrity: sha512-rLtpZvs5RYlebwjb047PldmiuFBbbVOhEofA90N8pgTCIlfnJRTxfevd6gx3Qp0/uG+AV0DWcZxtba6H/MPYug==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      '@lingui/babel-plugin-lingui-macro': 5.3.2
+      babel-plugin-macros: 2 || 3
+    peerDependenciesMeta:
+      '@lingui/babel-plugin-lingui-macro':
+        optional: true
+      babel-plugin-macros:
+        optional: true
+
   '@lingui/detect-locale@5.3.1':
     resolution: {integrity: sha512-uHVjHDtgEMf80Gj/WZpmHAUqxQwyYFMZk/IFNWco3tTlJ/I55Mul312yiVPxQoYraEK+OCkb3eIs6E9rRxDxGA==}
     engines: {node: '>=20.0.0'}
@@ -1064,8 +1076,26 @@ packages:
       babel-plugin-macros:
         optional: true
 
+  '@lingui/macro@5.3.2':
+    resolution: {integrity: sha512-K+G24xhbWFaYVxJRz+I8qXUISfXJ+T9BN+b9RMR+0pwsIshK4TWJNti8WiG8cnPxQmMeQ2waZqCJUPVObGbGvw==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      '@lingui/babel-plugin-lingui-macro': 5.3.2
+      babel-plugin-macros: 2 || 3
+    peerDependenciesMeta:
+      '@lingui/babel-plugin-lingui-macro':
+        optional: true
+      babel-plugin-macros:
+        optional: true
+
   '@lingui/message-utils@5.3.1':
     resolution: {integrity: sha512-/nwO/uXHYNO4pT+gor7iFdvNHSIjhGhJnqGeWMndSAAqmx0LstrFp9yWhcUU3XaTceyy7AtgVZh0ter7ghOw/Q==}
+    engines: {node: '>=20.0.0'}
+    bundledDependencies:
+      - '@messageformat/date-skeleton'
+
+  '@lingui/message-utils@5.3.2':
+    resolution: {integrity: sha512-YUBrXApa3kxcL9oimJdw7oiAJ2ESkI24uyTMaRp9XYNaWgWqpEgoxC5bDN2Fwnk5THFjUp/l64kAD5LJGQhJxQ==}
     engines: {node: '>=20.0.0'}
     bundledDependencies:
       - '@messageformat/date-skeleton'
@@ -1075,6 +1105,19 @@ packages:
     engines: {node: '>=20.0.0'}
     peerDependencies:
       '@lingui/babel-plugin-lingui-macro': 5.3.1
+      babel-plugin-macros: 2 || 3
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@lingui/babel-plugin-lingui-macro':
+        optional: true
+      babel-plugin-macros:
+        optional: true
+
+  '@lingui/react@5.3.2':
+    resolution: {integrity: sha512-wKvgVIKmlz4pIu+mlixjKDLXJoqyG3N3WPB76EScNuDMN0L9T1xMA/bjO9SxgEaUypflALHRsTA2rzViskLFHg==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      '@lingui/babel-plugin-lingui-macro': 5.3.2
       babel-plugin-macros: 2 || 3
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     peerDependenciesMeta:
@@ -7522,6 +7565,15 @@ snapshots:
       '@lingui/babel-plugin-lingui-macro': 5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3)
       babel-plugin-macros: 3.1.0
 
+  '@lingui/core@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)':
+    dependencies:
+      '@babel/runtime': 7.27.6
+      '@lingui/message-utils': 5.3.2
+      unraw: 3.0.0
+    optionalDependencies:
+      '@lingui/babel-plugin-lingui-macro': 5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3)
+      babel-plugin-macros: 3.1.0
+
   '@lingui/detect-locale@5.3.1': {}
 
   '@lingui/detect-locale@5.3.2': {}
@@ -7545,7 +7597,22 @@ snapshots:
     transitivePeerDependencies:
       - react
 
+  '@lingui/macro@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
+    dependencies:
+      '@lingui/core': 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
+      '@lingui/react': 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)
+    optionalDependencies:
+      '@lingui/babel-plugin-lingui-macro': 5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3)
+      babel-plugin-macros: 3.1.0
+    transitivePeerDependencies:
+      - react
+
   '@lingui/message-utils@5.3.1':
+    dependencies:
+      '@messageformat/parser': 5.1.1
+      js-sha256: 0.10.1
+
+  '@lingui/message-utils@5.3.2':
     dependencies:
       '@messageformat/parser': 5.1.1
       js-sha256: 0.10.1
@@ -7554,6 +7621,15 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.26.7
       '@lingui/core': 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
+      react: 19.1.0
+    optionalDependencies:
+      '@lingui/babel-plugin-lingui-macro': 5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3)
+      babel-plugin-macros: 3.1.0
+
+  '@lingui/react@5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
+    dependencies:
+      '@babel/runtime': 7.27.6
+      '@lingui/core': 5.3.2(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
       react: 19.1.0
     optionalDependencies:
       '@lingui/babel-plugin-lingui-macro': 5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3)
@@ -7580,7 +7656,7 @@ snapshots:
 
   '@manypkg/find-root@1.1.0':
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.27.6
       '@types/node': 12.20.55
       find-up: 4.1.0
       fs-extra: 8.1.0
@@ -7689,7 +7765,7 @@ snapshots:
 
   '@metamask/sdk@0.32.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.27.6
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
       '@metamask/sdk-communication-layer': 0.32.0(cross-fetch@4.1.0)(eciesjs@0.4.13)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -13364,7 +13440,7 @@ snapshots:
 
   react-transition-group@4.4.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.27.6
       dom-helpers: 5.2.1
       loose-envify: 1.4.0
       prop-types: 15.8.1
