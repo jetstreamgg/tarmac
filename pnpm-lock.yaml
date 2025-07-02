@@ -27,8 +27,8 @@ importers:
         specifier: ^5.3.1
         version: 5.3.1(typescript@5.8.3)
       '@lingui/format-po':
-        specifier: ^5.3.1
-        version: 5.3.1(typescript@5.8.3)
+        specifier: ^5.3.2
+        version: 5.3.2(typescript@5.8.3)
       '@tanstack/eslint-plugin-query':
         specifier: ^5.81.2
         version: 5.81.2(eslint@9.26.0(jiti@2.4.2))(typescript@5.8.3)
@@ -1011,6 +1011,10 @@ packages:
     resolution: {integrity: sha512-eX7DaagtB0/3UN3jB8xqfu4cldSKi+zganZE6Q73N7fhgQhoqEIfnRurSrHP4tmea1AARUi66jFWx/1lPPBrAg==}
     engines: {node: '>=20.0.0'}
 
+  '@lingui/conf@5.3.2':
+    resolution: {integrity: sha512-c0Dfovr9BLuwAnY5GADxKcwBUQdVl0Jo/JUa3cumIXFhHzZGb78kfhCHjWWQdX8+WQD8qzSl/YkVDbxhcQJGmg==}
+    engines: {node: '>=20.0.0'}
+
   '@lingui/core@5.3.1':
     resolution: {integrity: sha512-Y6WdhTlzzz+HzE6rn34rVoyXuKvTHTF5JmKdevTRu5x7ZfURaEtcoT9y6k9jgA2QMaP8YblcnU50M0svn/UZTA==}
     engines: {node: '>=20.0.0'}
@@ -1031,6 +1035,10 @@ packages:
     resolution: {integrity: sha512-TE4nbvOspzj4M1PdBr6lYpMQAM4qulhQij8uyO32aNpejt6psivZ1bdcG6UGh1+ue38C5QYvjVSlWR8UCShTWg==}
     engines: {node: '>=20.0.0'}
 
+  '@lingui/format-po@5.3.2':
+    resolution: {integrity: sha512-YZxk0CqdTNV6Mwo/PRsx4SHoNxfGEMEK6OHDk42/MGJiUQ6/Od6+2qlAW5z9TvapHnzWbDbU3EdBcqLvgD7Rqw==}
+    engines: {node: '>=20.0.0'}
+
   '@lingui/macro@5.3.1':
     resolution: {integrity: sha512-8n6dcziAVuNDtVdjuCqbrcmspqFrzK5aRlYP14R3XrCaKb4mcP5UdHD8+nk4yvLDABoMJgZUQrnWB5Ca2vpHvQ==}
     engines: {node: '>=20.0.0'}
@@ -1045,6 +1053,12 @@ packages:
 
   '@lingui/message-utils@5.3.1':
     resolution: {integrity: sha512-/nwO/uXHYNO4pT+gor7iFdvNHSIjhGhJnqGeWMndSAAqmx0LstrFp9yWhcUU3XaTceyy7AtgVZh0ter7ghOw/Q==}
+    engines: {node: '>=20.0.0'}
+    bundledDependencies:
+      - '@messageformat/date-skeleton'
+
+  '@lingui/message-utils@5.3.2':
+    resolution: {integrity: sha512-YUBrXApa3kxcL9oimJdw7oiAJ2ESkI24uyTMaRp9XYNaWgWqpEgoxC5bDN2Fwnk5THFjUp/l64kAD5LJGQhJxQ==}
     engines: {node: '>=20.0.0'}
     bundledDependencies:
       - '@messageformat/date-skeleton'
@@ -7436,6 +7450,16 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
+  '@lingui/conf@5.3.2(typescript@5.8.3)':
+    dependencies:
+      '@babel/runtime': 7.27.6
+      chalk: 4.1.2
+      cosmiconfig: 8.3.6(typescript@5.8.3)
+      jest-validate: 29.7.0
+      jiti: 1.21.7
+    transitivePeerDependencies:
+      - typescript
+
   '@lingui/core@5.3.1(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)':
     dependencies:
       '@babel/runtime': 7.26.7
@@ -7456,6 +7480,15 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
+  '@lingui/format-po@5.3.2(typescript@5.8.3)':
+    dependencies:
+      '@lingui/conf': 5.3.2(typescript@5.8.3)
+      '@lingui/message-utils': 5.3.2
+      date-fns: 3.6.0
+      pofile: 1.1.4
+    transitivePeerDependencies:
+      - typescript
+
   '@lingui/macro@5.3.1(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)(react@19.1.0)':
     dependencies:
       '@lingui/core': 5.3.1(@lingui/babel-plugin-lingui-macro@5.3.1(babel-plugin-macros@3.1.0)(typescript@5.8.3))(babel-plugin-macros@3.1.0)
@@ -7467,6 +7500,11 @@ snapshots:
       - react
 
   '@lingui/message-utils@5.3.1':
+    dependencies:
+      '@messageformat/parser': 5.1.1
+      js-sha256: 0.10.1
+
+  '@lingui/message-utils@5.3.2':
     dependencies:
       '@messageformat/parser': 5.1.1
       js-sha256: 0.10.1
