@@ -145,31 +145,58 @@ export function L2SavingsSupplyWithdraw({
                 title={t`Transaction overview`}
                 isFetching={false}
                 fetchingMessage={t`Fetching transaction details`}
+                rateType="ssr"
+                onExternalLinkClicked={onExternalLinkClicked}
                 transactionData={[
                   {
                     label: tabIndex === 0 ? t`You will supply` : t`You will withdraw`,
                     value: `${formatBigInt(originAmount, {
                       maxDecimals: 2,
-                      unit: getTokenDecimals(originToken, chainId)
+                      unit: getTokenDecimals(originToken, chainId),
+                      compact: true
                     })} ${originToken?.symbol}`
+                  },
+                  {
+                    label: t`Rate`,
+                    value: skySavingsRatecRate
                   },
                   ...(isConnectedAndEnabled
                     ? [
-                        ...(tabIndex === 0
-                          ? [
-                              {
-                                label: t`Rate`,
-                                value: skySavingsRatecRate
-                              }
-                            ]
-                          : []),
                         {
-                          label: t`Your wallet ${originToken?.symbol} balance will be`,
-                          value: `${formatBigInt(finalBalance, { maxDecimals: 2, unit: getTokenDecimals(originToken, chainId) })} ${originToken?.symbol}`
+                          label: t`Your wallet ${originToken?.symbol} balance`,
+                          value:
+                            originBalance !== undefined
+                              ? [
+                                  formatBigInt(originBalance, {
+                                    maxDecimals: 2,
+                                    unit: getTokenDecimals(originToken, chainId),
+                                    compact: true
+                                  }),
+                                  formatBigInt(finalBalance, {
+                                    maxDecimals: 2,
+                                    unit: getTokenDecimals(originToken, chainId),
+                                    compact: true
+                                  })
+                                ]
+                              : '--'
                         },
                         {
-                          label: t`Your Savings ${originToken?.symbol} balance will be`,
-                          value: `${formatBigInt(finalSavingsBalance, { maxDecimals: 2, unit: getTokenDecimals(originToken, chainId) })} ${originToken?.symbol}`
+                          label: t`Your Savings USDS balance`,
+                          value:
+                            convertedBalance?.value !== undefined
+                              ? [
+                                  formatBigInt(convertedBalance.value, {
+                                    maxDecimals: 2,
+                                    unit: getTokenDecimals(originToken, chainId),
+                                    compact: true
+                                  }),
+                                  formatBigInt(finalSavingsBalance, {
+                                    maxDecimals: 2,
+                                    unit: getTokenDecimals(originToken, chainId),
+                                    compact: true
+                                  })
+                                ]
+                              : '--'
                         }
                       ]
                     : [])

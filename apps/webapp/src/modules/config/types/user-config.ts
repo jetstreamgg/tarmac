@@ -7,4 +7,5 @@ export type UserConfig = {
   sealToken?: SealToken;
   chatSuggested: boolean;
   stakeToken?: StakeToken;
+  batchEnabled: boolean;
 };

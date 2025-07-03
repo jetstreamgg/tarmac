@@ -1,6 +1,6 @@
 import { Chain, defineChain } from 'viem';
 import tenderlyTestnetData from '../../../../../../tenderlyTestnetData.json' with { type: 'json' };
-import { optimism, unichain } from 'viem/chains';
+import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import { NetworkName } from '../../../test/e2e/utils/constants';
 
 export const TENDERLY_CHAIN_ID = 314310;
@@ -32,6 +32,7 @@ export const getTestTenderlyChains = () => {
 
   return [
     defineChain({
+      ...mainnet,
       id: TENDERLY_CHAIN_ID,
       name: 'Tenderly Mainnet',
       nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
@@ -40,6 +41,7 @@ export const getTestTenderlyChains = () => {
       }
     }),
     defineChain({
+      ...base,
       id: TENDERLY_BASE_CHAIN_ID,
       name: 'Tenderly Base',
       nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
@@ -48,6 +50,7 @@ export const getTestTenderlyChains = () => {
       }
     }),
     defineChain({
+      ...arbitrum,
       id: TENDERLY_ARBITRUM_CHAIN_ID,
       name: 'Tenderly Arbitrum',
       nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
@@ -55,19 +58,19 @@ export const getTestTenderlyChains = () => {
         default: { http: [arbitrumData.TENDERLY_RPC_URL || TENDERLY_ARBITRUM_RPC_URL] }
       }
     }),
-    {
+    defineChain({
       ...optimism,
       name: 'Tenderly Optimism',
       rpcUrls: {
         default: { http: [optimismData.TENDERLY_RPC_URL] }
       }
-    },
-    {
+    }),
+    defineChain({
       ...unichain,
       name: 'Tenderly Unichain',
       rpcUrls: {
         default: { http: [unichainData.TENDERLY_RPC_URL] }
       }
-    }
+    })
   ] as readonly Chain[];
 };

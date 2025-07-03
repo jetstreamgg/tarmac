@@ -63,7 +63,6 @@ export function getL2SubgraphUrl(chainId: number): string | null {
 export function getBaLabsApiUrl(chainId: number): string | null {
   switch (chainId) {
     case sepolia.id:
-    case TENDERLY_CHAIN_ID:
       return URL_BA_LABS_API_TENDERLY;
     default:
       return URL_BA_LABS_API_MAINNET;

@@ -146,30 +146,41 @@ export const SupplyWithdraw = ({
           title={t`Transaction overview`}
           isFetching={false}
           fetchingMessage={t`Fetching transaction details`}
+          rateType="ssr"
+          onExternalLinkClicked={onExternalLinkClicked}
           transactionData={[
             {
               label: tabIndex === 0 ? t`You will supply` : t`You will withdraw`,
               value: `${formatBigInt(amount, {
-                maxDecimals: 2
+                maxDecimals: 2,
+                compact: true
               })} ${inputToken?.symbol}`
+            },
+            {
+              label: t`Rate`,
+              value: stats.skySavingsRatecRate
             },
             ...(address
               ? [
-                  ...(widgetState.flow === SavingsFlow.SUPPLY
-                    ? [
-                        {
-                          label: t`Rate`,
-                          value: stats.skySavingsRatecRate
-                        }
-                      ]
-                    : []),
                   {
-                    label: t`Your wallet ${inputToken?.symbol} balance will be`,
-                    value: `${formatBigInt(finalBalance, { maxDecimals: 2 })} ${inputToken?.symbol}`
+                    label: t`Your wallet ${inputToken?.symbol} balance`,
+                    value:
+                      nstBalance !== undefined
+                        ? [
+                            formatBigInt(nstBalance, { maxDecimals: 2, compact: true }),
+                            formatBigInt(finalBalance, { maxDecimals: 2, compact: true })
+                          ]
+                        : '--'
                   },
                   {
-                    label: t`Your Savings ${inputToken?.symbol} balance will be`,
-                    value: `${formatBigInt(finalSavingsBalance, { maxDecimals: 2 })} ${inputToken?.symbol}`
+                    label: t`Your Savings USDS balance`,
+                    value:
+                      savingsBalance !== undefined
+                        ? [
+                            formatBigInt(savingsBalance, { maxDecimals: 2, compact: true }),
+                            formatBigInt(finalSavingsBalance, { maxDecimals: 2, compact: true })
+                          ]
+                        : '--'
                   }
                 ]
               : [])

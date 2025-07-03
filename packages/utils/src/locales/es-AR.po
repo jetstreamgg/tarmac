@@ -21,12 +21,15 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -35,6 +38,9 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "/+Z5u4"
 msgstr ""
 
@@ -53,12 +59,20 @@ msgid "{0} — Rewards statistics"
 msgstr ""
 
 #. placeholder {0}: flow === UpgradeFlow.UPGRADE ? 'Upgraded' : 'Reverted'
-#. placeholder {0}: flow === UpgradeFlow.UPGRADE ? 'Upgrading' : 'Reverting'
+#. placeholder {0}: flow === UpgradeFlow.UPGRADE ? (needsAllowance ? 'Approving and upgrading' : 'Upgrading') : needsAllowance ? 'Approving and reverting' : 'Reverting'
 #. placeholder {1}: originToken.symbol
 #. placeholder {2}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 msgid "{0} {1} to {2}"
+msgstr ""
+
+#. placeholder {0}: needsAllowance ? 'Approved and supplied' : 'Supplied'
+#. placeholder {0}: needsAllowance ? 'Approving and supplying' : 'Supplying'
+#. placeholder {1}: selectedRewardContract.supplyToken.symbol
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "{0} {1} to Sky Token Rewards module"
 msgstr ""
 
 #. placeholder {0}: SealToken.MKR
@@ -73,8 +87,10 @@ msgstr ""
 msgid "{0} staked"
 msgstr ""
 
-#. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Supplied to' : 'Withdrawn from'
+#. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Approved and supplied to' : isL2Chain ? 'Approved and withdrawn from' : 'Withdrawn from'
+#. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Approving and supplying to' : isL2Chain ? 'Approving and withdrawing from' : 'Withdrawing from'
 #. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Supplying to' : 'Withdrawing from'
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 msgid "{0} the Sky Savings Rate module"
@@ -111,6 +127,7 @@ msgstr ""
 #. placeholder {1}: originToken.symbol
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "1 {0} = {executionPrice} {1}"
 msgstr ""
 
@@ -225,6 +242,7 @@ msgstr ""
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Almost done!"
 msgstr ""
 
@@ -239,22 +257,33 @@ msgstr ""
 msgid "Amount exceeds debt"
 msgstr ""
 
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "An error occurred when allowing this app to access the {symbol} in your wallet."
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "An error occurred during the revert flow."
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "An error occurred during the supply flow."
+msgstr ""
+
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "An error occurred during the trade flow."
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "An error occurred during the upgrade flow."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "An error occurred during the withdraw flow."
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "An error occurred when allowing this app to access the tokens in your wallet."
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 msgid "An error occurred while allowing the app to access the {symbol}."
-msgstr ""
-
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "An error occurred while approving access to your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -272,20 +301,8 @@ msgstr ""
 msgid "An error occurred while preparing the transaction"
 msgstr ""
 
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "An error occurred while reverting your tokens."
-msgstr ""
-
 #: apps/webapp/src/modules/ui/components/TermsModal.tsx
 msgid "An error occurred while submitting your signature. Please ensure your wallet is connected to either Ethereum mainnet, Base, Arbitrum, Optimism or Unichain and try again. If the issue persists, reach out for assistance in the official <0>Sky Discord</0>"
-msgstr ""
-
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "An error occurred while supplying {symbol}"
-msgstr ""
-
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "An error occurred while supplying your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
@@ -293,16 +310,8 @@ msgstr ""
 msgid "An error occurred while trading your tokens"
 msgstr ""
 
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "An error occurred while upgrading your tokens."
-msgstr ""
-
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "An error occurred while withdrawing {symbol}"
-msgstr ""
-
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "An error occurred while withdrawing your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
@@ -321,25 +330,17 @@ msgid "Approval failed"
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx
+#: packages/widgets/src/shared/components/ui/transaction/TransactionReview.tsx
+#: packages/widgets/src/shared/components/ui/transaction/BatchTransactionStatus.tsx
 msgid "Approve"
 msgstr ""
 
-#. placeholder {0}: tabIndex === 0 ? 'upgrade' : 'revert'
-#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
-msgid "Approve {0} amount"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "Approve repay amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "Approve seal amount"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
-msgid "Approve staking amount"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
@@ -357,28 +358,9 @@ msgstr ""
 msgid "Approve successful"
 msgstr ""
 
-#: packages/widgets/src/widgets/SavingsWidget/index.tsx
-#: packages/widgets/src/widgets/RewardsWidget/index.tsx
-#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
-msgid "Approve supply amount"
-msgstr ""
-
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Approve token access"
-msgstr ""
-
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "Approve tokens access"
-msgstr ""
-
-#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
-msgid "Approve trade amount"
-msgstr ""
-
-#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
-msgid "Approve withdraw amount"
 msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedOriginAmount, { locale, unit: originToken ? getTokenDecimals(originToken, chainId) : 18 })
@@ -476,8 +458,40 @@ msgstr ""
 msgid "Be sure to check your transaction status on CoW Explorer to verify the cancellation was successful"
 msgstr ""
 
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Begin the change position process"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Begin the open position process"
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Begin the revert process"
+msgstr ""
+
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "Begin the savings process"
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Begin the supply process"
+msgstr ""
+
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "Begin the trade process"
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Begin the upgrade process"
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Begin the withdraw process"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
@@ -515,6 +529,11 @@ msgstr ""
 msgid "Borrowing"
 msgstr ""
 
+#. placeholder {0}: batchEnabled ? 'enabled' : 'disabled'
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+msgid "Bundled transactions {0}"
+msgstr ""
+
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
 msgid "By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain."
 msgstr ""
@@ -540,6 +559,21 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 msgid "Cancelled"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/components/StakeModuleTransactionStatus.tsx
+#: packages/widgets/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: packages/widgets/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+msgid "Change Position"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
+msgid "Change your delegate"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Changing position"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/components/TradeInputs.tsx
@@ -670,13 +704,41 @@ msgstr ""
 msgid "Confirm"
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
+#: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
+#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+msgid "Confirm 2 transactions"
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
+#: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
+#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+msgid "Confirm bundled transaction"
+msgstr ""
+
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "Confirm position"
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+msgid "Confirm revert"
+msgstr ""
+
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
 msgid "Confirm Staking Position"
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+msgid "Confirm supply"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
@@ -685,11 +747,26 @@ msgid "Confirm the change in your position"
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx
+#: packages/widgets/src/shared/components/ui/transaction/BatchTransactionStatus.tsx
 msgid "Confirm this transaction in your wallet."
+msgstr ""
+
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
+msgid "Confirm trade"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 msgid "Confirm trade details"
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+msgid "Confirm upgrade"
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+msgid "Confirm withdrawal"
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -703,10 +780,6 @@ msgstr ""
 msgid "Confirm your position"
 msgstr ""
 
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Confirm your revert"
-msgstr ""
-
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 msgid "Confirm your trade"
@@ -717,15 +790,8 @@ msgstr ""
 msgid "Confirm your transaction"
 msgstr ""
 
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "Confirm your transfer"
-msgstr ""
-
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Confirm your upgrade"
 msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/components/AssetsNoWalletConnected.tsx
@@ -759,16 +825,10 @@ msgstr ""
 msgid "Connect Wallet"
 msgstr ""
 
-#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
-#: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
-#: packages/widgets/src/widgets/SavingsWidget/index.tsx
-#: packages/widgets/src/widgets/RewardsWidget/index.tsx
-#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
-#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 msgid "Continue"
 msgstr ""
 
@@ -906,7 +966,6 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
@@ -914,11 +973,10 @@ msgstr ""
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Error"
 msgstr ""
@@ -954,6 +1012,7 @@ msgid "Estimated price impact"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 msgid "Exchange rate"
 msgstr ""
 
@@ -1008,6 +1067,7 @@ msgstr ""
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 msgid "Fetching transaction details"
 msgstr ""
@@ -1145,6 +1205,10 @@ msgstr ""
 msgid "How much would you like to unseal?"
 msgstr ""
 
+#: packages/widgets/src/widgets/StakeModuleWidget/components/UnconnectedState.tsx
+msgid "How to stake"
+msgstr ""
+
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
 msgid "How to Stake in 4 steps:"
 msgstr ""
@@ -1167,17 +1231,15 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "In progress"
 msgstr ""
 
@@ -1379,19 +1441,9 @@ msgstr ""
 msgid "New positions disabled"
 msgstr ""
 
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Next, confirm the revert transaction."
-msgstr ""
-
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 msgid "Next, confirm the transaction in your wallet."
-msgstr ""
-
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Next, confirm the upgrade transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/components/BalancesContent.tsx
@@ -1452,6 +1504,7 @@ msgid "Open a new position"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/components/StakeModuleTransactionStatus.tsx
+#: packages/widgets/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
 msgid "Open a position"
 msgstr ""
@@ -1462,6 +1515,7 @@ msgstr ""
 msgid "Open position"
 msgstr ""
 
+#: packages/widgets/src/widgets/StakeModuleWidget/components/UnconnectedState.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
 msgid "Open Position"
@@ -1483,6 +1537,7 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Order cancelled"
 msgstr ""
 
@@ -1499,14 +1554,40 @@ msgstr ""
 msgid "Output is estimated. You will receive at least {slippageAdjustedQuote} {0} or the transaction will revert."
 msgstr ""
 
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Please allow this app to access the {0} in your wallet and revert it to {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "Please allow this app to access the {0} in your wallet and trade it for {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+msgid "Please allow this app to access the {0} in your wallet and upgrade it to {1}."
+msgstr ""
+
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "Please allow this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module."
+msgstr ""
+
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Please allow this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "Please allow this app to access the {symbol} in your wallet and withdraw it from the Sky Savings Rate module."
+msgstr ""
+
+#: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 msgid "Please allow this app to access the {symbol} in your wallet."
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Please allow this app to access the tokens in your wallet."
 msgstr ""
@@ -1533,6 +1614,7 @@ msgid "Please connect your wallet to view your history"
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx
+#: packages/widgets/src/shared/components/ui/transaction/BatchTransactionStatus.tsx
 msgid "Please try again"
 msgstr ""
 
@@ -1561,7 +1643,6 @@ msgstr ""
 msgid "Position overview"
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/PositionSummary.tsx
 msgid "Position summary"
 msgstr ""
@@ -1586,6 +1667,7 @@ msgstr ""
 #: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 msgid "Rate"
 msgstr ""
@@ -1634,10 +1716,6 @@ msgstr ""
 msgid "Repaying USDS in the Seal Rewards module"
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Repaying USDS in the Stake Rewards module"
-msgstr ""
-
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
@@ -1650,8 +1728,8 @@ msgid "Retry"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
-#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeTransactionStatus.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeTransactionReview.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Revert"
 msgstr ""
@@ -1663,11 +1741,21 @@ msgid "Revert {0} into {1}"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Revert failed"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Revert successful"
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/SavingsWidget/index.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
+#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+msgid "Review"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
@@ -1959,6 +2047,7 @@ msgid "Something went wrong when trying to sign the message. Please try again."
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
@@ -2003,7 +2092,6 @@ msgstr ""
 msgid "Stake"
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/components/UnconnectedState.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
 msgid "Stake and borrow"
 msgstr ""
@@ -2035,10 +2123,6 @@ msgstr ""
 msgid "Staking Engine Overview"
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Staking MKR in the Stake Rewards module"
-msgstr ""
-
 #: apps/webapp/src/modules/stake/components/StakeOverview.tsx
 msgid "Staking positions"
 msgstr ""
@@ -2057,10 +2141,6 @@ msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeOverview.tsx
 msgid "Staking Rewards overview"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Staking SKY in the Staking Rewards Engine"
 msgstr ""
 
 #: apps/webapp/src/modules/app/hooks/useChatNotification.tsx
@@ -2124,11 +2204,6 @@ msgstr ""
 msgid "Successfully withdrawn"
 msgstr ""
 
-#. placeholder {0}: selectedRewardContract.supplyToken.symbol
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "Supplied {0} to Sky Token Rewards module"
-msgstr ""
-
 #: packages/widgets/src/widgets/RewardsWidget/components/SelectedRewardsCard.tsx
 msgid "Supplied balance"
 msgstr ""
@@ -2148,13 +2223,12 @@ msgstr ""
 
 #: apps/webapp/src/modules/savings/components/SavingsHistory.tsx
 #: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
-#: packages/widgets/src/widgets/SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SavingsTransactionStatus.tsx
-#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/SavingsWidget/components/SavingsTransactionReview.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/RewardsTransactionStatus.tsx
+#: packages/widgets/src/widgets/RewardsWidget/components/RewardsTransactionReview.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/ManagePosition.tsx
-#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Supply"
@@ -2187,11 +2261,6 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 msgid "Supplying {0} {1}"
-msgstr ""
-
-#. placeholder {0}: selectedRewardContract.supplyToken.symbol
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "Supplying {0} to Sky Token Rewards module"
 msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedAmount)
@@ -2267,24 +2336,18 @@ msgstr ""
 msgid "This reflects your slippage tolerance."
 msgstr ""
 
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 msgid "Token access approval in progress."
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "Token access approved"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 msgid "Tokens to receive"
 msgstr ""
 
@@ -2296,12 +2359,6 @@ msgstr ""
 #. placeholder {0}: rewardContract.rewardToken.symbol
 #: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
 msgid "Total {0} rewarded"
-msgstr ""
-
-#. placeholder {0}: selectedRewardContract?.supplyToken.symbol ?? ''
-#. placeholder {1}: widgetState.flow === RewardsFlow.SUPPLY ? 'Supply' : 'Withdraw'
-#: packages/widgets/src/widgets/RewardsWidget/index.tsx
-msgid "Total {0} to {1}"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/DelegateCard.tsx
@@ -2353,7 +2410,8 @@ msgstr ""
 #: apps/webapp/src/modules/balances/components/BalancesModuleShowcase.tsx
 #: packages/widgets/src/widgets/TradeWidget/components/TradeTransactionStatus.tsx
 #: packages/widgets/src/widgets/TradeWidget/components/TradeHeader.tsx
-#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/components/L2TradeTransactionStatus.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/components/L2TradeTransactionReview.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Trade"
 msgstr ""
@@ -2372,11 +2430,8 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Trade completed"
-msgstr ""
-
-#: packages/widgets/src/widgets/TradeWidget/components/TradeDetails.tsx
-msgid "Trade details"
 msgstr ""
 
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
@@ -2432,6 +2487,7 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Trading"
 msgstr ""
 
@@ -2447,6 +2503,7 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Trading {0} for {1}"
 msgstr ""
 
@@ -2455,8 +2512,10 @@ msgid "Transaction history"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+#: packages/widgets/src/widgets/TradeWidget/components/TradeDetails.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 msgid "Transaction overview"
 msgstr ""
@@ -2543,6 +2602,7 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Unknown status."
 msgstr ""
 
@@ -2569,7 +2629,6 @@ msgid "Unstake"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/StakeModuleWidget/components/UnconnectedState.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
 msgid "Unstake and pay back"
 msgstr ""
@@ -2582,20 +2641,6 @@ msgstr ""
 msgid "Unstaking"
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/components/StakeModuleTransactionStatus.tsx
-#: packages/widgets/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
-msgid "Update Position"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
-msgid "Update your delegate"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Updating position"
-msgstr ""
-
 #: apps/webapp/src/lib/constants.ts
 msgid "upgrade"
 msgstr ""
@@ -2603,8 +2648,8 @@ msgstr ""
 #: apps/webapp/src/modules/balances/components/BalancesModuleShowcase.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
-#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeTransactionStatus.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeTransactionReview.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Upgrade"
 msgstr ""
@@ -2635,6 +2680,7 @@ msgid "Upgrade DAI to USDS"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Upgrade failed"
 msgstr ""
 
@@ -2646,6 +2692,7 @@ msgstr ""
 msgid "Upgrade stats"
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Upgrade successful"
 msgstr ""
@@ -2755,6 +2802,7 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 #: packages/widgets/src/shared/constants.ts
 msgid "Waiting for confirmation"
 msgstr ""
@@ -2826,13 +2874,12 @@ msgid "With: USDS Get: USDS"
 msgstr ""
 
 #: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
-#: packages/widgets/src/widgets/SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SavingsTransactionStatus.tsx
-#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/SavingsWidget/components/SavingsTransactionReview.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/RewardsTransactionStatus.tsx
+#: packages/widgets/src/widgets/RewardsWidget/components/RewardsTransactionReview.tsx
 #: packages/widgets/src/widgets/RewardsWidget/components/ManagePosition.tsx
-#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
 #: packages/widgets/src/widgets/BalancesWidget/lib/getTitle.ts
 msgid "Withdraw"
@@ -2967,12 +3014,14 @@ msgstr ""
 #. placeholder {0}: targetToken.symbol
 #. placeholder {1}: originToken.symbol
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "You received {targetAmount} {0} for {originAmount} {1}."
 msgstr ""
 
 #. placeholder {0}: formatUnits(debouncedOriginAmount, 18)
 #. placeholder {1}: originToken.symbol
 #. placeholder {2}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "You reverted {0} {1} into {2}"
 msgstr ""
@@ -3034,17 +3083,62 @@ msgstr ""
 #. placeholder {1}: originToken.symbol
 #. placeholder {2}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "You upgraded {0} {1} into {2}"
 msgstr ""
 
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You will change your Staking Rewards Engine position."
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You will open a new Staking Rewards Engine position."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You will revert your {0} to {1}."
+msgstr ""
+
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 msgid "You will supply"
 msgstr ""
 
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Sky Savings Rate module."
+msgstr ""
+
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Sky Token Rewards module."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "You will trade your {0} for {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You will upgrade your {0} to {1}."
+msgstr ""
+
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
 msgid "You will withdraw"
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You will withdraw your {symbol} from the Sky Savings Rate module."
+msgstr ""
+
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You will withdraw your {symbol} from the Sky Token Rewards module."
 msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedAmount, { locale })
@@ -3060,6 +3154,82 @@ msgstr ""
 #. placeholder {0}: formatBigInt(debouncedAmount)
 #: packages/widgets/src/widgets/SavingsWidget/index.tsx
 msgid "You withdrew {0} USDS"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access the {0} in your wallet and revert it to {1} in multiple transactions."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access the {0} in your wallet and revert it to {1} in one bundled transaction."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "You're allowing this app to access the {0} in your wallet and trade it for {1} in multiple transactions."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "You're allowing this app to access the {0} in your wallet and trade it for {1} in one bundled transaction."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access the {0} in your wallet and upgrade it to {1} in multiple transactions."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access the {0} in your wallet and upgrade it to {1} in one bundled transaction."
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and change your Staking Rewards Engine position in multiple transactions."
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and change your Staking Rewards Engine position in one bundled transaction."
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and open a new Staking Rewards Engine position in multiple transactions."
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and open a new Staking Rewards Engine position in one bundled transaction."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module in multiple transactions."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module in one bundled transaction."
+msgstr ""
+
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module in multiple transactions."
+msgstr ""
+
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module in one bundled transaction."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and withdraw from the Sky Savings Rate module in multiple transactions."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access the {symbol} in your wallet and withdraw from the Sky Savings Rate module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -3100,9 +3270,10 @@ msgstr ""
 msgid "You’ve claimed your rewards"
 msgstr ""
 
+#. placeholder {0}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You've received {amount} {symbol}."
+msgid "You've received {amount} {0}."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
@@ -3156,6 +3327,12 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
 msgid "You've withdrawn {amount} {symbol} from the Sky Savings Rate module."
+msgstr ""
+
+#. placeholder {0}: selectedRewardContract?.rewardToken.symbol ?? ''
+#. placeholder {1}: selectedRewardContract?.supplyToken.symbol ?? ''
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+msgid "Your {0} rewards {1} balance"
 msgstr ""
 
 #. placeholder {0}: Array.isArray(termsLink) && termsLink.length > 0 ? ( <ExternalLink skipConfirm className="text-textEmphasis" showIcon={false} href={sanitizeUrl(termsLink[0].url)} > {termsLink[0].name} </ExternalLink> ) : ( 'Terms of Use' )
@@ -3213,15 +3390,13 @@ msgstr ""
 msgid "Your Rewards transaction history"
 msgstr ""
 
-#. placeholder {0}: inputToken?.symbol
-#. placeholder {0}: originToken?.symbol
-#: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
-#: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
-msgid "Your Savings {0} balance will be"
-msgstr ""
-
 #: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
 msgid "Your Savings transaction history"
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+msgid "Your Savings USDS balance"
 msgstr ""
 
 #: apps/webapp/src/modules/seal/components/SealPositionDetails.tsx
@@ -3248,7 +3423,29 @@ msgstr ""
 msgid "Your supply is being processed on the blockchain. Please wait."
 msgstr ""
 
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Your token approval and revert are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+#: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Your token approval and supply are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "Your token approval and trade are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Your token approval and upgrade are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
+msgid "Your token approval and withdrawal are being processed on the blockchain. Please wait."
+msgstr ""
+
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
+#: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
 msgid "Your trade is being processed on the blockchain. Please wait."
 msgstr ""
 
@@ -3257,12 +3454,12 @@ msgid "Your Trade transaction history"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Your transaction is being processed on the blockchain to create your position. Please wait."
+msgid "Your transaction is being processed on the blockchain to change your position. Please wait."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Your transaction is being processed on the blockchain to update your position. Please wait."
+#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Your transaction is being processed on the blockchain to create your position. Please wait."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
@@ -3281,15 +3478,25 @@ msgstr ""
 msgid "Your Upgrade/Revert transaction history"
 msgstr ""
 
+#. placeholder {0}: originToken?.symbol || ''
+#. placeholder {0}: targetToken?.symbol || ''
 #. placeholder {0}: inputToken?.symbol
-#. placeholder {0}: originToken?.symbol
+#: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+#: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
 #: packages/widgets/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: packages/widgets/src/widgets/RewardsWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
-msgid "Your wallet {0} balance will be"
+msgid "Your wallet {0} balance"
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/UnsupportedNetworkPage.tsx
 msgid "Your wallet is connected to an unsupported network"
+msgstr ""
+
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+msgid "Your wallet or the chain you are connected to currently does not support bundled transactions"
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts

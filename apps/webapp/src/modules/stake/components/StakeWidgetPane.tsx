@@ -15,6 +15,7 @@ import { Intent } from '@/lib/enums';
 import { useEffect, useState } from 'react';
 import { useStakeHistory } from '@jetstreamgg/sky-hooks';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
 
 export function StakeWidgetPane(sharedProps: SharedProps) {
@@ -30,6 +31,7 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   const { setShouldDisableActionButtons } = useChatContext();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   const isReset = searchParams.get(QueryParams.Reset) === 'true';
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   const onStakeUrnChange = (urn?: {
@@ -168,6 +170,8 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
           stakeTab,
           flow
         }}
+        batchEnabled={batchEnabled}
+        setBatchEnabled={setBatchEnabled}
       />
       <StakeHelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </>

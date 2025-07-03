@@ -7,8 +7,12 @@ const MAINNET_FORK_CONTAINER_ID = '67d03866-3483-455a-a001-7f9f69b1c5d4';
 // corresponds to https://dashboard.tenderly.co/jetstreamgg/jetstream/testnet/d382d976-02a4-4fc2-a9ba-db43a1602719
 const BASE_FORK_CONTAINER_ID = 'd382d976-02a4-4fc2-a9ba-db43a1602719';
 // corresponds to https://dashboard.tenderly.co/jetstreamgg/jetstream/testnet/d720e619-0124-4c51-aae9-f32dcba6de2a
-const ARBITRUM_FORK_CONTAINER_ID = 'd720e619-0124-4c51-aae9-f32dcba6de2a';
+// const ARBITRUM_FORK_CONTAINER_ID = 'd720e619-0124-4c51-aae9-f32dcba6de2a';
 
+const ARBITRUM_CONFIG = {
+  chainId: 42161,
+  forkBlock: '343221023'
+};
 const OPTIMISM_CONFIG = {
   chainId: 10,
   // Fixed block from after the Optimism PSM was funded
@@ -57,7 +61,7 @@ const forkVnets = async chainType => {
             })
           });
         case 'arbitrum':
-          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets', {
             headers: [
               ['accept', 'application/json, text/plain, */*'],
               ['content-type', 'application/json'],
@@ -65,8 +69,17 @@ const forkVnets = async chainType => {
             ],
             method: 'POST',
             body: JSON.stringify({
-              vnet_id: ARBITRUM_FORK_CONTAINER_ID,
-              display_name: 'ci-tests-testnet'
+              slug: `ci-tests-testnet-${ARBITRUM_CONFIG.chainId}-${currentTime}`,
+              display_name: 'ci-tests-testnet',
+              fork_config: {
+                network_id: ARBITRUM_CONFIG.chainId,
+                block_number: ARBITRUM_CONFIG.forkBlock
+              },
+              virtual_network_config: {
+                chain_config: {
+                  chain_id: ARBITRUM_CONFIG.chainId
+                }
+              }
             })
           });
         case 'optimism':
