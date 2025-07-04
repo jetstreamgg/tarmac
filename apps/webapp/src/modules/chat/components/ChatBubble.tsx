@@ -78,6 +78,7 @@ export const ChatBubble = ({
   const isLoading = type === MessageType.loading;
   const isInternal = type === MessageType.internal;
   const isCanceled = type === MessageType.canceled;
+  const isPending = type === MessageType.pending;
 
   return (
     <div
@@ -121,8 +122,9 @@ export const ChatBubble = ({
           <div className="space-y-5">
             <HStack className="items-center space-x-[6px]">
               {isError && <ChatError boxSize={16} />}
-              <div className="text-white/75">
+              <div className={`${isPending ? 'opacity-50' : ''} text-white/75`}>
                 <ChatMarkdownRenderer markdown={message} />
+                {isPending && <span className="ml-2 text-xs italic">(Pending terms acceptance)</span>}
               </div>
             </HStack>
             {user === UserType.bot && !isError && !isInternal && !isCanceled && (

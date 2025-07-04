@@ -96,18 +96,12 @@ const sendMessageMutation: MutationFunction<
 };
 
 export const useSendMessage = () => {
-  const {
-    setChatHistory,
-    sessionId,
-    chatHistory,
-    setShowChatbotTermsDialog,
-    setHasAcceptedChatbotTerms,
-    setPendingMessage
-  } = useChatContext();
+  const { setChatHistory, sessionId, chatHistory, setShowChatbotTermsDialog, setHasAcceptedChatbotTerms } =
+    useChatContext();
   const chainId = useChainId();
   const { isConnected } = useAccount();
 
-  const { loading: LOADING, error: ERROR, canceled: CANCELED } = MessageType;
+  const { loading: LOADING, error: ERROR, canceled: CANCELED, pending: PENDING } = MessageType;
   const { mutate } = useMutation<SendMessageResponse, Error, { messagePayload: Partial<SendMessageRequest> }>(
     {
       mutationFn: sendMessageMutation
@@ -172,15 +166,23 @@ export const useSendMessage = () => {
             // Show terms dialog
             setShowChatbotTermsDialog(true);
 
-            // Store the message that triggered the 403
-            setPendingMessage(message);
-
-            // Remove both the user message and loading message
-            // We need to remove the last 2 messages (user message + loading)
+            // Mark the user's message as pending instead of removing it
             setChatHistory(prevHistory => {
+              // Remove loading message
               const filtered = prevHistory.filter(item => item.type !== LOADING);
-              // Remove the last message (which should be the user's message that got 403)
-              return filtered.slice(0, -1);
+              // Find the last user message and mark it as pending
+              const lastUserMessageIndex = filtered.findLastIndex(
+                item => item.user === UserType.user && !item.type
+              );
+              if (lastUserMessageIndex >= 0) {
+                const updated = [...filtered];
+                updated[lastUserMessageIndex] = {
+                  ...updated[lastUserMessageIndex],
+                  type: PENDING
+                };
+                return updated;
+              }
+              return filtered;
             });
 
             return;

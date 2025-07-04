@@ -9,6 +9,7 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useDismissChatSuggestion } from '../hooks/useDismissChatSuggestion';
 import { ChatbotTermsDialog } from '@/modules/chat/components/ChatbotTermsDialog';
 import { TermsDeclinedMessage } from '@/modules/chat/components/TermsDeclinedMessage';
+import { MessageType } from '@/modules/chat/constants';
 
 export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const {
@@ -19,8 +20,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     setHasAcceptedChatbotTerms,
     setHasDeclinedChatbotTerms,
     hasDeclinedChatbotTerms,
-    pendingMessage,
-    setPendingMessage
+    setChatHistory
   } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -39,17 +39,17 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     setHasAcceptedChatbotTerms(true);
     setShowChatbotTermsDialog(false);
 
-    // If there's a pending message, send it automatically
-    if (pendingMessage) {
-      sendMessage(pendingMessage);
-      setPendingMessage(null); // Clear the pending message
-    }
+    const pendingMessages = chatHistory.filter(item => item.type === MessageType.pending);
+    setChatHistory(prevHistory => prevHistory.filter(item => item.type !== MessageType.pending));
+    pendingMessages.forEach(msg => {
+      sendMessage(msg.message);
+    });
   };
 
   const handleTermsDecline = () => {
     setShowChatbotTermsDialog(false);
     setHasDeclinedChatbotTerms(true);
-    setPendingMessage(null); // Clear any pending message
+    setChatHistory(prevHistory => prevHistory.filter(item => item.type !== MessageType.pending));
   };
 
   return (

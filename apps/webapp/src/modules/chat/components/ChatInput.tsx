@@ -6,10 +6,12 @@ import { t } from '@lingui/macro';
 import { useChatContext } from '../context/ChatContext';
 import { Text } from '@/modules/layout/components/Typography';
 import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
+import { generateUUID } from '../lib/generateUUID';
+import { UserType, MessageType } from '../constants';
 
 export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const [inputText, setInputText] = useState('');
-  const { isLoading, hasAcceptedChatbotTerms, chatHistory, setShowChatbotTermsDialog, setPendingMessage } =
+  const { isLoading, hasAcceptedChatbotTerms, chatHistory, setShowChatbotTermsDialog, setChatHistory } =
     useChatContext();
   const isMessageSendingBlocked = !inputText || isLoading;
 
@@ -18,8 +20,16 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
 
     // Check for chatbot terms acceptance (includes age restriction)
     if (!hasAcceptedChatbotTerms) {
-      // Store the message to send after terms acceptance
-      setPendingMessage(inputText);
+      // Add the message as pending in chat history
+      setChatHistory(prevHistory => [
+        ...prevHistory,
+        {
+          id: generateUUID(),
+          user: UserType.user,
+          message: inputText,
+          type: MessageType.pending
+        }
+      ]);
       setShowChatbotTermsDialog(true);
       setInputText(''); // Clear the input so user knows their message is "captured"
       return;
