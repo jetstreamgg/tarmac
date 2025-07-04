@@ -1,5 +1,5 @@
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
-import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
   useTokenBalance,
   TokenForChain,
@@ -44,7 +44,6 @@ import { getValidatedState } from '@widgets/lib/utils';
 import { L2TradeInputs } from './components/L2TradeInputs';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
-import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { Heading } from '@widgets/shared/components/ui/Typography';
@@ -52,6 +51,7 @@ import { L2TradeTransactionStatus } from './components/L2TradeTransactionStatus'
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { L2TradeTransactionReview } from './components/L2TradeTransactionReview';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 
 const useMaxInForWithdraw = (
   targetAmount: bigint,
@@ -99,63 +99,12 @@ export type TradeWidgetProps = WidgetProps & {
   setBatchEnabled?: (enabled: boolean) => void;
 };
 
-export const L2TradeWidget = ({
-  onConnect,
-  addRecentTransaction,
-  locale,
-  rightHeaderComponent,
-  customTokenList,
-  disallowedPairs = defaultConfig.tradeDisallowedPairs,
-  externalWidgetState,
-  onStateValidated,
-  onNotification,
-  onWidgetStateChange,
-  onCustomNavigation,
-  customNavigationLabel,
-  onExternalLinkClicked,
-  enabled = true,
-  referralCode,
-  widgetTitle,
-  shouldReset = false,
-  batchEnabled,
-  setBatchEnabled
-}: TradeWidgetProps) => {
-  const key = shouldReset ? 'reset' : undefined;
-  return (
-    <ErrorBoundary componentName="TradeWidget">
-      <WidgetProvider key={key} locale={locale}>
-        <TradeWidgetWrapped
-          key={key}
-          onConnect={onConnect}
-          addRecentTransaction={addRecentTransaction}
-          rightHeaderComponent={rightHeaderComponent}
-          customTokenList={customTokenList}
-          disallowedPairs={disallowedPairs}
-          locale={locale}
-          externalWidgetState={externalWidgetState}
-          onStateValidated={onStateValidated}
-          onNotification={onNotification}
-          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
-          customNavigationLabel={customNavigationLabel}
-          onCustomNavigation={onCustomNavigation}
-          onExternalLinkClicked={onExternalLinkClicked}
-          enabled={enabled}
-          referralCode={referralCode}
-          widgetTitle={widgetTitle}
-          batchEnabled={batchEnabled}
-          setBatchEnabled={setBatchEnabled}
-        />
-      </WidgetProvider>
-    </ErrorBoundary>
-  );
-};
-
 function TradeWidgetWrapped({
   onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   customTokenList = [],
-  disallowedPairs,
+  disallowedPairs = defaultConfig.tradeDisallowedPairs,
   locale,
   externalWidgetState,
   onStateValidated,
@@ -1338,3 +1287,5 @@ function TradeWidgetWrapped({
     </WidgetContainer>
   );
 }
+
+export const L2TradeWidget = withWidgetProvider(TradeWidgetWrapped, 'L2TradeWidget');

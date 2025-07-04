@@ -1,7 +1,6 @@
-import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { WidgetProps, WidgetState, WidgetStateChangeParams } from '@widgets/shared/types/widgetState';
-import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { Heading } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
@@ -17,12 +16,7 @@ import { useAccount, useChainId } from 'wagmi';
 import { getStepTitle, StakeAction, StakeFlow, StakeScreen, StakeStep } from './lib/constants';
 import { getNextStep, getPreviousStep, getStepIndex, getTotalSteps } from './lib/utils';
 import { StepperBar } from './components/StepperBar';
-import { UrnsList } from './components/UrnsList';
-import { OpenNewUrn } from './components/OpenNewUrn';
-import { SelectRewardContract } from './components/SelectRewardContract';
-import { StakeModuleWidgetContext, StakeModuleWidgetProvider } from './context/context';
-import { SelectDelegate } from './components/SelectDelegate';
-import { PositionSummary } from './components/PositionSummary';
+import { StakeModuleWidgetContext } from './context/context';
 import {
   useCurrentUrnIndex,
   useStakeSkyAllowance,
@@ -40,8 +34,7 @@ import {
   TOKENS,
   getTokenDecimals,
   getIlkName,
-  useIsBatchSupported,
-  Token
+  useIsBatchSupported
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt, getTransactionLink, useDebounce, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
@@ -53,6 +46,9 @@ import { UnconnectedState } from './components/UnconnectedState';
 import { useLingui } from '@lingui/react';
 import { formatUnits, parseUnits } from 'viem';
 import { StakeModuleTransactionStatus } from './components/StakeModuleTransactionStatus';
+import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
+import { Wizard } from './components/Wizard';
+import { ManagePosition } from './components/ManagePosition';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -65,48 +61,6 @@ type StakeModuleWidgetProps = WidgetProps & {
   addRecentTransaction: any;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
-};
-
-export const StakeModuleWidget = ({
-  locale,
-  rightHeaderComponent,
-  onStakeUrnChange,
-  externalWidgetState,
-  onConnect,
-  onNotification,
-  onWidgetStateChange,
-  onExternalLinkClicked,
-  onShowHelpModal,
-  addRecentTransaction,
-  referralCode,
-  shouldReset = false,
-  batchEnabled,
-  setBatchEnabled
-}: StakeModuleWidgetProps) => {
-  const key = shouldReset ? 'reset' : undefined;
-  return (
-    <ErrorBoundary componentName="StakeModuleWidget">
-      <WidgetProvider key={key} locale={locale}>
-        <StakeModuleWidgetProvider>
-          <StakeModuleWidgetWrapped
-            key={key}
-            rightHeaderComponent={rightHeaderComponent}
-            onStakeUrnChange={onStakeUrnChange}
-            externalWidgetState={externalWidgetState}
-            onConnect={onConnect}
-            onNotification={onNotification}
-            onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
-            onExternalLinkClicked={onExternalLinkClicked}
-            onShowHelpModal={onShowHelpModal}
-            addRecentTransaction={addRecentTransaction}
-            referralCode={referralCode}
-            batchEnabled={batchEnabled}
-            setBatchEnabled={setBatchEnabled}
-          />
-        </StakeModuleWidgetProvider>
-      </WidgetProvider>
-    </ErrorBoundary>
-  );
 };
 
 function StakeModuleWidgetWrapped({
@@ -1099,119 +1053,4 @@ function StakeModuleWidgetWrapped({
   );
 }
 
-const Wizard = ({
-  isConnectedAndEnabled,
-  onExternalLinkClicked,
-  currentStep,
-  onClickTrigger,
-  tabSide,
-  onWidgetStateChange,
-  needsAllowance,
-  allowanceToken,
-  batchEnabled,
-  setBatchEnabled,
-  isBatchTransaction
-}: {
-  isConnectedAndEnabled: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  currentStep: StakeStep;
-  onClickTrigger: any;
-  tabSide: 'left' | 'right';
-  onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
-  needsAllowance: boolean;
-  allowanceToken?: Token;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
-  isBatchTransaction: boolean;
-}) => {
-  const chainId = useChainId();
-  const { widgetState, txStatus } = useContext(WidgetContext);
-  return (
-    <div>
-      {currentStep === StakeStep.OPEN_BORROW && (
-        <OpenNewUrn
-          isConnectedAndEnabled={isConnectedAndEnabled}
-          onClickTrigger={onClickTrigger}
-          tabSide={tabSide}
-          onInputAmountChange={(val: bigint, userTriggered?: boolean) => {
-            if (userTriggered) {
-              // If newValue is 0n and it was triggered by user, it means they're clearing the input
-              const formattedValue =
-                val === 0n ? '' : formatUnits(val, getTokenDecimals(TOKENS.sky, chainId));
-              onWidgetStateChange?.({
-                originAmount: formattedValue,
-                txStatus,
-                widgetState
-              });
-            }
-          }}
-        />
-      )}
-      {currentStep === StakeStep.REWARDS && (
-        <SelectRewardContract onExternalLinkClicked={onExternalLinkClicked} />
-      )}
-      {currentStep === StakeStep.DELEGATE && <SelectDelegate onExternalLinkClicked={onExternalLinkClicked} />}
-      {currentStep === StakeStep.SUMMARY && (
-        <PositionSummary
-          needsAllowance={needsAllowance}
-          allowanceToken={allowanceToken}
-          batchEnabled={batchEnabled}
-          setBatchEnabled={setBatchEnabled}
-          isBatchTransaction={isBatchTransaction}
-        />
-      )}
-    </div>
-  );
-};
-
-const ManagePosition = ({
-  isConnectedAndEnabled,
-  onExternalLinkClicked,
-  currentStep,
-  currentAction,
-  onClickTrigger,
-  tabSide,
-  claimPrepared,
-  claimExecute,
-  onStakeUrnChange,
-  onWidgetStateChange,
-  needsAllowance,
-  allowanceToken,
-  batchEnabled,
-  setBatchEnabled,
-  isBatchTransaction
-}: {
-  isConnectedAndEnabled: boolean;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  currentStep: StakeStep;
-  currentAction: StakeAction;
-  onClickTrigger: any;
-  tabSide: 'left' | 'right';
-  claimPrepared: boolean;
-  claimExecute: () => void;
-  onStakeUrnChange?: OnStakeUrnChange;
-  onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
-  needsAllowance: boolean;
-  allowanceToken?: Token;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
-  isBatchTransaction: boolean;
-}) => {
-  return currentAction === StakeAction.OVERVIEW ? (
-    <UrnsList claimPrepared={claimPrepared} claimExecute={claimExecute} onStakeUrnChange={onStakeUrnChange} />
-  ) : (
-    <Wizard
-      isConnectedAndEnabled={isConnectedAndEnabled}
-      onExternalLinkClicked={onExternalLinkClicked}
-      currentStep={currentStep}
-      onClickTrigger={onClickTrigger}
-      tabSide={tabSide}
-      onWidgetStateChange={onWidgetStateChange}
-      needsAllowance={needsAllowance}
-      allowanceToken={allowanceToken}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
-      isBatchTransaction={isBatchTransaction}
-    />
-  );
-};
+export const StakeModuleWidget = withWidgetProvider(StakeModuleWidgetWrapped, 'StakeModuleWidget');

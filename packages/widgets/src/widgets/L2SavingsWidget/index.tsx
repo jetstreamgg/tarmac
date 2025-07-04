@@ -19,7 +19,7 @@ import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetCont
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
 import { SavingsTransactionStatus } from '../SavingsWidget/components/SavingsTransactionStatus';
 import { L2SavingsSupplyWithdraw } from './components/L2SavingsSupplyWithdraw';
-import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { NotificationType, TxStatus, EPOCH_LENGTH } from '@widgets/shared/constants';
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { Trans } from '@lingui/react/macro';
@@ -30,7 +30,6 @@ import { formatUnits, parseUnits } from 'viem';
 import { Heading } from '@widgets/shared/components/ui/Typography';
 import { getValidatedState } from '@widgets/lib/utils';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
-import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
@@ -41,6 +40,7 @@ import {
   useReadSsrAuthOracleGetSsr
 } from '@jetstreamgg/sky-hooks';
 import { SavingsTransactionReview } from '../SavingsWidget/components/SavingsTransactionReview';
+import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 
 const defaultDepositOptions = [TOKENS.usds, TOKENS.usdc];
 const defaultWithdrawOptions = [TOKENS.usds, TOKENS.usdc];
@@ -83,49 +83,6 @@ export type SavingsWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
-};
-
-export const L2SavingsWidget = ({
-  onConnect,
-  addRecentTransaction,
-  locale,
-  rightHeaderComponent,
-  externalWidgetState,
-  onStateValidated,
-  onNotification,
-  onWidgetStateChange,
-  onExternalLinkClicked,
-  enabled = true,
-  referralCode,
-  disallowedTokens,
-  shouldReset = false,
-  batchEnabled,
-  setBatchEnabled
-}: SavingsWidgetProps) => {
-  const key = shouldReset ? 'reset' : undefined;
-  return (
-    <ErrorBoundary componentName="SavingsWidget">
-      <WidgetProvider key={key} locale={locale}>
-        <SavingsWidgetWrapped
-          key={key}
-          onConnect={onConnect}
-          addRecentTransaction={addRecentTransaction}
-          rightHeaderComponent={rightHeaderComponent}
-          externalWidgetState={externalWidgetState}
-          onStateValidated={onStateValidated}
-          onNotification={onNotification}
-          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
-          onExternalLinkClicked={onExternalLinkClicked}
-          locale={locale}
-          enabled={enabled}
-          referralCode={referralCode}
-          disallowedTokens={disallowedTokens}
-          batchEnabled={batchEnabled}
-          setBatchEnabled={setBatchEnabled}
-        />
-      </WidgetProvider>
-    </ErrorBoundary>
-  );
 };
 
 // HOC Widget
@@ -1071,3 +1028,5 @@ const SavingsWidgetWrapped = ({
     </WidgetContainer>
   );
 };
+
+export const L2SavingsWidget = withWidgetProvider(SavingsWidgetWrapped, 'L2SavingsWidget');
