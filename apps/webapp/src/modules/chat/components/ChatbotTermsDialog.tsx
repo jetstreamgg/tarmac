@@ -26,7 +26,7 @@ export function ChatbotTermsDialog({ isOpen, onAccept, onDecline }: ChatbotTerms
   const [isPrivacyChecked, setIsPrivacyChecked] = useState(false);
   const { ref: endOfTermsRef, inView } = useInView({
     threshold: 0.9, // Require 90% of the element to be visible
-    skip: !isOpen // Don't observe when dialog is closed
+    skip: !isOpen || !termsContent // Don't observe when dialog is closed or no content
   });
 
   useEffect(() => {
@@ -50,6 +50,12 @@ export function ChatbotTermsDialog({ isOpen, onAccept, onDecline }: ChatbotTerms
       const { content, version } = await getChatbotTerms();
       setTermsContent(content);
       setTermsVersion(version);
+      // Check if content is immediately visible after a small delay
+      setTimeout(() => {
+        if (inView) {
+          setHasScrolledToEnd(true);
+        }
+      }, 100);
     } catch (err) {
       console.error('Failed to load terms:', err);
       setTermsContent('Failed to load terms. Please try again later.');
