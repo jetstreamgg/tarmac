@@ -10,5 +10,6 @@ export enum MessageType {
   error = 'error',
   text = 'text',
   internal = 'internal',
-  canceled = 'canceled'
+  canceled = 'canceled',
+  pending = 'pending' // Message pending terms acceptance
 }

@@ -49,7 +49,9 @@ msgid "(More rewards coming soon)"
 msgstr ""
 
 #. placeholder {0}: signStatus === 'signing' ? 'Signing...' : 'Agree and Sign'
+#. placeholder {0}: isLoading ? 'Accepting...' : canAccept ? 'I Agree' : 'Complete Requirements'
 #: apps/webapp/src/modules/ui/components/TermsModal.tsx
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
 msgid "{0}"
 msgstr ""
 
@@ -189,6 +191,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "About Trade"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/TermsDeclinedMessage.tsx
+msgid "Accept Terms"
 msgstr ""
 
 #: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
@@ -534,6 +540,10 @@ msgstr ""
 msgid "Bundled transactions {0}"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "By checking the boxes below, you confirm that you have read, understood, and agree to the following:"
+msgstr ""
+
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
 msgid "By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain."
 msgstr ""
@@ -574,6 +584,10 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Changing position"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "Chatbot Terms of Service"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/components/TradeInputs.tsx
@@ -896,6 +910,10 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 msgid "Debt must be paid off entirely, or left with a minimum of {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "Decline"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
@@ -1592,6 +1610,10 @@ msgstr ""
 msgid "Please allow this app to access the tokens in your wallet."
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "Please check both boxes to confirm your agreement."
+msgstr ""
+
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "Please confirm that you want to claim your {symbol} rewards directly to your wallet."
 msgstr ""
@@ -1601,16 +1623,16 @@ msgstr ""
 msgid "Please confirm that you want to claim your rewards directly to your wallet."
 msgstr ""
 
-#: apps/webapp/src/modules/chat/components/ChatInput.tsx
-msgid "Please confirm you're at least 18"
-msgstr ""
-
 #: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
 msgid "Please connect your wallet to Ethereum Mainnet to start the migration of your positions."
 msgstr ""
 
 #: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
 msgid "Please connect your wallet to view your history"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "Please scroll to the bottom to read all terms before proceeding."
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx
@@ -2284,6 +2306,10 @@ msgstr ""
 msgid "Switch network"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/TermsDeclinedMessage.tsx
+msgid "Terms Not Accepted"
+msgstr ""
+
 #: packages/widgets/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
 msgid "Terms of Use."
 msgstr ""
@@ -2294,6 +2320,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "The multicall transaction was successful"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "The Privacy Policy governing the use of this chatbot service"
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
@@ -2314,6 +2344,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "The Staking Engine is a module of the Sky Protocol. It has replaced the Seal Engine, offering the same features but it has no exit fee and only supports SKY, not MKR. The SKY tokens you supply to the Staking Engine enable you to access Staking Rewards, and more. With Sky, you always remain in control of your assets."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "The Terms of Use of the chatbot service, including that you are at least 18 years old"
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
@@ -2992,6 +3026,10 @@ msgstr ""
 msgid "You don't have any open positions."
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/TermsDeclinedMessage.tsx
+msgid "You have declined the chatbot terms of service. You need to accept the terms in order to use the chatbot."
+msgstr ""
+
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Repay.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/components/Repay.tsx
 msgid "You have no debt to repay"
@@ -3009,6 +3047,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
 msgid "You may choose to transfer the voting power your staked SKY provides to a recognized delegate <0/> or a contract you own."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatbotTermsDialog.tsx
+msgid "You may now accept the terms."
 msgstr ""
 
 #. placeholder {0}: targetToken.symbol

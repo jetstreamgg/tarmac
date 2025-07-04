@@ -15,8 +15,6 @@ import { ChatIntentsRow } from './ChatIntentsRow';
 import { StopGeneratingButton } from './StopGeneratingButton';
 import { ChatError } from '@/modules/icons';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
-import { AgeWarningRow } from './AgeWarningRow';
-import { useChatContext } from '../context/ChatContext';
 
 type ChatBubbleProps = {
   user: UserType;
@@ -70,18 +68,17 @@ export const ChatBubble = ({
   intents,
   sendMessage,
   showModifierRow = true,
-  isLastMessage,
-  isFirstMessage
+  isLastMessage
 }: ChatBubbleProps) => {
   const { address } = useAccount();
   const [searchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
-  const { hasAcceptedAgeRestriction } = useChatContext();
   const shouldUseLargeAvatar = bpi >= BP.xl && searchParams.get(QueryParams.Details) !== 'true';
   const isError = type === MessageType.error;
   const isLoading = type === MessageType.loading;
   const isInternal = type === MessageType.internal;
   const isCanceled = type === MessageType.canceled;
+  const isPending = type === MessageType.pending;
 
   return (
     <div
@@ -125,11 +122,11 @@ export const ChatBubble = ({
           <div className="space-y-5">
             <HStack className="items-center space-x-[6px]">
               {isError && <ChatError boxSize={16} />}
-              <div className="text-white/75">
+              <div className={`${isPending ? 'opacity-50' : ''} text-white/75`}>
                 <ChatMarkdownRenderer markdown={message} />
+                {isPending && <span className="ml-2 text-xs italic">(Pending terms acceptance)</span>}
               </div>
             </HStack>
-            {isFirstMessage && !hasAcceptedAgeRestriction && <AgeWarningRow />}
             {user === UserType.bot && !isError && !isInternal && !isCanceled && (
               <div className="space-y-5">
                 {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />}

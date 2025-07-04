@@ -6,14 +6,35 @@ import { t } from '@lingui/macro';
 import { useChatContext } from '../context/ChatContext';
 import { Text } from '@/modules/layout/components/Typography';
 import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
+import { generateUUID } from '../lib/generateUUID';
+import { UserType, MessageType } from '../constants';
 
 export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const [inputText, setInputText] = useState('');
-  const { isLoading, hasAcceptedAgeRestriction, chatHistory } = useChatContext();
-  const isMessageSendingBlocked = !inputText || isLoading || !hasAcceptedAgeRestriction;
+  const { isLoading, hasAcceptedChatbotTerms, chatHistory, setShowChatbotTermsDialog, setChatHistory } =
+    useChatContext();
+  const isMessageSendingBlocked = !inputText || isLoading;
 
   const handleSubmit = () => {
-    if (isMessageSendingBlocked) return;
+    if (!inputText || isLoading) return;
+
+    // Check for chatbot terms acceptance (includes age restriction)
+    if (!hasAcceptedChatbotTerms) {
+      // Add the message as pending in chat history
+      setChatHistory(prevHistory => [
+        ...prevHistory,
+        {
+          id: generateUUID(),
+          user: UserType.user,
+          message: inputText,
+          type: MessageType.pending
+        }
+      ]);
+      setShowChatbotTermsDialog(true);
+      setInputText(''); // Clear the input so user knows their message is "captured"
+      return;
+    }
+
     sendMessage(inputText);
     setInputText('');
   };
@@ -27,11 +48,7 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
   };
 
   const isFirstMessage = chatHistory.length === 1;
-  const placeholder = hasAcceptedAgeRestriction
-    ? isFirstMessage
-      ? t`Ask me anything`
-      : t`Ask another question`
-    : t`Please confirm you're at least 18`;
+  const placeholder = isFirstMessage ? t`Ask me anything` : t`Ask another question`;
 
   return (
     <div>
@@ -43,7 +60,6 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
           maxLength={MAX_MESSAGE_LENGTH}
           onChange={e => setInputText(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
           onKeyUp={handleKeyPress}
-          disabled={!hasAcceptedAgeRestriction}
         />
         <Button
           variant="ghost"
