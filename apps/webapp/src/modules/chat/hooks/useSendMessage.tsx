@@ -34,10 +34,28 @@ const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
     method: 'POST',
     headers,
     body: JSON.stringify(messagePayload)
+    // credentials: 'include' // Important for cookies - Uncomment when we have a backend with jwt
   });
 
   if (!response.ok) {
-    throw new Error('Advanced chat response was not ok');
+    // Check for 403 specifically to handle terms acceptance
+    if (response.status === 403) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        // If Requestly or another interceptor doesn't provide JSON body
+        errorData = { error: 'Terms acceptance required' };
+      }
+      const error = new Error(errorData.error || 'Terms acceptance required');
+      (error as any).code = errorData.code || 'TERMS_NOT_ACCEPTED';
+      (error as any).status = 403;
+      throw error;
+    }
+    // Preserve status for other errors too
+    const error = new Error(`Chat response was not ok: ${response.status}`);
+    (error as any).status = response.status;
+    throw error;
   }
 
   const data = await response.json();
@@ -78,7 +96,8 @@ const sendMessageMutation: MutationFunction<
 };
 
 export const useSendMessage = () => {
-  const { setChatHistory, sessionId, chatHistory } = useChatContext();
+  const { setChatHistory, sessionId, chatHistory, setShowChatbotTermsDialog, setHasAcceptedChatbotTerms } =
+    useChatContext();
   const chainId = useChainId();
   const { isConnected } = useAccount();
 
@@ -129,6 +148,30 @@ export const useSendMessage = () => {
         },
         onError: error => {
           console.error('Failed to send message:', error);
+          console.log('Error details:', {
+            status: (error as any).status,
+            code: (error as any).code,
+            message: error.message
+          });
+
+          // Handle 403 errors specifically for terms acceptance
+          // Check both status property and error message (for Requestly compatibility)
+          const is403Error = (error as any).status === 403;
+          if (is403Error) {
+            console.log('Handling 403 error - showing terms dialog');
+
+            // Clear terms acceptance state
+            setHasAcceptedChatbotTerms(false);
+
+            // Show terms dialog
+            setShowChatbotTermsDialog(true);
+
+            // Remove the loading message without adding an error message
+            setChatHistory(prevHistory => prevHistory.filter(item => item.type !== LOADING));
+
+            return;
+          }
+
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED
               ? prevHistory

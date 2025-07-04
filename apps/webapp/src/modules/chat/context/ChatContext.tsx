@@ -4,9 +4,7 @@ import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/macro';
 import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { intentModifiesState } from '../lib/intentUtils';
-
-// Key for localStorage
-const AGE_RESTRICTION_KEY = 'has-accepted-age-restriction';
+import { checkTermsAcceptance } from '../api/chatbotTermsApi';
 
 interface ChatContextType {
   isLoading: boolean;
@@ -17,14 +15,19 @@ interface ChatContextType {
   sessionId: string;
   shouldShowConfirmationWarning: boolean;
   shouldDisableActionButtons: boolean;
-  hasAcceptedAgeRestriction: boolean;
+  hasAcceptedChatbotTerms: boolean;
+  hasDeclinedChatbotTerms: boolean;
+  isCheckingTermsAcceptance: boolean;
+  showChatbotTermsDialog: boolean;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   setConfirmationWarningOpened: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedIntent: React.Dispatch<React.SetStateAction<ChatIntent | undefined>>;
   setWarningShown: React.Dispatch<React.SetStateAction<ChatIntent[]>>;
   hasShownIntent: (intent?: ChatIntent) => boolean;
   setShouldDisableActionButtons: React.Dispatch<React.SetStateAction<boolean>>;
-  setHasAcceptedAgeRestriction: (accepted: boolean) => void;
+  setHasAcceptedChatbotTerms: (accepted: boolean) => void;
+  setHasDeclinedChatbotTerms: (declined: boolean) => void;
+  setShowChatbotTermsDialog: (show: boolean) => void;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -42,8 +45,13 @@ const ChatContext = createContext<ChatContextType>({
   shouldShowConfirmationWarning: false,
   shouldDisableActionButtons: false,
   setShouldDisableActionButtons: () => {},
-  hasAcceptedAgeRestriction: false,
-  setHasAcceptedAgeRestriction: () => {}
+  hasAcceptedChatbotTerms: false,
+  hasDeclinedChatbotTerms: false,
+  isCheckingTermsAcceptance: false,
+  showChatbotTermsDialog: false,
+  setHasAcceptedChatbotTerms: () => {},
+  setHasDeclinedChatbotTerms: () => {},
+  setShowChatbotTermsDialog: () => {}
 });
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -62,21 +70,43 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [confirmationWarningOpened, setConfirmationWarningOpened] = useState<boolean>(false);
   const [warningShown, setWarningShown] = useState<ChatIntent[]>([]);
   const [shouldDisableActionButtons, setShouldDisableActionButtons] = useState<boolean>(false);
-  const [hasAcceptedAgeRestriction, setHasAcceptedAgeRestrictionState] = useState<boolean>(false);
+  const [hasAcceptedChatbotTerms, setHasAcceptedChatbotTermsState] = useState<boolean>(false);
+  const [hasDeclinedChatbotTerms, setHasDeclinedChatbotTerms] = useState<boolean>(false);
+  const [isCheckingTermsAcceptance, setIsCheckingTermsAcceptance] = useState<boolean>(true);
+  const [showChatbotTermsDialog, setShowChatbotTermsDialog] = useState<boolean>(false);
   const isLoading = chatHistory[chatHistory.length - 1]?.type === MessageType.loading;
 
-  // Load age restriction acceptance from localStorage on initial render
+  // Check chatbot terms acceptance on initial render
   useEffect(() => {
-    const storedValue = window.localStorage.getItem(AGE_RESTRICTION_KEY);
-    if (storedValue) {
-      setHasAcceptedAgeRestrictionState(storedValue === 'true');
-    }
+    const checkTerms = async () => {
+      setIsCheckingTermsAcceptance(true);
+      try {
+        const status = await checkTermsAcceptance();
+        setHasAcceptedChatbotTermsState(status.accepted);
+
+        // Quick client-side expiration check
+        if (status.accepted && status.expiresAt) {
+          const expiresAt = new Date(status.expiresAt);
+          if (expiresAt < new Date()) {
+            setHasAcceptedChatbotTermsState(false);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check terms acceptance:', error);
+        setHasAcceptedChatbotTermsState(false);
+      } finally {
+        setIsCheckingTermsAcceptance(false);
+      }
+    };
+
+    checkTerms();
   }, []);
 
-  // Function to update both state and localStorage
-  const setHasAcceptedAgeRestriction = useCallback((accepted: boolean) => {
-    setHasAcceptedAgeRestrictionState(accepted);
-    window.localStorage.setItem(AGE_RESTRICTION_KEY, String(accepted));
+  // Function to update chatbot terms acceptance
+  const setHasAcceptedChatbotTerms = useCallback((accepted: boolean) => {
+    setHasAcceptedChatbotTermsState(accepted);
+    // Reset declined state when accepting
+    setHasDeclinedChatbotTerms(!accepted);
   }, []);
 
   const hasShownIntent = useCallback(
@@ -109,8 +139,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         shouldShowConfirmationWarning,
         shouldDisableActionButtons,
         setShouldDisableActionButtons,
-        hasAcceptedAgeRestriction,
-        setHasAcceptedAgeRestriction
+        hasAcceptedChatbotTerms,
+        hasDeclinedChatbotTerms,
+        isCheckingTermsAcceptance,
+        showChatbotTermsDialog,
+        setHasAcceptedChatbotTerms,
+        setHasDeclinedChatbotTerms,
+        setShowChatbotTermsDialog
       }}
     >
       {children}

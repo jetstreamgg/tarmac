@@ -9,11 +9,18 @@ import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
 
 export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const [inputText, setInputText] = useState('');
-  const { isLoading, hasAcceptedAgeRestriction, chatHistory } = useChatContext();
-  const isMessageSendingBlocked = !inputText || isLoading || !hasAcceptedAgeRestriction;
+  const { isLoading, hasAcceptedChatbotTerms, chatHistory, setShowChatbotTermsDialog } = useChatContext();
+  const isMessageSendingBlocked = !inputText || isLoading;
 
   const handleSubmit = () => {
-    if (isMessageSendingBlocked) return;
+    if (!inputText || isLoading) return;
+
+    // Check for chatbot terms acceptance (includes age restriction)
+    if (!hasAcceptedChatbotTerms) {
+      setShowChatbotTermsDialog(true);
+      return;
+    }
+
     sendMessage(inputText);
     setInputText('');
   };
@@ -27,11 +34,7 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
   };
 
   const isFirstMessage = chatHistory.length === 1;
-  const placeholder = hasAcceptedAgeRestriction
-    ? isFirstMessage
-      ? t`Ask me anything`
-      : t`Ask another question`
-    : t`Please confirm you're at least 18`;
+  const placeholder = isFirstMessage ? t`Ask me anything` : t`Ask another question`;
 
   return (
     <div>
@@ -43,7 +46,6 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
           maxLength={MAX_MESSAGE_LENGTH}
           onChange={e => setInputText(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
           onKeyUp={handleKeyPress}
-          disabled={!hasAcceptedAgeRestriction}
         />
         <Button
           variant="ghost"
