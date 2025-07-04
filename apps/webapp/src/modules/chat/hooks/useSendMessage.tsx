@@ -96,8 +96,14 @@ const sendMessageMutation: MutationFunction<
 };
 
 export const useSendMessage = () => {
-  const { setChatHistory, sessionId, chatHistory, setShowChatbotTermsDialog, setHasAcceptedChatbotTerms } =
-    useChatContext();
+  const {
+    setChatHistory,
+    sessionId,
+    chatHistory,
+    setShowChatbotTermsDialog,
+    setHasAcceptedChatbotTerms,
+    setPendingMessage
+  } = useChatContext();
   const chainId = useChainId();
   const { isConnected } = useAccount();
 
@@ -166,8 +172,16 @@ export const useSendMessage = () => {
             // Show terms dialog
             setShowChatbotTermsDialog(true);
 
-            // Remove the loading message without adding an error message
-            setChatHistory(prevHistory => prevHistory.filter(item => item.type !== LOADING));
+            // Store the message that triggered the 403
+            setPendingMessage(message);
+
+            // Remove both the user message and loading message
+            // We need to remove the last 2 messages (user message + loading)
+            setChatHistory(prevHistory => {
+              const filtered = prevHistory.filter(item => item.type !== LOADING);
+              // Remove the last message (which should be the user's message that got 403)
+              return filtered.slice(0, -1);
+            });
 
             return;
           }

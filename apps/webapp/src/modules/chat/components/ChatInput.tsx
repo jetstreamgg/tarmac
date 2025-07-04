@@ -9,7 +9,8 @@ import { MAX_MESSAGE_LENGTH } from '@/lib/constants';
 
 export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const [inputText, setInputText] = useState('');
-  const { isLoading, hasAcceptedChatbotTerms, chatHistory, setShowChatbotTermsDialog } = useChatContext();
+  const { isLoading, hasAcceptedChatbotTerms, chatHistory, setShowChatbotTermsDialog, setPendingMessage } =
+    useChatContext();
   const isMessageSendingBlocked = !inputText || isLoading;
 
   const handleSubmit = () => {
@@ -17,7 +18,10 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
 
     // Check for chatbot terms acceptance (includes age restriction)
     if (!hasAcceptedChatbotTerms) {
+      // Store the message to send after terms acceptance
+      setPendingMessage(inputText);
       setShowChatbotTermsDialog(true);
+      setInputText(''); // Clear the input so user knows their message is "captured"
       return;
     }
 

@@ -18,7 +18,9 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     setShowChatbotTermsDialog,
     setHasAcceptedChatbotTerms,
     setHasDeclinedChatbotTerms,
-    hasDeclinedChatbotTerms
+    hasDeclinedChatbotTerms,
+    pendingMessage,
+    setPendingMessage
   } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -36,11 +38,18 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
   const handleTermsAccept = () => {
     setHasAcceptedChatbotTerms(true);
     setShowChatbotTermsDialog(false);
+
+    // If there's a pending message, send it automatically
+    if (pendingMessage) {
+      sendMessage(pendingMessage);
+      setPendingMessage(null); // Clear the pending message
+    }
   };
 
   const handleTermsDecline = () => {
     setShowChatbotTermsDialog(false);
     setHasDeclinedChatbotTerms(true);
+    setPendingMessage(null); // Clear any pending message
   };
 
   return (

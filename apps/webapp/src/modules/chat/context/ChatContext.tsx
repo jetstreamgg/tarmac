@@ -19,6 +19,7 @@ interface ChatContextType {
   hasDeclinedChatbotTerms: boolean;
   isCheckingTermsAcceptance: boolean;
   showChatbotTermsDialog: boolean;
+  pendingMessage: string | null;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   setConfirmationWarningOpened: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedIntent: React.Dispatch<React.SetStateAction<ChatIntent | undefined>>;
@@ -28,6 +29,7 @@ interface ChatContextType {
   setHasAcceptedChatbotTerms: (accepted: boolean) => void;
   setHasDeclinedChatbotTerms: (declined: boolean) => void;
   setShowChatbotTermsDialog: (show: boolean) => void;
+  setPendingMessage: (message: string | null) => void;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -49,9 +51,11 @@ const ChatContext = createContext<ChatContextType>({
   hasDeclinedChatbotTerms: false,
   isCheckingTermsAcceptance: false,
   showChatbotTermsDialog: false,
+  pendingMessage: null,
   setHasAcceptedChatbotTerms: () => {},
   setHasDeclinedChatbotTerms: () => {},
-  setShowChatbotTermsDialog: () => {}
+  setShowChatbotTermsDialog: () => {},
+  setPendingMessage: () => {}
 });
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -74,7 +78,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasDeclinedChatbotTerms, setHasDeclinedChatbotTerms] = useState<boolean>(false);
   const [isCheckingTermsAcceptance, setIsCheckingTermsAcceptance] = useState<boolean>(true);
   const [showChatbotTermsDialog, setShowChatbotTermsDialog] = useState<boolean>(false);
+  const [pendingMessage, setPendingMessageState] = useState<string | null>(null);
   const isLoading = chatHistory[chatHistory.length - 1]?.type === MessageType.loading;
+
+  const setPendingMessage = (message: string | null) => {
+    setPendingMessageState(message);
+  };
 
   // Check chatbot terms acceptance on initial render
   useEffect(() => {
@@ -143,9 +152,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasDeclinedChatbotTerms,
         isCheckingTermsAcceptance,
         showChatbotTermsDialog,
+        pendingMessage,
         setHasAcceptedChatbotTerms,
         setHasDeclinedChatbotTerms,
-        setShowChatbotTermsDialog
+        setShowChatbotTermsDialog,
+        setPendingMessage
       }}
     >
       {children}
