@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter } from '@widgets/components/ui/card';
 import { ArrowRight } from 'lucide-react';
 import { Text } from '../Typography';
 import { TokenIcon } from '../token/TokenIcon';
-import { Link } from 'react-router-dom';
+import { useRouter } from '../../../../hooks/useRouter';
 
 export const InteractiveStatsCard = ({
   title,
@@ -21,6 +21,7 @@ export const InteractiveStatsCard = ({
   url?: string;
   chainId?: number;
 }): React.ReactElement => {
+  const { Link } = useRouter();
   return (
     <Card variant={url ? 'statsInteractive' : 'stats'} className="relative p-4 lg:p-5">
       <div className="flex items-center gap-2">
@@ -50,7 +51,7 @@ export const InteractiveStatsCard = ({
           </CardFooter>
         </div>
       </div>
-      {url && <Link to={url} className="absolute inset-0 z-0 h-full w-full rounded-[20px]" />}
+      {url && Link && <Link to={url} className="absolute inset-0 z-0 h-full w-full rounded-[20px]" />}
     </Card>
   );
 };

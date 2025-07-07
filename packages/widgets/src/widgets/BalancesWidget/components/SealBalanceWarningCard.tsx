@@ -6,7 +6,7 @@ import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Warning } from '@widgets/shared/components/icons/Warning';
-import { Link } from 'react-router-dom';
+import { useRouter } from '@widgets/hooks/useRouter';
 import { Trans } from '@lingui/react/macro';
 import { ArrowRight } from 'lucide-react';
 
@@ -21,6 +21,7 @@ export const SealBalanceWarningCard = ({
   sealBalance?: bigint;
   sealValue?: number;
 }): React.ReactElement => {
+  const { Link } = useRouter();
   const isLargeAmount = sealValue && sealValue > 1000000;
 
   return (

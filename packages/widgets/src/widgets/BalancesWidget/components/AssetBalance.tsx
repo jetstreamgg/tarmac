@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useRouter } from '@widgets/hooks/useRouter';
 
 export const AssetBalance = ({
   symbol,
@@ -34,6 +34,7 @@ export const AssetBalance = ({
     tokenChainId: number
   ) => { label: string; actionUrl: string; image: string } | undefined;
 }) => {
+  const { Link } = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const action = useMemo(
     () => actionForToken?.(symbol, formatted, chainId),

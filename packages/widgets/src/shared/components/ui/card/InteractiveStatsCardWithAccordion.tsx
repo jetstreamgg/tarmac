@@ -12,7 +12,7 @@ import { ArrowRight } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
 import { formatBigInt, formatNumber, getChainIcon } from '@jetstreamgg/sky-utils';
-import { Link } from 'react-router-dom';
+import { useRouter } from '../../../../hooks/useRouter';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 import { PriceData } from '@jetstreamgg/sky-hooks';
 
@@ -35,6 +35,7 @@ export const InteractiveStatsCardWithAccordion = ({
   urlMap: Record<number, string>;
   pricesData: Record<string, PriceData>;
 }): React.ReactElement => {
+  const { Link } = useRouter();
   const chains = useChains();
   if (balancesByChain.length === 1) {
     return (
