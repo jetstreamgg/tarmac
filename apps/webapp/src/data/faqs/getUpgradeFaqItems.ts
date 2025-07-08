@@ -1,26 +1,22 @@
-export const getUpgradeFaqItems = () => [...mkrToSkyFaqItems, ...usdsFaqItems];
-
-const mkrToSkyFaqItems = [
+export const getUpgradeFaqItems = () => [
   {
     question: 'How do I upgrade my MKR to SKY?',
     answer: `Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app, or they may choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.sky.money). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
-For upgrade details and step-by-step upgrade instructions, visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).
-`
+For upgrade details and step-by-step upgrade instructions, visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`
   },
   {
     question: 'Where can I find the MKR to SKY Upgrade Guide and Upgrade FAQs?',
     answer:
-      'For upgrade FAQs and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). For a more technical overview, see the [Upgrade Guide](https://developers.sky.money/guides/sky/token-governance-upgrade/overview/) in the [Developer Documentation](https://developers.sky.money/). '
+      'For upgrade FAQs and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). For a more technical overview, see the [Upgrade Guide](https://developers.sky.money/guides/sky/token-governance-upgrade/overview/) in the [Developer Documentation](https://developers.sky.money/).'
   },
   {
     question: 'Why should I upgrade my MKR to SKY?',
-    answer: `The governance-aligned vote to upgrade MKR to SKY, establishing SKY as the sole governance token of the Sky Protocol, reflects the community’s desire to streamline governance, increase voter participation, and support the ecosystem’s long-term growth and scalability. Simply put, SKY is the technical and functional evolution of MKR, inheriting the governance functionalities previously held by MKR. 
+    answer: `The governance-aligned vote to upgrade MKR to SKY, establishing SKY as the sole governance token of the Sky Protocol, reflects the community's desire to streamline governance, increase voter participation, and support the ecosystem's long-term growth and scalability. Simply put, SKY is the technical and functional evolution of MKR, inheriting the governance functionalities previously held by MKR. 
 
 SKY holders can use the token to vote directly on Sky Ecosystem Governance proposals and/or to transfer the voting power of their SKY tokens to a recognized delegate or a contract that they own, just as they once could with MKR. SKY also enables users to access Staking Rewards via the Sky.money web app. When users supply SKY to the Staking Engine of the Sky Protocol, they can access those rewards and may also choose to create one or more positions, including positions that enable them to generate and borrow USDS against their supplied SKY, and to delegate the voting power their supplied SKY tokens provide.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).
-`
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`
   },
   {
     question: 'Is there a deadline to upgrade MKR to SKY?',
@@ -53,7 +49,7 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
   },
   {
     question: 'Why did Sky Ecosystem Governance vote to upgrade MKR to SKY?',
-    answer: `The governance-aligned vote to upgrade MKR to SKY, establishing SKY as the sole governance token of the Sky Protocol, reflects the community’s desire to streamline governance, increase voter participation, and support the ecosystem’s long-term growth and scalability. 
+    answer: `The governance-aligned vote to upgrade MKR to SKY, establishing SKY as the sole governance token of the Sky Protocol, reflects the community's desire to streamline governance, increase voter participation, and support the ecosystem's long-term growth and scalability. 
  
 The upgrade of MKR to SKY establishes SKY as the technical and functional evolution of MKR, with SKY inheriting the governance functionalities previously held by MKR. The upgrade is at the rate of 1:24,000 (1 MKR = 24,000 SKY). 
 SKY holders can use the token to vote directly on Sky Ecosystem Governance proposals and/or to transfer their voting power to a recognized delegate or a contract that they own, just as they once could with MKR. 
@@ -81,8 +77,7 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
     question: 'Are SKY and MKR the same?',
     answer: `Think of SKY not as different from MKR, but as the technical and functional evolution of MKR, with SKY inheriting the governance functionalities previously held by MKR. The upgrade is at the rate of 1:24,000 (1 MKR = 24,000 SKY). 
 
-SKY is the sole governance token of the Sky Ecosystem and the upgrade of MKR. SKY token holders can use their SKY to participate directly in Sky Ecosystem Governance through a system of decentralized onchain voting, and/or to entrust their voting power to one or more governance delegates or a contract that they own. Voting with MKR is no longer possible.
-`
+SKY is the sole governance token of the Sky Ecosystem and the upgrade of MKR. SKY token holders can use their SKY to participate directly in Sky Ecosystem Governance through a system of decentralized onchain voting, and/or to entrust their voting power to one or more governance delegates or a contract that they own. Voting with MKR is no longer possible.`
   },
   {
     question: 'Are Sky and Maker the same?',
@@ -103,7 +98,7 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
 
 To facilitate a smooth and prompt transition, Sky Ecosystem Governance [voted to introduce a Delayed Upgrade Penalty](https://vote.makerdao.com/polling/QmTVd4iq). The penalty, which will [begin September 18, 2025](https://upgrademkrtosky.sky.money) reduces the amount of SKY received per MKR upgraded at a rate of 1%, and increases by 1% every three months thereafter until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). `
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`
   },
   {
     question: 'Can I convert my SKY back to MKR?',
@@ -118,8 +113,7 @@ SKY holders participate directly in Sky Ecosystem Governance by supplying SKY to
 
 SKY holders can use their tokens to entrust their voting power to one or more delegates via the Sky Governance Voting portal or the Staking Engine of the Sky Protocol. Sky Ecosystem Governance delegates are chosen and approved by governance vote. Creating a new delegate account can only be done via the Sky Governance Voting Portal.
 
-Delegates in receipt of token voting power can never directly access any SKY tokens delegated to them. Throughout the delegation process, users always own and are in control of their SKY tokens, and can change their delegate(s) at any time (subject to the Sky Protocol’s rules that prevent double voting or misuse of delegated voting power).
-`
+Delegates in receipt of token voting power can never directly access any SKY tokens delegated to them. Throughout the delegation process, users always own and are in control of their SKY tokens, and can change their delegate(s) at any time (subject to the Sky Protocol's rules that prevent double voting or misuse of delegated voting power).`
   },
   {
     question: 'Does the MKR to SKY upgrade affect DAI and USDS?',
@@ -130,7 +124,7 @@ Delegates in receipt of token voting power can never directly access any SKY tok
     question: 'Are DAI and MKR going away?',
     answer: `No. Sky Ecosystem Governance has not indicated that the DAI and MKR will go away. You can continue to hold DAI exactly as you have in the past, or you can upgrade it to USDS, which may enable more uses than DAI. 
 
-SKY is the technical and functional evolution of MKR, inheriting and extending the governance functionalities previously held by MKR. It reflects the community’s desire to streamline governance, increase voter participation, and support the ecosystem’s long-term growth and scalability. 
+SKY is the technical and functional evolution of MKR, inheriting and extending the governance functionalities previously held by MKR. It reflects the community's desire to streamline governance, increase voter participation, and support the ecosystem's long-term growth and scalability. 
 
 MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,000 SKY). For upgrade details, see the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). For the most current information on all things Sky, join the community conversations in the [Sky Forum](https://forum.sky.money/), [Sky Discord](https://discord.com/invite/skyecosystem), and [Sky Builder Discord](https://discord.gg/skybuilder), where the Sky community dives deep into Sky Stars, the Star Agent Framework and Sky Ecosystem Governance.`
   },
@@ -149,10 +143,7 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
     question: 'Can I still vote and delegate with MKR?',
     answer:
       'No, MKR is no longer used for Sky Ecosystem Governance. Only SKY, the upgrade of MKR, can be used to participate in Sky Ecosystem Governance voting at the new [Sky Governance Voting Portal](https://vote.sky.money/).'
-  }
-];
-
-const usdsFaqItems = [
+  },
   {
     question: 'What is USDS?',
     answer: `USDS is a stablecoin of the decentralized Sky Protocol and the upgrade of DAI. It is backed by a surplus of collateral and soft-pegged to the value of the U.S. dollar, meaning it is designed to maintain a value equal to or close to a dollar. I
@@ -191,10 +182,9 @@ For details on the risks associated with soft-pegged stablecoins, review the [Us
     answer: 'No, upgrading your DAI is optional. You can continue to hold DAI tokens as you have in the past.'
   },
   {
-    question: 'What happens to the DAI I’ve supplied to the DAI Savings Rate contract?',
-    answer: `The DAI Savings Rate (DSR) contract remains unchanged, so you don’t need to immediately do anything to your DAI in the DSR module. You can, however, withdraw your DSR position, and, if you’re an eligible user of the Sky.money web app, upgrade your DAI to USDS, and then use the USDS to access the Sky Savings Rate.  
+    question: "What happens to the DAI I've supplied to the DAI Savings Rate contract?",
+    answer: `The DAI Savings Rate (DSR) contract remains unchanged, so you don't need to immediately do anything to your DAI in the DSR module. You can, however, withdraw your DSR position, and, if you're an eligible user of the Sky.money web app, upgrade your DAI to USDS, and then use the USDS to access the Sky Savings Rate.  
 
-When you supply USDS to the Sky Savings Rate module of the decentralized, non-custodial Sky Protocol, you receive sUSDS savings tokens in return. When you choose to redeem your sUSDS for USDS—which you can do at any time—the total USDS you will receive will equal the amount you originally supplied, plus any rewards accumulated. No minimum supply amount is required to access the Sky Savings Rate, and you always maintain full control of your supplied assets.
-`
+When you supply USDS to the Sky Savings Rate module of the decentralized, non-custodial Sky Protocol, you receive sUSDS savings tokens in return. When you choose to redeem your sUSDS for USDS—which you can do at any time—the total USDS you will receive will equal the amount you originally supplied, plus any rewards accumulated. No minimum supply amount is required to access the Sky Savings Rate, and you always maintain full control of your supplied assets.`
   }
 ];

@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { getSavingsFaqItems } from '../getSavingsFaqItems';
+import { getSavingsFaqItems } from '@/data/faqs/getSavingsFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 
 export function SavingsFaq() {

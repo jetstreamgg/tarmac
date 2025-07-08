@@ -1,6 +1,6 @@
 export const getStakeFaqItems = () => [
   {
-    question: 'What are  Staking Rewards?',
+    question: 'What are Staking Rewards?',
     answer:
       'Staking Rewards can be accessed when you supply SKY to the Staking Engine of the decentralized Sky Protocol. Currently, all Staking Rewards take the form of USDS. Your SKY, as well as any Staking Rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary ever takes custody of those tokens. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.'
   },
@@ -15,7 +15,7 @@ export const getStakeFaqItems = () => [
 
 **Overview of the Staking Engine**
 
-When you supply SKY governance tokens to the Staking Engine using the Sky.money web app, you can access Staking Rewards and may also choose to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides. Here’s a brief overview:
+When you supply SKY governance tokens to the Staking Engine using the Sky.money web app, you can access Staking Rewards and may also choose to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides. Here's a brief overview:
 
 • Access Rewards. Supply SKY tokens to access Staking Rewards, initially in the form of USDS. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.
 
@@ -52,10 +52,9 @@ For more information, see the [User Risk Documentation](https://docs.sky.money/u
   },
   {
     question: 'Can I borrow USDS using ETH?',
-    answer: `Yes, but only via [Spark](http://spark.fi)’s Borrow feature, not via the Sky.money web app. 
+    answer: `Yes, but only via [Spark](http://spark.fi)'s Borrow feature, not via the Sky.money web app. 
 
-[Spark Borrow](https://spark.fi/borrow) enables you to borrow USDS stablecoins using various cryptocurrencies as collateral, including ETH. Spark is the very first Sky Star Agent (Star) and a top DeFi liquidity protocol. Stars are autonomous and independent decentralized projects within the larger Sky Ecosystem. For more information about the Borrow feature, you can review the [Spark Documentation](https://docs.spark.fi/user-guides/using-sparklend/borrow-dai-and-usds). 
-`
+[Spark Borrow](https://spark.fi/borrow) enables you to borrow USDS stablecoins using various cryptocurrencies as collateral, including ETH. Spark is the very first Sky Star Agent (Star) and a top DeFi liquidity protocol. Stars are autonomous and independent decentralized projects within the larger Sky Ecosystem. For more information about the Borrow feature, you can review the [Spark Documentation](https://docs.spark.fi/user-guides/using-sparklend/borrow-dai-and-usds).`
   },
   {
     question: 'What happens if my USDS borrow position is liquidated?',
@@ -70,7 +69,7 @@ For more information, see the [User Risk Documentation](https://docs.sky.money/u
 A borrow position is subject to liquidation risk if at any time the value of the supplied collateral drops below the required threshold (liquidation price) and the position becomes undercollateralized. If this were to occur, the system would automatically liquidate and auction the collateral, and any leftover collateral may be claimed through the [Unified Auctions portal](https://unified-auctions.makerdao.com/).`
   },
   {
-    question: 'What’s the difference between Sky Token Rewards and Staking Rewards?',
+    question: "What's the difference between Sky Token Rewards and Staking Rewards?",
     answer: `Sky Token Rewards are what you can access when you supply USDS stablecoins to the Sky Token Rewards module of the Sky Protocol. Sky Token Rewards currently take the form of SKY tokens. Both USDS and SKY are native tokens of the Sky Protocol.
 
 Staking Rewards are what you can access when you supply SKY to the Staking Engine of the Sky Protocol. Staking Rewards currently take the form of USDS.`
@@ -85,8 +84,7 @@ Staking Rewards are what you can access when you supply SKY to the Staking Engin
     answer: `When you hold SKY governance tokens, you may choose to participate in the decision-making process of Sky Ecosystem Governance. You can use your SKY to participate directly in governance through a system of decentralized onchain voting and/or to entrust your voting power to one or more delegates via the Sky Governance Voting portal or to a contract that you own. You can also use SKY to delegate your voting power via the Staking Engine of the Sky Protocol.
 
 By supplying SKY to the Staking Engine, you can open a position, earn Staking Rewards, and also entrust your voting power to a delegate of your choosing, who can then participate in the Sky Ecosystem Governance voting process on your behalf. You can choose one delegate per position, meaning if you want to entrust your SKY to two different delegates using the Staking Engine, you will need to create two separate positions. 
-Delegates in receipt of token voting power can never directly access any tokens delegated to them, including the SKY supplied to the Staking Engine. Throughout the delegation process, you always own and are in control of those tokens. You can also change your delegate at any time (subject to the Sky Protocol’s rules that prevent double voting or misuse of delegated voting power).
-`
+Delegates in receipt of token voting power can never directly access any tokens delegated to them, including the SKY supplied to the Staking Engine. Throughout the delegation process, you always own and are in control of those tokens. You can also change your delegate at any time (subject to the Sky Protocol's rules that prevent double voting or misuse of delegated voting power).`
   },
   {
     question: 'Where can I learn about Sky Ecosystem Governance?',

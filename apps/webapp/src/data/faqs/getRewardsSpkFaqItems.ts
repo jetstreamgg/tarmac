@@ -1,11 +1,6 @@
-export interface Item {
-  question: string;
-  answer: string;
-  type?: 'restricted' | 'unrestricted';
-}
-export const getRewardsSpkFaqItems = (): Item[] => mainnetFaqItems;
+export const getRewardsSpkFaqItems = () => [...mainnetFaqItems];
 
-const mainnetFaqItems = [
+const mainnetFaqItems: { question: string; answer: string; type?: 'restricted' | 'unrestricted' }[] = [
   {
     question: 'What is SPK?',
     answer:

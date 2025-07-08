@@ -1,10 +1,4 @@
-import { isBaseChainId } from '@jetstreamgg/sky-utils';
-
-export const getRewardsFaqItems = (chainId: number) => [
-  ...mainnetFaqItems,
-  ...(isBaseChainId(chainId) && baseFaqItems ? baseFaqItems : [])
-  // TODO add arbitrum, optimism and unichain
-];
+export const getRewardsFaqItems = () => [...mainnetFaqItems];
 
 const mainnetFaqItems: { question: string; answer: string; type?: 'restricted' | 'unrestricted' }[] = [
   {
@@ -25,7 +19,7 @@ const mainnetFaqItems: { question: string; answer: string; type?: 'restricted' |
 
 • The market price of the token rewarded; and
 
-• The user’s proportional supply within the total pool of assets linked to the Sky Token Rewards module.
+• The user's proportional supply within the total pool of assets linked to the Sky Token Rewards module.
 
 Sky.money does not control the issuance, determination, or distribution of these rewards.`
   },
@@ -40,6 +34,3 @@ Sky.money does not control the issuance, determination, or distribution of these
       'To claim your Sky Token Rewards using the Sky.money web app, click on the Claim button in the Rewards feature of the app. You must claim all your Sky Token Rewards at once. It is not possible to claim partial rewards.'
   }
 ];
-
-// Rewards in Base is coming soon
-const baseFaqItems: { question: string; answer: string; type?: 'restricted' | 'unrestricted' }[] = [];

@@ -1,27 +1,28 @@
 import {
-  isBaseChainId,
   isArbitrumChainId,
+  isBaseChainId,
   isOptimismChainId,
   isUnichainChainId
 } from '@jetstreamgg/sky-utils';
 
 import {
   L2GeneralFaqItems,
-  baseFaqItems,
   arbitrumFaqItems,
+  baseFaqItems,
   optimismFaqItems,
   unichainFaqItems
-} from '../ui/constants/sharedFaqItems';
+} from './sharedFaqItems';
 
 export const getBalancesFaqItems = (chainId: number) => [
-  ...[...mainnetFaqItems, ...L2GeneralFaqItems],
+  ...generalFaqItems,
+  ...L2GeneralFaqItems,
   ...(isBaseChainId(chainId) ? baseFaqItems : []),
   ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : []),
   ...(isOptimismChainId(chainId) ? optimismFaqItems : []),
   ...(isUnichainChainId(chainId) ? unichainFaqItems : [])
 ];
 
-const mainnetFaqItems = [
+const generalFaqItems = [
   {
     question: 'What is a crypto wallet, and how do I get one?',
     answer: `A crypto wallet is a tool, typically in the form of software, that enables you to easily view a list of your digital assets, manage them, and help safeguard them. Note that with crypto wallets, your assets are recorded on a blockchain and only visible in the wallet—not stored there. 
@@ -30,26 +31,23 @@ Your non-custodial wallet holds the private keys needed to sign crypto transacti
 
 Non-custodial wallets can be software-based, like mobile apps, or hardware devices designed for enhanced security. There are several types of crypto wallets and no limit to the number of wallets you can own. Two popular software-based wallets are Metamask and Rainbow.
 
-Sky Balances is not a crypto wallet, but rather a non-custodial tool that displays your Sky-related asset balances by receiving information from the non-custodial crypto wallet that you connect to Sky.money to access the Sky Protocol.
-`
+Sky Balances is not a crypto wallet, but rather a non-custodial tool that displays your Sky-related asset balances by receiving information from the non-custodial crypto wallet that you connect to Sky.money to access the Sky Protocol.`
   },
   {
     question: 'How do crypto wallets work?',
-    answer: `Typical crypto wallets operate using a pair of cryptographic keys—one public, the other private. These keys are essential components of what is known as “public key cryptography,” the core concept underlying wallet security and actions. 
+    answer: `Typical crypto wallets operate using a pair of cryptographic keys—one public, the other private. These keys are essential components of what is known as "public key cryptography," the core concept underlying wallet security and actions. 
 
-Typically, when setting up a new non-custodial digital wallet, the wallet software generates a “seed phrase,” which is a sequence of 12, 18, or 24 seemingly random words used as a mnemonic device to access the underlying private key(s) related to that wallet. The seed phrase can be used to recover the public and private keys, and should therefore be stored somewhere safe and never shared with anyone. 
+Typically, when setting up a new non-custodial digital wallet, the wallet software generates a "seed phrase," which is a sequence of 12, 18, or 24 seemingly random words used as a mnemonic device to access the underlying private key(s) related to that wallet. The seed phrase can be used to recover the public and private keys, and should therefore be stored somewhere safe and never shared with anyone. 
 
 A private key is a randomly generated string of letters and numbers which acts as a sort of password that gives anyone that knows it the capability to control the wallet assets. It is known only to the user and should be kept secure and confidential to ensure that only the user has access to and can control any associated assets. The private key is used to sign transactions. For example, when a user wants to send crypto or access their assets on the blockchain, they would use the private key to authorize the transaction. 
 
-A public key is usually derived from the private key using a mathematical algorithm. It is a string of characters that can be shared openly without compromising a wallet’s inherent security. The public key is used to generate wallet addresses and to encrypt data. For example, when someone wants to send digital assets to a user, they would use the user’s public key or the associated wallet address. 
-`
+A public key is usually derived from the private key using a mathematical algorithm. It is a string of characters that can be shared openly without compromising a wallet's inherent security. The public key is used to generate wallet addresses and to encrypt data. For example, when someone wants to send digital assets to a user, they would use the user's public key or the associated wallet address.`
   },
   {
     question: 'How do I use a non-custodial digital wallet to make a transaction?',
-    answer: `Once you’ve set up your non-custodial digital wallet, and have your public and private keys, you can use it to manage (send and receive) your digital assets on the blockchain. Every time you transact, your wallet requires you to digitally sign the transaction with your private key. Signing when prompted is a simple but critical part of the process, demonstrating that you acknowledge your action, and ensuring that only you have control of your crypto.
+    answer: `Once you've set up your non-custodial digital wallet, and have your public and private keys, you can use it to manage (send and receive) your digital assets on the blockchain. Every time you transact, your wallet requires you to digitally sign the transaction with your private key. Signing when prompted is a simple but critical part of the process, demonstrating that you acknowledge your action, and ensuring that only you have control of your crypto.
 
-Some onchain actions might require multiple wallet signatures to authorize them. For example, to complete a trade on the decentralized, non-custodial Sky Protocol using the Sky.money web app, you would first need to confirm that you allow the app to access the token you want to trade in your wallet (one signature), and then authorize the actual trade (another signature).
-`
+Some onchain actions might require multiple wallet signatures to authorize them. For example, to complete a trade on the decentralized, non-custodial Sky Protocol using the Sky.money web app, you would first need to confirm that you allow the app to access the token you want to trade in your wallet (one signature), and then authorize the actual trade (another signature).`
   },
   {
     question: 'What is a blockchain transaction fee?',
@@ -95,8 +93,7 @@ SKY holders can use the token to:
 
 • Participate directly in Sky Ecosystem Governance through a system of onchain voting, and/or to entrust their voting power to one or more governance delegates. 
 
-• Access Staking Rewards by supplying SKY to the Staking Engine of the Protocol. 
-`
+• Access Staking Rewards by supplying SKY to the Staking Engine of the Protocol.`
   },
   {
     question: 'Are there risks involved with using the Sky.money web app?',

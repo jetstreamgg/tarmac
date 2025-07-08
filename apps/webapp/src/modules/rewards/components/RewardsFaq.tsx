@@ -1,9 +1,9 @@
 import { RewardContract } from '@jetstreamgg/sky-hooks';
-import { getRewardsFaqItems } from '../lib/getRewardsFaqItems';
+import { getRewardsFaqItems } from '@/data/faqs/getRewardsFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
-import { getRewardsCleFaqItems } from '../lib/getRewardsCleFaqItems';
+import { getRewardsCleFaqItems } from '@/data/faqs/getRewardsCleFaqItems';
 import { useChainId } from 'wagmi';
-import { getRewardsSpkFaqItems } from '../lib/getRewardsSpkFaqItems';
+import { getRewardsSpkFaqItems } from '@/data/faqs/getRewardsSpkFaqItems';
 
 export function RewardsFaq({ rewardContract }: { rewardContract?: RewardContract }) {
   const chainId = useChainId();
