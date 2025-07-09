@@ -20,6 +20,7 @@ import {
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 
 export const tenderly = {
+  ...mainnet,
   id: TENDERLY_CHAIN_ID,
   name: 'mainnet_2025_apr_15_0',
   network: 'tenderly',
@@ -40,6 +41,7 @@ export const tenderly = {
 };
 
 export const tenderlyBase = {
+  ...base,
   id: TENDERLY_BASE_CHAIN_ID,
   name: 'new-base-testnet-jan-27',
   network: 'tenderly base',
@@ -60,6 +62,7 @@ export const tenderlyBase = {
 };
 
 export const tenderlyArbitrum = {
+  ...arbitrum,
   id: TENDERLY_ARBITRUM_CHAIN_ID,
   name: 'arbitrum_fork_feb_7',
   network: 'tenderly arbitrum',

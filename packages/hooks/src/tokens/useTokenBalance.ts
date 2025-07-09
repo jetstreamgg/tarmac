@@ -1,6 +1,13 @@
-import { useBalance, useReadContracts } from 'wagmi';
+import { useBalance, useConfig, useReadContracts } from 'wagmi';
 import { erc20Abi, formatUnits } from 'viem';
-import type { ReadContractsErrorType, GetBalanceErrorType } from '@wagmi/core';
+import {
+  type ReadContractsErrorType,
+  type GetBalanceErrorType,
+  getBalance,
+  Config,
+  multicall
+} from '@wagmi/core';
+import { useQuery } from '@tanstack/react-query';
 
 type UseTokenBalanceParameters = {
   address?: `0x${string}`;
@@ -129,6 +136,107 @@ export function useTokenBalance({
   };
 }
 
+// Fetcher function that handles both ERC20 and native tokens
+async function fetchTokenBalances({
+  config,
+  address,
+  tokenMap
+}: {
+  config: Config;
+  address: `0x${string}`;
+  tokenMap: ChainTokenMap;
+}): Promise<TokenBalanceRequiredSymbol[]> {
+  // Process all chains in parallel
+  const chainPromises = Object.entries(tokenMap).map(async ([chainId, tokens]) => {
+    const numericChainId = Number(chainId);
+    const nonNativeTokens = tokens.filter(token => !token.isNative);
+    const nativeToken = tokens.find(token => token.isNative);
+    const results: TokenBalanceRequiredSymbol[] = [];
+
+    // Create promises for both native and ERC20 token fetching
+    const promises: Promise<void>[] = [];
+
+    // Fetch native token balance
+    if (nativeToken) {
+      const nativePromise = getBalance(config, {
+        address,
+        chainId: numericChainId
+      })
+        .then(balance => {
+          results.push({
+            value: balance.value,
+            decimals: 18, // Native tokens always have 18 decimals
+            formatted: formatUnits(balance.value, 18),
+            symbol: nativeToken.symbol,
+            chainId: numericChainId
+          });
+        })
+        .catch(error => {
+          console.error(`Failed to fetch native balance for chain ${numericChainId}:`, error);
+        });
+
+      promises.push(nativePromise);
+    }
+
+    // Fetch ERC20 token balances
+    if (nonNativeTokens.length > 0) {
+      const erc20Promise = (async () => {
+        try {
+          // Batch all ERC20 calls for this chain
+          const contracts = nonNativeTokens.flatMap(token => [
+            {
+              address: token.address!,
+              abi: erc20Abi,
+              functionName: 'balanceOf',
+              args: [address]
+            },
+            {
+              address: token.address!,
+              abi: erc20Abi,
+              functionName: 'decimals'
+            }
+          ]);
+
+          const multicallResults = await multicall(config, {
+            contracts,
+            chainId: numericChainId
+          });
+
+          // Process results
+          for (let i = 0; i < multicallResults.length; i += 2) {
+            const tokenIndex = i / 2;
+            const token = nonNativeTokens[tokenIndex];
+            const balance = multicallResults[i].result as bigint;
+            const decimals = multicallResults[i + 1].result as number;
+
+            if (balance !== undefined && decimals !== undefined) {
+              results.push({
+                value: balance,
+                decimals,
+                formatted: formatUnits(balance, decimals),
+                symbol: token.symbol,
+                chainId: numericChainId
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to fetch ERC20 balances for chain ${numericChainId}:`, error);
+        }
+      })();
+
+      promises.push(erc20Promise);
+    }
+
+    // Wait for both native and ERC20 operations to complete
+    await Promise.all(promises);
+    return results;
+  });
+
+  // Wait for all chains to complete and flatten the results
+  const allResults = await Promise.all(chainPromises);
+  return allResults.flat();
+}
+
 //takes in either a chainTokenMap, or a tokens array and chainId
 export function useTokenBalances({
   address,
@@ -137,101 +245,21 @@ export function useTokenBalances({
   chainTokenMap,
   enabled = true
 }: UseTokenBalancesParameters): UseTokenBalancesReturnType {
+  const config = useConfig();
+
   // Convert legacy params to chainTokenMap format
   const tokenMap = chainTokenMap ?? (tokens && chainId ? { [chainId]: tokens } : {});
 
-  // Aggregate results from all chains
-  const results = Object.entries(tokenMap).map(([chainId, tokens]) => {
-    const numericChainId = Number(chainId);
-    const nonNativeTokens = tokens.filter(tokenItem => !tokenItem.isNative);
-    const nativeToken = tokens.find(tokenItem => tokenItem.isNative) || null;
-
-    const {
-      data: tokenResultData,
-      refetch: refetchTokenResult,
-      isLoading: isTokenResultLoading,
-      error: tokenResultError
-    } = useReadContracts({
-      contracts: nonNativeTokens
-        .map(tokenItem => [
-          {
-            address: tokenItem.address,
-            abi: erc20Abi,
-            chainId: numericChainId,
-            functionName: 'balanceOf',
-            args: address ? [address] : undefined
-          },
-          {
-            address: tokenItem.address,
-            abi: erc20Abi,
-            chainId: numericChainId,
-            functionName: 'decimals'
-          }
-        ])
-        .flat(),
-      allowFailure: false,
-      query: {
-        enabled: enabled && !!address && nonNativeTokens.length > 0
-      }
-    });
-
-    const {
-      data: nativeResultData,
-      refetch: refetchNativeResult,
-      isLoading: isNativeResultLoading,
-      error: nativeResultError
-    } = useBalance({
-      address,
-      chainId: numericChainId,
-      query: { enabled: enabled && !!nativeToken }
-    });
-
-    const formattedTokenResultData = tokenResultData?.reduce<TokenBalance[]>((acc, _, index, array) => {
-      if (index % 2 === 0) {
-        const tokenIndex = index / 2;
-        const tokenItem = nonNativeTokens[tokenIndex];
-        acc.push({
-          value: array[index] as bigint,
-          decimals: array[index + 1] as number,
-          formatted: formatUnits(tokenResultData[index] as bigint, tokenResultData[index + 1] as number),
-          symbol: tokenItem.symbol,
-          chainId: numericChainId
-        });
-      }
-      return acc;
-    }, []);
-
-    const nativeResultWithSymbol =
-      nativeToken && nativeResultData
-        ? {
-            ...nativeResultData,
-            symbol: nativeToken.symbol,
-            chainId: numericChainId
-          }
-        : null;
-
-    return {
-      data:
-        formattedTokenResultData || nativeResultWithSymbol
-          ? ([
-              ...(formattedTokenResultData || []),
-              ...(nativeResultWithSymbol ? [nativeResultWithSymbol] : [])
-            ] as TokenBalanceRequiredSymbol[])
-          : undefined,
-      isLoading: isNativeResultLoading || isTokenResultLoading,
-      error: nativeResultError || tokenResultError,
-      refetch: async () => {
-        await Promise.all([refetchTokenResult(), refetchNativeResult()]);
-      }
-    };
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['token-balances', address, tokenMap],
+    queryFn: () => fetchTokenBalances({ config, address: address!, tokenMap }),
+    enabled: enabled && !!address && Object.keys(tokenMap).length > 0
   });
 
   return {
-    data: results.every(r => r.data) ? results.flatMap(r => r.data!) : undefined,
-    isLoading: results.some(r => r.isLoading),
-    error: results.find(r => r.error)?.error ?? null,
-    refetch: async () => {
-      await Promise.all(results.map(r => r.refetch()));
-    }
+    data,
+    isLoading,
+    error: error as GetBalanceErrorType | ReadContractsErrorType | null,
+    refetch
   };
 }

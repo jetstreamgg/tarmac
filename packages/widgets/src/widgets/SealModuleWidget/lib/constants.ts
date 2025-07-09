@@ -170,7 +170,7 @@ export function sealLoadingButtonText({
       return flow === SealFlow.OPEN
         ? msg`Opening position`
         : flow === SealFlow.MANAGE
-          ? msg`Updating position`
+          ? msg`Changing position`
           : msg`Loading`;
   }
 }

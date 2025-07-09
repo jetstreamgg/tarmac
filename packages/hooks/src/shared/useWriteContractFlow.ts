@@ -7,32 +7,11 @@ import {
 } from 'wagmi';
 import { isRevertedError } from '../helpers';
 import { useEffect, useMemo } from 'react';
-import type { WriteHook } from '../hooks';
-import { type Abi, type ContractFunctionArgs, type ContractFunctionName } from 'viem';
 import { Config, ResolvedRegister } from '@wagmi/core';
 import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
-
-type UseWriteContractFlowParameters<
-  abi extends Abi | readonly unknown[] = Abi,
-  functionName extends ContractFunctionName<abi, 'nonpayable' | 'payable'> = ContractFunctionName<
-    abi,
-    'nonpayable' | 'payable'
-  >,
-  args extends ContractFunctionArgs<abi, 'nonpayable' | 'payable', functionName> = ContractFunctionArgs<
-    abi,
-    'nonpayable' | 'payable',
-    functionName
-  >,
-  config extends Config = Config,
-  chainId extends config['chains'][number]['id'] | undefined = undefined
-> = UseSimulateContractParameters<abi, functionName, args, config, chainId> & {
-  enabled: boolean;
-  gcTime?: number;
-  onStart?: (hash: string) => void;
-  onSuccess?: (hash: string) => void;
-  onError?: (error: Error, hash: string) => void;
-};
+import type { UseWriteContractFlowParameters, WriteHook } from '../hooks';
+import type { Abi, ContractFunctionArgs, ContractFunctionName } from 'viem';
 
 export function useWriteContractFlow<
   const abi extends Abi | readonly unknown[],

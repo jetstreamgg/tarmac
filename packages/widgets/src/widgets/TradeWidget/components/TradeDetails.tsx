@@ -88,7 +88,7 @@ export function TradeDetails({
 
   return (
     <TransactionOverview
-      title={t`Trade details`}
+      title={t`Transaction overview`}
       isFetching={isQuoteLoading}
       fetchingMessage={t`Fetching price`}
       transactionData={transactionData}

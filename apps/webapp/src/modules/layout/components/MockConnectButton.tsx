@@ -7,15 +7,33 @@ export function MockConnectButton(): JSX.Element {
   const { isConnected, address } = useAccount();
 
   return (
-    <button
-      className="rounded-lg bg-white px-4 py-2"
-      onClick={() =>
-        connect({
-          connector: mockWagmiConfig.connectors[0]
-        })
-      }
-    >
-      {isConnected ? address : 'Connect Mock Wallet'}
-    </button>
+    <>
+      {!isConnected ? (
+        <>
+          <button
+            className="rounded-lg bg-white px-4 py-2"
+            onClick={() =>
+              connect({
+                connector: mockWagmiConfig.connectors[0]
+              })
+            }
+          >
+            {'Connect Mock Wallet'}
+          </button>
+          <button
+            className="rounded-lg bg-white px-4 py-2"
+            onClick={() =>
+              connect({
+                connector: mockWagmiConfig.connectors[1]
+              })
+            }
+          >
+            {'Connect Batch Mock Wallet'}
+          </button>
+        </>
+      ) : (
+        <button className="rounded-lg bg-white px-4 py-2">{address}</button>
+      )}
+    </>
   );
 }

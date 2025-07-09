@@ -1,10 +1,10 @@
 import { expect, test } from '../fixtures.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { usdsAddress } from '@jetstreamgg/sky-hooks';
+import { sUsdsAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
-import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { approveToken } from '../utils/approveToken.ts';
 
 test('Supply and withdraw from Savings', async ({ page }) => {
   await page.goto('/');
@@ -27,10 +27,8 @@ test('Supply and withdraw from Savings', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
   await page.getByTestId('withdraw-input-savings').fill('.01');
   await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-  // await page.getByRole('button', { name: 'Withdraw' }).click();
-  const withdrawButton = page.getByTestId('widget-button');
-  await expect(withdrawButton).toHaveText('Withdraw');
-  await withdrawButton.click();
+
+  approveOrPerformAction(page, 'Withdraw');
 
   await expect(page.getByText("You've withdrawn 0.01 USDS from the Sky Savings Rate module")).toBeVisible();
   //TODO: why is the finish button disabled?
@@ -57,13 +55,13 @@ test('withdraw with insufficient savings balance', async ({ page }) => {
   await page.getByRole('tab', { name: 'Withdraw' }).click();
 
   await page.getByTestId('withdraw-input-savings-max').click();
-  const withdrawButton = await page
-    .waitForSelector('role=button[name="Withdraw"]', { timeout: 500 })
+  const reviewButton = await page
+    .waitForSelector('role=button[name="Review"]', { timeout: 500 })
     .catch(() => null);
 
-  // If there's no withdraw button after clicking 100%, it means we don't any USDS supplied
-  if (withdrawButton) {
-    await withdrawButton.click();
+  // If there's no review button after clicking 100%, it means we don't any USDS supplied
+  if (reviewButton) {
+    await approveOrPerformAction(page, 'Withdraw');
     await expect(page.getByText("You've withdrawn 0.01 USDS from the Sky Savings Rate module")).toBeVisible();
     // await expect(page.locator('text=successfully withdrew')).toHaveCount(2);
     await page.getByRole('button', { name: 'Back to Savings' }).click();
@@ -72,9 +70,9 @@ test('withdraw with insufficient savings balance', async ({ page }) => {
   await page.getByTestId('withdraw-input-savings').click();
   await page.getByTestId('withdraw-input-savings').fill('100');
   await expect(page.getByText('Insufficient funds.')).toBeVisible();
-  const withdrawButtonDisabled = page.getByTestId('widget-button');
-  expect(withdrawButtonDisabled).toHaveText('Withdraw');
-  expect(withdrawButtonDisabled).toBeDisabled();
+  const reviewButtonDisabled = page.getByTestId('widget-button');
+  expect(reviewButtonDisabled).toHaveText('Review');
+  expect(reviewButtonDisabled).toBeDisabled();
 });
 
 test('Balance changes after a successful supply', async ({ page }) => {
@@ -120,11 +118,11 @@ test('Balance changes after a successful withdraw', async ({ page }) => {
 
   await page.getByTestId('withdraw-input-savings').click();
   await page.getByTestId('withdraw-input-savings').fill('2');
-  const withdrawButton = await page
-    .waitForSelector('role=button[name="Withdraw"]', { timeout: 500 })
+  const reviewButton = await page
+    .waitForSelector('role=button[name="Review"]', { timeout: 500 })
     .catch(() => null);
-  if (withdrawButton) {
-    await withdrawButton.click();
+  if (reviewButton) {
+    await approveOrPerformAction(page, 'Withdraw');
   }
   await page.getByRole('button', { name: 'Back to Savings' }).click();
 
@@ -141,31 +139,21 @@ test('Balance changes after a successful withdraw', async ({ page }) => {
 });
 
 test('supply with enough allowance does not require approval', async ({ page }) => {
-  await page.goto('/');
-  await connectMockWalletAndAcceptTerms(page);
-  await page.getByRole('tab', { name: 'Savings' }).click();
-  await page.getByTestId('supply-input-savings').click();
-  await page.getByTestId('supply-input-savings').click();
-  await page.getByTestId('supply-input-savings').fill('100');
-  // Approve
-  await page.getByRole('button', { name: 'Approve' }).click();
-  // Wait for approval tx to finish
-  await expect(page.getByText('Token access approved')).toBeVisible();
-  // await page.locator('role=button[name="Back"]').first().click(); //for some reason there's another button named Next
-  // await page.getByRole('button', { name: 'Finish' }).click();
+  await approveToken(usdsAddress[TENDERLY_CHAIN_ID], sUsdsAddress[TENDERLY_CHAIN_ID], '100');
 
-  // Restart
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
   await page.getByRole('tab', { name: 'Savings' }).click();
   await page.getByTestId('supply-input-savings').click();
   await page.getByTestId('supply-input-savings').click();
   await page.getByTestId('supply-input-savings').fill('100');
+  // Go to review screen
+  await page.getByTestId('widget-button').click();
   // It should not ask for approval
-  await expect(page.getByTestId('widget-button')).toHaveText(/^Supply$/);
+  await expect(page.getByTestId('widget-button').last()).toHaveText(/^Confirm supply$/);
 
   // Supply and reset approval
-  await page.getByTestId('widget-button').click();
+  await page.getByTestId('widget-button').last().click();
 });
 
 test('supply without allowance requires approval', async ({ page }) => {
@@ -176,8 +164,9 @@ test('supply without allowance requires approval', async ({ page }) => {
   await page.getByTestId('supply-input-savings').click();
   await page.getByTestId('supply-input-savings').click();
   await page.getByTestId('supply-input-savings').fill('101');
-  // Approve button should be visible
-  await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
+  await page.getByTestId('widget-button').click();
+  // It should ask to confirm 2 transactions, including the approval
+  await expect(page.getByTestId('widget-button').last()).toHaveText('Confirm 2 transactions');
 });
 
 test('if not connected it should show a connect button', async ({ page }) => {
@@ -261,7 +250,7 @@ test('enter amount button should be disabled', async ({ page }) => {
   ).toBeDisabled();
 });
 
-test('An approval error redirects to the error screen', async ({ page }) => {
+test('A supply error redirects to the error screen', async ({ page }) => {
   await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '101');
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
@@ -269,13 +258,9 @@ test('An approval error redirects to the error screen', async ({ page }) => {
   await page.getByTestId('supply-input-savings').click();
   await page.getByTestId('supply-input-savings').fill('101');
 
-  // Intercept the tenderly RPC call to reject the transaction. Waits for 200ms for UI to update
-  await interceptAndRejectTransactions(page, 200, true);
-  await page.getByRole('button', { name: 'Approve' }).click();
+  await approveOrPerformAction(page, 'Supply', { reject: true });
 
-  expect(
-    page.getByText('An error occurred when allowing this app to access the USDS in your wallet.')
-  ).toBeVisible();
+  expect(page.getByText('An error occurred during the supply flow.').last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
@@ -283,29 +268,7 @@ test('An approval error redirects to the error screen', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Retry' }).last().click();
 
-  await expect(
-    page.getByText('An error occurred when allowing this app to access the USDS in your wallet.')
-  ).toBeVisible();
-});
-
-test('A supply error redirects to the error screen', async ({ page }) => {
-  await page.goto('/');
-  await connectMockWalletAndAcceptTerms(page);
-  await page.getByRole('tab', { name: 'Savings' }).click();
-  await page.getByTestId('supply-input-savings').click();
-  await page.getByTestId('supply-input-savings').fill('1');
-
-  await approveOrPerformAction(page, 'Supply', { reject: true });
-
-  await expect(page.getByText('An error occurred while supplying your USDS')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Retry' }).last()).toBeEnabled({ timeout: 15000 });
-
-  await page.getByRole('button', { name: 'Retry' }).last().click();
-
-  await expect(page.getByText('An error occurred while supplying your USDS')).toBeVisible();
+  await expect(page.getByText('An error occurred during the supply flow.')).toBeVisible();
 });
 
 test('A withdraw error redirects to the error screen', async ({ page }) => {
@@ -324,19 +287,9 @@ test('A withdraw error redirects to the error screen', async ({ page }) => {
   await page.getByTestId('withdraw-input-savings').click();
   await page.getByTestId('withdraw-input-savings').fill('1');
 
-  const withdrawButton = await page
-    .waitForSelector('role=button[name="Withdraw"]', { timeout: 500 })
-    .catch(() => null);
+  await approveOrPerformAction(page, 'Withdraw', { reject: true });
 
-  if (withdrawButton) {
-    //already have allowance
-    // Intercept the tenderly RPC call to reject the transaction. Waits for 200ms for UI to update
-
-    await interceptAndRejectTransactions(page, 200, true);
-    withdrawButton.click();
-  }
-
-  expect(page.getByText('An error occurred while withdrawing your USDS')).toBeVisible();
+  expect(page.getByText('An error occurred during the withdraw flow.').last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back' }).last()).toBeVisible();
   expect(page.getByRole('button', { name: 'Back' }).last()).toBeEnabled();
   expect(page.getByRole('button', { name: 'Retry' }).last()).toBeVisible();
@@ -344,7 +297,7 @@ test('A withdraw error redirects to the error screen', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Retry' }).last().click();
 
-  await expect(page.getByText('An error occurred while withdrawing your USDS')).toBeVisible();
+  await expect(page.getByText('An error occurred during the withdraw flow.')).toBeVisible();
 });
 
 test('Details pane shows right data', async ({ page }) => {
@@ -366,11 +319,11 @@ test('Details pane shows right data', async ({ page }) => {
   await expect(page.getByTestId('supplied-balance')).toHaveText(detailsSuppliedBalance);
 
   // close details pane
-  await page.getByLabel('Toggle details').click();
+  await page.getByTestId('widget-container').getByLabel('Toggle details').click();
   await expect(page.getByTestId('savings-stats-section')).not.toBeVisible();
 
   // open details pane
-  await page.getByLabel('Toggle details').click();
+  await page.getByTestId('widget-container').getByLabel('Toggle details').click();
   await expect(page.getByTestId('savings-stats-section')).toBeVisible();
 
   // Chart is present
@@ -378,4 +331,18 @@ test('Details pane shows right data', async ({ page }) => {
 
   // History is present
   await expect(page.getByTestId('savings-history')).toBeVisible();
+});
+
+test('Batch - Supply to Savings', async ({ page }) => {
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.getByRole('tab', { name: 'Savings' }).click();
+
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+
+  await page.getByTestId('supply-input-savings').click();
+  await page.getByTestId('supply-input-savings').fill('.02');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+  await performAction(page, 'Supply');
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
 });
