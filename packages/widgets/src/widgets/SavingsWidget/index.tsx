@@ -3,7 +3,9 @@ import {
   TOKENS,
   useSavingsAllowance,
   useSavingsData,
-  useIsBatchSupported
+  useIsBatchSupported,
+  Token,
+  useTokenBalance
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -28,6 +30,7 @@ import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState
 import { SavingsTransactionReview } from './components/SavingsTransactionReview';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { useSavingsTransactions } from './hooks/useSavingsTransactions';
+import { tokenForSymbol } from '../UpgradeWidget/lib/helpers';
 
 export type SavingsWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -69,10 +72,20 @@ const SavingsWidgetWrapped = ({
   const debouncedAmount = useDebounce(amount);
   const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
+  const [originToken, setOriginToken] = useState<Token>(
+    tokenForSymbol((validatedExternalState?.token as 'DAI' | 'USDS') || 'USDS')
+  );
   const [max, setMax] = useState<boolean>(false);
   const linguiCtx = useLingui();
-  const usds = TOKENS.usds;
+  const dai = TOKENS.dai;
   const { data: batchSupported, isLoading: isBatchSupportLoading } = useIsBatchSupported();
+
+  // Balance of the tokens to be supplied
+  const { data: originBalance, refetch: mutateOriginBalance } = useTokenBalance({
+    chainId,
+    address,
+    token: originToken.address[chainId]
+  });
 
   useEffect(() => {
     setAmount(initialAmount);
@@ -96,17 +109,20 @@ const SavingsWidgetWrapped = ({
 
   useNotifyWidgetState({ widgetState, txStatus, onWidgetStateChange });
 
-  const { savingsApprove, savingsSupply, batchSavingsSupply, savingsWithdraw } = useSavingsTransactions({
-    amount: debouncedAmount,
-    max,
-    referralCode,
-    allowance,
-    mutateAllowance,
-    mutateSavings,
-    addRecentTransaction,
-    onWidgetStateChange,
-    onNotification
-  });
+  const { savingsApprove, savingsSupply, batchSavingsSupply, savingsWithdraw, batchUpgradeAndSupply } =
+    useSavingsTransactions({
+      amount: debouncedAmount,
+      max,
+      referralCode,
+      allowance,
+      originToken,
+      mutateAllowance,
+      mutateOriginBalance,
+      mutateSavings,
+      addRecentTransaction,
+      onWidgetStateChange,
+      onNotification
+    });
 
   const needsAllowance = !!(!allowance || allowance < debouncedAmount);
   const shouldUseBatch =
@@ -169,8 +185,8 @@ const SavingsWidgetWrapped = ({
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
     address &&
-    (savingsData?.userNstBalance || savingsData?.userNstBalance === 0n) &&
-    debouncedAmount > savingsData.userNstBalance &&
+    (originBalance?.value || originBalance?.value === 0n) &&
+    debouncedAmount > originBalance.value &&
     amount !== 0n //don't wait for debouncing on default state
       ? true
       : false;
@@ -221,6 +237,14 @@ const SavingsWidgetWrapped = ({
     isAmountWaitingForDebounce ||
     (!!batchEnabled && isBatchSupportLoading);
 
+  const batchUpgradeAndSupplyDisabled =
+    [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
+    isSupplyBalanceError ||
+    !batchUpgradeAndSupply.prepared ||
+    batchUpgradeAndSupply.isLoading ||
+    isAmountWaitingForDebounce ||
+    !batchSupported;
+
   const approveOnClick = () => {
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
@@ -247,6 +271,13 @@ const SavingsWidgetWrapped = ({
     batchSavingsSupply.execute();
   };
 
+  const upgradeAndSupplyOnClick = () => {
+    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
+    setTxStatus(TxStatus.INITIALIZED);
+    setExternalLink(undefined);
+    batchUpgradeAndSupply.execute();
+  };
+
   const withdrawOnClick = () => {
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
@@ -256,12 +287,12 @@ const SavingsWidgetWrapped = ({
 
   // Handle external state changes
   useEffect(() => {
-    const tokenDecimals = getTokenDecimals(usds, chainId);
+    const tokenDecimals = getTokenDecimals(originToken, chainId);
     const formattedAmount = formatUnits(amount, tokenDecimals);
     const amountHasChanged =
       validatedExternalState?.amount !== undefined && validatedExternalState?.amount !== formattedAmount;
 
-    const tokenHasChanged = externalWidgetState?.token?.toLowerCase() !== usds.symbol.toLowerCase();
+    const tokenHasChanged = externalWidgetState?.token?.toLowerCase() !== originToken.symbol.toLowerCase();
 
     if ((amountHasChanged || tokenHasChanged) && txStatus === TxStatus.IDLE) {
       // Only set amount if there's a valid amount in external state
@@ -318,9 +349,11 @@ const SavingsWidgetWrapped = ({
   // Handle the error onClicks separately to keep it clean
   const errorOnClick = () => {
     return widgetState.action === SavingsAction.SUPPLY
-      ? shouldUseBatch
-        ? batchSupplyOnClick()
-        : supplyOnClick()
+      ? originToken.symbol === dai.symbol
+        ? upgradeAndSupplyOnClick()
+        : shouldUseBatch
+          ? batchSupplyOnClick()
+          : supplyOnClick()
       : widgetState.action === SavingsAction.WITHDRAW
         ? withdrawOnClick()
         : widgetState.action === SavingsAction.APPROVE
@@ -337,11 +370,13 @@ const SavingsWidgetWrapped = ({
         : widgetState.screen === SavingsScreen.ACTION
           ? reviewOnClick
           : widgetState.flow === SavingsFlow.SUPPLY
-            ? shouldUseBatch
-              ? batchSupplyOnClick
-              : widgetState.action === SavingsAction.APPROVE
-                ? approveOnClick
-                : supplyOnClick
+            ? originToken.symbol === dai.symbol
+              ? upgradeAndSupplyOnClick
+              : shouldUseBatch
+                ? batchSupplyOnClick
+                : widgetState.action === SavingsAction.APPROVE
+                  ? approveOnClick
+                  : supplyOnClick
             : widgetState.flow === SavingsFlow.WITHDRAW && widgetState.action === SavingsAction.WITHDRAW
               ? withdrawOnClick
               : undefined;
@@ -403,7 +438,11 @@ const SavingsWidgetWrapped = ({
     setIsDisabled(
       isConnectedAndEnabled &&
         ((widgetState.action === SavingsAction.SUPPLY &&
-          (shouldUseBatch ? batchSupplyDisabled : supplyDisabled)) ||
+          (originToken.symbol === dai.symbol
+            ? batchUpgradeAndSupplyDisabled
+            : shouldUseBatch
+              ? batchSupplyDisabled
+              : supplyDisabled)) ||
           (widgetState.action === SavingsAction.WITHDRAW && withdrawDisabled) ||
           (widgetState.action === SavingsAction.APPROVE && approveDisabled))
     );
@@ -414,7 +453,9 @@ const SavingsWidgetWrapped = ({
     approveDisabled,
     isConnectedAndEnabled,
     shouldUseBatch,
-    batchSupplyDisabled
+    batchSupplyDisabled,
+    originToken.symbol,
+    batchUpgradeAndSupplyDisabled
   ]);
 
   // After a successful approval, wait for the next hook (supply) to be prepared and send the transaction
@@ -479,6 +520,7 @@ const SavingsWidgetWrapped = ({
     }
 
     // Refresh data
+    mutateOriginBalance();
     mutateSavings();
     mutateAllowance();
   }, [chainId]);
@@ -502,10 +544,10 @@ const SavingsWidgetWrapped = ({
       }
     >
       <AnimatePresence mode="popLayout" initial={false}>
-        {usds && txStatus !== TxStatus.IDLE ? (
+        {txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="widget-transaction-status">
             <SavingsTransactionStatus
-              originToken={usds}
+              originToken={originToken}
               originAmount={debouncedAmount}
               onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
@@ -518,7 +560,7 @@ const SavingsWidgetWrapped = ({
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
               isBatchTransaction={shouldUseBatch}
-              originToken={usds}
+              originToken={originToken}
               originAmount={debouncedAmount}
               needsAllowance={needsAllowance}
             />
@@ -527,7 +569,7 @@ const SavingsWidgetWrapped = ({
           <CardAnimationWrapper key="widget-inputs">
             <SupplyWithdraw
               address={address}
-              nstBalance={savingsData?.userNstBalance}
+              originBalance={originBalance?.value}
               savingsBalance={savingsData?.userSavingsBalance}
               savingsTvl={savingsData?.savingsTvl}
               isSavingsDataLoading={isSavingsDataLoading}
@@ -536,12 +578,19 @@ const SavingsWidgetWrapped = ({
                 if (userTriggered) {
                   // If newValue is 0n and it was triggered by user, it means they're clearing the input
                   const formattedValue =
-                    newValue === 0n ? '' : formatUnits(newValue, getTokenDecimals(usds, chainId));
+                    newValue === 0n ? '' : formatUnits(newValue, getTokenDecimals(originToken, chainId));
                   onWidgetStateChange?.({
                     originAmount: formattedValue,
                     txStatus,
                     widgetState
                   });
+                }
+              }}
+              originToken={originToken}
+              onMenuItemChange={(op: Token | null) => {
+                if (op) {
+                  setOriginToken(op as Token);
+                  onWidgetStateChange?.({ originToken: op.symbol, txStatus, widgetState });
                 }
               }}
               onToggle={setTabIndex}

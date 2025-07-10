@@ -10,12 +10,14 @@ interface UseSavingsTransactionCallbacksParameters
   amount: bigint;
   mutateAllowance: () => void;
   mutateSavings: () => void;
+  mutateOriginBalance: () => void;
   retryPrepareSupply: () => void;
 }
 
 export const useSavingsTransactionCallbacks = ({
   amount,
   mutateAllowance,
+  mutateOriginBalance,
   mutateSavings,
   retryPrepareSupply,
   addRecentTransaction,
@@ -72,6 +74,7 @@ export const useSavingsTransactionCallbacks = ({
           notificationDescription: t`You supplied ${formatBigInt(amount)} USDS`
         });
         mutateAllowance();
+        mutateOriginBalance();
         mutateSavings();
       },
       onError: (error, hash) => {
@@ -101,6 +104,7 @@ export const useSavingsTransactionCallbacks = ({
           notificationDescription: t`You withdrew ${formatBigInt(amount)} USDS`
         });
         mutateSavings();
+        mutateOriginBalance();
       },
       onError: (error, hash) => {
         handleOnError({
