@@ -1,12 +1,14 @@
 import {
+  Token,
   useBatchSavingsSupply,
+  useBatchUpgradeAndSavingsSupply,
   useSavingsApprove,
   useSavingsSupply,
   useSavingsWithdraw
 } from '@jetstreamgg/sky-hooks';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useContext } from 'react';
-import { SavingsAction } from '../lib/constants';
+import { SavingsAction, SavingsFlow } from '../lib/constants';
 import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
@@ -16,8 +18,10 @@ interface UseSavingsTransactionsParameters
   max: boolean;
   referralCode: number | undefined;
   allowance: bigint | undefined;
+  originToken: Token;
   mutateAllowance: () => void;
   mutateSavings: () => void;
+  mutateOriginBalance: () => void;
 }
 
 export const useSavingsTransactions = ({
@@ -25,8 +29,10 @@ export const useSavingsTransactions = ({
   max,
   referralCode,
   allowance,
+  originToken,
   mutateAllowance,
   mutateSavings,
+  mutateOriginBalance,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
@@ -36,6 +42,7 @@ export const useSavingsTransactions = ({
     useSavingsTransactionCallbacks({
       amount,
       mutateAllowance,
+      mutateOriginBalance,
       mutateSavings,
       retryPrepareSupply: () => savingsSupply.retryPrepare(),
       addRecentTransaction,
@@ -74,5 +81,10 @@ export const useSavingsTransactions = ({
     ...withdrawTransactionCallbacks
   });
 
-  return { savingsApprove, savingsSupply, batchSavingsSupply, savingsWithdraw };
+  const batchUpgradeAndSupply = useBatchUpgradeAndSavingsSupply({
+    ...savingsSupplyParams,
+    enabled: widgetState.flow === SavingsFlow.SUPPLY && originToken.symbol === 'DAI'
+  });
+
+  return { savingsApprove, savingsSupply, batchSavingsSupply, savingsWithdraw, batchUpgradeAndSupply };
 };
