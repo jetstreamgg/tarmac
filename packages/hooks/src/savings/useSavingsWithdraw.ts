@@ -10,6 +10,7 @@ import { TENDERLY_CHAIN_ID } from '../constants';
 export function useSavingsWithdraw({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -61,6 +62,7 @@ export function useSavingsWithdraw({
     chainId,
     gas: chainId === TENDERLY_CHAIN_ID ? gas || 170000n : gas, // Set gas limit for Tenderly to prevent errors due to pot.drip() not being called every block
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

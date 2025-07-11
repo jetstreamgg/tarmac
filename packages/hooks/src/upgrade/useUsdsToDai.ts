@@ -9,6 +9,7 @@ export function useUsdsToDai({
   amount,
   enabled: paramEnabled = true,
   gas,
+  onMutate,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -37,6 +38,7 @@ export function useUsdsToDai({
     chainId,
     enabled,
     gas,
+    onMutate,
     onSuccess,
     onError,
     onStart

@@ -19,10 +19,12 @@ interface UseRewardsTransactionsParameters
   referralCode: number | undefined;
   amount: bigint;
   allowance: bigint | undefined;
+  rewardsBalance: bigint | undefined;
   mutateAllowance: () => void;
   mutateTokenBalance: () => void;
   mutateRewardsBalance: () => void;
   mutateUserSuppliedBalance: () => void;
+  setClaimAmount: React.Dispatch<React.SetStateAction<bigint>>;
 }
 
 export const useRewardsTransactions = ({
@@ -30,13 +32,15 @@ export const useRewardsTransactions = ({
   referralCode,
   amount,
   allowance,
+  rewardsBalance,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   mutateAllowance,
   mutateTokenBalance,
   mutateRewardsBalance,
-  mutateUserSuppliedBalance
+  mutateUserSuppliedBalance,
+  setClaimAmount
 }: UseRewardsTransactionsParameters) => {
   const chainId = useChainId();
   const {
@@ -47,6 +51,7 @@ export const useRewardsTransactions = ({
   } = useRewardsTransactionCallbacks({
     selectedRewardContract,
     amount,
+    rewardsBalance,
     mutateAllowance,
     mutateTokenBalance,
     mutateRewardsBalance,
@@ -54,7 +59,8 @@ export const useRewardsTransactions = ({
     retryPrepareSupply: () => supply.retryPrepare(),
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    setClaimAmount
   });
 
   const { widgetState } = useContext(WidgetContext);

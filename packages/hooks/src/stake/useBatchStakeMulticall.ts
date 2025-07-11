@@ -10,6 +10,7 @@ export function useBatchStakeMulticall({
   skyAmount,
   usdsAmount,
   enabled: paramEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null,
@@ -68,6 +69,7 @@ export function useBatchStakeMulticall({
     calls,
     chainId,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

@@ -8,6 +8,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useFreeCollateral({
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null,
@@ -31,6 +32,7 @@ export function useFreeCollateral({
     chainId: chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

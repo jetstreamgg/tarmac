@@ -12,6 +12,7 @@ export function usePsmSwapExactIn({
   referralCode = 0n,
   enabled: paramEnabled = true,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -44,6 +45,7 @@ export function usePsmSwapExactIn({
     chainId,
     enabled,
     gas,
+    onMutate,
     onSuccess,
     onError,
     onStart

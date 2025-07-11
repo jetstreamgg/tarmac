@@ -39,7 +39,7 @@ export const useL2TradeTransactionCallbacks = ({
   onNotification,
   setShowAddToken
 }: UseL2TradeTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
@@ -51,6 +51,7 @@ export const useL2TradeTransactionCallbacks = ({
 
   const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -83,6 +84,7 @@ export const useL2TradeTransactionCallbacks = ({
     [
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -96,6 +98,7 @@ export const useL2TradeTransactionCallbacks = ({
 
   const tradeTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -136,6 +139,7 @@ export const useL2TradeTransactionCallbacks = ({
     [
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -153,6 +157,7 @@ export const useL2TradeTransactionCallbacks = ({
 
   const tradeOutTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -193,6 +198,7 @@ export const useL2TradeTransactionCallbacks = ({
     [
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,

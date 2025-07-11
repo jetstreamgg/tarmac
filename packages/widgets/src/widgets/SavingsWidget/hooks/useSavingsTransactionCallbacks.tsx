@@ -22,7 +22,7 @@ export const useSavingsTransactionCallbacks = ({
   onWidgetStateChange,
   onNotification
 }: UseSavingsTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
@@ -31,6 +31,7 @@ export const useSavingsTransactionCallbacks = ({
   // Savings approve
   const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({ hash, recentTransactionDescription: t`Approving ${formatBigInt(amount)} USDS` });
       },
@@ -53,12 +54,21 @@ export const useSavingsTransactionCallbacks = ({
         mutateAllowance();
       }
     }),
-    [amount, handleOnError, handleOnStart, handleOnSuccess, mutateAllowance, retryPrepareSupply]
+    [
+      amount,
+      handleOnError,
+      handleOnMutate,
+      handleOnStart,
+      handleOnSuccess,
+      mutateAllowance,
+      retryPrepareSupply
+    ]
   );
 
   // Savings supply
   const supplyTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -85,12 +95,13 @@ export const useSavingsTransactionCallbacks = ({
         mutateSavings();
       }
     }),
-    [amount, handleOnError, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
+    [amount, handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
   );
 
   // Savings withdraw
   const withdrawTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({ hash, recentTransactionDescription: t`Withdrawing ${formatBigInt(amount)} USDS` });
       },
@@ -113,7 +124,7 @@ export const useSavingsTransactionCallbacks = ({
         mutateSavings();
       }
     }),
-    [amount, handleOnError, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
+    [amount, handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
   );
 
   return { approveTransactionCallbacks, supplyTransactionCallbacks, withdrawTransactionCallbacks };

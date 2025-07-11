@@ -9,6 +9,7 @@ import { useSendBatchTransactionFlow } from '../shared/useSendBatchTransactionFl
 
 export function useBatchSavingsSupply({
   amount,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -55,6 +56,7 @@ export function useBatchSavingsSupply({
     calls,
     chainId,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

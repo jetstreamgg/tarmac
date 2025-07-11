@@ -37,7 +37,7 @@ export const useL2SavingsTransactionCallbacks = ({
   retryPrepareWithdraw,
   retryPrepareWithdrawAll
 }: UseL2SavingsTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
@@ -49,6 +49,7 @@ export const useL2SavingsTransactionCallbacks = ({
 
   const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -93,6 +94,7 @@ export const useL2SavingsTransactionCallbacks = ({
       amount,
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       isMaxWithdraw,
@@ -110,6 +112,7 @@ export const useL2SavingsTransactionCallbacks = ({
 
   const supplyTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -148,6 +151,7 @@ export const useL2SavingsTransactionCallbacks = ({
       amount,
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -159,6 +163,7 @@ export const useL2SavingsTransactionCallbacks = ({
   );
   const withdrawTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -197,6 +202,7 @@ export const useL2SavingsTransactionCallbacks = ({
       amount,
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,

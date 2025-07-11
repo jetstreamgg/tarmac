@@ -6,6 +6,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useRewardsClaim({
   contractAddress,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -22,6 +23,7 @@ export function useRewardsClaim({
     chainId,
     enabled: !!address,
     gas,
+    onMutate,
     onSuccess,
     onError,
     onStart

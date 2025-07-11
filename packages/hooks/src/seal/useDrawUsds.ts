@@ -11,6 +11,7 @@ export function useDrawUsds({
   gas,
   amount,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null
@@ -33,6 +34,7 @@ export function useDrawUsds({
     chainId: chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

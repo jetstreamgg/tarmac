@@ -77,17 +77,8 @@ function StakeModuleWidgetWrapped({
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const {
-    txStatus,
-    widgetState,
-    setWidgetState,
-    setIsLoading,
-    setButtonText,
-    setIsDisabled,
-    setTxStatus,
-    setExternalLink,
-    setShowStepIndicator
-  } = useContext(WidgetContext);
+  const { txStatus, widgetState, setWidgetState, setIsLoading, setButtonText, setIsDisabled, setTxStatus } =
+    useContext(WidgetContext);
   const { i18n } = useLingui();
   const chainId = useChainId();
   const { isConnected, isConnecting, address } = useAccount();
@@ -274,7 +265,7 @@ function StakeModuleWidgetWrapped({
         ...prev,
         action: StakeAction.MULTICALL
       }));
-      submitOnClick();
+      multicall.execute();
     }
   }, [widgetState.flow, widgetState.action, txStatus, multicall.prepared]);
 
@@ -583,14 +574,6 @@ function StakeModuleWidgetWrapped({
   };
 
   const approveOnClick = () => {
-    setShowStepIndicator(true);
-    // Need to set action to approve to trigger the tx screen content
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      screen: StakeScreen.TRANSACTION
-    }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
     if (needsLockAllowance) {
       lockSkyApprove.execute();
     } else if (needsUsdsAllowance) {
@@ -619,42 +602,6 @@ function StakeModuleWidgetWrapped({
     //   ...prev,
     //   action: previousAction
     // }));
-  };
-
-  const submitOnClick = () => {
-    setShowStepIndicator(true);
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      action: StakeAction.MULTICALL,
-      screen: StakeScreen.TRANSACTION
-    }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    multicall.execute();
-  };
-
-  const batchSubmitOnClick = () => {
-    setShowStepIndicator(true);
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      action: StakeAction.MULTICALL,
-      screen: StakeScreen.TRANSACTION
-    }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    batchMulticall.execute();
-  };
-
-  const claimOnClick = () => {
-    setShowStepIndicator(false);
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      action: StakeAction.CLAIM,
-      screen: StakeScreen.TRANSACTION
-    }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    claimRewards.execute();
   };
 
   const finishOnClick = () => {
@@ -700,12 +647,12 @@ function StakeModuleWidgetWrapped({
         ? approveOnClick
         : currentStep === StakeStep.SUMMARY && widgetState.action === StakeAction.MULTICALL
           ? shouldUseBatch
-            ? batchSubmitOnClick
-            : submitOnClick
+            ? batchMulticall.execute
+            : multicall.execute
           : shouldOpenFromWidgetButton
             ? handleClickOpenPosition
             : widgetState.flow === StakeFlow.MANAGE && widgetState.action === StakeAction.CLAIM
-              ? claimOnClick
+              ? claimRewards.execute
               : widgetState.flow === StakeFlow.OPEN || widgetState.flow === StakeFlow.MANAGE
                 ? nextOnClick
                 : undefined;

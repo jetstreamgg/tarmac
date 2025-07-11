@@ -23,6 +23,7 @@ export function useWriteContractFlow<
   const {
     enabled,
     gcTime,
+    onMutate = () => null,
     onSuccess = () => null,
     onError = () => null,
     onStart = () => null,
@@ -46,6 +47,7 @@ export function useWriteContractFlow<
     data: mutationHash
   } = useWriteContract({
     mutation: {
+      onMutate,
       onSuccess: (hash: `0x${string}`) => {
         if (onStart) {
           onStart(hash);

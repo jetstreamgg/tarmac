@@ -1,9 +1,9 @@
 import { useCallback, useContext } from 'react';
-import { WidgetProps } from '../types/widgetState';
+import { WidgetProps, WidgetState } from '../types/widgetState';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useAccount, useChainId } from 'wagmi';
-import { NotificationType, TxStatus } from '../constants';
+import { InitialScreen, NotificationType, TxStatus } from '../constants';
 
 type UseTransactionCallbacksParameters = Pick<
   WidgetProps,
@@ -34,11 +34,17 @@ export const useTransactionCallbacks = ({
   onWidgetStateChange,
   onNotification
 }: UseTransactionCallbacksParameters) => {
-  const { widgetState, setExternalLink, setTxStatus } = useContext(WidgetContext);
+  const { widgetState, setWidgetState, setExternalLink, setTxStatus } = useContext(WidgetContext);
 
   const chainId = useChainId();
   const { address } = useAccount();
   const isSafeWallet = useIsSafeWallet();
+
+  const handleOnMutate = useCallback(() => {
+    setWidgetState((prev: WidgetState) => ({ ...prev, screen: InitialScreen.TRANSACTION }));
+    setTxStatus(TxStatus.INITIALIZED);
+    setExternalLink(undefined);
+  }, [setWidgetState, setTxStatus, setExternalLink]);
 
   const handleOnStart = useCallback(
     ({ hash, recentTransactionDescription }: TransactionStartParameters) => {
@@ -121,5 +127,5 @@ export const useTransactionCallbacks = ({
     ]
   );
 
-  return { handleOnStart, handleOnSuccess, handleOnError };
+  return { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError };
 };

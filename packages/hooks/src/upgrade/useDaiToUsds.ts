@@ -9,6 +9,7 @@ export function useDaiToUsds({
   amount,
   enabled: paramEnabled = true,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -37,6 +38,7 @@ export function useDaiToUsds({
     chainId,
     enabled,
     gas,
+    onMutate,
     onSuccess,
     onError,
     onStart

@@ -11,6 +11,7 @@ export function useSelectStakeRewardContract({
   ref = 0,
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null
@@ -32,6 +33,7 @@ export function useSelectStakeRewardContract({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

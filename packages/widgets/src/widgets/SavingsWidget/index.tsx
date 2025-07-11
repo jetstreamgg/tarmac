@@ -221,39 +221,6 @@ const SavingsWidgetWrapped = ({
     isAmountWaitingForDebounce ||
     (!!batchEnabled && isBatchSupportLoading);
 
-  const approveOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    savingsApprove.execute();
-  };
-
-  const supplyOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    savingsSupply.execute();
-  };
-
-  const batchSupplyOnClick = () => {
-    if (!needsAllowance) {
-      // If the user does not need allowance, just send the individual transaction as it will be more gas efficient
-      supplyOnClick();
-      return;
-    }
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    batchSavingsSupply.execute();
-  };
-
-  const withdrawOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    savingsWithdraw.execute();
-  };
-
   // Handle external state changes
   useEffect(() => {
     const tokenDecimals = getTokenDecimals(usds, chainId);
@@ -277,6 +244,7 @@ const SavingsWidgetWrapped = ({
 
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
+    setAmount(0n);
 
     setWidgetState((prev: WidgetState) => ({
       ...prev,
@@ -288,16 +256,6 @@ const SavingsWidgetWrapped = ({
             : SavingsAction.SUPPLY,
       screen: SavingsScreen.ACTION
     }));
-
-    // if successful supply/withdraw, reset amount
-    if (widgetState.action !== SavingsAction.APPROVE) {
-      setAmount(0n);
-    }
-
-    // if successfully approved, go to supply/withdraw
-    if (widgetState.action === SavingsAction.APPROVE && !needsAllowance) {
-      return widgetState.flow === SavingsFlow.SUPPLY ? supplyOnClick() : withdrawOnClick();
-    }
   };
 
   const reviewOnClick = () => {
@@ -319,12 +277,12 @@ const SavingsWidgetWrapped = ({
   const errorOnClick = () => {
     return widgetState.action === SavingsAction.SUPPLY
       ? shouldUseBatch
-        ? batchSupplyOnClick()
-        : supplyOnClick()
+        ? batchSavingsSupply.execute()
+        : savingsSupply.execute()
       : widgetState.action === SavingsAction.WITHDRAW
-        ? withdrawOnClick()
+        ? savingsWithdraw.execute()
         : widgetState.action === SavingsAction.APPROVE
-          ? approveOnClick()
+          ? savingsApprove.execute()
           : undefined;
   };
 
@@ -338,12 +296,12 @@ const SavingsWidgetWrapped = ({
           ? reviewOnClick
           : widgetState.flow === SavingsFlow.SUPPLY
             ? shouldUseBatch
-              ? batchSupplyOnClick
+              ? batchSavingsSupply.execute
               : widgetState.action === SavingsAction.APPROVE
-                ? approveOnClick
-                : supplyOnClick
+                ? savingsApprove.execute
+                : savingsSupply.execute
             : widgetState.flow === SavingsFlow.WITHDRAW && widgetState.action === SavingsAction.WITHDRAW
-              ? withdrawOnClick
+              ? savingsWithdraw.execute
               : undefined;
 
   const showSecondaryButton = txStatus === TxStatus.ERROR || widgetState.screen === SavingsScreen.REVIEW;
@@ -428,7 +386,7 @@ const SavingsWidgetWrapped = ({
         ...prev,
         action: SavingsAction.SUPPLY
       }));
-      supplyOnClick();
+      savingsSupply.execute();
     }
   }, [widgetState.action, txStatus, savingsSupply.prepared]);
 

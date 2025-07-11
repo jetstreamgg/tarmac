@@ -156,9 +156,7 @@ export const useL2SavingsTransactions = ({
     savingsApprove,
     savingsSupply,
     batchSavingsSupply,
-    savingsWithdrawAll,
-    batchSavingsWithdrawAll,
-    savingsWithdraw,
-    batchSavingsWithdraw
+    savingsWithdraw: isMaxWithdraw ? savingsWithdrawAll : savingsWithdraw,
+    batchSavingsWithdraw: isMaxWithdraw ? batchSavingsWithdrawAll : batchSavingsWithdraw
   };
 };

@@ -9,6 +9,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useLockSky({
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null,
@@ -42,6 +43,7 @@ export function useLockSky({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

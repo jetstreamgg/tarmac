@@ -15,6 +15,7 @@ interface UseUpgradeTransactionsParameters
   originAmount: bigint;
   allowance: bigint | undefined;
   shouldUseBatch: boolean;
+  shouldAllowExternalUpdate: React.RefObject<boolean>;
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
@@ -27,6 +28,7 @@ export const useUpgradeTransactions = ({
   originAmount,
   allowance,
   shouldUseBatch,
+  shouldAllowExternalUpdate,
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
@@ -41,6 +43,7 @@ export const useUpgradeTransactions = ({
     originToken,
     targetToken,
     tabIndex,
+    shouldAllowExternalUpdate,
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
