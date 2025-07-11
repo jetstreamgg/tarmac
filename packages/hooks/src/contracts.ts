@@ -125,7 +125,7 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'mkrSky',
     address: {
       [mainnet.id]: '0xA1Ea1bA18E88C381C724a75F23a130420C403f9a',
-      [TENDERLY_CHAIN_ID]: '0x831C6C334f8DDeE62246a5c81B82c8e18008b38f'
+      [TENDERLY_CHAIN_ID]: '0xA1Ea1bA18E88C381C724a75F23a130420C403f9a'
     }
   },
   // Savings module
@@ -232,7 +232,7 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'stakeModule',
     address: {
       [mainnet.id]: '0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3',
-      [TENDERLY_CHAIN_ID]: '0xB1fC11F03b084FfF8daE95fA08e8D69ad2547Ec1'
+      [TENDERLY_CHAIN_ID]: '0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3'
     }
   },
   // LockstakeSky
@@ -240,7 +240,7 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'lsSky',
     address: {
       [mainnet.id]: '0xf9A9cfD3229E985B91F99Bc866d42938044FFa1C',
-      [TENDERLY_CHAIN_ID]: '0x9cC87998ba85D81e017E6B7662aC00eE2Ab8fe13'
+      [TENDERLY_CHAIN_ID]: '0xf9A9cfD3229E985B91F99Bc866d42938044FFa1C'
     }
   },
   // Lockstake USDS Rewards
@@ -248,7 +248,7 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'lsSkyUsdsReward',
     address: {
       [mainnet.id]: '0x38E4254bD82ED5Ee97CD1C4278FAae748d998865',
-      [TENDERLY_CHAIN_ID]: '0xAf7868a9BB72E16B930D50636519038d7F057470'
+      [TENDERLY_CHAIN_ID]: '0x38E4254bD82ED5Ee97CD1C4278FAae748d998865'
     }
   },
   // Lockstake SPK Rewards
