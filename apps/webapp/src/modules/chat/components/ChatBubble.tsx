@@ -15,8 +15,6 @@ import { ChatIntentsRow } from './ChatIntentsRow';
 import { StopGeneratingButton } from './StopGeneratingButton';
 import { ChatError } from '@/modules/icons';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
-import { AgeWarningRow } from './AgeWarningRow';
-import { useChatContext } from '../context/ChatContext';
 
 type ChatBubbleProps = {
   user: UserType;
@@ -70,13 +68,11 @@ export const ChatBubble = ({
   intents,
   sendMessage,
   showModifierRow = true,
-  isLastMessage,
-  isFirstMessage
+  isLastMessage
 }: ChatBubbleProps) => {
   const { address } = useAccount();
   const [searchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
-  const { hasAcceptedAgeRestriction } = useChatContext();
   const shouldUseLargeAvatar = bpi >= BP.xl && searchParams.get(QueryParams.Details) !== 'true';
   const isError = type === MessageType.error;
   const isLoading = type === MessageType.loading;
@@ -129,7 +125,6 @@ export const ChatBubble = ({
                 <ChatMarkdownRenderer markdown={message} />
               </div>
             </HStack>
-            {isFirstMessage && !hasAcceptedAgeRestriction && <AgeWarningRow />}
             {user === UserType.bot && !isError && !isInternal && !isCanceled && (
               <div className="space-y-5">
                 {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />}
