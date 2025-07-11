@@ -10,7 +10,11 @@ const mainnetFaqItems: { question: string; answer: string; type?: 'restricted' |
   {
     question: 'What are Sky Token Rewards, and how do they work?',
     answer:
-      'When you supply  USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time in the form of SKY governance tokens. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.'
+      'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.'
+  },
+  {
+    question: 'What tokens can I use to access Sky Token Rewards?',
+    answer: 'Only USDS can be used to access Sky Token Rewards.'
   },
   {
     question: 'How much USDS do I have to supply to accumulate Sky Token Rewards?',
@@ -18,7 +22,7 @@ const mainnetFaqItems: { question: string; answer: string; type?: 'restricted' |
       'Eligible users can supply any amount of USDS to the Sky Token Rewards module of the decentralized Sky Protocol to begin accessing Sky Token Rewards. There is no minimum amount required. Eligible users can also withdraw their USDS at any time. With the Sky Protocol, you can receive rewards without giving up control of your supplied assets, as the Sky Token Rewards module is non-custodial.'
   },
   {
-    question: 'How is the Sky Token Rewards rate calculated?',
+    question: 'How are Sky Token Reward rates calculated?',
     answer: `The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors:
 
 • The issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance;
@@ -32,7 +36,7 @@ Sky.money does not control the issuance, determination, or distribution of these
   {
     question: 'How much does it cost to participate in Sky Token Rewards?',
     answer:
-      'There is no fee to participate in the Sky Token Rewards feature of the  Sky Protocol; however, with each transaction, you will likely pay a transaction, or gas, fee for using the Ethereum blockchain network. That fee is neither controlled, imposed nor received by Sky.money or the Sky Protocol.'
+      'There is no fee to participate in the Sky Token Rewards feature of the Sky Protocol; however, with each transaction, you will likely pay a transaction, or gas, fee for using the Ethereum blockchain network. That fee is neither controlled, imposed nor received by Sky.money or the Sky Protocol.'
   },
   {
     question: 'How do I claim my Sky Token Rewards?',

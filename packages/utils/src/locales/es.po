@@ -591,6 +591,10 @@ msgid "Choose a token to upgrade, and enter an amount"
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Choose from the Staking Reward options."
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
 msgid "Choose Reward"
 msgstr ""
 
@@ -914,7 +918,7 @@ msgid "Delegate (optional)"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
-msgid "Delegates in receipt of token voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time. Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to earn Staking Rewards."
+msgid "Delegates in receipt of token voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time. Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to access Staking Rewards."
 msgstr ""
 
 #: apps/webapp/src/modules/upgrade/components/UpgradeHistory.tsx
@@ -2015,10 +2019,6 @@ msgstr ""
 msgid "Sky Token Rewards overview"
 msgstr ""
 
-#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "Sky Tokens Rewards are what you access when you supply USDS to the Sky Token Rewards module of the decentralised Sky Protocol. Sky Token Rewards are in the form of SKY governance tokens. No minimum USDS supply amount is required. With the Sky Protocol, you can access rewards without giving up control of your supplied funds."
-msgstr ""
-
 #: packages/widgets/src/widgets/TradeWidget/components/TradeSummary.tsx
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
 msgid "Slippage"
@@ -2131,12 +2131,8 @@ msgstr ""
 msgid "Staking reward"
 msgstr ""
 
-#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
-msgid "Staking Rewards are in the form of USDS."
-msgstr ""
-
 #: apps/webapp/src/modules/ui/components/AboutStakeModule.tsx
-msgid "Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting."
+msgid "Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Staking Rewards rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting."
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeOverview.tsx
@@ -2313,7 +2309,7 @@ msgid "The Seal Engine is now deprecated. Please close your positions and open n
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "The Staking Engine is a module of the Sky Protocol. It has replaced the Seal Engine, offering the same features but it has no exit fee and only supports SKY, not MKR. The SKY tokens you supply to the Staking Engine enable you to access Staking Rewards, and more. With Sky, you always remain in control of your assets."
+msgid "The Staking Engine is a module of the Sky Protocol. When you stake SKY tokens to the Staking Engine, you can access Staking Rewards and may also choose to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides. With Sky, you always remain in control of your assets."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
@@ -2859,6 +2855,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
 msgid "When you supply USDS to the Sky Savings Rate module of the decentralized Sky Protocol, you access the Sky Savings Rate <0/> and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied assets, as this feature is non-custodial."
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets."
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
