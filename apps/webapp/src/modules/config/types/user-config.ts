@@ -8,4 +8,5 @@ export type UserConfig = {
   chatSuggested: boolean;
   stakeToken?: StakeToken;
   batchEnabled: boolean;
+  batchTxNotificationShown: boolean;
 };

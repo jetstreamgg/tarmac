@@ -220,6 +220,10 @@ msgstr ""
 msgid "Accumulated Rewards"
 msgstr ""
 
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "Activate smart account"
+msgstr ""
+
 #. placeholder {0}: targetToken?.symbol || ''
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
@@ -532,6 +536,10 @@ msgstr ""
 #. placeholder {0}: batchEnabled ? 'enabled' : 'disabled'
 #: apps/webapp/src/components/BatchTransactionsToggle.tsx
 msgid "Bundled transactions {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "Bundled transactions enable a one-click, gas-optimized user experience that aligns with the best practices of the broader Ethereum ecosystem."
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
@@ -932,6 +940,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Earn with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "EIP-7702 Bundled transactions now supported"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
@@ -1611,6 +1623,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
 msgid "Please connect your wallet to view your history"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "Please note however that all security checks, user confirmations, and error handling are managed by your chosen wallet's delegate contract. As outlined in our <0>Terms of Use</0>, your use of a non-custodial digital wallet—including wallets supporting EIP-7702 and smart account functionality—is governed by the terms of service of your third-party wallet provider. We do not control or take responsibility for the security, functionality, or behavior of third-party wallets, including their handling of bundled transactions or delegate contracts. To ensure a secure and transparent experience, please ensure you are using a trusted and up-to-date wallet before proceeding."
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx

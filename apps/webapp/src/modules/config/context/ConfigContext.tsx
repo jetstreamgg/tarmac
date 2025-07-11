@@ -57,7 +57,8 @@ const defaultUserConfig: UserConfig = {
   sealToken: SealToken.MKR,
   chatSuggested: false,
   stakeToken: StakeToken.SKY,
-  batchEnabled: import.meta.env.VITE_BATCH_TX_ENABLED === 'true'
+  batchEnabled: false, // Default to false to show activation prompt
+  batchTxNotificationShown: false
 };
 
 const defaultLinkedActionConfig = {
