@@ -63,9 +63,9 @@ export function getUpgradeReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${originToken.symbol} in your wallet and upgrade it to ${targetToken.symbol} in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${originToken.symbol} and upgrade it to ${targetToken.symbol} in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${originToken.symbol} in your wallet and upgrade it to ${targetToken.symbol} in multiple transactions.`;
+      return msg`You're allowing this app to access your ${originToken.symbol} and upgrade it to ${targetToken.symbol} in multiple transactions.`;
     default:
       return msg``;
   }
@@ -87,9 +87,9 @@ export function getRevertReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${originToken.symbol} in your wallet and revert it to ${targetToken.symbol} in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${originToken.symbol} and revert it to ${targetToken.symbol} in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${originToken.symbol} in your wallet and revert it to ${targetToken.symbol} in multiple transactions.`;
+      return msg`You're allowing this app to access your ${originToken.symbol} and revert it to ${targetToken.symbol} in multiple transactions.`;
     default:
       return msg``;
   }
@@ -135,7 +135,7 @@ export function upgradeSubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access the ${originToken.symbol} in your wallet and upgrade it to ${targetToken.symbol}.`
+        ? msg`Please allow this app to access your ${originToken.symbol} and upgrade it to ${targetToken.symbol}.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
@@ -165,7 +165,7 @@ export function revertSubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access the ${originToken.symbol} in your wallet and revert it to ${targetToken.symbol}.`
+        ? msg`Please allow this app to access your ${originToken.symbol} and revert it to ${targetToken.symbol}.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance

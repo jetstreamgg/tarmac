@@ -51,9 +51,9 @@ export function getSavingsSupplyReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and supply it to the Sky Savings Rate module in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Savings Rate module in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and supply it to the Sky Savings Rate module in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Savings Rate module in multiple transactions.`;
     default:
       return msg``;
   }
@@ -75,9 +75,9 @@ export function getSavingsWithdrawReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and withdraw from the Sky Savings Rate module in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and withdraw from the Sky Savings Rate module in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and withdraw from the Sky Savings Rate module in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and withdraw from the Sky Savings Rate module in multiple transactions.`;
     default:
       return msg``;
   }
@@ -97,7 +97,7 @@ export function supplySubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access the ${symbol} in your wallet and supply it to the Sky Savings Rate module.`
+        ? msg`Please allow this app to access your ${symbol} and supply it to the Sky Savings Rate module.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
@@ -127,7 +127,7 @@ export function withdrawSubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return isL2Chain && needsAllowance
-        ? msg`Please allow this app to access the ${symbol} in your wallet and withdraw it from the Sky Savings Rate module.`
+        ? msg`Please allow this app to access your ${symbol} and withdraw it from the Sky Savings Rate module.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return isL2Chain && needsAllowance

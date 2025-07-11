@@ -66,21 +66,40 @@ export function TransactionReview({
           <motion.div variants={positionAnimations}>
             <CardFooter className="border-selectActive border-t pt-5">
               <HStack className="w-full items-center justify-between">
-                <HStack className="gap-1 space-x-0">
-                  <Text className="text-textSecondary">Bundle transactions</Text>
-                  <InfoTooltip
-                    contentClassname="max-w-[300px]"
-                    iconClassName="text-textSecondary"
-                    content={
-                      <>
-                        <Text className="text-sm">
-                          {batchEnabled
-                            ? 'Your transactions will be completed in a single step, combining actions to save time and reduce gas fees.'
-                            : 'Your transactions will be completed in multiple steps'}
-                        </Text>
-                      </>
-                    }
-                  />
+                <HStack className="flex-wrap gap-1 space-x-0">
+                  <HStack className="gap-1 space-x-0">
+                    <Text className="text-[13px]">Bundle transactions</Text>
+                    <InfoTooltip
+                      contentClassname="max-w-[350px]"
+                      iconClassName="text-[13px]"
+                      content={
+                        <>
+                          <Text className="text-[13px]">Bundle transactions</Text>
+                          <Text className="text-[13px] text-white/60">
+                            Bundled transactions are set &apos;on&apos; by default to complete transactions in
+                            a single step. Combining actions improves the user experience and reduces gas
+                            fees. Manually toggle off to cancel this feature.
+                            <br />
+                            <br />
+                            Legal disclaimer:
+                            <br />
+                            <span className="text-xs">
+                              Please note however that all security checks, user confirmations, and error
+                              handling are managed by your chosen wallet&apos;s delegate contract. As outlined
+                              in our Terms of Use, your use of a non-custodial digital wallet—including
+                              wallets supporting EIP-7702 and smart account functionality—is governed by the
+                              terms of service of your third-party wallet provider. We do not control or take
+                              responsibility for the security, functionality, or behavior of third-party
+                              wallets, including their handling of bundled transactions or delegate contracts.
+                              To ensure a secure and transparent experience, please ensure you are using a
+                              trusted and up-to-date wallet before proceeding.
+                            </span>
+                          </Text>
+                        </>
+                      }
+                    />
+                  </HStack>
+                  <Text className="text-textSecondary text-[13px]">(toggled on by default).</Text>
                 </HStack>
                 <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} />
               </HStack>

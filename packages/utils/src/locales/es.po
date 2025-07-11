@@ -283,7 +283,7 @@ msgid "An error occurred when allowing this app to access the tokens in your wal
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-msgid "An error occurred while allowing the app to access the {symbol}."
+msgid "An error occurred while allowing the app to access your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -458,14 +458,6 @@ msgstr ""
 msgid "Be sure to check your transaction status on CoW Explorer to verify the cancellation was successful"
 msgstr ""
 
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Begin the change position process"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Begin the open position process"
-msgstr ""
-
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
 msgid "Begin the revert process"
@@ -569,6 +561,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
 msgid "Change your delegate"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Change your position"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
@@ -1522,6 +1518,10 @@ msgid "Open Position"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Open your position"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Opening position"
 msgstr ""
@@ -1554,42 +1554,42 @@ msgstr ""
 msgid "Output is estimated. You will receive at least {slippageAdjustedQuote} {0} or the transaction will revert."
 msgstr ""
 
+#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Please allow this app to access the tokens in your wallet."
+msgstr ""
+
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {0} in your wallet and revert it to {1}."
+msgid "Please allow this app to access your {0} and revert it to {1}."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {0} in your wallet and trade it for {1}."
+msgid "Please allow this app to access your {0} and trade it for {1}."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {0} in your wallet and upgrade it to {1}."
+msgid "Please allow this app to access your {0} and upgrade it to {1}."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module."
+msgid "Please allow this app to access your {symbol} and supply it to the Sky Savings Rate module."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module."
+msgid "Please allow this app to access your {symbol} and supply it to the Sky Token Rewards module."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet and withdraw it from the Sky Savings Rate module."
+msgid "Please allow this app to access your {symbol} and withdraw it from the Sky Savings Rate module."
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet."
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Please allow this app to access the tokens in your wallet."
+msgid "Please allow this app to access your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -3159,77 +3159,77 @@ msgstr ""
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and revert it to {1} in multiple transactions."
+msgid "You're allowing this app to access your {0} and revert it to {1} in multiple transactions."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and revert it to {1} in one bundled transaction."
+msgid "You're allowing this app to access your {0} and revert it to {1} in one bundled transaction."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and trade it for {1} in multiple transactions."
+msgid "You're allowing this app to access your {0} and trade it for {1} in multiple transactions."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and trade it for {1} in one bundled transaction."
+msgid "You're allowing this app to access your {0} and trade it for {1} in one bundled transaction."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and upgrade it to {1} in multiple transactions."
+msgid "You're allowing this app to access your {0} and upgrade it to {1} in multiple transactions."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and upgrade it to {1} in one bundled transaction."
+msgid "You're allowing this app to access your {0} and upgrade it to {1} in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and change your Staking Rewards Engine position in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and change your position in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and change your Staking Rewards Engine position in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and change your position in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and open a new Staking Rewards Engine position in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and open a new position in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and open a new Staking Rewards Engine position in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and open a new position in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Savings Rate module in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Savings Rate module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Token Rewards module in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Token Rewards module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and withdraw from the Sky Savings Rate module in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and withdraw from the Sky Savings Rate module in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and withdraw from the Sky Savings Rate module in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and withdraw from the Sky Savings Rate module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts

@@ -72,8 +72,12 @@ export function TransactionOverview({
                           {label}
                         </Text>
                         {label === 'Rate' && rateType && (
-                          <span className="ml-2 mt-1">
-                            <PopoverRateInfo type={rateType} onExternalLinkClicked={onExternalLinkClicked} />
+                          <span className="mt-1">
+                            <PopoverRateInfo
+                              type={rateType}
+                              onExternalLinkClicked={onExternalLinkClicked}
+                              iconClassName="text-textSecondary"
+                            />
                           </span>
                         )}
                         {tooltipText && (

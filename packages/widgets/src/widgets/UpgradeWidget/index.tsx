@@ -864,10 +864,12 @@ export function UpgradeWidgetWrapped({
                     return;
                   }
 
-                  const newOriginToken = targetToken;
                   setTabIndex(index);
+                  //Always default to DAI / USDS flow when toggling tabs
+                  const newOriginToken = index === 0 ? TOKENS.dai : TOKENS.usds;
+                  const newTargetToken = index === 0 ? TOKENS.usds : TOKENS.dai;
                   setOriginToken(newOriginToken);
-                  setTargetToken(originToken);
+                  setTargetToken(newTargetToken);
                   setOriginAmount(0n);
 
                   if (isConnectedAndEnabled) {
