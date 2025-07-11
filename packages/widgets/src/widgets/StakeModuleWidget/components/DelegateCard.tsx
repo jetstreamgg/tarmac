@@ -34,6 +34,7 @@ export const DelegateCard = ({
 
   return (
     <StatsOverviewCardCoreAccordion
+      dataTestId={`delegate-card-${delegate.id}`}
       className={`transition-colors ${
         selectedDelegate && getAddress(selectedDelegate) === getAddress(delegate.id)
           ? 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'

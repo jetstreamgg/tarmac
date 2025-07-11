@@ -37,7 +37,10 @@ test('Lock SKY, select rewards, select delegate, and open position', async ({ pa
 
   // select delegate
   await expect(page.getByText('Choose your delegate')).toBeVisible();
-  await page.getByRole('button', { name: '0x8779' }).click();
+  await page
+    .getByTestId(/^delegate-card-/)
+    .first()
+    .click(); // select the first delegate using data-testid
   await expect(page.getByTestId('widget-button').first()).toBeEnabled();
   await page.getByTestId('widget-button').first().click();
 
@@ -164,7 +167,10 @@ test('Batch - Lock SKY, select rewards, select delegate, and open position', asy
 
   // select delegate
   await expect(page.getByText('Choose your delegate')).toBeVisible();
-  await page.getByRole('button', { name: '0x8779' }).click();
+  await page
+    .getByTestId(/^delegate-card-/)
+    .first()
+    .click(); // select the first delegate using data-testid
   await expect(page.getByTestId('widget-button').first()).toBeEnabled();
   await page.getByTestId('widget-button').first().click();
 
