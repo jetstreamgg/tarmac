@@ -62,11 +62,11 @@ const content = {
     title: 'Staking Rewards Rate',
     description: (
       <Text className="leading-5 text-white/80" variant="small">
-        The Staking Rewards Rate (SRR) is variable and may fluctuate. It is determined by: (1) the current
-        issuance rate of the rewards set through onchain governance processes and (2) the market price of the
-        staked SKY at the time of each calculation. Rewards are accrued in USDS for the time being, subject to
-        any future adjustment by onchain governance. The SRR shown here is an estimated annual rate, updated
-        using data from a third party provider (i.e.,{' '}
+        Staking Rewards rates are variable and may fluctuate. They are determined by: (1) the current issuance
+        rate of the rewards set through onchain governance processes and (2) the market price of the staked
+        SKY at the time of each calculation. Rewards are accrued in USDS for the time being, subject to any
+        future adjustment by onchain governance. The SRR shown here is an estimated annual rate, updated using
+        data from a third party provider (i.e.,{' '}
         <ExternalLink
           href="https://blockanalitica.com/"
           className="hover:text-white hover:underline"
@@ -141,7 +141,7 @@ const content = {
         including staked tokens. Throughout the delegation process, you always own and are in control of your
         staked tokens, and you can change your delegate at any time. Staking to delegate your voting power may
         be a useful option for governance token holders who have limited time to allocate to the process, who
-        want to save on the cost of gas involved in voting on their own, and who also want to earn Staking
+        want to save on the cost of gas involved in voting on their own, and who also want to access Staking
         Rewards.
       </Text>
     )

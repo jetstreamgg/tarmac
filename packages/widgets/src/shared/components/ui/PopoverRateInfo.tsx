@@ -17,23 +17,21 @@ const getContent = (
     title: 'Sky Token Rewards (STR) Rate',
     description: (
       <Text variant="small" className="leading-5 text-white/80">
-        The Sky Token Rewards (STR) rate is variable, and is determined by the following factors: the current
-        issuance rate of the reward token in question, as set through the relevant onchain governance
-        processes pertinent to the reward token in question (for example, SKY issuance rate is decided by the
-        decentralised Maker/Sky ecosystem onchain governance), the current market price of the reward token in
-        question, and the user&apos;s proportional percentage of the total supply within the pool of funds
-        accruing that particular reward. STR rate may be volatile. The rate provided here is an estimate of
-        the relevant STR rate expressed in expected rate per annum, should be automatically updated every 5
-        minutes and is powered by data provided by a third party (
-        <ExternalLink
-          href="https://blockanalitica.com/"
-          className="hover:text-white hover:underline"
-          showIcon={false}
-          onExternalLinkClicked={onExternalLinkClicked}
-        >
-          BlockAnalitica
-        </ExternalLink>
-        ). This figure does not represent or guarantee future results.
+        The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates,
+        determined by the following factors:
+        <br />
+        <br />
+        • The issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance;
+        <br />
+        <br />
+        • The market price of the token rewarded; and
+        <br />
+        <br />
+        • The user’s proportional supply within the total pool of assets linked to the Sky Token Rewards
+        module.
+        <br />
+        <br />
+        Sky.money does not control the issuance, determination, or distribution of these rewards.
       </Text>
     )
   },

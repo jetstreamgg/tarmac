@@ -78,7 +78,7 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
 For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`
   },
   {
-    question: 'Are SKY and MKR the same?',
+    question: 'Are SKY and MKR tokens the same?',
     answer: `Think of SKY not as different from MKR, but as the technical and functional evolution of MKR, with SKY inheriting the governance functionalities previously held by MKR. The upgrade is at the rate of 1:24,000 (1 MKR = 24,000 SKY). 
 
 SKY is the sole governance token of the Sky Ecosystem and the upgrade of MKR. SKY token holders can use their SKY to participate directly in Sky Ecosystem Governance through a system of decentralized onchain voting, and/or to entrust their voting power to one or more governance delegates or a contract that they own. Voting with MKR is no longer possible.
@@ -101,7 +101,7 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
     question: 'Will the MKR I hold lose its value if I never upgrade to SKY?',
     answer: `All MKR holders are encouraged to upgrade to SKY promptly to maintain the ability to participate in key decisions shaping the Sky Protocol. Upgrading in a timely fashion ensures reduced governance complexity and a more effective, efficient and resilient ecosystem for all. Please note that while MKR will continue to exist, users will not be able to revert back to MKR from SKY via the Sky Protocol.
 
-To facilitate a smooth and prompt transition, Sky Ecosystem Governance [voted to introduce a Delayed Upgrade Penalty](https://vote.makerdao.com/polling/QmTVd4iq). The penalty, which will [begin September 18, 2025](https://upgrademkrtosky.sky.money) reduces the amount of SKY received per MKR upgraded at a rate of 1%, and increases by 1% every three months thereafter until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.
+To facilitate a smooth and prompt transition, Sky Ecosystem Governance [voted to introduce a Delayed Upgrade Penalty](https://vote.makerdao.com/polling/QmTVd4iq). The penalty, which will [begin September 18, 2025](https://upgrademkrtosky.sky.money), reduces the amount of SKY received per MKR upgraded at a rate of 1%, and increases by 1% every three months thereafter until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.
 
 For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). `
   },
@@ -137,7 +137,7 @@ MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,
   {
     question: 'Will the MKR I have locked in the Seal Engine be automatically upgraded to SKY?',
     answer:
-      'No, If you currently have one or more positions in the Seal Engine, you will need to manually exit and, if you choose, upgrade your MKR to SKY, and then supply your SKY to the Staking Engine. The process, via the Sky.money web app, makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible.'
+      'No, but your sealed MKR will be upgraded to SKY during the Seal to Staking migration process. The process, via the Sky.money web app, makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible The Staking Engine offers all of the same features as the Seal Engine, but it has no exit fee and only supports SKY, not MKR.'
   },
   {
     question: 'Will the exchange I use automatically upgrade all of my MKR to SKY?',
@@ -157,7 +157,7 @@ const usdsFaqItems = [
     question: 'What is USDS?',
     answer: `USDS is a stablecoin of the decentralized Sky Protocol and the upgrade of DAI. It is backed by a surplus of collateral and soft-pegged to the value of the U.S. dollar, meaning it is designed to maintain a value equal to or close to a dollar. I
 
-USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS, and to access Sky Token Rewards in the form of SKY tokens via the Sky.money web app.  
+USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS, and to access Sky Token Rewards via the Sky.money web app.  
 
 The Sky Protocol is governed by a community of broad and diversified individuals and entities from around the world, who hold Sky governance tokens and support the Sky Ecosystem by participating in a system of decentralized onchain voting. USDS powers the open Sky Ecosystem.
 

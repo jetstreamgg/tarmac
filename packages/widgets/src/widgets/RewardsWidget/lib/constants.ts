@@ -64,9 +64,9 @@ export function getRewardsSupplyReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and supply it to the Sky Token Rewards module in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Token Rewards module in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and supply it to the Sky Token Rewards module in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Sky Token Rewards module in multiple transactions.`;
     default:
       return msg``;
   }
@@ -108,7 +108,7 @@ export function rewardsSupplySubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access the ${symbol} in your wallet and supply it to the Sky Token Rewards module.`
+        ? msg`Please allow this app to access your ${symbol} and supply it to the Sky Token Rewards module.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance

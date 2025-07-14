@@ -118,7 +118,7 @@ export const SelectDelegate = ({
                     are in control of your staked tokens, and you can change your delegate at any time.
                     Staking to delegate your voting power may be a useful option for governance token holders
                     who have limited time to allocate to the process, who want to save on the cost of gas
-                    involved in voting on their own, and who also want to earn Staking Rewards.
+                    involved in voting on their own, and who also want to access Staking Rewards.
                   </Trans>
                 </Text>
                 <br />

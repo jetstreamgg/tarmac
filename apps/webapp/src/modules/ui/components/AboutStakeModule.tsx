@@ -31,9 +31,8 @@ export const AboutStakeModule = () => {
         <Text variant="small">
           <Trans>
             Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized,
-            non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward
-            rates are determined by Sky Ecosystem Governance through the process of decentralized onchain
-            voting.
+            non-custodial Sky Protocol. Staking Rewards rates are determined by Sky Ecosystem Governance
+            through the process of decentralized onchain voting.
           </Trans>
         </Text>
       </div>

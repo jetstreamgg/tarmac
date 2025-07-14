@@ -53,7 +53,7 @@ const STAKING_STEPS = (bpi: number) =>
       id: 'choose-reward',
       number: 2,
       title: <Trans>Choose Reward</Trans>,
-      content: <Trans>Staking Rewards are in the form of USDS.</Trans>
+      content: <Trans>Choose from the Staking Reward options.</Trans>
     },
     {
       id: 'delegate',

@@ -32,7 +32,7 @@ const generalFaqItems = [
 
 Market participants trade crypto for a variety of reasons. For example, users may trade crypto for portfolio diversification and to participate in DeFi. Regardless of the motivation, crypto trading can provide a diverse range of opportunities to market participants depending on their goals and risk appetite.
 
-When you trade USDC, USDT, ETH or SKY for USDS via the Sky Protocol, you can use your USDS to access the Sky Savings Rate to access additional USDS over time, and to access Sky Token Rewards in the form of SKY governance tokens.
+When you trade USDC, USDT, ETH or SKY for USDS via the Sky Protocol, you can use your USDS to access the Sky Savings Rate to access additional USDS over time, and to access Sky Token Rewards.
 
 When you trade USDC, USDT, ETH and USDS for SKY, you can supply your SKY tokens to the Staking Engine of the Sky Protocol to access Staking Rewards. The Staking Engine enables you to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides.`
   },

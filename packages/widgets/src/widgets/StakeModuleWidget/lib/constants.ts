@@ -76,8 +76,8 @@ export function getStakeTitle(
   }
 }
 
-export const stakeOpenReviewTitle = msg`Begin the open position process`;
-export const stakeManageReviewTitle = msg`Begin the change position process`;
+export const stakeOpenReviewTitle = msg`Open your position`;
+export const stakeManageReviewTitle = msg`Change your position`;
 
 export function getStakeOpenReviewSubtitle({
   batchStatus,
@@ -94,9 +94,9 @@ export function getStakeOpenReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and open a new Staking Rewards Engine position in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and open a new position in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and open a new Staking Rewards Engine position in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and open a new position in multiple transactions.`;
     default:
       return msg``;
   }
@@ -117,9 +117,9 @@ export function getStakeManageReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and change your Staking Rewards Engine position in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and change your position in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${symbol} in your wallet and change your Staking Rewards Engine position in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and change your position in multiple transactions.`;
     default:
       return msg``;
   }
