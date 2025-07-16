@@ -16,7 +16,6 @@ interface UseUpgradeTransactionCallbacksParameters
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
-  retryPrepareAction: () => void;
 }
 
 export const useUpgradeTransactionCallbacks = ({
@@ -28,7 +27,6 @@ export const useUpgradeTransactionCallbacks = ({
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
-  retryPrepareAction,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
@@ -39,53 +37,12 @@ export const useUpgradeTransactionCallbacks = ({
     onNotification
   });
 
-  // Upgrade approve
-  const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onMutate: () => {
-        shouldAllowExternalUpdate.current = false;
-        handleOnMutate();
-      },
-      onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: t`Approving ${originToken.symbol} token` });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved ${formatUnits(originAmount, 18)} ${originToken.symbol}`
-        });
-        mutateAllowance();
-        retryPrepareAction();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateAllowance();
-      }
-    }),
-    [
-      handleOnError,
-      handleOnMutate,
-      handleOnStart,
-      handleOnSuccess,
-      mutateAllowance,
-      originAmount,
-      originToken.symbol,
-      retryPrepareAction,
-      shouldAllowExternalUpdate
-    ]
-  );
-
   // Upgrade action manager
   const upgradeManagerTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
       onMutate: () => {
         shouldAllowExternalUpdate.current = false;
+        mutateAllowance();
         handleOnMutate();
       },
       onStart: hash => {
@@ -142,5 +99,5 @@ export const useUpgradeTransactionCallbacks = ({
     ]
   );
 
-  return { approveTransactionCallbacks, upgradeManagerTransactionCallbacks };
+  return { upgradeManagerTransactionCallbacks };
 };

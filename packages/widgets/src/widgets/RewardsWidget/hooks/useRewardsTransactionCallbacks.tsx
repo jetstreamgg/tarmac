@@ -18,7 +18,6 @@ interface UseRewardsTransactionCallbacksParameters
   mutateTokenBalance: () => void;
   mutateRewardsBalance: () => void;
   mutateUserSuppliedBalance: () => void;
-  retryPrepareSupply: () => void;
   setClaimAmount: React.Dispatch<React.SetStateAction<bigint>>;
 }
 
@@ -30,7 +29,6 @@ export const useRewardsTransactionCallbacks = ({
   mutateTokenBalance,
   mutateRewardsBalance,
   mutateUserSuppliedBalance,
-  retryPrepareSupply,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
@@ -41,65 +39,15 @@ export const useRewardsTransactionCallbacks = ({
     onWidgetStateChange,
     onNotification
   });
-  const { setShowStepIndicator, setWidgetState } = useContext(WidgetContext);
+  const { setWidgetState } = useContext(WidgetContext);
   const { i18n } = useLingui();
   const locale = i18n.locale;
-
-  // Rewards approve
-  const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onMutate: () => {
-        setShowStepIndicator(true);
-        handleOnMutate();
-      },
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Approving ${formatBigInt(amount, { locale })} ${
-            selectedRewardContract?.supplyToken.name ?? ''
-          }`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved ${formatBigInt(amount, { locale })} ${
-            selectedRewardContract?.supplyToken.name ?? ''
-          }`
-        });
-        mutateAllowance();
-        retryPrepareSupply();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateAllowance();
-      }
-    }),
-    [
-      amount,
-      handleOnError,
-      handleOnMutate,
-      handleOnStart,
-      handleOnSuccess,
-      locale,
-      mutateAllowance,
-      retryPrepareSupply,
-      selectedRewardContract?.supplyToken.name,
-      setShowStepIndicator
-    ]
-  );
 
   // Rewards supply
   const supplyTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
       onMutate: () => {
-        setShowStepIndicator(true);
+        mutateAllowance();
         handleOnMutate();
       },
       onStart: (hash?: string) => {
@@ -144,18 +92,14 @@ export const useRewardsTransactionCallbacks = ({
       mutateRewardsBalance,
       mutateTokenBalance,
       mutateUserSuppliedBalance,
-      selectedRewardContract?.supplyToken.name,
-      setShowStepIndicator
+      selectedRewardContract?.supplyToken.name
     ]
   );
 
   // Rewards withdraw
   const withdrawTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
-      onMutate: () => {
-        setShowStepIndicator(false);
-        handleOnMutate();
-      },
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -199,8 +143,7 @@ export const useRewardsTransactionCallbacks = ({
       mutateRewardsBalance,
       mutateTokenBalance,
       mutateUserSuppliedBalance,
-      selectedRewardContract?.supplyToken.name,
-      setShowStepIndicator
+      selectedRewardContract?.supplyToken.name
     ]
   );
 
@@ -208,7 +151,6 @@ export const useRewardsTransactionCallbacks = ({
   const claimTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
       onMutate: () => {
-        setShowStepIndicator(false);
         handleOnMutate();
         setClaimAmount(rewardsBalance || 0n);
         setWidgetState((prev: WidgetState) => ({
@@ -249,15 +191,9 @@ export const useRewardsTransactionCallbacks = ({
       mutateTokenBalance,
       rewardsBalance,
       setClaimAmount,
-      setShowStepIndicator,
       setWidgetState
     ]
   );
 
-  return {
-    approveTransactionCallbacks,
-    supplyTransactionCallbacks,
-    withdrawTransactionCallbacks,
-    claimTransactionCallbacks
-  };
+  return { supplyTransactionCallbacks, withdrawTransactionCallbacks, claimTransactionCallbacks };
 };

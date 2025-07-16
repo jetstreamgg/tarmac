@@ -6,7 +6,7 @@ import {
   type Config,
   type SendCallsParameters
 } from '@wagmi/core';
-import { type Abi, type ContractFunctionArgs, type ContractFunctionName } from 'viem';
+import { type Call, type Abi, type ContractFunctionArgs, type ContractFunctionName } from 'viem';
 import type { UseSimulateContractParameters } from 'wagmi';
 
 export type ReadHook = {
@@ -75,6 +75,7 @@ export type BatchWriteHookParams = {
   onStart?: () => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
+  shouldUseBatch?: boolean;
   enabled?: boolean;
   gas?: bigint;
 };
@@ -108,4 +109,34 @@ export type TrustLevel = {
   level: 0 | 1 | 2;
   title: string;
   description: string;
+};
+
+export type UseTransactionFlowParameters = {
+  calls: Call[];
+  shouldUseBatch?: boolean;
+  enabled?: boolean;
+  onMutate?: () => void;
+  onStart?: () => void;
+  onSuccess?: (hash: string | undefined) => void;
+  onError?: (error: Error, hash: string | undefined) => void;
+  gcTime?: number;
+  chainId?: number;
+};
+
+export type UseSequentialTransactionFlowParameters = {
+  calls: Call[];
+  enabled?: boolean;
+  onMutate?: () => void;
+  onStart?: (hash: string) => void;
+  onSuccess?: (hash: string) => void;
+  onError?: (error: Error, hash: string) => void;
+  gcTime?: number;
+  chainId?: number;
+};
+
+export type SequentialTransactionHook = {
+  error: Error | null;
+  isLoading: boolean;
+  execute: () => void;
+  prepared: boolean;
 };

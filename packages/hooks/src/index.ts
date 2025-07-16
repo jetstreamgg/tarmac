@@ -271,6 +271,6 @@ export {
 } from './generated';
 export { contracts, /*tenderlyContracts,*/ sepoliaContracts, l2Contracts } from './contracts';
 
-export { useSendBatchTransactionFlow } from './shared/useSendBatchTransactionFlow';
+export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
