@@ -51,9 +51,9 @@
     "zod": "^3.24.4"
   },
   "peerDependencies": {
-    "@lingui/detect-locale": "^5.3.2",
-    "@lingui/macro": "^5.3.2",
-    "@lingui/react": "^5.3.2",
+    "@lingui/detect-locale": "^5.3.3",
+    "@lingui/macro": "^5.3.3",
+    "@lingui/react": "^5.3.3",
     "@tanstack/react-query": "^5.81.5",
     "framer-motion": "^11.18.2",
     "react": "^19.1.0",
@@ -63,9 +63,9 @@
     "wagmi": "^2.15.6"
   },
   "devDependencies": {
-    "@lingui/core": "^5.3.2",
+    "@lingui/core": "^5.3.3",
     "@lingui/swc-plugin": "^5.5.2",
-    "@lingui/vite-plugin": "^5.3.2",
+    "@lingui/vite-plugin": "^5.3.3",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-query": "^5.81.5",
     "@testing-library/dom": "^10.4.0",

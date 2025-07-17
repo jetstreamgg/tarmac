@@ -6,6 +6,9 @@ import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
 import { useAccount } from 'wagmi';
+import { Trans } from '@lingui/react/macro';
+import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
+import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 
 export function BatchTransactionsToggle() {
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
@@ -41,6 +44,13 @@ export function BatchTransactionsToggle() {
               ? t`Your wallet or the chain you are connected to currently does not support bundled transactions`
               : t`Bundled transactions ${batchEnabled ? 'enabled' : 'disabled'}`}
           </Text>
+          <ExternalLink
+            href={BATCH_TX_LEGAL_NOTICE_URL}
+            className="text-textEmphasis hover:text-textEmphasis self-start text-sm hover:underline"
+            showIcon={false}
+          >
+            <Trans>Legal Notice</Trans>
+          </ExternalLink>
           <TooltipArrow width={12} height={8} />
         </TooltipContent>
       </TooltipPortal>

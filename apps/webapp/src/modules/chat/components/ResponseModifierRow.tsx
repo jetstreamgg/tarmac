@@ -3,7 +3,8 @@ import { Longer } from '@/modules/icons/Longer';
 import { Simpler } from '@/modules/icons/Simpler';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Text } from '@/modules/layout/components/Typography';
-import { Trans, t } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 
 type ResponseModifierRow = {
   sendMessage: (message: string) => void;

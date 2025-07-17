@@ -67,6 +67,7 @@ export const RewardsWidget = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   shouldReset = false,
   batchEnabled,
@@ -92,6 +93,7 @@ export const RewardsWidget = ({
           referralCode={referralCode}
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
+          legalBatchTxUrl={legalBatchTxUrl}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -111,6 +113,7 @@ const RewardsWidgetWrapped = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled
@@ -856,6 +859,7 @@ const RewardsWidgetWrapped = ({
               rewardAmount={widgetState.action === RewardsAction.CLAIM ? claimAmount : amount}
               selectedRewardContract={selectedRewardContract}
               needsAllowance={needsAllowance}
+              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

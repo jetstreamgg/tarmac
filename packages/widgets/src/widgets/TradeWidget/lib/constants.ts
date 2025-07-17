@@ -47,13 +47,13 @@ export const tradeApproveTitle: TxCardCopyTextWithCancel = {
 export function tradeApproveSubtitle(txStatus: TxStatus, symbol: string): MessageDescriptor {
   switch (txStatus) {
     case TxStatus.INITIALIZED:
-      return msg`Please allow this app to access the ${symbol} in your wallet.`;
+      return msg`Please allow this app to access your ${symbol}.`;
     case TxStatus.LOADING:
       return msg`Token access approval in progress.`;
     case TxStatus.SUCCESS:
       return msg`Next, confirm the transaction in your wallet.`;
     case TxStatus.ERROR:
-      return msg`An error occurred while allowing the app to access the ${symbol}.`;
+      return msg`An error occurred while allowing the app to access your ${symbol}.`;
     default:
       return msg`Unknown status.`;
   }

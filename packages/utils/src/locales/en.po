@@ -220,6 +220,10 @@ msgstr ""
 msgid "Accumulated Rewards"
 msgstr ""
 
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "Activate smart account"
+msgstr ""
+
 #. placeholder {0}: targetToken?.symbol || ''
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/L2TradeWidget/index.tsx
@@ -283,7 +287,7 @@ msgid "An error occurred when allowing this app to access the tokens in your wal
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-msgid "An error occurred while allowing the app to access the {symbol}."
+msgid "An error occurred while allowing the app to access your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -413,6 +417,10 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+#: apps/webapp/src/pages/BatchTransactionsLegal.tsx
+msgid "Back to Home Page"
+msgstr ""
+
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
 msgid "Back to Rewards"
 msgstr ""
@@ -456,14 +464,6 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 msgid "Be sure to check your transaction status on CoW Explorer to verify the cancellation was successful"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Begin the change position process"
-msgstr ""
-
-#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "Begin the open position process"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
@@ -534,6 +534,14 @@ msgstr ""
 msgid "Bundled transactions {0}"
 msgstr ""
 
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "Bundled transactions enable a one-click, gas-optimized user experience that aligns with the best practices of the broader Ethereum ecosystem."
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "Bundled transactions: <0>Active</0>"
+msgstr ""
+
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
 msgid "By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain."
 msgstr ""
@@ -572,6 +580,10 @@ msgid "Change your delegate"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Change your position"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Changing position"
 msgstr ""
@@ -588,6 +600,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 msgid "Choose a token to upgrade, and enter an amount"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Choose from the Staking Reward options."
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
@@ -914,7 +930,7 @@ msgid "Delegate (optional)"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
-msgid "Delegates in receipt of token voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time. Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to earn Staking Rewards."
+msgid "Delegates in receipt of token voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time. Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to access Staking Rewards."
 msgstr ""
 
 #: apps/webapp/src/modules/upgrade/components/UpgradeHistory.tsx
@@ -932,6 +948,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
 msgid "Earn with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+msgid "EIP-7702 Bundled transactions now supported"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
@@ -1274,6 +1294,12 @@ msgstr ""
 msgid "Learn more"
 msgstr ""
 
+#: apps/webapp/src/pages/BatchTransactionsLegal.tsx
+#: apps/webapp/src/modules/app/hooks/useBatchTxNotification.tsx
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+msgid "Legal Notice"
+msgstr ""
+
 #: apps/webapp/src/modules/ui/components/TermsModal.tsx
 msgid "Legal Terms"
 msgstr ""
@@ -1522,6 +1548,10 @@ msgid "Open Position"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Open your position"
+msgstr ""
+
+#: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Opening position"
 msgstr ""
@@ -1554,42 +1584,42 @@ msgstr ""
 msgid "Output is estimated. You will receive at least {slippageAdjustedQuote} {0} or the transaction will revert."
 msgstr ""
 
+#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Please allow this app to access the tokens in your wallet."
+msgstr ""
+
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {0} in your wallet and revert it to {1}."
+msgid "Please allow this app to access your {0} and revert it to {1}."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {0} in your wallet and trade it for {1}."
+msgid "Please allow this app to access your {0} and trade it for {1}."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {0} in your wallet and upgrade it to {1}."
+msgid "Please allow this app to access your {0} and upgrade it to {1}."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module."
+msgid "Please allow this app to access your {symbol} and supply it to the Sky Savings Rate module."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module."
+msgid "Please allow this app to access your {symbol} and supply it to the Sky Token Rewards module."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet and withdraw it from the Sky Savings Rate module."
+msgid "Please allow this app to access your {symbol} and withdraw it from the Sky Savings Rate module."
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
-msgid "Please allow this app to access the {symbol} in your wallet."
-msgstr ""
-
-#: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
-msgid "Please allow this app to access the tokens in your wallet."
+msgid "Please allow this app to access your {symbol}."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
@@ -1611,6 +1641,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
 msgid "Please connect your wallet to view your history"
+msgstr ""
+
+#: apps/webapp/src/pages/BatchTransactionsLegal.tsx
+msgid "Please note that all security checks, user confirmations, and error handling are managed by your chosen wallet's delegate contract. As outlined in our <0>Terms of Use</0>, your use of a non-custodial digital wallet—including wallets supporting EIP-7702 and smart account functionality—is governed by the terms of service of your third-party wallet provider. We do not control or take responsibility for the security, functionality, or behavior of third-party wallets, including their handling of bundled transactions or delegate contracts. To ensure a secure and transparent experience, please ensure you are using a trusted and up-to-date wallet before proceeding."
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx
@@ -2015,10 +2049,6 @@ msgstr ""
 msgid "Sky Token Rewards overview"
 msgstr ""
 
-#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "Sky Tokens Rewards are what you access when you supply USDS to the Sky Token Rewards module of the decentralised Sky Protocol. Sky Token Rewards are in the form of SKY governance tokens. No minimum USDS supply amount is required. With the Sky Protocol, you can access rewards without giving up control of your supplied funds."
-msgstr ""
-
 #: packages/widgets/src/widgets/TradeWidget/components/TradeSummary.tsx
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
 msgid "Slippage"
@@ -2131,12 +2161,8 @@ msgstr ""
 msgid "Staking reward"
 msgstr ""
 
-#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
-msgid "Staking Rewards are in the form of USDS."
-msgstr ""
-
 #: apps/webapp/src/modules/ui/components/AboutStakeModule.tsx
-msgid "Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting."
+msgid "Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Staking Rewards rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting."
 msgstr ""
 
 #: apps/webapp/src/modules/stake/components/StakeOverview.tsx
@@ -2313,7 +2339,7 @@ msgid "The Seal Engine is now deprecated. Please close your positions and open n
 msgstr ""
 
 #: apps/webapp/src/modules/layout/components/ConnectCard.tsx
-msgid "The Staking Engine is a module of the Sky Protocol. It has replaced the Seal Engine, offering the same features but it has no exit fee and only supports SKY, not MKR. The SKY tokens you supply to the Staking Engine enable you to access Staking Rewards, and more. With Sky, you always remain in control of your assets."
+msgid "The Staking Engine is a module of the Sky Protocol. When you stake SKY tokens to the Staking Engine, you can access Staking Rewards and may also choose to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides. With Sky, you always remain in control of your assets."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
@@ -2861,6 +2887,10 @@ msgstr ""
 msgid "When you supply USDS to the Sky Savings Rate module of the decentralized Sky Protocol, you access the Sky Savings Rate <0/> and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied assets, as this feature is non-custodial."
 msgstr ""
 
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets."
+msgstr ""
+
 #: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
 msgid "With Sky, you always remain in control of your assets."
 msgstr ""
@@ -3159,77 +3189,77 @@ msgstr ""
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and revert it to {1} in multiple transactions."
+msgid "You're allowing this app to access your {0} and revert it to {1} in multiple transactions."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and revert it to {1} in one bundled transaction."
+msgid "You're allowing this app to access your {0} and revert it to {1} in one bundled transaction."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and trade it for {1} in multiple transactions."
+msgid "You're allowing this app to access your {0} and trade it for {1} in multiple transactions."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/L2TradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and trade it for {1} in one bundled transaction."
+msgid "You're allowing this app to access your {0} and trade it for {1} in one bundled transaction."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and upgrade it to {1} in multiple transactions."
+msgid "You're allowing this app to access your {0} and upgrade it to {1} in multiple transactions."
 msgstr ""
 
 #. placeholder {0}: originToken.symbol
 #. placeholder {1}: targetToken.symbol
 #: packages/widgets/src/widgets/UpgradeWidget/lib/constants.ts
-msgid "You're allowing this app to access the {0} in your wallet and upgrade it to {1} in one bundled transaction."
+msgid "You're allowing this app to access your {0} and upgrade it to {1} in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and change your Staking Rewards Engine position in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and change your position in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and change your Staking Rewards Engine position in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and change your position in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and open a new Staking Rewards Engine position in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and open a new position in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and open a new Staking Rewards Engine position in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and open a new position in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Savings Rate module in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Savings Rate module in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Savings Rate module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Token Rewards module in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and supply it to the Sky Token Rewards module in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Token Rewards module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and withdraw from the Sky Savings Rate module in multiple transactions."
+msgid "You're allowing this app to access your {symbol} and withdraw from the Sky Savings Rate module in multiple transactions."
 msgstr ""
 
 #: packages/widgets/src/widgets/SavingsWidget/lib/constants.ts
-msgid "You're allowing this app to access the {symbol} in your wallet and withdraw from the Sky Savings Rate module in one bundled transaction."
+msgid "You're allowing this app to access your {symbol} and withdraw from the Sky Savings Rate module in one bundled transaction."
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts

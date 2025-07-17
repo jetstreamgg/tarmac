@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { MessageType } from '../constants';
 import { useChatContext } from '../context/ChatContext';
 import { Text } from '@/modules/layout/components/Typography';
-import { Trans } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
 import { Stop } from '@/modules/icons/Stop';
 
 export const StopGeneratingButton = () => {

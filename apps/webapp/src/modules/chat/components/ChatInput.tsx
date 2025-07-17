@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { ChatbotSend } from '@/modules/icons';
 import { HStack } from '@/modules/layout/components/HStack';
 import { useState } from 'react';
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 import { useChatContext } from '../context/ChatContext';
 import { Text } from '@/modules/layout/components/Typography';
 import { MAX_MESSAGE_LENGTH } from '@/lib/constants';

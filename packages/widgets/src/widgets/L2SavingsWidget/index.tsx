@@ -96,6 +96,7 @@ export const L2SavingsWidget = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   disallowedTokens,
   shouldReset = false,
@@ -122,6 +123,7 @@ export const L2SavingsWidget = ({
           disallowedTokens={disallowedTokens}
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
+          legalBatchTxUrl={legalBatchTxUrl}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -143,7 +145,8 @@ const SavingsWidgetWrapped = ({
   referralCode,
   disallowedTokens,
   batchEnabled,
-  setBatchEnabled
+  setBatchEnabled,
+  legalBatchTxUrl
 }: SavingsWidgetProps) => {
   const {
     setButtonText,
@@ -1016,6 +1019,7 @@ const SavingsWidgetWrapped = ({
               originToken={originToken}
               originAmount={debouncedAmount}
               needsAllowance={needsAllowance}
+              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

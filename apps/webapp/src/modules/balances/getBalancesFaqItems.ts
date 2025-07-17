@@ -12,9 +12,10 @@ import {
   optimismFaqItems,
   unichainFaqItems
 } from '../ui/constants/sharedFaqItems';
+import { BATCH_TX_ENABLED } from '@/lib/constants';
 
 export const getBalancesFaqItems = (chainId: number) => [
-  ...[...mainnetFaqItems, ...L2GeneralFaqItems],
+  ...[...mainnetFaqItems, ...batchTxFaqItems, ...L2GeneralFaqItems],
   ...(isBaseChainId(chainId) ? baseFaqItems : []),
   ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : []),
   ...(isOptimismChainId(chainId) ? optimismFaqItems : []),
@@ -60,7 +61,7 @@ Some onchain actions might require multiple wallet signatures to authorize them.
     question: 'What is USDS?',
     answer: `USDS is a stablecoin of the decentralized Sky Protocol and the upgrade of DAI. It is backed by a surplus of collateral and soft-pegged to the value of the U.S. dollar, meaning it is designed to maintain a value equal to or close to a dollar.
 
-USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS, and to access Sky Token Rewards in the form of SKY tokens via the Sky.money web app.  
+USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS, and to access Sky Token Rewards via the Sky.money web app.  
 
 The Sky Protocol is governed by a community of broad and diversified individuals and entities from around the world, who hold Sky governance tokens and support the Sky Ecosystem by participating in a system of decentralized onchain voting. USDS powers the open Sky Ecosystem.
 
@@ -74,7 +75,7 @@ USDS is also currently available on networks other than Ethereum Mainnet, includ
   {
     question: 'How can I use USDS?',
     answer:
-      'Like other decentralized stablecoins, USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. Unlike other stablecoins, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS over time, and to access Sky Token Rewards to accumulate SKY, the governance token of the Sky Protocol, without giving up control of your digital assets. With Sky Token Rewards, you can participate—if you choose to do so—in the governance of the Sky Ecosystem.'
+      'Like other decentralized stablecoins, USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. Unlike other stablecoins, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS over time, and to access Sky Token Rewards, without giving up control of your digital assets. When you select SKY as your Sky Token Reward, you can participate—if you choose to do so—in the governance of the Sky Ecosystem.'
   },
   {
     question: 'What is SKY, and how can I get it and use it?',
@@ -86,7 +87,7 @@ You can access SKY in several ways:
 
 • By directly trading  USDC, USDT, ETH and USDS for it via the Sky.money web app.
 
-• By supplying USDS to the Sky Token Rewards module of the Sky Protocol and accessing SKY as a reward
+• By supplying USDS to the Sky Token Rewards module of the Sky Protocol and selecting SKY as a reward.
 
 • On cryptocurrency exchanges that support the SKY token. 
 
@@ -104,3 +105,32 @@ SKY holders can use the token to:
       'For details regarding potential risks using Sky.money web app, please see the [User Risk Documentation](https://docs.sky.money/user-risks).'
   }
 ];
+
+const batchTxFaqItems = BATCH_TX_ENABLED
+  ? [
+      {
+        question: 'What are EIP-7702 bundled transactions, and how do they work?',
+        answer: `EIP-7702 is a formal Ethereum Improvement Proposal that introduces native bundled transactions. Bundled transactions enable users to bundle multiple on-chain calls (e.g., token approval and upgrade, token approval and savings supply, etc.) into one atomic operation. 
+
+Wallets implement EIP-7702 via delegate contracts that handle bundling, validation, gas estimation, and signature flow on behalf of dApps. Please note, however, that all security checks, user confirmations, and error handling are managed by your chosen wallet’s delegate contract. As outlined in our [Terms of Use](https://docs.sky.money/legal-terms), your use of a non-custodial digital wallet—including wallets supporting EIP-7702 and smart account functionality—is governed by the terms of service of your third-party wallet provider. We do not control or take responsibility for the security, functionality, or behavior of third-party wallets, including their handling of bundled transactions or delegate contracts. To ensure a secure and transparent experience, please ensure you are using a trusted and up-to-date wallet before proceeding.
+
+By adopting EIP-7702, Sky.money delivers a one-click, gas-optimized experience that aligns with the best practices of the broader Ethereum ecosystem, while avoiding any additional risks associated with low-level transaction assembly or bundler contract implementation.`
+      },
+      {
+        question: 'How do I opt in or out of bundled transactions?',
+        answer: `EIP-7702 bundled transactions are enabled by default, as they simplify the user experience and reduce gas costs. You can opt out of bundled transactions manually by toggling off where indicated in the feature widget flow or in the main navigation bar in the top right corner of the app.
+
+When bundled transactions are toggled off, you will need to confirm two separate transactions, as you did prior to implementation of the bundled transaction option, instead of only one.`
+      },
+      {
+        question: 'How do I know if my wallet is compatible with EIP-7702 bundled transactions?',
+        answer: `On first use, if your connected wallet supports EIP-7702 functionality, it will ask if you would like to use a Smart Account, which accommodates features such as bundled transactions. You will also be shown some of the benefits of opting for a Smart Account. On Metamask, for example, those benefits include:
+
+• Faster transactions and lower gas fees.  
+• The ability to pay network fees with any token in your wallet.  
+• The ability to keep the same wallet address and turn the functionality on or off any time.
+
+If your connected wallet doesn’t support EIP-7702, you will not be able to use the bundled transactions option with that wallet.`
+      }
+    ]
+  : [];

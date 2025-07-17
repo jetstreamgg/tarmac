@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Text } from '@/modules/layout/components/Typography';
 import { HStack } from '@/modules/layout/components/HStack';
 import { VStack } from '@/modules/layout/components/VStack';
-import { Trans } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';

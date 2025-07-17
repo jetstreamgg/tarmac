@@ -114,6 +114,7 @@ export const L2TradeWidget = ({
   customNavigationLabel,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   widgetTitle,
   shouldReset = false,
@@ -144,6 +145,7 @@ export const L2TradeWidget = ({
           widgetTitle={widgetTitle}
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
+          legalBatchTxUrl={legalBatchTxUrl}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -165,6 +167,7 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   widgetTitle,
   batchEnabled,
@@ -1202,6 +1205,7 @@ function TradeWidgetWrapped({
               targetToken={targetToken as Token}
               targetAmount={debouncedTargetAmount}
               needsAllowance={needsAllowance}
+              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

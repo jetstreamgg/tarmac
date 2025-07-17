@@ -101,6 +101,7 @@ export const UpgradeWidget = ({
   onExternalLinkClicked,
   batchEnabled,
   setBatchEnabled,
+  legalBatchTxUrl,
   upgradeOptions = defaultUpgradeOptions,
   enabled = true,
   shouldReset = false
@@ -125,6 +126,7 @@ export const UpgradeWidget = ({
           upgradeOptions={upgradeOptions}
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
+          legalBatchTxUrl={legalBatchTxUrl}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -145,6 +147,7 @@ export function UpgradeWidgetWrapped({
   upgradeOptions,
   batchEnabled,
   setBatchEnabled,
+  legalBatchTxUrl,
   enabled = true
 }: UpgradeWidgetProps): React.ReactElement {
   const validatedExternalState = getValidatedState(externalWidgetState);
@@ -834,6 +837,7 @@ export function UpgradeWidgetWrapped({
               targetToken={targetToken}
               targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
               needsAllowance={!hasAllowance}
+              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

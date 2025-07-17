@@ -5,15 +5,18 @@ import { VStack } from '@/modules/layout/components/VStack';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 
-const TOAST_STORAGE_KEY = 'governance-migration-notice-shown';
+export const TOAST_STORAGE_KEY = 'governance-migration-notice-shown';
 
-export const useGovernanceMigrationToast = () => {
+export const useGovernanceMigrationToast = ({ isAuthorized }: { isAuthorized: boolean }) => {
   useEffect(() => {
-    const hasSeenToast = localStorage.getItem(TOAST_STORAGE_KEY);
+    // Only show if authorized by the notification queue
+    if (!isAuthorized) {
+      return;
+    }
 
-    if (!hasSeenToast) {
+    // Add a small delay to ensure smooth UX
+    const timer = setTimeout(() => {
       localStorage.setItem(TOAST_STORAGE_KEY, 'true');
-
       toast({
         title: (
           <Text variant="medium" className="text-selectActive">
@@ -45,6 +48,10 @@ export const useGovernanceMigrationToast = () => {
         variant: 'info',
         duration: 15000
       });
-    }
-  }, []);
+    }, 1000); // 1 second delay
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [isAuthorized]);
 };
