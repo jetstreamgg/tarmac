@@ -314,6 +314,10 @@ msgstr ""
 msgid "An error occurred while withdrawing {symbol}"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Any feedback not matching above topics"
+msgstr ""
+
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
@@ -409,6 +413,7 @@ msgstr ""
 msgid "Ask me anything"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
 msgid "Back"
 msgstr ""
@@ -528,6 +533,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
 msgid "By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Cancel"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
@@ -658,6 +667,10 @@ msgstr ""
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Claiming rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatInput.tsx
+msgid "Click to share feedback about this chat"
 msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
@@ -825,6 +838,7 @@ msgstr ""
 msgid "Connect Wallet"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
 #: packages/widgets/src/widgets/TradeWidget/index.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/index.tsx
 #: packages/widgets/src/widgets/SealModuleWidget/index.tsx
@@ -1051,6 +1065,18 @@ msgstr ""
 #: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
 #: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
 msgid "FAQs"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatInput.tsx
+msgid "FB"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatInput.tsx
+msgid "Feedback"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatBubble.tsx
+msgid "Feedback sent"
 msgstr ""
 
 #: packages/widgets/src/widgets/StakeModuleWidget/components/Repay.tsx
@@ -1374,6 +1400,10 @@ msgstr ""
 msgid "Maximum input"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatBubble.tsx
+msgid "Message:"
+msgstr ""
+
 #: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
 #: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
 #: apps/webapp/src/modules/stake/components/StakeOverview.tsx
@@ -1392,6 +1422,14 @@ msgstr ""
 #: packages/widgets/src/widgets/TradeWidget/components/TradeSummary.tsx
 #: packages/widgets/src/widgets/TradeWidget/components/TradeDetails.tsx
 msgid "Minimum output"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Missing activation/button for trade, etc."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Missing or unnecessary disclaimer"
 msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/lib/getToken.ts
@@ -1605,16 +1643,20 @@ msgstr ""
 msgid "Please confirm that you want to claim your rewards directly to your wallet."
 msgstr ""
 
-#: apps/webapp/src/modules/chat/components/ChatInput.tsx
-msgid "Please confirm you're at least 18"
-msgstr ""
-
 #: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
 msgid "Please connect your wallet to Ethereum Mainnet to start the migration of your positions."
 msgstr ""
 
 #: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
 msgid "Please connect your wallet to view your history"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Please describe your feedback in detail:"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Please select one or more topics that describe your feedback:"
 msgstr ""
 
 #: packages/widgets/src/shared/components/ui/transaction/TransactionStatus.tsx
@@ -1718,6 +1760,22 @@ msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/lib/constants.ts
 msgid "Repaying USDS in the Seal Rewards module"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Response contains wrong information"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Response is correct and sufficient"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Response may be perceived as financial, investment, or legal advice"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Response omits key information"
 msgstr ""
 
 #: packages/widgets/src/widgets/UpgradeWidget/index.tsx
@@ -1903,6 +1961,10 @@ msgstr ""
 msgid "Select delegate"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Select Feedback Topics"
+msgstr ""
+
 #: apps/webapp/src/modules/stake/components/StakeHistory.tsx
 #: apps/webapp/src/modules/seal/components/SealHistory.tsx
 #: packages/widgets/src/widgets/StakeModuleWidget/lib/constants.ts
@@ -1916,8 +1978,17 @@ msgstr ""
 msgid "Select token"
 msgstr ""
 
+#. placeholder {0}: selectedTopics.map(topic => topic.toUpperCase()).join(', ')
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Selected topics: {0}"
+msgstr ""
+
 #: apps/webapp/src/modules/chat/components/ChatIntentsRow.tsx
 msgid "Selecting a suggested action will prefill transaction details, but execution still requires user review and confirmation."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Send"
 msgstr ""
 
 #. placeholder {0}: formatBigInt(debouncedOriginAmount, { locale, unit: originToken ? getTokenDecimals(originToken, chainId) : 18 })
@@ -1933,6 +2004,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
 msgid "Sending ETH"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/ChatInput.tsx
+msgid "Share your feedback about this chat experience. Click this button to start a feedback message, then type your thoughts and send."
 msgstr ""
 
 #: packages/widgets/src/widgets/SealModuleWidget/components/ViewSkyMkrButton.tsx
@@ -2347,6 +2422,10 @@ msgstr ""
 msgid "Tokens to receive"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/ChatBubble.tsx
+msgid "Topics:"
+msgstr ""
+
 #. placeholder {0}: rewardContract.rewardToken.symbol
 #: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
 msgid "Total {0} Points rewarded"
@@ -2568,6 +2647,10 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Type your feedback here..."
+msgstr ""
+
 #: apps/webapp/src/modules/chat/components/ChatBubble.tsx
 msgid "Typing"
 msgstr ""
@@ -2590,6 +2673,10 @@ msgstr ""
 
 #: apps/webapp/src/modules/ui/components/Chart.tsx
 msgid "Unable to load chart data, please try again later."
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Unexpected issue with the response"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/lib/constants.ts
@@ -2927,6 +3014,10 @@ msgstr ""
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 #: packages/widgets/src/widgets/RewardsWidget/lib/constants.ts
 msgid "Withdrawing {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/modules/chat/components/FeedbackModal.tsx
+msgid "Write Your Feedback"
 msgstr ""
 
 #. placeholder {0}: originToken?.symbol ?? ''

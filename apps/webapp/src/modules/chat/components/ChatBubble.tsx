@@ -10,13 +10,13 @@ import { QueryParams } from '@/lib/constants';
 import { motion } from 'framer-motion';
 import { ResponseModifierRow } from './ResponseModifierRow';
 import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
 import { ChatIntent } from '../types/Chat';
 import { ChatIntentsRow } from './ChatIntentsRow';
 import { StopGeneratingButton } from './StopGeneratingButton';
 import { ChatError } from '@/modules/icons';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
-import { AgeWarningRow } from './AgeWarningRow';
-import { useChatContext } from '../context/ChatContext';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 type ChatBubbleProps = {
   user: UserType;
@@ -70,18 +70,32 @@ export const ChatBubble = ({
   intents,
   sendMessage,
   showModifierRow = true,
-  isLastMessage,
-  isFirstMessage
+  isLastMessage
 }: ChatBubbleProps) => {
   const { address } = useAccount();
   const [searchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
-  const { hasAcceptedAgeRestriction } = useChatContext();
   const shouldUseLargeAvatar = bpi >= BP.xl && searchParams.get(QueryParams.Details) !== 'true';
   const isError = type === MessageType.error;
   const isLoading = type === MessageType.loading;
   const isInternal = type === MessageType.internal;
   const isCanceled = type === MessageType.canceled;
+  const isFeedback = message.startsWith('/feedback');
+
+  // Parse feedback message to extract the actual feedback content
+  const getFeedbackContent = () => {
+    if (!isFeedback) return null;
+    // Format: /feedback topics - message
+    // Make the regex more flexible with whitespace
+    const match = message.match(/^\/feedback\s+(.+?)\s*-\s*(.+)$/s);
+    if (match) {
+      return {
+        topics: match[1].split(',').map(t => t.trim()),
+        message: match[2].trim()
+      };
+    }
+    return null;
+  };
 
   return (
     <div
@@ -125,11 +139,55 @@ export const ChatBubble = ({
           <div className="space-y-5">
             <HStack className="items-center gap-x-[6px] space-x-0">
               {isError && <ChatError className="mb-3 h-4 w-4 shrink-0" />}
-              <div className="text-white/75">
-                <ChatMarkdownRenderer markdown={message} />
+              <div className="min-w-0 text-white/75">
+                {isFeedback && user === UserType.user ? (
+                  <Accordion type="single" collapsible className="w-full overflow-hidden">
+                    <AccordionItem value="feedback" className="border-none p-0">
+                      <AccordionTrigger className="p-0 py-2 text-left hover:no-underline">
+                        <Text className="italic">
+                          <Trans>Feedback sent</Trans>
+                        </Text>
+                      </AccordionTrigger>
+                      <AccordionContent className="overflow-hidden pb-2 pt-2 text-white">
+                        {(() => {
+                          const feedbackContent = getFeedbackContent();
+                          if (!feedbackContent) {
+                            // Show the raw message if parsing fails
+                            return (
+                              <Text variant="small" className="break-words text-white/75">
+                                {message}
+                              </Text>
+                            );
+                          }
+                          return (
+                            <VStack className="gap-3">
+                              <div className="min-w-0">
+                                <Text variant="small" className="text-white/50">
+                                  <Trans>Topics:</Trans>
+                                </Text>
+                                <Text variant="small" className="mt-1 break-words text-white/75">
+                                  {feedbackContent.topics.join(', ')}
+                                </Text>
+                              </div>
+                              <div className="min-w-0">
+                                <Text variant="small" className="text-white/50">
+                                  <Trans>Message:</Trans>
+                                </Text>
+                                <Text variant="small" className="mt-1 break-words text-white/75">
+                                  {feedbackContent.message}
+                                </Text>
+                              </div>
+                            </VStack>
+                          );
+                        })()}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                ) : (
+                  <ChatMarkdownRenderer markdown={message} />
+                )}
               </div>
             </HStack>
-            {isFirstMessage && !hasAcceptedAgeRestriction && <AgeWarningRow />}
             {user === UserType.bot && !isError && !isInternal && !isCanceled && (
               <div className="space-y-5">
                 {intents && intents?.length > 0 && isLastMessage && <ChatIntentsRow intents={intents} />}
