@@ -19,7 +19,7 @@ export function useVault(
   // MCD Vat
   // We get the collateral and debt from the MCD Vat contract
 
-  const ilkName = ilkNameParam || getIlkName(chainId);
+  const ilkName = ilkNameParam || getIlkName(1);
   const ilkHex = stringToHex(ilkName, { size: 32 });
 
   const mcdVatSource = {

@@ -286,7 +286,7 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
     useContext(StakeModuleWidgetContext);
 
   const chainId = useChainId();
-  const ilkName = getIlkName(chainId, 2);
+  const ilkName = getIlkName(2);
 
   const { data: existingVault } = useVault(activeUrn?.urnAddress, ilkName);
 

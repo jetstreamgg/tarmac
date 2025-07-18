@@ -37,7 +37,7 @@ describe('Stake Module Multicall tests', async () => {
   const USDS_TO_DRAW = parseEther('10000');
   const SELECTED_DELEGATE = '0x7f362498964E030F16D8C4D43EdF4ea70Bb4269B';
   const LOADING_TIMEOUT = 15000;
-  const ILK_NAME = getIlkName(TENDERLY_CHAIN_ID, 2);
+  const ILK_NAME = getIlkName(2);
 
   it('Should open, lock SKY, draw USDS, select a reward contract and a delegate in a single multicall transaction', async () => {
     // Set initial SKY balance

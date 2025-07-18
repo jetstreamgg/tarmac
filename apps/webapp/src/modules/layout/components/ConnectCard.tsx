@@ -17,6 +17,7 @@ export function ConnectCard({ intent }: { intent: Intent }) {
     [Intent.BALANCES_INTENT]: t`About Balances`,
     [Intent.REWARDS_INTENT]: t`About Sky Token Rewards`,
     [Intent.SAVINGS_INTENT]: t`About the Sky Savings Rate`,
+    [Intent.STUSDS_INTENT]: t`About stUSDS`,
     [Intent.UPGRADE_INTENT]: t`Ready to upgrade and explore?`,
     [Intent.TRADE_INTENT]: t`About Trade`,
     [Intent.SEAL_INTENT]: t`About Seal Engine`,
@@ -64,6 +65,7 @@ export function ConnectCard({ intent }: { intent: Intent }) {
       },
       chainId
     ),
+    [Intent.STUSDS_INTENT]: t`stUSDS allows you to earn variable yield on your USDS by participating in SKY-backed borrowing. The yield fluctuates based on borrowing demand, offering higher returns than the standard Sky Savings Rate. Note that withdrawals may be delayed during periods of high utilization. stUSDS is only available on Ethereum mainnet.`,
     [Intent.SEAL_INTENT]: t`The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem governance. With Sky, you always remain in control of your funds.`,
     [Intent.STAKE_INTENT]: t`The Staking Engine is a module of the Sky Protocol. When you stake SKY tokens to the Staking Engine, you can access Staking Rewards and may also choose to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides. With Sky, you always remain in control of your assets.`
   };

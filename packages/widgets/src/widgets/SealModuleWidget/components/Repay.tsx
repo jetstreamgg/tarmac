@@ -293,7 +293,7 @@ const PositionManagerOverviewContainer = ({
 export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolean }) => {
   const { address } = useAccount();
   const chainId = useChainId();
-  const ilkName = getIlkName(chainId);
+  const ilkName = getIlkName(1);
 
   const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId], chainId });
 

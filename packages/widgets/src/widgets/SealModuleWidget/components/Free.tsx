@@ -3,7 +3,7 @@ import { TOKENS, useVault, useSimulatedVault, getIlkName, Token } from '@jetstre
 import { math } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { SealModuleWidgetContext } from '../context/context';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SealFlow } from '../lib/constants';
@@ -18,8 +18,7 @@ export const Free = ({
   onChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const ilkName = getIlkName(chainId);
+  const ilkName = getIlkName(1);
 
   const {
     setMkrToFree,

@@ -7,7 +7,6 @@ import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal'
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { IconProps } from '@/modules/icons/Icon';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNotification } from '../hooks/useNotification';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -30,15 +29,7 @@ import { IntentMapping } from '@/lib/constants';
 import { QueryParams } from '@/lib/constants';
 import { DetailsSwitcher } from '@/components/DetailsSwitcher';
 import { CustomConnectButton } from '@/modules/layout/components/CustomConnectButton';
-
-export type WidgetContent = [
-  Intent,
-  string,
-  (props: IconProps) => React.ReactNode,
-  React.ReactNode | null,
-  boolean,
-  { disabled?: boolean }?
-][];
+import { WidgetContent, WidgetItem } from '../types/Widgets';
 
 type WidgetPaneProps = {
   children?: React.ReactNode;
@@ -136,7 +127,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
     }
   }, [isConnected, isL2]);
 
-  const widgetContent: WidgetContent = [
+  const widgetItems: WidgetItem[] = [
     [
       Intent.SEAL_INTENT,
       'Seal',
@@ -196,6 +187,14 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
       ),
       false
     ]
+  ];
+
+  // Create a single group for seal migration
+  const widgetContent: WidgetContent = [
+    {
+      id: 'seal-migration',
+      items: widgetItems
+    }
   ];
 
   return (

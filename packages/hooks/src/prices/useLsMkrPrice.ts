@@ -9,7 +9,7 @@ import { getIlkName } from '../vaults/helpers';
 
 export const useLsMkrPrice = (): ReadHook & { data?: PriceData } => {
   const chainId = useChainId();
-  const ilkName = getIlkName(chainId);
+  const ilkName = getIlkName(1);
   const ilkHex = stringToHex(ilkName, { size: 32 });
 
   // MCD Vat

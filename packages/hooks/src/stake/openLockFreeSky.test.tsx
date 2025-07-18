@@ -28,7 +28,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
   const wrapper = WagmiWrapper;
   const SKY_AMOUNT = '720000';
   const URN_INDEX = 0n;
-  const ILK_NAME = getIlkName(TENDERLY_CHAIN_ID, 2);
+  const ILK_NAME = getIlkName(2);
 
   await Promise.all([
     setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], SKY_AMOUNT),

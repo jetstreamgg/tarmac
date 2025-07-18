@@ -49,9 +49,12 @@ describe('Savings Base - Supply and withdraw', () => {
     );
 
     // The user should have some tokens
+    let initialBalance: string = '0';
     await waitFor(
       () => {
-        expect(resultBalance.current.data?.formatted).toEqual('200');
+        expect(resultBalance.current.data?.formatted).toBeDefined();
+        expect(Number(resultBalance.current.data?.formatted)).toBeGreaterThanOrEqual(10);
+        initialBalance = resultBalance.current.data?.formatted ?? '0';
         return;
       },
       { timeout: 5000 }
@@ -90,9 +93,10 @@ describe('Savings Base - Supply and withdraw', () => {
     );
 
     // The user should have less tokens after supply
+    const expectedBalanceAfterSupply = (Number(initialBalance) - 10).toString();
     await waitFor(
       () => {
-        expect(resultBalanceAfterSupply.current.data?.formatted).toEqual('190');
+        expect(resultBalanceAfterSupply.current.data?.formatted).toEqual(expectedBalanceAfterSupply);
         return;
       },
       { timeout: 5000 }
@@ -145,9 +149,10 @@ describe('Savings Base - Supply and withdraw', () => {
     );
 
     // The user should have more tokens after withdrawing
+    const expectedBalanceAfterWithdraw = (Number(initialBalance) - 10 + 5).toString();
     await waitFor(
       () => {
-        expect(resultBalanceAfterWithdraw.current.data?.formatted).toEqual('195');
+        expect(resultBalanceAfterWithdraw.current.data?.formatted).toEqual(expectedBalanceAfterWithdraw);
         return;
       },
       { timeout: 5000 }
@@ -155,6 +160,30 @@ describe('Savings Base - Supply and withdraw', () => {
   });
 
   it('Batch - Should supply and withdraw', { timeout: 90000 }, async () => {
+    // Get initial balance
+    const { result: resultInitialBalance } = renderHook(
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
+          chainId: TENDERLY_BASE_CHAIN_ID
+        }),
+      {
+        wrapper: WagmiWrapper
+      }
+    );
+
+    let initialBalance: string = '0';
+    await waitFor(
+      () => {
+        expect(resultInitialBalance.current.data?.formatted).toBeDefined();
+        expect(Number(resultInitialBalance.current.data?.formatted)).toBeGreaterThanOrEqual(10);
+        initialBalance = resultInitialBalance.current.data?.formatted ?? '0';
+        return;
+      },
+      { timeout: 5000 }
+    );
+
     // Refetch USDS allowance
     const { result: resultAllowanceUsds } = renderHook(
       () =>
@@ -209,9 +238,10 @@ describe('Savings Base - Supply and withdraw', () => {
     );
 
     // The user should have less tokens after supply
+    const expectedBalanceAfterSupply = (Number(initialBalance) - 10).toString();
     await waitFor(
       () => {
-        expect(resultBalanceAfterSupply.current.data?.formatted).toEqual('185');
+        expect(resultBalanceAfterSupply.current.data?.formatted).toEqual(expectedBalanceAfterSupply);
         return;
       },
       { timeout: 5000 }

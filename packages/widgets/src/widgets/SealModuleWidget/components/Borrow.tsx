@@ -339,7 +339,7 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
   } = useContext(SealModuleWidgetContext);
 
   const chainId = useChainId();
-  const ilkName = getIlkName(chainId);
+  const ilkName = getIlkName(1);
 
   const { data: existingVault } = useVault(activeUrn?.urnAddress, ilkName);
 

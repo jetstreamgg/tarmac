@@ -25,7 +25,7 @@ export function useCollateralData(
 ): ReadHook & { data?: CollateralRiskParameters; raw?: VaultRaw } {
   const chainId = useChainId();
 
-  const ilkName = ilkNameParam || getIlkName(chainId);
+  const ilkName = ilkNameParam || getIlkName(1);
   const ilkHex = stringToHex(ilkName, { size: 32 });
 
   // MCD Vat

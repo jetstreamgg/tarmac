@@ -2,7 +2,7 @@ import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { TOKENS, useVault, useSimulatedVault, getIlkName } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { StakeModuleWidgetContext } from '../context/context';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeFlow } from '../lib/constants';
@@ -17,8 +17,7 @@ export const Free = ({
   onChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const ilkName = getIlkName(chainId, 2);
+  const ilkName = getIlkName(2);
 
   const { setSkyToFree, skyToFree, usdsToWipe, setIsLockCompleted, activeUrn } =
     useContext(StakeModuleWidgetContext);

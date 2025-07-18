@@ -3,6 +3,7 @@ import { Intent } from '@/lib/enums';
 import { TradeDetails } from '@/modules/trade/components/TradeDetails';
 import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
+import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -38,7 +39,7 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
 
@@ -47,7 +48,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
       if (prevIntentState !== intent) {
         // By giving the keys a new value, we force the motion component to animate the new component in, even if it's
         // the same component as before. This prevents the component from being re-added before being removed
-        setKeys(prevKeys => prevKeys.map(key => key + 6));
+        setKeys(prevKeys => prevKeys.map(key => key + 7));
       }
 
       return intent || defaultDetail;
@@ -93,16 +94,22 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   <SavingsDetails />
                 </MotionDetailsWrapper>
               );
-            case Intent.STAKE_INTENT:
+            case Intent.STUSDS_INTENT:
               return (
                 <MotionDetailsWrapper key={keys[4]}>
+                  <StUSDSDetails />
+                </MotionDetailsWrapper>
+              );
+            case Intent.STAKE_INTENT:
+              return (
+                <MotionDetailsWrapper key={keys[5]}>
                   <StakeDetailsPane />
                 </MotionDetailsWrapper>
               );
             case Intent.BALANCES_INTENT:
             default:
               return (
-                <MotionDetailsWrapper key={keys[5]}>
+                <MotionDetailsWrapper key={keys[6]}>
                   <BalancesDetails />
                 </MotionDetailsWrapper>
               );

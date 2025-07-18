@@ -2219,7 +2219,7 @@ export const lsSkyAbi = [
  */
 export const lsSkyAddress = {
   1: '0xf9A9cfD3229E985B91F99Bc866d42938044FFa1C',
-  314310: '0x9cC87998ba85D81e017E6B7662aC00eE2Ab8fe13'
+  314310: '0xf9A9cfD3229E985B91F99Bc866d42938044FFa1C'
 } as const;
 
 /**
@@ -2879,7 +2879,7 @@ export const lsSkyUsdsRewardAbi = [
  */
 export const lsSkyUsdsRewardAddress = {
   1: '0x38E4254bD82ED5Ee97CD1C4278FAae748d998865',
-  314310: '0xAf7868a9BB72E16B930D50636519038d7F057470'
+  314310: '0x38E4254bD82ED5Ee97CD1C4278FAae748d998865'
 } as const;
 
 /**
@@ -4953,7 +4953,7 @@ export const mkrSkyAbi = [
  */
 export const mkrSkyAddress = {
   1: '0xA1Ea1bA18E88C381C724a75F23a130420C403f9a',
-  314310: '0x831C6C334f8DDeE62246a5c81B82c8e18008b38f'
+  314310: '0xA1Ea1bA18E88C381C724a75F23a130420C403f9a'
 } as const;
 
 /**
@@ -8607,7 +8607,7 @@ export const stakeModuleAbi = [
  */
 export const stakeModuleAddress = {
   1: '0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3',
-  314310: '0xB1fC11F03b084FfF8daE95fA08e8D69ad2547Ec1'
+  314310: '0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3'
 } as const;
 
 /**
