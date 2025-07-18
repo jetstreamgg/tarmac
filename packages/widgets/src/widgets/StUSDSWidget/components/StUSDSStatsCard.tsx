@@ -48,7 +48,7 @@ export const StUSDSStatsCard = ({
           variants={positionAnimations}
           data-testid="supplied-balance-container"
         >
-          <Text className="text-textSecondary text-sm leading-4">{t`Savings balance`}</Text>
+          <Text className="text-textSecondary text-sm leading-4">{t`Supplied to stUSDS`}</Text>
           {isLoading ? (
             <Skeleton className="bg-textSecondary h-6 w-10" />
           ) : isConnectedAndEnabled && stats?.savingsBalance !== undefined ? (

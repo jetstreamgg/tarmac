@@ -21,7 +21,8 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 type StUSDSSupplyWithdrawProps = {
   address?: string;
   nstBalance?: bigint;
-  savingsBalance?: bigint;
+  savingsBalance?: bigint; // User's stUSDS token balance (for display)
+  withdrawableBalance?: bigint; // User's withdrawable USDS balance (for withdraw functionality)
   savingsTvl?: bigint;
   isSavingsDataLoading: boolean;
   onChange: (val: bigint, userTriggered?: boolean) => void;
@@ -38,6 +39,7 @@ export const StUSDSSupplyWithdraw = ({
   address,
   nstBalance,
   savingsBalance,
+  withdrawableBalance,
   // savingsTvl, // Unused, will be replaced with stUSDS TVL data
   isSavingsDataLoading,
   onChange,
@@ -142,7 +144,7 @@ export const StUSDSSupplyWithdraw = ({
               placeholder={t`Enter amount`}
               token={inputToken}
               tokenList={[inputToken]}
-              balance={address ? savingsBalance : undefined}
+              balance={address ? withdrawableBalance : undefined}
               onChange={(newValue, event) => {
                 onChange(BigInt(newValue), !!event);
               }}
@@ -150,7 +152,7 @@ export const StUSDSSupplyWithdraw = ({
               error={
                 error
                   ? t`Insufficient funds. Your balance is ${formatUnits(
-                      savingsBalance || 0n,
+                      withdrawableBalance || 0n,
                       inputToken ? getTokenDecimals(inputToken, chainId) : 18
                     )} ${inputToken?.symbol}.`
                   : undefined

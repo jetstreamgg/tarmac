@@ -1,12 +1,11 @@
 import {
   getTokenDecimals,
   TOKENS,
-  useSavingsAllowance,
-  useSavingsApprove,
-  useSavingsData,
-  useSavingsSupply,
-  useSavingsWithdraw,
-  useBatchSavingsSupply,
+  useStUsdsAllowance,
+  useStUsdsApprove,
+  useStUsdsData,
+  useStUsdsDeposit,
+  useStUsdsWithdraw,
   useIsBatchSupported
 } from '@jetstreamgg/sky-hooks';
 import { getTransactionLink, useDebounce, formatBigInt, useIsSafeWallet } from '@jetstreamgg/sky-utils';
@@ -104,14 +103,8 @@ const StUSDSWidgetWrapped = ({
   const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
-  // TODO: Replace these hooks with stUSDS-specific hooks when available:
-  // - useStUSDSData() instead of useSavingsData()
-  // - useStUSDSAllowance() instead of useSavingsAllowance()
-  // - useStUSDSSupply() instead of useSavingsSupply()
-  // - useStUSDSWithdraw() instead of useSavingsWithdraw()
-  // - useBatchStUSDSSupply() instead of useBatchSavingsSupply()
-  const { mutate: mutateSavings, data: savingsData, isLoading: isSavingsDataLoading } = useSavingsData();
-  const { data: allowance, mutate: mutateAllowance, isLoading: allowanceLoading } = useSavingsAllowance();
+  const { mutate: mutateStUsds, data: stUsdsData, isLoading: isStUsdsDataLoading } = useStUsdsData();
+  const { data: allowance, mutate: mutateAllowance, isLoading: allowanceLoading } = useStUsdsAllowance();
   const initialAmount =
     validatedExternalState?.amount && validatedExternalState.amount !== '0'
       ? parseUnits(validatedExternalState.amount, 18)
@@ -147,7 +140,7 @@ const StUSDSWidgetWrapped = ({
 
   useNotifyWidgetState({ widgetState, txStatus, onWidgetStateChange });
 
-  const savingsApprove = useSavingsApprove({
+  const stUsdsApprove = useStUsdsApprove({
     amount: debouncedAmount,
     onStart: (hash: string) => {
       addRecentTransaction?.({
@@ -166,7 +159,7 @@ const StUSDSWidgetWrapped = ({
       });
       setTxStatus(TxStatus.SUCCESS);
       mutateAllowance();
-      savingsSupply.retryPrepare();
+      stUsdsDeposit.retryPrepare();
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
     },
     onError: (error, hash) => {
@@ -207,7 +200,7 @@ const StUSDSWidgetWrapped = ({
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
       mutateAllowance();
-      mutateSavings();
+      mutateStUsds();
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
     },
     onError: (error: Error, hash: string | undefined) => {
@@ -221,26 +214,22 @@ const StUSDSWidgetWrapped = ({
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
       mutateAllowance();
-      mutateSavings();
+      mutateStUsds();
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
       console.log(error);
     },
-    ref: referralCode
+    referral: referralCode
   };
 
-  const savingsSupply = useSavingsSupply({
+  const stUsdsDeposit = useStUsdsDeposit({
     ...savingsSupplyParams,
     enabled: widgetState.action === StUSDSAction.SUPPLY && allowance !== undefined
   });
 
-  const batchSavingsSupply = useBatchSavingsSupply({
-    ...savingsSupplyParams,
-    enabled:
-      (widgetState.action === StUSDSAction.SUPPLY || widgetState.action === StUSDSAction.APPROVE) &&
-      allowance !== undefined
-  });
+  // TODO: Implement batch support later
+  const batchSavingsSupply = { prepared: false, isLoading: false, execute: () => {} };
 
-  const savingsWithdraw = useSavingsWithdraw({
+  const stUsdsWithdraw = useStUsdsWithdraw({
     amount: debouncedAmount,
     max,
     onStart: (hash: string) => {
@@ -259,7 +248,7 @@ const StUSDSWidgetWrapped = ({
         status: TxStatus.SUCCESS
       });
       setTxStatus(TxStatus.SUCCESS);
-      mutateSavings();
+      mutateStUsds();
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
     },
     onError: (error, hash) => {
@@ -270,7 +259,7 @@ const StUSDSWidgetWrapped = ({
       });
       setTxStatus(TxStatus.ERROR);
       mutateAllowance();
-      mutateSavings();
+      mutateStUsds();
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
       console.log(error);
     },
@@ -278,8 +267,10 @@ const StUSDSWidgetWrapped = ({
   });
 
   const needsAllowance = !!(!allowance || allowance < debouncedAmount);
-  const shouldUseBatch =
-    !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === StUSDSFlow.SUPPLY;
+  // Temporarily disable batch operations until useStUsdsBatchDeposit is implemented
+  const shouldUseBatch = false;
+  // const shouldUseBatch =
+  //   !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === StUSDSFlow.SUPPLY;
 
   useEffect(() => {
     //Initialize the supply flow only when we are connected
@@ -338,8 +329,8 @@ const StUSDSWidgetWrapped = ({
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
     address &&
-    (savingsData?.userNstBalance || savingsData?.userNstBalance === 0n) &&
-    debouncedAmount > savingsData.userNstBalance &&
+    (stUsdsData?.userUsdsBalance || stUsdsData?.userUsdsBalance === 0n) &&
+    debouncedAmount > stUsdsData.userUsdsBalance &&
     amount !== 0n //don't wait for debouncing on default state
       ? true
       : false;
@@ -347,8 +338,8 @@ const StUSDSWidgetWrapped = ({
   const isWithdrawBalanceError =
     txStatus === TxStatus.IDLE &&
     address &&
-    (savingsData?.userSavingsBalance === 0n || !!savingsData?.userSavingsBalance) &&
-    debouncedAmount > savingsData.userSavingsBalance &&
+    stUsdsData?.userMaxWithdraw !== undefined &&
+    debouncedAmount > stUsdsData.userMaxWithdraw &&
     amount !== 0n //don't wait for debouncing on default state
       ? true
       : false;
@@ -358,15 +349,15 @@ const StUSDSWidgetWrapped = ({
   const withdrawDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isWithdrawBalanceError ||
-    !savingsWithdraw.prepared ||
+    !stUsdsWithdraw.prepared ||
     isAmountWaitingForDebounce;
 
   const supplyDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isSupplyBalanceError ||
     allowance === undefined ||
-    !savingsSupply.prepared ||
-    savingsSupply.isLoading ||
+    !stUsdsDeposit.prepared ||
+    stUsdsDeposit.isLoading ||
     isAmountWaitingForDebounce;
 
   const batchSupplyDisabled =
@@ -383,9 +374,9 @@ const StUSDSWidgetWrapped = ({
   const approveDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isSupplyBalanceError ||
-    !savingsApprove.prepared ||
-    savingsApprove.isLoading ||
-    (txStatus === TxStatus.SUCCESS && !savingsSupply.prepared) || //disable next button if supply not prepared
+    !stUsdsApprove.prepared ||
+    stUsdsApprove.isLoading ||
+    (txStatus === TxStatus.SUCCESS && !stUsdsDeposit.prepared) || //disable next button if supply not prepared
     allowance === undefined ||
     isAmountWaitingForDebounce ||
     (!!batchEnabled && isBatchSupportLoading);
@@ -394,14 +385,14 @@ const StUSDSWidgetWrapped = ({
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: StUSDSScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-    savingsApprove.execute();
+    stUsdsApprove.execute();
   };
 
   const supplyOnClick = () => {
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: StUSDSScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-    savingsSupply.execute();
+    stUsdsDeposit.execute();
   };
 
   const batchSupplyOnClick = () => {
@@ -420,7 +411,7 @@ const StUSDSWidgetWrapped = ({
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: StUSDSScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-    savingsWithdraw.execute();
+    stUsdsWithdraw.execute();
   };
 
   // Handle external state changes
@@ -518,26 +509,26 @@ const StUSDSWidgetWrapped = ({
   const showSecondaryButton = txStatus === TxStatus.ERROR || widgetState.screen === StUSDSScreen.REVIEW;
 
   useEffect(() => {
-    if (savingsSupply.prepareError) {
-      console.log(savingsSupply.prepareError);
+    if (stUsdsDeposit.prepareError) {
+      console.log(stUsdsDeposit.prepareError);
       onNotification?.({
         title: t`Error preparing transaction`,
-        description: savingsSupply.prepareError.message,
+        description: stUsdsDeposit.prepareError.message,
         status: TxStatus.ERROR
       });
     }
-  }, [savingsSupply.prepareError]);
+  }, [stUsdsDeposit.prepareError]);
 
   useEffect(() => {
-    if (savingsWithdraw.prepareError) {
-      console.log(savingsWithdraw.prepareError);
+    if (stUsdsWithdraw.prepareError) {
+      console.log(stUsdsWithdraw.prepareError);
       onNotification?.({
         title: t`Error preparing transaction`,
-        description: savingsWithdraw.prepareError.message,
+        description: stUsdsWithdraw.prepareError.message,
         status: TxStatus.ERROR
       });
     }
-  }, [savingsWithdraw.prepareError]);
+  }, [stUsdsWithdraw.prepareError]);
 
   // Update button state according to action and tx
   // Ref: https://lingui.dev/tutorials/react-patterns#memoization-pitfall
@@ -591,7 +582,7 @@ const StUSDSWidgetWrapped = ({
     if (
       widgetState.action === StUSDSAction.APPROVE &&
       txStatus === TxStatus.SUCCESS &&
-      savingsSupply.prepared
+      stUsdsDeposit.prepared
     ) {
       setWidgetState((prev: WidgetState) => ({
         ...prev,
@@ -599,7 +590,7 @@ const StUSDSWidgetWrapped = ({
       }));
       supplyOnClick();
     }
-  }, [widgetState.action, txStatus, savingsSupply.prepared]);
+  }, [widgetState.action, txStatus, stUsdsDeposit.prepared]);
 
   // Set isLoading to be consumed by WidgetButton
   useEffect(() => {
@@ -648,7 +639,7 @@ const StUSDSWidgetWrapped = ({
     }
 
     // Refresh data
-    mutateSavings();
+    mutateStUsds();
     mutateAllowance();
   }, [chainId]);
 
@@ -701,10 +692,11 @@ const StUSDSWidgetWrapped = ({
           <CardAnimationWrapper key="widget-inputs">
             <StUSDSSupplyWithdraw
               address={address}
-              nstBalance={savingsData?.userNstBalance}
-              savingsBalance={savingsData?.userSavingsBalance}
-              savingsTvl={savingsData?.savingsTvl}
-              isSavingsDataLoading={isSavingsDataLoading}
+              nstBalance={stUsdsData?.userUsdsBalance}
+              savingsBalance={stUsdsData?.userMaxWithdraw}
+              withdrawableBalance={stUsdsData?.userMaxWithdraw}
+              savingsTvl={stUsdsData?.totalAssets}
+              isSavingsDataLoading={isStUsdsDataLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
