@@ -27,7 +27,7 @@ export function BatchTransactionsToggle() {
         <div>
           <Toggle
             variant="singleSwitcherBright"
-            className="hidden h-10 w-10 rounded-xl p-0 md:flex"
+            className="h-10 w-10 rounded-xl p-0"
             pressed={batchEnabled}
             onPressedChange={handleToggle}
             aria-label="Toggle bundled transactions"
