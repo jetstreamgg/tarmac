@@ -34,7 +34,7 @@ export function WidgetNavigation({
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
   const containerRef = useRef<HTMLDivElement>(null);
-  const widgetRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const {
     selectedRewardContract,
@@ -73,7 +73,7 @@ export function WidgetNavigation({
     ? `${baseTabContentClasses} pl-6 pt-2 pr-0 pb-0 md:p-3 md:pb-3 md:pr-0 md:pt-2 xl:p-4 xl:pb-4 xl:pr-0`
     : intent === Intent.BALANCES_INTENT
       ? `${baseTabContentClasses} pl-6 pt-2 pr-0 pb-0 md:p-3 md:pb-0 md:pr-0 md:pt-2 xl:p-4 xl:pb-0 xl:pr-0`
-      : `${baseTabContentClasses} pl-6 pt-2 pr-0 md:p-3 md:pr-0 md:pt-2 xl:p-4 xl:pr-0`;
+      : `${baseTabContentClasses} pl-6 pt-2 pb-4 pr-0 md:pb-0 md:p-3 md:pr-0 md:pt-2 xl:p-4 xl:pr-0`;
   // If it's mobile, use the widget navigation row height + the height of the webiste header
   // as we're using 100vh for the content style, if not, just use the height of the navigation row
   // If the tab list is hidden, don't count it's height
@@ -89,7 +89,7 @@ export function WidgetNavigation({
   // Memoized scroll function
   const scrollToTop = useCallback(() => {
     if (isMobile) {
-      widgetRef.current?.scrollIntoView(true);
+      menuRef.current?.scrollIntoView();
     }
   }, [isMobile]);
 
@@ -102,7 +102,7 @@ export function WidgetNavigation({
     <div className={`${isMobile ? 'w-full' : 'md:flex md:h-full'}`}>
       {/* Mobile hamburger menu - placed at the top on mobile */}
       {isMobile && !hideTabs && (
-        <div className="flex items-center p-4 pb-2 md:hidden">
+        <div className="flex items-center p-4 pb-2 md:hidden" ref={menuRef}>
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
@@ -249,7 +249,6 @@ export function WidgetNavigation({
                           initial={AnimationLabels.initial}
                           animate={AnimationLabels.animate}
                           exit={AnimationLabels.exit}
-                          ref={widgetRef}
                           className={cn(
                             'md:scrollbar-thin flex-1 overflow-y-auto pr-4 md:pr-0',
                             isMobile
