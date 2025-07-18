@@ -49,6 +49,7 @@ export const SavingsWidget = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   shouldReset = false,
   batchEnabled,
@@ -72,6 +73,7 @@ export const SavingsWidget = ({
           referralCode={referralCode}
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
+          legalBatchTxUrl={legalBatchTxUrl}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -89,6 +91,7 @@ const SavingsWidgetWrapped = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled
@@ -454,6 +457,12 @@ const SavingsWidgetWrapped = ({
     // if successful supply/withdraw, reset amount
     if (widgetState.action !== SavingsAction.APPROVE) {
       setAmount(0n);
+      // Notify external state about the cleared amount
+      onWidgetStateChange?.({
+        originAmount: '',
+        txStatus,
+        widgetState
+      });
     }
 
     // if successfully approved, go to supply/withdraw
@@ -683,6 +692,7 @@ const SavingsWidgetWrapped = ({
               originToken={usds}
               originAmount={debouncedAmount}
               needsAllowance={needsAllowance}
+              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

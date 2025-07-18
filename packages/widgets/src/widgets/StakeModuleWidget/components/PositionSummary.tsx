@@ -126,13 +126,15 @@ export const PositionSummary = ({
   allowanceToken,
   batchEnabled,
   setBatchEnabled,
-  isBatchTransaction
+  isBatchTransaction,
+  legalBatchTxUrl
 }: {
   needsAllowance: boolean;
   allowanceToken?: Token;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
+  legalBatchTxUrl?: string;
 }) => {
   const chainId = useChainId();
   const ilkName = getIlkName(chainId, 2);
@@ -467,6 +469,7 @@ export const PositionSummary = ({
     <TransactionReview
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
+      legalBatchTxUrl={legalBatchTxUrl}
       transactionDetail={
         <MotionVStack gap={2} variants={positionAnimations} className="mt-6 space-y-3">
           <motion.div

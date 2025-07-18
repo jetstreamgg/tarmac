@@ -117,7 +117,8 @@ export const RewardsTransactionStatus = ({
               amount: formatBigInt(rewardAmount, {
                 unit: rewardToken ? getTokenDecimals(rewardToken, chainId) : 18
               }),
-              symbol: rewardToken.symbol
+              symbol: rewardToken.symbol,
+              action
             })
           )
         );

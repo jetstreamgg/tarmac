@@ -105,7 +105,18 @@ export const L2TradeTransactionStatus = ({
           )
         );
         setTxDescription(i18n._(l2TradeDescription({ originToken, targetToken, executionPrice })));
-        setLoadingText(i18n._(l2TradeLoadingButtonText({ txStatus: flowTxStatus })));
+        setLoadingText(
+          i18n._(
+            l2TradeLoadingButtonText({
+              txStatus: flowTxStatus,
+              action,
+              amount: formatBigInt(originAmount, {
+                unit: originToken ? getTokenDecimals(originToken, chainId) : 18
+              }),
+              symbol: originToken.symbol
+            })
+          )
+        );
 
         if (action === TradeAction.APPROVE) setStep(1);
         else if (action === TradeAction.TRADE) setStep(2);

@@ -15,7 +15,8 @@ import {
   sUsdsConfig,
   sUsdsL2Address,
   usdcL2Address,
-  usdsL2Address
+  usdsL2Address,
+  spkConfig
 } from '../generated';
 import { TokenMapping, Token, TokenForChain } from './types';
 import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID, TENDERLY_ARBITRUM_CHAIN_ID } from '../constants';
@@ -187,7 +188,8 @@ export const TRADE_TOKENS = {
     mkr: { ...TOKENS.mkr, address: mkrConfig.address[mainnet.id] },
     usds: { ...TOKENS.usds, address: usdsConfig.address[mainnet.id] },
     sky: { ...TOKENS.sky, address: skyConfig.address[mainnet.id] },
-    susds: { ...TOKENS.susds, address: sUsdsConfig.address[mainnet.id] }
+    susds: { ...TOKENS.susds, address: sUsdsConfig.address[mainnet.id] },
+    spk: { ...TOKENS.spk, address: spkConfig.address[mainnet.id] }
   },
   [sepolia.id]: {
     usdc: { ...TOKENS.usdc, address: usdcSepoliaAddress[sepolia.id] },
@@ -205,7 +207,8 @@ export const TRADE_TOKENS = {
     mkr: { ...TOKENS.mkr, address: mkrConfig.address[TENDERLY_CHAIN_ID] },
     usds: { ...TOKENS.usds, address: usdsConfig.address[TENDERLY_CHAIN_ID] },
     sky: { ...TOKENS.sky, address: skyConfig.address[TENDERLY_CHAIN_ID] },
-    susds: { ...TOKENS.susds, address: sUsdsConfig.address[TENDERLY_CHAIN_ID] }
+    susds: { ...TOKENS.susds, address: sUsdsConfig.address[TENDERLY_CHAIN_ID] },
+    spk: { ...TOKENS.spk, address: spkConfig.address[TENDERLY_CHAIN_ID] }
   },
   [base.id]: {
     usdc: { ...TOKENS.usdc, address: usdcL2Address[base.id] },

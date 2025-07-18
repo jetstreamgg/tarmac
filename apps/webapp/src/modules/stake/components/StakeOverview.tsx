@@ -15,7 +15,7 @@ import { StakeHistory } from './StakeHistory';
 import { StakeRewardsOverview } from './StakeRewardsOverview';
 import { StakeFaq } from './StakeFaq';
 import { StakeChart } from './StakeChart';
-import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { useMemo } from 'react';
 import { StakeToken } from '../constants';
 import { useChainId } from 'wagmi';

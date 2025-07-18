@@ -67,6 +67,7 @@ export const RewardsWidget = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   shouldReset = false,
   batchEnabled,
@@ -92,6 +93,7 @@ export const RewardsWidget = ({
           referralCode={referralCode}
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
+          legalBatchTxUrl={legalBatchTxUrl}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -111,6 +113,7 @@ const RewardsWidgetWrapped = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   enabled = true,
+  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled
@@ -393,6 +396,11 @@ const RewardsWidgetWrapped = ({
     !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === RewardsFlow.SUPPLY;
 
   useEffect(() => {
+    // Only the supply flow requires token allowance
+    setShowStepIndicator(widgetState.flow === RewardsFlow.SUPPLY);
+  }, [widgetState.flow]);
+
+  useEffect(() => {
     if (widgetState.action === RewardsAction.CLAIM) {
       setWidgetState({
         flow: selectedRewardContract ? (tabIndex === 1 ? RewardsFlow.WITHDRAW : RewardsFlow.SUPPLY) : null,
@@ -545,14 +553,12 @@ const RewardsWidgetWrapped = ({
   }, [debouncedBalanceError]);
 
   const approveOnClick = () => {
-    setShowStepIndicator(true);
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: RewardsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
     approve.execute();
   };
   const supplyOnClick = () => {
-    setShowStepIndicator(true);
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: RewardsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
@@ -564,14 +570,12 @@ const RewardsWidgetWrapped = ({
       supplyOnClick();
       return;
     }
-    setShowStepIndicator(true);
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: RewardsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
     batchSupply.execute();
   };
   const withdrawOnClick = () => {
-    setShowStepIndicator(false);
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: RewardsScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
@@ -642,7 +646,6 @@ const RewardsWidgetWrapped = ({
     }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-    setShowStepIndicator(false);
     claim?.execute();
   };
 
@@ -856,6 +859,7 @@ const RewardsWidgetWrapped = ({
               rewardAmount={widgetState.action === RewardsAction.CLAIM ? claimAmount : amount}
               selectedRewardContract={selectedRewardContract}
               needsAllowance={needsAllowance}
+              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

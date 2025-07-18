@@ -22,7 +22,8 @@ export const SavingsTransactionReview = ({
   isBatchTransaction,
   originToken,
   originAmount,
-  needsAllowance
+  needsAllowance,
+  legalBatchTxUrl
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
@@ -30,6 +31,7 @@ export const SavingsTransactionReview = ({
   originToken: Token;
   originAmount: bigint;
   needsAllowance: boolean;
+  legalBatchTxUrl?: string;
 }) => {
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
@@ -83,5 +85,11 @@ export const SavingsTransactionReview = ({
     setTxDescription(i18n._(savingsActionDescription({ flow, action, txStatus, needsAllowance, isL2Chain })));
   }, [flow, action, screen, i18n.locale, isBatchTransaction, batchSupported, batchEnabled]);
 
-  return <TransactionReview batchEnabled={batchEnabled} setBatchEnabled={setBatchEnabled} />;
+  return (
+    <TransactionReview
+      batchEnabled={batchEnabled}
+      setBatchEnabled={setBatchEnabled}
+      legalBatchTxUrl={legalBatchTxUrl}
+    />
+  );
 };

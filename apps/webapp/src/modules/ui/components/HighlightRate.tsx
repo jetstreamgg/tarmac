@@ -3,7 +3,7 @@ import { useAvailableTokenRewardContracts, RewardContract } from '@jetstreamgg/s
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useChainId } from 'wagmi';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
-import { PopoverInfo } from './PopoverInfo';
+import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { TOKENS } from '@jetstreamgg/sky-hooks';
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 import { useRewardsChartInfo } from '@jetstreamgg/sky-hooks';

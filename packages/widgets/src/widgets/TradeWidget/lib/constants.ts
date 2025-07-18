@@ -47,13 +47,13 @@ export const tradeApproveTitle: TxCardCopyTextWithCancel = {
 export function tradeApproveSubtitle(txStatus: TxStatus, symbol: string): MessageDescriptor {
   switch (txStatus) {
     case TxStatus.INITIALIZED:
-      return msg`Please allow this app to access the ${symbol} in your wallet.`;
+      return msg`Please allow this app to access your ${symbol}.`;
     case TxStatus.LOADING:
       return msg`Token access approval in progress.`;
     case TxStatus.SUCCESS:
       return msg`Next, confirm the transaction in your wallet.`;
     case TxStatus.ERROR:
-      return msg`An error occurred while allowing the app to access the ${symbol}.`;
+      return msg`An error occurred while allowing the app to access your ${symbol}.`;
     default:
       return msg`Unknown status.`;
   }
@@ -134,6 +134,25 @@ export function tradeLoadingButtonText({ txStatus }: { txStatus: TxStatus }): Me
   }
 }
 
+export function tradeApproveLoadingButtonText({
+  txStatus,
+  amount,
+  symbol
+}: {
+  txStatus: TxStatus;
+  amount: string;
+  symbol: string;
+}): MessageDescriptor {
+  switch (txStatus) {
+    case TxStatus.INITIALIZED:
+      return msg`Waiting for confirmation`;
+    case TxStatus.LOADING:
+      return msg`Approving ${amount} ${symbol}`;
+    default:
+      return msg``;
+  }
+}
+
 export enum SUPPORTED_TOKEN_SYMBOLS {
   ETH = 'ETH',
   WETH = 'WETH',
@@ -143,7 +162,8 @@ export enum SUPPORTED_TOKEN_SYMBOLS {
   USDS = 'USDS',
   sUSDS = 'sUSDS',
   MKR = 'MKR',
-  SKY = 'SKY'
+  SKY = 'SKY',
+  SPK = 'SPK'
 }
 
 export const ETH_SLIPPAGE_STORAGE_KEY = 'eth-trade-slippage';

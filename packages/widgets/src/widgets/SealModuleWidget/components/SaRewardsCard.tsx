@@ -82,7 +82,7 @@ export const SaRewardsCard = ({
           {contractRewardsData && contractRewardsData.rate > 0 ? (
             <div className="flex items-center gap-2">
               <Text className="text-bullish">{contractRewardsData.rate}% Rate</Text>
-              <PopoverRateInfo type="str" onExternalLinkClicked={onExternalLinkClicked} />
+              <PopoverRateInfo type="srr" onExternalLinkClicked={onExternalLinkClicked} />
             </div>
           ) : isSealRewardsDataLoading ? (
             <Skeleton className="bg-textSecondary h-6 w-10" />

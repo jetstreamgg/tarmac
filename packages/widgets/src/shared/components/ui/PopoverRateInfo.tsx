@@ -17,23 +17,21 @@ const getContent = (
     title: 'Sky Token Rewards (STR) Rate',
     description: (
       <Text variant="small" className="leading-5 text-white/80">
-        The Sky Token Rewards (STR) rate is variable, and is determined by the following factors: the current
-        issuance rate of the reward token in question, as set through the relevant onchain governance
-        processes pertinent to the reward token in question (for example, SKY issuance rate is decided by the
-        decentralised Maker/Sky ecosystem onchain governance), the current market price of the reward token in
-        question, and the user&apos;s proportional percentage of the total supply within the pool of funds
-        accruing that particular reward. STR rate may be volatile. The rate provided here is an estimate of
-        the relevant STR rate expressed in expected rate per annum, should be automatically updated every 5
-        minutes and is powered by data provided by a third party (
-        <ExternalLink
-          href="https://blockanalitica.com/"
-          className="hover:text-white hover:underline"
-          showIcon={false}
-          onExternalLinkClicked={onExternalLinkClicked}
-        >
-          BlockAnalitica
-        </ExternalLink>
-        ). This figure does not represent or guarantee future results.
+        The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates,
+        determined by the following factors:
+        <br />
+        <br />
+        • The issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance;
+        <br />
+        <br />
+        • The market price of the token rewarded; and
+        <br />
+        <br />
+        • The user’s proportional supply within the total pool of assets linked to the Sky Token Rewards
+        module.
+        <br />
+        <br />
+        Sky.money does not control the issuance, determination, or distribution of these rewards.
       </Text>
     )
   },
@@ -60,14 +58,13 @@ const getContent = (
     )
   },
   srr: {
-    title: 'Staking Rewards Rate (SRR)',
+    title: 'Staking Rewards Rates (SRR)',
     description: (
       <Text variant="small" className="leading-5 text-white/80">
-        The Staking Rewards Rate (SRR) is variable and may fluctuate. It is determined by: (1) the current
-        issuance rate of the rewards set through onchain governance processes and (2) the market price of the
-        staked SKY at the time of each calculation. Rewards are accrued in USDS for the time being, subject to
-        any future adjustment by onchain governance. The SRR shown here is an estimated annual rate, updated
-        using data from a third party provider (i.e.,{' '}
+        Staking Rewards Rates are variable and may fluctuate. They are determined by: (1) the current issuance
+        rate of the rewards set through onchain governance processes, and (2) the market price of the staked
+        SKY at the time of each calculation. The SRRs shown are estimated annual rates, updated using data
+        from a third-party provider (i.e.,{' '}
         <ExternalLink
           href="https://blockanalitica.com/"
           className="hover:text-white hover:underline"
@@ -76,7 +73,7 @@ const getContent = (
         >
           BlockAnalitica
         </ExternalLink>
-        ). Further, the estimate is for informational purposes only and does not guarantee future results.
+        ). Further, the estimates are for informational purposes only and do not guarantee future results.
       </Text>
     )
   },
@@ -89,17 +86,111 @@ const getContent = (
         subject to change by the Sky Ecosystem Governance.
       </Text>
     )
+  },
+  sbr: {
+    title: 'Borrow Rate',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        The borrow rate is a parameter determined by Sky ecosystem governance through a process of
+        decentralised onchain voting. Borrow rate fees accumulate automatically per block and get added to the
+        total debt.
+      </Text>
+    )
+  },
+  psm: {
+    title: 'Peg Stability Module (PSM)',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        PSMs are smart contracts that allow users to convert certain stablecoins directly with the Sky
+        Protocol for USDS or DAI at a fixed rate, with zero protocol fees; however, gas fees will apply. They
+        are designed to maintain the stability of USDS and DAI. Unlike decentralized exchange (DEX)
+        transactions, PSM operations do not involve trading between users. Instead, they are direct,
+        non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the
+        Sky Protocol.
+      </Text>
+    )
+  },
+  stakingRewards: {
+    title: 'Staking Rewards',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized,
+        non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward rates
+        are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.
+      </Text>
+    )
+  },
+  borrow: {
+    title: 'Borrow',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        Borrowing against your staked collateral carries the risk of automatic liquidation without any
+        possibility of recourse if at any time the value of your staked collateral drops below the required
+        threshold and your position becomes undercollateralized. Please ensure you fully understand these
+        risks before proceeding.
+      </Text>
+    )
+  },
+  delegate: {
+    title: 'Delegate',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        When you hold SKY tokens, you maintain the right to participate in the process of Sky Ecosystem
+        Governance voting. That means that you have the ability to contribute to the community-driven,
+        decentralized ecosystem decision-making process, which occurs through onchain voting.
+        <br />
+        <br />
+        The voting power delegation feature of the Staking Engine of the Sky Protocol enables you to entrust
+        your voting power to a delegate of your choosing, who can then vote in the Sky Ecosystem Governance
+        process on your behalf. You can choose one delegate per SKY position. If you want to entrust your SKY
+        to two delegates using the Staking Engine, you will need to create two separate positions.
+        <br />
+        <br />
+        Delegates in receipt of token voting power can never directly access any tokens delegated to them,
+        including staked tokens. Throughout the delegation process, you always own and are in control of your
+        staked tokens, and you can change your delegate at any time. Staking to delegate your voting power may
+        be a useful option for governance token holders who have limited time to allocate to the process, who
+        want to save on the cost of gas involved in voting on their own, and who also want to access Staking
+        Rewards.
+      </Text>
+    )
+  },
+  liquidation: {
+    title: 'Liquidation',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        If the value of your collateral (SKY) drops below the liquidation price noted here, some or all of
+        your collateral may be auctioned to repay the amount of USDS that you borrowed. Note that a one-hour
+        price update delay applies. In other words, when SKY drops below a user&apos;s liquidation price it
+        will only start applying one hour later. This is called the OSM delay in technical terms, and it also
+        applies to any legacy Maker MCD vault.
+      </Text>
+    )
   }
 });
 
 export const PopoverRateInfo = ({
   type,
   onExternalLinkClicked,
-  iconClassName
+  iconClassName,
+  width = 16,
+  height = 15
 }: {
-  type: 'str' | 'ssr' | 'srr' | 'dtc';
+  type:
+    | 'str'
+    | 'ssr'
+    | 'sbr'
+    | 'srr'
+    | 'dtc'
+    | 'psm'
+    | 'stakingRewards'
+    | 'borrow'
+    | 'delegate'
+    | 'liquidation';
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   iconClassName?: string;
+  width?: number;
+  height?: number;
 }) => {
   const content = getContent(onExternalLinkClicked);
 
@@ -108,7 +199,7 @@ export const PopoverRateInfo = ({
   return (
     <Popover>
       <PopoverTrigger onClick={e => e.stopPropagation()} className="z-10">
-        <Info className={iconClassName} />
+        <Info className={iconClassName} width={width} height={height} />
       </PopoverTrigger>
       <PopoverContent
         align="center"

@@ -84,7 +84,7 @@ export const UpgradeTransactionStatus = ({
               txStatus: flowTxStatus,
               amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
               symbol: originToken.symbol,
-              actionLabel: 'Upgrading'
+              actionLabel: action === UpgradeAction.APPROVE ? 'Approving' : 'Upgrading'
             })
           )
         );
@@ -126,7 +126,7 @@ export const UpgradeTransactionStatus = ({
               txStatus: flowTxStatus,
               amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
               symbol: originToken.symbol,
-              actionLabel: 'Reverting'
+              actionLabel: action === UpgradeAction.APPROVE ? 'Approving' : 'Reverting'
             })
           )
         );

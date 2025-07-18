@@ -3,6 +3,7 @@ import { BatchStatus, TxStatus } from '@widgets/shared/constants';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 import { Token } from '@jetstreamgg/sky-hooks';
+import { TradeAction } from '@widgets/widgets/TradeWidget/lib/constants';
 
 export const l2TradeReviewTitle = msg`Begin the trade process`;
 
@@ -23,9 +24,9 @@ export function getL2TradeReviewSubtitle({
 
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access the ${originToken.symbol} in your wallet and trade it for ${targetToken.symbol} in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${originToken.symbol} and trade it for ${targetToken.symbol} in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access the ${originToken.symbol} in your wallet and trade it for ${targetToken.symbol} in multiple transactions.`;
+      return msg`You're allowing this app to access your ${originToken.symbol} and trade it for ${targetToken.symbol} in multiple transactions.`;
     default:
       return msg``;
   }
@@ -57,7 +58,7 @@ export function l2TradeSubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access the ${originToken.symbol} in your wallet and trade it for ${targetToken.symbol}.`
+        ? msg`Please allow this app to access your ${originToken.symbol} and trade it for ${targetToken.symbol}.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
@@ -85,12 +86,24 @@ export function l2TradeDescription({
   return msg`1 ${targetToken.symbol} = ${executionPrice} ${originToken.symbol}`;
 }
 
-export function l2TradeLoadingButtonText({ txStatus }: { txStatus: TxStatus }): MessageDescriptor {
+export function l2TradeLoadingButtonText({
+  txStatus,
+  action,
+  amount,
+  symbol
+}: {
+  txStatus: TxStatus;
+  action?: string;
+  amount?: string;
+  symbol?: string;
+}): MessageDescriptor {
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return msg`Waiting for confirmation`;
     case TxStatus.LOADING:
-      return msg`Trading`;
+      return action === TradeAction.APPROVE && amount && symbol
+        ? msg`Approving ${amount} ${symbol}`
+        : msg`Trading`;
     default:
       return msg``;
   }

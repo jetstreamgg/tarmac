@@ -13,15 +13,19 @@ import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
 import { StepIndicator } from './StepIndicator';
 import { TxStatus } from '@widgets/shared/constants';
 import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
+import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 
 export function TransactionReview({
   batchEnabled,
   setBatchEnabled,
-  transactionDetail
+  transactionDetail,
+  legalBatchTxUrl
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   transactionDetail?: React.ReactElement;
+  legalBatchTxUrl?: string;
 }) {
   const { txTitle, txSubtitle, stepTwoTitle, showStepIndicator } = useContext(WidgetContext);
   const { data: batchSupported } = useIsBatchSupported();
@@ -66,21 +70,38 @@ export function TransactionReview({
           <motion.div variants={positionAnimations}>
             <CardFooter className="border-selectActive border-t pt-5">
               <HStack className="w-full items-center justify-between">
-                <HStack className="gap-1 space-x-0">
-                  <Text className="text-textSecondary">Bundle transactions</Text>
-                  <InfoTooltip
-                    contentClassname="max-w-[300px]"
-                    iconClassName="text-textSecondary"
-                    content={
-                      <>
-                        <Text className="text-sm">
-                          {batchEnabled
-                            ? 'Your transactions will be completed in a single step, combining actions to save time and reduce gas fees.'
-                            : 'Your transactions will be completed in multiple steps'}
-                        </Text>
-                      </>
-                    }
-                  />
+                <HStack className="flex-wrap gap-1 space-x-0">
+                  <HStack className="gap-1 space-x-0">
+                    <Text className="text-[13px]">Bundle transactions</Text>
+                    <InfoTooltip
+                      contentClassname="max-w-[350px]"
+                      iconClassName="text-[13px]"
+                      content={
+                        <>
+                          <Text className="text-[13px]">Bundle transactions</Text>
+                          <Text className="text-[13px] text-white/60">
+                            Bundled transactions are set &apos;on&apos; by default to complete transactions in
+                            a single step. Combining actions improves the user experience and reduces gas
+                            fees. Manually toggle off to cancel this feature.
+                            {legalBatchTxUrl && (
+                              <>
+                                <br />
+                                <br />
+                                <ExternalLink
+                                  href={legalBatchTxUrl}
+                                  className="text-textEmphasis hover:text-textEmphasis self-start text-sm hover:underline"
+                                  showIcon={false}
+                                >
+                                  <Trans>Legal Notice</Trans>
+                                </ExternalLink>
+                              </>
+                            )}
+                          </Text>
+                        </>
+                      }
+                    />
+                  </HStack>
+                  <Text className="text-textSecondary text-[13px]">(toggled on by default).</Text>
                 </HStack>
                 <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} />
               </HStack>

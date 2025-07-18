@@ -1,16 +1,18 @@
 import { useToast } from '@/components/ui/use-toast';
-import { CHATBOT_ENABLED } from '@/lib/constants';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useEffect } from 'react';
+import { CHATBOT_ENABLED, CHAT_NOTIFICATION_KEY } from '@/lib/constants';
+import { useEffect, useState } from 'react';
 
 export const useDismissChatSuggestion = () => {
-  const { userConfig, updateUserConfig } = useConfigContext();
   const { toasts, dismiss } = useToast();
+  const [chatSuggested, setChatSuggested] = useState(() => {
+    return localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true';
+  });
 
   useEffect(() => {
     if (CHATBOT_ENABLED) {
-      if (!userConfig.chatSuggested) {
-        updateUserConfig({ ...userConfig, chatSuggested: true });
+      if (!chatSuggested) {
+        localStorage.setItem(CHAT_NOTIFICATION_KEY, 'true');
+        setChatSuggested(true);
         // Dismiss chat notification
         const chatToast = toasts.find(toast => toast.variant === 'chat');
         if (chatToast) {
@@ -18,5 +20,5 @@ export const useDismissChatSuggestion = () => {
         }
       }
     }
-  }, [userConfig, toasts]);
+  }, [chatSuggested, toasts, dismiss]);
 };

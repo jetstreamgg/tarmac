@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ChatHistory, ChatIntent } from '../types/Chat';
 import { generateUUID } from '../lib/generateUUID';
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { intentModifiesState } from '../lib/intentUtils';
 

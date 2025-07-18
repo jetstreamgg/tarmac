@@ -15,7 +15,6 @@ import { ConnectedProvider } from '@/modules/ui/context/ConnectedContext';
 import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
 import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersContext';
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
-import { useGovernanceMigrationToast } from '@/modules/app/hooks/useGovernanceMigrationToast';
 
 import '@rainbow-me/rainbowkit/styles.css';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
@@ -33,8 +32,6 @@ const config = useMock ? mockWagmiConfig : useTestnetConfig ? wagmiConfigDev : w
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  useGovernanceMigrationToast();
-
   return (
     <ConnectedProvider>
       <ChatProvider>

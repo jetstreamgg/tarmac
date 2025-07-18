@@ -3,7 +3,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { TransactionStatus } from '@widgets/shared/components/ui/transaction/TransactionStatus';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { i18n } from '@lingui/core';
-import { t } from '@lingui/core/macro';
+import { t, msg } from '@lingui/core/macro';
 import {
   TOKENS,
   useRewardContractTokens,
@@ -13,7 +13,7 @@ import {
   ZERO_ADDRESS
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { approveLoadingButtonText } from '@widgets/shared/constants';
+import { TxStatus } from '@widgets/shared/constants';
 import {
   claimLoadingButtonText,
   claimSubtitle,
@@ -225,7 +225,30 @@ export const SealModuleTransactionStatus = ({ onExternalLinkClicked }: SealModul
     if (action === SealAction.APPROVE && screen === SealScreen.TRANSACTION) {
       // Both flows will have the same approval copy
       setStep(1);
-      setLoadingText(i18n._(approveLoadingButtonText[txStatus]));
+      const approvalAmount =
+        mkrToLock && mkrToLock > 0n
+          ? formatBigInt(mkrToLock)
+          : skyToLock && skyToLock > 0n
+            ? formatBigInt(skyToLock)
+            : usdsToWipe && usdsToWipe > 0n
+              ? formatBigInt(usdsToWipe)
+              : undefined;
+      const approvalSymbol =
+        mkrToLock && mkrToLock > 0n
+          ? 'MKR'
+          : skyToLock && skyToLock > 0n
+            ? 'SKY'
+            : usdsToWipe && usdsToWipe > 0n
+              ? 'USDS'
+              : undefined;
+
+      setLoadingText(
+        txStatus === TxStatus.INITIALIZED
+          ? i18n._(msg`Waiting for confirmation`)
+          : txStatus === TxStatus.LOADING && approvalAmount && approvalSymbol
+            ? i18n._(msg`Approving ${approvalAmount} ${approvalSymbol}`)
+            : i18n._(msg`Processing transaction`)
+      );
       setTxTitle(i18n._(sealApproveTitle[txStatus]));
       setTxSubtitle(i18n._(sealApproveSubtitle[txStatus]));
       setTxDescription(

@@ -224,7 +224,15 @@ export const StakeModuleTransactionStatus = ({
         i18n._(
           stakeLoadingButtonText({
             flow,
-            txStatus: flowTxStatus
+            txStatus: flowTxStatus,
+            action,
+            amount:
+              skyToLock && skyToLock > 0n
+                ? formatBigInt(skyToLock)
+                : usdsToWipe && usdsToWipe > 0n
+                  ? formatBigInt(usdsToWipe)
+                  : undefined,
+            symbol: skyToLock && skyToLock > 0n ? 'SKY' : usdsToWipe && usdsToWipe > 0n ? 'USDS' : undefined
           })
         )
       );
