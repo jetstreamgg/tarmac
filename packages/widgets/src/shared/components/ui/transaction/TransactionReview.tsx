@@ -17,11 +17,13 @@ import { t } from '@lingui/core/macro';
 export function TransactionReview({
   batchEnabled,
   setBatchEnabled,
-  transactionDetail
+  transactionDetail,
+  customSteps
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   transactionDetail?: React.ReactElement;
+  customSteps?: React.ReactElement;
 }) {
   const { txTitle, txSubtitle, stepTwoTitle, showStepIndicator } = useContext(WidgetContext);
   const { data: batchSupported } = useIsBatchSupported();
@@ -40,26 +42,27 @@ export function TransactionReview({
           <motion.div variants={positionAnimations} className="min-h-12">
             <Text className="mt-2">{txSubtitle}</Text>
           </motion.div>
-          {showStepIndicator && (
-            <motion.div variants={positionAnimations} className="flex w-full flex-col pt-4">
-              <StepIndicator
-                stepNumber={1}
-                currentStep={false}
-                txStatus={TxStatus.IDLE}
-                text={t`Approve`}
-                className="flex-1"
-                circleIndicator
-              />
-              <StepIndicator
-                stepNumber={2}
-                currentStep={false}
-                txStatus={TxStatus.IDLE}
-                text={stepTwoTitle}
-                className="flex-1"
-                circleIndicator
-              />
-            </motion.div>
-          )}
+          {showStepIndicator &&
+            (customSteps || (
+              <motion.div variants={positionAnimations} className="flex w-full flex-col pt-4">
+                <StepIndicator
+                  stepNumber={1}
+                  currentStep={false}
+                  txStatus={TxStatus.IDLE}
+                  text={t`Approve`}
+                  className="flex-1"
+                  circleIndicator
+                />
+                <StepIndicator
+                  stepNumber={2}
+                  currentStep={false}
+                  txStatus={TxStatus.IDLE}
+                  text={stepTwoTitle}
+                  className="flex-1"
+                  circleIndicator
+                />
+              </motion.div>
+            ))}
           {transactionDetail ?? <TransactionDetail />}
         </CardContent>
         {batchEnabled !== undefined && !!setBatchEnabled && !!batchSupported && (
