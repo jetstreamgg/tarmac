@@ -15,6 +15,7 @@ import { CheckedState } from '@radix-ui/react-checkbox';
 import { useInView } from 'react-intersection-observer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { sanitizeUrl } from '@/lib/utils';
+import { BP, useBreakpointIndex } from '../hooks/useBreakpointIndex';
 
 export function TermsModal() {
   const { closeModal, isModalOpen, openModal } = useTermsModal();
@@ -24,6 +25,8 @@ export function TermsModal() {
   const { address, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const [endOfTermsRef, hasScrolledToEnd] = useInView({ triggerOnce: true });
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
 
   const onSuccess = async (signature: string) => {
     const payload = {
@@ -103,7 +106,7 @@ export function TermsModal() {
     <Dialog open={isModalOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="connect" onClick={openModal}>
-          <Trans>Connect Wallet</Trans>
+          <Trans>{isMobile ? 'Connect' : 'Connect Wallet'}</Trans>
         </Button>
       </DialogTrigger>
       {isCheckingTerms || signStatus === 'loading' ? (
