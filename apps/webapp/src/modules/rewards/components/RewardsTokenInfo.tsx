@@ -3,7 +3,7 @@ import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
-import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';

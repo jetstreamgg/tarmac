@@ -20,7 +20,11 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
 import { ChatPane } from './ChatPane';
 import { useChatNotification } from '../hooks/useChatNotification';
+import { useBatchTxNotification } from '../hooks/useBatchTxNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
+import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
+import { useNotificationQueue } from '../hooks/useNotificationQueue';
+import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export function MainApp() {
@@ -95,7 +99,22 @@ export function MainApp() {
   // step is initialized as 0 and will evaluate to false, setting the first step to 1
   const step = linkedAction ? linkedActionConfig.step || 1 : 0;
 
-  useChatNotification({ isAuthorized: CHATBOT_ENABLED });
+  // Page Load Notifications - Only one notification shows per page load
+  // Get configurations for all page load notifications
+  const notificationConfigs = usePageLoadNotifications();
+
+  // Use the notification queue to determine which notification to show
+  const { shouldShowNotification } = useNotificationQueue(notificationConfigs);
+
+  // Notification Priority System (only one notification per page load):
+  // 1. EIP7702 Batch Transaction (highest priority)
+  // 2. Governance Migration (for connected wallets with MKR ≥ 0.05)
+  // 3. Chat Notification (lowest priority)
+
+  // Display notifications based on queue priority
+  useBatchTxNotification({ isAuthorized: shouldShowNotification('batch-tx') });
+  useGovernanceMigrationToast({ isAuthorized: shouldShowNotification('governance-migration') });
+  useChatNotification({ isAuthorized: shouldShowNotification('chat') });
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();

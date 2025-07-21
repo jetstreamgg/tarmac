@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Heading } from '@/modules/layout/components/Typography';
 import { SafeMarkdownRenderer } from './markdown/SafeMarkdownRenderer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { PopoverInfo } from './PopoverInfo';
+import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 
 interface Item {
   question: string;

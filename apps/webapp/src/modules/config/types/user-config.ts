@@ -5,6 +5,6 @@ export type UserConfig = {
   locale?: string;
   intent: Intent;
   sealToken?: SealToken;
-  chatSuggested: boolean;
   stakeToken?: StakeToken;
+  batchEnabled: boolean;
 };

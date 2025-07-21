@@ -21,7 +21,6 @@ export function useUpgraderManager({
     return mkrSky;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   return {
     execute: () => {},
     data: null,

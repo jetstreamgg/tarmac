@@ -4,7 +4,7 @@ import { SendMessageRequest, SendMessageResponse, ChatIntent } from '../types/Ch
 import { useChatContext } from '../context/ChatContext';
 import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { generateUUID } from '../lib/generateUUID';
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
 import { CHATBOT_DOMAIN, CHATBOT_ENABLED, MAX_HISTORY_LENGTH } from '@/lib/constants';
 

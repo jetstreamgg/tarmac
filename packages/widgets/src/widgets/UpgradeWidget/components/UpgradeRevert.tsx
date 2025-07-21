@@ -6,7 +6,7 @@ import { getTokenDecimals, Token, TOKENS } from '@jetstreamgg/sky-hooks';
 import { UpgradeStats } from './UpgradeStats';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { t } from '@lingui/core/macro';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt, math } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useChainId } from 'wagmi';
@@ -43,6 +43,7 @@ export function UpgradeRevert({
   originAmount,
   targetAmount,
   originBalance,
+  targetBalance,
   tabIndex,
   error,
   onToggle,
@@ -109,17 +110,65 @@ export function UpgradeRevert({
                 transactionData={[
                   {
                     label: t`Exchange rate`,
-                    value: `${formatBigInt(originAmount, {
-                      unit: originToken ? getTokenDecimals(originToken, chainId) : 18
-                    })} ${originToken?.symbol} = ${formatBigInt(targetAmount, {
-                      unit: targetToken ? getTokenDecimals(targetToken, chainId) : 18
-                    })} ${targetToken?.symbol} `
+                    value: (() => {
+                      // Check if it's MKR to SKY conversion
+                      if (
+                        originToken?.symbol === TOKENS.mkr.symbol &&
+                        targetToken?.symbol === TOKENS.sky.symbol
+                      ) {
+                        return `1:${math.MKR_TO_SKY_PRICE_RATIO.toString()}`;
+                      }
+                      // Check if it's SKY to MKR conversion
+                      else if (
+                        originToken?.symbol === TOKENS.sky.symbol &&
+                        targetToken?.symbol === TOKENS.mkr.symbol
+                      ) {
+                        return `${math.MKR_TO_SKY_PRICE_RATIO.toString()}:1`;
+                      }
+                      // All other conversions are 1:1 (DAI to USDS, USDS to DAI)
+                      else {
+                        return '1:1';
+                      }
+                    })()
                   },
                   {
                     label: t`Tokens to receive`,
                     value: `${formatBigInt(targetAmount, {
-                      unit: targetToken ? getTokenDecimals(targetToken, chainId) : 18
+                      unit: targetToken ? getTokenDecimals(targetToken, chainId) : 18,
+                      compact: true
                     })} ${targetToken?.symbol}`
+                  },
+                  {
+                    label: t`Your wallet ${originToken?.symbol || ''} balance`,
+                    value:
+                      originBalance !== undefined && originAmount > 0n
+                        ? [
+                            formatBigInt(originBalance, {
+                              unit: originToken ? getTokenDecimals(originToken, chainId) : 18,
+                              compact: true
+                            }),
+                            formatBigInt(originBalance - originAmount, {
+                              unit: originToken ? getTokenDecimals(originToken, chainId) : 18,
+                              compact: true
+                            })
+                          ]
+                        : '--'
+                  },
+                  {
+                    label: t`Your wallet ${targetToken?.symbol || ''} balance`,
+                    value:
+                      targetBalance !== undefined && targetAmount > 0n
+                        ? [
+                            formatBigInt(targetBalance, {
+                              unit: targetToken ? getTokenDecimals(targetToken, chainId) : 18,
+                              compact: true
+                            }),
+                            formatBigInt(targetBalance + targetAmount, {
+                              unit: targetToken ? getTokenDecimals(targetToken, chainId) : 18,
+                              compact: true
+                            })
+                          ]
+                        : '--'
                   },
                   ...(originToken?.symbol === TOKENS.mkr.symbol
                     ? [

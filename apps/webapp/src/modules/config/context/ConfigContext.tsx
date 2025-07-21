@@ -9,7 +9,7 @@ import { dynamicActivate } from '@jetstreamgg/sky-utils';
 import { Intent } from '@/lib/enums';
 // import { z } from 'zod';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
-import { ALLOWED_EXTERNAL_DOMAINS } from '@/lib/constants';
+import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
 import { SealToken } from '@/modules/seal/constants';
 import { StakeToken } from '@/modules/stake/constants';
 
@@ -55,8 +55,8 @@ const defaultUserConfig: UserConfig = {
   locale: undefined,
   intent: Intent.BALANCES_INTENT,
   sealToken: SealToken.MKR,
-  chatSuggested: false,
-  stakeToken: StakeToken.SKY
+  stakeToken: StakeToken.SKY,
+  batchEnabled: false // Default to false to show activation prompt
 };
 
 const defaultLinkedActionConfig = {
@@ -132,7 +132,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   useEffect(() => {
     // const localeFromUrl = fromUrl(QueryParams.Locale);
     // const backupLocale = detect(fromNavigator(), () => 'en');
-    const settings = window.localStorage.getItem('user-settings');
+    const settings = window.localStorage.getItem(USER_SETTINGS_KEY);
     try {
       const parsed = JSON.parse(settings || '{}');
       // Use Zod to parse and validate the user settings
@@ -143,18 +143,21 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         ...userConfig,
         ...parsed,
         // locale: localeFromUrl || localeFromConfig || backupLocale
-        locale: 'en'
+        locale: 'en',
+        batchEnabled:
+          // If the feature flag is enabled, but the local storage item is not set, default to enabled
+          import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined
       });
     } catch (e) {
       console.log('Error parsing user settings', e);
-      window.localStorage.setItem('user-settings', JSON.stringify(userConfig));
+      window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userConfig));
     }
     setLoaded(true);
   }, []);
 
   const updateUserConfig = (config: UserConfig) => {
     setUserConfig(config);
-    window.localStorage.setItem('user-settings', JSON.stringify(config));
+    window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(config));
 
     // We needed to reload because changing the wagmi client messed with the rainbowkit buttons.
     // https://github.com/rainbow-me/rainbowkit/issues/953

@@ -11,7 +11,7 @@ import { useCallback } from 'react';
 import { usePrepareNotification } from './usePrepareNotification';
 import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { PopoverInfo } from '@/modules/ui/components/PopoverInfo';
+import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 

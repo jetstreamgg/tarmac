@@ -88,7 +88,7 @@ export const SaRewardsCard = ({
               <Text className="text-bullish">
                 {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData.rate))} Rate
               </Text>
-              <PopoverRateInfo type="str" onExternalLinkClicked={onExternalLinkClicked} />
+              <PopoverRateInfo type="srr" onExternalLinkClicked={onExternalLinkClicked} />
             </div>
           ) : isRewardsChartInfoLoading ? (
             <Skeleton className="bg-textSecondary h-6 w-10" />

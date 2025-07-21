@@ -22,7 +22,7 @@ const tabsTriggerVariants = cva('', {
   variants: {
     variant: {
       default:
-        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary ring-offset-background transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text focus:bg-neutral-950 focus:bg-tab focus:text-text disabled:text-opacity duration-250 ease-out-expo',
+        'w-full inline-flex items-center justify-center whitespace-nowrap h-10 p-3 text-sm font-normal leading-none text-tabPrimary ring-offset-background transition-all focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-surface hover:bg-surfaceHover data-[state=active]:bg-surface data-[state=active]:border-transparent data-[state=active]:text-text disabled:text-opacity duration-250 ease-out-expo',
       icons:
         'uppercase text-xs text-textSecondary flex flex-col items-center justify-center hover:bg-primaryHover hover:text-textSecondary data-[state=active]:bg-primaryActive data-[state=active]:text-text active:bg-primaryActive active:text-text focus:bg-primaryFocus'
     },

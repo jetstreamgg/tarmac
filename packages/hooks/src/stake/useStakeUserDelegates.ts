@@ -100,6 +100,11 @@ export function useStakeUserDelegates({
   const sortDelegatesFn =
     sortType === 'totalDelegated' ? sortDelegatesByTotalDelegatedFn : sortDelegatesByAlignedFn;
 
+  // Reset hasInitiallyOrdered when search changes
+  useEffect(() => {
+    hasInitiallyOrdered.current = false;
+  }, [search]);
+
   // Memoize the delegates transformation to prevent unnecessary re-computations
   const delegatesWithTotals = useMemo(() => {
     if (!delegates) return undefined;

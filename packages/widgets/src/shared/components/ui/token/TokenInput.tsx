@@ -48,6 +48,7 @@ export interface TokenInputProps {
   extraPadding?: boolean;
   enabled?: boolean;
   gasBufferAmount?: bigint;
+  maxIntegerDigits?: number;
   borrowLimitText?: string | undefined;
 }
 
@@ -74,7 +75,8 @@ export function TokenInput({
   extraPadding = false,
   enabled = true,
   gasBufferAmount = 0n,
-  borrowLimitText
+  borrowLimitText,
+  maxIntegerDigits
 }: TokenInputProps): React.ReactElement {
   const cardRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -110,6 +112,20 @@ export function TokenInput({
     const partsComma = val.split(',');
     if (partsComma.length === 2 && partsComma[1].length > decimals) {
       val = (partsComma[0] + ',' + partsComma[1].substring(0, decimals)) as `${number}`;
+    }
+
+    // Prevent overflow by limiting integer part length
+    // ethers.js FixedNumber uses internal 128-bit precision for calculations.
+    // When multiplying two FixedNumbers (like in collateralValue = ink * price),
+    // we need to ensure the result doesn't overflow. Since both operands can have
+    // up to N digits, the result can have up to 2N digits internally.
+    // Using 38 total digits ensures safe multiplication: 38/2 = 19 digits per operand,
+    // which when squared (19^2 ≈ 10^38) stays well within 128-bit bounds (≈ 10^39).
+    const DEFAULT_MAX_TOTAL_DIGITS = 38;
+    const maxDigits = maxIntegerDigits ?? Math.max(DEFAULT_MAX_TOTAL_DIGITS - decimals, 1);
+    const integerPart = val.split(/[.,]/)[0];
+    if (integerPart.length > maxDigits) {
+      return; // Don't update if too many digits
     }
 
     setInputValue(val);

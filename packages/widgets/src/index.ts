@@ -31,3 +31,4 @@ export { formatUrnIndex } from './widgets/SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';
 export { NoResults } from './shared/components/icons/NoResults';
+export { PopoverRateInfo } from './shared/components/ui/PopoverRateInfo';

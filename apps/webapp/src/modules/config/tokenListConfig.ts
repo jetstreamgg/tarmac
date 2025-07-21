@@ -13,6 +13,7 @@ import {
   ETH_ADDRESS,
   mkrAddress,
   skyAddress,
+  spkAddress,
   usdcL2Address,
   usdsL2Address
 } from '@jetstreamgg/sky-hooks';
@@ -23,9 +24,9 @@ import {
   TENDERLY_ARBITRUM_CHAIN_ID
 } from '@/data/wagmi/config/testTenderlyChain';
 
-const { usdc, usdt, eth, weth, dai, usds, mkr, sky } = TOKENS;
+const { usdc, usdt, eth, weth, dai, usds, mkr, sky, spk } = TOKENS;
 
-export const restrictedTokenList = {
+export const restrictedBalancesTokenList = {
   [mainnet.id]: [
     { ...usdc, address: usdcAddress[mainnet.id] },
     { ...usdt, address: usdtAddress[mainnet.id] },
@@ -34,7 +35,8 @@ export const restrictedTokenList = {
     { ...dai, address: mcdDaiAddress[mainnet.id] },
     { ...usds, address: usdsAddress[mainnet.id] },
     { ...mkr, address: mkrAddress[mainnet.id] },
-    { ...sky, address: skyAddress[mainnet.id] }
+    { ...sky, address: skyAddress[mainnet.id] },
+    { ...spk, address: spkAddress[mainnet.id] }
   ],
   [tenderly.id]: [
     { ...usdc, address: usdcAddress[TENDERLY_CHAIN_ID] },
@@ -44,7 +46,8 @@ export const restrictedTokenList = {
     { ...dai, address: mcdDaiAddress[TENDERLY_CHAIN_ID] },
     { ...usds, address: usdsAddress[TENDERLY_CHAIN_ID] },
     { ...mkr, address: mkrAddress[TENDERLY_CHAIN_ID] },
-    { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] }
+    { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] },
+    { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] }
   ],
   [sepolia.id]: [
     // The USDC token that COW uses has 18 decimals, instead of 6
@@ -83,14 +86,15 @@ export const restrictedTokenList = {
 };
 
 // Remove USDC and USDT from the list as they're only used for trade
-export const restrictedTokenListMiCa = {
+export const restrictedBalancesTokenListMiCa = {
   [mainnet.id]: [
     { ...eth, address: eth.address[mainnet.id] },
     { ...weth, address: wethAddress[mainnet.id] },
     { ...dai, address: mcdDaiAddress[mainnet.id] },
     { ...usds, address: usdsAddress[mainnet.id] },
     { ...mkr, address: mkrAddress[mainnet.id] },
-    { ...sky, address: skyAddress[mainnet.id] }
+    { ...sky, address: skyAddress[mainnet.id] },
+    { ...spk, address: spkAddress[mainnet.id] }
   ],
   [tenderly.id]: [
     { ...eth, address: eth.address[TENDERLY_CHAIN_ID] },
@@ -98,7 +102,8 @@ export const restrictedTokenListMiCa = {
     { ...dai, address: mcdDaiAddress[TENDERLY_CHAIN_ID] },
     { ...usds, address: usdsAddress[TENDERLY_CHAIN_ID] },
     { ...mkr, address: mkrAddress[TENDERLY_CHAIN_ID] },
-    { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] }
+    { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] },
+    { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] }
   ],
   [sepolia.id]: [
     { ...eth, address: ETH_ADDRESS },
@@ -125,7 +130,7 @@ export const restrictedTokenListMiCa = {
   ]
 };
 
-export const restrictedTokenListTrade = {
+export const restrictedTradeTokenList = {
   [mainnet.id]: [
     { ...usdc, address: usdcAddress[mainnet.id] },
     { ...usdt, address: usdtAddress[mainnet.id] },

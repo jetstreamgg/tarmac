@@ -18,6 +18,8 @@ type TransactionOverviewParams = {
   title: string;
   isFetching: boolean;
   fetchingMessage: string;
+  rateType?: 'str' | 'ssr' | 'srr' | 'dtc';
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   transactionData:
     | {
         label: string;
@@ -34,6 +36,8 @@ export function TransactionOverview({
   title,
   isFetching,
   fetchingMessage,
+  rateType = 'ssr',
+  onExternalLinkClicked,
   transactionData
 }: TransactionOverviewParams) {
   return (
@@ -66,12 +70,16 @@ export function TransactionOverview({
                           className={`text-${error ? 'error' : 'textSecondary'} flex items-center text-sm`}
                         >
                           {label}
-                          {label === 'Rate' && (
-                            <span className="ml-2 mt-1">
-                              <PopoverRateInfo type="ssr" />
-                            </span>
-                          )}
                         </Text>
+                        {label === 'Rate' && rateType && (
+                          <span className="mt-1">
+                            <PopoverRateInfo
+                              type={rateType}
+                              onExternalLinkClicked={onExternalLinkClicked}
+                              iconClassName="text-textSecondary"
+                            />
+                          </span>
+                        )}
                         {tooltipText && (
                           <InfoTooltip content={tooltipText} iconClassName="text-textSecondary" />
                         )}

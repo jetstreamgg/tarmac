@@ -16,6 +16,15 @@ updates:
     allow:
       - dependency-type: "direct"
     open-pull-requests-limit: 15
+    groups:
+      # Group Lingui internationalization packages
+      lingui-packages:
+        patterns:
+          - "@lingui/*"
+          - "lingui"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

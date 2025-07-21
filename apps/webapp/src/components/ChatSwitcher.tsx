@@ -9,7 +9,7 @@ import {
   TooltipArrow,
   TooltipPortal
 } from '@/components/ui/tooltip';
-import { t } from '@lingui/macro';
+import { t } from '@lingui/core/macro';
 import { Chat } from '@/modules/icons';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { JSX } from 'react';

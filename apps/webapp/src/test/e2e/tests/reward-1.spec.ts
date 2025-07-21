@@ -1,7 +1,11 @@
 import { expect, test } from '../fixtures.ts';
-import { approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
+import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { withdrawAllAndReset } from '../utils/rewards.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
+import { approveToken } from '../utils/approveToken.ts';
+import { usdsAddress, usdsSkyRewardAddress } from '@jetstreamgg/sky-hooks';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
+import { NetworkName } from '../utils/constants.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -53,10 +57,15 @@ test('Balances change after successfully supplying and withdrawing', async ({ pa
 
 test('Insufficient token allowance triggers approval flow', async ({ page }) => {
   await page.getByTestId('supply-input-rewards').fill('90');
-  // Not enough allowance, so approve button should be visible
-  await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
-  await page.getByRole('button', { name: 'Approve' }).click();
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Review' }).click();
+  // Not enough allowance, so the button should prompt 2 transactions
+  await expect(page.getByTestId('widget-button').last()).toHaveText('Confirm 2 transactions');
+  await approveToken(
+    usdsAddress[TENDERLY_CHAIN_ID],
+    usdsSkyRewardAddress[TENDERLY_CHAIN_ID],
+    '90',
+    NetworkName.mainnet
+  );
 
   // Restart
   await page.reload();
@@ -65,10 +74,11 @@ test('Insufficient token allowance triggers approval flow', async ({ page }) => 
   await page.getByText('With: USDS Get: SKY').first().click();
 
   await page.getByTestId('supply-input-rewards').fill('90');
+  await page.getByRole('button', { name: 'Review' }).click();
   // It should not ask for approval
-  await expect(page.getByRole('button', { name: 'Supply' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Confirm supply' }).last()).toBeVisible();
   // Supply and reset approval
-  await page.getByTestId('widget-container').getByRole('button', { name: 'Supply' }).first().click(); // The first supply button is the main button
+  await page.getByTestId('widget-container').getByRole('button', { name: 'Confirm supply' }).last().click(); // The last supply button is the main button
   await page.getByRole('button', { name: 'Back to Rewards' }).click();
 
   // Restart
@@ -78,10 +88,9 @@ test('Insufficient token allowance triggers approval flow', async ({ page }) => 
   await page.getByText('With: USDS Get: SKY').first().click();
 
   await page.getByTestId('supply-input-rewards').fill('10');
+  await page.getByRole('button', { name: 'Review' }).click();
   // Allowance should be reset, so approve button should be visible again
-  await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible();
-  // Withdraw all to reset balances
-  await withdrawAllAndReset(page);
+  await expect(page.getByTestId('widget-button').last()).toHaveText('Confirm 2 transactions');
 });
 
 test('if not connected it should show a connect button', async ({ page }) => {
@@ -137,4 +146,38 @@ test('Enter amount button only gets enabled with a valid amount', async ({ page 
   await expect(widgetButton).toBeDisabled();
   await page.getByTestId('withdraw-input-rewards').fill('0');
   await expect(widgetButton).toBeDisabled();
+});
+
+test('Batch - Balances change after successfully supplying and withdrawing', async ({ page }) => {
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.getByRole('tab', { name: 'Rewards' }).click();
+  await page.getByText('With: USDS Get: SKY').first().click();
+
+  const rewardsCardSuppliedBalance = page
+    .getByTestId('widget-container')
+    .getByText('Supplied balance', { exact: true })
+    .locator('xpath=ancestor::div[1]')
+    .getByText(/^\d.*USDS$/);
+  await expect(rewardsCardSuppliedBalance).toHaveText('0 USDS');
+
+  await page.getByTestId('supply-input-rewards').fill('2');
+
+  await expect(page.getByTestId('widget-button')).toBeEnabled();
+  await performAction(page, 'Supply');
+  await page.getByRole('button', { name: 'Back to Rewards' }).click();
+  await expect(page.getByTestId('supply-input-rewards-balance')).toHaveText('98 USDS');
+  await expect(rewardsCardSuppliedBalance).toHaveText('2 USDS');
+
+  await page.getByRole('tab', { name: 'Withdraw' }).click();
+  await expect(page.getByTestId('withdraw-input-rewards-balance')).toHaveText('2 USDS');
+  await page.getByTestId('withdraw-input-rewards').fill('2');
+
+  await performAction(page, 'Withdraw');
+  await page.getByRole('button', { name: 'Back to Rewards' }).click();
+  await expect(page.getByTestId('withdraw-input-rewards-balance')).toHaveText('0 USDS');
+  await expect(rewardsCardSuppliedBalance).toHaveText('0 USDS');
+
+  await page.getByRole('tab', { name: 'Supply', exact: true }).click();
+  await expect(page.getByTestId('supply-input-rewards-balance')).toHaveText('100 USDS');
 });

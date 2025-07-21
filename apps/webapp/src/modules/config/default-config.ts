@@ -3,10 +3,10 @@
 import { defaultConfig as widgetsConfig } from '@jetstreamgg/sky-widgets';
 import { SiteConfig } from './types/site-config';
 import {
-  restrictedTokenList,
-  restrictedTokenListMiCa,
-  restrictedTokenListTrade
-} from './restrictedTokenList';
+  restrictedBalancesTokenList,
+  restrictedBalancesTokenListMiCa,
+  restrictedTradeTokenList
+} from './tokenListConfig';
 
 const restrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
 const restrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
@@ -21,10 +21,10 @@ export const defaultConfig: SiteConfig = {
   favicon: '/images/sky.svg',
   ...(restrictedBuild
     ? {
-        tradeTokenList: restrictedTokenListTrade,
-        balancesTokenList: restrictedTokenList
+        tradeTokenList: restrictedTradeTokenList,
+        balancesTokenList: restrictedBalancesTokenList
       }
     : {}),
-  ...(restrictedMiCa ? { balancesTokenList: restrictedTokenListMiCa } : {}),
+  ...(restrictedMiCa ? { balancesTokenList: restrictedBalancesTokenListMiCa } : {}),
   locale: 'en'
 };

@@ -29,9 +29,10 @@ import {
   tradeDescription,
   tradeLoadingButtonText,
   tradeSubtitle,
-  tradeTitle
+  tradeTitle,
+  tradeApproveLoadingButtonText
 } from '../lib/constants';
-import { TxStatus, approveLoadingButtonText } from '@widgets/shared/constants';
+import { TxStatus } from '@widgets/shared/constants';
 import { formatUnits } from 'viem';
 import { EthTxCardCopyText } from '../lib/types';
 import { useChainId } from 'wagmi';
@@ -139,7 +140,17 @@ export const TradeTransactionStatus = ({
       if (flow === TradeFlow.TRADE) setStepTwoTitle(t`Trade`);
       if (flow === TradeFlow.TRADE && action === TradeAction.APPROVE && screen === TradeScreen.TRANSACTION) {
         setStep(1);
-        setLoadingText(i18n._(approveLoadingButtonText[txStatus as keyof TxCardCopyText]));
+        setLoadingText(
+          i18n._(
+            tradeApproveLoadingButtonText({
+              txStatus,
+              amount: formatBigInt(originAmount, {
+                unit: originToken ? getTokenDecimals(originToken, chainId) : 18
+              }),
+              symbol: originToken.symbol
+            })
+          )
+        );
         setTxTitle(i18n._(tradeApproveTitle[txStatus as keyof TxCardCopyText]));
         setTxSubtitle(i18n._(tradeApproveSubtitle(txStatus, originToken.symbol)));
         setTxDescription(

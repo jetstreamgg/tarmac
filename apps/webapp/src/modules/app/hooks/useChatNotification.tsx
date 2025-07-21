@@ -1,22 +1,25 @@
 import { toast, useToast } from '@/components/ui/use-toast';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text } from '@/modules/layout/components/Typography';
 import { HStack } from '@/modules/layout/components/HStack';
 import { VStack } from '@/modules/layout/components/VStack';
-import { Trans } from '@lingui/macro';
+import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { CHATBOT_ENABLED, QueryParams } from '@/lib/constants';
+import { CHATBOT_ENABLED, QueryParams, CHAT_NOTIFICATION_KEY } from '@/lib/constants';
 import { CHATBOT_NAME } from '@/modules/chat/constants';
 import { Chat } from '@/modules/icons';
 
 export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean }) => {
-  const { userConfig, updateUserConfig } = useConfigContext();
   const { dismiss } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
+
+  // Use localStorage directly for notification state
+  const [chatSuggested, setChatSuggested] = useState(() => {
+    return localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true';
+  });
 
   const showChat = useMemo(() => CHATBOT_ENABLED && isAuthorized, [CHATBOT_ENABLED, isAuthorized]);
 
@@ -30,15 +33,16 @@ export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean })
   }, [bpi, dismiss, searchParams, setSearchParams]);
 
   const onClose = useCallback(() => {
-    updateUserConfig({ ...userConfig, chatSuggested: true });
-  }, [updateUserConfig, userConfig]);
+    localStorage.setItem(CHAT_NOTIFICATION_KEY, 'true');
+    setChatSuggested(true);
+  }, []);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (showChat) {
       timerRef.current = setTimeout(() => {
-        if (!userConfig.chatSuggested && searchParams.get(QueryParams.Chat) !== 'true') {
+        if (!chatSuggested && searchParams.get(QueryParams.Chat) !== 'true') {
           toast({
             title: (
               <HStack>
@@ -82,5 +86,5 @@ export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean })
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [showChat, userConfig.chatSuggested, searchParams]);
+  }, [showChat, chatSuggested, searchParams]);
 };

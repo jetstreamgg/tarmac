@@ -9,6 +9,9 @@ import { useApproveToken } from '../tokens/useApproveToken';
 import { useRewardsWithdraw } from './useRewardsWithdraw';
 import { TENDERLY_CHAIN_ID } from '../constants';
 import { waitForPreparedExecuteAndMine } from '../../test/helpers';
+import { usdsAddress, usdsSkyRewardAddress } from '../generated';
+import { useTokenAllowance } from '../tokens/useTokenAllowance';
+import { useBatchRewardsSupply } from './useBatchRewardsSupply';
 
 describe('Supply and withdraw in rewards', async () => {
   it(
@@ -172,6 +175,72 @@ describe('Supply and withdraw in rewards', async () => {
       );
     }
   );
+
+  it('Batch - should supply', { timeout: 90000 }, async () => {
+    const supplyTokenAddres = usdsAddress[TENDERLY_CHAIN_ID];
+    const rewardContractAddress = usdsSkyRewardAddress[TENDERLY_CHAIN_ID];
+
+    // Refetch USDS allowance
+    const { result: resultAllowanceUsds } = renderHook(
+      () =>
+        useTokenAllowance({
+          chainId: TENDERLY_CHAIN_ID,
+          contractAddress: supplyTokenAddres,
+          owner: TEST_WALLET_ADDRESS,
+          spender: rewardContractAddress
+        }),
+      {
+        wrapper: WagmiWrapper
+      }
+    );
+
+    resultAllowanceUsds.current.mutate();
+    await waitFor(
+      () => {
+        expect(resultAllowanceUsds.current.data).toEqual(0n);
+        return;
+      },
+      { timeout: 15000 }
+    );
+
+    const { result: resultBatchSupply } = renderHook(
+      () =>
+        useBatchRewardsSupply({
+          contractAddress: rewardContractAddress,
+          supplyTokenAddress: supplyTokenAddres,
+          amount: parseEther('1'),
+          enabled: true,
+          gas: GAS
+        }),
+      {
+        wrapper: WagmiWrapper
+      }
+    );
+
+    await waitForPreparedExecuteAndMine(resultBatchSupply);
+
+    // Get the balance of tokens for that user
+    const { result: resultBalance } = renderHook(
+      () =>
+        useTokenBalance({
+          address: TEST_WALLET_ADDRESS,
+          token: supplyTokenAddres,
+          chainId: TENDERLY_CHAIN_ID
+        }),
+      {
+        wrapper: WagmiWrapper
+      }
+    );
+
+    // The user should have 99 USDS tokens
+    await waitFor(
+      () => {
+        expect(resultBalance.current.data?.formatted).toEqual('99');
+        return;
+      },
+      { timeout: 15000 }
+    );
+  });
 
   afterAll(() => {
     cleanup();
