@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
+import { useEffect, useState } from 'react';
 import { upgradeTokens } from '@widgets/widgets/UpgradeWidget/lib/constants';
 import { defaultConfig } from '../config/default-config';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
@@ -14,6 +15,16 @@ import { BalancesFlow } from '@widgets/widgets/BalancesWidget/constants';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function useIsTouchDevice() {
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
+
+  return isTouchDevice;
 }
 
 const tokenSymbols: string[] = []; //get all token symbols
