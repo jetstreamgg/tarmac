@@ -1,7 +1,8 @@
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
-import { cn, useIsTouchDevice } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 

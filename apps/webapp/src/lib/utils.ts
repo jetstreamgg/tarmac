@@ -1,22 +1,11 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useEffect, useState } from 'react';
 import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { ALLOWED_EXTERNAL_DOMAINS, CHAIN_WIDGET_MAP, restrictedIntents } from './constants';
 import { Intent } from './enums';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-export function useIsTouchDevice() {
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-
-  useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
-
-  return isTouchDevice;
 }
 
 export function getFooterLinks(): { url: string; name: string }[] {
