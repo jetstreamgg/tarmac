@@ -29,13 +29,7 @@ import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor, getCeilingTextColor } from '../lib/utils';
 import { useChainId } from 'wagmi';
 import { useRiskSlider } from '../hooks/useRiskSlider';
-import {
-  collateralizationRatioTooltipText,
-  liquidationPriceTooltipText,
-  riskLevelTooltipText,
-  borrowRateTooltipText,
-  debtCeilingTooltipText
-} from '../lib/constants';
+import { getTooltipById } from '../../../data/tooltips';
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { Text } from '@widgets/shared/components/ui/Typography';
 
@@ -240,7 +234,7 @@ const PositionManagerOverviewContainer = ({
       {
         label: t`Borrow rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : '',
-        tooltipText: borrowRateTooltipText
+        tooltipText: getTooltipById('borrow-rate-seal')?.tooltip || ''
       },
       {
         label: t`Collateral value`,
@@ -256,13 +250,16 @@ const PositionManagerOverviewContainer = ({
         label: t`Liquidation price`,
         value:
           hasPositions && existingLiqPrice !== newLiqPrice ? [existingLiqPrice, newLiqPrice] : newLiqPrice,
-        tooltipText: liquidationPriceTooltipText
+        tooltipText:
+          getTooltipById(
+            displayToken === TOKENS.mkr ? 'liquidation-price-seal-mkr' : 'liquidation-price-seal-sky'
+          )?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
         value:
           hasPositions && existingColRatio !== newColRatio ? [existingColRatio, newColRatio] : newColRatio,
-        tooltipText: collateralizationRatioTooltipText
+        tooltipText: getTooltipById('collateralization-ratio-seal')?.tooltip || ''
       },
       {
         label: t`Liquidation ratio`,
@@ -277,7 +274,7 @@ const PositionManagerOverviewContainer = ({
                 `${captitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
               ]
             : `${captitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
-        tooltipText: riskLevelTooltipText,
+        tooltipText: getTooltipById('risk-level-seal')?.tooltip || '',
         classNamePrev: existingRiskTextColor,
         className: riskTextColor
       },
@@ -290,7 +287,7 @@ const PositionManagerOverviewContainer = ({
                 `${Math.ceil(newDebtCeilingUtilization * 100)}%`
               ]
             : `${Math.ceil(newDebtCeilingUtilization * 100)}%`,
-        tooltipText: debtCeilingTooltipText,
+        tooltipText: getTooltipById('debt-ceiling-seal')?.tooltip || '',
         classNamePrev: existingCeilingRiskTextColor,
         className: newCeilingTextColor
       }

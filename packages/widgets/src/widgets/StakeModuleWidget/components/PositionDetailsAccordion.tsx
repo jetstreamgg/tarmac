@@ -12,13 +12,8 @@ import { motion } from 'framer-motion';
 import { getRiskTextColor } from '../lib/utils';
 import { getIlkName, RiskLevel, useCollateralData } from '@jetstreamgg/sky-hooks';
 import { cn } from '@widgets/lib/utils';
-import {
-  collateralizationRatioTooltipText,
-  borrowRateTooltipText,
-  liquidationPriceTooltipText,
-  riskLevelTooltipText
-} from '../lib/constants';
 import { useChainId } from 'wagmi';
+import { getTooltipById } from '../../../data/tooltips';
 
 type Props = {
   collateralizationRatio?: bigint;
@@ -58,8 +53,8 @@ export function PositionDetailAccordion({
         <AccordionContent className="space-y-4 pt-4">
           <motion.div className="flex justify-between" variants={positionAnimations}>
             <TextWithTooltip
-              text="Staked"
-              tooltip="The amount of SKY you’ve staked in this position."
+              text={getTooltipById('staked-amount')?.title || 'Staked'}
+              tooltip={getTooltipById('staked-amount')?.tooltip || ''}
               textClassName="leading-4"
               gap={1}
               iconClassName="text-textSecondary"
@@ -69,8 +64,8 @@ export function PositionDetailAccordion({
           {!!borrowedAmount && borrowedAmount > 0n && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
               <TextWithTooltip
-                text="Borrowed"
-                tooltip="The amount of USDS that you have borrowed."
+                text={getTooltipById('borrowed-amount')?.title || 'Borrowed'}
+                tooltip={getTooltipById('borrowed-amount')?.tooltip || ''}
                 textClassName="leading-4"
                 gap={1}
                 iconClassName="text-textSecondary"
@@ -81,8 +76,8 @@ export function PositionDetailAccordion({
           {!!collateralData?.stabilityFee && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
               <TextWithTooltip
-                text="Borrow rate"
-                tooltip={borrowRateTooltipText}
+                text={getTooltipById('borrow-rate')?.title || 'Borrow rate'}
+                tooltip={getTooltipById('borrow-rate')?.tooltip || ''}
                 textClassName="leading-4"
                 contentClassname="w-[400px]"
                 gap={1}
@@ -94,8 +89,8 @@ export function PositionDetailAccordion({
           {!!collateralizationRatio && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
               <TextWithTooltip
-                text="Collateralization ratio"
-                tooltip={collateralizationRatioTooltipText}
+                text={getTooltipById('collateralization-ratio')?.title || 'Collateralization ratio'}
+                tooltip={getTooltipById('collateralization-ratio')?.tooltip || ''}
                 textClassName="leading-4"
                 contentClassname="w-[400px]"
                 gap={1}
@@ -109,8 +104,8 @@ export function PositionDetailAccordion({
           {!!liquidationPrice && liquidationPrice > 0n && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
               <TextWithTooltip
-                text="Liquidation price"
-                tooltip={liquidationPriceTooltipText}
+                text={getTooltipById('liquidation-price')?.title || 'Liquidation price'}
+                tooltip={getTooltipById('liquidation-price')?.tooltip || ''}
                 textClassName="leading-4"
                 contentClassname="w-[400px]"
                 gap={1}
@@ -128,8 +123,8 @@ export function PositionDetailAccordion({
           {!!riskLevel && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
               <TextWithTooltip
-                text="Risk level"
-                tooltip={riskLevelTooltipText}
+                text={getTooltipById('risk-level')?.title || 'Risk level'}
+                tooltip={getTooltipById('risk-level')?.tooltip || ''}
                 textClassName="leading-4"
                 contentClassname="w-[400px]"
                 gap={1}
