@@ -17,6 +17,7 @@ export { formatAddress } from './formatAddress';
 export { normalizeAddress } from './normalizeAddress';
 export { chainId } from './chainId';
 export * as math from './math';
+export * from './math/calculateApy';
 export * from './formatDate';
 export * from './formatValue';
 export * from './formatUnits';

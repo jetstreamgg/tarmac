@@ -166,6 +166,17 @@ const getContent = (
         applies to any legacy Maker MCD vault.
       </Text>
     )
+  },
+  stusds: {
+    title: 'stUSDS Rate',
+    description: (
+      <Text className="leading-5 text-white/80" variant="small">
+        The stUSDS rate is the current yield earned on your stUSDS position. This rate fluctuates based on
+        vault utilization and borrowing demand from the Sky Protocol. As more USDS is borrowed from the vault,
+        the rate typically increases. The rate shown is an annualized percentage and updates in real-time as
+        market conditions change.
+      </Text>
+    )
   }
 });
 
@@ -186,7 +197,8 @@ export const PopoverRateInfo = ({
     | 'stakingRewards'
     | 'borrow'
     | 'delegate'
-    | 'liquidation';
+    | 'liquidation'
+    | 'stusds';
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   iconClassName?: string;
   width?: number;

@@ -36,6 +36,7 @@ export const IntentMapping = {
   [Intent.UPGRADE_INTENT]: 'upgrade',
   [Intent.TRADE_INTENT]: 'trade',
   [Intent.SAVINGS_INTENT]: 'savings',
+  [Intent.STUSDS_INTENT]: 'stusds',
   [Intent.REWARDS_INTENT]: 'rewards',
   [Intent.SEAL_INTENT]: 'seal',
   [Intent.STAKE_INTENT]: 'stake'
@@ -46,6 +47,7 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.BALANCES_INTENT,
     Intent.REWARDS_INTENT,
     Intent.SAVINGS_INTENT,
+    Intent.STUSDS_INTENT,
     Intent.UPGRADE_INTENT,
     Intent.TRADE_INTENT,
     Intent.SEAL_INTENT,
@@ -55,6 +57,7 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.BALANCES_INTENT,
     Intent.REWARDS_INTENT,
     Intent.SAVINGS_INTENT,
+    Intent.STUSDS_INTENT,
     Intent.UPGRADE_INTENT,
     Intent.SEAL_INTENT,
     Intent.STAKE_INTENT
@@ -92,6 +95,7 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   trade: msg`trade`,
   upgrade: msg`upgrade`,
   savings: msg`savings`,
+  stusds: msg`stusds`,
   rewards: msg`rewards`,
   balances: msg`balances`,
   seal: msg`seal`,
@@ -131,6 +135,7 @@ export const linkedActionMetadata = {
   [IntentMapping[Intent.UPGRADE_INTENT]]: { text: 'Upgrade DAI', icon: Upgrade },
   [IntentMapping[Intent.TRADE_INTENT]]: { text: 'Trade Tokens', icon: Trade },
   [IntentMapping[Intent.SAVINGS_INTENT]]: { text: 'Access Savings', icon: Savings },
+  [IntentMapping[Intent.STUSDS_INTENT]]: { text: 'Access stUSDS', icon: Savings },
   [IntentMapping[Intent.REWARDS_INTENT]]: { text: 'Get Rewards', icon: RewardsModule },
   [IntentMapping[Intent.SEAL_INTENT]]: { text: 'Seal', icon: Seal },
   [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Activate', icon: Seal }

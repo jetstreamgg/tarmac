@@ -50,6 +50,7 @@ interface BalancesContentProps {
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
   stakeCardUrl?: string;
+  stusdsCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onToggle: (number: 0 | 1) => void;
   showAllNetworks?: boolean;
@@ -70,6 +71,7 @@ export const BalancesContent = ({
   savingsCardUrlMap,
   sealCardUrl,
   stakeCardUrl,
+  stusdsCardUrl,
   showAllNetworks: showAllNetworksProp,
   hideZeroBalances: hideZeroBalancesProp,
   setShowAllNetworks: setShowAllNetworksProp,
@@ -277,6 +279,7 @@ export const BalancesContent = ({
               savingsCardUrlMap={savingsCardUrlMap}
               sealCardUrl={sealCardUrl}
               stakeCardUrl={stakeCardUrl}
+              stusdsCardUrl={stusdsCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
               hideModuleBalances={hideModuleBalances}
               chainIds={chainIds}

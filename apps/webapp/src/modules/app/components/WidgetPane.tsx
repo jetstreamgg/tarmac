@@ -17,6 +17,7 @@ import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPan
 import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
+import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import React, { useEffect } from 'react';
 import { useNotification } from '../hooks/useNotification';
@@ -32,15 +33,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { isIntentAllowed } from '@/lib/utils';
-
-export type WidgetContent = [
-  Intent,
-  string,
-  (props: IconProps) => React.ReactNode,
-  React.ReactNode | null,
-  boolean,
-  { disabled?: boolean }?
-][];
+import { WidgetContent, WidgetItem } from '../types/Widgets';
 
 type WidgetPaneProps = {
   intent: Intent;
@@ -61,7 +54,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
-  const rightHeaderComponent = <DualSwitcher />;
+  const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
   const { Locale, Details } = QueryParams;
   const retainedParams = [Locale, Details];
@@ -105,8 +98,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const stakeUrl = getQueryParams(
     `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`
   );
+  const stusdsUrl = getQueryParams(
+    `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.STUSDS_INTENT)}`
+  );
 
-  const widgetContent: WidgetContent = [
+  const widgetItems: WidgetItem[] = [
     [
       Intent.BALANCES_INTENT,
       'Balances',
@@ -120,6 +116,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           savingsCardUrlMap={savingsUrlMap}
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
+          stusdsCardUrl={stusdsUrl}
           customTokenMap={defaultConfig.balancesTokenList}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
@@ -136,6 +133,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<RewardsWidgetPane {...sharedProps} />)
     ],
     [Intent.SAVINGS_INTENT, 'Savings', Savings, withErrorBoundary(<SavingsWidgetPane {...sharedProps} />)],
+    [Intent.STUSDS_INTENT, 'stUSDS', Savings, withErrorBoundary(<StUSDSWidgetPane {...sharedProps} />)],
     [Intent.UPGRADE_INTENT, 'Upgrade', Upgrade, withErrorBoundary(<UpgradeWidgetPane {...sharedProps} />)],
     [Intent.TRADE_INTENT, 'Trade', Trade, withErrorBoundary(<TradeWidgetPane {...sharedProps} />)],
     [Intent.STAKE_INTENT, 'Stake', Stake, withErrorBoundary(<StakeWidgetPane {...sharedProps} />)]
@@ -149,7 +147,31 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       comingSoon,
       comingSoon ? { disabled: true } : undefined
     ];
-  });
+  }) as WidgetItem[];
+
+  // Group the widgets in categories
+  const widgetContent: WidgetContent = [
+    {
+      id: 'group-1',
+      items: widgetItems.filter(([intent]) => intent === Intent.BALANCES_INTENT)
+    },
+    {
+      id: 'group-2',
+      items: widgetItems.filter(
+        ([intent]) =>
+          intent === Intent.REWARDS_INTENT ||
+          intent === Intent.SAVINGS_INTENT ||
+          intent === Intent.STUSDS_INTENT ||
+          intent === Intent.STAKE_INTENT
+      )
+    },
+    {
+      id: 'group-3',
+      items: widgetItems.filter(
+        ([intent]) => intent === Intent.UPGRADE_INTENT || intent === Intent.TRADE_INTENT
+      )
+    }
+  ];
 
   useEffect(() => {
     if (!searchParams.get(QueryParams.Reset)) return;
@@ -164,11 +186,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     return () => clearTimeout(timer); // cleanup
   }, [searchParams, setSearchParams]);
 
+  // Filter widget groups to only include allowed intents
+  const filteredWidgetContent: WidgetContent = widgetContent
+    .map(group => ({
+      ...group,
+      items: group.items.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))
+    }))
+    .filter(group => group.items.length > 0);
+
   return (
-    <WidgetNavigation
-      widgetContent={widgetContent.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))}
-      intent={intent}
-    >
+    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent}>
       {children}
     </WidgetNavigation>
   );
