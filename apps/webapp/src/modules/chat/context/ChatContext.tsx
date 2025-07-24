@@ -1,12 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { ChatHistory, ChatIntent } from '../types/Chat';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/core/macro';
 import { CHATBOT_NAME, MessageType, UserType } from '../constants';
 import { intentModifiesState } from '../lib/intentUtils';
-
-// Key for localStorage
-const AGE_RESTRICTION_KEY = 'has-accepted-age-restriction';
 
 interface ChatContextType {
   isLoading: boolean;
@@ -17,14 +14,20 @@ interface ChatContextType {
   sessionId: string;
   shouldShowConfirmationWarning: boolean;
   shouldDisableActionButtons: boolean;
-  hasAcceptedAgeRestriction: boolean;
+  termsAccepted: boolean;
+  showTermsModal: boolean;
+  isCheckingTerms: boolean;
+  termsError: string | null;
+  setTermsError: React.Dispatch<React.SetStateAction<string | null>>;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   setConfirmationWarningOpened: React.Dispatch<React.SetStateAction<boolean>>;
   setSelectedIntent: React.Dispatch<React.SetStateAction<ChatIntent | undefined>>;
   setWarningShown: React.Dispatch<React.SetStateAction<ChatIntent[]>>;
   hasShownIntent: (intent?: ChatIntent) => boolean;
   setShouldDisableActionButtons: React.Dispatch<React.SetStateAction<boolean>>;
-  setHasAcceptedAgeRestriction: (accepted: boolean) => void;
+  setTermsAccepted: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowTermsModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsCheckingTerms: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -42,8 +45,14 @@ const ChatContext = createContext<ChatContextType>({
   shouldShowConfirmationWarning: false,
   shouldDisableActionButtons: false,
   setShouldDisableActionButtons: () => {},
-  hasAcceptedAgeRestriction: false,
-  setHasAcceptedAgeRestriction: () => {}
+  termsAccepted: false,
+  setTermsAccepted: () => {},
+  showTermsModal: false,
+  setShowTermsModal: () => {},
+  isCheckingTerms: false,
+  setIsCheckingTerms: () => {},
+  termsError: null,
+  setTermsError: () => {}
 });
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -62,22 +71,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [confirmationWarningOpened, setConfirmationWarningOpened] = useState<boolean>(false);
   const [warningShown, setWarningShown] = useState<ChatIntent[]>([]);
   const [shouldDisableActionButtons, setShouldDisableActionButtons] = useState<boolean>(false);
-  const [hasAcceptedAgeRestriction, setHasAcceptedAgeRestrictionState] = useState<boolean>(false);
   const isLoading = chatHistory[chatHistory.length - 1]?.type === MessageType.loading;
 
-  // Load age restriction acceptance from localStorage on initial render
-  useEffect(() => {
-    const storedValue = window.localStorage.getItem(AGE_RESTRICTION_KEY);
-    if (storedValue) {
-      setHasAcceptedAgeRestrictionState(storedValue === 'true');
-    }
-  }, []);
-
-  // Function to update both state and localStorage
-  const setHasAcceptedAgeRestriction = useCallback((accepted: boolean) => {
-    setHasAcceptedAgeRestrictionState(accepted);
-    window.localStorage.setItem(AGE_RESTRICTION_KEY, String(accepted));
-  }, []);
+  // Terms acceptance state - managed by ChatWithTerms component
+  const [termsAcceptedState, setTermsAccepted] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [isCheckingTerms, setIsCheckingTerms] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   const hasShownIntent = useCallback(
     (intent?: ChatIntent) => {
@@ -109,8 +109,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         shouldShowConfirmationWarning,
         shouldDisableActionButtons,
         setShouldDisableActionButtons,
-        hasAcceptedAgeRestriction,
-        setHasAcceptedAgeRestriction
+        termsAccepted: termsAcceptedState,
+        setTermsAccepted,
+        showTermsModal,
+        setShowTermsModal,
+        isCheckingTerms,
+        setIsCheckingTerms,
+        termsError,
+        setTermsError
       }}
     >
       {children}

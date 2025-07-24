@@ -175,6 +175,7 @@ export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESS
 export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHAT_SUGGESTIONS_ENABLED === 'true';
 export const ADVANCED_CHAT_ENABLED = import.meta.env.VITE_ADVANCED_CHAT_ENABLED === 'true';
 export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
+export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&

@@ -2,9 +2,10 @@ import { useAccount, useChainId } from 'wagmi';
 import { MutationFunction, useMutation } from '@tanstack/react-query';
 import { SendMessageRequest, SendMessageResponse, ChatIntent } from '../types/Chat';
 import { useChatContext } from '../context/ChatContext';
-import { CHATBOT_NAME, MessageType, UserType } from '../constants';
+import { CHATBOT_NAME, MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '../constants';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
 import { CHATBOT_DOMAIN, CHATBOT_ENABLED, MAX_HISTORY_LENGTH } from '@/lib/constants';
 
@@ -33,10 +34,17 @@ const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
   const response = await fetch(`${CHATBOT_DOMAIN}/chat`, {
     method: 'POST',
     headers,
+    credentials: 'include',
     body: JSON.stringify(messagePayload)
   });
 
   if (!response.ok) {
+    if (response.status === 400 || response.status === 401) {
+      const error: any = new Error('Terms acceptance required');
+      error.code = 'TERMS_NOT_ACCEPTED';
+      error.status = response.status;
+      throw error;
+    }
     throw new Error('Advanced chat response was not ok');
   }
 
@@ -78,11 +86,12 @@ const sendMessageMutation: MutationFunction<
 };
 
 export const useSendMessage = () => {
-  const { setChatHistory, sessionId, chatHistory } = useChatContext();
+  const { setChatHistory, sessionId, chatHistory, setTermsAccepted } = useChatContext();
   const chainId = useChainId();
   const { isConnected } = useAccount();
+  const { i18n } = useLingui();
 
-  const { loading: LOADING, error: ERROR, canceled: CANCELED } = MessageType;
+  const { loading: LOADING, error: ERROR, canceled: CANCELED, authError: AUTH_ERROR } = MessageType;
   const { mutate } = useMutation<SendMessageResponse, Error, { messagePayload: Partial<SendMessageRequest> }>(
     {
       mutationFn: sendMessageMutation
@@ -102,7 +111,6 @@ export const useSendMessage = () => {
       {
         messagePayload: {
           session_id: sessionId,
-          accepted_terms_hash: 'aaaaaaaa11111111bbbbbbbb22222222cccccccc33333333dddddddd44444444', // TODO, this is hardcoded for now
           network,
           messages: [...history.slice(-MAX_HISTORY_LENGTH), { role: 'user', content: message }]
         }
@@ -127,8 +135,11 @@ export const useSendMessage = () => {
                 ];
           });
         },
-        onError: error => {
-          console.error('Failed to send message:', error);
+        onError: async (error: any) => {
+          console.error('Failed to send message:', JSON.stringify(error));
+          if (error.status === 401) {
+            setTermsAccepted(false);
+          }
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED
               ? prevHistory
@@ -137,8 +148,11 @@ export const useSendMessage = () => {
                   {
                     id: generateUUID(),
                     user: UserType.bot,
-                    message: t`Sorry, something went wrong. Can you repeat your question?`,
-                    type: ERROR
+                    message:
+                      error.status === 401
+                        ? i18n._(TERMS_ACCEPTANCE_MESSAGE)
+                        : t`Sorry, something went wrong. Can you repeat your question?`,
+                    type: error.status === 401 ? AUTH_ERROR : ERROR
                   }
                 ];
           });
