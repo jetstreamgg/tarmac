@@ -13,20 +13,96 @@ interface ChatWithTermsProps {
 }
 
 export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => {
-  // TODO: This may come from a url
-  const TERMS_VERSION = '2025-07-15';
   const { i18n } = useLingui();
-  const baseTerms = t`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+  const [termsVersion, setTermsVersion] = useState<string>(''); // TODO: Update this mock date when real terms document is ready
+  const [termsContent, setTermsContent] = useState<string | undefined>(undefined);
+  const [isLoadingTerms, setIsLoadingTerms] = useState(false);
+  const [termsLoadError, setTermsLoadError] = useState<string | null>(null);
+  const [termsLoadedSuccessfully, setTermsLoadedSuccessfully] = useState(false);
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
+  // TODO: Update this URL to the final terms document location
+  const TERMS_URL = 'https://raw.githubusercontent.com/jetstreamgg/tarmac/main/README.md';
 
-Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
+  // Fetch terms from GitHub
+  useEffect(() => {
+    const fetchTerms = async () => {
+      setIsLoadingTerms(true);
+      setTermsLoadError(null);
+      setTermsLoadedSuccessfully(false);
 
-Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.
+      try {
+        const response = await fetch(TERMS_URL);
+        if (!response.ok) {
+          throw new Error('Failed to fetch terms');
+        }
 
-At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.`;
-  // TODO: Remove the Array.fill repetition once we have real terms from URL
-  const TERMS_CONTENT = baseTerms ? Array(3).fill(baseTerms).join('\n\n') : undefined;
+        let text = await response.text();
+
+        // TODO: Remove this mock date prepending when the real terms document includes the date
+        // Prepend mock date to simulate the expected format
+        const mockDate = '2025-07-15';
+        text = `${mockDate}\n${text}`;
+
+        // Parse the first line as date
+        // Expected format:
+        // 2025-07-15
+        // Terms content...
+
+        const lines = text.split('\n');
+        const dateMatch = lines[0]?.match(/^\d{4}-\d{2}-\d{2}$/);
+
+        if (dateMatch) {
+          setTermsVersion(dateMatch[0]);
+          setTermsContent(lines.slice(1).join('\n').trim());
+          setTermsLoadedSuccessfully(true);
+        } else {
+          // Invalid format - terms not loaded successfully
+          console.error('Terms document does not start with expected date format (YYYY-MM-DD)');
+          setTermsLoadError(
+            t`Invalid terms format. The terms document must start with a date in YYYY-MM-DD format.`
+          );
+
+          // Show error content
+          const errorContent = t`# Invalid Terms Format
+
+The terms document could not be loaded because it doesn't follow the expected format.
+
+#### Expected Format:
+The first line must contain a date in YYYY-MM-DD format (e.g., 2025-01-20), followed by the terms content.
+
+#### What This Means:
+We cannot present the terms for acceptance at this time. Please contact support if this issue persists.`;
+
+          setTermsContent(errorContent);
+          setTermsLoadedSuccessfully(false);
+        }
+      } catch (error) {
+        console.error('Error fetching terms:', error);
+        setTermsLoadError(t`Failed to load terms. Please try again later.`);
+        // Fallback to error message content
+        const fallbackTerms = t`# Unable to Load Terms
+
+We're currently unable to fetch the latest terms and conditions. This may be due to a network issue or temporary service disruption.
+
+## What you can do:
+
+1. **Check your internet connection** - Ensure you have a stable connection
+2. **Refresh the page** - Try reloading to fetch the terms again
+3. **Try again later** - The service may be temporarily unavailable
+
+## Important Notice
+
+By using this chatbot service, you acknowledge that terms and conditions apply. We recommend reviewing them once they're available.
+
+If this issue persists, please contact support for assistance.`;
+        setTermsContent(fallbackTerms);
+      } finally {
+        setIsLoadingTerms(false);
+      }
+    };
+
+    fetchTerms();
+  }, [TERMS_URL]);
 
   const {
     termsAccepted,
@@ -99,7 +175,7 @@ At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praese
   const handleAcceptTerms = async () => {
     setIsAccepting(true);
     try {
-      await acceptTerms(TERMS_VERSION);
+      await acceptTerms(termsVersion);
     } catch {
       // Error is handled by the hook
     } finally {
@@ -137,10 +213,11 @@ At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praese
         isOpen={showTermsModal}
         onAccept={handleAcceptTerms}
         onDecline={handleDeclineTerms}
-        termsVersion={TERMS_VERSION}
-        termsContent={TERMS_CONTENT}
-        isLoading={isAccepting || isCheckingTerms}
-        error={termsError}
+        termsVersion={termsVersion}
+        termsContent={termsContent}
+        isLoading={isAccepting || isCheckingTerms || isLoadingTerms}
+        error={termsError || termsLoadError}
+        termsLoadedSuccessfully={termsLoadedSuccessfully}
       />
     </>
   );

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { Text } from '@/modules/layout/components/Typography';
 import { TermsDialog } from '@/modules/ui/components/TermsDialog';
+import { TermsMarkdownRenderer } from '@/modules/ui/components/markdown/TermsMarkdownRenderer';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 
@@ -14,6 +14,7 @@ interface ChatbotTermsModalProps {
   termsContent?: string;
   isLoading?: boolean;
   error?: string | null;
+  termsLoadedSuccessfully?: boolean;
 }
 
 export const ChatbotTermsModal: React.FC<ChatbotTermsModalProps> = ({
@@ -23,7 +24,8 @@ export const ChatbotTermsModal: React.FC<ChatbotTermsModalProps> = ({
   termsVersion,
   termsContent,
   isLoading = false,
-  error = null
+  error = null,
+  termsLoadedSuccessfully = true
 }) => {
   const [isChecked, setIsChecked] = useState(false);
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
@@ -84,16 +86,17 @@ export const ChatbotTermsModal: React.FC<ChatbotTermsModalProps> = ({
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
       title={t`Chatbot Terms of Service`}
-      content={<Text className="whitespace-pre-wrap text-sm text-violet-100/90">{termsContent}</Text>}
+      content={termsContent ? <TermsMarkdownRenderer markdown={termsContent} /> : null}
       termsVersion={termsVersion}
       error={error}
       isLoading={isLoading}
-      onAccept={onAccept}
+      onAccept={termsLoadedSuccessfully ? onAccept : () => {}}
       onDecline={onDecline}
-      acceptButtonText={getButtonText()}
+      acceptButtonText={termsLoadedSuccessfully ? getButtonText() : undefined}
+      declineButtonText={termsLoadedSuccessfully ? t`Reject` : t`Close`}
       acceptButtonDisabled={!isChecked}
-      additionalContent={checkboxContent}
-      showScrollInstruction={true}
+      additionalContent={termsLoadedSuccessfully ? checkboxContent : undefined}
+      showScrollInstruction={termsLoadedSuccessfully}
       scrollInstructionText={t`Please scroll to the bottom and read the entire terms; the checkbox will become enabled afterward.`}
     />
   );
