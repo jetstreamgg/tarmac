@@ -1,7 +1,7 @@
-import { Locale } from 'date-fns';
+import type { Locale } from 'date-fns';
 
-type LocaleModule = {
-  default: Locale;
+export type LocaleModule = {
+  [key: string]: Locale;
 };
 
 type LocaleImport = {
@@ -11,6 +11,7 @@ type LocaleImport = {
 // This code is needed to dynamically import the locale data for date-fns.
 // It allows us to only load the locales that are actually used, reducing the bundle size.
 // The compiler needs to statically know the import path, we can't just use a variable.
+// In date-fns v3, locales are named exports, not default exports.
 export const localeImports: LocaleImport = {
   af: () => import('date-fns/locale/af'),
   ar: () => import('date-fns/locale/ar'),
