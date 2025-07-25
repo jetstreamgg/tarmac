@@ -2492,6 +2492,7 @@ msgid "Trade failed"
 msgstr ""
 
 #: packages/widgets/src/widgets/TradeWidget/components/TradeHeader.tsx
+#: packages/widgets/src/widgets/L2TradeWidget/index.tsx
 msgid "Trade popular tokens for Sky Ecosystem tokens"
 msgstr ""
 
@@ -2801,6 +2802,10 @@ msgstr ""
 
 #: packages/widgets/src/widgets/BalancesWidget/components/RewardsBalanceCard.tsx
 msgid "USDS supplied to Rewards"
+msgstr ""
+
+#: packages/widgets/src/widgets/L2SavingsWidget/index.tsx
+msgid "Use USDS or USDC to access the Sky Savings Rate"
 msgstr ""
 
 #: packages/widgets/src/widgets/RewardsWidget/index.tsx
