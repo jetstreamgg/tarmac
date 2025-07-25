@@ -5,6 +5,8 @@ import { usdsAddress, stUsdsAddress, stUsdsAbi } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
 import { getEtherscanLink } from '@jetstreamgg/sky-utils';
+import { useCollateralData } from '../vaults/useCollateralData';
+import { getIlkName } from '../vaults/helpers';
 
 export type StUsdsHookData = {
   totalAssets: bigint;
@@ -30,6 +32,17 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
   const chainId = useChainId();
   const { address: connectedAddress } = useAccount();
   const acct = address || connectedAddress;
+
+  const ilkName = getIlkName(2);
+  const {
+    data: collateralData,
+    isLoading: isCollateralLoading,
+    error: collateralError
+  } = useCollateralData(ilkName);
+
+  const debtCeiling = collateralData?.debtCeiling ?? 0n;
+  const totalUsdsBorrowed = collateralData?.totalDaiDebt ?? 0n;
+  const debtCeilingReached = totalUsdsBorrowed >= debtCeiling;
 
   const stUsdsContractAddress = stUsdsAddress[chainId as keyof typeof stUsdsAddress];
 
@@ -141,7 +154,7 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     return userStUsdsBalance;
   }, [userStUsdsBalance, totalAssets, totalSupply]);
 
-  const isLoading = isContractLoading || userUsdsLoading || vaultUsdsLoading;
+  const isLoading = isContractLoading || userUsdsLoading || vaultUsdsLoading || isCollateralLoading;
 
   const data: StUsdsHookData | undefined = useMemo(() => {
     if (!contractData) return undefined;
@@ -156,7 +169,7 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
       userSuppliedUsds,
       userMaxDeposit: userMaxDeposit || 0n,
       userMaxWithdraw: userMaxWithdraw || 0n,
-      moduleRate: ysr || 0n,
+      moduleRate: debtCeilingReached ? 0n : ysr || 0n,
       chi: chi || 0n,
       cap: cap || 0n,
       line: line || 0n
@@ -175,7 +188,8 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     ysr,
     chi,
     cap,
-    line
+    line,
+    debtCeilingReached
   ]);
 
   const dataSources: DataSource[] = [
@@ -188,8 +202,8 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
   ];
 
   return {
-    isLoading,
-    error: contractError || null,
+    isLoading: isLoading,
+    error: contractError || collateralError || null,
     data,
     mutate: () => {}, // implement if needed
     dataSources
