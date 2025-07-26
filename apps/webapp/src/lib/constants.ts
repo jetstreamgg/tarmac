@@ -183,6 +183,7 @@ export const CHATBOT_USE_TESTNET_NETWORK_NAME =
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
 export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
+export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // LocalStorage keys
 export const USER_SETTINGS_KEY = 'user-settings';

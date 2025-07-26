@@ -49,7 +49,7 @@ export function StakePositionOverview({
     data: vault,
     isLoading: vaultLoading,
     error: vaultError
-  } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(chainId, 2));
+  } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
 
   if (!error && !isLoading && !data) return null;
 

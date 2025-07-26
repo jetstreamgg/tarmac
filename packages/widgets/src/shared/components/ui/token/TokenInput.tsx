@@ -364,7 +364,7 @@ export function TokenInput({
         <PopoverContent
           className="bg-container rounded-[20px] border-0 p-2 pr-0 pt-5 backdrop-blur-[50px]"
           sideOffset={4}
-          avoidCollisions={false}
+          avoidCollisions={true}
           style={{ width: `${width}px` }}
         >
           <VStack className="w-full space-y-2">

@@ -1,11 +1,8 @@
-import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
 import { Intent } from '@/lib/enums';
 import { mapIntentToQueryParam } from '@/lib/constants';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/utils';
-import { HStack } from '@/modules/layout/components/HStack';
 import { Card, CardTitle, CardContent } from '@/components/ui/card';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
@@ -17,6 +14,9 @@ import {
 } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 import { QueryParams } from '@/lib/constants';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { Logo, LogoName } from '@/modules/ui/components/HighlightLogo';
 
 type ModuleCardProps = {
   className: string;
@@ -25,14 +25,29 @@ type ModuleCardProps = {
   module: string;
   notAvailable?: boolean;
   soon?: boolean;
+  subHeading: React.ReactElement;
+  emphasisText?: React.ReactElement;
+  logoName: LogoName;
 };
 
-export const ModuleCard = ({ className, title, intent, module, notAvailable, soon }: ModuleCardProps) => {
+export const ModuleCard = ({
+  className,
+  title,
+  intent,
+  module,
+  notAvailable,
+  soon,
+  subHeading,
+  emphasisText,
+  logoName
+}: ModuleCardProps) => {
   const chainId = useChainId();
   const isBase = isBaseChainId(chainId);
   const isArbitrum = isArbitrumChainId(chainId);
   const isOptimism = isOptimismChainId(chainId);
   const isUnichain = isUnichainChainId(chainId);
+
+  const navigate = useNavigate();
   const url = useRetainedQueryParams(
     `/?widget=${mapIntentToQueryParam(intent)}${notAvailable ? '&network=ethereum' : ''}`,
     notAvailable
@@ -40,43 +55,42 @@ export const ModuleCard = ({ className, title, intent, module, notAvailable, soo
       : [QueryParams.Locale, QueryParams.Details, QueryParams.Network]
   );
 
-  const availableSoonChains = [
+  const l2Chains = [
     { check: isBase, name: 'Base' },
     { check: isArbitrum, name: 'Arbitrum' },
     { check: isOptimism, name: 'Optimism' },
     { check: isUnichain, name: 'Unichain' }
   ];
-  const soonChain = availableSoonChains.find(chain => chain.check);
+  const l2Chain = l2Chains.find(chain => chain.check);
 
-  const content = (
-    <>
+  return (
+    <Card
+      className={cn(
+        'relative flex h-full flex-col justify-between overflow-hidden bg-gradient-to-b p-3 py-4 pb-8 lg:px-6',
+        className
+      )}
+    >
+      <CardTitle className="mb-5 text-left font-normal leading-8">
+        <Heading>{t`${title}`}</Heading>
+      </CardTitle>
+      <CardContent className="z-10 flex grow flex-col items-start justify-between p-0">
+        <div>
+          {subHeading}
+          <div className="mt-2">{emphasisText}</div>
+        </div>
+        <Button variant="light" className="mt-5" onClick={() => navigate(url)}>
+          {notAvailable ? t`View on Mainnet` : t`Go to ${l2Chain?.name || ''} ${module}`}
+        </Button>
+      </CardContent>
       {soon && (
         <Text
           variant="small"
-          className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text absolute -top-3 right-2 z-10 rounded-full px-1.5 py-0 md:px-2 md:py-1"
+          className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text 3xl:block top-6.5 absolute right-6 z-10 hidden rounded-full px-1.5 py-0 md:px-2 md:py-1"
         >
-          {soonChain ? <Trans>Soon on {soonChain.name}</Trans> : <Trans>Coming Soon</Trans>}
+          {l2Chain ? <Trans>Soon on {l2Chain.name}</Trans> : <Trans>Coming Soon</Trans>}
         </Text>
       )}
-      <Card className={cn('relative flex h-full flex-col justify-between bg-[length:100%_100%]', className)}>
-        <CardTitle className="mb-7 text-left font-normal leading-8">{t`${title}`}</CardTitle>
-        <CardContent className="relative p-0 pb-2">
-          <HStack className="items-center justify-between">
-            <Heading variant="extraSmall" className="text-left">
-              {notAvailable
-                ? t`View on Mainnet`
-                : t`Go to ${isBase ? 'Base' : isArbitrum ? 'Arbitrum' : ''} ${module}`}
-            </Heading>
-            <ArrowRight />
-          </HStack>
-        </CardContent>
-      </Card>
-    </>
-  );
-
-  return (
-    <Link to={url} className="relative flex flex-1 basis-full flex-col xl:basis-[20%]">
-      {content}
-    </Link>
+      <Logo logoName={logoName} />
+    </Card>
   );
 };

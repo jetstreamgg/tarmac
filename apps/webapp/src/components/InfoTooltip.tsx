@@ -1,19 +1,6 @@
 import { Info, X } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipArrow,
-  TooltipContent,
-  TooltipPortal,
-  TooltipTrigger
-} from '../../../../components/ui/tooltip';
-import {
-  Popover,
-  PopoverArrow,
-  PopoverClose,
-  PopoverContent,
-  PopoverTrigger
-} from '../../../../components/ui/popover';
-import { Text } from '@widgets/shared/components/ui/Typography';
+import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
+import { Popover, PopoverArrow, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
 import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 
 export function InfoTooltip({
@@ -55,7 +42,7 @@ export function InfoTooltip({
           onWheel={e => e.stopPropagation()}
           onTouchMove={e => e.stopPropagation()}
         >
-          {typeof content === 'string' ? <Text>{content}</Text> : content}
+          {typeof content === 'string' ? <p>{content}</p> : content}
         </div>
         <PopoverArrow />
       </PopoverContent>
@@ -68,7 +55,7 @@ export function InfoTooltip({
       <TooltipPortal>
         <TooltipContent className={`max-w-[400px] ${contentClassname}`} arrowPadding={10}>
           <div className="scrollbar-thin max-h-[calc(var(--radix-tooltip-content-available-height)-64px)] overflow-y-auto">
-            {typeof content === 'string' ? <Text>{content}</Text> : content}
+            {typeof content === 'string' ? <p>{content}</p> : content}
           </div>
           <TooltipArrow width={12} height={8} />
         </TooltipContent>

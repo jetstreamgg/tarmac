@@ -18,7 +18,6 @@ import {
   liquidationPriceTooltipText,
   riskLevelTooltipText
 } from '../lib/constants';
-import { useChainId } from 'wagmi';
 
 type Props = {
   collateralizationRatio?: bigint;
@@ -42,8 +41,7 @@ export function PositionDetailAccordion({
   delayedPrice,
   liquidationPrice
 }: Props) {
-  const chainId = useChainId();
-  const ilkName = getIlkName(chainId, 2);
+  const ilkName = getIlkName(2);
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
   const { data: collateralData } = useCollateralData(ilkName);
 

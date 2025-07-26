@@ -71,7 +71,7 @@ const PositionManagerOverviewContainer = ({
   minDebtNotMet: boolean;
 }) => {
   const chainId = useChainId();
-  const { data: collateralData } = useCollateralData(getIlkName(chainId, 2));
+  const { data: collateralData } = useCollateralData(getIlkName(2));
   const hasPositions = !!existingVault;
 
   // New amount values here will factor in user input, if there is no existing vault then amounts will not be included
@@ -254,7 +254,7 @@ const PositionManagerOverviewContainer = ({
 export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolean }) => {
   const { address } = useAccount();
   const chainId = useChainId();
-  const ilkName = getIlkName(chainId, 2);
+  const ilkName = getIlkName(2);
 
   const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId], chainId });
 

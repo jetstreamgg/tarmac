@@ -47,11 +47,12 @@ import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
-import { Heading } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { L2TradeTransactionStatus } from './components/L2TradeTransactionStatus';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { L2TradeTransactionReview } from './components/L2TradeTransactionReview';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { Trans } from '@lingui/react/macro';
 
 const useMaxInForWithdraw = (
   targetAmount: bigint,
@@ -1170,6 +1171,11 @@ function TradeWidgetWrapped({
   return (
     <WidgetContainer
       header={<Heading variant="x-large">{widgetTitle || 'Trade'}</Heading>}
+      subHeader={
+        <Text className="text-textSecondary" variant="small">
+          <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+        </Text>
+      }
       rightHeader={rightHeaderComponent}
       footer={
         <WidgetButtons

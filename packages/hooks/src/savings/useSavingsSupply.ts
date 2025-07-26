@@ -3,7 +3,6 @@ import { WriteHook, WriteHookParams } from '../hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
-import { TENDERLY_CHAIN_ID } from '../constants';
 
 export function useSavingsSupply({
   amount,
@@ -37,7 +36,7 @@ export function useSavingsSupply({
     functionName: 'deposit',
     args: [amount, connectedAddress!, ref],
     chainId,
-    gas: chainId === TENDERLY_CHAIN_ID ? gas || 170000n : gas, // Set gas limit for Tenderly to prevent errors due to pot.drip() not being called every block
+    gas,
     enabled,
     onSuccess,
     onError,

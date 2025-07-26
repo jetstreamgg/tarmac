@@ -1,51 +1,62 @@
-import { Intent } from '@/lib/enums';
-import { HStack } from '@/modules/layout/components/HStack';
-import { t } from '@lingui/core/macro';
-import { ModuleCard } from '@/modules/balances/components/ModuleCard';
-import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { useRef } from 'react';
+import { Carousel, CarouselContent, CarouselItem, CarouselControls } from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
+import Fade from 'embla-carousel-fade';
+import { RewardsCard } from './modules/RewardsCard';
+import { SavingsCard } from './modules/SavingsCard';
+import { TradeCard } from './modules/TradeCard';
+import { UpgradeCard } from './modules/UpgradeCard';
+import { StakingRewardsCard } from './modules/StakingRewardsCard';
+import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 
 export function BalancesModuleShowcase() {
   const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
-  const chainId = useChainId();
-  const isL2 = isL2ChainId(chainId);
+
+  const { bpi } = useBreakpointIndex();
+  const isMobileOrTablet = bpi < BP['2xl'];
+  // Use a ref to tell the carousel what will be the root of the mouse events
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   return (
-    <HStack className="mb-8 flex-wrap items-stretch gap-3 space-x-0">
-      {!isRestrictedBuild && (
-        <>
-          <ModuleCard
-            intent={Intent.REWARDS_INTENT}
-            module={t`Rewards`}
-            title={t`Access rewards without giving up control`}
-            className="bg-sky-blue"
-            notAvailable={isL2}
-            soon={isL2}
-          />
-          <ModuleCard
-            intent={Intent.SAVINGS_INTENT}
-            module={t`Savings`}
-            title={t`Access the Sky Savings Rate`}
-            className="bg-sky-purple"
-          />
-        </>
-      )}
-      {!isRestrictedMiCa && (
-        <ModuleCard
-          intent={Intent.TRADE_INTENT}
-          module={t`Trade`}
-          title={t`Trade your crypto tokens`}
-          className="bg-sky-purplish-blue"
-        />
-      )}
-      <ModuleCard
-        intent={Intent.UPGRADE_INTENT}
-        module={t`Upgrade`}
-        title={t`Upgrade your DAI and MKR`}
-        className="bg-sky-pink"
-        notAvailable={isL2}
-      />
-    </HStack>
+    <Carousel
+      ref={carouselRef}
+      opts={{ loop: true, watchDrag: isMobileOrTablet }}
+      plugins={[
+        Autoplay({
+          delay: 5000,
+          stopOnInteraction: false,
+          stopOnMouseEnter: true,
+          rootNode: emblaRoot => carouselRef.current || emblaRoot
+        }),
+        Fade()
+      ]}
+      className="relative mb-8"
+    >
+      <CarouselContent>
+        {!isRestrictedBuild && (
+          <CarouselItem>
+            <RewardsCard />
+          </CarouselItem>
+        )}
+        {!isRestrictedBuild && (
+          <CarouselItem>
+            <SavingsCard />
+          </CarouselItem>
+        )}
+        <CarouselItem>
+          <StakingRewardsCard />
+        </CarouselItem>
+        <CarouselItem>
+          <UpgradeCard />
+        </CarouselItem>
+        {!isRestrictedMiCa && (
+          <CarouselItem>
+            <TradeCard />
+          </CarouselItem>
+        )}
+      </CarouselContent>
+      <CarouselControls className="absolute bottom-1 left-1/2 z-10 -translate-x-1/2 2xl:bottom-4" />
+    </Carousel>
   );
 }

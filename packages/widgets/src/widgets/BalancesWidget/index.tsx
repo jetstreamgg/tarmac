@@ -1,4 +1,4 @@
-import { Heading } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -141,6 +141,11 @@ const BalancesWidgetWrapped = ({
         <Heading variant="x-large">
           <Trans>Balances</Trans>
         </Heading>
+      }
+      subHeader={
+        <Text className="text-textSecondary" variant="small">
+          <Trans>Manage your Sky Ecosystem funds across supported networks</Trans>
+        </Text>
       }
       rightHeader={rightHeaderComponent}
       footer={

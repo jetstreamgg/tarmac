@@ -22,7 +22,7 @@ import { isTestnetId } from '@jetstreamgg/sky-utils';
 export const tenderly = {
   ...mainnet,
   id: TENDERLY_CHAIN_ID,
-  name: 'mainnet_2025_apr_15_0',
+  name: 'mainnet_yusds_2025_jul_13_0',
   network: 'tenderly',
   // This is used by RainbowKit to display a chain icon for small screens
   iconUrl: 'tokens/weth.svg',

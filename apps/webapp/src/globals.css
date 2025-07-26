@@ -84,10 +84,6 @@
   --background-image-primaryFocus: var(--primary-purple-40);
   --background-image-primaryTransparent: var(--service-purple-transparent);
   --background-image-app-background: URL('/images/background.png');
-  --background-image-sky-blue: URL('/images/sky-blue.png');
-  --background-image-sky-purple: URL('/images/sky-purple.png');
-  --background-image-sky-pink: URL('/images/sky-pink.png');
-  --background-image-sky-purplish-blue: URL('/images/sky-purplish-blue.png');
   --background-image-nav-light: var(--service-nav-light);
 
   --radius-lg: 10px;

@@ -27,7 +27,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
-import { Heading } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { getValidatedState } from '@widgets/lib/utils';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
@@ -993,6 +993,11 @@ const SavingsWidgetWrapped = ({
         <Heading variant="x-large">
           <Trans>Sky Savings Rate</Trans>
         </Heading>
+      }
+      subHeader={
+        <Text className="text-textSecondary" variant="small">
+          <Trans>Use USDS or USDC to access the Sky Savings Rate</Trans>
+        </Text>
       }
       rightHeader={rightHeaderComponent}
       footer={

@@ -8,7 +8,7 @@ import { useLingui } from '@lingui/react';
 import { Button } from '@/components/ui/button';
 import { VStack } from '@/modules/layout/components/VStack';
 import { RewardsRate, SavingsRate } from './HighlightRate';
-import { Logo } from './HighlightLogo';
+import { Logo, LogoName } from './HighlightLogo';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { Trans } from '@lingui/react/macro';
@@ -70,7 +70,7 @@ export const LinkedActionCard = ({
 
   return (
     <Card variant="spotlight" className="relative w-full overflow-hidden xl:flex-1">
-      {<Logo logoName={isLastStep ? intent : la} />}
+      {<Logo logoName={(isLastStep ? intent : la) as LogoName} />}
       <CardContent className="relative z-10">
         <VStack className="space-between gap-4">
           <Heading>

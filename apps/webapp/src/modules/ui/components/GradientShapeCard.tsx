@@ -41,7 +41,7 @@ export function GradientShapeCard({
             clipPath: 'polygon(100% 0, 100% 100%, 0 100%, 53% 0)'
           }}
         />
-        <div className="relative z-10 flex h-full w-full flex-col p-3 lg:flex-row lg:items-center lg:justify-between lg:p-6">
+        <div className="relative z-10 flex h-full w-full flex-col p-3 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
           {children}
         </div>
       </div>

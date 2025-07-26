@@ -28,7 +28,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
   const wrapper = WagmiWrapper;
   const SKY_AMOUNT = '720000';
   const URN_INDEX = 0n;
-  const ILK_NAME = getIlkName(TENDERLY_CHAIN_ID, 2);
+  const ILK_NAME = getIlkName(2);
 
   await Promise.all([
     setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], SKY_AMOUNT),
@@ -154,7 +154,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
   });
 
   it('Should delegate and select reward contract', async () => {
-    const TEST_DELEGATE = '0x87792AB6Ce7e8fdA320FeB71624D009d1717A66d';
+    const TEST_DELEGATE = '0x173a1c04b79ed9266721c1154daa29addc0b9558'; //BLUE
     const TEST_REWARD_CONTRACT = lsSkyUsdsRewardAddress[TENDERLY_CHAIN_ID];
 
     const urnAddress = await getUrnAddress(URN_INDEX, useUrnAddress);
@@ -178,7 +178,7 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
     );
     await waitFor(
       () => {
-        expect(resultUrnSelectedDelegate.current.data).toBe(TEST_DELEGATE);
+        expect(resultUrnSelectedDelegate.current.data?.toLowerCase()).toBe(TEST_DELEGATE.toLowerCase());
         return;
       },
       { timeout: 5000 }

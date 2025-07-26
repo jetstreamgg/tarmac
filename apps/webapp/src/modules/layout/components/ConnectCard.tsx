@@ -9,7 +9,7 @@ import { useChainId } from 'wagmi';
 import { getChainSpecificText } from '@jetstreamgg/sky-utils';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 
-export function ConnectCard({ intent }: { intent: Intent }) {
+export function ConnectCard({ intent, className }: { intent: Intent; className?: string }) {
   const connect = useCustomConnectModal();
   const chainId = useChainId();
 
@@ -73,6 +73,7 @@ export function ConnectCard({ intent }: { intent: Intent }) {
       colorLeft="radial-gradient(100% 177.78% at 100% 0%, #A273FF 0%, #4331E9 100%)"
       colorMiddle="radial-gradient(circle at 0% 100%, #FFCD6B 0%, #EB5EDF 150%)"
       colorRight="#2A197D"
+      className={className}
     >
       <div className="w-[80%] space-y-2 lg:w-2/3" data-testid="connect-wallet-card">
         <Heading className="mb-2">{heading[intent]}</Heading>

@@ -1,11 +1,18 @@
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-
+import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 import { cn } from '@/lib/utils';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
-const Tooltip = TooltipPrimitive.Root;
+const Tooltip = ({ open, ...props }: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) => {
+  const isTouchDevice = useIsTouchDevice();
+
+  // Force tooltip to be closed on touch devices
+  const controlledOpen = isTouchDevice ? false : open;
+
+  return <TooltipPrimitive.Root open={controlledOpen} {...props} />;
+};
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 

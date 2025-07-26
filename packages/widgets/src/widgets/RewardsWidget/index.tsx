@@ -32,7 +32,7 @@ import { useLingui } from '@lingui/react';
 import { useAccount, useChainId } from 'wagmi';
 import { RewardsTransactionStatus } from './components/RewardsTransactionStatus';
 import { ManagePosition } from './components/ManagePosition';
-import { Heading } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { RewardsOverview } from './components/RewardsOverview';
 import { Button } from '@widgets/components/ui/button';
 import { getValidatedState } from '../../lib/utils';
@@ -397,8 +397,10 @@ const RewardsWidgetWrapped = ({
 
   useEffect(() => {
     // Only the supply flow requires token allowance
-    setShowStepIndicator(widgetState.flow === RewardsFlow.SUPPLY);
-  }, [widgetState.flow]);
+    setShowStepIndicator(
+      widgetState.flow === RewardsFlow.SUPPLY && widgetState.action !== RewardsAction.CLAIM
+    );
+  }, [widgetState.flow, widgetState.action]);
 
   useEffect(() => {
     if (widgetState.action === RewardsAction.CLAIM) {
@@ -801,6 +803,13 @@ const RewardsWidgetWrapped = ({
             </Button>
           </CardAnimationWrapper>
         )
+      }
+      subHeader={
+        widgetState.action === RewardsAction.OVERVIEW ? (
+          <Text className="text-textSecondary" variant="small">
+            <Trans>Use USDS to access Sky Token Rewards</Trans>
+          </Text>
+        ) : undefined
       }
       rightHeader={rightHeaderComponent}
       footer={

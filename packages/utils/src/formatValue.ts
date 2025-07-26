@@ -67,7 +67,8 @@ export function formatBigInt(amount: bigint, options?: FormatOptions): string {
 
 export function formatNumber(amount: number, options?: FormatOptions): string {
   const absAmount = Math.abs(amount);
-  const smallestNumber = 1 / Math.pow(10, SMALL_NUM_DECIMALS); //0.0001 if SMALL_NUM_DECIMALS is 4
+  // If the maxDecimals is provided, set the smallestNumber with that amount of decimals
+  const smallestNumber = 1 / Math.pow(10, options?.maxDecimals || SMALL_NUM_DECIMALS); //0.0001 if SMALL_NUM_DECIMALS is 4
   const lessThanSmallest = absAmount > 0 && absAmount < smallestNumber / 2;
   const amountToFormat = lessThanSmallest ? smallestNumber : amount;
   const result = createNumberFormatter({ ...options, amount: amountToFormat }).format(

@@ -22,46 +22,61 @@ export const TradeHeader = ({
   setSlippage,
   isEthFlow = false,
   ttl,
-  setTtl,
-  originToken,
-  onExternalLinkClicked
-}: PropTypes): React.ReactElement => {
+  setTtl
+}: Omit<PropTypes, 'originToken' | 'onExternalLinkClicked'>): React.ReactElement => {
   const ref = useRef<HTMLDivElement>(null);
   const collisionBoundary = ref.current?.parentElement?.parentElement || null;
+
+  return (
+    <div ref={ref} className="flex items-baseline justify-between gap-2">
+      <Heading variant="x-large">
+        <Trans>Trade</Trans>
+      </Heading>
+      <TradeConfigMenu
+        boundary={collisionBoundary}
+        slippage={slippage}
+        setSlippage={setSlippage}
+        isEthFlow={isEthFlow}
+        ttl={ttl}
+        setTtl={setTtl}
+      />
+    </div>
+  );
+};
+
+export const TradeSubHeader = () => (
+  <Text className="text-textSecondary" variant="small">
+    <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+  </Text>
+);
+
+export const TradePoweredBy = ({
+  onExternalLinkClicked
+}: {
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+}) => (
+  <Text className="text-text mb-4 text-sm font-normal leading-none">
+    Powered by{' '}
+    <ExternalLink
+      href="https://cow.fi/"
+      showIcon={false}
+      className="underline"
+      onExternalLinkClicked={onExternalLinkClicked}
+    >
+      CoW Protocol
+    </ExternalLink>
+  </Text>
+);
+
+export const TradeWarning = ({ originToken }: { originToken?: TokenForChain }) => {
   const { chainId } = useAccount();
   const shouldShowUSDTWarning = originToken?.symbol === 'USDT' && chainId === sepolia.id;
 
+  if (!shouldShowUSDTWarning) return null;
+
   return (
-    <div>
-      <div ref={ref} className="flex items-baseline justify-between gap-2">
-        <Heading variant="x-large">
-          <Trans>Trade</Trans>
-        </Heading>
-        <TradeConfigMenu
-          boundary={collisionBoundary}
-          slippage={slippage}
-          setSlippage={setSlippage}
-          isEthFlow={isEthFlow}
-          ttl={ttl}
-          setTtl={setTtl}
-        />
-      </div>
-      <Text className="text-text mt-6 text-sm font-normal leading-none">
-        Powered by{' '}
-        <ExternalLink
-          href="https://cow.fi/"
-          showIcon={false}
-          className="underline"
-          onExternalLinkClicked={onExternalLinkClicked}
-        >
-          CoW Protocol
-        </ExternalLink>
-      </Text>
-      {shouldShowUSDTWarning && (
-        <Text className="mt-1 text-[11px] font-normal leading-none text-orange-400">
-          Need to reset the allowance to 0 before approving a new amount
-        </Text>
-      )}
-    </div>
+    <Text className="mt-1 text-[11px] font-normal leading-none text-orange-400">
+      Need to reset the allowance to 0 before approving a new amount
+    </Text>
   );
 };

@@ -23,7 +23,6 @@ import { Button } from '@widgets/components/ui/button';
 import { Edit } from '@widgets/shared/components/icons/Edit';
 import { OnStakeUrnChange } from '..';
 import { fromHex, trim } from 'viem';
-import { useChainId } from 'wagmi';
 
 interface UrnPositionProps {
   index: bigint;
@@ -38,7 +37,6 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
   claimExecute,
   onStakeUrnChange
 }) => {
-  const chainId = useChainId();
   const { data: urnAddress } = useStakeUrnAddress(index);
   const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
     urn: urnAddress || ZERO_ADDRESS
@@ -48,7 +46,7 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
     urn: urnAddress || ZERO_ADDRESS
   });
 
-  const { data: vaultData } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(chainId, 2));
+  const { data: vaultData } = useVault(urnAddress || ZERO_ADDRESS, getIlkName(2));
 
   const { setWidgetState } = useContext(WidgetContext);
 

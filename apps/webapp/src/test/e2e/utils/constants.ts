@@ -1,4 +1,4 @@
-export const TEST_ADDRESS = '0xdE70d75Bee022C0706C584042836a44ABc5bB863';
+export const TEST_ADDRESS = '0xc45806d20044407f33ef0d0885991c738639e5b3';
 export enum NetworkName {
   mainnet = 'mainnet',
   base = 'base',

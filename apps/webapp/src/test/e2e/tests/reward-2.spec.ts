@@ -190,13 +190,10 @@ test('Claim rewards', async ({ page }) => {
   await page.getByTestId('widget-container').getByRole('button', { name: 'Claim' }).click();
   await expect(page.getByText('Success!', { exact: true })).toBeVisible();
   await page.getByRole('tab', { name: 'Balances' }).click();
-  await expect(page.getByRole('heading', { name: 'Balances' })).toBeVisible();
+  await expect(page.getByTestId('widget-container').getByRole('heading', { name: 'Balances' })).toBeVisible();
   await expect(skyLocator).toBeVisible();
   await expect(skyLocator).not.toHaveText(skyInitialBalance);
   const skyNewBalance = await skyLocator.innerText();
 
   expect(parseNumberFromString(skyNewBalance)).toBeGreaterThan(parseNumberFromString(skyInitialBalance));
-
-  //TODO: uncomment this if we add more tests
-  //await withdrawAllAndReset(page);
 });

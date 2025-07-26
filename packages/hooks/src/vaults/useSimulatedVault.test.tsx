@@ -54,7 +54,7 @@ describe('Hook should return error messages for incorrect vault parameters', asy
   it('shows insufficient collateral when trying to draw more than the collateral value from a position with existing debt', async () => {
     const colAmt = parseEther('100');
     const existingDebtAmt = parseEther('30000');
-    const newDebtAmt = parseEther('130000');
+    const newDebtAmt = parseEther('200000');
 
     const { result } = renderHook(() => useSimulatedVault(colAmt, newDebtAmt, existingDebtAmt), { wrapper });
 

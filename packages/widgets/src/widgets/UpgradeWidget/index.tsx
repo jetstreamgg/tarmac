@@ -13,7 +13,7 @@ import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { Heading } from '@widgets/shared/components/ui/Typography';
+import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useAccount, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -804,6 +804,11 @@ export function UpgradeWidgetWrapped({
         <Heading variant="x-large">
           <Trans>Upgrade</Trans>
         </Heading>
+      }
+      subHeader={
+        <Text className="text-textSecondary" variant="small">
+          <Trans>Upgrade your DAI to USDS and MKR to SKY</Trans>
+        </Text>
       }
       rightHeader={rightHeaderComponent}
       footer={

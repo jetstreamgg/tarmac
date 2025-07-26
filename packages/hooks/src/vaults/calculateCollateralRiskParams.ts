@@ -1,7 +1,5 @@
 import { math } from '@jetstreamgg/sky-utils';
 import { CollateralRiskParameters } from './vault';
-import { formatUnits } from 'viem';
-import { RAD_PRECISION, WAD_PRECISION } from '@jetstreamgg/sky-utils';
 
 type RiskParamInputs = {
   par: bigint;
@@ -24,7 +22,7 @@ export function calculateCollateralRiskParams({
   duty,
   par
 }: RiskParamInputs): CollateralRiskParameters {
-  const debtCeiling = BigInt(formatUnits(line, RAD_PRECISION - WAD_PRECISION));
+  const debtCeiling = math.convertRadToWad(line);
   const totalDaiDebt = ilkArt && math.debtValue(ilkArt, rate);
   return {
     delayedPrice: math.delayedPrice(par, spot, mat),
