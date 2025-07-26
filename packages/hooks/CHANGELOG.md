@@ -1,5 +1,11 @@
 # @jetstreamgg/sky-hooks
 
+## 1.0.2
+
+### Patch Changes
+
+- 905f893: Updated mkrSky mainnet contract address in hooks package
+
 ## 1.0.1
 
 ### Patch Changes
