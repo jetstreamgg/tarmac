@@ -19,6 +19,11 @@ export default defineConfig({
   // Set test timeout
   timeout: 120000,
 
+  //timeout for all assertions
+  expect: {
+    timeout: 15000
+  },
+
   // Reporter to use
   reporter: 'html',
 

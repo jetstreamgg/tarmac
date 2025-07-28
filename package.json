@@ -10,22 +10,22 @@
     "preinstall": "pnpm dlx only-allow pnpm",
     "prettier": "prettier --write --cache .",
     "lint": "eslint --cache",
-    "build": "pnpm -r run build",
+    "build": "pnpm messages && pnpm -r run build",
     "build:packages": "pnpm -r --filter='./packages/**' build",
     "build:restricted": "VITE_PUBLIC_RESTRICTED_BUILD=true pnpm -r run build",
-    "dev": "pnpm messages:compile && pnpm -F webapp dev",
-    "dev:packages": "pnpm messages:compile && pnpm --parallel -F './packages/**' dev",
+    "dev": "pnpm messages && pnpm -F webapp dev",
+    "dev:packages": "pnpm messages && pnpm --parallel -F './packages/**' dev",
     "preview": "pnpm --filter='./apps/webapp' preview",
     "preview:restricted": "pnpm --filter='./apps/webapp' preview:restricted",
     "test": "pnpm -r --filter='!./packages/hooks' --parallel run test && pnpm test:hooks",
     "test:coverage": "pnpm vnet:fork && pnpm -r --workspace-concurrency=1 run test:coverage && pnpm vnet:delete",
     "test:coverage:ci": "pnpm -r --workspace-concurrency=1 --filter './packages/**' run test:coverage",
-    "test:hooks": "pnpm vnet:fork && pnpm --filter='./packages/hooks' run test src/savings/supplyAndWithdrawSavings.test.tsx && pnpm vnet:delete",
+    "test:hooks": "pnpm vnet:fork && pnpm --filter='./packages/hooks' run test && pnpm vnet:delete",
     "test:widgets": "pnpm vnet:fork && pnpm --filter='./packages/widgets' run test && pnpm vnet:delete",
     "test:utils": "pnpm --filter='./packages/utils' run test",
-    "e2e": "pnpm vnet:delete:all && pnpm vnet:fork && pnpm -F webapp e2e",
-    "e2e:no-vnet": "pnpm -F webapp e2e",
-    "e2e:ui": "pnpm vnet:delete:all && pnpm vnet:fork && pnpm -F webapp e2e:ui",
+    "e2e": "pnpm messages && pnpm vnet:delete:all && pnpm vnet:fork && pnpm -F webapp e2e",
+    "e2e:no-vnet": "pnpm messages && pnpm -F webapp e2e",
+    "e2e:ui": "pnpm messages && pnpm vnet:delete:all && pnpm vnet:fork && pnpm -F webapp e2e:ui",
     "vnet:fork": "node --env-file=.env ./scripts/forkVnet.ts",
     "vnet:fork:ci": "node ./scripts/forkVnet.ts",
     "vnet:delete": "node --env-file=.env ./scripts/deleteVnet.ts",
@@ -95,7 +95,8 @@
   },
   "pnpm": {
     "overrides": {
-      "esbuild@<=0.24.2": "^0.25.0"
+      "esbuild@<=0.24.2": "^0.25.0",
+      "@babel/runtime@7.26.7": "7.26.10"
     }
   }
 }

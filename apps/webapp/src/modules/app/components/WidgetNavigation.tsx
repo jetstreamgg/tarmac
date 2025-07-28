@@ -14,6 +14,13 @@ import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipPortal
+} from '@/components/ui/tooltip';
 
 interface WidgetNavigationProps {
   widgetContent: WidgetContent;
@@ -128,35 +135,50 @@ export function WidgetNavigation({
           className={`sticky top-0 z-20 flex w-full justify-around rounded-none rounded-t-3xl border-b p-3 backdrop-blur-2xl md:border-none md:p-0 md:backdrop-filter-none ${hideTabs ? 'hidden' : ''}`}
           data-testid="widget-navigation"
         >
-          {widgetContent.map(([widgetIntent, label, icon, , comingSoon, options]) => (
-            <div key={widgetIntent} className="flex grow basis-[15%] justify-center">
-              <TabsTrigger
-                variant="icons"
-                value={widgetIntent}
-                className={cn(
-                  'text-textSecondary data-[state=active]:text-text w-full px-1 md:px-2',
-                  'before:opacity-0',
-                  'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)] disabled:before:opacity-0 disabled:hover:before:opacity-0',
-                  tabGlowClasses,
-                  intent === widgetIntent && 'before:opacity-100 hover:before:opacity-100'
-                )}
-                disabled={options?.disabled || false}
-              >
-                {!isMobile && icon({ color: 'inherit' })}
-                <Text variant="small" className="leading-4 text-inherit">
-                  <Trans>{label}</Trans>
-                </Text>
-                {comingSoon && (
-                  <Text
-                    variant="small"
-                    className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-textSecondary absolute left-1/2 top-0 rounded-full px-1.5 py-0 md:px-2 md:py-1"
-                  >
-                    <Trans>Soon</Trans>
-                  </Text>
-                )}
-              </TabsTrigger>
-            </div>
-          ))}
+          <TooltipProvider>
+            {widgetContent.map(([widgetIntent, label, icon, , comingSoon, options, description]) => (
+              <div key={widgetIntent} className="flex grow basis-[15%] justify-center">
+                <TabsTrigger
+                  variant="icons"
+                  value={widgetIntent}
+                  className={cn(
+                    'text-textSecondary data-[state=active]:text-text w-full px-1 md:px-2',
+                    'before:opacity-0',
+                    'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)] disabled:before:opacity-0 disabled:hover:before:opacity-0',
+                    tabGlowClasses,
+                    intent === widgetIntent && 'before:opacity-100 hover:before:opacity-100'
+                  )}
+                  disabled={options?.disabled || false}
+                >
+                  <Tooltip delayDuration={150}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        {!isMobile && icon({ color: 'inherit' })}
+                        <Text variant="small" className="leading-4 text-inherit">
+                          <Trans>{label}</Trans>
+                        </Text>
+                      </div>
+                    </TooltipTrigger>
+                    {description && !isMobile && (
+                      <TooltipPortal>
+                        <TooltipContent>
+                          <p className="max-w-xs text-sm">{description}</p>
+                        </TooltipContent>
+                      </TooltipPortal>
+                    )}
+                  </Tooltip>
+                  {comingSoon && (
+                    <Text
+                      variant="small"
+                      className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-textSecondary absolute left-1/2 top-0 rounded-full px-1.5 py-0 md:px-2 md:py-1"
+                    >
+                      <Trans>Soon</Trans>
+                    </Text>
+                  )}
+                </TabsTrigger>
+              </div>
+            ))}
+          </TooltipProvider>
         </TabsList>
         <LinkedActionWrapper />
         <AnimatePresence initial={false} mode="popLayout">

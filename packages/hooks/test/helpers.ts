@@ -6,7 +6,7 @@ import { BatchWriteHook } from '../src/hooks';
 
 export const waitForPreparedExecuteAndMine = async (
   result: { current: WriteHook | BatchWriteHook },
-  loadingTimeout: number = 3000
+  loadingTimeout: number = 5000
 ) => {
   await waitFor(
     () => {

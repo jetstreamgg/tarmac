@@ -11,7 +11,12 @@ import { Card } from '@widgets/components/ui/card';
 import { CopyToClipboard } from '@widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
-import { isBaseChainId, isArbitrumChainId } from '@jetstreamgg/sky-utils';
+import {
+  isBaseChainId,
+  isArbitrumChainId,
+  isOptimismChainId,
+  isUnichainChainId
+} from '@jetstreamgg/sky-utils';
 import { BalancesFlow } from '../constants';
 
 export const BalancesHeader = ({
@@ -34,6 +39,8 @@ export const BalancesHeader = ({
   );
   const isBaseChain = useMemo(() => isBaseChainId(chainId), [chainId]);
   const isArbitrumChain = useMemo(() => isArbitrumChainId(chainId), [chainId]);
+  const isOptimismChain = useMemo(() => isOptimismChainId(chainId), [chainId]);
+  const isUnichainChain = useMemo(() => isUnichainChainId(chainId), [chainId]);
 
   const jazziconComponent = useMemo(() => {
     return address ? <Jazzicon diameter={24} seed={jsNumberForAddress(address)} /> : null;
@@ -90,6 +97,38 @@ export const BalancesHeader = ({
               onExternalLinkClicked={onExternalLinkClicked}
             >
               <span className="inline">bridge your assets to Arbitrum.</span>
+            </ExternalLink>
+          </Text>
+        </div>
+      )}
+      {isOptimismChain && (
+        <div className="mt-3 flex">
+          <Text variant="medium">
+            Learn how to{' '}
+            <ExternalLink
+              href="https://app.optimism.io/bridge"
+              iconSize={11}
+              className="text-textEmphasis inline"
+              inline
+              onExternalLinkClicked={onExternalLinkClicked}
+            >
+              <span className="inline">bridge your assets to OP Mainnet.</span>
+            </ExternalLink>
+          </Text>
+        </div>
+      )}
+      {isUnichainChain && (
+        <div className="mt-3 flex">
+          <Text variant="medium">
+            Learn how to{' '}
+            <ExternalLink
+              href="https://www.unichain.org/bridge"
+              iconSize={11}
+              className="text-textEmphasis inline"
+              inline
+              onExternalLinkClicked={onExternalLinkClicked}
+            >
+              <span className="inline">bridge your assets to Unichain.</span>
             </ExternalLink>
           </Text>
         </div>
