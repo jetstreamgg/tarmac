@@ -24,18 +24,24 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
 
+  // Check if MKR exists on current chain
+  const mkrAddress = TOKENS.mkr.address[chainId];
+  const mkrExistsOnChain = !!mkrAddress;
+
   // Get MKR balance to determine if governance notification will actually show
   const { data: mkrBalance, isLoading: mkrBalanceLoading } = useTokenBalance({
     address,
-    token: TOKENS.mkr.address[chainId],
+    token: mkrAddress,
     chainId: chainId,
-    enabled: isConnected && !!address
+    enabled: isConnected && !!address && mkrExistsOnChain
   });
 
   // Check if user is eligible for governance migration notification
   const minimumMkrBalance = parseEther('0.05');
-  const mkrBalanceLoaded = isConnected ? mkrBalance !== undefined && !mkrBalanceLoading : true;
-  const hasEnoughMkr = !!(mkrBalance && mkrBalance.value >= minimumMkrBalance);
+  const mkrBalanceLoaded = isConnected
+    ? !mkrExistsOnChain || (mkrBalance !== undefined && !mkrBalanceLoading)
+    : true;
+  const hasEnoughMkr = !!(mkrExistsOnChain && mkrBalance && mkrBalance.value >= minimumMkrBalance);
 
   // Define notification configurations with priority order
   const notificationConfigs: NotificationConfig[] = useMemo(
@@ -50,7 +56,7 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
         id: 'governance-migration',
         priority: 2,
         isReady: () => mkrBalanceLoaded, // Wait for MKR balance to load
-        checkConditions: () => isConnected && hasEnoughMkr,
+        checkConditions: () => isConnected && mkrExistsOnChain && hasEnoughMkr,
         hasBeenShown: () => localStorage.getItem(GOVERNANCE_MIGRATION_NOTIFICATION_KEY) === 'true'
       },
       {
@@ -60,7 +66,7 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
         hasBeenShown: () => localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true'
       }
     ],
-    [isConnected, mkrBalanceLoaded, hasEnoughMkr, BATCH_TX_ENABLED, CHATBOT_ENABLED]
+    [isConnected, mkrBalanceLoaded, mkrExistsOnChain, hasEnoughMkr, BATCH_TX_ENABLED, CHATBOT_ENABLED]
   );
 
   return notificationConfigs;

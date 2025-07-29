@@ -17,7 +17,14 @@ import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useAccount, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDebounce, getTransactionLink, useIsSafeWallet, math, formatBigInt } from '@jetstreamgg/sky-utils';
+import {
+  useDebounce,
+  getTransactionLink,
+  useIsSafeWallet,
+  math,
+  formatBigInt,
+  useIsMetaMaskWallet
+} from '@jetstreamgg/sky-utils';
 import { useTokenAllowance } from '@jetstreamgg/sky-hooks';
 import { useUpgraderManager } from './hooks/useUpgraderManager';
 import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';
@@ -258,6 +265,7 @@ export function UpgradeWidgetWrapped({
   });
 
   const { data: batchSupported, isLoading: isBatchSupportLoading } = useIsBatchSupported();
+  const isMetaMaskWallet = useIsMetaMaskWallet();
 
   const {
     data: allowance,
@@ -273,7 +281,10 @@ export function UpgradeWidgetWrapped({
         : mkrSkyAddress[chainId as keyof typeof mkrSkyAddress]
   });
   const hasAllowance = !!(allowance && debouncedOriginAmount !== 0n && allowance >= debouncedOriginAmount);
-  const shouldUseBatch = !!batchEnabled && !!batchSupported && !hasAllowance;
+  // MKR to SKY conversion is not supported in MetaMask as a bundled transaction as it's throwing missleading warnings
+  // So we we avoid the bundled Upgrade MKR flow in MetaMask for now
+  const shouldAvoidBundledFlow = originToken.symbol === 'MKR' && isMetaMaskWallet;
+  const shouldUseBatch = !!batchEnabled && !!batchSupported && !hasAllowance && !shouldAvoidBundledFlow;
 
   const actionManager = useUpgraderManager({
     token: originToken,
@@ -837,7 +848,7 @@ export function UpgradeWidgetWrapped({
         ) : widgetState.screen === UpgradeScreen.REVIEW ? (
           <CardAnimationWrapper key="widget-transaction-review">
             <UpgradeTransactionReview
-              batchEnabled={batchEnabled}
+              batchEnabled={batchEnabled && !shouldAvoidBundledFlow}
               setBatchEnabled={setBatchEnabled}
               isBatchTransaction={shouldUseBatch}
               originToken={originToken}
@@ -846,6 +857,7 @@ export function UpgradeWidgetWrapped({
               targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
               needsAllowance={!hasAllowance}
               legalBatchTxUrl={legalBatchTxUrl}
+              isBatchFlowSupported={!shouldAvoidBundledFlow}
             />
           </CardAnimationWrapper>
         ) : (

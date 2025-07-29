@@ -26,6 +26,7 @@ import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToas
 import { useNotificationQueue } from '../hooks/useNotificationQueue';
 import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export function MainApp() {
   const {
@@ -35,6 +36,7 @@ export function MainApp() {
     updateLinkedActionConfig,
     setSelectedRewardContract
   } = useConfigContext();
+  const { isAuthorized } = useConnectedContext();
 
   const { bpi } = useBreakpointIndex();
 
@@ -112,9 +114,9 @@ export function MainApp() {
   // 3. Chat Notification (lowest priority)
 
   // Display notifications based on queue priority
-  useBatchTxNotification({ isAuthorized: shouldShowNotification('batch-tx') });
-  useGovernanceMigrationToast({ isAuthorized: shouldShowNotification('governance-migration') });
-  useChatNotification({ isAuthorized: shouldShowNotification('chat') });
+  useBatchTxNotification(isAuthorized && shouldShowNotification('batch-tx'));
+  useGovernanceMigrationToast(isAuthorized && shouldShowNotification('governance-migration'));
+  useChatNotification(isAuthorized && shouldShowNotification('chat'));
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
