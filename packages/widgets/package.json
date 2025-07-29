@@ -44,7 +44,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "copy-to-clipboard": "^3.3.3",
-    "lucide-react": "^0.525.0",
+    "lucide-react": "^0.533.0",
     "react-jazzicon": "^1.0.4",
     "tailwind-merge": "^2.6.0",
     "tailwind-variants": "^0.3.1",
