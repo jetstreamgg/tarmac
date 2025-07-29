@@ -54,7 +54,7 @@
     "viem": "^2.31.7",
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^3.1.2",
+    "vitest": "^3.2.4",
     "wagmi": "^2.15.6"
   },
   "keywords": [
