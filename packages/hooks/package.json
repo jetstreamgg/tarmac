@@ -44,7 +44,7 @@
     "@tanstack/react-query": "^5.81.5",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.3.0",
-    "@types/react": "^19.1.8",
+    "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.3",
     "@vitest/coverage-v8": "^3.1.2",
     "@wagmi/cli": "^2.3.1",
