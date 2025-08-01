@@ -25,7 +25,7 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query": "^5.84.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "viem": "^2.33.1",
@@ -33,9 +33,9 @@
   },
   "devDependencies": {
     "@lingui/core": "^5.3.3",
-    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query": "^5.84.1",
     "@types/react": "^19.1.9",
-    "typescript": "5.8.3",
+    "typescript": "5.9.2",
     "viem": "^2.33.1",
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4",
