@@ -26,9 +26,11 @@ export function BalancesDetails() {
       <DetailSectionRow>
         <BalancesModuleShowcase />
       </DetailSectionRow>
-      <DetailSectionRow>
-        <ConnectCard intent={Intent.BALANCES_INTENT} className="mb-4" />
-      </DetailSectionRow>
+      {!isConnectedAndAcceptedTerms && (
+        <DetailSectionRow>
+          <ConnectCard intent={Intent.BALANCES_INTENT} className="mb-4" />
+        </DetailSectionRow>
+      )}
       {isConnectedAndAcceptedTerms && isDesktop && (
         <DetailSection title={t`Your funds`}>
           <DetailSectionRow>

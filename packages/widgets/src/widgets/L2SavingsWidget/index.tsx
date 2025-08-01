@@ -168,6 +168,7 @@ const SavingsWidgetWrapped = ({
         disallowedToken => disallowedToken.symbol.toLowerCase() === symbol.toLowerCase()
       )
   );
+  const usdcSupported = allowedSymbolsForValidation.includes('USDC');
 
   const validatedExternalState = getValidatedState(externalWidgetState, allowedSymbolsForValidation);
 
@@ -996,7 +997,11 @@ const SavingsWidgetWrapped = ({
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">
-          <Trans>Use USDS or USDC to access the Sky Savings Rate</Trans>
+          {usdcSupported ? (
+            <Trans>Use USDS or USDC to access the Sky Savings Rate</Trans>
+          ) : (
+            <Trans>Use USDS to access the Sky Savings Rate</Trans>
+          )}
         </Text>
       }
       rightHeader={rightHeaderComponent}

@@ -47,7 +47,6 @@ export interface TokenInputProps {
   buttonsToShow?: number[];
   extraPadding?: boolean;
   enabled?: boolean;
-  gasBufferAmount?: bigint;
   maxIntegerDigits?: number;
   borrowLimitText?: string | undefined;
 }
@@ -74,7 +73,6 @@ export function TokenInput({
   buttonsToShow = [25, 50, 100],
   extraPadding = false,
   enabled = true,
-  gasBufferAmount = 0n,
   borrowLimitText,
   maxIntegerDigits
 }: TokenInputProps): React.ReactElement {
@@ -196,8 +194,7 @@ export function TokenInput({
     const formattedValue = formatUnits(newValue, decimals);
 
     if (max) {
-      const maxValue = balance - gasBufferAmount > 0n ? balance - gasBufferAmount : 0n;
-      updateValue(formatUnits(maxValue, decimals) as `${number}`, e);
+      updateValue(formatUnits(balance, decimals) as `${number}`, e);
       if (typeof onSetMax === 'function') onSetMax(true);
     } else {
       // Truncate the string to two decimal places

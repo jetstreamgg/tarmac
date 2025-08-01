@@ -11,7 +11,7 @@ import { CHATBOT_ENABLED, QueryParams, CHAT_NOTIFICATION_KEY } from '@/lib/const
 import { CHATBOT_NAME } from '@/modules/chat/constants';
 import { Chat } from '@/modules/icons';
 
-export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean }) => {
+export const useChatNotification = (isAuthorized: boolean) => {
   const { dismiss } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
@@ -40,6 +40,12 @@ export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean })
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Only show if authorized by the notification queue
+    if (!isAuthorized) {
+      dismiss();
+      return;
+    }
+
     if (showChat) {
       timerRef.current = setTimeout(() => {
         if (!chatSuggested && searchParams.get(QueryParams.Chat) !== 'true') {
@@ -86,5 +92,5 @@ export const useChatNotification = ({ isAuthorized }: { isAuthorized: boolean })
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [showChat, chatSuggested, searchParams]);
+  }, [showChat, chatSuggested, searchParams, isAuthorized]);
 };

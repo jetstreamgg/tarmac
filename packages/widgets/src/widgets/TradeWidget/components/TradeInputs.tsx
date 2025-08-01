@@ -88,7 +88,6 @@ export function TradeInputs({
 }: TradeInputsProps) {
   const separationPx = 12;
   const separationMb = 'mb-[12px]';
-  const [max, setMax] = useState(false);
   const topInputRef = useRef<HTMLDivElement>(null);
   const bottomInputRef = useRef<HTMLDivElement>(null);
   const [switchPosition, setSwitchPosition] = useState<{ top: string; left: string }>({
@@ -174,10 +173,6 @@ export function TradeInputs({
 
   const switchDisabled = !canSwitchTokens || isQuoteLoading || !enoughTimePassed;
 
-  const GAS_BUFFER = 10000000000000000n; // 0.01 ETH
-  const notEnoughEthForGas =
-    max && originToken?.symbol === 'ETH' && originBalance?.value && originBalance?.value <= GAS_BUFFER;
-
   return (
     <VStack className="relative h-auto items-stretch" gap={0}>
       <motion.div variants={positionAnimations} ref={topInputRef}>
@@ -208,19 +203,11 @@ export function TradeInputs({
             setOriginToken(option as TokenForChain);
             onOriginTokenChange?.(option as TokenForChain);
           }}
-          error={
-            isBalanceError
-              ? t`Insufficient funds`
-              : notEnoughEthForGas
-                ? t`A minimum 0.01 ETH is needed to cover transaction costs. Actual gas fees may be lower.`
-                : undefined
-          }
+          error={isBalanceError ? t`Insufficient funds` : undefined}
           variant="top"
           extraPadding={true}
           showPercentageButtons={isConnectedAndEnabled}
           enabled={isConnectedAndEnabled}
-          gasBufferAmount={originToken?.symbol === 'ETH' ? GAS_BUFFER : 0n}
-          onSetMax={setMax}
         />
       </motion.div>
       <div

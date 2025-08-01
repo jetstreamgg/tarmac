@@ -11,11 +11,9 @@ import { JSX } from 'react';
 
 export const SavingsStatsCardCore = ({
   content,
-  isLoading,
   onExternalLinkClicked
 }: {
   content: JSX.Element;
-  isLoading: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
   const { data: overallSkyData, isLoading: isOverallSkyDataLoading } = useOverallSkyData();
@@ -30,7 +28,7 @@ export const SavingsStatsCardCore = ({
       }
       headerRightContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          {isLoading || isOverallSkyDataLoading ? (
+          {isOverallSkyDataLoading ? (
             <Skeleton className="bg-textSecondary h-5 w-12" />
           ) : (
             <Text className="text-bullish">

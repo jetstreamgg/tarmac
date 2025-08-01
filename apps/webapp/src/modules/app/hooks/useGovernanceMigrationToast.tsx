@@ -1,21 +1,28 @@
-import { useEffect } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { useCallback, useEffect } from 'react';
+import { toast, useToast } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { GOVERNANCE_MIGRATION_NOTIFICATION_KEY } from '@/lib/constants';
 
-export const useGovernanceMigrationToast = ({ isAuthorized }: { isAuthorized: boolean }) => {
+export const useGovernanceMigrationToast = (isAuthorized: boolean) => {
+  const { dismiss } = useToast();
+
+  const onClose = useCallback(() => {
+    localStorage.setItem(GOVERNANCE_MIGRATION_NOTIFICATION_KEY, 'true');
+    dismiss();
+  }, []);
+
   useEffect(() => {
     // Only show if authorized by the notification queue
     if (!isAuthorized) {
+      dismiss();
       return;
     }
 
     // Add a small delay to ensure smooth UX
     const timer = setTimeout(() => {
-      localStorage.setItem(GOVERNANCE_MIGRATION_NOTIFICATION_KEY, 'true');
       toast({
         title: (
           <Text variant="medium" className="text-selectActive">
@@ -45,7 +52,8 @@ export const useGovernanceMigrationToast = ({ isAuthorized }: { isAuthorized: bo
           </VStack>
         ),
         variant: 'info',
-        duration: 15000
+        duration: 15000,
+        onClose
       });
     }, 1000); // 1 second delay
 

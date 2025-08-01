@@ -10,21 +10,88 @@ updates:
     directory: "/"
     target-branch: "development"
     schedule:
-      interval: "daily"
+      interval: "monthly"
+      day: "monday"
       time: "14:00"
       timezone: "Europe/Stockholm"
     allow:
       - dependency-type: "direct"
     open-pull-requests-limit: 15
     groups:
-      # Group Lingui internationalization packages
-      lingui-packages:
+      # Web3 and blockchain-related packages
+      web3-tools:
         patterns:
+          - "viem"
+          - "wagmi"
+          - "@wagmi/*"
+          - "@rainbow-me/rainbowkit"
+          - "ethers"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Core infrastructure (React, TypeScript, Build tools, i18n, etc.)
+      infrastructure:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+          - "typescript"
+          - "@tanstack/*"
+          - "vite"
+          - "@vitejs/*"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "rollup*"
+          - "esbuild"
+          - "vite-plugin-*"
           - "@lingui/*"
           - "lingui"
         update-types:
           - "minor"
           - "patch"
+      
+      # UI components and animation libraries
+      ui-components:
+        patterns:
+          - "@radix-ui/*"
+          - "framer-motion"
+          - "lucide-react"
+          - "embla-carousel*"
+          - "tailwind-merge"
+          - "tailwind-variants"
+          - "class-variance-authority"
+          - "clsx"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Development tools (Testing, Linting, Formatting)
+      dev-tools:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "@playwright/*"
+          - "happy-dom"
+          - "eslint*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "prettier*"
+          - "husky"
+          - "lint-staged"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # All other packages not covered by groups above
+      misc-packages:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]

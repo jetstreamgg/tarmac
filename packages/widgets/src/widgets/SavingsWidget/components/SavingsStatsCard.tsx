@@ -42,7 +42,7 @@ export const SavingsStatsCard = ({
         data-testid="supplied-balance-container"
       >
         <Text className="text-textSecondary text-sm leading-4">{t`Savings balance`}</Text>
-        {isLoading ? (
+        {isLoading && isConnectedAndEnabled ? (
           <Skeleton className="bg-textSecondary h-6 w-10" />
         ) : isConnectedAndEnabled && stats?.savingsBalance !== undefined ? (
           <Text dataTestId="supplied-balance">
@@ -76,7 +76,6 @@ export const SavingsStatsCard = ({
 
   return (
     <SavingsStatsCardCore
-      isLoading={isLoading}
       content={
         <StatsAccordionCard
           chainId={chainId}

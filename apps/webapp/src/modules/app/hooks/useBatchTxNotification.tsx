@@ -10,7 +10,7 @@ import { Zap } from '@/modules/icons/Zap';
 import { BATCH_TX_LEGAL_NOTICE_URL, BATCH_TX_NOTIFICATION_KEY, USER_SETTINGS_KEY } from '@/lib/constants';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 
-export const useBatchTxNotification = ({ isAuthorized }: { isAuthorized: boolean }) => {
+export const useBatchTxNotification = (isAuthorized: boolean) => {
   const { updateUserConfig } = useConfigContext();
   const { dismiss } = useToast();
   const [batchEnabled] = useBatchToggle();
@@ -40,6 +40,12 @@ export const useBatchTxNotification = ({ isAuthorized }: { isAuthorized: boolean
   }, [dismiss, updateUserConfig]);
 
   useEffect(() => {
+    // Only show if authorized by the notification queue
+    if (!isAuthorized) {
+      dismiss();
+      return;
+    }
+
     // Show notification if feature is enabled and hasn't been shown yet
     // (regardless of whether batch is already enabled)
     if (isAuthorized && !notificationShown) {
