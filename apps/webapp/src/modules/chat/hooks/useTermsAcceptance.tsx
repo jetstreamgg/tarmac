@@ -13,17 +13,23 @@ interface UseTermsAcceptanceReturn {
 }
 
 export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
-  const { termsAccepted, setTermsAccepted, showTermsModal, setShowTermsModal, isCheckingTerms, termsError } =
-    useChatContext();
+  const {
+    termsAccepted,
+    setTermsAccepted,
+    showTermsModal,
+    setShowTermsModal,
+    isCheckingTerms,
+    termsError,
+    setTermsError
+  } = useChatContext();
 
   const [isCheckingTermsLocal, setIsCheckingTermsLocal] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [hasCheckedOnce, setHasCheckedOnce] = useState(false);
 
   // Clear error when dialog visibility changes
   useEffect(() => {
     if (showTermsModal) {
-      setError(null);
+      setTermsError(null);
     }
   }, [showTermsModal]);
 
@@ -34,7 +40,7 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
     }
 
     setIsCheckingTermsLocal(true);
-    setError(null);
+    setTermsError(null);
 
     try {
       const response = await checkChatbotTerms();
@@ -56,7 +62,7 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
 
   const acceptTerms = useCallback(
     async (termsVersion: string) => {
-      setError(null);
+      setTermsError(null);
 
       try {
         await signChatbotTerms(termsVersion);
@@ -64,7 +70,7 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
         setShowTermsModal(false);
       } catch (err) {
         console.error('Failed to accept terms:', err);
-        setError('Failed to accept terms. Please try again.');
+        setTermsError('Failed to accept terms. Please try again.');
         throw err;
       }
     },
@@ -78,6 +84,6 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
     acceptTerms,
     checkTermsStatus,
     setShowTermsDialog: setShowTermsModal,
-    error: error || termsError
+    error: termsError
   };
 };

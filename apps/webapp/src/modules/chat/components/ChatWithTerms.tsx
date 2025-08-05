@@ -7,26 +7,47 @@ import { useLingui } from '@lingui/react';
 import { useTermsAcceptance } from '../hooks/useTermsAcceptance';
 import { generateUUID } from '../lib/generateUUID';
 import { MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '../constants';
+import termsMarkdown from '@/content/chatbot_terms.md?raw'; //https://vitejs.dev/guide/assets#importing-asset-as-string
 
+const parseTerms = () => {
+  const lines = termsMarkdown.split('\n');
+  const dateMatch = lines[0]?.match(/^\d{4}-\d{2}-\d{2}$/);
+
+  if (dateMatch) {
+    return {
+      version: dateMatch[0],
+      content: lines.slice(1).join('\n').trim(),
+      isValid: true
+    };
+  }
+
+  // Invalid format
+  console.error('Terms document does not start with expected date format (YYYY-MM-DD)');
+  return {
+    version: '',
+    content: t`# Invalid Terms Format
+
+The terms document could not be loaded because it doesn't follow the expected format.
+
+#### Expected Format:
+The first line must contain a date in YYYY-MM-DD format (e.g., 2025-01-20), followed by the terms content.
+
+#### What This Means:
+We cannot present the terms for acceptance at this time. Please contact support if this issue persists.`,
+    isValid: false
+  };
+};
 interface ChatWithTermsProps {
   sendMessage: (message: string) => void;
 }
 
 export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => {
-  // TODO: This may come from a url
-  const TERMS_VERSION = '2025-07-15';
   const { i18n } = useLingui();
-  const baseTerms = t`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.
-
-Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
-
-Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam.
-
-At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praesentium voluptatum deleniti atque corrupti quos dolores et quas molestias excepturi sint occaecati cupiditate non provident, similique sunt in culpa qui officia deserunt mollitia animi, id est laborum et dolorum fuga.`;
-  // TODO: Remove the Array.fill repetition once we have real terms from URL
-  const TERMS_CONTENT = baseTerms ? Array(3).fill(baseTerms).join('\n\n') : undefined;
+  const parsedTerms = parseTerms();
+  const termsVersion = parsedTerms.version;
+  const termsContent = parsedTerms.content;
+  const termsLoadedSuccessfully = parsedTerms.isValid;
 
   const {
     termsAccepted,
@@ -99,7 +120,7 @@ At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praese
   const handleAcceptTerms = async () => {
     setIsAccepting(true);
     try {
-      await acceptTerms(TERMS_VERSION);
+      await acceptTerms(termsVersion);
     } catch {
       // Error is handled by the hook
     } finally {
@@ -137,10 +158,11 @@ At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis praese
         isOpen={showTermsModal}
         onAccept={handleAcceptTerms}
         onDecline={handleDeclineTerms}
-        termsVersion={TERMS_VERSION}
-        termsContent={TERMS_CONTENT}
+        termsVersion={termsVersion}
+        termsContent={termsContent}
         isLoading={isAccepting || isCheckingTerms}
         error={termsError}
+        termsLoadedSuccessfully={termsLoadedSuccessfully}
       />
     </>
   );
