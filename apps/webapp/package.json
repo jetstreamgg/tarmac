@@ -23,7 +23,10 @@
     "e2e:ui": "playwright test --ui",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit --project tsconfig.production.json"
+    "typecheck": "tsc --noEmit --project tsconfig.production.json",
+    "sync-content": "./scripts/sync-content.sh",
+    "bump-content-version": "./scripts/bump-content-version.sh",
+    "prebuild": "pnpm sync-content"
   },
   "dependencies": {
     "@jetstreamgg/sky-hooks": "workspace:^",
