@@ -128,10 +128,24 @@ export const StUSDSSupplyWithdraw = ({
       <Tabs value={tabIndex === 0 ? 'left' : 'right'}>
         <motion.div variants={positionAnimations}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger position="left" value="left" onClick={() => onToggle(0)}>
+            <TabsTrigger
+              position="left"
+              value="left"
+              onClick={() => {
+                onChange(0n, true);
+                onToggle(0);
+              }}
+            >
               <Trans>Supply</Trans>
             </TabsTrigger>
-            <TabsTrigger position="right" value="right" onClick={() => onToggle(1)}>
+            <TabsTrigger
+              position="right"
+              value="right"
+              onClick={() => {
+                onChange(0n, true);
+                onToggle(1);
+              }}
+            >
               <Trans>Withdraw</Trans>
             </TabsTrigger>
           </TabsList>
@@ -161,7 +175,15 @@ export const StUSDSSupplyWithdraw = ({
               placeholder={t`Enter amount`}
               token={inputToken}
               tokenList={[inputToken]}
-              balance={address ? nstBalance : undefined}
+              balance={
+                address
+                  ? nstBalance && maxDeposit
+                    ? nstBalance < maxDeposit
+                      ? nstBalance
+                      : maxDeposit
+                    : nstBalance
+                  : undefined
+              }
               onChange={(newValue, event) => {
                 onChange(BigInt(newValue), !!event);
               }}
