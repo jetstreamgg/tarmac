@@ -71,6 +71,13 @@ describe('StUSDS widget tests', () => {
     expect(connectButton).toBeTruthy();
   });
 
+  it('shows "USDS balance" balance label', async () => {
+    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+
+    const balanceLabel = await screen.findByText('USDS balance');
+    expect(balanceLabel).toBeTruthy();
+  });
+
   it('shows "Supplied balance" balance label', async () => {
     renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
@@ -78,18 +85,18 @@ describe('StUSDS widget tests', () => {
     expect(balanceLabel).toBeTruthy();
   });
 
-  it('displays TVL information', async () => {
+  it('displays supplycapacity information', async () => {
     renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
-    const tvlLabel = await screen.findByText('TVL');
-    expect(tvlLabel).toBeTruthy();
+    const capacityLabel = await screen.findByText('Supply capacity');
+    expect(capacityLabel).toBeTruthy();
   });
 
-  it('displays utilization information', async () => {
+  it('displays withdrawal liquidity information', async () => {
     renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
-    const utilizationLabel = await screen.findByText('Utilization');
-    expect(utilizationLabel).toBeTruthy();
+    const withdrawalLiquidityLabel = await screen.findByText('Withdrawal liquidity');
+    expect(withdrawalLiquidityLabel).toBeTruthy();
   });
 
   it('handles external state for supply flow', async () => {
