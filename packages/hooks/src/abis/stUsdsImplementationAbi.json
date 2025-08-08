@@ -1,0 +1,21 @@
+[
+  {
+    "type": "constructor",
+    "name": "",
+    "stateMutability": "",
+    "constant": false,
+    "inputs": [
+      { "type": "address", "name": "implementation", "simpleType": "address" },
+      { "type": "bytes", "name": "_data", "simpleType": "bytes" }
+    ],
+    "id": "9201517a-d807-4da7-bdcd-29529a96e1db"
+  },
+  {
+    "type": "event",
+    "name": "Upgraded",
+    "stateMutability": "",
+    "constant": false,
+    "inputs": [{ "type": "address", "name": "implementation", "simpleType": "address" }],
+    "id": "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
+  }
+]

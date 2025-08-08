@@ -30,6 +30,9 @@ jobs:
           - test: stake.spec
             vnet: true
             chain: mainnet
+          - test: expert-stusds.spec
+            vnet: true
+            chain: mainnet
           - test: landing.spec
             vnet: true
             chain: mainnet

@@ -129,8 +129,11 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       const reward = linkedActionConfig.rewardContract
         ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}`
         : '';
+      const expertModule = linkedActionConfig.expertModule
+        ? `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}`
+        : '';
       setCustomHref(
-        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}`
+        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}${expertModule}`
       );
       setCustomNavLabel(`Go to ${capitalizeFirstLetter(linkedActionConfig.linkedAction)}`);
     } else {

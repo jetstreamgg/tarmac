@@ -5,6 +5,8 @@ import { useAllRewardsUserHistory } from '../rewards/useAllRewardsUserHistory';
 import { useMemo } from 'react';
 import { useSealHistory } from '../seal/useSealHistory';
 import { useStakeHistory } from '../stake/useStakeHistory';
+import { useStUsdsHistory } from '../stusds/useStUsdsHistory';
+
 export function useEthereumCombinedHistory() {
   const savingsHistory = useEthereumSavingsHistory();
   const upgradeHistory = useUpgradeHistory();
@@ -12,6 +14,7 @@ export function useEthereumCombinedHistory() {
   const combinedRewardHistory = useAllRewardsUserHistory();
   const sealHistory = useSealHistory();
   const stakeHistory = useStakeHistory();
+  const stUsdsHistory = useStUsdsHistory();
 
   const combinedData = useMemo(() => {
     return [
@@ -20,7 +23,8 @@ export function useEthereumCombinedHistory() {
       ...(tradeHistory.data || []),
       ...(combinedRewardHistory.data || []),
       ...(sealHistory.data || []),
-      ...(stakeHistory.data || [])
+      ...(stakeHistory.data || []),
+      ...(stUsdsHistory.data || [])
     ].sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
   }, [
     savingsHistory.data,
@@ -28,7 +32,8 @@ export function useEthereumCombinedHistory() {
     tradeHistory.data,
     combinedRewardHistory.data,
     sealHistory.data,
-    stakeHistory.data
+    stakeHistory.data,
+    stUsdsHistory.data
   ]);
 
   return {
@@ -39,14 +44,16 @@ export function useEthereumCombinedHistory() {
       upgradeHistory.isLoading ||
       combinedRewardHistory.isLoading ||
       sealHistory.isLoading ||
-      stakeHistory.isLoading,
+      stakeHistory.isLoading ||
+      stUsdsHistory.isLoading,
     error:
       savingsHistory.error ||
       upgradeHistory.error ||
       tradeHistory.error ||
       combinedRewardHistory.error ||
       sealHistory.error ||
-      stakeHistory.error,
+      stakeHistory.error ||
+      stUsdsHistory.error,
     mutate: () => {
       savingsHistory.mutate();
       upgradeHistory.mutate();
@@ -54,6 +61,7 @@ export function useEthereumCombinedHistory() {
       combinedRewardHistory.mutate();
       sealHistory.mutate();
       stakeHistory.mutate();
+      stUsdsHistory.mutate();
     }
   };
 }

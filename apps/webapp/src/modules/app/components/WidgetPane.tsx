@@ -1,9 +1,10 @@
-import { Balances, Upgrade, Trade, RewardsModule, Savings, Stake } from '../../icons';
-import { Intent } from '@/lib/enums';
+import { Balances, Upgrade, Trade, RewardsModule, Savings, Stake, Expert } from '../../icons';
+import { ExpertIntent, Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import {
+  ExpertIntentMapping,
   BATCH_TX_LEGAL_NOTICE_URL,
   COMING_SOON_MAP,
   mapIntentToQueryParam,
@@ -32,17 +33,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { isIntentAllowed } from '@/lib/utils';
+import { WidgetContent, WidgetItem } from '../types/Widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
-
-export type WidgetContent = [
-  Intent,
-  string,
-  (props: IconProps) => React.ReactNode,
-  React.ReactNode | null,
-  boolean,
-  { disabled?: boolean }?,
-  string? // description for tooltip
-][];
+import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 
 type WidgetPaneProps = {
   intent: Intent;
@@ -64,7 +57,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
-  const rightHeaderComponent = <DualSwitcher />;
+  const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
   const { Locale, Details } = QueryParams;
   const retainedParams = [Locale, Details];
@@ -108,8 +101,13 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const stakeUrl = getQueryParams(
     `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`
   );
+  // Attempt to redirect to the stUSDS module, but if user hasn't acknowledged the risk checkbox,
+  // they will be redirected to the overview of the expert widget
+  const stusdsUrl = getQueryParams(
+    `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
+  );
 
-  const widgetContent: WidgetContent = [
+  const widgetItems: WidgetItem[] = [
     [
       Intent.BALANCES_INTENT,
       'Balances',
@@ -123,6 +121,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           savingsCardUrlMap={savingsUrlMap}
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
+          stusdsCardUrl={stusdsUrl}
           customTokenMap={defaultConfig.balancesTokenList}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
@@ -183,6 +182,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       false,
       undefined,
       'Stake SKY to earn rewards, delegate votes, and borrow USDS'
+    ],
+    [
+      Intent.EXPERT_INTENT,
+      'Expert',
+      Expert,
+      withErrorBoundary(<ExpertWidgetPane {...sharedProps} />),
+      false,
+      undefined,
+      'Higher-Risk Options: For experienced users'
     ]
   ].map(([intent, label, icon, component, , , description]) => {
     const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
@@ -195,7 +203,34 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       comingSoon ? { disabled: true } : undefined,
       description as string
     ];
-  });
+  }) as WidgetItem[];
+
+  // Group the widgets in categories
+  const widgetContent: WidgetContent = [
+    {
+      id: 'group-1',
+      items: widgetItems.filter(([intent]) => intent === Intent.BALANCES_INTENT)
+    },
+    {
+      id: 'group-2',
+      items: widgetItems.filter(
+        ([intent]) =>
+          intent === Intent.REWARDS_INTENT ||
+          intent === Intent.SAVINGS_INTENT ||
+          intent === Intent.STAKE_INTENT
+      )
+    },
+    {
+      id: 'group-3',
+      items: widgetItems.filter(
+        ([intent]) => intent === Intent.UPGRADE_INTENT || intent === Intent.TRADE_INTENT
+      )
+    },
+    {
+      id: 'group-4',
+      items: widgetItems.filter(([intent]) => intent === Intent.EXPERT_INTENT)
+    }
+  ];
 
   useEffect(() => {
     if (!searchParams.get(QueryParams.Reset)) return;
@@ -210,11 +245,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     return () => clearTimeout(timer); // cleanup
   }, [searchParams, setSearchParams]);
 
+  // Filter widget groups to only include allowed intents
+  const filteredWidgetContent: WidgetContent = widgetContent
+    .map(group => ({
+      ...group,
+      items: group.items.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))
+    }))
+    .filter(group => group.items.length > 0);
+
   return (
-    <WidgetNavigation
-      widgetContent={widgetContent.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))}
-      intent={intent}
-    >
+    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent}>
       {children}
     </WidgetNavigation>
   );

@@ -16,7 +16,7 @@ function getEtherscanPrefix(id: number) {
     case chainId.arbitrum:
       return 'arbiscan.io';
     case chainId.tenderly:
-      return 'dashboard.tenderly.co/pullup-labs/endgame-0/testnet/da404f7a-d40d-4c75-928f-308835f9e0e3';
+      return 'dashboard.tenderly.co/pullup-labs/endgame-0/testnet/8514b732-76e6-4024-9f3f-37ccd12d5e9a';
     case chainId.tenderlyBase:
       return 'dashboard.tenderly.co/explorer/vnet/376e4980-c2de-48b9-bf76-c25bd6d1c324';
     case chainId.tenderlyArbitrum:

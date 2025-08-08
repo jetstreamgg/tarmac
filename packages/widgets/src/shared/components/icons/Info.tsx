@@ -1,7 +1,7 @@
 import { Icon, IconProps } from './Icon';
 
-export const Info = (props: IconProps) => (
-  <Icon {...props} width="16" height="15" viewBox="0 0 16 15" fill="none">
+export const Info = ({ width = '16', height = '15', ...props }: IconProps) => (
+  <Icon {...props} width={width} height={height} viewBox="0 0 16 15" fill="none">
     <path
       d="M7.11816 3.75H8.61816V5.25H7.11816V3.75ZM7.11816 6.75H8.61816V11.25H7.11816V6.75ZM7.86816 0C3.72816 0 0.368164 3.36 0.368164 7.5C0.368164 11.64 3.72816 15 7.86816 15C12.0082 15 15.3682 11.64 15.3682 7.5C15.3682 3.36 12.0082 0 7.86816 0ZM7.86816 13.5C4.56066 13.5 1.86816 10.8075 1.86816 7.5C1.86816 4.1925 4.56066 1.5 7.86816 1.5C11.1757 1.5 13.8682 4.1925 13.8682 7.5C13.8682 10.8075 11.1757 13.5 7.86816 13.5Z"
       fill="currentColor"
