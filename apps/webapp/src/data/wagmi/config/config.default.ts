@@ -6,7 +6,8 @@ import {
   rainbowWallet,
   walletConnectWallet,
   metaMaskWallet,
-  binanceWallet
+  binanceWallet,
+  coinbaseWallet
 } from '@rainbow-me/rainbowkit/wallets';
 import {
   TENDERLY_CHAIN_ID,
@@ -86,7 +87,15 @@ const connectors = connectorsForWallets(
   [
     {
       groupName: 'Suggested',
-      wallets: [metaMaskWallet, baseAccount, walletConnectWallet, rainbowWallet, safeWallet, binanceWallet]
+      wallets: [
+        metaMaskWallet,
+        baseAccount,
+        coinbaseWallet,
+        walletConnectWallet,
+        rainbowWallet,
+        safeWallet,
+        binanceWallet
+      ]
     }
   ],
   {
