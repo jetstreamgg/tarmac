@@ -14,6 +14,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { FooterLinks } from '@/modules/layout/components/FooterLinks';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { StakeDetailsPane } from '@/modules/stake/components/StakeDetailsPane';
+import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
 
 type DetailsPaneProps = {
   intent: Intent;
@@ -38,7 +39,7 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
 
@@ -47,7 +48,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
       if (prevIntentState !== intent) {
         // By giving the keys a new value, we force the motion component to animate the new component in, even if it's
         // the same component as before. This prevents the component from being re-added before being removed
-        setKeys(prevKeys => prevKeys.map(key => key + 6));
+        setKeys(prevKeys => prevKeys.map(key => key + 7));
       }
 
       return intent || defaultDetail;
@@ -101,10 +102,16 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   <StakeDetailsPane />
                 </MotionDetailsWrapper>
               );
+            case Intent.SEAL_INTENT:
+              return (
+                <MotionDetailsWrapper key={keys[5]}>
+                  <SealDetailsPane />
+                </MotionDetailsWrapper>
+              );
             case Intent.BALANCES_INTENT:
             default:
               return (
-                <MotionDetailsWrapper key={keys[5]}>
+                <MotionDetailsWrapper key={keys[6]}>
                   <BalancesDetails />
                 </MotionDetailsWrapper>
               );

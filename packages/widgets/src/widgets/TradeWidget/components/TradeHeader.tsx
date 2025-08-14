@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { Dispatch, SetStateAction, useRef } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { TradeConfigMenu } from './TradeConfigMenu';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
@@ -24,16 +24,12 @@ export const TradeHeader = ({
   ttl,
   setTtl
 }: Omit<PropTypes, 'originToken' | 'onExternalLinkClicked'>): React.ReactElement => {
-  const ref = useRef<HTMLDivElement>(null);
-  const collisionBoundary = ref.current?.parentElement?.parentElement || null;
-
   return (
-    <div ref={ref} className="flex items-baseline justify-between gap-2">
+    <div className="flex items-baseline justify-between gap-2">
       <Heading variant="x-large">
         <Trans>Trade</Trans>
       </Heading>
       <TradeConfigMenu
-        boundary={collisionBoundary}
         slippage={slippage}
         setSlippage={setSlippage}
         isEthFlow={isEthFlow}
