@@ -161,7 +161,6 @@ export const StUSDSSupplyWithdraw = ({
         <motion.div variants={positionAnimations} className="mt-4">
           <StUSDSStatsCard
             isLoading={isStUsdsDataLoading}
-            address={address}
             stats={{
               totalAssets: totalAssets || 0n,
               userUsdsBalance: userUsdsBalance || 0n,
@@ -171,7 +170,6 @@ export const StUSDSSupplyWithdraw = ({
             }}
             isConnectedAndEnabled={isConnectedAndEnabled}
             onExternalLinkClicked={onExternalLinkClicked}
-            walletUsdsBalance={nstBalance}
           />
         </motion.div>
         <TabsContent value="left">

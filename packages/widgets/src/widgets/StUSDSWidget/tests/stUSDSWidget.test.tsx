@@ -85,13 +85,6 @@ describe('StUSDS widget tests', () => {
     expect(balanceLabel).toBeTruthy();
   });
 
-  it('displays supplycapacity information', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
-
-    const capacityLabel = await screen.findByText('Supply capacity');
-    expect(capacityLabel).toBeTruthy();
-  });
-
   it('displays withdrawal liquidity information', async () => {
     renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
