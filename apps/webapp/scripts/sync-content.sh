@@ -276,6 +276,7 @@ import {
   optimismFaqItems,
   unichainFaqItems
 } from './sharedFaqItems';
+import { getBundledTransactionsFaqItems } from './getBundledTransactionsFaqItems';
 
 export const getBalancesFaqItems = (chainId: number) => {
   const items = [
@@ -284,7 +285,8 @@ export const getBalancesFaqItems = (chainId: number) => {
     ...(isBaseChainId(chainId) ? baseFaqItems : []),
     ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : []),
     ...(isOptimismChainId(chainId) ? optimismFaqItems : []),
-    ...(isUnichainChainId(chainId) ? unichainFaqItems : [])
+    ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
+    ...getBundledTransactionsFaqItems()
   ];
   return items.sort((a, b) => a.index - b.index);
 };

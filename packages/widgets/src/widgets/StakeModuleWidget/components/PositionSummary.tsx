@@ -297,7 +297,7 @@ export const PositionSummary = ({
         label: t`Borrow rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : undefined,
         hideIfNoDebt: true,
-        tooltipText: getTooltipById('borrow-rate')?.tooltip || ''
+        tooltipText: getTooltipById('borrow')?.tooltip || ''
       },
       {
         label: t`Current SKY price`,
