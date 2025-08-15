@@ -18,6 +18,8 @@ OUTPUT_SOURCE_PATH="output/webapp/faq"
 DESTINATION_PATH="src/data/faqs"
 TOOLTIPS_SOURCE_PATH="output/webapp/tooltips"
 TOOLTIPS_DESTINATION_PATH="../../packages/widgets/src/data/tooltips"
+BANNERS_SOURCE_PATH="output/webapp/banner"
+BANNERS_DESTINATION_PATH="src/data/banners"
 EXTRACT_SCRIPT="scripts/extract_webapp_faqs.js"
 
 # Function to print colored output
@@ -465,6 +467,26 @@ EOF
     fi
 else
     print_warning "No tooltips directory found in corpus output"
+fi
+
+# Copy banners if they exist
+if [ -d "$TEMP_DIR/$BANNERS_SOURCE_PATH" ]; then
+    print_status "Syncing banners to webapp..."
+    
+    # Check if banners.ts exists in the output
+    if [ -f "$TEMP_DIR/$BANNERS_SOURCE_PATH/banners.ts" ]; then
+        # Ensure destination directory exists
+        mkdir -p "$BANNERS_DESTINATION_PATH"
+        
+        # Copy the banners file
+        cp "$TEMP_DIR/$BANNERS_SOURCE_PATH/banners.ts" "$BANNERS_DESTINATION_PATH/banners.ts"
+        
+        print_status "Banners synced successfully to $BANNERS_DESTINATION_PATH/banners.ts"
+    else
+        print_warning "No banners.ts file found in corpus output"
+    fi
+else
+    print_warning "No banners directory found in corpus output"
 fi
 
 # Clean up temp directory
