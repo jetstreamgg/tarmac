@@ -85,6 +85,7 @@
   --background-image-primaryTransparent: var(--service-purple-transparent);
   --background-image-app-background: URL('/images/background.png');
   --background-image-nav-light: var(--service-nav-light);
+  --background-image-nav-light-vertical: var(--service-nav-light-vertical);
 
   --radius-lg: 10px;
   --radius-md: 8px;
@@ -254,6 +255,12 @@
     --service-chart-red: linear-gradient(90deg, 0% rgba(255, 130, 129, 1), 100% rgba(255, 130, 129, 0));
     --service-nav-light: linear-gradient(
       90deg,
+      rgba(71, 34, 255, 0) 2.2%,
+      #9580ff 48.55%,
+      rgba(54, 13, 255, 0) 100%
+    );
+    --service-nav-light-vertical: linear-gradient(
+      180deg,
       rgba(71, 34, 255, 0) 2.2%,
       #9580ff 48.55%,
       rgba(54, 13, 255, 0) 100%

@@ -111,7 +111,8 @@ export const UpgradeWidget = ({
   legalBatchTxUrl,
   upgradeOptions = defaultUpgradeOptions,
   enabled = true,
-  shouldReset = false
+  shouldReset = false,
+  disallowedFlow
 }: UpgradeWidgetProps) => {
   const key = shouldReset ? 'reset' : undefined;
   return (
@@ -134,6 +135,7 @@ export const UpgradeWidget = ({
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
           legalBatchTxUrl={legalBatchTxUrl}
+          disallowedFlow={disallowedFlow}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -155,7 +157,8 @@ export function UpgradeWidgetWrapped({
   batchEnabled,
   setBatchEnabled,
   legalBatchTxUrl,
-  enabled = true
+  enabled = true,
+  disallowedFlow
 }: UpgradeWidgetProps): React.ReactElement {
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);
@@ -883,8 +886,14 @@ export function UpgradeWidgetWrapped({
                 targetToken={targetToken}
                 originBalance={originBalance?.value}
                 targetBalance={targetBalance?.value}
+                disallowedFlow={disallowedFlow}
                 onToggle={(index: 0 | 1) => {
                   if (tabIndex === index) {
+                    return;
+                  }
+
+                  const targetFlow = index === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT;
+                  if (disallowedFlow && disallowedFlow === targetFlow) {
                     return;
                   }
 

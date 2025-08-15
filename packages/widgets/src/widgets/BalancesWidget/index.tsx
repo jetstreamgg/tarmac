@@ -30,6 +30,7 @@ export type BalancesWidgetProps = WidgetProps & {
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
   stakeCardUrl?: string;
+  stusdsCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   showAllNetworks?: boolean;
@@ -53,6 +54,7 @@ export const BalancesWidget = ({
   savingsCardUrlMap,
   sealCardUrl,
   stakeCardUrl,
+  stusdsCardUrl,
   customTokenMap,
   chainIds,
   showAllNetworks,
@@ -77,6 +79,7 @@ export const BalancesWidget = ({
           savingsCardUrlMap={savingsCardUrlMap}
           sealCardUrl={sealCardUrl}
           stakeCardUrl={stakeCardUrl}
+          stusdsCardUrl={stusdsCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
           onWidgetStateChange={onWidgetStateChange}
           showAllNetworks={showAllNetworks}
@@ -105,6 +108,7 @@ const BalancesWidgetWrapped = ({
   savingsCardUrlMap,
   sealCardUrl,
   stakeCardUrl,
+  stusdsCardUrl,
   showAllNetworks,
   hideZeroBalances,
   setShowAllNetworks,
@@ -191,6 +195,7 @@ const BalancesWidgetWrapped = ({
               savingsCardUrlMap={savingsCardUrlMap}
               sealCardUrl={sealCardUrl}
               stakeCardUrl={stakeCardUrl}
+              stusdsCardUrl={stusdsCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
               onToggle={onToggle}
               chainIds={chainIds}
