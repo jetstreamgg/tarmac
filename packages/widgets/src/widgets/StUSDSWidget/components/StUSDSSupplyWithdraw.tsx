@@ -13,7 +13,6 @@ import { useAccount, useChainId } from 'wagmi';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
-import { formatUnits } from 'viem';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 
@@ -22,9 +21,8 @@ type StUSDSSupplyWithdrawProps = {
   nstBalance?: bigint;
   userUsdsBalance?: bigint;
   withdrawableBalance?: bigint; // User's withdrawable USDS balance (for withdraw functionality)
-  maxDeposit?: bigint; // Max USDS user can deposit
   totalAssets?: bigint;
-  availableLiquidity?: bigint; // Available USDS in vault for withdrawals
+  availableLiquidityBuffered?: bigint; // Available USDS in vault for withdrawals
   moduleRate?: bigint; // Current module rate
   isStUsdsDataLoading: boolean;
   onChange: (val: bigint, userTriggered?: boolean) => void;
@@ -35,7 +33,7 @@ type StUSDSSupplyWithdrawProps = {
   tabIndex: 0 | 1;
   enabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  remainingCapacity?: bigint;
+  remainingCapacityBuffered?: bigint;
 };
 
 export const StUSDSSupplyWithdraw = ({
@@ -43,9 +41,8 @@ export const StUSDSSupplyWithdraw = ({
   nstBalance,
   userUsdsBalance,
   withdrawableBalance,
-  maxDeposit,
   totalAssets,
-  availableLiquidity,
+  availableLiquidityBuffered,
   moduleRate,
   isStUsdsDataLoading,
   onChange,
@@ -56,7 +53,7 @@ export const StUSDSSupplyWithdraw = ({
   tabIndex,
   enabled = true,
   onExternalLinkClicked,
-  remainingCapacity
+  remainingCapacityBuffered
 }: StUSDSSupplyWithdrawProps) => {
   const inputToken = TOKENS.usds;
   const chainId = useChainId();
@@ -72,12 +69,9 @@ export const StUSDSSupplyWithdraw = ({
       })} ${inputToken?.symbol}.`;
     }
 
-    // Check if exceeds max deposit
-    if (maxDeposit !== undefined && amount > maxDeposit) {
-      return t`Exceeds max deposit. Maximum allowed is ${formatUnits(
-        maxDeposit,
-        inputToken ? getTokenDecimals(inputToken, chainId) : 18
-      )} ${inputToken?.symbol}.`;
+    // Check if exceeds remaining capacity
+    if (remainingCapacityBuffered !== undefined && amount > remainingCapacityBuffered) {
+      return t`Exceeds remaining capacity.`;
     }
 
     return t`Insufficient funds`;
@@ -108,16 +102,16 @@ export const StUSDSSupplyWithdraw = ({
 
   // Check if user's balance exceeds available capacity/liquidity
   const userBalanceExceedsCapacity =
-    remainingCapacity !== undefined &&
+    remainingCapacityBuffered !== undefined &&
     nstBalance !== undefined &&
-    remainingCapacity > 0n &&
-    nstBalance > remainingCapacity;
+    remainingCapacityBuffered > 0n &&
+    nstBalance > remainingCapacityBuffered;
 
   const userSuppliedExceedsLiquidity =
-    availableLiquidity !== undefined &&
+    availableLiquidityBuffered !== undefined &&
     userUsdsBalance !== undefined &&
-    availableLiquidity > 0n &&
-    userUsdsBalance > availableLiquidity;
+    availableLiquidityBuffered > 0n &&
+    userUsdsBalance > availableLiquidityBuffered;
 
   const { widgetState } = useContext(WidgetContext);
   const { isConnected } = useAccount();
@@ -164,9 +158,7 @@ export const StUSDSSupplyWithdraw = ({
             stats={{
               totalAssets: totalAssets || 0n,
               userUsdsBalance: userUsdsBalance || 0n,
-              availableLiquidity: availableLiquidity,
-              maxWithdraw: withdrawableBalance,
-              maxDeposit: maxDeposit
+              availableLiquidityBuffered: availableLiquidityBuffered
             }}
             isConnectedAndEnabled={isConnectedAndEnabled}
             onExternalLinkClicked={onExternalLinkClicked}
@@ -181,12 +173,10 @@ export const StUSDSSupplyWithdraw = ({
               token={inputToken}
               tokenList={[inputToken]}
               balance={
-                address
-                  ? nstBalance && maxDeposit
-                    ? nstBalance < maxDeposit
-                      ? nstBalance
-                      : maxDeposit
-                    : nstBalance
+                address && nstBalance !== undefined && remainingCapacityBuffered !== undefined
+                  ? nstBalance < remainingCapacityBuffered
+                    ? nstBalance
+                    : remainingCapacityBuffered
                   : undefined
               }
               onChange={(newValue, event) => {
@@ -197,9 +187,9 @@ export const StUSDSSupplyWithdraw = ({
               error={getSupplyErrorMessage()}
               showPercentageButtons={isConnectedAndEnabled}
               enabled={isConnectedAndEnabled}
-              disabled={remainingCapacity === 0n}
+              disabled={remainingCapacityBuffered === 0n}
             />
-            {!isStUsdsDataLoading && remainingCapacity === 0n ? (
+            {!isStUsdsDataLoading && remainingCapacityBuffered === 0n ? (
               <div className="ml-3 mt-2 flex items-start text-amber-400">
                 <PopoverRateInfo type="stusds" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">
@@ -236,9 +226,9 @@ export const StUSDSSupplyWithdraw = ({
               dataTestId="withdraw-input-stusds"
               showPercentageButtons={isConnectedAndEnabled}
               enabled={isConnectedAndEnabled}
-              disabled={availableLiquidity === 0n}
+              disabled={availableLiquidityBuffered === 0n}
             />
-            {!isStUsdsDataLoading && availableLiquidity === 0n ? (
+            {!isStUsdsDataLoading && availableLiquidityBuffered === 0n ? (
               <div className="ml-3 mt-2 flex items-start text-amber-400">
                 <PopoverRateInfo type="stusds" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">

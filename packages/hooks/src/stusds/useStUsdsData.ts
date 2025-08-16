@@ -7,17 +7,20 @@ import { DataSource, ReadHook } from '../hooks';
 import { getEtherscanLink, isTestnetId } from '@jetstreamgg/sky-utils';
 import { useCollateralData } from '../vaults/useCollateralData';
 import { getIlkName } from '../vaults/helpers';
+import { calculateLiquidityBuffer } from './helpers';
 
 export type StUsdsHookData = {
   totalAssets: bigint;
   totalSupply: bigint;
   assetPerShare: bigint;
   availableLiquidity: bigint;
+  availableLiquidityBuffered: bigint;
   userStUsdsBalance: bigint;
   userUsdsBalance: bigint;
   userSuppliedUsds: bigint;
   userMaxDeposit: bigint;
   userMaxWithdraw: bigint;
+  userMaxWithdrawBuffered: bigint;
   moduleRate: bigint;
   chi: bigint;
   cap: bigint;
@@ -40,6 +43,7 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
   const stakingEngineIlk = getIlkName(2); // Staking engine is collateral type 2
   const {
     data: stakingEngineData,
+    raw: stakingEngineRaw,
     isLoading: isLoadingStakingEngine,
     mutate: refetchStakingEngine
   } = useCollateralData(stakingEngineIlk);
@@ -167,12 +171,37 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     return userStUsdsBalance;
   }, [userConvertedAssets, userStUsdsBalance, totalAssets, totalSupply]);
 
-  // Calculate available liquidity as totalAssets - staking engine total debt
   const availableLiquidity = useMemo(() => {
     const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
     const assets = totalAssets || 0n;
     return assets > stakingEngineDebt ? assets - stakingEngineDebt : 0n;
   }, [totalAssets, stakingEngineData?.totalDaiDebt]);
+
+  const liquidityBuffer = useMemo(() => {
+    if (!totalAssets || !ysr) return 0n;
+    const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
+    const stakingDuty = stakingEngineRaw?.duty?.value || 0n;
+    return calculateLiquidityBuffer(totalAssets, ysr, stakingEngineDebt, stakingDuty);
+  }, [totalAssets, ysr, stakingEngineData?.totalDaiDebt, stakingEngineRaw?.duty]);
+
+  const userMaxWithdrawBuffered = useMemo(() => {
+    if (!userMaxWithdraw || !availableLiquidity) return 0n;
+
+    const bufferedLiquidity =
+      availableLiquidity > liquidityBuffer ? availableLiquidity - liquidityBuffer : 0n;
+
+    // Only apply buffer if protocol liquidity is the limiting factor
+    if (userMaxWithdraw <= bufferedLiquidity) {
+      return userMaxWithdraw;
+    }
+
+    return bufferedLiquidity;
+  }, [userMaxWithdraw, availableLiquidity, liquidityBuffer]);
+
+  const availableLiquidityBuffered = useMemo(() => {
+    if (!availableLiquidity) return 0n;
+    return availableLiquidity > liquidityBuffer ? availableLiquidity - liquidityBuffer : 0n;
+  }, [availableLiquidity, liquidityBuffer]);
 
   const isLoading = isContractLoading || (!!acct && userUsdsLoading) || isLoadingStakingEngine;
 
@@ -184,11 +213,13 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
       totalSupply: totalSupply || 0n,
       assetPerShare,
       availableLiquidity,
+      availableLiquidityBuffered,
       userStUsdsBalance: userStUsdsBalance || 0n,
       userUsdsBalance: userUsdsBalance?.value || 0n,
       userSuppliedUsds,
       userMaxDeposit: userMaxDeposit || 0n,
       userMaxWithdraw: userMaxWithdraw || 0n,
+      userMaxWithdrawBuffered,
       moduleRate: ysr || 0n,
       chi: chi || 0n,
       cap: cap || 0n,
@@ -200,11 +231,13 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     totalSupply,
     assetPerShare,
     availableLiquidity,
+    availableLiquidityBuffered,
     userStUsdsBalance,
     userUsdsBalance,
     userSuppliedUsds,
     userMaxDeposit,
     userMaxWithdraw,
+    userMaxWithdrawBuffered,
     ysr,
     chi,
     cap,

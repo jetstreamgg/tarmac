@@ -42,15 +42,27 @@ export function useStUsdsWithdraw({
     queryClient.invalidateQueries({ queryKey });
   }, [blockNumber, queryClient, queryKey]);
 
-  const withdrawAmount = max ? ((maxWithdraw as bigint) ?? amount) : amount;
+  // Apply liquidity buffer when using max withdrawal to prevent tx failures
+  const withdrawAmount = (() => {
+    if (!max) return amount;
+
+    const maxWithdrawAmount = (maxWithdraw as bigint) ?? amount;
+
+    // If we have the buffered value from stUsdsData, use that directly
+    if (stUsdsData?.userMaxWithdrawBuffered) {
+      return stUsdsData.userMaxWithdrawBuffered;
+    }
+
+    return maxWithdrawAmount;
+  })();
 
   // Only enabled if user has a balance in stUSDS which is GTE the amount to withdraw
   const enabled =
     isConnected &&
     !!stUsdsData &&
-    !!stUsdsData?.userMaxWithdraw &&
-    stUsdsData.userMaxWithdraw > 0n &&
-    stUsdsData.userMaxWithdraw >= withdrawAmount &&
+    !!stUsdsData?.userMaxWithdrawBuffered &&
+    stUsdsData.userMaxWithdrawBuffered > 0n &&
+    stUsdsData.userMaxWithdrawBuffered >= withdrawAmount &&
     withdrawAmount > 0n &&
     activeTabEnabled &&
     !!connectedAddress;

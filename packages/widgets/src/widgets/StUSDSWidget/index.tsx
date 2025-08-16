@@ -338,12 +338,14 @@ const StUSDSWidgetWrapped = ({
     setShowStepIndicator(widgetState.flow === StUSDSFlow.SUPPLY);
   }, [widgetState.flow]);
 
+  const remainingCapacityBuffered = capacityData?.remainingCapacityBuffered || 0n;
+
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
     address &&
     amount !== 0n && //don't wait for debouncing on default state
     ((stUsdsData?.userUsdsBalance !== undefined && debouncedAmount > stUsdsData.userUsdsBalance) ||
-      (stUsdsData?.userMaxDeposit !== undefined && debouncedAmount > stUsdsData.userMaxDeposit))
+      (remainingCapacityBuffered !== undefined && debouncedAmount > remainingCapacityBuffered))
       ? true
       : false;
 
@@ -351,8 +353,8 @@ const StUSDSWidgetWrapped = ({
     txStatus === TxStatus.IDLE &&
     address &&
     amount !== 0n && //don't wait for debouncing on default state
-    stUsdsData?.userMaxWithdraw !== undefined &&
-    debouncedAmount > stUsdsData.userMaxWithdraw
+    stUsdsData?.userMaxWithdrawBuffered !== undefined &&
+    debouncedAmount > stUsdsData.userMaxWithdrawBuffered
       ? true
       : false;
 
@@ -672,11 +674,6 @@ const StUSDSWidgetWrapped = ({
     mutateAllowance();
   }, [chainId]);
 
-  // Calculate remaining capacity
-  const maxCapacity = capacityData?.maxCapacity || 0n;
-  const totalAssets = stUsdsData?.totalAssets || 0n;
-  const remainingCapacity = maxCapacity > totalAssets ? maxCapacity - totalAssets : 0n;
-
   return (
     <WidgetContainer
       header={
@@ -740,13 +737,12 @@ const StUSDSWidgetWrapped = ({
               address={address}
               nstBalance={stUsdsData?.userUsdsBalance}
               userUsdsBalance={stUsdsData?.userSuppliedUsds}
-              withdrawableBalance={stUsdsData?.userMaxWithdraw}
-              maxDeposit={stUsdsData?.userMaxDeposit}
+              withdrawableBalance={stUsdsData?.userMaxWithdrawBuffered}
               totalAssets={stUsdsData?.totalAssets}
-              availableLiquidity={stUsdsData?.availableLiquidity}
+              availableLiquidityBuffered={stUsdsData?.availableLiquidityBuffered}
               moduleRate={stUsdsData?.moduleRate}
               isStUsdsDataLoading={isStUsdsDataLoading}
-              remainingCapacity={remainingCapacity}
+              remainingCapacityBuffered={remainingCapacityBuffered}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
