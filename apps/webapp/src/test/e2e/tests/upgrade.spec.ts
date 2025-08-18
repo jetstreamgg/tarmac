@@ -1,22 +1,18 @@
 import { expect, test } from '../fixtures.ts';
-import { setErc20Balance } from '../utils/setBalance.ts';
 import { daiUsdsAddress, mcdDaiAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
 import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
-import { getTestWalletAddress } from '../utils/testWallets.ts';
 import { NetworkName } from '../utils/constants.ts';
 import { approveToken } from '../utils/approveToken.ts';
 
-const setTestBalance = async (tokenAddress: string, amount: string, decimals = 18) => {
-  const workerIndex = Number(process.env.VITE_TEST_WORKER_INDEX ?? 1);
-  const address = getTestWalletAddress(workerIndex);
-  await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
-};
+// Tests using customBalance fixture will get proper isolation
 
-test('Upgrade DAI and revert USDS', async ({ page }) => {
-  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+test('Upgrade DAI and revert USDS', async ({ page, customBalance }) => {
+  await customBalance({
+    [mcdDaiAddress[TENDERLY_CHAIN_ID]]: { amount: '10' }
+  });
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
   await page.getByRole('tab', { name: 'Upgrade' }).click();
@@ -37,8 +33,10 @@ test('Upgrade DAI and revert USDS', async ({ page }) => {
   await page.getByRole('button', { name: 'Back to Upgrade' }).click();
 });
 
-test('Upgrade MKR but revert SKY isnt allowed', async ({ page }) => {
-  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+test('Upgrade MKR but revert SKY isnt allowed', async ({ page, customBalance }) => {
+  await customBalance({
+    [mcdDaiAddress[TENDERLY_CHAIN_ID]]: { amount: '10' }
+  });
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
   await page.getByRole('tab', { name: 'Upgrade' }).click();
@@ -84,9 +82,11 @@ test('Upgrade and revert with insufficient balance', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Review' })).toBeDisabled();
 });
 
-test('Balances change after successfully upgrading and reverting', async ({ page }) => {
-  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
-  await setTestBalance(usdsAddress[TENDERLY_CHAIN_ID], '10');
+test('Balances change after successfully upgrading and reverting', async ({ page, customBalance }) => {
+  await customBalance({
+    [mcdDaiAddress[TENDERLY_CHAIN_ID]]: { amount: '10' },
+    [usdsAddress[TENDERLY_CHAIN_ID]]: { amount: '10' }
+  });
 
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
@@ -180,10 +180,10 @@ test('if not connected it should show a connect button', async ({ page }) => {
   await expect(widgetConnectButton).not.toBeVisible();
 });
 
-// TODO: this test occasionally fails due to wallet not being connect, which might be related to above test
-test('percentage buttons work', async ({ page }) => {
-  await setTestBalance(usdsAddress[TENDERLY_CHAIN_ID], '1000');
-
+test('percentage buttons work', async ({ page, customBalance }) => {
+  await customBalance({
+    [usdsAddress[TENDERLY_CHAIN_ID]]: { amount: '1000' }
+  });
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page);
   await page.getByRole('tab', { name: 'Upgrade' }).click();
@@ -406,8 +406,10 @@ test('Details pane shows right data', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'FAQs', exact: true })).toBeVisible();
 });
 
-test('Batch - Upgrade DAI and revert USDS', async ({ page }) => {
-  await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+test('Batch - Upgrade DAI and revert USDS', async ({ page, customBalance }) => {
+  await customBalance({
+    [mcdDaiAddress[TENDERLY_CHAIN_ID]]: { amount: '10' }
+  });
   await page.goto('/');
   await connectMockWalletAndAcceptTerms(page, { batch: true });
   await page.getByRole('tab', { name: 'Upgrade' }).click();

@@ -28,6 +28,7 @@ type WorkerFixture = {
 
 type TestFixture = {
   autoTestFixture: void;
+  customBalance: (balanceConfig: Record<string, { amount: string; decimals?: number }>) => Promise<void>;
 };
 
 const test = playwrightTest.extend<TestFixture, WorkerFixture>({
@@ -35,7 +36,7 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
   snapshotId: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use, workerInfo) => {
-      const requiredChain = process.env.TEST_CHAIN;
+      const requiredChain = process.env.TEST_CHAIN || 'mainnet';
       if (!requiredChain) {
         throw new Error('TEST_CHAIN environment variable not set');
       }
@@ -99,25 +100,61 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
     },
     { scope: 'worker', auto: true }
   ],
+  // Custom balance fixture for tests that need specific token balances
+  customBalance: [
+    async ({ snapshotId }, use, workerInfo) => {
+      const requiredChain = process.env.TEST_CHAIN || 'mainnet';
+      const [primaryChain] = requiredChain.split(',').map(chain => chain.trim());
+      const address = getTestWalletAddress(workerInfo.workerIndex);
+
+      let hasSetCustomBalance = false;
+      let customSnapshotId: string | null = null;
+
+      const setCustomBalances = async (
+        balanceConfig: Record<string, { amount: string; decimals?: number }>
+      ) => {
+        hasSetCustomBalance = true;
+
+        // First revert to worker's clean state
+        await evmRevert(primaryChain, snapshotId);
+
+        // Set custom balances
+        const networkName = primaryChain as keyof typeof NetworkName;
+        for (const [tokenAddress, { amount, decimals = 18 }] of Object.entries(balanceConfig)) {
+          await setErc20Balance(tokenAddress, amount, decimals, NetworkName[networkName], address);
+        }
+
+        // Create snapshot with custom balances
+        customSnapshotId = await evmSnapshot(primaryChain);
+      };
+
+      await use(setCustomBalances);
+
+      // Mark that this test used custom balances (for autoTestFixture to skip revert)
+      (global as any).__testUsedCustomBalance = hasSetCustomBalance;
+      (global as any).__customSnapshotId = customSnapshotId;
+    },
+    { scope: 'test' }
+  ],
   // Auto fixture that will run for each test. By adding its code after the `use` call, we ensure that the fixture runs after the test
   autoTestFixture: [
     async ({ snapshotId }, use) => {
-      const requiredChain = process.env.TEST_CHAIN;
-      if (!requiredChain) {
-        throw new Error('TEST_CHAIN environment variable not set');
-      }
-
-      // Split the chain string and use the first chain as primary
+      const requiredChain = process.env.TEST_CHAIN || 'mainnet';
       const [primaryChain] = requiredChain.split(',').map(chain => chain.trim());
-      if (!primaryChain) {
-        throw new Error('No valid chain specified in TEST_CHAIN');
-      }
+
+      // Clear the custom balance flags at start of test
+      (global as any).__testUsedCustomBalance = false;
+      (global as any).__customSnapshotId = null;
 
       await use();
 
-      // Restore the EVM snapshot for the current test's chain
+      // Always revert to clean worker state after test (whether custom balance was used or not)
       const revertSuccessful = await evmRevert(primaryChain, snapshotId);
       expect(revertSuccessful).toBe(true);
+
+      // Clean up flags
+      delete (global as any).__testUsedCustomBalance;
+      delete (global as any).__customSnapshotId;
     },
     { scope: 'test', auto: true }
   ],
