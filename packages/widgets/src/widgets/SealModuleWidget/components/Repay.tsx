@@ -29,12 +29,7 @@ import { getRiskTextColor } from '../lib/utils';
 import { useAccount, useChainId } from 'wagmi';
 import { useSealExitFee } from '@jetstreamgg/sky-hooks';
 import { useRiskSlider } from '../hooks/useRiskSlider';
-import {
-  collateralizationRatioTooltipText,
-  liquidationPriceTooltipText,
-  riskLevelTooltipText,
-  borrowRateTooltipText
-} from '../lib/constants';
+import { getTooltipById } from '../../../data/tooltips';
 
 const { usds, mkr, sky } = TOKENS;
 
@@ -216,7 +211,7 @@ const PositionManagerOverviewContainer = ({
       {
         label: t`Borrow rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : '',
-        tooltipText: borrowRateTooltipText
+        tooltipText: getTooltipById('borrow-rate-seal')?.tooltip || ''
       },
       {
         label: t`Collateral value`,
@@ -232,13 +227,16 @@ const PositionManagerOverviewContainer = ({
         label: t`Liquidation price`,
         value:
           hasPositions && existingLiqPrice !== newLiqPrice ? [existingLiqPrice, newLiqPrice] : newLiqPrice,
-        tooltipText: liquidationPriceTooltipText
+        tooltipText:
+          getTooltipById(
+            displayToken === TOKENS.mkr ? 'liquidation-price-seal-mkr' : 'liquidation-price-seal-sky'
+          )?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
         value:
           hasPositions && existingColRatio !== newColRatio ? [existingColRatio, newColRatio] : newColRatio,
-        tooltipText: collateralizationRatioTooltipText
+        tooltipText: getTooltipById('collateralization-ratio-seal')?.tooltip || ''
       },
       {
         label: t`Liquidation ratio`,
@@ -253,7 +251,7 @@ const PositionManagerOverviewContainer = ({
                 `${captitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
               ]
             : `${captitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
-        tooltipText: riskLevelTooltipText,
+        tooltipText: getTooltipById('risk-level-seal')?.tooltip || '',
         classNamePrev: existingRiskTextColor,
         className: riskTextColor
       }

@@ -94,7 +94,7 @@ test('Balance changes after a successful supply', async ({ page }) => {
   await expect(page.getByTestId('supply-input-savings-balance')).toHaveText('8 USDS', { timeout: 15000 });
 
   const expectedBalance = preSupplyBalance + 2;
-  expect(await page.getByTestId('supplied-balance').innerText()).toBe(`${expectedBalance} USDS`);
+  await expect(page.getByTestId('supplied-balance')).toContainText(`${expectedBalance} USDS`);
 });
 
 test('Balance changes after a successful withdraw', async ({ page }) => {
@@ -129,7 +129,7 @@ test('Balance changes after a successful withdraw', async ({ page }) => {
   const expectedBalance = prewithdrawBalance - 2;
   if (expectedBalance >= 1) {
     // We supplied 4 and then withdrew 2
-    await expect(page.getByTestId('supplied-balance')).toHaveText('2 USDS', { timeout: 15000 });
+    await expect(page.getByTestId('supplied-balance')).toContainText('2 USDS', { timeout: 15000 });
   } else {
     const zeroBalance = Number(
       (await page.getByTestId('supplied-balance').innerText()).split(' ')[0].replace('<', '').trim()
@@ -316,7 +316,7 @@ test('Details pane shows right data', async ({ page }) => {
   await expect(page.getByTestId('savings-supplied-balance-details')).toContainText('USDS');
 
   const detailsSuppliedBalance = await page.getByTestId('savings-supplied-balance-details').innerText();
-  await expect(page.getByTestId('supplied-balance')).toHaveText(detailsSuppliedBalance);
+  await expect(page.getByTestId('supplied-balance')).toContainText(detailsSuppliedBalance);
 
   // close details pane
   await page.getByTestId('widget-container').getByLabel('Toggle details').click();

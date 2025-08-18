@@ -25,14 +25,12 @@ type PropTypes = {
   isEthFlow?: boolean;
   ttl: string;
   setTtl: Dispatch<SetStateAction<string>>;
-  boundary: Element | null;
 };
 
 export const TradeConfigMenu = ({
   slippage,
   setSlippage,
-  isEthFlow,
-  boundary
+  isEthFlow
 }: PropTypes): React.ReactElement | null => {
   const { widgetState } = useContext(WidgetContext);
   const slippageConfig = isEthFlow ? ethFlowSlippageConfig : ercFlowSlippageConfig;
@@ -59,10 +57,7 @@ export const TradeConfigMenu = ({
       <PopoverTrigger className={paginationButtonClasses}>
         <SettingsIcon width={20} />
       </PopoverTrigger>
-      <PopoverContent
-        className="bg-container w-[330px] rounded-[20px] border-0 backdrop-blur-[50px]"
-        collisionBoundary={boundary}
-      >
+      <PopoverContent className="bg-container w-[330px] rounded-[20px] border-0 backdrop-blur-[50px]">
         <VStack className="w-full gap-5">
           <div className="space-y-3">
             <Heading variant="small">
