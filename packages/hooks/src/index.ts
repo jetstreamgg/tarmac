@@ -75,6 +75,7 @@ export { useDaiUsdsApprove } from './upgrade/useDaiUsdsApprove';
 export { useMkrSkyApprove } from './upgrade/useMkrSkyApprove';
 export { useUpgradeHistory } from './upgrade/useUpgradeHistory';
 export { useUpgradeTotals } from './upgrade/useUpgradeTotals';
+export { useMkrSkyRate } from './upgrade/useMkrSkyRate';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';

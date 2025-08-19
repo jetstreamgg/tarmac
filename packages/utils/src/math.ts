@@ -15,7 +15,7 @@ import { formatUnits, parseUnits } from 'viem';
 
 // Maker glossary: https://docs.makerdao.com/other-documentation/system-glossary
 
-export const MKR_TO_SKY_PRICE_RATIO = 24000n;
+// MKR to SKY conversion functions require dynamic rate from contract
 
 // This multiplies the base by the factor N times, used for doubling, tripling, etc, any number of times
 const fixedMultiplySeries = (base: FixedNumber, factor: FixedNumber, count: FixedNumber) => {
@@ -295,19 +295,23 @@ export const removeDecimalPartOfWad = (wadValue: bigint) => {
   return parseUnits(formatted.split('.')[0], 18);
 };
 
-export const calculateConversion = (originToken: { symbol: string }, amount: bigint) => {
+export const calculateConversion = (
+  originToken: { symbol: string },
+  amount: bigint,
+  mkrSkyRate: bigint
+): bigint => {
   if (originToken.symbol === 'DAI' || originToken.symbol === 'USDS') {
     return amount;
   }
   if (originToken.symbol === 'MKR') {
-    return amount * MKR_TO_SKY_PRICE_RATIO;
+    return amount * mkrSkyRate;
   }
-
-  return amount / MKR_TO_SKY_PRICE_RATIO;
+  // SKY or any other token
+  return amount / mkrSkyRate;
 };
 
-export const calculateMKRtoSKYPrice = (mkrPrice: bigint): bigint => {
-  return mkrPrice / MKR_TO_SKY_PRICE_RATIO;
+export const calculateMKRtoSKYPrice = (mkrPrice: bigint, mkrSkyRate: bigint): bigint => {
+  return mkrPrice / mkrSkyRate;
 };
 
 export const convertUSDCtoWad = (usdcAmount: bigint) => {
