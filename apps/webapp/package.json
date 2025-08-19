@@ -23,7 +23,10 @@
     "e2e:ui": "playwright test --ui",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit --project tsconfig.production.json"
+    "typecheck": "tsc --noEmit --project tsconfig.production.json",
+    "sync-content": "./scripts/sync-content.sh",
+    "bump-content-version": "./scripts/bump-content-version.sh",
+    "prebuild": "pnpm sync-content"
   },
   "dependencies": {
     "@jetstreamgg/sky-hooks": "workspace:^",
@@ -48,7 +51,7 @@
     "@tanstack/react-query": "^5.84.1",
     "@types/react": "19.1.9",
     "@types/react-dom": "19.1.7",
-    "@wagmi/core": "^2.18.0",
+    "@wagmi/core": "^2.18.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "copy-to-clipboard": "^3.3.3",
@@ -69,7 +72,7 @@
     "tailwind-variants": "^0.3.1",
     "viem": "2.33.2",
     "vite": "^7.0.0",
-    "wagmi": "^2.16.0"
+    "wagmi": "^2.16.1"
   },
   "devDependencies": {
     "@lingui/core": "^5.4.0",

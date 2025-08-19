@@ -1272,6 +1272,7 @@ function TradeWidgetWrapped({
               onUserSwitchTokens={onUserSwitchTokens}
               tradeAnyway={tradeAnyway}
               setTradeAnyway={setTradeAnyway}
+              enableSearch={true}
               onOriginTokenChange={(token: TokenForChain) => {
                 onWidgetStateChange?.({
                   originToken: token.symbol,

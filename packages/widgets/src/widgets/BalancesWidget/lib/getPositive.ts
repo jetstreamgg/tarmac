@@ -5,7 +5,6 @@ export const getPositive = ({ type }: { type: TransactionTypeEnum }) => {
     case TransactionTypeEnum.SELECT_DELEGATE:
     case TransactionTypeEnum.SELECT_REWARD:
     case TransactionTypeEnum.OPEN:
-    case TransactionTypeEnum.STAKE_REWARD:
     case TransactionTypeEnum.UNSTAKE_KICK:
     case TransactionTypeEnum.STAKE_OPEN:
     case TransactionTypeEnum.STAKE_SELECT_DELEGATE:
@@ -14,6 +13,7 @@ export const getPositive = ({ type }: { type: TransactionTypeEnum }) => {
 
     case TransactionTypeEnum.WITHDRAW:
     case TransactionTypeEnum.REWARD:
+    case TransactionTypeEnum.STAKE_REWARD:
     case TransactionTypeEnum.MKR_TO_SKY:
     case TransactionTypeEnum.DAI_TO_USDS:
     case TransactionTypeEnum.REPAY:

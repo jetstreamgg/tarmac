@@ -1,6 +1,6 @@
 import { useSavingsData } from '@jetstreamgg/sky-hooks';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
-import { useTokenBalance, usdcL2Address, sUsdsL2Address } from '@jetstreamgg/sky-hooks';
+import { useTokenBalance, usdcL2Address, sUsdsL2Address, TOKENS } from '@jetstreamgg/sky-hooks';
 import { useChainId, useAccount } from 'wagmi';
 import { isL2ChainId, formatBigInt } from '@jetstreamgg/sky-utils';
 
@@ -9,7 +9,7 @@ export function SavingsBalanceDetails() {
   const { address } = useAccount();
   const { data, isLoading, error } = useSavingsData();
   const isL2 = isL2ChainId(chainId);
-  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
+
   const { data: usdcBalance } = useTokenBalance({
     chainId,
     address,
@@ -17,12 +17,21 @@ export function SavingsBalanceDetails() {
     enabled: isL2
   });
 
-  const { data: sUsdsBalance } = useTokenBalance({
+  const { data: sUsdsBalanceL2 } = useTokenBalance({
     chainId,
     address,
     token: sUsdsL2Address[chainId as keyof typeof sUsdsL2Address],
     enabled: isL2
   });
+
+  const { data: sUsdsBalanceMainnet } = useTokenBalance({
+    chainId,
+    address,
+    token: TOKENS.susds.address[chainId],
+    enabled: !isL2
+  });
+
+  const sUsdsBalance = isL2 ? sUsdsBalanceL2 : sUsdsBalanceMainnet;
 
   const usdsToken = { name: 'USDS', symbol: 'USDS' };
   const usdcToken = { name: 'USDC', symbol: 'USDC', decimals: 6 };
@@ -34,7 +43,11 @@ export function SavingsBalanceDetails() {
         isLoading={isLoading}
         token={usdsToken}
         error={error}
-        afterBalance={isL2 && sUsdsBalance ? ` (${formatBigInt(sUsdsBalance.value)} sUSDS)` : undefined}
+        afterBalance={
+          sUsdsBalance
+            ? ` (${formatBigInt(sUsdsBalance.value, { compact: true, maxDecimals: 2 })} sUSDS)`
+            : undefined
+        }
         dataTestId="savings-supplied-balance-details"
       />
     );
@@ -63,7 +76,7 @@ export function SavingsBalanceDetails() {
     );
   };
 
-  return isL2 && !isRestrictedMiCa ? (
+  return isL2 ? (
     <div className="flex w-full flex-col gap-3">
       <div className="w-full">
         <SuppliedSavingsBalanceCard />

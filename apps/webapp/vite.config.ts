@@ -63,6 +63,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://safe-transaction-sepolia.safe.global
       https://safe-transaction-optimism.safe.global
       https://safe-transaction-unichain.safe.global
+      https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
       https://vote.sky.money
       https://query-subgraph-testnet.sky.money

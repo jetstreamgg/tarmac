@@ -29,7 +29,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "viem": "^2.33.2",
-    "wagmi": "^2.16.0"
+    "wagmi": "^2.16.1"
   },
   "devDependencies": {
     "@lingui/core": "^5.4.0",
@@ -40,7 +40,7 @@
     "vite": "^7.0.0",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^3.2.4",
-    "wagmi": "^2.16.0"
+    "wagmi": "^2.16.1"
   },
   "keywords": [
     "makerdao",

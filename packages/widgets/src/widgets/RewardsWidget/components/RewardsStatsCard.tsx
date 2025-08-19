@@ -42,6 +42,7 @@ export const RewardsStatsCard = ({
       rewardContract={rewardContract}
       onClick={onClick}
       isConnectedAndEnabled={isConnectedAndEnabled}
+      className="bg-radial-(--gradient-position) from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 active:from-primary-start/100 active:to-primary-end/100 transition"
       content={
         <HStack className="mt-5 justify-between" gap={2}>
           <MotionVStack className="justify-between" gap={2} variants={positionAnimations}>

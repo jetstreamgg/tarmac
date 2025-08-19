@@ -24,7 +24,6 @@ export const validateSearchParams = (
 ) => {
   const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
   const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
-  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
 
   searchParams.forEach((value, key) => {
     // removes any query param not found in QueryParams
@@ -105,16 +104,6 @@ export const validateSearchParams = (
           isL2Chain)
       ) {
         searchParams.delete(key);
-      }
-
-      // Add check for disallowed tokens in Savings on L2
-      if (widgetParam?.toLowerCase() === IntentMapping[Intent.SAVINGS_INTENT] && isL2Chain) {
-        if (isRestrictedMiCa) {
-          // Currently, USDS is the only allowed token in this scenario
-          if (value.toLowerCase() !== 'usds') {
-            searchParams.delete(key);
-          }
-        }
       }
 
       // if widget is upgrade, only valid source token is MKR, DAI or USDS

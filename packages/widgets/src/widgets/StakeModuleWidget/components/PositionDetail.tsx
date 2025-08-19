@@ -21,6 +21,7 @@ import { JazziconComponent } from './Jazzicon';
 import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
 import { ClaimRewardsButton } from './ClaimRewardsButton';
+import { getTooltipById } from '../../../data/tooltips';
 
 type Props = {
   collateralizationRatio?: bigint;
@@ -91,8 +92,8 @@ export function PositionDetail({
           {collateralizationRatio !== undefined && collateralizationRatio !== 0n && (
             <VStack gap={3}>
               <TextWithTooltip
-                text="Collateralization ratio"
-                tooltip="The ratio between the value of collateral you’ve provided and the amount you’ve borrowed against that collateral."
+                text={getTooltipById('collateralization-ratio')?.title || 'Collateralization ratio'}
+                tooltip={getTooltipById('collateralization-ratio')?.tooltip || ''}
                 contentClassname="w-[400px]"
                 textClassName="leading-4"
                 gap={1}
@@ -124,8 +125,8 @@ export function PositionDetail({
           {!!riskLevel && borrowedAmount !== undefined && borrowedAmount > 0n && (
             <VStack gap={3}>
               <TextWithTooltip
-                text="Risk level"
-                tooltip="Risk level indicates the likelihood of your collateral being liquidated. This is primarily determined by your Loan-to-Value (LTV) ratio, which represents the amount you've borrowed compared to the value of your crypto collateral. A high risk level means your collateral is close to the liquidation price threshold, and most vulnerable to market changes. A medium risk level means you have a reasonable balance between borrowing power and a safety buffer. A low risk level means you have a comparatively wider safety next against price fluctuations."
+                text={getTooltipById('risk-level')?.title || 'Risk level'}
+                tooltip={getTooltipById('risk-level')?.tooltip || ''}
                 textClassName="leading-4"
                 contentClassname="w-[400px]"
                 gap={1}

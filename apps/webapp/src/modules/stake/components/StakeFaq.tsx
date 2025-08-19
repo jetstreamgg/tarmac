@@ -1,4 +1,4 @@
-import { getStakeFaqItems } from '../getStakeFaqItems';
+import { getStakeFaqItems } from '@/data/faqs/getStakeFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 
 export function StakeFaq() {

@@ -4,11 +4,13 @@ import { t } from '@lingui/core/macro';
 export const getToken = ({
   type,
   tradeFromToken,
-  savingsToken
+  savingsToken,
+  rewardToken
 }: {
   type: TransactionTypeEnum;
   tradeFromToken?: string;
   savingsToken?: string;
+  rewardToken?: string;
 }) => {
   switch (type) {
     case TransactionTypeEnum.SUPPLY: //TODO: account for other reward contracts
@@ -20,8 +22,9 @@ export const getToken = ({
     case TransactionTypeEnum.REPAY:
     case TransactionTypeEnum.STAKE_BORROW:
     case TransactionTypeEnum.STAKE_REPAY:
-    case TransactionTypeEnum.STAKE_REWARD:
       return t`USDS`;
+    case TransactionTypeEnum.STAKE_REWARD:
+      return rewardToken || t`USDS`;
     case TransactionTypeEnum.MKR_TO_SKY:
     case TransactionTypeEnum.SKY_TO_MKR:
     case TransactionTypeEnum.SEAL_SKY:
@@ -32,7 +35,7 @@ export const getToken = ({
     case TransactionTypeEnum.TRADE:
       return tradeFromToken || 'Token';
     case TransactionTypeEnum.REWARD:
-      return t`SKY`; //TODO: handle other reward contracts
+      return rewardToken || t`SKY`;
     case TransactionTypeEnum.SEAL:
     case TransactionTypeEnum.UNSEAL:
       return t`MKR`;

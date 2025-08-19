@@ -21,6 +21,8 @@ import { AnimationLabels } from '@widgets/shared/animation/constants';
 import { TokenListItem } from './TokenListItem';
 import { TokenSelector } from './TokenSelector';
 import { useChainId } from 'wagmi';
+import { Search } from '../../icons/Search';
+import { Close } from '../../icons/Close';
 
 export interface TokenInputProps {
   label?: string;
@@ -49,6 +51,7 @@ export interface TokenInputProps {
   enabled?: boolean;
   maxIntegerDigits?: number;
   borrowLimitText?: string | undefined;
+  enableSearch?: boolean;
 }
 
 export function TokenInput({
@@ -74,12 +77,14 @@ export function TokenInput({
   extraPadding = false,
   enabled = true,
   borrowLimitText,
-  maxIntegerDigits
+  maxIntegerDigits,
+  enableSearch = false
 }: TokenInputProps): React.ReactElement {
   const cardRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const chainId = useChainId();
   const decimals = token ? getTokenDecimals(token, chainId) : 18;
   const color = useMemo(() => {
@@ -249,6 +254,17 @@ export function TokenInput({
     })} ${token.symbol.toUpperCase()}`;
   }, [balance, token, enabled]);
 
+  const filteredTokenList = useMemo(() => {
+    if (!enableSearch || !searchQuery) {
+      return tokenList;
+    }
+
+    const query = searchQuery.toLowerCase().replace(/\s/g, ''); // Remove all spaces from the query
+    return tokenList.filter(
+      token => token.name.toLowerCase().includes(query) || token.symbol.toLowerCase().includes(query)
+    );
+  }, [tokenList, searchQuery, enableSearch]);
+
   return (
     <Popover>
       <PopoverAnchor>
@@ -370,9 +386,37 @@ export function TokenInput({
                 <Trans>Select token</Trans>
               </Text>
             </motion.div>
-            {/* 185px is 3 rows of 60px */}
-            <VStack className="scrollbar-thin max-h-[185px] space-y-2 overflow-y-scroll">
-              {tokenList?.map((token, index) => (
+            {enableSearch && (
+              <motion.div variants={positionAnimations} className="px-2">
+                <HStack gap={2} className="bg-white/2 items-center rounded-xl p-3">
+                  <Search className="text-textSecondary h-4 w-4" />
+                  <div className="grow">
+                    <Input
+                      type="text"
+                      value={searchQuery}
+                      placeholder="Search tokens"
+                      className="placeholder:text-textSecondary h-5 text-sm leading-4 lg:text-sm lg:leading-4"
+                      containerClassName="border-none p-0"
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  {searchQuery && (
+                    <Close
+                      className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white"
+                      onClick={() => setSearchQuery('')}
+                    />
+                  )}
+                </HStack>
+              </motion.div>
+            )}
+            {/* 185px is 3 rows of 60px, adjust height when search is enabled */}
+            <VStack
+              className={cn(
+                'scrollbar-thin space-y-2 overflow-y-scroll',
+                enableSearch ? 'max-h-[125px]' : 'max-h-[185px]'
+              )}
+            >
+              {filteredTokenList?.map((token, index) => (
                 <TokenListItem
                   key={token.symbol}
                   token={token}
@@ -381,6 +425,11 @@ export function TokenInput({
                   enabled={enabled}
                 />
               ))}
+              {enableSearch && filteredTokenList.length === 0 && searchQuery && (
+                <Text className="text-textDesaturated px-5 py-4 text-center text-sm">
+                  No tokens found matching &quot;{searchQuery}&quot;
+                </Text>
+              )}
             </VStack>
           </VStack>
         </PopoverContent>

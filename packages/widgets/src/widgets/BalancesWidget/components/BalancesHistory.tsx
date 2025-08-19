@@ -76,6 +76,13 @@ export const BalancesHistory = ({
                 chainId={item.chainId}
                 savingsToken={'token' in item ? item.token?.symbol : undefined}
                 tradeFromToken={'fromToken' in item ? item.fromToken?.symbol : undefined}
+                rewardContract={
+                  'rewardContractAddress' in item && item.rewardContractAddress
+                    ? item.rewardContractAddress
+                    : 'rewardContract' in item && item.rewardContract
+                      ? item.rewardContract
+                      : undefined
+                }
                 item={item}
                 onExternalLinkClicked={onExternalLinkClicked}
               />

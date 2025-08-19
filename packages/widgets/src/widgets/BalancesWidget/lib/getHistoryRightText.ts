@@ -9,12 +9,14 @@ export const getHistoryRightText = ({
   type,
   tradeFromToken,
   savingsToken,
+  rewardToken,
   chainId
 }: {
   item: CombinedHistoryItem;
   type: TransactionTypeEnum;
   tradeFromToken?: string;
   savingsToken?: string;
+  rewardToken?: string;
   chainId: number;
 }) => {
   if ([TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.STAKE_SELECT_DELEGATE].includes(type)) {
@@ -28,5 +30,7 @@ export const getHistoryRightText = ({
   if ([TransactionTypeEnum.OPEN, TransactionTypeEnum.STAKE_OPEN].includes(type)) {
     return '';
   }
-  return getAmount({ item, type, chainId }) + ' ' + getToken({ type, tradeFromToken, savingsToken });
+  return (
+    getAmount({ item, type, chainId }) + ' ' + getToken({ type, tradeFromToken, savingsToken, rewardToken })
+  );
 };

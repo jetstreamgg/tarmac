@@ -59,10 +59,10 @@ export const SaRewardsCard = ({
 
   return (
     <StatsOverviewCardCoreAccordion
-      className={`transition-colors ${
+      className={`bg-radial-(--gradient-position) transition-colors ${
         selectedRewardContract && getAddress(selectedRewardContract) === getAddress(contractAddress)
-          ? 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'
-          : ''
+          ? 'from-primary-start/100 to-primary-end/100'
+          : 'from-card to-card hover:from-primary-start/40 hover:to-primary-end/40'
       } ${setSelectedRewardContract ? 'cursor-pointer' : 'cursor-default'}`}
       headerLeftContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>

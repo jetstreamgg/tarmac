@@ -60,7 +60,7 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.30.1",
     "viem": "^2.33.2",
-    "wagmi": "^2.16.0"
+    "wagmi": "^2.16.1"
   },
   "devDependencies": {
     "@lingui/core": "^5.4.0",
@@ -84,7 +84,7 @@
     "vite-plugin-static-copy": "^3.1.1",
     "vitest": "^3.2.4",
     "vitest-canvas-mock": "^0.3.3",
-    "wagmi": "^2.16.0"
+    "wagmi": "^2.16.1"
   },
   "keywords": [
     "react",

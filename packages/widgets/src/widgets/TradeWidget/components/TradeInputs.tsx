@@ -47,6 +47,7 @@ type TradeInputsProps = {
   onOriginTokenChange?: (token: TokenForChain) => void;
   onTargetTokenChange?: (token: TokenForChain) => void;
   onOriginInputChange?: (val: bigint, userTriggered?: boolean) => void;
+  enableSearch?: boolean;
 };
 
 export function TradeInput(props: TokenInputProps) {
@@ -84,7 +85,8 @@ export function TradeInputs({
   setTradeAnyway,
   onOriginTokenChange,
   onTargetTokenChange,
-  onOriginInputChange
+  onOriginInputChange,
+  enableSearch = false
 }: TradeInputsProps) {
   const separationPx = 12;
   const separationMb = 'mb-[12px]';
@@ -208,6 +210,7 @@ export function TradeInputs({
           extraPadding={true}
           showPercentageButtons={isConnectedAndEnabled}
           enabled={isConnectedAndEnabled}
+          enableSearch={enableSearch}
         />
       </motion.div>
       <div
@@ -264,6 +267,7 @@ export function TradeInputs({
           showPercentageButtons={false}
           enabled={isConnectedAndEnabled}
           inputDisabled={originToken?.isNative}
+          enableSearch={enableSearch}
         />
       </motion.div>
       {quoteError && (

@@ -4,13 +4,19 @@ import { Card } from '@widgets/components/ui/card';
 import { LinkExternal } from '@widgets/shared/components/icons/LinkExternal';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { getPositive } from '../lib/getPositive';
-import { ModuleEnum, TransactionTypeEnum, CombinedHistoryItem } from '@jetstreamgg/sky-hooks';
+import {
+  ModuleEnum,
+  TransactionTypeEnum,
+  CombinedHistoryItem,
+  useRewardContractTokens
+} from '@jetstreamgg/sky-hooks';
 import { getHistoryIconSource } from '../lib/getHistoryIconSource';
 import { getTitle } from '../lib/getTitle';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { getHistoryRightText } from '../lib/getHistoryRightText';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Avatar, AvatarImage } from '@widgets/components/ui/avatar';
+import { Skeleton } from '@widgets/components/ui/skeleton';
 
 interface BalancesHistoryItemProps {
   transactionHash: string;
@@ -20,6 +26,7 @@ interface BalancesHistoryItemProps {
   chainId?: number;
   savingsToken?: string;
   tradeFromToken?: string;
+  rewardContract?: `0x${string}`;
   item: CombinedHistoryItem;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
@@ -32,10 +39,18 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   chainId,
   savingsToken,
   tradeFromToken,
+  rewardContract,
   item,
   onExternalLinkClicked
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const { data: rewardContractTokens, isLoading: isLoadingRewardContractTokens } =
+    useRewardContractTokens(rewardContract);
+
+  const isHistoryRightTextLoading =
+    [TransactionTypeEnum.STAKE_REWARD, TransactionTypeEnum.REWARD].includes(type) &&
+    isLoadingRewardContractTokens;
+
   const href =
     type === TransactionTypeEnum.TRADE && !isL2ChainId(chainId || 1)
       ? getCowExplorerLink(chainId || 1, transactionHash)
@@ -84,12 +99,23 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
               )}
             </div>
             <div className="text-right">
-              <Text className={positive ? 'text-bullish' : ''}>
-                <span>{positive ? '+' : positive === false ? '-' : ''}</span>
-                <span className="ml-[2px]">
-                  {getHistoryRightText({ item, type, tradeFromToken, savingsToken, chainId: chainId || 1 })}
-                </span>
-              </Text>
+              {isHistoryRightTextLoading ? (
+                <Skeleton />
+              ) : (
+                <Text className={positive ? 'text-bullish' : ''}>
+                  <span>{positive ? '+' : positive === false ? '-' : ''}</span>
+                  <span className="ml-[2px]">
+                    {getHistoryRightText({
+                      item,
+                      type,
+                      tradeFromToken,
+                      savingsToken,
+                      rewardToken: rewardContractTokens?.rewardsToken.symbol,
+                      chainId: chainId || 1
+                    })}
+                  </span>
+                </Text>
+              )}
               <Text variant="small" className="text-textSecondary">
                 {formattedDate}
               </Text>
