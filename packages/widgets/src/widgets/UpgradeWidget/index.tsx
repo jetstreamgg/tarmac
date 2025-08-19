@@ -5,7 +5,8 @@ import {
   getTokenDecimals,
   mkrSkyAddress,
   useIsBatchSupported,
-  useTokenBalance
+  useTokenBalance,
+  useMkrSkyRate
 } from '@jetstreamgg/sky-hooks';
 import { UpgradeRevert } from './components/UpgradeRevert';
 import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
@@ -168,6 +169,7 @@ export function UpgradeWidgetWrapped({
   const { address, isConnected, isConnecting } = useAccount();
   const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
+  const { data: mkrSkyRate, isLoading: isRateLoading, error: rateError } = useMkrSkyRate();
 
   const initialTabIndex = validatedExternalState?.flow === UpgradeFlow.REVERT ? 1 : 0;
 
@@ -764,12 +766,13 @@ export function UpgradeWidgetWrapped({
   useEffect(() => {
     setIsLoading(
       isConnecting ||
+        isRateLoading ||
         txStatus === TxStatus.LOADING ||
         txStatus === TxStatus.INITIALIZED ||
         // Keep the loading state after a successful approval as a new transaction will automatically pop up
         (widgetState.action === UpgradeAction.APPROVE && txStatus === TxStatus.SUCCESS)
     );
-  }, [txStatus, isConnecting, widgetState.action]);
+  }, [txStatus, isConnecting, widgetState.action, isRateLoading]);
 
   // Reset widget state after switching network
   useEffect(() => {
@@ -839,7 +842,9 @@ export function UpgradeWidgetWrapped({
               originToken={originToken}
               originAmount={originAmount}
               targetToken={targetToken}
-              targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
+              targetAmount={
+                mkrSkyRate ? math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyRate) : 0n
+              }
               onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
               needsAllowance={!hasAllowance}
@@ -854,7 +859,9 @@ export function UpgradeWidgetWrapped({
               originToken={originToken}
               originAmount={debouncedOriginAmount}
               targetToken={targetToken}
-              targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
+              targetAmount={
+                mkrSkyRate ? math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyRate) : 0n
+              }
               needsAllowance={!hasAllowance}
               legalBatchTxUrl={legalBatchTxUrl}
               isBatchFlowSupported={!shouldAvoidBundledFlow}
@@ -872,7 +879,9 @@ export function UpgradeWidgetWrapped({
                     : t`Enter an amount of USDS to revert`
                 }
                 originAmount={originAmount}
-                targetAmount={math.calculateConversion(originToken, debouncedOriginAmount)}
+                targetAmount={
+                  mkrSkyRate ? math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyRate) : 0n
+                }
                 originOptions={calculateOriginOptions(
                   originToken,
                   tabIndex === 0 ? 'upgrade' : 'revert',
@@ -941,7 +950,13 @@ export function UpgradeWidgetWrapped({
                   }
                 }}
                 tabIndex={tabIndex}
-                error={isBalanceError ? new Error(t`Insufficient funds`) : undefined}
+                error={
+                  isBalanceError
+                    ? new Error(t`Insufficient funds`)
+                    : rateError
+                      ? new Error(t`Unable to fetch conversion rate`)
+                      : undefined
+                }
                 onMenuItemChange={(op: Token | null) => {
                   if (op) {
                     setOriginToken(op as Token);

@@ -2,11 +2,11 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
-import { getTokenDecimals, Token, TOKENS } from '@jetstreamgg/sky-hooks';
+import { getTokenDecimals, Token, TOKENS, useMkrSkyRate } from '@jetstreamgg/sky-hooks';
 import { UpgradeStats } from './UpgradeStats';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { t } from '@lingui/core/macro';
-import { formatBigInt, math } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useChainId } from 'wagmi';
@@ -52,6 +52,10 @@ export function UpgradeRevert({
   isConnectedAndEnabled = true
 }: Props): React.ReactElement {
   const chainId = useChainId();
+  const { data: mkrSkyRate } = useMkrSkyRate();
+
+  // Format the rate with thousand separators
+  const formattedRate = mkrSkyRate ? mkrSkyRate.toLocaleString() : '...';
 
   return (
     <VStack className="w-full items-center justify-center">
@@ -116,14 +120,14 @@ export function UpgradeRevert({
                         originToken?.symbol === TOKENS.mkr.symbol &&
                         targetToken?.symbol === TOKENS.sky.symbol
                       ) {
-                        return `1:${math.MKR_TO_SKY_PRICE_RATIO.toString()}`;
+                        return `1:${formattedRate}`;
                       }
                       // Check if it's SKY to MKR conversion
                       else if (
                         originToken?.symbol === TOKENS.sky.symbol &&
                         targetToken?.symbol === TOKENS.mkr.symbol
                       ) {
-                        return `${math.MKR_TO_SKY_PRICE_RATIO.toString()}:1`;
+                        return `${formattedRate}:1`;
                       }
                       // All other conversions are 1:1 (DAI to USDS, USDS to DAI)
                       else {
