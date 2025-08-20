@@ -20,7 +20,9 @@
     "lint": "pnpm lint-no-files src scripts",
     "test": "vitest run",
     "e2e": "playwright test --trace on",
-    "e2e:ui": "playwright test --ui",
+    "e2e:ui": "TEST_CHAIN=mainnet playwright test --ui",
+    "e2e:stagehand": "dotenv -e .env.stagehand -- bash -c 'USE_STAGEHAND=true TEST_CHAIN=mainnet playwright test --trace on'",
+    "e2e:stagehand:ui": "dotenv -e .env.stagehand -- bash -c 'USE_STAGEHAND=true TEST_CHAIN=mainnet playwright test --ui'",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit --project tsconfig.production.json",
@@ -75,6 +77,7 @@
     "wagmi": "^2.16.1"
   },
   "devDependencies": {
+    "@browserbasehq/stagehand": "^2.4.3",
     "@lingui/core": "^5.4.0",
     "@lingui/swc-plugin": "^5.5.2",
     "@lingui/vite-plugin": "^5.4.0",
@@ -82,6 +85,8 @@
     "@tailwindcss/vite": "^4.1.11",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "@vitest/coverage-v8": "^3.2.4",
+    "dotenv": "^16.6.1",
+    "dotenv-cli": "^10.0.0",
     "happy-dom": "^15.11.7",
     "tailwind-merge": "^2.6.0",
     "tailwindcss": "^4.1.11",
