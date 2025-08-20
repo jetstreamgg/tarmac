@@ -89,6 +89,7 @@ export const SupplyWithdraw = ({
           isLoading={isSavingsDataLoading}
           stats={stats}
           address={contractAddress}
+          userAddress={address}
           isConnectedAndEnabled={isConnectedAndEnabled}
           onExternalLinkClicked={onExternalLinkClicked}
         />

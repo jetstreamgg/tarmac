@@ -1,5 +1,5 @@
 import { useChainId } from 'wagmi';
-import { getTradeFaqItems } from '../getTradeFaqItems';
+import { getTradeFaqItems } from '@/data/faqs/getTradeFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 
 export function TradeFaq() {

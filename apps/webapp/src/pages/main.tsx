@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ConfigProvider } from '../modules/config/context/ConfigContext';
+import { ConfigProvider } from '../modules/config/context/ConfigProvider';
 import { App } from './App';
 import { ErrorBoundary } from '../modules/layout/components/ErrorBoundary';
 
