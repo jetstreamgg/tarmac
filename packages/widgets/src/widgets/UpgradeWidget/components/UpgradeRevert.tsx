@@ -57,6 +57,47 @@ export function UpgradeRevert({
   // Format the rate with thousand separators
   const formattedRate = mkrSkyRate ? mkrSkyRate.toLocaleString() : '...';
 
+  // Calculate the upgrade penalty dynamically
+  const ORIGINAL_RATE = 24000n;
+
+  function getUpgradePenalty(rate: bigint): string {
+    if (typeof rate !== 'bigint') {
+      throw new TypeError('rate must be a bigint');
+    }
+
+    if (rate >= ORIGINAL_RATE) {
+      return '0';
+    }
+
+    // scale = percentage * 100 (two decimal places kept as an integer)
+    const diff = ORIGINAL_RATE - rate;
+    const scale100 = (diff * 10000n) / ORIGINAL_RATE; // e.g. 1234 => 12.34%
+
+    const intPart = scale100 / 100n;
+    const fracPart = scale100 % 100n;
+
+    if (fracPart === 0n) {
+      return intPart.toString(); // "100", "16", etc.
+    }
+
+    // format with two decimals, trimming trailing zero if present
+    const fracStr = fracPart.toString().padStart(2, '0');
+    return fracStr.endsWith('0') ? `${intPart}.${fracStr[0]}` : `${intPart}.${fracStr}`;
+  }
+
+  // Calculate penalty only if we have a valid rate
+  let upgradePenalty: string | null = null;
+  let penaltyError = false;
+
+  try {
+    if (mkrSkyRate) {
+      upgradePenalty = getUpgradePenalty(mkrSkyRate);
+    }
+  } catch (error) {
+    penaltyError = true;
+    console.error('Failed to calculate upgrade penalty:', error);
+  }
+
   return (
     <VStack className="w-full items-center justify-center">
       <Tabs value={tabIndex === 0 ? UpgradeFlow.UPGRADE : UpgradeFlow.REVERT} className="w-full">
@@ -178,8 +219,8 @@ export function UpgradeRevert({
                     ? [
                         {
                           label: t`Delayed Upgrade Penalty`,
-                          // TODO: Fetch this value dynamically
-                          value: '0%',
+                          value: penaltyError ? 'Error' : upgradePenalty ? `${upgradePenalty}%` : '...',
+                          error: penaltyError,
                           tooltipText: (
                             <>
                               <Text>
