@@ -6,68 +6,74 @@ type TenderlyTestnetDataFile = {
   TENDERLY_RPC_URL: string;
 }[];
 
-type EvmSnapshotResponse = {
+type RpcResponse<T> = {
   id: number;
   jsonrpc: string;
-  result: string;
+  result: T;
 };
 
-type EvmRevertResponse = {
-  id: number;
-  jsonrpc: string;
-  result: boolean;
+export type SnapshotInfo = {
+  chain: string;
+  snapshotId: string;
 };
 
-export const evmSnapshot = async (chain: string): Promise<string> => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const testnetsData: TenderlyTestnetDataFile = JSON.parse(file);
-
-  const networkData = testnetsData.find(item => item.NETWORK === chain);
-  if (!networkData) {
-    throw new Error(`No data found for network ${chain}`);
-  }
-
-  const res = await fetch(networkData.TENDERLY_RPC_URL, {
+const makeRpcRequest = async <T>(rpcUrl: string, method: string, params: unknown[]): Promise<T> => {
+  const res = await fetch(rpcUrl, {
     method: 'POST',
     headers: {
       accept: '*/*',
       'content-type': 'application/json'
     },
     body: JSON.stringify({
-      method: 'evm_snapshot',
-      params: [],
+      method,
+      params,
       id: 42,
       jsonrpc: '2.0'
     })
   });
 
-  const data: EvmSnapshotResponse = await res.json();
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`RPC request failed for ${rpcUrl} with method ${method}: ${errorText}`);
+  }
+
+  const data: RpcResponse<T> = await res.json();
   return data.result;
+};
+
+const getTestnetsData = async (): Promise<TenderlyTestnetDataFile> => {
+  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
+  return JSON.parse(file);
+};
+
+export const evmSnapshot = async (chain?: string): Promise<string | SnapshotInfo[]> => {
+  const testnetsData = await getTestnetsData();
+
+  if (chain) {
+    const networkData = testnetsData.find(item => item.NETWORK === chain);
+    if (!networkData) {
+      throw new Error(`No data found for network ${chain}`);
+    }
+    return makeRpcRequest<string>(networkData.TENDERLY_RPC_URL, 'evm_snapshot', []);
+  }
+
+  const responses = await Promise.all(
+    testnetsData.map(async network => {
+      const snapshotId = await makeRpcRequest<string>(network.TENDERLY_RPC_URL, 'evm_snapshot', []);
+      return { chain: network.NETWORK, snapshotId };
+    })
+  );
+
+  return responses;
 };
 
 export const evmRevert = async (chain: string, snapshotId: string): Promise<boolean> => {
-  const file = await readFile('../../tenderlyTestnetData.json', 'utf-8');
-  const testnetsData: TenderlyTestnetDataFile = JSON.parse(file);
+  const testnetsData = await getTestnetsData();
 
   const networkData = testnetsData.find(item => item.NETWORK === chain);
   if (!networkData) {
     throw new Error(`No data found for network ${chain}`);
   }
 
-  const res = await fetch(networkData.TENDERLY_RPC_URL, {
-    method: 'POST',
-    headers: {
-      accept: '*/*',
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify({
-      method: 'evm_revert',
-      params: [snapshotId],
-      id: 42,
-      jsonrpc: '2.0'
-    })
-  });
-
-  const data: EvmRevertResponse = await res.json();
-  return data.result;
+  return makeRpcRequest<boolean>(networkData.TENDERLY_RPC_URL, 'evm_revert', [snapshotId]);
 };

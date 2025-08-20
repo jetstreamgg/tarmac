@@ -1,4 +1,4 @@
-export const getSparkGeneralFaqItems = () => {
+export const getSparkSpecificFaqItems = () => {
   const items = [
     {
       question: 'What is Spark?',
