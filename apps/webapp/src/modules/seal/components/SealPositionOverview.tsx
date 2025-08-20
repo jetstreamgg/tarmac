@@ -5,7 +5,8 @@ import {
   useSealPosition,
   useUrnAddress,
   useVault,
-  ZERO_ADDRESS
+  ZERO_ADDRESS,
+  useMkrSkyRate
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt, formatPercent, math } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
@@ -41,6 +42,7 @@ export function SealPositionOverview({
   const { data, isLoading, error } = useSealPosition({ urnIndex: positionIndex });
   const { data: urnAddress, isLoading: urnAddressLoading } = useUrnAddress(BigInt(positionIndex));
   const { data: vault, isLoading: vaultLoading, error: vaultError } = useVault(urnAddress || ZERO_ADDRESS);
+  const { data: mkrSkyRate } = useMkrSkyRate();
 
   if (!error && !isLoading && !data) return null;
 
@@ -48,8 +50,10 @@ export function SealPositionOverview({
 
   const mkrSealed = formatBigInt(vault?.collateralAmount || 0n);
   const skySealed = useMemo(() => {
-    return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
-  }, [vault?.collateralAmount]);
+    return vault?.collateralAmount && mkrSkyRate
+      ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n, mkrSkyRate)
+      : 0n;
+  }, [vault?.collateralAmount, mkrSkyRate]);
 
   const displayToken = useMemo(() => {
     return userConfig?.sealToken === SealToken.MKR ? SealToken.MKR : SealToken.SKY;
@@ -120,7 +124,9 @@ export function SealPositionOverview({
                   {formatBigInt(
                     displayToken === SealToken.MKR
                       ? vault?.liquidationPrice || 0n
-                      : math.calculateMKRtoSKYPrice(vault?.liquidationPrice || 0n)
+                      : mkrSkyRate
+                        ? math.calculateMKRtoSKYPrice(vault?.liquidationPrice || 0n, mkrSkyRate)
+                        : 0n
                   )}
                 </Text>
               }
@@ -135,7 +141,9 @@ export function SealPositionOverview({
                   {formatBigInt(
                     displayToken === SealToken.MKR
                       ? vault?.delayedPrice || 0n
-                      : math.calculateMKRtoSKYPrice(vault?.delayedPrice || 0n)
+                      : mkrSkyRate
+                        ? math.calculateMKRtoSKYPrice(vault?.delayedPrice || 0n, mkrSkyRate)
+                        : 0n
                   )}
                 </Text>
               }

@@ -10,7 +10,7 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { captitalizeFirstLetter, formatBigInt, formatPercent, math } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
 import { getRiskTextColor } from '../lib/utils';
-import { RiskLevel, Token, TOKENS, useCollateralData } from '@jetstreamgg/sky-hooks';
+import { RiskLevel, Token, TOKENS, useCollateralData, useMkrSkyRate } from '@jetstreamgg/sky-hooks';
 import { cn } from '@widgets/lib/utils';
 import { getTooltipById } from '../../../data/tooltips';
 
@@ -41,6 +41,7 @@ export function PositionDetailAccordion({
 }: Props) {
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
   const { data: collateralData } = useCollateralData();
+  const { data: mkrSkyRate } = useMkrSkyRate();
 
   return (
     <Accordion type="single" collapsible>
@@ -69,7 +70,9 @@ export function PositionDetailAccordion({
               {formatBigInt(
                 displayToken === TOKENS.mkr
                   ? sealedAmount || 0n
-                  : math.calculateConversion(TOKENS.mkr, sealedAmount || 0n)
+                  : mkrSkyRate
+                    ? math.calculateConversion(TOKENS.mkr, sealedAmount || 0n, mkrSkyRate)
+                    : 0n
               )}{' '}
               {displayToken.symbol}
             </Text>
@@ -135,7 +138,9 @@ export function PositionDetailAccordion({
                 {formatBigInt(
                   displayToken === TOKENS.mkr
                     ? liquidationPrice
-                    : math.calculateMKRtoSKYPrice(liquidationPrice)
+                    : mkrSkyRate
+                      ? math.calculateMKRtoSKYPrice(liquidationPrice, mkrSkyRate)
+                      : 0n
                 )}
               </Text>
             </motion.div>
@@ -146,7 +151,11 @@ export function PositionDetailAccordion({
               <Text className="text-right text-sm">
                 $
                 {formatBigInt(
-                  displayToken === TOKENS.mkr ? delayedPrice : math.calculateMKRtoSKYPrice(delayedPrice)
+                  displayToken === TOKENS.mkr
+                    ? delayedPrice
+                    : mkrSkyRate
+                      ? math.calculateMKRtoSKYPrice(delayedPrice, mkrSkyRate)
+                      : 0n
                 )}
               </Text>
             </motion.div>

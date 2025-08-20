@@ -1,6 +1,12 @@
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
-import { TOKENS, useVault, useSimulatedVault, getIlkName, Token } from '@jetstreamgg/sky-hooks';
-import { math } from '@jetstreamgg/sky-utils';
+import {
+  TOKENS,
+  useVault,
+  useSimulatedVault,
+  getIlkName,
+  Token,
+  useMkrSkyRate
+} from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
 import { useAccount } from 'wagmi';
@@ -33,12 +39,13 @@ export const Free = ({
     setSelectedToken
   } = useContext(SealModuleWidgetContext);
   const { widgetState } = useContext(WidgetContext);
+  const { data: mkrSkyRate } = useMkrSkyRate();
 
   const mkrSealed = sealedAmount || 0n;
 
   const skySealed = useMemo(() => {
-    return sealedAmount ? sealedAmount * math.MKR_TO_SKY_PRICE_RATIO : 0n;
-  }, [sealedAmount]);
+    return sealedAmount && mkrSkyRate ? sealedAmount * mkrSkyRate : 0n;
+  }, [sealedAmount, mkrSkyRate]);
 
   const { data: existingVault } = useVault(activeUrn?.urnAddress, ilkName);
 
@@ -49,7 +56,9 @@ export const Free = ({
   const newCollateralAmount =
     selectedToken === TOKENS.mkr
       ? (existingVault?.collateralAmount || 0n) - mkrToFree
-      : (existingVault?.collateralAmount || 0n) * math.MKR_TO_SKY_PRICE_RATIO - skyToFree;
+      : mkrSkyRate
+        ? (existingVault?.collateralAmount || 0n) * mkrSkyRate - skyToFree
+        : 0n;
 
   const { data: simulatedVault, isLoading } = useSimulatedVault(
     // Collateral amounts must be > 0

@@ -9,7 +9,8 @@ import {
   useRewardContractTokens,
   useDelegateName,
   useSaRewardContracts,
-  useDelegateOwner
+  useDelegateOwner,
+  useMkrSkyRate
 } from '@jetstreamgg/sky-hooks';
 import { captitalizeFirstLetter, formatBigInt, formatPercent, math } from '@jetstreamgg/sky-utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -66,6 +67,7 @@ export function PositionDetail({
   const { data: selectedDelegateOwner } = useDelegateOwner(selectedVoteDelegate);
   const { data: sealRewardContracts } = useSaRewardContracts();
   const { displayToken, setDisplayToken } = useContext(SealModuleWidgetContext);
+  const { data: mkrSkyRate } = useMkrSkyRate();
 
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
 
@@ -114,7 +116,9 @@ export function PositionDetail({
               balance={formatBigInt(
                 displayToken === TOKENS.mkr
                   ? sealedAmount || 0n
-                  : math.calculateConversion(TOKENS.mkr, sealedAmount || 0n)
+                  : mkrSkyRate
+                    ? math.calculateConversion(TOKENS.mkr, sealedAmount || 0n, mkrSkyRate)
+                    : 0n
               )}
             />
           </VStack>
