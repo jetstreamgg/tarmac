@@ -112,13 +112,20 @@ describe('useMkrSkyRate', () => {
 
     renderHook(() => useMkrSkyRate());
 
-    // Should still use mainnet address if testnet address doesn't exist
-    expect(useReadContract).toHaveBeenCalledWith(
-      expect.objectContaining({
-        address: expect.any(String),
-        chainId: testnetChainId
-      })
-    );
+    // Should use the testnet-specific address if available, otherwise undefined
+    const expectedAddress = mkrSkyAddress[testnetChainId as keyof typeof mkrSkyAddress];
+
+    expect(useReadContract).toHaveBeenCalledWith({
+      address: expectedAddress,
+      abi: expect.any(Array),
+      functionName: 'rate',
+      chainId: testnetChainId,
+      query: {
+        staleTime: 60 * 1000,
+        refetchInterval: 60 * 1000,
+        refetchOnWindowFocus: true
+      }
+    });
   });
 
   it('should refetch data when refetch is called', () => {
