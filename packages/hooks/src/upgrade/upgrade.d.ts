@@ -17,6 +17,7 @@ export type UpgradeTotalResponses = {
 export type UpgradeTotals = {
   totalDaiUpgraded: bigint;
   totalMkrUpgraded: bigint;
+  totalSkyUpgraded: bigint;
 };
 
 export type DaiUsdsRow = HistoryItem & {
