@@ -87,7 +87,7 @@ export const L2SavingsStatsCard = ({
     <StatsOverviewCardCore
       headerLeftContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS' }} />
+          <TokenIcon className="h-6 w-6" token={{ symbol: 'sUSDS' }} />
           <Text>Sky Savings Rate</Text>
         </MotionHStack>
       }

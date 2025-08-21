@@ -3,7 +3,7 @@ export const getRewardsFaqItems = () => {
     {
       question: 'What are Sky Token Rewards, and how do they work?',
       answer:
-        'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time in the form of SKY governance tokens. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
+        'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
       index: 0
     },
     {
@@ -18,7 +18,7 @@ export const getRewardsFaqItems = () => {
       index: 2
     },
     {
-      question: 'How is the Sky Token Rewards rates calculated?',
+      question: 'How are Sky Token Rewards rates calculated?',
       answer: `The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors:
 
 • The issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance;
