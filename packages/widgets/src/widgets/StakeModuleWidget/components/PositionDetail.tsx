@@ -41,6 +41,9 @@ type Props = {
   index: bigint;
   claimPrepared: boolean;
   claimExecute: () => void;
+  claimAllPrepared: boolean;
+  claimAllExecute: () => void;
+  batchEnabledAndSupported: boolean;
 };
 
 // Copied from TransactionDetail, it could be reusable
@@ -57,7 +60,10 @@ export function PositionDetail({
   urnAddress,
   index,
   claimPrepared,
-  claimExecute
+  claimExecute,
+  claimAllPrepared,
+  claimAllExecute,
+  batchEnabledAndSupported
 }: Props) {
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
@@ -177,6 +183,9 @@ export function PositionDetail({
           index={index}
           claimPrepared={claimPrepared}
           claimExecute={claimExecute}
+          claimAllPrepared={claimAllPrepared}
+          claimAllExecute={claimAllExecute}
+          batchEnabledAndSupported={batchEnabledAndSupported}
         />
       )}
     </MotionVStack>

@@ -14,6 +14,9 @@ export const ManagePosition = ({
   tabSide,
   claimPrepared,
   claimExecute,
+  claimAllPrepared,
+  claimAllExecute,
+  batchEnabledAndSupported,
   onStakeUrnChange,
   onWidgetStateChange,
   needsAllowance,
@@ -31,6 +34,9 @@ export const ManagePosition = ({
   tabSide: 'left' | 'right';
   claimPrepared: boolean;
   claimExecute: () => void;
+  claimAllPrepared: boolean;
+  claimAllExecute: () => void;
+  batchEnabledAndSupported: boolean;
   onStakeUrnChange?: OnStakeUrnChange;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   needsAllowance: boolean;
@@ -41,7 +47,14 @@ export const ManagePosition = ({
   legalBatchTxUrl?: string;
 }) => {
   return currentAction === StakeAction.OVERVIEW ? (
-    <UrnsList claimPrepared={claimPrepared} claimExecute={claimExecute} onStakeUrnChange={onStakeUrnChange} />
+    <UrnsList
+      claimPrepared={claimPrepared}
+      claimExecute={claimExecute}
+      claimAllPrepared={claimAllPrepared}
+      claimAllExecute={claimAllExecute}
+      batchEnabledAndSupported={batchEnabledAndSupported}
+      onStakeUrnChange={onStakeUrnChange}
+    />
   ) : (
     <Wizard
       isConnectedAndEnabled={isConnectedAndEnabled}

@@ -20,7 +20,10 @@ export function ClaimRewardsDropdown({
   urnAddress,
   index,
   claimPrepared,
-  claimExecute
+  claimExecute,
+  claimAllPrepared,
+  claimAllExecute,
+  batchEnabledAndSupported
 }: {
   stakeRewardContracts: {
     contractAddress: `0x${string}`;
@@ -29,6 +32,9 @@ export function ClaimRewardsDropdown({
   index: bigint;
   claimPrepared: boolean;
   claimExecute: () => void;
+  claimAllPrepared: boolean;
+  claimAllExecute: () => void;
+  batchEnabledAndSupported: boolean;
 }) {
   const { setTxStatus, setExternalLink, setShowStepIndicator, setWidgetState } = useContext(WidgetContext);
   const { indexToClaim, setIndexToClaim, rewardContractToClaim, setRewardContractToClaim } =
@@ -36,7 +42,7 @@ export function ClaimRewardsDropdown({
 
   const chainId = useChainId();
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedContract, setSelectedContract] = useState<`0x${string}` | null>(null);
+  const [selectedContract, setSelectedContract] = useState<`0x${string}` | 'all' | null>(null);
 
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses: stakeRewardContracts.map(({ contractAddress }) => contractAddress),
@@ -45,17 +51,20 @@ export function ClaimRewardsDropdown({
   });
 
   const selectedRewardToClaim = useMemo(() => {
+    if (selectedContract === 'all') return selectedContract;
     return rewardContractsToClaim?.find(({ contractAddress }) => contractAddress === selectedContract);
   }, [rewardContractsToClaim, selectedContract]);
 
   const handleClaimClick = () => {
     if (selectedContract) {
       setIndexToClaim(index);
-      setRewardContractToClaim(selectedContract);
+      if (selectedContract !== 'all') {
+        setRewardContractToClaim(selectedContract);
+      }
     }
   };
 
-  const handleOptionSelect = (option: `0x${string}`) => {
+  const handleOptionSelect = (option: `0x${string}` | 'all') => {
     setSelectedContract(option);
     setIsOpen(false);
   };
@@ -64,8 +73,8 @@ export function ClaimRewardsDropdown({
     if (
       indexToClaim === index &&
       selectedContract &&
-      rewardContractToClaim === selectedContract &&
-      claimPrepared
+      ((rewardContractToClaim === selectedContract && claimPrepared) ||
+        (selectedContract === 'all' && claimAllPrepared))
     ) {
       setShowStepIndicator(false);
       setWidgetState((prev: WidgetState) => ({
@@ -75,9 +84,13 @@ export function ClaimRewardsDropdown({
       }));
       setTxStatus(TxStatus.INITIALIZED);
       setExternalLink(undefined);
-      claimExecute();
+      if (selectedContract === 'all') {
+        claimAllExecute();
+      } else {
+        claimExecute();
+      }
     }
-  }, [indexToClaim, index, rewardContractToClaim, selectedContract, claimPrepared]);
+  }, [indexToClaim, index, rewardContractToClaim, selectedContract, claimPrepared, claimAllPrepared]);
 
   const isProcessing =
     indexToClaim === index && selectedContract && rewardContractToClaim === selectedContract;
@@ -107,7 +120,9 @@ export function ClaimRewardsDropdown({
           {isProcessing
             ? 'Preparing your claim transaction...'
             : selectedRewardToClaim
-              ? `Claim ${formatBigInt(selectedRewardToClaim.claimBalance)} ${selectedRewardToClaim.rewardSymbol}`
+              ? selectedRewardToClaim === 'all'
+                ? 'Claim all rewards'
+                : `Claim ${formatBigInt(selectedRewardToClaim.claimBalance)} ${selectedRewardToClaim.rewardSymbol}`
               : 'Select reward to claim'}
         </Text>
       </Button>
@@ -141,6 +156,18 @@ export function ClaimRewardsDropdown({
                 <Text>{`Claim ${formatBigInt(claimBalance)} ${rewardSymbol}`}</Text>
               </Button>
             ))}
+            {batchEnabledAndSupported && (
+              <Button
+                variant={null}
+                onClick={() => handleOptionSelect('all')}
+                className={cn(
+                  'text-text flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm bg-blend-overlay transition',
+                  selectedContract === 'all' ? 'bg-surface' : 'bg-transparent hover:bg-[#FFFFFF0D]'
+                )}
+              >
+                <Text>Claim all rewards</Text>
+              </Button>
+            )}
           </VStack>
         </PopoverContent>
       </Popover>

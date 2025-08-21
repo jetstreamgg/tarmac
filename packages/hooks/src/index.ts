@@ -144,6 +144,7 @@ export { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from '.
 export { useStakeSkyAllowance, useStakeUsdsAllowance } from './stake/useStakeAllowance';
 export { useStakeSkyApprove, useStakeUsdsApprove } from './stake/useStakeApprove';
 export { useClaimRewards as useStakeClaimRewards } from './stake/useClaimRewards';
+export { useBatchClaimAllRewards as useBatchStakeClaimAllRewards } from './stake/useBatchClaimAllRewards';
 export { useStakeRewardsData } from './stake/useStakeRewardsData';
 export { useStakePosition } from './stake/useStakePosition';
 export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';

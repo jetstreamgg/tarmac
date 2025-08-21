@@ -28,6 +28,9 @@ interface UrnPositionProps {
   index: bigint;
   claimPrepared: boolean;
   claimExecute: () => void;
+  claimAllPrepared: boolean;
+  claimAllExecute: () => void;
+  batchEnabledAndSupported: boolean;
   onStakeUrnChange?: OnStakeUrnChange;
 }
 
@@ -35,6 +38,9 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
   index,
   claimPrepared,
   claimExecute,
+  claimAllPrepared,
+  claimAllExecute,
+  batchEnabledAndSupported,
   onStakeUrnChange
 }) => {
   const { data: urnAddress } = useStakeUrnAddress(index);
@@ -121,6 +127,9 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
         index={index}
         claimPrepared={claimPrepared}
         claimExecute={claimExecute}
+        claimAllPrepared={claimAllPrepared}
+        claimAllExecute={claimAllExecute}
+        batchEnabledAndSupported={batchEnabledAndSupported}
       />
     </Card>
   );

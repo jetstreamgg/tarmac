@@ -8,10 +8,16 @@ import { OnStakeUrnChange } from '..';
 export const UrnsList = ({
   claimPrepared,
   claimExecute,
+  claimAllPrepared,
+  claimAllExecute,
+  batchEnabledAndSupported,
   onStakeUrnChange
 }: {
   claimPrepared: boolean;
   claimExecute: () => void;
+  claimAllPrepared: boolean;
+  claimAllExecute: () => void;
+  batchEnabledAndSupported: boolean;
   onStakeUrnChange?: OnStakeUrnChange;
 }) => {
   const { data: currentIndex } = useCurrentUrnIndex();
@@ -33,6 +39,9 @@ export const UrnsList = ({
               index={BigInt(index)}
               claimPrepared={claimPrepared}
               claimExecute={claimExecute}
+              claimAllPrepared={claimAllPrepared}
+              claimAllExecute={claimAllExecute}
+              batchEnabledAndSupported={batchEnabledAndSupported}
               onStakeUrnChange={onStakeUrnChange}
             />
           ))}

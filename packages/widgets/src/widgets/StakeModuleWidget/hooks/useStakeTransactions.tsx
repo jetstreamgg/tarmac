@@ -1,6 +1,10 @@
 import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useStakeTransactionCallbacks } from './useStakeTransactionCallbacks';
-import { useBatchStakeMulticall, useStakeClaimRewards } from '@jetstreamgg/sky-hooks';
+import {
+  useBatchStakeClaimAllRewards,
+  useBatchStakeMulticall,
+  useStakeClaimRewards
+} from '@jetstreamgg/sky-hooks';
 import { useContext } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeAction } from '../lib/constants';
@@ -69,5 +73,13 @@ export const useStakeTransactions = ({
     ...claimTransactionCallbacks
   });
 
-  return { batchMulticall, claimRewards };
+  const claimAllRewards = useBatchStakeClaimAllRewards({
+    index: indexToClaim,
+    // Always use batch transactions for this flow
+    shouldUseBatch: true,
+    enabled: indexToClaim !== undefined && !rewardContractToClaim,
+    ...claimTransactionCallbacks
+  });
+
+  return { batchMulticall, claimRewards, claimAllRewards };
 };

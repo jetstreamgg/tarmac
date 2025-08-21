@@ -169,7 +169,7 @@ function StakeModuleWidgetWrapped({
   const needsAllowance = needsLockAllowance || needsUsdsAllowance;
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
-  const { batchMulticall, claimRewards } = useStakeTransactions({
+  const { batchMulticall, claimRewards, claimAllRewards } = useStakeTransactions({
     lockAmount: debouncedLockAmount,
     usdsAmount: debouncedUsdsAmount,
     calldata,
@@ -555,7 +555,9 @@ function StakeModuleWidgetWrapped({
         : shouldOpenFromWidgetButton
           ? handleClickOpenPosition
           : widgetState.flow === StakeFlow.MANAGE && widgetState.action === StakeAction.CLAIM
-            ? claimRewards.execute
+            ? rewardContractToClaim
+              ? claimRewards.execute
+              : claimAllRewards.execute
             : widgetState.flow === StakeFlow.OPEN || widgetState.flow === StakeFlow.MANAGE
               ? nextOnClick
               : undefined;
@@ -720,6 +722,9 @@ function StakeModuleWidgetWrapped({
                       tabSide={tabSide}
                       claimPrepared={claimRewards.prepared}
                       claimExecute={claimRewards.execute}
+                      claimAllPrepared={claimAllRewards.prepared}
+                      claimAllExecute={claimAllRewards.execute}
+                      batchEnabledAndSupported={!!batchEnabled && !!batchSupported}
                       onStakeUrnChange={onStakeUrnChange}
                       onWidgetStateChange={onWidgetStateChange}
                       needsAllowance={needsAllowance}
