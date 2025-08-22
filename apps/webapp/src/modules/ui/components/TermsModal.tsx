@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
-import termsMarkdown from '@/content/terms.md?raw'; //https://vitejs.dev/guide/assets#importing-asset-as-string
 import { TermsMarkdownRenderer } from '@/modules/ui/components/markdown/TermsMarkdownRenderer';
 import { useSignMessage, useAccount, useDisconnect } from 'wagmi';
 import { useConnectedContext } from '../context/ConnectedContext';
@@ -15,6 +14,7 @@ import { CheckedState } from '@radix-ui/react-checkbox';
 import { useInView } from 'react-intersection-observer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { sanitizeUrl } from '@/lib/utils';
+import { getTermsContent } from './terms-loader';
 
 export function TermsModal() {
   const { closeModal, isModalOpen, openModal } = useTermsModal();
@@ -24,6 +24,7 @@ export function TermsModal() {
   const { address, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const [endOfTermsRef, hasScrolledToEnd] = useInView({ triggerOnce: true });
+  const [termsMarkdown] = useState<string>(getTermsContent());
 
   const onSuccess = async (signature: string) => {
     const payload = {
