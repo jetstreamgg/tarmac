@@ -12,6 +12,7 @@ import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useChainId } from 'wagmi';
 import { UpgradeFlow } from '../lib/constants';
 import { Text } from '@widgets/shared/components/ui/Typography';
+import { getTooltipById } from '../../../data/tooltips';
 
 type Props = WidgetProps & {
   leftTabTitle: string;
@@ -110,6 +111,7 @@ export function UpgradeRevert({
                 transactionData={[
                   {
                     label: t`Exchange rate`,
+                    tooltipText: getTooltipById('exchange-rate')?.tooltip || '',
                     value: (() => {
                       // Check if it's MKR to SKY conversion
                       if (

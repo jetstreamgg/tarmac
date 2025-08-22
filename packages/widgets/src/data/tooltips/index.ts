@@ -90,7 +90,7 @@ Delegates in receipt of token voting power can never directly access any tokens 
   {
     id: 'delayed-upgrade-penalty',
     title: 'Delayed Upgrade Penalty',
-    tooltip: `The Delayed Upgrade Penalty is a time-based upgrade mechanism, approved by Sky Ecosystem Governance, which is designed to facilitate a smooth and prompt upgrade of MKR to SKY.
+    tooltip: `The Delayed Upgrade Penalty is a time-based upgrade mechanism approved by Sky Ecosystem Governance and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
 
 The penalty, which will begin sometime in September 2025, reduces the amount of SKY received per MKR upgraded at a rate of 1%, and increases by 1% every three months thereafter until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in`
   },
