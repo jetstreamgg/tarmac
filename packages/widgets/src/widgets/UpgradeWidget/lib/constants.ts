@@ -200,3 +200,6 @@ export function upgradeRevertLoadingButtonText({
       return msg`Loading`;
   }
 }
+
+export const defaultUpgradeOptions = [TOKENS.dai, TOKENS.mkr];
+export const defaultRevertOptions = [TOKENS.usds];

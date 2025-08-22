@@ -20,7 +20,7 @@ import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { JazziconComponent } from './Jazzicon';
 import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
-import { ClaimRewardsButton } from './ClaimRewardsButton';
+import { ClaimRewardsDropdown } from './ClaimRewardsDropdown';
 import { getTooltipById } from '../../../data/tooltips';
 
 type Props = {
@@ -170,20 +170,15 @@ export function PositionDetail({
         delayedPrice={delayedPrice}
         liquidationPrice={liquidationPrice}
       />
-      <>
-        {stakeRewardContracts &&
-          urnAddress &&
-          stakeRewardContracts.map(({ contractAddress }) => (
-            <ClaimRewardsButton
-              key={`${index}-${contractAddress}`}
-              rewardContract={contractAddress}
-              urnAddress={urnAddress}
-              index={index}
-              claimPrepared={claimPrepared}
-              claimExecute={claimExecute}
-            />
-          ))}
-      </>
+      {stakeRewardContracts && urnAddress && (
+        <ClaimRewardsDropdown
+          stakeRewardContracts={stakeRewardContracts}
+          urnAddress={urnAddress}
+          index={index}
+          claimPrepared={claimPrepared}
+          claimExecute={claimExecute}
+        />
+      )}
     </MotionVStack>
   );
 }

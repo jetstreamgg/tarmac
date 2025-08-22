@@ -1,5 +1,5 @@
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
-import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
   MAX_SLIPPAGE_WITHOUT_WARNING,
   MAX_FEE_PERCENTAGE_WITHOUT_WARNING,
@@ -51,12 +51,12 @@ import { getValidatedState } from '@widgets/lib/utils';
 import { TradeSummary } from './components/TradeSummary';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
-import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { sepolia } from 'viem/chains';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
+import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -65,55 +65,12 @@ export type TradeWidgetProps = WidgetProps & {
   widgetTitle?: ReactNode;
 };
 
-export const TradeWidget = ({
-  onConnect,
-  addRecentTransaction,
-  locale,
-  rightHeaderComponent,
-  customTokenList,
-  disallowedPairs = defaultConfig.tradeDisallowedPairs,
-  externalWidgetState,
-  onStateValidated,
-  onNotification,
-  onWidgetStateChange,
-  onCustomNavigation,
-  customNavigationLabel,
-  onExternalLinkClicked,
-  enabled = true,
-  shouldReset = false
-}: TradeWidgetProps) => {
-  const key = shouldReset ? 'reset' : undefined;
-  return (
-    <ErrorBoundary componentName="TradeWidget">
-      <WidgetProvider key={key} locale={locale}>
-        <TradeWidgetWrapped
-          key={key}
-          onConnect={onConnect}
-          addRecentTransaction={addRecentTransaction}
-          rightHeaderComponent={rightHeaderComponent}
-          customTokenList={customTokenList}
-          disallowedPairs={disallowedPairs}
-          locale={locale}
-          externalWidgetState={externalWidgetState}
-          onStateValidated={onStateValidated}
-          onNotification={onNotification}
-          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
-          customNavigationLabel={customNavigationLabel}
-          onCustomNavigation={onCustomNavigation}
-          onExternalLinkClicked={onExternalLinkClicked}
-          enabled={enabled}
-        />
-      </WidgetProvider>
-    </ErrorBoundary>
-  );
-};
-
 function TradeWidgetWrapped({
   onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   customTokenList = [],
-  disallowedPairs,
+  disallowedPairs = defaultConfig.tradeDisallowedPairs,
   locale,
   externalWidgetState,
   onStateValidated,
@@ -1305,3 +1262,5 @@ function TradeWidgetWrapped({
     </WidgetContainer>
   );
 }
+
+export const TradeWidget = withWidgetProvider(TradeWidgetWrapped, 'TradeWidget');
