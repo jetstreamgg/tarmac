@@ -1,4 +1,4 @@
-import { test as baseTest } from './fixtures';
+import { test as baseTest, expect } from './fixtures';
 import { Stagehand } from '@browserbasehq/stagehand';
 import type { Page } from '@playwright/test';
 import { config as dotenvConfig } from 'dotenv';
@@ -22,7 +22,7 @@ try {
 // Extended page type with Stagehand capabilities
 export interface StagehandPage extends Page {
   act?: (action: string, options?: any) => Promise<any>;
-  extract?: (instruction: string) => Promise<any>;
+  extract?: (instruction: string | { instruction: string; schema?: any }) => Promise<any>;
 }
 
 type StagehandFixture = {
@@ -34,9 +34,12 @@ type StagehandFixture = {
 // This ensures we inherit all the critical setup: EVM snapshots, network setup,
 // token funding, route mocking, worker management, etc.
 export const test = baseTest.extend<StagehandFixture>({
+  // Note: All base fixtures (snapshotId, autoTestFixture, page with mocking) are inherited automatically
+  // We just add Stagehand on top of them
+
   stagehand: [
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async ({ browserName: _browserName }, use) => {
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use) => {
       // Check if Stagehand should be enabled
       const useStagehand = process.env.USE_STAGEHAND === 'true';
 
@@ -147,54 +150,16 @@ export const test = baseTest.extend<StagehandFixture>({
         activePage = stagehand.page;
 
         // Apply the same route mocking that the base fixtures apply
-        // This is critical for DeFi tests that need RPC and VPN mocking
+        // This ensures RPC calls and VPN checks work correctly
         await activePage.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
         await activePage.route('**/ip/status?ip=*', mockVpnCheck);
 
-        // Set worker index like the base fixtures do
+        // Ensure worker index is set (important for wallet selection)
+        // The base fixtures already set this for the regular page,
+        // but we need to ensure it's set for Stagehand tests too
         process.env.VITE_TEST_WORKER_INDEX = String(workerInfo.workerIndex);
-
-        // CRITICAL: Ensure mock wallet is enabled for Stagehand
-        // Since import.meta.env.VITE_USE_MOCK_WALLET is set at build time,
-        // we need to intercept the page response and inject the mock wallet logic
-        await activePage.route('**/*', async (route, request) => {
-          // If this is the main HTML page
-          if (
-            request.url().includes('localhost:3000') &&
-            (request.resourceType() === 'document' || request.url().endsWith('/'))
-          ) {
-            const response = await route.fetch();
-            let body = await response.text();
-
-            // Inject a script to override the mock wallet detection
-            const mockWalletScript = `
-            <script>
-              // Override import.meta.env for mock wallet in Stagehand tests
-              window.__VITE_MOCK_WALLET_OVERRIDE__ = true;
-              
-              // Also set up a global flag that the app can check
-              window.FORCE_MOCK_WALLET = true;
-            </script>
-            `;
-
-            // Insert the script before the closing head tag
-            body = body.replace('</head>', mockWalletScript + '</head>');
-
-            route.fulfill({
-              response,
-              body,
-              headers: {
-                ...response.headers(),
-                'content-type': 'text/html'
-              }
-            });
-          } else {
-            // For all other requests, just continue normally
-            route.continue();
-          }
-        });
       } else {
-        // Use regular Playwright page (already has route mocking from base fixtures)
+        // Use regular Playwright page (which already has all base fixture setup)
         activePage = page;
       }
 
@@ -204,7 +169,8 @@ export const test = baseTest.extend<StagehandFixture>({
   ]
 });
 
-export { expect } from './fixtures';
+// Re-export expect from base fixtures
+export { expect };
 
 // Helper function to check if Stagehand is available
 export function isStagehandEnabled(): boolean {
@@ -221,5 +187,7 @@ export function getStagehandMode(): 'LOCAL' | 'BROWSERBASE' | 'DISABLED' {
 
 // Type guard to check if a page has Stagehand capabilities
 export function hasStagehandCapabilities(page: Page | StagehandPage): page is StagehandPage {
-  return 'act' in page && typeof page.act === 'function';
+  // Check if the methods exist as properties (even non-enumerable ones)
+  // Stagehand adds these as non-enumerable properties, so 'in' doesn't work
+  return typeof (page as any).act === 'function' && typeof (page as any).extract === 'function';
 }

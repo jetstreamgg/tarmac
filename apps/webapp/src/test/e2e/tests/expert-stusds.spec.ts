@@ -1,7 +1,18 @@
+import { mcdDaiAddress } from '@jetstreamgg/sky-hooks';
 import { expect, test } from '../fixtures.ts';
 import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { mineBlock } from '../utils/mineBlock.ts';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
+import { getTestWalletAddress } from '../utils/testWallets.ts';
+import { NetworkName } from '../utils/constants.ts';
+import { setErc20Balance } from '../utils/setBalance.ts';
+
+const setTestBalance = async (tokenAddress: string, amount: string, decimals = 18) => {
+  const workerIndex = Number(process.env.VITE_TEST_WORKER_INDEX ?? 1);
+  const address = getTestWalletAddress(workerIndex);
+  await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
+};
 
 test.describe('Expert Module - stUSDS', () => {
   test.beforeEach(async ({ page }) => {
@@ -161,5 +172,29 @@ test.describe('Expert Module - stUSDS', () => {
     // Clear amount - transaction overview should disappear
     await page.getByTestId('supply-input-stusds').clear();
     await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+  });
+
+  test('Upgrade and access rewards', async ({ page }) => {
+    await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+    await page.getByRole('button', { name: 'Upgrade and access rewards' }).click();
+
+    // click on Upgrade and access rewards button with natural language
+    await page.getByTestId('upgrade-input-origin').click();
+    await page.getByTestId('upgrade-input-origin').fill('4');
+    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await approveOrPerformAction(page, 'Upgrade');
+
+    // click on the expert button
+    await page.getByRole('button', { name: 'Go to Expert' }).first().click();
+
+    // supply
+    await page.getByRole('tab', { name: 'Supply' }).click();
+    await page.getByTestId('supply-input-stusds').click();
+    await page.getByTestId('supply-input-stusds').fill('10');
+    await approveOrPerformAction(page, 'Supply');
+
+    // click on the expert button
+    await page.getByRole('button', { name: 'Back to Expert' }).click();
+    await expect(page.getByTestId('stusds-stats-card')).toBeVisible();
   });
 });
