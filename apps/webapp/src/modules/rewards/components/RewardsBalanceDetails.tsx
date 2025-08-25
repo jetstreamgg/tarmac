@@ -59,7 +59,6 @@ export function RewardsBalanceDetails({ rewardContract }: { rewardContract: Rewa
     isLoading: pointsLoading,
     error: pointsError
   } = useUserRewardsBalance({
-    chainId,
     address: address || ZERO_ADDRESS,
     contractAddress: rewardContract.contractAddress as `0x${string}`
   });
