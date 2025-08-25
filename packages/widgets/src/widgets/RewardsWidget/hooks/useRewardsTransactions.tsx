@@ -1,9 +1,7 @@
 import {
   RewardContract,
-  useApproveToken,
   useBatchRewardsSupply,
   useRewardsClaim,
-  useRewardsSupply,
   useRewardsWithdraw
 } from '@jetstreamgg/sky-hooks';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -18,75 +16,56 @@ interface UseRewardsTransactionsParameters
   selectedRewardContract: RewardContract | undefined;
   referralCode: number | undefined;
   amount: bigint;
-  allowance: bigint | undefined;
+  rewardsBalance: bigint | undefined;
+  shouldUseBatch: boolean;
   mutateAllowance: () => void;
   mutateTokenBalance: () => void;
   mutateRewardsBalance: () => void;
   mutateUserSuppliedBalance: () => void;
+  setClaimAmount: React.Dispatch<React.SetStateAction<bigint>>;
 }
 
 export const useRewardsTransactions = ({
   selectedRewardContract,
   referralCode,
   amount,
-  allowance,
+  rewardsBalance,
+  shouldUseBatch,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   mutateAllowance,
   mutateTokenBalance,
   mutateRewardsBalance,
-  mutateUserSuppliedBalance
+  mutateUserSuppliedBalance,
+  setClaimAmount
 }: UseRewardsTransactionsParameters) => {
   const chainId = useChainId();
-  const {
-    approveTransactionCallbacks,
-    supplyTransactionCallbacks,
-    withdrawTransactionCallbacks,
-    claimTransactionCallbacks
-  } = useRewardsTransactionCallbacks({
-    selectedRewardContract,
-    amount,
-    mutateAllowance,
-    mutateTokenBalance,
-    mutateRewardsBalance,
-    mutateUserSuppliedBalance,
-    retryPrepareSupply: () => supply.retryPrepare(),
-    addRecentTransaction,
-    onWidgetStateChange,
-    onNotification
-  });
+  const { supplyTransactionCallbacks, withdrawTransactionCallbacks, claimTransactionCallbacks } =
+    useRewardsTransactionCallbacks({
+      selectedRewardContract,
+      amount,
+      rewardsBalance,
+      mutateAllowance,
+      mutateTokenBalance,
+      mutateRewardsBalance,
+      mutateUserSuppliedBalance,
+      addRecentTransaction,
+      onWidgetStateChange,
+      onNotification,
+      setClaimAmount
+    });
 
   const { widgetState } = useContext(WidgetContext);
 
-  const supplyParams = {
+  const batchSupply = useBatchRewardsSupply({
     contractAddress: selectedRewardContract?.contractAddress as `0x${string}`,
     supplyTokenAddress: selectedRewardContract?.supplyToken.address[chainId],
     ref: referralCode,
     amount,
+    shouldUseBatch,
+    enabled: widgetState.action === RewardsAction.SUPPLY || widgetState.action === RewardsAction.APPROVE,
     ...supplyTransactionCallbacks
-  };
-
-  // Supply call
-  const supply = useRewardsSupply({
-    ...supplyParams,
-    enabled: widgetState.action === RewardsAction.SUPPLY && allowance !== undefined
-  });
-
-  const batchSupply = useBatchRewardsSupply({
-    ...supplyParams,
-    enabled:
-      (widgetState.action === RewardsAction.SUPPLY || widgetState.action === RewardsAction.APPROVE) &&
-      allowance !== undefined
-  });
-
-  // Approve
-  const approve = useApproveToken({
-    spender: selectedRewardContract?.contractAddress as `0x${string}`,
-    enabled: widgetState.action === RewardsAction.APPROVE && allowance !== undefined,
-    amount: amount,
-    contractAddress: selectedRewardContract?.supplyToken.address[chainId],
-    ...approveTransactionCallbacks
   });
 
   // Withdraw
@@ -103,5 +82,5 @@ export const useRewardsTransactions = ({
     ...claimTransactionCallbacks
   });
 
-  return { approve, supply, batchSupply, withdraw, claim };
+  return { batchSupply, withdraw, claim };
 };

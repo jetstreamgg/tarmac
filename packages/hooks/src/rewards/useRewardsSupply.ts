@@ -10,6 +10,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useRewardsSupply({
   contractAddress,
   supplyTokenAddress,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -46,6 +47,7 @@ export function useRewardsSupply({
     chainId,
     gas,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

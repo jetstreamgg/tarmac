@@ -2,89 +2,54 @@ import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useTransactionCallbacks } from '@widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@widgets/shared/types/transactionCallbacks';
-import { WidgetProps } from '@widgets/shared/types/widgetState';
-import { useMemo } from 'react';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { useContext, useMemo } from 'react';
+import { RewardsAction, RewardsScreen } from '../lib/constants';
 
 interface UseRewardsTransactionCallbacksParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
   selectedRewardContract: RewardContract | undefined;
   amount: bigint;
+  rewardsBalance: bigint | undefined;
   mutateAllowance: () => void;
   mutateTokenBalance: () => void;
   mutateRewardsBalance: () => void;
   mutateUserSuppliedBalance: () => void;
-  retryPrepareSupply: () => void;
+  setClaimAmount: React.Dispatch<React.SetStateAction<bigint>>;
 }
 
 export const useRewardsTransactionCallbacks = ({
   selectedRewardContract,
   amount,
+  rewardsBalance,
   mutateAllowance,
   mutateTokenBalance,
   mutateRewardsBalance,
   mutateUserSuppliedBalance,
-  retryPrepareSupply,
   addRecentTransaction,
   onWidgetStateChange,
-  onNotification
+  onNotification,
+  setClaimAmount
 }: UseRewardsTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
+  const { setWidgetState } = useContext(WidgetContext);
   const { i18n } = useLingui();
   const locale = i18n.locale;
-
-  // Rewards approve
-  const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Approving ${formatBigInt(amount, { locale })} ${
-            selectedRewardContract?.supplyToken.name ?? ''
-          }`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved ${formatBigInt(amount, { locale })} ${
-            selectedRewardContract?.supplyToken.name ?? ''
-          }`
-        });
-        mutateAllowance();
-        retryPrepareSupply();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateAllowance();
-      }
-    }),
-    [
-      amount,
-      handleOnError,
-      handleOnStart,
-      handleOnSuccess,
-      locale,
-      mutateAllowance,
-      retryPrepareSupply,
-      selectedRewardContract?.supplyToken.name
-    ]
-  );
 
   // Rewards supply
   const supplyTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: () => {
+        mutateAllowance();
+        handleOnMutate();
+      },
       onStart: (hash?: string) => {
         handleOnStart({
           hash,
@@ -119,6 +84,7 @@ export const useRewardsTransactionCallbacks = ({
     [
       amount,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -133,6 +99,7 @@ export const useRewardsTransactionCallbacks = ({
   // Rewards withdraw
   const withdrawTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({
           hash,
@@ -168,6 +135,7 @@ export const useRewardsTransactionCallbacks = ({
     [
       amount,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -182,6 +150,15 @@ export const useRewardsTransactionCallbacks = ({
   // Rewards claim
   const claimTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: () => {
+        handleOnMutate();
+        setClaimAmount(rewardsBalance || 0n);
+        setWidgetState((prev: WidgetState) => ({
+          ...prev,
+          screen: RewardsScreen.TRANSACTION,
+          action: RewardsAction.CLAIM
+        }));
+      },
       onStart: hash => {
         handleOnStart({ hash, recentTransactionDescription: 'Claiming tokens' });
       },
@@ -205,13 +182,18 @@ export const useRewardsTransactionCallbacks = ({
         mutateTokenBalance();
       }
     }),
-    [handleOnError, handleOnStart, handleOnSuccess, mutateRewardsBalance, mutateTokenBalance]
+    [
+      handleOnError,
+      handleOnMutate,
+      handleOnStart,
+      handleOnSuccess,
+      mutateRewardsBalance,
+      mutateTokenBalance,
+      rewardsBalance,
+      setClaimAmount,
+      setWidgetState
+    ]
   );
 
-  return {
-    approveTransactionCallbacks,
-    supplyTransactionCallbacks,
-    withdrawTransactionCallbacks,
-    claimTransactionCallbacks
-  };
+  return { supplyTransactionCallbacks, withdrawTransactionCallbacks, claimTransactionCallbacks };
 };

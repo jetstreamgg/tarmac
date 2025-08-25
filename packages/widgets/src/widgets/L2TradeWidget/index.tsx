@@ -154,7 +154,7 @@ function TradeWidgetWrapped({
   const [targetAmount, setTargetAmount] = useState(initialTargetAmount);
   const debouncedTargetAmount = useDebounce(targetAmount);
 
-  const { data: batchSupported, isLoading: isBatchSupportLoading } = useIsBatchSupported();
+  const { data: batchSupported } = useIsBatchSupported();
 
   const { value: maxAmountInForWithdraw } = useMaxInForWithdraw(
     debouncedTargetAmount,
@@ -180,7 +180,7 @@ function TradeWidgetWrapped({
     txStatus,
     widgetState,
     setWidgetState,
-    setShowStepIndicator
+    setBackButtonText
   } = useContext(WidgetContext);
 
   const pairValid = !!originToken && !!targetToken && originToken.symbol !== targetToken.symbol;
@@ -204,11 +204,7 @@ function TradeWidgetWrapped({
     chainId
   });
 
-  const {
-    data: allowance,
-    mutate: mutateAllowance,
-    isLoading: allowanceLoading
-  } = useTokenAllowance({
+  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
     chainId,
     contractAddress: originToken?.address as `0x${string}`,
     owner: address,
@@ -481,14 +477,14 @@ function TradeWidgetWrapped({
     }
   }, [debouncedOriginAmount]);
 
-  const { approve, trade, batchTrade, tradeOut, batchTradeOut } = useL2TradeTransactions({
+  const { batchTrade, batchTradeOut } = useL2TradeTransactions({
     originAmount: debouncedOriginAmount,
     originToken,
     targetToken,
     targetAmount: debouncedTargetAmount,
-    allowance,
     referralCode,
     maxAmountInForWithdraw,
+    shouldUseBatch,
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
@@ -498,41 +494,16 @@ function TradeWidgetWrapped({
     setShowAddToken
   });
 
-  const prepareError = approve.prepareError;
-
   const isAmountWaitingForDebounce =
     lastUpdated === TradeSide.IN
       ? debouncedOriginAmount !== originAmount
       : debouncedTargetAmount !== targetAmount;
 
-  const approveDisabled =
-    [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
-    !approve.prepared ||
-    isBalanceError ||
-    approve.isLoading ||
-    !pairValid ||
-    (!originToken.isNative && allowance === undefined) ||
-    allowanceLoading ||
-    (txStatus === TxStatus.SUCCESS &&
-      (lastUpdated === TradeSide.OUT ? !tradeOut.prepared : !trade.prepared)) ||
-    isAmountWaitingForDebounce ||
-    !originAmount ||
-    !targetAmount ||
-    (!!batchEnabled && isBatchSupportLoading);
-
   const tradeDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isBalanceError ||
     !pairValid ||
-    (lastUpdated === TradeSide.OUT
-      ? shouldUseBatch
-        ? !batchTradeOut.prepared
-        : !tradeOut.prepared
-      : shouldUseBatch
-        ? !batchTrade.prepared
-        : !trade.prepared) ||
-    (!originToken.isNative && allowance === undefined) ||
-    allowanceLoading ||
+    (lastUpdated === TradeSide.OUT ? !batchTradeOut.prepared : !batchTrade.prepared) ||
     isAmountWaitingForDebounce;
 
   useEffect(() => {
@@ -553,35 +524,10 @@ function TradeWidgetWrapped({
     }
   }, [isConnectedAndEnabled]);
 
-  // If we need allowance and  batch transactions are not supported, set the action to approve
-  useEffect(() => {
-    if (
-      isConnectedAndEnabled &&
-      widgetState.flow === TradeFlow.TRADE &&
-      (widgetState.screen === TradeScreen.ACTION || widgetState.screen === TradeScreen.REVIEW)
-    ) {
-      setWidgetState((prev: WidgetState) => ({
-        ...prev,
-        action:
-          needsAllowance && !allowanceLoading && !shouldUseBatch && !isBatchSupportLoading
-            ? TradeAction.APPROVE
-            : TradeAction.TRADE
-      }));
-    }
-  }, [
-    widgetState.flow,
-    widgetState.screen,
-    needsAllowance,
-    allowanceLoading,
-    isConnectedAndEnabled,
-    shouldUseBatch,
-    isBatchSupportLoading
-  ]);
-
   // Update button state according to action and tx
   useEffect(() => {
     if (isConnectedAndEnabled) {
-      if (txStatus === TxStatus.SUCCESS && widgetState.action !== TradeAction.APPROVE) {
+      if (txStatus === TxStatus.SUCCESS) {
         if (showAddToken) {
           setButtonText(t`Add ${targetToken?.symbol || ''} to wallet`);
           // This should run after adding the token
@@ -601,14 +547,12 @@ function TradeWidgetWrapped({
           setButtonText(t`Review`);
         }
       } else if (widgetState.screen === TradeScreen.REVIEW) {
-        if (widgetState.action === TradeAction.APPROVE) {
+        if (shouldUseBatch) {
+          setButtonText(t`Confirm bundled transaction`);
+        } else if (needsAllowance) {
           setButtonText(t`Confirm 2 transactions`);
-        } else if (widgetState.action === TradeAction.TRADE) {
-          if (shouldUseBatch) {
-            setButtonText(t`Confirm bundled transaction`);
-          } else {
-            setButtonText(t`Confirm trade`);
-          }
+        } else {
+          setButtonText(t`Confirm trade`);
         }
       }
     } else {
@@ -624,43 +568,19 @@ function TradeWidgetWrapped({
     chainId,
     targetToken,
     showAddToken,
-    shouldUseBatch
+    shouldUseBatch,
+    needsAllowance
   ]);
 
   // set widget button to be disabled depending on which action we're performing
   useEffect(() => {
-    setIsDisabled(
-      isConnectedAndEnabled &&
-        !!(
-          (widgetState.action === TradeAction.APPROVE && approveDisabled) ||
-          (widgetState.action === TradeAction.TRADE && tradeDisabled)
-        )
-    );
-  }, [isConnectedAndEnabled, approveDisabled, tradeDisabled, widgetState.action]);
-
-  // After a successful approval, wait for the next hook to be prepared and send the transaction
-  useEffect(() => {
-    const nextActionPrepared = lastUpdated === TradeSide.IN ? trade.prepared : tradeOut.prepared;
-
-    if (widgetState.action === TradeAction.APPROVE && txStatus === TxStatus.SUCCESS && nextActionPrepared) {
-      setWidgetState((prev: WidgetState) => ({
-        ...prev,
-        action: TradeAction.TRADE
-      }));
-      tradeOnClick();
-    }
-  }, [widgetState.action, txStatus, trade.prepared, tradeOut.prepared, lastUpdated]);
+    setIsDisabled(isConnectedAndEnabled && tradeDisabled);
+  }, [isConnectedAndEnabled, setIsDisabled, tradeDisabled]);
 
   // set isLoading to be consumed by WidgetButton
   useEffect(() => {
-    setIsLoading(
-      isConnecting ||
-        txStatus === TxStatus.LOADING ||
-        txStatus === TxStatus.INITIALIZED ||
-        // Keep the loading state after a successful approval as a new transaction will automatically pop up
-        (widgetState.action === TradeAction.APPROVE && txStatus === TxStatus.SUCCESS)
-    );
-  }, [isConnecting, txStatus, widgetState.action]);
+    setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
+  }, [isConnecting, txStatus]);
 
   useEffect(() => {
     setOriginToken(initialOriginToken);
@@ -676,21 +596,6 @@ function TradeWidgetWrapped({
     }
     // do nothing, the current target token is correct
   }, [targetTokenList]);
-
-  useEffect(() => {
-    if (prepareError) {
-      console.log(prepareError);
-      onNotification?.({
-        title: t`Error preparing transaction`,
-        description: prepareError.message,
-        status: TxStatus.ERROR
-      });
-    }
-  }, [prepareError]);
-
-  useEffect(() => {
-    setShowStepIndicator(!originToken?.isNative);
-  }, [originToken?.isNative]);
 
   useEffect(() => {
     if (targetToken === undefined || originToken === undefined) {
@@ -723,65 +628,38 @@ function TradeWidgetWrapped({
     });
   }, [chainId]);
 
-  const approveOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      screen: TradeScreen.TRANSACTION
-    }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    approve.execute();
-  };
-
   const tradeOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      screen: TradeScreen.TRANSACTION,
-      action: TradeAction.TRADE
-    }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    const tradeExecuteFunction = shouldUseBatch ? batchTrade.execute : trade.execute;
-    const tradeOutExecuteFunction = shouldUseBatch ? batchTradeOut.execute : tradeOut.execute;
-    const executeFunction = lastUpdated === TradeSide.OUT ? tradeOutExecuteFunction : tradeExecuteFunction;
+    const executeFunction = lastUpdated === TradeSide.OUT ? batchTradeOut.execute : batchTrade.execute;
     executeFunction();
   };
 
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
 
-    // After a successful trade, reset the origin amount
-    if (widgetState.action !== TradeAction.APPROVE) {
-      setTimeout(() => {
-        setOriginAmount(0n);
-        setTargetAmount(0n);
-        setOriginToken(initialOriginToken);
-        setTargetToken(undefined);
-      }, 500);
+    setTimeout(() => {
+      setOriginAmount(0n);
+      setTargetAmount(0n);
+      setOriginToken(initialOriginToken);
+      setTargetToken(undefined);
+    }, 500);
 
-      // Notify widget state change to clear URL params and force a reset
-      onWidgetStateChange?.({
-        originToken: initialOriginToken?.symbol || '',
-        targetToken: '',
-        originAmount: '',
-        txStatus: TxStatus.IDLE,
-        widgetState: {
-          flow: TradeFlow.TRADE,
-          action: TradeAction.TRADE,
-          screen: TradeScreen.ACTION
-        },
-        hash: undefined // Clear any existing hash
-      });
-    }
-
-    if (widgetState.action === TradeAction.APPROVE && !needsAllowance) {
-      // If we just finished approving, we want to go directly to the next action
-      return tradeOnClick();
-    }
+    // Notify widget state change to clear URL params and force a reset
+    onWidgetStateChange?.({
+      originToken: initialOriginToken?.symbol || '',
+      targetToken: '',
+      originAmount: '',
+      txStatus: TxStatus.IDLE,
+      widgetState: {
+        flow: TradeFlow.TRADE,
+        action: TradeAction.TRADE,
+        screen: TradeScreen.ACTION
+      },
+      hash: undefined // Clear any existing hash
+    });
 
     setWidgetState((prev: WidgetState) => ({
       ...prev,
-      action: needsAllowance ? TradeAction.APPROVE : TradeAction.TRADE,
+      action: TradeAction.TRADE,
       screen: TradeScreen.ACTION
     }));
   };
@@ -794,8 +672,9 @@ function TradeWidgetWrapped({
   };
 
   const onClickBack = () => {
-    if (widgetState.action === TradeAction.TRADE && txStatus === TxStatus.SUCCESS) {
+    if (txStatus === TxStatus.SUCCESS) {
       // If success trade we restart the flow
+      setBackButtonText(t`Back`);
       nextOnClick();
     } else {
       setTxStatus(TxStatus.IDLE);
@@ -856,15 +735,6 @@ function TradeWidgetWrapped({
     }
   };
 
-  // Handle the error onClicks separately to keep it clean
-  const errorOnClick = () => {
-    return widgetState.action === TradeAction.TRADE
-      ? tradeOnClick()
-      : widgetState.action === TradeAction.APPROVE
-        ? approveOnClick()
-        : undefined;
-  };
-
   const onClickAction = !isConnectedAndEnabled
     ? onConnect
     : widgetState.action === TradeAction.TRADE && txStatus === TxStatus.SUCCESS && showAddToken
@@ -874,14 +744,12 @@ function TradeWidgetWrapped({
         : txStatus === TxStatus.SUCCESS
           ? nextOnClick
           : txStatus === TxStatus.ERROR
-            ? errorOnClick
+            ? tradeOnClick
             : widgetState.screen === TradeScreen.ACTION
               ? reviewOnClick
-              : widgetState.action === TradeAction.APPROVE
-                ? approveOnClick
-                : widgetState.action === TradeAction.TRADE
-                  ? tradeOnClick
-                  : undefined;
+              : widgetState.flow === TradeFlow.TRADE
+                ? tradeOnClick
+                : undefined;
 
   const showSecondaryButton =
     !!customNavigationLabel ||

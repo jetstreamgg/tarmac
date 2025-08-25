@@ -8,6 +8,7 @@ export function useMkrSkyApprove({
   amount,
   tokenAddress,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -22,6 +23,7 @@ export function useMkrSkyApprove({
     spender: mkrSkyAddress[chainId as keyof typeof mkrSkyAddress],
     amount,
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart

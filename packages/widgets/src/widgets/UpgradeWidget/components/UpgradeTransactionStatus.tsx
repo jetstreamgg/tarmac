@@ -65,14 +65,12 @@ export const UpgradeTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    const isApprovalSuccess = txStatus === TxStatus.SUCCESS && action === UpgradeAction.APPROVE;
     const isWaitingForSecondTransaction =
       txStatus === TxStatus.INITIALIZED &&
       action !== UpgradeAction.APPROVE &&
       flowNeedsAllowance &&
       !isBatchTransaction;
-    const flowTxStatus: TxStatus =
-      isApprovalSuccess || isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
+    const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
 
     if (flow === UpgradeFlow.UPGRADE) {
       setStepTwoTitle(t`Upgrade`);
@@ -113,8 +111,11 @@ export const UpgradeTransactionStatus = ({
           )
         );
 
-        if (action === UpgradeAction.APPROVE) setStep(1);
-        else if (action === UpgradeAction.UPGRADE) setStep(2);
+        if (isBatchTransaction) setStep(2);
+        else if (flowTxStatus !== TxStatus.SUCCESS) {
+          if (needsAllowance) setStep(1);
+          else setStep(2);
+        }
       }
     } else if (flow === UpgradeFlow.REVERT) {
       setStepTwoTitle(t`Revert`);
@@ -155,11 +156,14 @@ export const UpgradeTransactionStatus = ({
           )
         );
 
-        if (action === UpgradeAction.APPROVE) setStep(1);
-        else if (action === UpgradeAction.REVERT) setStep(2);
+        if (isBatchTransaction) setStep(2);
+        else if (flowTxStatus !== TxStatus.SUCCESS) {
+          if (needsAllowance) setStep(1);
+          else setStep(2);
+        }
       }
     }
-  }, [txStatus, screen, flow, action, i18n.locale]);
+  }, [txStatus, screen, flow, action, i18n.locale, needsAllowance]);
 
   return (
     <BatchTransactionStatus

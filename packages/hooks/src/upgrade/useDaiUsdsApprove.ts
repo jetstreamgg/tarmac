@@ -8,6 +8,7 @@ export function useDaiUsdsApprove({
   amount,
   tokenAddress,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -22,6 +23,7 @@ export function useDaiUsdsApprove({
     spender: daiUsdsAddress[chainId as keyof typeof daiUsdsAddress],
     amount,
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart

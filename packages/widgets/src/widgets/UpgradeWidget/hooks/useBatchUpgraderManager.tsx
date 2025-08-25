@@ -7,7 +7,7 @@ import {
   mkrSkyAddress,
   Token,
   TOKENS,
-  useSendBatchTransactionFlow,
+  useTransactionFlow,
   useTokenAllowance
 } from '@jetstreamgg/sky-hooks';
 import { Call, erc20Abi } from 'viem';
@@ -17,6 +17,7 @@ export function useBatchUpgraderManager({
   token,
   amount,
   enabled: paramEnabled = true,
+  shouldUseBatch = true,
   ...params
 }: BatchWriteHookParams & {
   token: Token;
@@ -78,9 +79,10 @@ export function useBatchUpgraderManager({
 
   const enabled = paramEnabled && !!address && amount !== 0n && !!token.symbol;
 
-  return useSendBatchTransactionFlow({
+  return useTransactionFlow({
     calls,
     enabled,
+    shouldUseBatch,
     ...params
   });
 }

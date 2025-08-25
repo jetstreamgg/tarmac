@@ -9,6 +9,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useSavingsWithdraw({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -60,6 +61,7 @@ export function useSavingsWithdraw({
     chainId,
     gas,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

@@ -12,6 +12,7 @@ import { fetchOrderStatus } from './fetchOrderStatus';
 export const useCreateEthTradeOrder = ({
   order,
   gas,
+  onMutate = () => null,
   onStart = () => null,
   onEthSent = () => null,
   onOrderCreated = () => null,
@@ -105,6 +106,7 @@ export const useCreateEthTradeOrder = ({
     chainId,
     gas,
     enabled,
+    onMutate,
     onSuccess: handleOnChainTransactionSuccess,
     onError,
     onStart

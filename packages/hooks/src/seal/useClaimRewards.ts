@@ -11,6 +11,7 @@ export function useClaimRewards({
   to,
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null
@@ -39,6 +40,7 @@ export function useClaimRewards({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

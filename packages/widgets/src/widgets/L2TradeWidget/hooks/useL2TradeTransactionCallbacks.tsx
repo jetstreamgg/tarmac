@@ -19,8 +19,6 @@ interface UseL2TradeTransactionCallbacksParameters
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
-  retryTradePrepare: () => void;
-  retryTradeOutPrepare: () => void;
   setShowAddToken: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -32,14 +30,12 @@ export const useL2TradeTransactionCallbacks = ({
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
-  retryTradePrepare,
-  retryTradeOutPrepare,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   setShowAddToken
 }: UseL2TradeTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
@@ -49,53 +45,12 @@ export const useL2TradeTransactionCallbacks = ({
   const { i18n } = useLingui();
   const locale = i18n.locale;
 
-  const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Approving ${formatBigInt(originAmount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken?.symbol ?? ''}`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved ${originToken?.symbol ?? ''}`
-        });
-        mutateAllowance();
-        retryTradePrepare();
-        retryTradeOutPrepare();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateAllowance();
-      }
-    }),
-    [
-      chainId,
-      handleOnError,
-      handleOnStart,
-      handleOnSuccess,
-      locale,
-      mutateAllowance,
-      originAmount,
-      originToken,
-      retryTradeOutPrepare,
-      retryTradePrepare
-    ]
-  );
-
   const tradeTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: () => {
+        mutateAllowance();
+        handleOnMutate();
+      },
       onStart: hash => {
         handleOnStart({
           hash,
@@ -136,6 +91,7 @@ export const useL2TradeTransactionCallbacks = ({
     [
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -153,6 +109,10 @@ export const useL2TradeTransactionCallbacks = ({
 
   const tradeOutTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: () => {
+        mutateAllowance();
+        handleOnMutate();
+      },
       onStart: hash => {
         handleOnStart({
           hash,
@@ -193,6 +153,7 @@ export const useL2TradeTransactionCallbacks = ({
     [
       chainId,
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       locale,
@@ -208,5 +169,5 @@ export const useL2TradeTransactionCallbacks = ({
     ]
   );
 
-  return { approveTransactionCallbacks, tradeTransactionCallbacks, tradeOutTransactionCallbacks };
+  return { tradeTransactionCallbacks, tradeOutTransactionCallbacks };
 };

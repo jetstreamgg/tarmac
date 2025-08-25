@@ -62,14 +62,12 @@ export const SavingsTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    const isApprovalSuccess = txStatus === TxStatus.SUCCESS && action === SavingsAction.APPROVE;
     const isWaitingForSecondTransaction =
       txStatus === TxStatus.INITIALIZED &&
       action !== SavingsAction.APPROVE &&
       flowNeedsAllowance &&
       !isBatchTransaction;
-    const flowTxStatus: TxStatus =
-      isApprovalSuccess || isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
+    const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
 
     if (flow === SavingsFlow.SUPPLY) {
       setStepTwoTitle(t`Supply`);
@@ -108,8 +106,11 @@ export const SavingsTransactionStatus = ({
           )
         );
 
-        if (action === SavingsAction.APPROVE) setStep(1);
-        else if (action === SavingsAction.SUPPLY) setStep(2);
+        if (isBatchTransaction) setStep(2);
+        else if (flowTxStatus !== TxStatus.SUCCESS) {
+          if (needsAllowance) setStep(1);
+          else setStep(2);
+        }
       }
     } else if (flow === SavingsFlow.WITHDRAW) {
       setStepTwoTitle(t`Withdraw`);
@@ -149,11 +150,14 @@ export const SavingsTransactionStatus = ({
           )
         );
 
-        if (action === SavingsAction.APPROVE) setStep(1);
-        else if (action === SavingsAction.WITHDRAW) setStep(2);
+        if (isBatchTransaction) setStep(2);
+        else if (flowTxStatus !== TxStatus.SUCCESS) {
+          if (needsAllowance) setStep(1);
+          else setStep(2);
+        }
       }
     }
-  }, [txStatus, flow, action, screen, i18n.locale]);
+  }, [txStatus, flow, action, screen, i18n.locale, needsAllowance]);
   return (
     <BatchTransactionStatus
       onExternalLinkClicked={onExternalLinkClicked}

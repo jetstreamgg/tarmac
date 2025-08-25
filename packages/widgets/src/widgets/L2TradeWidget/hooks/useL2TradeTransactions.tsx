@@ -1,14 +1,5 @@
-import {
-  psm3L2Address,
-  TokenForChain,
-  useApproveToken,
-  useBatchPsmSwapExactIn,
-  useBatchPsmSwapExactOut,
-  usePsmSwapExactIn,
-  usePsmSwapExactOut
-} from '@jetstreamgg/sky-hooks';
+import { TokenForChain, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut } from '@jetstreamgg/sky-hooks';
 import { WidgetProps } from '@widgets/shared/types/widgetState';
-import { useChainId } from 'wagmi';
 import { useL2TradeTransactionCallbacks } from './useL2TradeTransactionCallbacks';
 import { useContext } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -20,9 +11,9 @@ interface UseL2TradeTransactionsParameters
   originToken: TokenForChain | undefined;
   targetAmount: bigint;
   targetToken: TokenForChain | undefined;
-  allowance: bigint | undefined;
   referralCode: number | undefined;
   maxAmountInForWithdraw: bigint;
+  shouldUseBatch: boolean;
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
@@ -34,9 +25,9 @@ export const useL2TradeTransactions = ({
   originToken,
   targetToken,
   targetAmount,
-  allowance,
   referralCode,
   maxAmountInForWithdraw,
+  shouldUseBatch,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
@@ -46,74 +37,46 @@ export const useL2TradeTransactions = ({
   setShowAddToken
 }: UseL2TradeTransactionsParameters) => {
   const { widgetState } = useContext(WidgetContext);
-  const chainId = useChainId();
 
-  const { approveTransactionCallbacks, tradeTransactionCallbacks, tradeOutTransactionCallbacks } =
-    useL2TradeTransactionCallbacks({
-      originAmount,
-      originToken,
-      targetAmount,
-      targetToken,
-      mutateAllowance,
-      mutateOriginBalance,
-      mutateTargetBalance,
-      retryTradePrepare: () => trade.retryPrepare(),
-      retryTradeOutPrepare: () => tradeOut.retryPrepare(),
-      addRecentTransaction,
-      onWidgetStateChange,
-      onNotification,
-      setShowAddToken
-    });
-
-  const approve = useApproveToken({
-    amount: originAmount,
-    contractAddress: originToken?.address,
-    spender: psm3L2Address[chainId as keyof typeof psm3L2Address],
-    enabled: widgetState.action === TradeAction.APPROVE && allowance !== undefined && !!originToken,
-    ...approveTransactionCallbacks
+  const { tradeTransactionCallbacks, tradeOutTransactionCallbacks } = useL2TradeTransactionCallbacks({
+    originAmount,
+    originToken,
+    targetAmount,
+    targetToken,
+    mutateAllowance,
+    mutateOriginBalance,
+    mutateTargetBalance,
+    addRecentTransaction,
+    onWidgetStateChange,
+    onNotification,
+    setShowAddToken
   });
 
-  const tradeParams = {
+  const batchTrade = useBatchPsmSwapExactIn({
     amountIn: originAmount,
     assetIn: originToken?.address as `0x${string}`,
     assetOut: targetToken?.address as `0x${string}`,
     minAmountOut: targetAmount,
     referralCode: referralCode ? BigInt(referralCode) : undefined,
-    ...tradeTransactionCallbacks
-  };
-
-  const trade = usePsmSwapExactIn({
-    ...tradeParams,
-    enabled: widgetState.action === TradeAction.TRADE && !!(originToken?.address && targetToken?.address)
-  });
-
-  const batchTrade = useBatchPsmSwapExactIn({
-    ...tradeParams,
+    shouldUseBatch,
     enabled:
       (widgetState.action === TradeAction.TRADE || widgetState.action === TradeAction.APPROVE) &&
-      !!(originToken?.address && targetToken?.address)
+      !!(originToken?.address && targetToken?.address),
+    ...tradeTransactionCallbacks
   });
 
-  const tradeOutParams = {
+  const batchTradeOut = useBatchPsmSwapExactOut({
     amountOut: targetAmount,
     assetIn: originToken?.address as `0x${string}`,
     assetOut: targetToken?.address as `0x${string}`,
     maxAmountIn: originToken?.symbol === 'sUSDS' ? maxAmountInForWithdraw : originAmount,
     referralCode: referralCode ? BigInt(referralCode) : undefined,
-    ...tradeOutTransactionCallbacks
-  };
-
-  const tradeOut = usePsmSwapExactOut({
-    ...tradeOutParams,
-    enabled: widgetState.action === TradeAction.TRADE && !!(originToken?.address && targetToken?.address)
-  });
-
-  const batchTradeOut = useBatchPsmSwapExactOut({
-    ...tradeOutParams,
+    shouldUseBatch,
     enabled:
       (widgetState.action === TradeAction.TRADE || widgetState.action === TradeAction.APPROVE) &&
-      !!(originToken?.address && targetToken?.address)
+      !!(originToken?.address && targetToken?.address),
+    ...tradeOutTransactionCallbacks
   });
 
-  return { approve, trade, batchTrade, tradeOut, batchTradeOut };
+  return { batchTrade, batchTradeOut };
 };

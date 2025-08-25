@@ -8,108 +8,35 @@ import { useMemo } from 'react';
 interface UseStakeTransactionCallbacksParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
   lockAmount: bigint;
-  usdsAmount: bigint;
   setIndexToClaim: React.Dispatch<React.SetStateAction<bigint | undefined>>;
   setRewardContractToClaim: React.Dispatch<React.SetStateAction<`0x${string}` | undefined>>;
-  mutateStakeSkyAllowance: () => void;
   mutateStakeUsdsAllowance: () => void;
-  retryPrepareMulticall: () => void;
+  mutateStakeSkyAllowance: () => void;
 }
 
 export const useStakeTransactionCallbacks = ({
   lockAmount,
-  usdsAmount,
   setIndexToClaim,
   setRewardContractToClaim,
   mutateStakeSkyAllowance,
   mutateStakeUsdsAllowance,
-  retryPrepareMulticall,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
 }: UseStakeTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
 
-  const approveSkyTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Approving ${formatBigInt(lockAmount)} SKY`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved SKY`
-        });
-        mutateStakeSkyAllowance();
-        retryPrepareMulticall();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateStakeSkyAllowance();
-      }
-    }),
-    [
-      handleOnError,
-      handleOnStart,
-      handleOnSuccess,
-      lockAmount,
-      mutateStakeSkyAllowance,
-      retryPrepareMulticall
-    ]
-  );
-
-  const approveUsdsTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Approving ${formatBigInt(usdsAmount)} USDS`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved USDS`
-        });
-        mutateStakeUsdsAllowance();
-        retryPrepareMulticall();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateStakeUsdsAllowance();
-      }
-    }),
-    [
-      handleOnError,
-      handleOnStart,
-      handleOnSuccess,
-      mutateStakeUsdsAllowance,
-      retryPrepareMulticall,
-      usdsAmount
-    ]
-  );
-
   const multicallTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: () => {
+        mutateStakeSkyAllowance();
+        mutateStakeUsdsAllowance();
+        handleOnMutate();
+      },
       onStart: hash => {
         handleOnStart({ hash, recentTransactionDescription: t`Doing multicall` });
       },
@@ -134,11 +61,20 @@ export const useStakeTransactionCallbacks = ({
         mutateStakeSkyAllowance();
       }
     }),
-    [handleOnError, handleOnStart, handleOnSuccess, lockAmount, mutateStakeSkyAllowance]
+    [
+      handleOnError,
+      handleOnMutate,
+      handleOnStart,
+      handleOnSuccess,
+      lockAmount,
+      mutateStakeSkyAllowance,
+      mutateStakeUsdsAllowance
+    ]
   );
 
   const claimTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: handleOnMutate,
       onStart: hash => {
         handleOnStart({ hash, recentTransactionDescription: 'Claiming rewards' });
       },
@@ -165,13 +101,8 @@ export const useStakeTransactionCallbacks = ({
         });
       }
     }),
-    [handleOnError, handleOnStart, handleOnSuccess, setIndexToClaim, setRewardContractToClaim]
+    [handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, setIndexToClaim, setRewardContractToClaim]
   );
 
-  return {
-    approveSkyTransactionCallbacks,
-    approveUsdsTransactionCallbacks,
-    multicallTransactionCallbacks,
-    claimTransactionCallbacks
-  };
+  return { multicallTransactionCallbacks, claimTransactionCallbacks };
 };

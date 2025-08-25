@@ -66,14 +66,12 @@ export const RewardsTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    const isApprovalSuccess = txStatus === TxStatus.SUCCESS && action === RewardsAction.APPROVE;
     const isWaitingForSecondTransaction =
       txStatus === TxStatus.INITIALIZED &&
       action !== RewardsAction.APPROVE &&
       flowNeedsAllowance &&
       !isBatchTransaction;
-    const flowTxStatus: TxStatus =
-      isApprovalSuccess || isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
+    const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
 
     if (
       // Claim rewards
@@ -149,8 +147,11 @@ export const RewardsTransactionStatus = ({
           );
         }
 
-        if (action === RewardsAction.APPROVE) setStep(1);
-        else if (action === RewardsAction.SUPPLY) setStep(2);
+        if (isBatchTransaction) setStep(2);
+        else if (flowTxStatus !== TxStatus.SUCCESS) {
+          if (needsAllowance) setStep(1);
+          else setStep(2);
+        }
       }
     } else if (flow === RewardsFlow.WITHDRAW) {
       setStepTwoTitle(t`Withdraw`);
@@ -196,7 +197,7 @@ export const RewardsTransactionStatus = ({
         setStep(2);
       }
     }
-  }, [txStatus, flow, action, screen, i18n.locale]);
+  }, [txStatus, flow, action, screen, i18n.locale, needsAllowance]);
   return (
     <BatchTransactionStatus
       onExternalLinkClicked={onExternalLinkClicked}

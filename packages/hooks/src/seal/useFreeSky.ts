@@ -8,6 +8,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useFreeSky({
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null,
@@ -30,6 +31,7 @@ export function useFreeSky({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

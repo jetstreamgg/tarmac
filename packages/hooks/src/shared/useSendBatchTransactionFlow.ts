@@ -10,6 +10,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
 ): BatchWriteHook {
   const {
     enabled,
+    onMutate = () => null,
     onSuccess = () => null,
     onError = () => null,
     onStart = () => null,
@@ -30,6 +31,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
     data: mutationData
   } = useSendCalls({
     mutation: {
+      onMutate,
       onSuccess: () => {
         if (onStart) {
           onStart();

@@ -9,6 +9,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useOpenUrn({
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null
@@ -27,6 +28,7 @@ export function useOpenUrn({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

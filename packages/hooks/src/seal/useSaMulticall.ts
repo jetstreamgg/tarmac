@@ -8,6 +8,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useSaMulticall({
   gas,
   enabled: paramEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null,
@@ -26,6 +27,7 @@ export function useSaMulticall({
     chainId,
     gas,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

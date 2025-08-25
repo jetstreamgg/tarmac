@@ -9,6 +9,7 @@ export function useMkrToSky({
   amount,
   enabled: paramEnabled = true,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -43,6 +44,7 @@ export function useMkrToSky({
     chainId,
     enabled,
     gas,
+    onMutate,
     onSuccess,
     onError,
     onStart

@@ -3,8 +3,12 @@ import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
-import { UpgradeTotalResponses, UpgradeTotals } from './upgrade';
+import { UpgradeTotals } from './upgrade';
 import { useChainId } from 'wagmi';
+
+type GraphQLUpgradeTotalResponse = {
+  total: string;
+};
 
 async function fetchUpgradeTotals(urlSubgraph: string): Promise<UpgradeTotals | undefined> {
   const query = gql`
@@ -15,14 +19,26 @@ async function fetchUpgradeTotals(urlSubgraph: string): Promise<UpgradeTotals | 
       daiTotal: total(id: "daiUpgraded") {
         total
       }
+      skyUpgraded: total(id: "skyUpgraded") {
+        total
+      }
+      skyUpgradeFees: total(id: "skyUpgradeFees") {
+        total
+      }
     }
   `;
 
-  const response: Record<'mkrTotal' | 'daiTotal', UpgradeTotalResponses> = await request(urlSubgraph, query);
+  const response: Record<
+    'mkrTotal' | 'daiTotal' | 'skyUpgraded' | 'skyUpgradeFees',
+    GraphQLUpgradeTotalResponse
+  > = await request(urlSubgraph, query);
 
-  const totalDaiUpgraded = response?.daiTotal?.total ?? '0';
-  const totalMkrUpgraded = response?.mkrTotal?.total ?? '0';
-  return { totalDaiUpgraded, totalMkrUpgraded };
+  const totalDaiUpgraded = BigInt(response?.daiTotal?.total ?? '0');
+  const totalMkrUpgraded = BigInt(response?.mkrTotal?.total ?? '0');
+  const skyUpgraded = BigInt(response?.skyUpgraded?.total ?? '0');
+  const skyUpgradeFees = BigInt(response?.skyUpgradeFees?.total ?? '0');
+  const totalSkyUpgraded = skyUpgraded + skyUpgradeFees;
+  return { totalDaiUpgraded, totalMkrUpgraded, skyUpgraded, skyUpgradeFees, totalSkyUpgraded };
 }
 
 export function useUpgradeTotals({

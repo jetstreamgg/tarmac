@@ -12,10 +12,10 @@ interface UseUpgradeTransactionCallbacksParameters
   originToken: Token;
   targetToken: Token;
   tabIndex: 0 | 1;
+  shouldAllowExternalUpdate: React.RefObject<boolean>;
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
-  retryPrepareAction: () => void;
 }
 
 export const useUpgradeTransactionCallbacks = ({
@@ -23,62 +23,28 @@ export const useUpgradeTransactionCallbacks = ({
   originToken,
   targetToken,
   tabIndex,
+  shouldAllowExternalUpdate,
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
-  retryPrepareAction,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
 }: UseUpgradeTransactionCallbacksParameters) => {
-  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
 
-  // Upgrade approve
-  const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Approving ${formatUnits(originAmount, 18)} ${originToken.symbol}`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved ${formatUnits(originAmount, 18)} ${originToken.symbol}`
-        });
-        mutateAllowance();
-        retryPrepareAction();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateAllowance();
-      }
-    }),
-    [
-      handleOnError,
-      handleOnStart,
-      handleOnSuccess,
-      mutateAllowance,
-      originAmount,
-      originToken.symbol,
-      retryPrepareAction
-    ]
-  );
-
   // Upgrade action manager
   const upgradeManagerTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
+      onMutate: () => {
+        shouldAllowExternalUpdate.current = false;
+        mutateAllowance();
+        handleOnMutate();
+      },
       onStart: hash => {
         handleOnStart({
           hash,
@@ -119,6 +85,7 @@ export const useUpgradeTransactionCallbacks = ({
     }),
     [
       handleOnError,
+      handleOnMutate,
       handleOnStart,
       handleOnSuccess,
       mutateAllowance,
@@ -127,9 +94,10 @@ export const useUpgradeTransactionCallbacks = ({
       originAmount,
       originToken.symbol,
       tabIndex,
-      targetToken.symbol
+      targetToken.symbol,
+      shouldAllowExternalUpdate
     ]
   );
 
-  return { approveTransactionCallbacks, upgradeManagerTransactionCallbacks };
+  return { upgradeManagerTransactionCallbacks };
 };

@@ -15,7 +15,7 @@ import { formatUnits, parseUnits } from 'viem';
 
 // Maker glossary: https://docs.makerdao.com/other-documentation/system-glossary
 
-export const MKR_TO_SKY_PRICE_RATIO = 24000n;
+export const MKR_TO_SKY_RATE = 24000n; // Immutable in contract
 
 // This multiplies the base by the factor N times, used for doubling, tripling, etc, any number of times
 const fixedMultiplySeries = (base: FixedNumber, factor: FixedNumber, count: FixedNumber) => {
@@ -295,19 +295,67 @@ export const removeDecimalPartOfWad = (wadValue: bigint) => {
   return parseUnits(formatted.split('.')[0], 18);
 };
 
-export const calculateConversion = (originToken: { symbol: string }, amount: bigint) => {
+export const calculateConversion = (
+  originToken: { symbol: string },
+  amount: bigint,
+  fee: bigint // Required fee parameter (WAD scaled, pass 0n if no fee)
+): bigint => {
   if (originToken.symbol === 'DAI' || originToken.symbol === 'USDS') {
     return amount;
   }
+
   if (originToken.symbol === 'MKR') {
-    return amount * MKR_TO_SKY_PRICE_RATIO;
+    const skyGross = amount * MKR_TO_SKY_RATE;
+    if (fee > 0n) {
+      const skyFee = (skyGross * fee) / parseUnits('1', 18);
+      return skyGross - skyFee; // Return net amount after fee
+    }
+    return skyGross;
   }
 
-  return amount / MKR_TO_SKY_PRICE_RATIO;
+  // SKY to MKR (no fee on reverse)
+  return amount / MKR_TO_SKY_RATE;
 };
 
-export const calculateMKRtoSKYPrice = (mkrPrice: bigint): bigint => {
-  return mkrPrice / MKR_TO_SKY_PRICE_RATIO;
+export const calculateMKRtoSKYPrice = (mkrPrice: bigint, fee: bigint): bigint => {
+  const skyPrice = mkrPrice / MKR_TO_SKY_RATE;
+  if (fee > 0n) {
+    // Adjust price for fee
+    const adjustment = parseUnits('1', 18) - fee;
+    return (skyPrice * adjustment) / parseUnits('1', 18);
+  }
+  return skyPrice;
+};
+
+export const calculateUpgradePenalty = (fee: bigint | undefined): string => {
+  if (!fee || fee === 0n) return '0';
+
+  // Convert WAD to percentage (fee is in 1e18 scale)
+  const percentage = (fee * 10000n) / parseUnits('1', 18);
+  const intPart = percentage / 100n;
+  const fracPart = percentage % 100n;
+
+  if (fracPart === 0n) {
+    return intPart.toString();
+  }
+
+  const fracStr = fracPart.toString().padStart(2, '0');
+  return fracStr.endsWith('0') ? `${intPart}.${fracStr[0]}` : `${intPart}.${fracStr}`;
+};
+
+export const calculateEffectiveSkyRate = (fee: bigint | undefined): string => {
+  // Base rate is 1 MKR = 24,000 SKY
+  const baseRate = MKR_TO_SKY_RATE;
+
+  if (!fee || fee === 0n) {
+    return baseRate.toLocaleString();
+  }
+
+  // Calculate effective rate after fee (fee is WAD scaled, 1e18 = 100%)
+  const oneWad = parseUnits('1', 18);
+  const effectiveRate = (baseRate * (oneWad - fee)) / oneWad;
+
+  return effectiveRate.toLocaleString();
 };
 
 export const convertUSDCtoWad = (usdcAmount: bigint) => {
