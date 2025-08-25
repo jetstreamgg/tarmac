@@ -1,5 +1,13 @@
 # @jetstreamgg/sky-widgets
 
+## 1.0.3
+
+### Patch Changes
+
+- 9dd90ae: Standardize transaction handling and component structure across all major widgets
+- Updated dependencies [905f893]
+  - @jetstreamgg/sky-hooks@1.0.2
+
 ## 1.0.2
 
 ### Patch Changes
