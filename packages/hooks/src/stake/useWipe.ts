@@ -9,6 +9,7 @@ export function useWipe({
   amount,
   index,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null
@@ -29,6 +30,7 @@ export function useWipe({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

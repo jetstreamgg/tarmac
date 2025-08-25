@@ -12,6 +12,7 @@ import { useSendBatchTransactionFlow } from '../shared/useSendBatchTransactionFl
 export function useBatchRewardsSupply({
   contractAddress,
   supplyTokenAddress,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -71,6 +72,7 @@ export function useBatchRewardsSupply({
     calls,
     chainId,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

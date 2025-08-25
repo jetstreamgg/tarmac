@@ -3,23 +3,18 @@ import {
   sUsdsL2Address,
   Token,
   TOKENS,
-  useApproveToken,
-  usePsmSwapExactIn,
-  usePsmSwapExactOut,
-  useBatchPsmSwapExactIn,
-  useBatchPsmSwapExactOut,
   useIsBatchSupported,
   useTokenAllowance,
   useTokenBalance,
   getTokenDecimals
 } from '@jetstreamgg/sky-hooks';
-import { getTransactionLink, useDebounce, formatBigInt, math, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { useDebounce, math } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
 import { SavingsTransactionStatus } from '../SavingsWidget/components/SavingsTransactionStatus';
 import { L2SavingsSupplyWithdraw } from './components/L2SavingsSupplyWithdraw';
-import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { NotificationType, TxStatus, EPOCH_LENGTH } from '@widgets/shared/constants';
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { Trans } from '@lingui/react/macro';
@@ -30,7 +25,6 @@ import { formatUnits, parseUnits } from 'viem';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { getValidatedState } from '@widgets/lib/utils';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
-import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
@@ -41,93 +35,16 @@ import {
   useReadSsrAuthOracleGetSsr
 } from '@jetstreamgg/sky-hooks';
 import { SavingsTransactionReview } from '../SavingsWidget/components/SavingsTransactionReview';
-
-const defaultDepositOptions = [TOKENS.usds, TOKENS.usdc];
-const defaultWithdrawOptions = [TOKENS.usds, TOKENS.usdc];
-
-function calculateOriginOptions(
-  token: Token,
-  action: string,
-  flow: SavingsFlow,
-  depositOptions: Token[] = [],
-  withdrawOptions: Token[] = [],
-  disallowedTokens: { [key in SavingsFlow]: Token[] } = {
-    [SavingsFlow.SUPPLY]: [],
-    [SavingsFlow.WITHDRAW]: []
-  }
-) {
-  const options = action === 'deposit' ? [...depositOptions] : [...withdrawOptions];
-  const disallowed = disallowedTokens[flow];
-  const allowedOptions = options.filter(option => !disallowed.includes(option));
-
-  // Sort the array so that the selected token is first
-  allowedOptions.sort((a, b) => {
-    if (a.symbol === token.symbol) {
-      return -1;
-    }
-    if (b.symbol === token.symbol) {
-      return 1;
-    }
-    return 0;
-  });
-
-  return allowedOptions;
-}
-
-const tokenForSymbol = (symbol: keyof typeof TOKENS) => {
-  return TOKENS[(symbol as string).toLowerCase()];
-};
+import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
+import { useL2SavingsTransactions } from './hooks/useL2SavingsTransactions';
+import { defaultDepositOptions, defaultWithdrawOptions } from './lib/constants';
+import { calculateOriginOptions, tokenForSymbol } from './lib/helpers';
 
 export type SavingsWidgetProps = WidgetProps & {
   disallowedTokens?: { [key in SavingsFlow]: Token[] };
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
-};
-
-export const L2SavingsWidget = ({
-  onConnect,
-  addRecentTransaction,
-  locale,
-  rightHeaderComponent,
-  externalWidgetState,
-  onStateValidated,
-  onNotification,
-  onWidgetStateChange,
-  onExternalLinkClicked,
-  enabled = true,
-  legalBatchTxUrl,
-  referralCode,
-  disallowedTokens,
-  shouldReset = false,
-  batchEnabled,
-  setBatchEnabled
-}: SavingsWidgetProps) => {
-  const key = shouldReset ? 'reset' : undefined;
-  return (
-    <ErrorBoundary componentName="SavingsWidget">
-      <WidgetProvider key={key} locale={locale}>
-        <SavingsWidgetWrapped
-          key={key}
-          onConnect={onConnect}
-          addRecentTransaction={addRecentTransaction}
-          rightHeaderComponent={rightHeaderComponent}
-          externalWidgetState={externalWidgetState}
-          onStateValidated={onStateValidated}
-          onNotification={onNotification}
-          onWidgetStateChange={shouldReset ? undefined : onWidgetStateChange}
-          onExternalLinkClicked={onExternalLinkClicked}
-          locale={locale}
-          enabled={enabled}
-          referralCode={referralCode}
-          disallowedTokens={disallowedTokens}
-          batchEnabled={batchEnabled}
-          setBatchEnabled={setBatchEnabled}
-          legalBatchTxUrl={legalBatchTxUrl}
-        />
-      </WidgetProvider>
-    </ErrorBoundary>
-  );
 };
 
 // HOC Widget
@@ -140,7 +57,6 @@ const SavingsWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onExternalLinkClicked,
-  locale,
   enabled = true,
   referralCode,
   disallowedTokens,
@@ -180,7 +96,6 @@ const SavingsWidgetWrapped = ({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useAccount();
-  const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
@@ -277,279 +192,30 @@ const SavingsWidgetWrapped = ({
           : maxAmountInForWithdraw
         : undefined;
 
-  const savingsApprove = useApproveToken({
-    amount: amountToApprove,
-    contractAddress:
-      widgetState.flow === SavingsFlow.SUPPLY ? originToken.address[chainId] : TOKENS.susds.address[chainId],
-    spender: psm3L2Address[chainId as keyof typeof psm3L2Address],
-    onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Approving ${formatBigInt(debouncedAmount, {
-          locale,
-          unit: originToken && getTokenDecimals(originToken, chainId)
-        })} ${originToken.symbol}`
-      });
-      setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      setTxStatus(TxStatus.LOADING);
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
-    },
-    onSuccess: hash => {
-      onNotification?.({
-        title: t`Approve successful`,
-        description: t`You approved ${formatBigInt(debouncedAmount, {
-          locale,
-          unit: originToken && getTokenDecimals(originToken, chainId)
-        })} ${originToken.symbol}`,
-        status: TxStatus.SUCCESS
-      });
-      setTxStatus(TxStatus.SUCCESS);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-
-      const retryFunction =
-        widgetState.flow === SavingsFlow.SUPPLY
-          ? savingsSupply.retryPrepare
-          : isMaxWithdraw
-            ? savingsWithdrawAll.retryPrepare
-            : savingsWithdraw.retryPrepare;
-      retryFunction();
-
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
-    },
-    onError: (error, hash) => {
-      onNotification?.({
-        title: t`Approval failed`,
-        description: t`We could not approve your token allowance.`,
-        status: TxStatus.ERROR
-      });
-      setTxStatus(TxStatus.ERROR);
-      mutateAllowance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
-      console.log(error);
-    },
-    enabled: widgetState.action === SavingsAction.APPROVE && allowance !== undefined
-  });
-
   const debouncedWadAmount =
     originToken.symbol === 'USDC' ? math.convertUSDCtoWad(debouncedAmount) : debouncedAmount;
   const shares = math.calculateSharesFromAssets(debouncedWadAmount, updatedChiForDeposit);
   const supplyMinAmountOut = originToken.symbol === 'USDC' ? math.roundDownLastTwelveDigits(shares) : shares;
 
-  const savingsSupplyParams = {
-    amountIn: debouncedAmount,
-    assetIn: originToken.address[chainId],
-    assetOut: TOKENS.susds.address[chainId],
-    minAmountOut: supplyMinAmountOut,
-    onStart: (hash?: string) => {
-      if (hash) {
-        addRecentTransaction?.({
-          hash,
-          description: t`Supplying ${formatBigInt(debouncedAmount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken.symbol}`
-        });
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.LOADING);
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
-    },
-    onSuccess: (hash: string | undefined) => {
-      onNotification?.({
-        title: t`Supply successful`,
-        description: t`You supplied ${formatBigInt(debouncedAmount, {
-          locale,
-          unit: originToken && getTokenDecimals(originToken, chainId)
-        })} ${originToken.symbol}`,
-        status: TxStatus.SUCCESS
-      });
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.SUCCESS);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
-    },
-    onError: (error: Error, hash: string | undefined) => {
-      onNotification?.({
-        title: t`Supply failed`,
-        description: t`Something went wrong with your transaction. Please try again.`,
-        status: TxStatus.ERROR
-      });
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.ERROR);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
-      console.log(error);
-    },
-    referralCode: referralCode ? BigInt(referralCode) : undefined
-  };
-
-  const savingsSupply = usePsmSwapExactIn({
-    ...savingsSupplyParams,
-    enabled: widgetState.action === SavingsAction.SUPPLY && allowance !== undefined && supplyMinAmountOut > 0n
-  });
-
-  const batchSavingsSupply = useBatchPsmSwapExactIn({
-    ...savingsSupplyParams,
-    enabled:
-      (widgetState.action === SavingsAction.SUPPLY || widgetState.action === SavingsAction.APPROVE) &&
-      supplyMinAmountOut > 0n
-  });
-
-  const savingsWithdrawAllParams = {
-    amountIn: sUsdsBalance?.value || 0n,
-    assetIn: TOKENS.susds.address[chainId],
-    assetOut: originToken.address[chainId],
-    minAmountOut: minAmountOutForWithdrawAll,
-    onStart: (hash?: string) => {
-      if (hash) {
-        addRecentTransaction?.({
-          hash,
-          description: t`Withdrawing ${formatBigInt(debouncedAmount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken.symbol}`
-        });
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.LOADING);
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
-    },
-    onSuccess: (hash: string | undefined) => {
-      onNotification?.({
-        title: t`Withdraw successful`,
-        description: t`You withdrew ${formatBigInt(debouncedAmount, {
-          locale,
-          unit: originToken && getTokenDecimals(originToken, chainId)
-        })} ${originToken.symbol}`,
-        status: TxStatus.SUCCESS
-      });
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.SUCCESS);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
-    },
-    onError: (error: Error, hash: string | undefined) => {
-      onNotification?.({
-        title: t`Withdraw failed`,
-        description: t`Something went wrong with your withdraw. Please try again.`,
-        status: TxStatus.ERROR
-      });
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.ERROR);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
-      console.log(error);
-    },
-    referralCode: referralCode ? BigInt(referralCode) : undefined
-  };
-
-  // use this to withdraw all from savings
-  const savingsWithdrawAll = usePsmSwapExactIn({
-    ...savingsWithdrawAllParams,
-    enabled:
-      (widgetState.action === SavingsAction.WITHDRAW ||
-        (widgetState.action === SavingsAction.APPROVE && txStatus === TxStatus.SUCCESS)) &&
-      isMaxWithdraw &&
-      allowance !== undefined
-  });
-
-  const batchSavingsWithdrawAll = useBatchPsmSwapExactIn({
-    ...savingsWithdrawAllParams,
-    enabled:
-      (widgetState.action === SavingsAction.WITHDRAW || widgetState.action === SavingsAction.APPROVE) &&
-      isMaxWithdraw
-  });
-
-  const savingsWithdrawParams = {
-    amountOut: debouncedAmount,
-    assetOut: originToken.address[chainId],
-    assetIn: TOKENS.susds.address[chainId],
-    maxAmountIn: maxAmountInForWithdraw,
-    onStart: (hash?: string) => {
-      if (hash) {
-        addRecentTransaction?.({
-          hash,
-          description: t`Withdrawing ${formatBigInt(debouncedAmount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken.symbol}`
-        });
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.LOADING);
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
-    },
-    onSuccess: (hash: string | undefined) => {
-      onNotification?.({
-        title: t`Withdraw successful`,
-        description: t`You withdrew ${formatBigInt(debouncedAmount, {
-          locale,
-          unit: originToken && getTokenDecimals(originToken, chainId)
-        })} ${originToken.symbol}`,
-        status: TxStatus.SUCCESS
-      });
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.SUCCESS);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
-    },
-    onError: (error: Error, hash: string | undefined) => {
-      onNotification?.({
-        title: t`Withdraw failed`,
-        description: t`Something went wrong with your withdraw. Please try again.`,
-        status: TxStatus.ERROR
-      });
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      setTxStatus(TxStatus.ERROR);
-      mutateAllowance();
-      mutateOriginBalance();
-      mutateSUsdsBalance();
-      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
-      console.log(error);
-    },
-    referralCode: referralCode ? BigInt(referralCode) : undefined
-  };
-
-  // use this to withdraw a specific amount from savings
-  const savingsWithdraw = usePsmSwapExactOut({
-    ...savingsWithdrawParams,
-    enabled:
-      (widgetState.action === SavingsAction.WITHDRAW ||
-        (widgetState.action === SavingsAction.APPROVE && txStatus === TxStatus.SUCCESS)) &&
-      !isMaxWithdraw &&
-      allowance !== undefined
-  });
-
-  const batchSavingsWithdraw = useBatchPsmSwapExactOut({
-    ...savingsWithdrawParams,
-    enabled:
-      (widgetState.action === SavingsAction.WITHDRAW || widgetState.action === SavingsAction.APPROVE) &&
-      !isMaxWithdraw
-  });
+  const { savingsApprove, savingsSupply, batchSavingsSupply, savingsWithdraw, batchSavingsWithdraw } =
+    useL2SavingsTransactions({
+      amountToApprove,
+      allowance,
+      originToken,
+      amount: debouncedAmount,
+      isMaxWithdraw,
+      supplyMinAmountOut,
+      referralCode,
+      sUsdsBalance: sUsdsBalance?.value,
+      minAmountOutForWithdrawAll,
+      maxAmountInForWithdraw,
+      mutateAllowance,
+      mutateOriginBalance,
+      mutateSUsdsBalance,
+      addRecentTransaction,
+      onWidgetStateChange,
+      onNotification
+    });
 
   const needsAllowance = !!(!allowance || allowance < (amountToApprove || 0n));
 
@@ -651,14 +317,14 @@ const SavingsWidgetWrapped = ({
       ? false
       : [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
         isWithdrawBalanceError ||
-        (isMaxWithdraw ? !savingsWithdrawAll.prepared : !savingsWithdraw.prepared) ||
+        !savingsWithdraw.prepared ||
         isAmountWaitingForDebounce;
 
   const batchWithdrawDisabled = isSuccessfulWithdraw
     ? false
     : [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
       isWithdrawBalanceError ||
-      (isMaxWithdraw ? !batchSavingsWithdrawAll.prepared : !batchSavingsWithdraw.prepared) ||
+      !batchSavingsWithdraw.prepared ||
       isAmountWaitingForDebounce ||
       // If the user has allowance, don't send a batch transaction as it's only 1 contract call
       hasAllowance ||
@@ -691,59 +357,14 @@ const SavingsWidgetWrapped = ({
     !savingsApprove.prepared ||
     savingsApprove.isLoading ||
     (txStatus === TxStatus.SUCCESS &&
-      (widgetState.flow === SavingsFlow.SUPPLY
-        ? !savingsSupply.prepared
-        : isMaxWithdraw
-          ? !savingsWithdrawAll.prepared
-          : !savingsWithdraw.prepared)) || // disable next button if the following action (supply or withdraw) is not prepared
+      (widgetState.flow === SavingsFlow.SUPPLY ? !savingsSupply.prepared : !savingsWithdraw.prepared)) || // disable next button if the following action (supply or withdraw) is not prepared
     allowance === undefined ||
     isAmountWaitingForDebounce ||
     (!!batchEnabled && isBatchSupportLoading);
 
-  const approveOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    savingsApprove.execute();
-  };
-  const supplyOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    savingsSupply.execute();
-  };
-  const batchSupplyOnClick = () => {
-    if (hasAllowance) {
-      // If the user has allowance, just send the individual transaction as it will be more gas efficient
-      supplyOnClick();
-      return;
-    }
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    batchSavingsSupply.execute();
-  };
-  const withdrawOnClick = () => {
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    const executeFunction = isMaxWithdraw ? savingsWithdrawAll.execute : savingsWithdraw.execute;
-    executeFunction();
-  };
-  const batchWithdrawOnClick = () => {
-    if (hasAllowance) {
-      // If the user has allowance, just send the individual transaction as it will be more gas efficient
-      withdrawOnClick();
-      return;
-    }
-    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SavingsScreen.TRANSACTION }));
-    setTxStatus(TxStatus.INITIALIZED);
-    setExternalLink(undefined);
-    const executeFunction = isMaxWithdraw ? batchSavingsWithdrawAll.execute : batchSavingsWithdraw.execute;
-    executeFunction();
-  };
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
+    setAmount(0n);
 
     setWidgetState((prev: WidgetState) => ({
       ...prev,
@@ -756,21 +377,12 @@ const SavingsWidgetWrapped = ({
       screen: SavingsScreen.ACTION
     }));
 
-    // if successful supply/withdraw, reset amount
-    if (widgetState.action !== SavingsAction.APPROVE) {
-      setAmount(0n);
-      // Notify external state about the cleared amount
-      onWidgetStateChange?.({
-        originAmount: '',
-        txStatus,
-        widgetState
-      });
-    }
-
-    // if successfully approved, go to supply/withdraw
-    if (widgetState.action === SavingsAction.APPROVE && !needsAllowance) {
-      return widgetState.flow === SavingsFlow.SUPPLY ? supplyOnClick() : withdrawOnClick();
-    }
+    // Notify external state about the cleared amount
+    onWidgetStateChange?.({
+      originAmount: '',
+      txStatus,
+      widgetState
+    });
   };
   const reviewOnClick = () => {
     setWidgetState((prev: WidgetState) => ({
@@ -791,14 +403,14 @@ const SavingsWidgetWrapped = ({
   const errorOnClick = () => {
     return widgetState.action === SavingsAction.SUPPLY
       ? shouldUseBatch
-        ? batchSupplyOnClick()
-        : supplyOnClick()
+        ? batchSavingsSupply.execute()
+        : savingsSupply.execute()
       : widgetState.action === SavingsAction.WITHDRAW
         ? shouldUseBatch
-          ? batchWithdrawOnClick()
-          : withdrawOnClick()
+          ? batchSavingsWithdraw.execute()
+          : savingsWithdraw.execute()
         : widgetState.action === SavingsAction.APPROVE
-          ? approveOnClick()
+          ? savingsApprove.execute()
           : undefined;
   };
 
@@ -812,15 +424,15 @@ const SavingsWidgetWrapped = ({
           ? reviewOnClick
           : shouldUseBatch
             ? widgetState.flow === SavingsFlow.SUPPLY
-              ? batchSupplyOnClick
-              : batchWithdrawOnClick
+              ? batchSavingsSupply.execute
+              : batchSavingsWithdraw.execute
             : (widgetState.flow === SavingsFlow.SUPPLY && widgetState.action === SavingsAction.APPROVE) ||
                 (widgetState.flow === SavingsFlow.WITHDRAW && widgetState.action === SavingsAction.APPROVE)
-              ? approveOnClick
+              ? savingsApprove.execute
               : widgetState.flow === SavingsFlow.SUPPLY && widgetState.action === SavingsAction.SUPPLY
-                ? supplyOnClick
+                ? savingsSupply.execute
                 : widgetState.flow === SavingsFlow.WITHDRAW && widgetState.action === SavingsAction.WITHDRAW
-                  ? withdrawOnClick
+                  ? savingsWithdraw.execute
                   : undefined;
 
   const showSecondaryButton = txStatus === TxStatus.ERROR || widgetState.screen === SavingsScreen.REVIEW;
@@ -846,17 +458,6 @@ const SavingsWidgetWrapped = ({
       });
     }
   }, [savingsWithdraw.prepareError]);
-
-  useEffect(() => {
-    if (savingsWithdrawAll.prepareError) {
-      console.log(savingsWithdrawAll.prepareError);
-      onNotification?.({
-        title: t`Error preparing transaction`,
-        description: savingsWithdrawAll.prepareError.message,
-        status: TxStatus.ERROR
-      });
-    }
-  }, [savingsWithdrawAll.prepareError]);
 
   // Update button state according to action and tx
   // Ref: https://lingui.dev/tutorials/react-patterns#memoization-pitfall
@@ -909,13 +510,9 @@ const SavingsWidgetWrapped = ({
 
   // After a successful approval, wait for the next hook (supply, withdraw) to be prepared and send the transaction
   useEffect(() => {
-    const nextAction =
-      widgetState.flow === SavingsFlow.SUPPLY
-        ? savingsSupply
-        : isMaxWithdraw
-          ? savingsWithdrawAll
-          : savingsWithdraw;
-    const nextActionOnClick = widgetState.flow === SavingsFlow.SUPPLY ? supplyOnClick : withdrawOnClick;
+    const nextAction = widgetState.flow === SavingsFlow.SUPPLY ? savingsSupply : savingsWithdraw;
+    const nextActionOnClick =
+      widgetState.flow === SavingsFlow.SUPPLY ? savingsSupply.execute : savingsWithdraw.execute;
 
     if (
       widgetState.action === SavingsAction.APPROVE &&
@@ -933,7 +530,6 @@ const SavingsWidgetWrapped = ({
     widgetState.action,
     txStatus,
     savingsSupply.prepared,
-    savingsWithdrawAll.prepared,
     savingsWithdraw.prepared,
     isMaxWithdraw
   ]);
@@ -1091,3 +687,5 @@ const SavingsWidgetWrapped = ({
     </WidgetContainer>
   );
 };
+
+export const L2SavingsWidget = withWidgetProvider(SavingsWidgetWrapped, 'L2SavingsWidget');

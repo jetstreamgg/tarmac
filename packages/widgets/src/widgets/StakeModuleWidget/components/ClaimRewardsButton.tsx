@@ -60,7 +60,7 @@ export function ClaimRewardsButton({
 
   return (
     <Button
-      variant="primaryAlt"
+      variant="secondary"
       onClick={handleClick}
       disabled={!!rewardContractToClaim && indexToClaim !== undefined}
     >

@@ -7,6 +7,7 @@ import { math } from '@jetstreamgg/sky-utils';
 export function useSaMkrApprove({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -22,6 +23,7 @@ export function useSaMkrApprove({
     spender: sealModuleAddress[chainId as keyof typeof sealModuleAddress],
     amount,
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart
@@ -31,6 +33,7 @@ export function useSaMkrApprove({
 export function useSaNgtApprove({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -46,6 +49,7 @@ export function useSaNgtApprove({
     spender: sealModuleAddress[chainId as keyof typeof sealModuleAddress],
     amount,
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart
@@ -56,6 +60,7 @@ export function useSaNstApprove({
   amount,
   roundUp = false,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -72,6 +77,7 @@ export function useSaNstApprove({
     spender: sealModuleAddress[chainId as keyof typeof sealModuleAddress],
     amount: roundUp && amount > 0n ? math.removeDecimalPartOfWad(amount) + 1000000000000000000n : amount, // round up 1 usds
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart

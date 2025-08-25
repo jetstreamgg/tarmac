@@ -14,6 +14,7 @@ type ApproveHookParams = WriteHookParams & {
 };
 export function useApproveToken({
   contractAddress,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -43,6 +44,7 @@ export function useApproveToken({
     enabled,
     scopeKey: `${contractAddress}-approve-${spender}-${amount}-${chainId}`,
     chainId,
+    onMutate,
     onSuccess,
     onError,
     onStart

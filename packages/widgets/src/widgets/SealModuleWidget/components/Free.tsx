@@ -37,7 +37,7 @@ export const Free = ({
   const mkrSealed = sealedAmount || 0n;
 
   const skySealed = useMemo(() => {
-    return sealedAmount ? sealedAmount * math.MKR_TO_SKY_PRICE_RATIO : 0n;
+    return sealedAmount ? sealedAmount * math.MKR_TO_SKY_RATE : 0n;
   }, [sealedAmount]);
 
   const { data: existingVault } = useVault(activeUrn?.urnAddress, ilkName);
@@ -49,7 +49,7 @@ export const Free = ({
   const newCollateralAmount =
     selectedToken === TOKENS.mkr
       ? (existingVault?.collateralAmount || 0n) - mkrToFree
-      : (existingVault?.collateralAmount || 0n) * math.MKR_TO_SKY_PRICE_RATIO - skyToFree;
+      : (existingVault?.collateralAmount || 0n) * math.MKR_TO_SKY_RATE - skyToFree;
 
   const { data: simulatedVault, isLoading } = useSimulatedVault(
     // Collateral amounts must be > 0

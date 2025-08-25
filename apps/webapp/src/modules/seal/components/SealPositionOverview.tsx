@@ -48,7 +48,9 @@ export function SealPositionOverview({
 
   const mkrSealed = formatBigInt(vault?.collateralAmount || 0n);
   const skySealed = useMemo(() => {
-    return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
+    return vault?.collateralAmount
+      ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n, 0n)
+      : 0n;
   }, [vault?.collateralAmount]);
 
   const displayToken = useMemo(() => {
@@ -120,7 +122,7 @@ export function SealPositionOverview({
                   {formatBigInt(
                     displayToken === SealToken.MKR
                       ? vault?.liquidationPrice || 0n
-                      : math.calculateMKRtoSKYPrice(vault?.liquidationPrice || 0n)
+                      : math.calculateMKRtoSKYPrice(vault?.liquidationPrice || 0n, 0n)
                   )}
                 </Text>
               }
@@ -135,7 +137,7 @@ export function SealPositionOverview({
                   {formatBigInt(
                     displayToken === SealToken.MKR
                       ? vault?.delayedPrice || 0n
-                      : math.calculateMKRtoSKYPrice(vault?.delayedPrice || 0n)
+                      : math.calculateMKRtoSKYPrice(vault?.delayedPrice || 0n, 0n)
                   )}
                 </Text>
               }

@@ -72,27 +72,33 @@ export function RewardsBalanceDetails({ rewardContract }: { rewardContract: Rewa
   const shouldShowPoints = rewardContract.rewardToken.symbol === TOKENS.cle.symbol;
 
   return (
-    <div className="flex w-full flex-col flex-wrap justify-between gap-3 xl:flex-row xl:flex-nowrap">
-      <SuppliedBalanceCard
-        label={t`USDS supplied`}
-        balance={suppliedBalance || 0n}
-        isLoading={suppliedBalanceLoading}
-        error={suppliedBalanceError}
-        token={rewardContract.supplyToken}
-      />
-      <UnsuppliedBalanceCard
-        label={t`USDS not supplied`}
-        balance={tokenBalance?.value || 0n}
-        isLoading={tokenBalanceLoading}
-        error={tokenBalanceError}
-        token={rewardContract.supplyToken}
-      />
-      <RewardsBalanceCard
-        balance={shouldShowPoints ? rewardsPoints : rewardsBalance || 0n}
-        isLoading={shouldShowPoints ? pointsLoading : rewardsBalanceLoading}
-        error={shouldShowPoints ? pointsError : rewardsBalanceError}
-        token={rewardContract.rewardToken}
-      />
+    <div className="flex w-full flex-wrap justify-between gap-3">
+      <div className="min-w-[250px] flex-1">
+        <SuppliedBalanceCard
+          label={t`USDS supplied`}
+          balance={suppliedBalance || 0n}
+          isLoading={suppliedBalanceLoading}
+          error={suppliedBalanceError}
+          token={rewardContract.supplyToken}
+        />
+      </div>
+      <div className="min-w-[250px] flex-1">
+        <UnsuppliedBalanceCard
+          label={t`USDS not supplied`}
+          balance={tokenBalance?.value || 0n}
+          isLoading={tokenBalanceLoading}
+          error={tokenBalanceError}
+          token={rewardContract.supplyToken}
+        />
+      </div>
+      <div className="min-w-[250px] flex-1">
+        <RewardsBalanceCard
+          balance={shouldShowPoints ? rewardsPoints : rewardsBalance || 0n}
+          isLoading={shouldShowPoints ? pointsLoading : rewardsBalanceLoading}
+          error={shouldShowPoints ? pointsError : rewardsBalanceError}
+          token={rewardContract.rewardToken}
+        />
+      </div>
     </div>
   );
 }

@@ -51,6 +51,7 @@ export { useRewardsSuppliedBalance } from './rewards/useRewardsBalance';
 export { useRewardsTotalSupplied } from './rewards/useRewardsTotalSupplied';
 export { useRewardsRate } from './rewards/useRewardsRate';
 export { useRewardsPeriodFinish } from './rewards/useRewardsPeriodFinish';
+export { useRewardContractsToClaim } from './rewards/useRewardContractsToClaim';
 
 // Shared
 export { useCombinedHistory } from './shared/useCombinedHistory';
@@ -75,6 +76,7 @@ export { useDaiUsdsApprove } from './upgrade/useDaiUsdsApprove';
 export { useMkrSkyApprove } from './upgrade/useMkrSkyApprove';
 export { useUpgradeHistory } from './upgrade/useUpgradeHistory';
 export { useUpgradeTotals } from './upgrade/useUpgradeTotals';
+export { useMkrSkyFee } from './upgrade/useMkrSkyFee';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';

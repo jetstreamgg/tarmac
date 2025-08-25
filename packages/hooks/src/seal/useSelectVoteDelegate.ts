@@ -10,6 +10,7 @@ export function useSelectVoteDelegate({
   voteDelegate,
   gas,
   enabled: activeTabEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onError = () => null,
   onSuccess = () => null
@@ -30,6 +31,7 @@ export function useSelectVoteDelegate({
     chainId,
     gas,
     enabled,
+    onMutate,
     onStart,
     onError,
     onSuccess

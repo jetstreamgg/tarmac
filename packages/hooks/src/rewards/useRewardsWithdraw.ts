@@ -7,6 +7,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useRewardsWithdraw({
   contractAddress,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -29,6 +30,7 @@ export function useRewardsWithdraw({
     chainId,
     enabled,
     gas,
+    onMutate,
     onSuccess,
     onError,
     onStart

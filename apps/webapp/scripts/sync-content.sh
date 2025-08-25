@@ -18,6 +18,8 @@ OUTPUT_SOURCE_PATH="output/webapp/faq"
 DESTINATION_PATH="src/data/faqs"
 TOOLTIPS_SOURCE_PATH="output/webapp/tooltips"
 TOOLTIPS_DESTINATION_PATH="../../packages/widgets/src/data/tooltips"
+BANNERS_SOURCE_PATH="output/webapp/banner"
+BANNERS_DESTINATION_PATH="src/data/banners"
 EXTRACT_SCRIPT="scripts/extract_webapp_faqs.js"
 
 # Function to print colored output
@@ -97,8 +99,40 @@ if [ ! -f "$EXTRACT_SCRIPT" ]; then
 fi
 
 # Run the extract script
+# Create a temporary package.json without "type": "module" to run CommonJS scripts
 print_status "Running extraction script..."
+
+# Save current package.json if it exists
+if [ -f "package.json" ]; then
+    mv package.json package.json.bak
+fi
+
+# Create a minimal package.json for CommonJS
+cat > package.json << 'EOF'
+{
+  "name": "temp-extraction",
+  "version": "1.0.0"
+}
+EOF
+
+# Run the extraction script
 node "$EXTRACT_SCRIPT"
+EXTRACT_EXIT_CODE=$?
+
+# Restore original package.json if it existed
+if [ -f "package.json.bak" ]; then
+    mv package.json.bak package.json
+else
+    rm package.json
+fi
+
+# Check if the extraction script succeeded
+if [ $EXTRACT_EXIT_CODE -ne 0 ]; then
+    print_error "Extraction script failed!"
+    cd ..
+    rm -rf "$TEMP_DIR"
+    exit 1
+fi
 
 # Check if output was generated
 if [ ! -d "$OUTPUT_SOURCE_PATH" ]; then
@@ -276,6 +310,7 @@ import {
   optimismFaqItems,
   unichainFaqItems
 } from './sharedFaqItems';
+import { getBundledTransactionsFaqItems } from './getBundledTransactionsFaqItems';
 
 export const getBalancesFaqItems = (chainId: number) => {
   const items = [
@@ -284,7 +319,8 @@ export const getBalancesFaqItems = (chainId: number) => {
     ...(isBaseChainId(chainId) ? baseFaqItems : []),
     ...(isArbitrumChainId(chainId) ? arbitrumFaqItems : []),
     ...(isOptimismChainId(chainId) ? optimismFaqItems : []),
-    ...(isUnichainChainId(chainId) ? unichainFaqItems : [])
+    ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
+    ...getBundledTransactionsFaqItems()
   ];
   return items.sort((a, b) => a.index - b.index);
 };
@@ -465,6 +501,68 @@ else
     print_warning "No tooltips directory found in corpus output"
 fi
 
+# Copy banners if they exist
+if [ -d "$TEMP_DIR/$BANNERS_SOURCE_PATH" ]; then
+    print_status "Syncing banners to webapp..."
+    
+    # Check if banners.ts exists in the output
+    if [ -f "$TEMP_DIR/$BANNERS_SOURCE_PATH/banners.ts" ]; then
+        # Ensure destination directory exists
+        mkdir -p "$BANNERS_DESTINATION_PATH"
+        
+        # Copy the banners file
+        cp "$TEMP_DIR/$BANNERS_SOURCE_PATH/banners.ts" "$BANNERS_DESTINATION_PATH/banners.ts"
+        
+        print_status "Banners synced successfully to $BANNERS_DESTINATION_PATH/banners.ts"
+    else
+        print_warning "No banners.ts file found in corpus output"
+    fi
+else
+    print_warning "No banners directory found in corpus output"
+fi
+
+# Track all generated files for formatting
+GENERATED_FILES=()
+
+# Collect all FAQ files
+print_status "Collecting generated files for formatting..."
+for file in "$DESTINATION_PATH"/*.ts; do
+    if [ -f "$file" ]; then
+        # Convert to path relative to monorepo root
+        GENERATED_FILES+=("apps/webapp/$file")
+    fi
+done
+
+# Add tooltip file if it exists
+if [ -f "$TOOLTIPS_DESTINATION_PATH/index.ts" ]; then
+    GENERATED_FILES+=("packages/widgets/src/data/tooltips/index.ts")
+fi
+
+# Add banner file if it exists
+if [ -f "$BANNERS_DESTINATION_PATH/banners.ts" ]; then
+    GENERATED_FILES+=("apps/webapp/$BANNERS_DESTINATION_PATH/banners.ts")
+fi
+
+# Format only the generated files
+if [ ${#GENERATED_FILES[@]} -gt 0 ]; then
+    print_status "Formatting ${#GENERATED_FILES[@]} generated files with prettier..."
+    
+    # Navigate to the monorepo root to use prettier
+    cd ../.. 
+    
+    # Format each file individually to avoid running prettier on the entire repo
+    for file in "${GENERATED_FILES[@]}"; do
+        npx --no-install prettier --write "$file" 2>/dev/null || true
+    done
+    
+    # Return to webapp directory
+    cd apps/webapp
+    
+    print_status "Files formatted successfully"
+else
+    print_warning "No files to format"
+fi
+
 # Clean up temp directory
 print_status "Cleaning up temporary files..."
 rm -rf "$TEMP_DIR"
@@ -474,11 +572,16 @@ print_status "Content sync completed successfully!"
 # List the synced files
 echo ""
 print_status "Synced files:"
-print_status "FAQ files:"
-find "$DESTINATION_PATH" -type f -name "*.json" -o -name "*.md" -o -name "*.ts" | sort | while read file; do
-    echo "  - $file"
-done
 
+# List FAQ files
+if [ -d "$DESTINATION_PATH" ]; then
+    print_status "FAQ files:"
+    find "$DESTINATION_PATH" -type f \( -name "*.ts" -o -name "*.json" -o -name "*.md" \) | sort | while read file; do
+        echo "  - $file"
+    done
+fi
+
+# List tooltip files
 if [ -f "$TOOLTIPS_DESTINATION_PATH/index.ts" ]; then
     echo ""
     print_status "Tooltip files:"

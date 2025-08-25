@@ -7,6 +7,7 @@ import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 export function useSavingsSupply({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null,
@@ -38,6 +39,7 @@ export function useSavingsSupply({
     chainId,
     gas,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

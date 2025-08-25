@@ -69,7 +69,7 @@ export function PositionDetailAccordion({
               {formatBigInt(
                 displayToken === TOKENS.mkr
                   ? sealedAmount || 0n
-                  : math.calculateConversion(TOKENS.mkr, sealedAmount || 0n)
+                  : math.calculateConversion(TOKENS.mkr, sealedAmount || 0n, 0n)
               )}{' '}
               {displayToken.symbol}
             </Text>
@@ -135,7 +135,7 @@ export function PositionDetailAccordion({
                 {formatBigInt(
                   displayToken === TOKENS.mkr
                     ? liquidationPrice
-                    : math.calculateMKRtoSKYPrice(liquidationPrice)
+                    : math.calculateMKRtoSKYPrice(liquidationPrice, 0n)
                 )}
               </Text>
             </motion.div>
@@ -146,7 +146,7 @@ export function PositionDetailAccordion({
               <Text className="text-right text-sm">
                 $
                 {formatBigInt(
-                  displayToken === TOKENS.mkr ? delayedPrice : math.calculateMKRtoSKYPrice(delayedPrice)
+                  displayToken === TOKENS.mkr ? delayedPrice : math.calculateMKRtoSKYPrice(delayedPrice, 0n)
                 )}
               </Text>
             </motion.div>

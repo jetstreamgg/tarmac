@@ -48,80 +48,88 @@ export function StakeOverview() {
     <DetailSectionWrapper>
       <DetailSection title={t`Staking Engine Overview`}>
         <DetailSectionRow>
-          <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
-            <StatsCard
-              title={t`Total SKY staked`}
-              isLoading={isLoading}
-              error={error}
-              content={
-                <TokenIconWithBalance
-                  className="mt-2"
-                  token={{ name: StakeToken.SKY, symbol: StakeToken.SKY }}
-                  balance={skySealed}
-                />
-              }
-            />
-            <StatsCard
-              title={t`Total USDS borrowed`}
-              isLoading={collateralDataLoading}
-              error={collateralDataError}
-              content={
-                <TokenIconWithBalance
-                  className="mt-2"
-                  token={{ name: 'USDS', symbol: 'USDS' }}
-                  balance={formatBigInt(totalDebt)}
-                />
-              }
-            />
-            <StatsCard
-              title={
-                <HStack gap={1} className="items-center">
-                  <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
-                    <Trans>Debt ceiling</Trans>
-                  </Heading>
-                  <PopoverInfo type="dtc" />
-                </HStack>
-              }
-              isLoading={collateralDataLoading}
-              error={collateralDataError}
-              content={
-                <TokenIconWithBalance
-                  className="mt-2"
-                  token={{ name: 'USDS', symbol: 'USDS' }}
-                  balance={formatBigInt(debtCeiling)}
-                />
-              }
-            />
-          </HStack>
-        </DetailSectionRow>
-        <DetailSectionRow>
-          <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
-            <StatsCard
-              title={
-                <HStack gap={1} className="items-center">
-                  <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
-                    <Trans>Borrow Rate</Trans>
-                  </Heading>
-                  <PopoverInfo type="sbr" />
-                </HStack>
-              }
-              isLoading={isLoading}
-              error={error}
-              content={<Text className="mt-2">{formatDecimalPercentage(borrowRate)}</Text>}
-            />
-            <StatsCard
-              title={t`TVL`}
-              isLoading={isLoading}
-              error={error}
-              content={<Text className="mt-2">{`$${formatNumber(tvl)}`}</Text>}
-            />
-            <StatsCard
-              title={t`Staking positions`}
-              isLoading={isLoading}
-              error={error}
-              content={<Text className="mt-2">{formatNumber(numberOfUrns, { maxDecimals: 0 })}</Text>}
-            />
-          </HStack>
+          <div className="flex w-full flex-wrap justify-between gap-3">
+            <div className="min-w-[250px] flex-1">
+              <StatsCard
+                title={t`Total SKY staked`}
+                isLoading={isLoading}
+                error={error}
+                content={
+                  <TokenIconWithBalance
+                    className="mt-2"
+                    token={{ name: StakeToken.SKY, symbol: StakeToken.SKY }}
+                    balance={skySealed}
+                  />
+                }
+              />
+            </div>
+            <div className="min-w-[250px] flex-1">
+              <StatsCard
+                title={t`Total USDS borrowed`}
+                isLoading={collateralDataLoading}
+                error={collateralDataError}
+                content={
+                  <TokenIconWithBalance
+                    className="mt-2"
+                    token={{ name: 'USDS', symbol: 'USDS' }}
+                    balance={formatBigInt(totalDebt)}
+                  />
+                }
+              />
+            </div>
+            <div className="min-w-[250px] flex-1">
+              <StatsCard
+                title={
+                  <HStack gap={1} className="items-center">
+                    <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+                      <Trans>Debt ceiling</Trans>
+                    </Heading>
+                    <PopoverInfo type="dtc" />
+                  </HStack>
+                }
+                isLoading={collateralDataLoading}
+                error={collateralDataError}
+                content={
+                  <TokenIconWithBalance
+                    className="mt-2"
+                    token={{ name: 'USDS', symbol: 'USDS' }}
+                    balance={formatBigInt(debtCeiling)}
+                  />
+                }
+              />
+            </div>
+            <div className="min-w-[250px] flex-1">
+              <StatsCard
+                title={
+                  <HStack gap={1} className="items-center">
+                    <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+                      <Trans>Borrow Rate</Trans>
+                    </Heading>
+                    <PopoverInfo type="sbr" />
+                  </HStack>
+                }
+                isLoading={isLoading}
+                error={error}
+                content={<Text className="mt-2">{formatDecimalPercentage(borrowRate)}</Text>}
+              />
+            </div>
+            <div className="min-w-[250px] flex-1">
+              <StatsCard
+                title={t`TVL`}
+                isLoading={isLoading}
+                error={error}
+                content={<Text className="mt-2">{`$${formatNumber(tvl)}`}</Text>}
+              />
+            </div>
+            <div className="min-w-[250px] flex-1">
+              <StatsCard
+                title={t`Staking positions`}
+                isLoading={isLoading}
+                error={error}
+                content={<Text className="mt-2">{formatNumber(numberOfUrns, { maxDecimals: 0 })}</Text>}
+              />
+            </div>
+          </div>
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Staking Rewards overview`}>

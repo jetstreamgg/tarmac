@@ -7,6 +7,7 @@ import { sUsdsAddress } from './useReadSavingsUsds';
 export function useSavingsApprove({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -22,6 +23,7 @@ export function useSavingsApprove({
     spender: sUsdsAddress[chainId as keyof typeof sUsdsAddress],
     amount,
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart

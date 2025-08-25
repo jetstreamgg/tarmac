@@ -58,33 +58,42 @@ Some onchain actions might require multiple wallet signatures to authorize them.
     index: 2
   },
   {
+    question: 'How can I whitelist USDS in digital non-custodial wallet?',
+    answer: `Your non-custodial wallet provider of choice might not always display all of the digital assets that you hold on blockchains. Metamask, for example, does not automatically integrate all tokens into its user interface in an effort to help protect its users from fake-token scams. What this means is that newly acquired tokens might not show up in the integrated asset list of your chosen wallet provider until you whitelist the contract addresses of those tokens. Notably, such tokens will still be visible if you are viewing the blockchain directly (i.e., outside the interface provided by your chosen wallet provider).
+
+Whitelisting a token address communicates to the wallet that the address is approved, adding an extra layer of security to all transactions involving that token. This process does not impact the token's availability on the blockchain, but ensures that it is visible and accessible within the wallet interface. Accordingly, a user of the decentralized Sky.money web app might choose to manually whitelist Sky Protocol native token addresses, including USDS and SKY. Metamask offers a one-click option to do so immediately after you've obtained tokens through trading or upgrading on the Sky.money web app.
+
+Your use of Metamask or any other third-party digital wallet software may be subject to such third-party's terms of service and any other applicable terms, conditions and policies that you may agree to with such third party. Please see the [User Risk Documentation](https://docs.sky.money/user-risks) and [Terms of Use](https://docs.sky.money/legal-terms) for more information. Sky.money is not responsible for any loss or damages incurred while using these third-party platforms.`,
+    index: 3
+  },
+  {
     question: 'What is a blockchain transaction fee?',
     answer:
       'Every time you engage in transactions with your digital assets (e.g., buy, sell, trade or transfer them) you will likely pay a transaction fee—called a gas fee—for using the blockchain network. That fee is neither controlled, imposed nor received by the Sky.money web app or the Sky Protocol; it is calculated based on current network demand and the amount of gas (i.e., units of compute resources) required to process your transaction. On the Ethereum blockchain, gas fees are paid in ETH, the native currency of the blockchain. So, be sure to have ETH in your wallet anytime you transact using the Sky Protocol.',
-    index: 3
+    index: 4
   },
   {
     question: 'What is USDS?',
     answer: `USDS is a stablecoin of the decentralized Sky Protocol and the upgrade of DAI. It is backed by a surplus of collateral and soft-pegged to the value of the U.S. dollar, meaning it is designed to maintain a value equal to or close to a dollar.
 
-USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS, and to access Sky Token Rewards in the form of SKY tokens via the Sky.money web app.
+USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. For example, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS, and to access Sky Token Rewards via the Sky.money web app.
 
 The Sky Protocol is governed by a community of broad and diversified individuals and entities from around the world, who hold Sky governance tokens and support the Sky Ecosystem by participating in a system of decentralized onchain voting. USDS powers the open Sky Ecosystem.
 
 USDS is also currently available on networks other than Ethereum Mainnet, including Solana, Base and Arbitrum. You can follow the growth of USDS and all Sky Protocol tokens using the [Sky Ecosystem Dashboard](https://info.sky.money/).`,
-    index: 4
+    index: 5
   },
   {
     question: 'How do I get USDS?',
     answer:
       'You can use the Sky.money web app, a non-custodial gateway to the decentralized Sky Protocol, to trade USDC, USDT, ETH or SKY for USDS (or vice versa). You can also upgrade your DAI to USDS, subject to any applicable blockchain transaction, or gas, fees. Gas fees are neither controlled, imposed nor received by Sky.money or the Sky Protocol. You can also obtain USDS on various crypto exchanges that decide to make it available on their platforms.',
-    index: 5
+    index: 6
   },
   {
     question: 'How can I use USDS?',
     answer:
       'Like other decentralized stablecoins, USDS is freely transferable and can be used in connection with any software protocol or platform that supports it. Unlike other stablecoins, you can use USDS to participate in the Sky Savings Rate to accumulate additional USDS over time, and to access Sky Token Rewards, without giving up control of your digital assets. When you select SKY as your Sky Token Reward, you can participate—if you choose to do so—in the governance of the Sky Ecosystem.',
-    index: 6
+    index: 7
   },
   {
     question: 'What is SKY, and how can I get it and use it?',
@@ -96,7 +105,7 @@ You can access SKY in several ways:
 
 • By directly trading USDC, USDT, ETH and USDS for it via the Sky.money web app.
 
-• By supplying USDS to the Sky Token Rewards module of the Sky Protocol and accessing SKY as a reward.
+• By supplying USDS to the Sky Token Rewards module of the Sky Protocol and selecting SKY as a reward.
 
 • On cryptocurrency exchanges that support the SKY token.
 
@@ -105,12 +114,12 @@ SKY holders can use the token to:
 • Participate directly in Sky Ecosystem Governance through a system of onchain voting, and/or to entrust their voting power to one or more governance delegates.
 
 • Access Staking Rewards by supplying SKY to the Staking Engine of the Protocol.`,
-    index: 7
+    index: 8
   },
   {
     question: 'Are there risks involved with using the Sky.money web app?',
     answer:
       'For details regarding potential risks using Sky.money web app, please see the [User Risk Documentation](https://docs.sky.money/user-risks).',
-    index: 8
+    index: 9
   }
 ];

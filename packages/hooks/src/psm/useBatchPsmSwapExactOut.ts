@@ -13,6 +13,7 @@ export function useBatchPsmSwapExactOut({
   maxAmountIn,
   referralCode = 0n,
   enabled: paramEnabled = true,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -62,6 +63,7 @@ export function useBatchPsmSwapExactOut({
     calls,
     chainId,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart

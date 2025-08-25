@@ -7,6 +7,7 @@ export function useTradeApprove({
   amount,
   tokenAddress,
   enabled = true,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -21,6 +22,7 @@ export function useTradeApprove({
     spender: gpv2VaultRelayerAddress[chainId as keyof typeof gpv2VaultRelayerAddress],
     amount,
     enabled,
+    onMutate,
     onError,
     onSuccess,
     onStart

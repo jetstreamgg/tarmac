@@ -72,58 +72,66 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
   const totalSuppliedInDollars = !isNaN(totalSupplied) && !isNaN(skyPrice) ? totalSupplied * skyPrice : 0;
 
   return (
-    <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
-      <StatsCard
-        title={t`Reward`}
-        isLoading={tokensLoading}
-        error={tokensError}
-        content={
-          rewardContractTokens ? (
-            <div className="mt-2 flex gap-2">
-              <TokenIcon token={rewardContractTokens.rewardsToken} className="h-6 w-6" />
-              <Text>{rewardContractTokens.rewardsToken.symbol}</Text>
-            </div>
-          ) : (
-            <Text className="mt-2">{formatAddress(contractAddress, 6, 4)}</Text>
-          )
-        }
-      />
-      <StatsCard
-        title={
-          <HStack gap={1} className="items-center">
-            <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
-              <Trans>Rate</Trans>
-            </Heading>
-            <PopoverInfo type="srr" />
-          </HStack>
-        }
-        isLoading={false}
-        error={null}
-        content={
-          <Text
-            className={`mt-2 ${
-              parseFloat(mostRecentRewardsChartInfoData?.rate || '0') > 0 ? 'text-bullish' : ''
-            }`}
-          >
-            {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData?.rate || '0'))}
-          </Text>
-        }
-      />
-      <StatsCard
-        title={t`TVL (Total Value Locked)`}
-        isLoading={historicRewardsTokenIsLoading || stakeHistoricIsLoading}
-        error={historicRewardsTokenError || stakeHistoricError}
-        content={<Text className="mt-2">{`$${formatNumber(totalSuppliedInDollars)}`}</Text>}
-      />
-      <StatsCard
-        title={t`Suppliers`}
-        isLoading={historicRewardsTokenIsLoading}
-        error={historicRewardsTokenError}
-        content={
-          <Text className="mt-2">{formatNumber(mostRecentReward?.suppliers || 0, { maxDecimals: 0 })}</Text>
-        }
-      />
-    </HStack>
+    <div className="flex w-full flex-wrap justify-between gap-3">
+      <div className="min-w-[250px] flex-1">
+        <StatsCard
+          title={t`Reward`}
+          isLoading={tokensLoading}
+          error={tokensError}
+          content={
+            rewardContractTokens ? (
+              <div className="mt-2 flex gap-2">
+                <TokenIcon token={rewardContractTokens.rewardsToken} className="h-6 w-6" />
+                <Text>{rewardContractTokens.rewardsToken.symbol}</Text>
+              </div>
+            ) : (
+              <Text className="mt-2">{formatAddress(contractAddress, 6, 4)}</Text>
+            )
+          }
+        />
+      </div>
+      <div className="min-w-[250px] flex-1">
+        <StatsCard
+          title={
+            <HStack gap={1} className="items-center">
+              <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+                <Trans>Rate</Trans>
+              </Heading>
+              <PopoverInfo type="srr" />
+            </HStack>
+          }
+          isLoading={false}
+          error={null}
+          content={
+            <Text
+              className={`mt-2 ${
+                parseFloat(mostRecentRewardsChartInfoData?.rate || '0') > 0 ? 'text-bullish' : ''
+              }`}
+            >
+              {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData?.rate || '0'))}
+            </Text>
+          }
+        />
+      </div>
+      <div className="min-w-[250px] flex-1">
+        <StatsCard
+          title={t`TVL (Total Value Locked)`}
+          isLoading={historicRewardsTokenIsLoading || stakeHistoricIsLoading}
+          error={historicRewardsTokenError || stakeHistoricError}
+          content={<Text className="mt-2">{`$${formatNumber(totalSuppliedInDollars)}`}</Text>}
+        />
+      </div>
+      <div className="min-w-[250px] flex-1">
+        <StatsCard
+          title={t`Suppliers`}
+          isLoading={historicRewardsTokenIsLoading}
+          error={historicRewardsTokenError}
+          content={
+            <Text className="mt-2">{formatNumber(mostRecentReward?.suppliers || 0, { maxDecimals: 0 })}</Text>
+          }
+        />
+      </div>
+    </div>
   );
 };
 
@@ -134,11 +142,13 @@ export function StakeRewardsOverview() {
     <LoadingErrorWrapper
       isLoading={isLoading}
       loadingComponent={
-        <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
+        <div className="flex w-full flex-wrap justify-between gap-3">
           {[1, 2, 3, 4].map(i => (
-            <LoadingStatCard key={i} />
+            <div key={i} className="min-w-[250px] flex-1">
+              <LoadingStatCard />
+            </div>
           ))}
-        </HStack>
+        </div>
       }
       error={error}
       errorComponent={
@@ -147,7 +157,7 @@ export function StakeRewardsOverview() {
         </Text>
       }
     >
-      <VStack className="space-y-8">
+      <VStack className="space-y-4">
         {data?.map(({ contractAddress }) => (
           <StakeRewardsOverviewRow key={contractAddress} contractAddress={contractAddress} />
         ))}

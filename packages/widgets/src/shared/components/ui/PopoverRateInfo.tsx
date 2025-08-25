@@ -186,6 +186,24 @@ const getContent = (
   }
 });
 
+// Export the valid tooltip types as a runtime constant
+export const POPOVER_TOOLTIP_TYPES = [
+  'str',
+  'ssr',
+  'sbr',
+  'srr',
+  'dtc',
+  'psm',
+  'stakingRewards',
+  'borrow',
+  'delegate',
+  'liquidation',
+  'delayedUpgradePenalty'
+] as const;
+
+// Derive the type from the constant
+export type PopoverTooltipType = (typeof POPOVER_TOOLTIP_TYPES)[number];
+
 export const PopoverRateInfo = ({
   type,
   onExternalLinkClicked,
@@ -193,18 +211,7 @@ export const PopoverRateInfo = ({
   width = 16,
   height = 15
 }: {
-  type:
-    | 'str'
-    | 'ssr'
-    | 'sbr'
-    | 'srr'
-    | 'dtc'
-    | 'psm'
-    | 'stakingRewards'
-    | 'borrow'
-    | 'delegate'
-    | 'liquidation'
-    | 'delayedUpgradePenalty';
+  type: PopoverTooltipType;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   iconClassName?: string;
   width?: number;

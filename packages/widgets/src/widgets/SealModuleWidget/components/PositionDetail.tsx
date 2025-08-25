@@ -114,7 +114,7 @@ export function PositionDetail({
               balance={formatBigInt(
                 displayToken === TOKENS.mkr
                   ? sealedAmount || 0n
-                  : math.calculateConversion(TOKENS.mkr, sealedAmount || 0n)
+                  : math.calculateConversion(TOKENS.mkr, sealedAmount || 0n, 0n)
               )}
             />
           </VStack>

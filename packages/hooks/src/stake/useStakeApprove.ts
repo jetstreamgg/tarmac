@@ -7,6 +7,7 @@ import { math } from '@jetstreamgg/sky-utils';
 export function useStakeSkyApprove({
   amount,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -22,6 +23,7 @@ export function useStakeSkyApprove({
     spender: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
     amount,
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart
@@ -32,6 +34,7 @@ export function useStakeUsdsApprove({
   amount,
   roundUp = false,
   gas,
+  onMutate = () => null,
   onSuccess = () => null,
   onError = () => null,
   onStart = () => null
@@ -48,6 +51,7 @@ export function useStakeUsdsApprove({
     spender: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
     amount: roundUp && amount > 0n ? math.removeDecimalPartOfWad(amount) + 1000000000000000000n : amount, // round up 1 usds
     gas,
+    onMutate,
     onError,
     onSuccess,
     onStart

@@ -13,6 +13,7 @@ export const useOnChainCancelOrder = ({
   orderUid,
   gas,
   enabled: paramEnabled = true,
+  onMutate = () => null,
   onStart = () => null,
   onSuccess = () => null,
   onError = () => null
@@ -36,6 +37,7 @@ export const useOnChainCancelOrder = ({
     chainId,
     gas,
     enabled,
+    onMutate,
     onSuccess,
     onError,
     onStart
