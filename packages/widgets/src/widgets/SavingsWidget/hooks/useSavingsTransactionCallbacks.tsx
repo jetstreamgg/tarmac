@@ -10,14 +10,12 @@ interface UseSavingsTransactionCallbacksParameters
   amount: bigint;
   mutateAllowance: () => void;
   mutateSavings: () => void;
-  retryPrepareSupply: () => void;
 }
 
 export const useSavingsTransactionCallbacks = ({
   amount,
   mutateAllowance,
   mutateSavings,
-  retryPrepareSupply,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
@@ -28,47 +26,13 @@ export const useSavingsTransactionCallbacks = ({
     onNotification
   });
 
-  // Savings approve
-  const approveTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onMutate: handleOnMutate,
-      onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: t`Approving ${formatBigInt(amount)} USDS` });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Approve successful`,
-          notificationDescription: t`You approved USDS`
-        });
-        mutateAllowance();
-        retryPrepareSupply();
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Approval failed`,
-          notificationDescription: t`We could not approve your token allowance.`
-        });
-        mutateAllowance();
-      }
-    }),
-    [
-      amount,
-      handleOnError,
-      handleOnMutate,
-      handleOnStart,
-      handleOnSuccess,
-      mutateAllowance,
-      retryPrepareSupply
-    ]
-  );
-
   // Savings supply
   const supplyTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
-      onMutate: handleOnMutate,
+      onMutate: () => {
+        mutateAllowance();
+        handleOnMutate();
+      },
       onStart: hash => {
         handleOnStart({
           hash,
@@ -127,5 +91,5 @@ export const useSavingsTransactionCallbacks = ({
     [amount, handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
   );
 
-  return { approveTransactionCallbacks, supplyTransactionCallbacks, withdrawTransactionCallbacks };
+  return { supplyTransactionCallbacks, withdrawTransactionCallbacks };
 };

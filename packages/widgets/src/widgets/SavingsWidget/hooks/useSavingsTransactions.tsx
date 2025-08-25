@@ -1,9 +1,4 @@
-import {
-  useBatchSavingsSupply,
-  useSavingsApprove,
-  useSavingsSupply,
-  useSavingsWithdraw
-} from '@jetstreamgg/sky-hooks';
+import { useBatchSavingsSupply, useSavingsWithdraw } from '@jetstreamgg/sky-hooks';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useContext } from 'react';
 import { SavingsAction } from '../lib/constants';
@@ -15,7 +10,7 @@ interface UseSavingsTransactionsParameters
   amount: bigint;
   max: boolean;
   referralCode: number | undefined;
-  allowance: bigint | undefined;
+  shouldUseBatch: boolean;
   mutateAllowance: () => void;
   mutateSavings: () => void;
 }
@@ -24,7 +19,7 @@ export const useSavingsTransactions = ({
   amount,
   max,
   referralCode,
-  allowance,
+  shouldUseBatch,
   mutateAllowance,
   mutateSavings,
   addRecentTransaction,
@@ -32,39 +27,21 @@ export const useSavingsTransactions = ({
   onNotification
 }: UseSavingsTransactionsParameters) => {
   const { widgetState } = useContext(WidgetContext);
-  const { approveTransactionCallbacks, supplyTransactionCallbacks, withdrawTransactionCallbacks } =
-    useSavingsTransactionCallbacks({
-      amount,
-      mutateAllowance,
-      mutateSavings,
-      retryPrepareSupply: () => savingsSupply.retryPrepare(),
-      addRecentTransaction,
-      onWidgetStateChange,
-      onNotification
-    });
-
-  const savingsApprove = useSavingsApprove({
+  const { supplyTransactionCallbacks, withdrawTransactionCallbacks } = useSavingsTransactionCallbacks({
     amount,
-    enabled: widgetState.action === SavingsAction.APPROVE && allowance !== undefined,
-    ...approveTransactionCallbacks
-  });
-
-  const savingsSupplyParams = {
-    amount,
-    ref: referralCode,
-    ...supplyTransactionCallbacks
-  };
-
-  const savingsSupply = useSavingsSupply({
-    ...savingsSupplyParams,
-    enabled: widgetState.action === SavingsAction.SUPPLY && allowance !== undefined
+    mutateAllowance,
+    mutateSavings,
+    addRecentTransaction,
+    onWidgetStateChange,
+    onNotification
   });
 
   const batchSavingsSupply = useBatchSavingsSupply({
-    ...savingsSupplyParams,
-    enabled:
-      (widgetState.action === SavingsAction.SUPPLY || widgetState.action === SavingsAction.APPROVE) &&
-      allowance !== undefined
+    amount,
+    ref: referralCode,
+    shouldUseBatch,
+    enabled: widgetState.action === SavingsAction.SUPPLY || widgetState.action === SavingsAction.APPROVE,
+    ...supplyTransactionCallbacks
   });
 
   const savingsWithdraw = useSavingsWithdraw({
@@ -74,5 +51,5 @@ export const useSavingsTransactions = ({
     ...withdrawTransactionCallbacks
   });
 
-  return { savingsApprove, savingsSupply, batchSavingsSupply, savingsWithdraw };
+  return { batchSavingsSupply, savingsWithdraw };
 };

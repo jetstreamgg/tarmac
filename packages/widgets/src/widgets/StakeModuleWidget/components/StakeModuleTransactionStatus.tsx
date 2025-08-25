@@ -202,14 +202,12 @@ export const StakeModuleTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
-    const isApprovalSuccess = txStatus === TxStatus.SUCCESS && action === StakeAction.APPROVE;
     const isWaitingForSecondTransaction =
       txStatus === TxStatus.INITIALIZED &&
       action !== StakeAction.APPROVE &&
       flowNeedsAllowance &&
       !isBatchTransaction;
-    const flowTxStatus: TxStatus =
-      isApprovalSuccess || isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
+    const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
 
     if (flow === StakeFlow.OPEN) setStepTwoTitle(t`Open a position`);
     if (flow === StakeFlow.MANAGE) setStepTwoTitle(t`Change Position`);
@@ -218,8 +216,12 @@ export const StakeModuleTransactionStatus = ({
       (action === StakeAction.APPROVE || action === StakeAction.MULTICALL) &&
       screen === StakeScreen.TRANSACTION
     ) {
-      if (action === StakeAction.APPROVE) setStep(1);
-      if (action === StakeAction.MULTICALL) setStep(2);
+      if (isBatchTransaction) setStep(2);
+      else if (flowTxStatus !== TxStatus.SUCCESS) {
+        if (needsAllowance) setStep(1);
+        else setStep(2);
+      }
+
       setLoadingText(
         i18n._(
           stakeLoadingButtonText({
@@ -256,7 +258,7 @@ export const StakeModuleTransactionStatus = ({
       setTxTitle(i18n._(claimTitle[txStatus]));
       setTxSubtitle(i18n._(claimSubtitle[txStatus]));
     }
-  }, [txStatus, screen, flow, action, i18n.locale]);
+  }, [txStatus, screen, flow, action, i18n.locale, needsAllowance]);
 
   return (
     <BatchTransactionStatus
