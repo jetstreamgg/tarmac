@@ -14,7 +14,7 @@ export function useBatchSavingsSupply({
   onError = () => null,
   onStart = () => null,
   enabled: activeTabEnabled = true,
-  shouldUseBatch,
+  shouldUseBatch = true,
   ref = 0
 }: BatchWriteHookParams & {
   amount: bigint;
