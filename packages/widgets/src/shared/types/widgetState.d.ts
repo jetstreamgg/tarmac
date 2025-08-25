@@ -108,4 +108,5 @@ export type WidgetProps = {
   referralCode?: number;
   shouldReset?: boolean;
   legalBatchTxUrl?: string;
+  disallowedFlow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | StakeFlow | SealFlow;
 };

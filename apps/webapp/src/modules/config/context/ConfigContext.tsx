@@ -2,7 +2,7 @@ import { createContext } from 'react';
 import { SiteConfig } from '../types/site-config';
 import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
-import { Intent } from '@/lib/enums';
+import { ExpertIntent, Intent } from '@/lib/enums';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { SealToken } from '@/modules/seal/constants';
 import { StakeToken } from '@/modules/stake/constants';
@@ -15,6 +15,7 @@ export type LinkedActionConfig = {
   sourceToken?: string;
   targetToken?: string;
   rewardContract?: string;
+  expertModule?: string;
   step: number;
   timestamp?: string;
 };
@@ -50,7 +51,8 @@ export const defaultUserConfig: UserConfig = {
   intent: Intent.BALANCES_INTENT,
   sealToken: SealToken.MKR,
   stakeToken: StakeToken.SKY,
-  batchEnabled: false // Default to false to show activation prompt
+  batchEnabled: false, // Default to false to show activation prompt
+  expertRiskDisclaimerShown: false
 };
 
 export const defaultLinkedActionConfig = {
@@ -79,6 +81,10 @@ export interface ConfigContextProps {
   externalLinkModalUrl: string;
   setExternalLinkModalUrl: (val: string) => void;
   onExternalLinkClicked: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  selectedExpertOption: ExpertIntent | undefined;
+  setSelectedExpertOption: (intent: ExpertIntent | undefined) => void;
+  expertRiskDisclaimerShown: boolean;
+  setExpertRiskDisclaimerShown: (shown: boolean) => void;
 }
 
 // Zod schema for validating user settings
@@ -109,5 +115,9 @@ export const ConfigContext = createContext<ConfigContextProps>({
   setExternalLinkModalOpened: () => {},
   externalLinkModalUrl: '',
   setExternalLinkModalUrl: () => {},
-  onExternalLinkClicked: () => {}
+  onExternalLinkClicked: () => {},
+  selectedExpertOption: undefined,
+  setSelectedExpertOption: () => {},
+  expertRiskDisclaimerShown: false,
+  setExpertRiskDisclaimerShown: () => {}
 });

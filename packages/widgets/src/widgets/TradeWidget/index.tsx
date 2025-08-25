@@ -63,6 +63,7 @@ export type TradeWidgetProps = WidgetProps & {
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
+  tokensLocked?: boolean;
 };
 
 function TradeWidgetWrapped({
@@ -79,7 +80,8 @@ function TradeWidgetWrapped({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
-  enabled = true
+  enabled = true,
+  tokensLocked = false
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
@@ -1218,11 +1220,11 @@ function TradeWidgetWrapped({
               targetAmount={targetAmount}
               quoteData={quoteData}
               quoteError={quoteError}
-              originTokenList={originTokenList}
-              targetTokenList={targetTokenList}
+              originTokenList={tokensLocked && originToken ? [originToken] : originTokenList}
+              targetTokenList={tokensLocked && targetToken ? [targetToken] : targetTokenList}
               isBalanceError={isBalanceError}
               isQuoteLoading={isQuoteLoading}
-              canSwitchTokens={true}
+              canSwitchTokens={!tokensLocked}
               priceImpact={priceImpact}
               feePercentage={feePercentage}
               isConnectedAndEnabled={isConnectedAndEnabled}
@@ -1230,6 +1232,7 @@ function TradeWidgetWrapped({
               tradeAnyway={tradeAnyway}
               setTradeAnyway={setTradeAnyway}
               enableSearch={true}
+              tokensLocked={tokensLocked}
               onOriginTokenChange={(token: TokenForChain) => {
                 onWidgetStateChange?.({
                   originToken: token.symbol,

@@ -71,7 +71,8 @@ export enum ModuleEnum {
   TRADE = 'TRADE',
   REWARDS = 'REWARDS',
   SEAL = 'SEAL',
-  STAKE = 'STAKE'
+  STAKE = 'STAKE',
+  STUSDS = 'STUSDS'
 }
 
 export enum TransactionTypeEnum {

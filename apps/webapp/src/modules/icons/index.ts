@@ -33,6 +33,7 @@ import { ArbitrumChain } from './ArbitrumChain';
 import { UnichainChain } from './UnichainChain';
 import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
+import { Expert } from './Expert';
 import { Delegate } from './Delegate';
 import { Borrow } from './Borrow';
 import { ClaimRewards } from './ClaimRewards';
@@ -76,6 +77,7 @@ export {
   OptimismChain,
   UnichainChain,
   Stake,
+  Expert,
   Delegate,
   Borrow,
   ClaimRewards,
