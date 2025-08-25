@@ -40,6 +40,7 @@ export { useRewardsChartInfo } from './rewards/useRewardsChartInfo';
 export { useRewardContractTokens } from './rewards/useRewardContractTokens';
 export { useUserRewardsBalance } from './rewards/useUserRewardsBalance';
 export { useRewardsWithUserBalance } from './rewards/useRewardsWithUserBalance';
+export { useRewardsWithUserBalanceOnChain } from './rewards/useRewardsWithUserBalanceOnChain';
 export { useBatchRewardsSupply } from './rewards/useBatchRewardsSupply';
 
 // Rewards

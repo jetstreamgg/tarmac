@@ -58,7 +58,7 @@ const fetchSealRewardsData = async (url: URL): Promise<SealRewardsData[] | undef
 export function useSealRewardsData(): ReadHook & { data?: SealRewardsData[] } {
   const chainId = useChainId();
 
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/lsefarms/`;

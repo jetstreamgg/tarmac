@@ -2,7 +2,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
   RewardContract,
   useAvailableTokenRewardContracts,
-  useRewardsWithUserBalance
+  useRewardsWithUserBalanceOnChain
 } from '@jetstreamgg/sky-hooks';
 import { useContext, useMemo } from 'react';
 import { useAccount, useChainId } from 'wagmi';
@@ -29,7 +29,7 @@ export const RewardsOverview = ({
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const { widgetState, setWidgetState } = useContext(WidgetContext);
 
-  const { data: rewardsWithUserBalance } = useRewardsWithUserBalance({
+  const { data: rewardsWithUserBalance } = useRewardsWithUserBalanceOnChain({
     address,
     chainId,
     contractAddresses: rewardContracts.map(rewardContract => rewardContract.contractAddress as `0x${string}`)

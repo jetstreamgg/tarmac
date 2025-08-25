@@ -44,7 +44,7 @@ async function fetchPrices(url: URL): Promise<Record<string, PriceData>> {
 
 export function usePrices(): ReadHook & { data?: Record<string, PriceData> } {
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/prices/`;

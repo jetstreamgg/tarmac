@@ -1,9 +1,7 @@
-import { sepolia } from 'wagmi/chains';
 import {
   URL_MAKER_SUBGRAPH_MAINNET,
   URL_MAKER_SUBGRAPH_TENDERLY,
   TENDERLY_CHAIN_ID,
-  URL_BA_LABS_API_TENDERLY,
   URL_BA_LABS_API_MAINNET,
   URL_BASE_SUBGRAPH_MAINNET,
   URL_BASE_SUBGRAPH_TENDERLY,
@@ -60,11 +58,6 @@ export function getL2SubgraphUrl(chainId: number): string | null {
   }
 }
 
-export function getBaLabsApiUrl(chainId: number): string | null {
-  switch (chainId) {
-    case sepolia.id:
-      return URL_BA_LABS_API_TENDERLY;
-    default:
-      return URL_BA_LABS_API_MAINNET;
-  }
+export function getBaLabsApiUrl(): string {
+  return URL_BA_LABS_API_MAINNET;
 }

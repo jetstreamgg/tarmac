@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { parseEther } from 'viem';
 import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { useChainId } from 'wagmi';
 import { formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
@@ -58,8 +57,7 @@ export function useTokenChartInfo({
 }: {
   tokenAddress: string;
 }): ReadHook & { data?: TokenChartInfoParsed[] } {
-  const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
 
   let url: URL | undefined;
   if (baseUrl && tokenAddress) {

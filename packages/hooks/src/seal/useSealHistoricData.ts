@@ -64,7 +64,7 @@ const fetchSealHistoricData = async (url: URL): Promise<SealHistoricData[] | und
 export function useSealHistoricData(): ReadHook & { data?: SealHistoricData[] } {
   const chainId = useChainId();
 
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/lse/historic/`;

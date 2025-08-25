@@ -62,7 +62,7 @@ export function useStakeHistoricData(): ReadHook & { data?: StakeHistoricData[] 
   const chainId = useChainId();
 
   // Note: Tenderly not supported for this endpoint
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/lsev2/historic/`;

@@ -58,7 +58,7 @@ const fetchStakeRewardsData = async (url: URL): Promise<StakeRewardsData[] | und
 export function useStakeRewardsData(): ReadHook & { data?: StakeRewardsData[] } {
   const chainId = useChainId();
 
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/lsev2/`;

@@ -51,7 +51,7 @@ async function fetchSavingsChartInfo(url: URL): Promise<SavingsChartInfoParsed[]
 export function useSavingsChartInfo(paramChainId?: number): ReadHook & { data?: SavingsChartInfoParsed[] } {
   const wagmiChainId = useChainId();
   const chainId = paramChainId || wagmiChainId;
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl();
   const savingsAddress = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
   let url: URL | undefined;
   if (baseUrl && savingsAddress) {
