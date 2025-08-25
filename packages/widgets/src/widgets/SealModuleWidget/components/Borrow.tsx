@@ -97,13 +97,13 @@ const PositionManagerOverviewContainer = ({
     unit: WAD_PRECISION
   })}`;
   const newSkyLiqPrice = `$${formatBigInt(
-    math.calculateMKRtoSKYPrice(simulatedVault?.liquidationPrice || 0n),
+    math.calculateMKRtoSKYPrice(simulatedVault?.liquidationPrice || 0n, 0n),
     {
       unit: WAD_PRECISION
     }
   )}`;
   const existingSkyLiqPrice = `$${formatBigInt(
-    math.calculateMKRtoSKYPrice(existingVault?.liquidationPrice || 0n),
+    math.calculateMKRtoSKYPrice(existingVault?.liquidationPrice || 0n, 0n),
     {
       unit: WAD_PRECISION
     }
@@ -154,10 +154,10 @@ const PositionManagerOverviewContainer = ({
           value:
             hasPositions && newCollateralAmount !== existingColAmount
               ? [
-                  `${formatBigInt(displayToken === mkr ? existingColAmount : math.calculateConversion(mkr, existingColAmount))}  ${displayToken.symbol}`,
-                  `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount))}  ${displayToken.symbol}`
+                  `${formatBigInt(displayToken === mkr ? existingColAmount : math.calculateConversion(mkr, existingColAmount, 0n))}  ${displayToken.symbol}`,
+                  `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount, 0n))}  ${displayToken.symbol}`
                 ]
-              : `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount))}  ${displayToken.symbol}`
+              : `${formatBigInt(displayToken === mkr ? newCollateralAmount : math.calculateConversion(mkr, newCollateralAmount, 0n))}  ${displayToken.symbol}`
         },
         {
           label: t`Exit fee percentage`,
@@ -211,7 +211,7 @@ const PositionManagerOverviewContainer = ({
             ],
         {
           label: displayToken === mkr ? t`Current MKR price` : t`Current SKY price`,
-          value: `$${formatBigInt(displayToken === mkr ? simulatedVault?.delayedPrice || 0n : math.calculateConversion(sky, simulatedVault?.delayedPrice || 0n), { unit: WAD_PRECISION })}`
+          value: `$${formatBigInt(displayToken === mkr ? simulatedVault?.delayedPrice || 0n : math.calculateConversion(sky, simulatedVault?.delayedPrice || 0n, 0n), { unit: WAD_PRECISION })}`
         }
       ].flat(),
     [
@@ -348,7 +348,7 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
 
   // Calculated total amount user will have locked based on existing collateral locked plus user input
   const newCollateralAmount =
-    (selectedToken === mkr ? mkrToLock : math.calculateConversion(sky, skyToLock)) +
+    (selectedToken === mkr ? mkrToLock : math.calculateConversion(sky, skyToLock, 0n)) +
     (existingVault?.collateralAmount || 0n);
 
   const { data: collateralData } = useCollateralData();

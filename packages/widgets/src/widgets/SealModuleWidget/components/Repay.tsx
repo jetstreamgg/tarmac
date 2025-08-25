@@ -77,11 +77,11 @@ const PositionManagerOverviewContainer = ({
   const newCollateralAmount =
     displayToken === mkr
       ? simulatedVault?.collateralAmount || 0n
-      : math.calculateConversion(mkr, simulatedVault?.collateralAmount || 0n);
+      : math.calculateConversion(mkr, simulatedVault?.collateralAmount || 0n, 0n);
   const existingColAmount =
     displayToken === mkr
       ? existingVault?.collateralAmount || 0n
-      : math.calculateConversion(mkr, existingVault?.collateralAmount || 0n);
+      : math.calculateConversion(mkr, existingVault?.collateralAmount || 0n, 0n);
 
   const newBorrowAmount = simulatedVault?.debtValue || 0n;
   const existingBorrowAmount = existingVault?.debtValue || 0n;
@@ -96,7 +96,7 @@ const PositionManagerOverviewContainer = ({
   const newLiqPrice = `$${formatBigInt(
     displayToken === mkr
       ? simulatedVault?.liquidationPrice || 0n
-      : math.calculateMKRtoSKYPrice(simulatedVault?.liquidationPrice || 0n),
+      : math.calculateMKRtoSKYPrice(simulatedVault?.liquidationPrice || 0n, 0n),
     {
       unit: WAD_PRECISION
     }
@@ -104,7 +104,7 @@ const PositionManagerOverviewContainer = ({
   const existingLiqPrice = `$${formatBigInt(
     displayToken === mkr
       ? existingVault?.liquidationPrice || 0n
-      : math.calculateMKRtoSKYPrice(existingVault?.liquidationPrice || 0n),
+      : math.calculateMKRtoSKYPrice(existingVault?.liquidationPrice || 0n, 0n),
     {
       unit: WAD_PRECISION
     }
@@ -189,7 +189,7 @@ const PositionManagerOverviewContainer = ({
             ],
         {
           label: t`Current ${displayToken.symbol} price`,
-          value: `$${formatBigInt(displayToken === mkr ? simulatedVault?.delayedPrice || 0n : math.calculateMKRtoSKYPrice(simulatedVault?.delayedPrice || 0n), { unit: WAD_PRECISION })}`
+          value: `$${formatBigInt(displayToken === mkr ? simulatedVault?.delayedPrice || 0n : math.calculateMKRtoSKYPrice(simulatedVault?.delayedPrice || 0n, 0n), { unit: WAD_PRECISION })}`
         }
       ].flat(),
     [
@@ -316,7 +316,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
   // Calculated total amount user will have locked based on existing collateral locked plus user input
   const newCollateralAmount =
     (existingVault?.collateralAmount || 0n) -
-    (selectedToken === mkr ? mkrToFree : math.calculateConversion(sky, skyToFree));
+    (selectedToken === mkr ? mkrToFree : math.calculateConversion(sky, skyToFree, 0n));
 
   const {
     data: simulatedVault,

@@ -4,7 +4,6 @@ import { useUpgradeTotals } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useRef } from 'react';
-import { math } from '@jetstreamgg/sky-utils';
 
 export const UpgradeStats = () => {
   // TODO handle loading and error states
@@ -12,7 +11,7 @@ export const UpgradeStats = () => {
   const ref = useRef<HTMLDivElement>(null);
   // const isCompact = (ref.current?.offsetWidth || 0) <= 350;
   const isCompact = true;
-  const totalSkyUpgraded = math.calculateConversion({ symbol: 'MKR' }, BigInt(data?.totalMkrUpgraded || 0));
+  const totalSkyUpgraded = data?.totalSkyUpgraded || 0n;
 
   return (
     <div ref={ref} className="my-4 flex justify-between gap-3">
