@@ -1,12 +1,10 @@
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
-import { useSealCurrentIndex, TOKENS } from '@jetstreamgg/sky-hooks';
+import { useSealCurrentIndex } from '@jetstreamgg/sky-hooks';
 import { UrnPosition } from './UrnPosition';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
 import { OnSealUrnChange } from '../lib/types';
-import { useContext } from 'react';
-import { SealModuleWidgetContext } from '../context/context';
-import { ViewSkyMkrButton } from './ViewSkyMkrButton';
+// Removed unused imports: useContext, SealModuleWidgetContext
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
@@ -25,7 +23,6 @@ export const UrnsList = ({
   onNavigateToStakeWidget?: () => void;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
-  const { displayToken, setDisplayToken } = useContext(SealModuleWidgetContext);
   const { data: currentIndex } = useSealCurrentIndex();
   const amountOfUrns = Array.from(Array(Number(currentIndex || 0n)).keys());
 
@@ -51,15 +48,7 @@ export const UrnsList = ({
         </Text>
       </HStack>
       <Heading tag="h3" variant="small" className="leading-6">
-        <div className="flex items-center">
-          <Trans>Your positions</Trans>
-          <div className="ml-2 flex">
-            <ViewSkyMkrButton
-              onClick={() => setDisplayToken(displayToken === TOKENS.mkr ? TOKENS.sky : TOKENS.mkr)}
-              displayToken={displayToken}
-            />
-          </div>
-        </div>
+        <Trans>Your positions</Trans>
       </Heading>
       <div className="h-1/2 overflow-auto">
         <div className="flex flex-col gap-6">

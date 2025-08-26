@@ -42,8 +42,6 @@ test('Free all MKR', async ({ page }) => {
   // unseal all
   await page.getByRole('button', { name: 'Manage Seal Position' }).last().click();
 
-  // switch tabs
-  await page.getByRole('tab', { name: 'Unseal and pay back' }).click();
   await expect(page.getByTestId('supply-first-input-lse-balance')).toHaveText('100 MKR');
 
   // fill with all MKR and proceed to skip the rewards and delegates and confirm position

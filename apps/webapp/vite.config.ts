@@ -81,6 +81,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://pulse.walletconnect.org
       wss://www.walletlink.org
       https://explorer-api.walletconnect.com/
+      https://api.web3modal.org
       https://enhanced-provider.rainbow.me
       https://mainnet.unichain.org/
       https://mainnet.optimism.io/

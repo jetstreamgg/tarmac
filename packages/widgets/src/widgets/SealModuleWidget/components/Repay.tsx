@@ -3,7 +3,6 @@ import {
   getIlkName,
   getTokenDecimals,
   RiskLevel,
-  Token,
   TOKENS,
   useCollateralData,
   useSimulatedVault,
@@ -17,10 +16,9 @@ import { SealModuleWidgetContext } from '../context/context';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import {
   WAD_PRECISION,
-  captitalizeFirstLetter,
+  capitalizeFirstLetter,
   formatBigInt,
   formatPercent,
-  math,
   useDebounce
 } from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
@@ -31,7 +29,7 @@ import { useSealExitFee } from '@jetstreamgg/sky-hooks';
 import { useRiskSlider } from '../hooks/useRiskSlider';
 import { getTooltipById } from '../../../data/tooltips';
 
-const { usds, mkr, sky } = TOKENS;
+const { usds, mkr } = TOKENS;
 
 const { LOW } = RiskLevel;
 
@@ -60,28 +58,19 @@ const SliderContainer = ({ vault }: { vault?: Vault }) => {
 const PositionManagerOverviewContainer = ({
   simulatedVault,
   existingVault,
-  minDebtNotMet,
-  selectedToken
+  minDebtNotMet
 }: {
   simulatedVault?: Vault;
   existingVault?: Vault;
   minDebtNotMet: boolean;
-  selectedToken: Token;
 }) => {
   const chainId = useChainId();
-  const { displayToken, setDisplayToken } = useContext(SealModuleWidgetContext);
   const { data: collateralData } = useCollateralData();
   const hasPositions = !!existingVault;
 
   // New amount values here will factor in user input, if there is no existing vault then amounts will not be included
-  const newCollateralAmount =
-    displayToken === mkr
-      ? simulatedVault?.collateralAmount || 0n
-      : math.calculateConversion(mkr, simulatedVault?.collateralAmount || 0n, 0n);
-  const existingColAmount =
-    displayToken === mkr
-      ? existingVault?.collateralAmount || 0n
-      : math.calculateConversion(mkr, existingVault?.collateralAmount || 0n, 0n);
+  const newCollateralAmount = simulatedVault?.collateralAmount || 0n;
+  const existingColAmount = existingVault?.collateralAmount || 0n;
 
   const newBorrowAmount = simulatedVault?.debtValue || 0n;
   const existingBorrowAmount = existingVault?.debtValue || 0n;
@@ -93,22 +82,12 @@ const PositionManagerOverviewContainer = ({
     Number(formatUnits(existingVault?.collateralizationRatio || 0n, WAD_PRECISION)) * 100
   ).toFixed(2)}%`;
 
-  const newLiqPrice = `$${formatBigInt(
-    displayToken === mkr
-      ? simulatedVault?.liquidationPrice || 0n
-      : math.calculateMKRtoSKYPrice(simulatedVault?.liquidationPrice || 0n, 0n),
-    {
-      unit: WAD_PRECISION
-    }
-  )}`;
-  const existingLiqPrice = `$${formatBigInt(
-    displayToken === mkr
-      ? existingVault?.liquidationPrice || 0n
-      : math.calculateMKRtoSKYPrice(existingVault?.liquidationPrice || 0n, 0n),
-    {
-      unit: WAD_PRECISION
-    }
-  )}`;
+  const newLiqPrice = `$${formatBigInt(simulatedVault?.liquidationPrice || 0n, {
+    unit: WAD_PRECISION
+  })}`;
+  const existingLiqPrice = `$${formatBigInt(existingVault?.liquidationPrice || 0n, {
+    unit: WAD_PRECISION
+  })}`;
 
   const existingRiskLevel = existingVault?.riskLevel || LOW;
   const riskLevel = simulatedVault?.riskLevel || LOW;
@@ -142,20 +121,25 @@ const PositionManagerOverviewContainer = ({
           value:
             hasPositions && newCollateralAmount !== existingColAmount
               ? [
-                  `${formatBigInt(existingColAmount)}  ${displayToken.symbol}`,
-                  `${formatBigInt(newCollateralAmount)}  ${displayToken.symbol}`
+                  `${formatBigInt(existingColAmount)} ${mkr.symbol}`,
+                  `${formatBigInt(newCollateralAmount)} ${mkr.symbol}`
                 ]
-              : `${formatBigInt(newCollateralAmount)}  ${displayToken.symbol}`
+              : `${formatBigInt(newCollateralAmount)} ${mkr.symbol}`
         },
         {
           label: t`Exit fee`,
           value:
             hasPositions && typeof exitFee === 'bigint'
-              ? [
-                  `${formatBigInt((existingColAmount - newCollateralAmount) * exitFee, {
-                    unit: WAD_PRECISION * 2
-                  })} ${displayToken.symbol}`
-                ]
+              ? (() => {
+                  // Clamp the freed amount to non-negative before applying exit fee
+                  const freedAmount =
+                    existingColAmount > newCollateralAmount ? existingColAmount - newCollateralAmount : 0n;
+                  return [
+                    `${formatBigInt(freedAmount * exitFee, {
+                      unit: WAD_PRECISION * 2
+                    })} ${mkr.symbol}`
+                  ];
+                })()
               : ''
         },
         {
@@ -188,8 +172,8 @@ const PositionManagerOverviewContainer = ({
               }
             ],
         {
-          label: t`Current ${displayToken.symbol} price`,
-          value: `$${formatBigInt(displayToken === mkr ? simulatedVault?.delayedPrice || 0n : math.calculateMKRtoSKYPrice(simulatedVault?.delayedPrice || 0n, 0n), { unit: WAD_PRECISION })}`
+          label: t`Current ${mkr.symbol} price`,
+          value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`
         }
       ].flat(),
     [
@@ -227,10 +211,7 @@ const PositionManagerOverviewContainer = ({
         label: t`Liquidation price`,
         value:
           hasPositions && existingLiqPrice !== newLiqPrice ? [existingLiqPrice, newLiqPrice] : newLiqPrice,
-        tooltipText:
-          getTooltipById(
-            displayToken === TOKENS.mkr ? 'liquidation-price-seal-mkr' : 'liquidation-price-seal-sky'
-          )?.tooltip || ''
+        tooltipText: getTooltipById('liquidation-price-seal-mkr')?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
@@ -247,10 +228,10 @@ const PositionManagerOverviewContainer = ({
         value:
           hasPositions && simulatedVault?.riskLevel !== existingVault?.riskLevel
             ? [
-                `${captitalizeFirstLetter(existingVault?.riskLevel?.toLowerCase() || '')}`,
-                `${captitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
+                `${capitalizeFirstLetter(existingVault?.riskLevel?.toLowerCase() || '')}`,
+                `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
               ]
-            : `${captitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
+            : `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
         tooltipText: getTooltipById('risk-level-seal')?.tooltip || '',
         classNamePrev: existingRiskTextColor,
         className: riskTextColor
@@ -274,10 +255,6 @@ const PositionManagerOverviewContainer = ({
     ]
   );
 
-  useEffect(() => {
-    setDisplayToken(selectedToken);
-  }, [selectedToken]);
-
   return (
     <TransactionOverview
       title={t`Position overview`}
@@ -295,16 +272,8 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
 
   const { data: usdsBalance } = useTokenBalance({ address, token: TOKENS.usds.address[chainId], chainId });
 
-  const {
-    setIsBorrowCompleted,
-    usdsToWipe,
-    setUsdsToWipe,
-    setWipeAll,
-    mkrToFree,
-    activeUrn,
-    selectedToken,
-    skyToFree
-  } = useContext(SealModuleWidgetContext);
+  const { setIsBorrowCompleted, usdsToWipe, setUsdsToWipe, setWipeAll, mkrToFree, activeUrn } =
+    useContext(SealModuleWidgetContext);
 
   const { data: existingVault } = useVault(activeUrn?.urnAddress, ilkName);
   // Comes from user input amount
@@ -314,9 +283,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
   const newDebtValue = (existingVault?.debtValue || 0n) - debouncedUsdsToWipe;
 
   // Calculated total amount user will have locked based on existing collateral locked plus user input
-  const newCollateralAmount =
-    (existingVault?.collateralAmount || 0n) -
-    (selectedToken === mkr ? mkrToFree : math.calculateConversion(sky, skyToFree, 0n));
+  const newCollateralAmount = (existingVault?.collateralAmount || 0n) - mkrToFree;
 
   const {
     data: simulatedVault,
@@ -392,7 +359,6 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
       <SliderContainer vault={simulatedVault} />
 
       <PositionManagerOverviewContainer
-        selectedToken={selectedToken}
         simulatedVault={simulatedVault}
         existingVault={existingVault}
         minDebtNotMet={minDebtNotMet}

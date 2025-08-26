@@ -108,23 +108,6 @@ export const getSaFreeMkrCalldata = ({
     args: [ownerAddress, urnIndex, toAddress, amount]
   });
 
-export const getSaFreeSkyCalldata = ({
-  ownerAddress,
-  urnIndex,
-  toAddress,
-  amount
-}: {
-  ownerAddress: `0x${string}`;
-  urnIndex: bigint;
-  toAddress: `0x${string}`;
-  amount: bigint;
-}) =>
-  encodeFunctionData({
-    abi: sealModuleAbi,
-    functionName: 'freeSky',
-    args: [ownerAddress, urnIndex, toAddress, amount]
-  });
-
 export const getSaWipeCalldata = ({
   ownerAddress,
   urnIndex,

@@ -12,6 +12,9 @@ import { parseEther } from 'viem';
 import { NetworkName, TEST_ADDRESS } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
+// NOTE: This utility creates existing seal positions for testing purposes.
+// Even though the UI no longer supports creating new seal positions,
+// this utility is still needed to set up test data for unsealing tests.
 export const newSealPosition = async (
   mkrAmount: string,
   delegateAddress: `0x${string}`,

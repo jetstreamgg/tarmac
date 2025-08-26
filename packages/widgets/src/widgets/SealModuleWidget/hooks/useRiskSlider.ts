@@ -8,8 +8,8 @@ type UseRiskSliderProps = {
 };
 
 export const useRiskSlider = ({ vault, isRepayMode = false }: UseRiskSliderProps) => {
-  const { setUsdsToBorrow, setUsdsToWipe } = useContext(SealModuleWidgetContext);
-  const setValue = isRepayMode ? setUsdsToWipe : setUsdsToBorrow;
+  const { setUsdsToWipe } = useContext(SealModuleWidgetContext);
+  const setValue = setUsdsToWipe;
 
   const riskPercentage = vault?.liquidationProximityPercentage || 0;
   const [sliderValue, setSliderValue] = useState([Math.max(1, riskPercentage)]);

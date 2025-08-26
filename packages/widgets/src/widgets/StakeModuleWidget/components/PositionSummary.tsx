@@ -23,7 +23,7 @@ import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack'
 import { motion } from 'framer-motion';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { WAD_PRECISION, captitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
+import { WAD_PRECISION, capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { cn } from '@widgets/lib/utils';
 import { getRiskTextColor } from '../lib/utils';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
@@ -324,10 +324,10 @@ export const PositionSummary = ({
         updated: isRiskLevelUpdated,
         value: isRiskLevelUpdated
           ? [
-              `${captitalizeFirstLetter(existingVault?.riskLevel?.toLowerCase() || '')}`,
-              `${captitalizeFirstLetter(updatedVault?.riskLevel?.toLowerCase() || '')}`
+              `${capitalizeFirstLetter(existingVault?.riskLevel?.toLowerCase() || '')}`,
+              `${capitalizeFirstLetter(updatedVault?.riskLevel?.toLowerCase() || '')}`
             ]
-          : `${captitalizeFirstLetter(updatedVault?.riskLevel?.toLowerCase() || '')}`,
+          : `${capitalizeFirstLetter(updatedVault?.riskLevel?.toLowerCase() || '')}`,
         className: isRiskLevelUpdated
           ? [getRiskTextColor(existingVault?.riskLevel), getRiskTextColor(updatedVault?.riskLevel)]
           : getRiskTextColor(vaultToDisplay?.riskLevel),

@@ -45,15 +45,8 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
 
   const { setWidgetState } = useContext(WidgetContext);
 
-  const {
-    setSelectedRewardContract,
-    setSelectedDelegate,
-    setActiveUrn,
-    setCurrentStep,
-    setAcceptedExitFee,
-    setSelectedToken,
-    displayToken
-  } = useContext(SealModuleWidgetContext);
+  const { setSelectedRewardContract, setSelectedDelegate, setActiveUrn, setCurrentStep, setAcceptedExitFee } =
+    useContext(SealModuleWidgetContext);
 
   const { data: urnHistory } = useSealHistory();
   const { data: urnPosition } = useSealPosition({ urnIndex: Number(index) });
@@ -100,8 +93,7 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
     setActiveUrn({ urnAddress, urnIndex: index }, onSealUrnChange ?? (() => {}));
     setCurrentStep(SealStep.OPEN_BORROW);
     setAcceptedExitFee(false);
-    setSelectedToken(displayToken);
-  }, [urnAddress, index, vaultData, urnSelectedVoteDelegate, urnSelectedRewardContract, displayToken]);
+  }, [urnAddress, index, vaultData, urnSelectedVoteDelegate, urnSelectedRewardContract]);
 
   return (
     <Card>
