@@ -198,11 +198,11 @@ test('percentage buttons work', async ({ page }) => {
   await page.getByRole('tab', { name: 'Revert' }).click();
   await expect(page.getByText('No wallet connected')).not.toBeVisible();
   await page.getByRole('button', { name: '25%' }).click();
-  expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('250');
+  expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('25');
   await page.getByRole('button', { name: '50%' }).click();
-  expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('500');
+  expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('50');
   await page.getByRole('button', { name: '100%' }).click();
-  expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('1000');
+  expect(await page.getByTestId('upgrade-input-origin').inputValue()).toBe('100');
 });
 
 test('enter amount button should be disabled', async ({ page }) => {
