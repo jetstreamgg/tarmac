@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@jetstreamgg/sky-utils';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { format } from 'date-fns';
 import { Text } from '@/modules/layout/components/Typography';
@@ -304,6 +304,8 @@ function ChartContent({
   error?: Error | null;
 }) {
   const { bpi } = useBreakpointIndex();
+  const gradientId = useId();
+
   return (
     <LoadingErrorWrapper
       isLoading={isLoading}
@@ -324,14 +326,7 @@ function ChartContent({
           margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
         >
           <defs>
-            <linearGradient
-              id="gradientGreen"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="100%"
-              gradientUnits="objectBoundingBox"
-            >
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="100%" gradientUnits="objectBoundingBox">
               <stop offset="5%" stopColor="#1DD9BA" stopOpacity={0.25} />
               <stop offset="75%" stopColor="#00A167" stopOpacity="0" />
             </linearGradient>
@@ -356,7 +351,7 @@ function ChartContent({
             stroke={'#1DD9BA'}
             strokeWidth={2.5}
             type="monotone"
-            fill="url(#gradientGreen)"
+            fill={`url(#${gradientId})`}
             label={<CustomizedLabel /*data={data} stroke="var(--transparent-white-40)"*/ />}
             dot={<CustomizedDot data={data} stroke="#1DD9BA" />}
           />

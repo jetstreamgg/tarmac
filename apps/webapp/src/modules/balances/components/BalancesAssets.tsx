@@ -25,7 +25,7 @@ export function BalancesAssets({ chainIds }: BalancesAssetsProps) {
   const currentChainId = useChainId();
   const chainsToQuery = chainIds ?? [currentChainId];
   const { data: pricesData, isLoading: pricesIsLoading, error: pricesError } = usePrices();
-  const { hideZeroBalances, showAllNetworks } = useBalanceFilters();
+  const { showAllNetworks } = useBalanceFilters();
   const [showAll, setShowAll] = useState(false);
 
   const toggleShowAll = () => {
@@ -65,9 +65,7 @@ export function BalancesAssets({ chainIds }: BalancesAssetsProps) {
       : undefined;
 
   // Apply zero balance filter
-  const balancesWithBalanceFilter = hideZeroBalances
-    ? sortedTokenBalances?.filter(({ value }) => value > 0n)
-    : sortedTokenBalances;
+  const balancesWithBalanceFilter = sortedTokenBalances?.filter(({ value }) => value > 0n);
 
   // Apply network filter
   const filteredAndSortedTokenBalances = showAllNetworks

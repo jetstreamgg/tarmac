@@ -118,7 +118,7 @@ jobs:
           REACT_VERSION: ${{ matrix.react-version }}
 
       - name: Delete Tenderly virtual testnet fork
-        run: pnpm vnet:delete:ci
+        run: pnpm vnet:delete:all:ci
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
         if: always()
