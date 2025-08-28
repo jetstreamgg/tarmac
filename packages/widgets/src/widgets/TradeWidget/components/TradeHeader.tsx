@@ -3,16 +3,12 @@ import { Dispatch, SetStateAction } from 'react';
 import { TradeConfigMenu } from './TradeConfigMenu';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
-import { useAccount } from 'wagmi';
-import { TokenForChain } from '@jetstreamgg/sky-hooks';
-import { sepolia } from 'viem/chains';
 
 type PropTypes = {
   slippage: string;
   setSlippage: (newSlippage: string) => void;
   isEthFlow?: boolean;
   ttl: string;
-  originToken?: TokenForChain;
   setTtl: Dispatch<SetStateAction<string>>;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
@@ -63,16 +59,3 @@ export const TradePoweredBy = ({
     </ExternalLink>
   </Text>
 );
-
-export const TradeWarning = ({ originToken }: { originToken?: TokenForChain }) => {
-  const { chainId } = useAccount();
-  const shouldShowUSDTWarning = originToken?.symbol === 'USDT' && chainId === sepolia.id;
-
-  if (!shouldShowUSDTWarning) return null;
-
-  return (
-    <Text className="mt-1 text-[11px] font-normal leading-none text-orange-400">
-      Need to reset the allowance to 0 before approving a new amount
-    </Text>
-  );
-};
