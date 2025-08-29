@@ -9,7 +9,7 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useDismissChatSuggestion } from '../hooks/useDismissChatSuggestion';
 
 export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
-  const { chatHistory, shouldShowConfirmationWarning } = useChatContext();
+  const { chatHistory, shouldShowConfirmationWarning, scrollTrigger } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
         behavior: 'smooth'
       });
     }
-  }, [chatHistory, shouldShowConfirmationWarning]);
+  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger]);
 
   useDismissChatSuggestion();
 
@@ -56,6 +56,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
                   sendMessage={sendMessage}
                   showModifierRow={!isFirstMessage && isLastMessage}
                   isFirstMessage={isFirstMessage}
+                  isOnlyMessage={chatHistory.length === 1}
                 />
               );
             })}

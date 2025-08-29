@@ -2,15 +2,19 @@ import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/co
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { testnetNameMapping } from '../lib/intentUtils';
-import { arbitrum, base, mainnet } from 'viem/chains';
+import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 
 const validNetworks = [
   normalizeUrlParam(base.name),
   normalizeUrlParam(mainnet.name),
   normalizeUrlParam(arbitrum.name),
+  'arbitrum',
   normalizeUrlParam(tenderly.name),
   normalizeUrlParam(tenderlyBase.name),
-  normalizeUrlParam(tenderlyArbitrum.name)
+  normalizeUrlParam(tenderlyArbitrum.name),
+  normalizeUrlParam(unichain.name),
+  normalizeUrlParam(optimism.name),
+  'optimism'
 ];
 
 export const useNetworkFromIntentUrl = (url: string) => {
