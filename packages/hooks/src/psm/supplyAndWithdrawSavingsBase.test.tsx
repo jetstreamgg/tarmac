@@ -4,7 +4,7 @@ import { useApproveToken } from '../tokens/useApproveToken';
 import { parseEther } from 'viem';
 import { config, GAS, TEST_WALLET_ADDRESS, WagmiWrapper } from '../../test';
 import { TOKENS } from '../tokens/tokens.constants';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../constants';
+import { TENDERLY_CHAIN_ID, BASE_CHAIN_ID } from '../constants';
 import { psm3L2Address } from '../generated';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { waitForPreparedExecuteAndMine } from '../../test/helpers';
@@ -17,7 +17,7 @@ import { useTokenAllowance } from '../tokens/useTokenAllowance';
 
 describe('Savings Base - Supply and withdraw', () => {
   beforeAll(async () => {
-    await switchChain(config, { chainId: TENDERLY_BASE_CHAIN_ID });
+    await switchChain(config, { chainId: BASE_CHAIN_ID });
   });
 
   it('Should supply and withdraw', { timeout: 90000 }, async () => {
@@ -26,8 +26,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useApproveToken({
           amount: parseEther('10'),
-          contractAddress: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          spender: psm3L2Address[TENDERLY_BASE_CHAIN_ID],
+          contractAddress: TOKENS.usds.address[BASE_CHAIN_ID],
+          spender: psm3L2Address[BASE_CHAIN_ID],
           gas: GAS
         }),
       {
@@ -40,8 +40,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useTokenBalance({
           address: TEST_WALLET_ADDRESS,
-          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          chainId: TENDERLY_BASE_CHAIN_ID
+          token: TOKENS.usds.address[BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID
         }),
       {
         wrapper: WagmiWrapper
@@ -67,8 +67,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         usePsmSwapExactIn({
           amountIn: parseEther('10'),
-          assetIn: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          assetOut: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
+          assetIn: TOKENS.usds.address[BASE_CHAIN_ID],
+          assetOut: TOKENS.susds.address[BASE_CHAIN_ID],
           minAmountOut: 0n,
           enabled: true,
           gas: GAS
@@ -84,8 +84,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useTokenBalance({
           address: TEST_WALLET_ADDRESS,
-          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          chainId: TENDERLY_BASE_CHAIN_ID
+          token: TOKENS.usds.address[BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID
         }),
       {
         wrapper: WagmiWrapper
@@ -108,8 +108,8 @@ describe('Savings Base - Supply and withdraw', () => {
         useApproveToken({
           // Actual amount of sUSDS will be slightly lower
           amount: parseEther('5'),
-          contractAddress: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
-          spender: psm3L2Address[TENDERLY_BASE_CHAIN_ID],
+          contractAddress: TOKENS.susds.address[BASE_CHAIN_ID],
+          spender: psm3L2Address[BASE_CHAIN_ID],
           gas: GAS
         }),
       {
@@ -123,8 +123,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         usePsmSwapExactOut({
           amountOut: parseEther('5'),
-          assetOut: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          assetIn: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
+          assetOut: TOKENS.usds.address[BASE_CHAIN_ID],
+          assetIn: TOKENS.susds.address[BASE_CHAIN_ID],
           maxAmountIn: parseEther('5'),
           enabled: true,
           gas: GAS
@@ -140,8 +140,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useTokenBalance({
           address: TEST_WALLET_ADDRESS,
-          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          chainId: TENDERLY_BASE_CHAIN_ID
+          token: TOKENS.usds.address[BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID
         }),
       {
         wrapper: WagmiWrapper
@@ -165,8 +165,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useTokenBalance({
           address: TEST_WALLET_ADDRESS,
-          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          chainId: TENDERLY_BASE_CHAIN_ID
+          token: TOKENS.usds.address[BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID
         }),
       {
         wrapper: WagmiWrapper
@@ -188,10 +188,10 @@ describe('Savings Base - Supply and withdraw', () => {
     const { result: resultAllowanceUsds } = renderHook(
       () =>
         useTokenAllowance({
-          chainId: TENDERLY_BASE_CHAIN_ID,
-          contractAddress: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID,
+          contractAddress: TOKENS.usds.address[BASE_CHAIN_ID],
           owner: TEST_WALLET_ADDRESS,
-          spender: psm3L2Address[TENDERLY_BASE_CHAIN_ID]
+          spender: psm3L2Address[BASE_CHAIN_ID]
         }),
       {
         wrapper: WagmiWrapper
@@ -212,8 +212,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useBatchPsmSwapExactIn({
           amountIn: parseEther('20'),
-          assetIn: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          assetOut: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
+          assetIn: TOKENS.usds.address[BASE_CHAIN_ID],
+          assetOut: TOKENS.susds.address[BASE_CHAIN_ID],
           minAmountOut: 0n,
           enabled: true,
           gas: GAS
@@ -229,8 +229,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useTokenBalance({
           address: TEST_WALLET_ADDRESS,
-          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          chainId: TENDERLY_BASE_CHAIN_ID
+          token: TOKENS.usds.address[BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID
         }),
       {
         wrapper: WagmiWrapper
@@ -251,10 +251,10 @@ describe('Savings Base - Supply and withdraw', () => {
     const { result: resultAllowanceSusds } = renderHook(
       () =>
         useTokenAllowance({
-          chainId: TENDERLY_BASE_CHAIN_ID,
-          contractAddress: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID,
+          contractAddress: TOKENS.susds.address[BASE_CHAIN_ID],
           owner: TEST_WALLET_ADDRESS,
-          spender: psm3L2Address[TENDERLY_BASE_CHAIN_ID]
+          spender: psm3L2Address[BASE_CHAIN_ID]
         }),
       {
         wrapper: WagmiWrapper
@@ -275,8 +275,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useBatchPsmSwapExactOut({
           amountOut: parseEther('10'),
-          assetOut: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          assetIn: TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID],
+          assetOut: TOKENS.usds.address[BASE_CHAIN_ID],
+          assetIn: TOKENS.susds.address[BASE_CHAIN_ID],
           maxAmountIn: parseEther('10'),
           enabled: true,
           gas: GAS
@@ -292,8 +292,8 @@ describe('Savings Base - Supply and withdraw', () => {
       () =>
         useTokenBalance({
           address: TEST_WALLET_ADDRESS,
-          token: TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID],
-          chainId: TENDERLY_BASE_CHAIN_ID
+          token: TOKENS.usds.address[BASE_CHAIN_ID],
+          chainId: BASE_CHAIN_ID
         }),
       {
         wrapper: WagmiWrapper

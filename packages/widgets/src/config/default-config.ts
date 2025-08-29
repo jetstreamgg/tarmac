@@ -23,7 +23,7 @@ import {
   spkAddress,
   stUsdsAddress
 } from '@jetstreamgg/sky-hooks';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '@widgets/shared/constants';
+import { TENDERLY_CHAIN_ID } from '@widgets/shared/constants';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 
 const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKENS;
@@ -68,12 +68,6 @@ export const defaultConfig: WidgetsConfig = {
       { ...usdc, address: usdcL2Address[arbitrum.id] },
       { ...usds, address: usdsL2Address[arbitrum.id] },
       { ...susds, address: sUsdsL2Address[arbitrum.id] }
-    ],
-    [TENDERLY_BASE_CHAIN_ID]: [
-      eth,
-      { ...usdc, address: usdcL2Address[base.id] },
-      { ...usds, address: usdsL2Address[base.id] },
-      { ...susds, address: sUsdsL2Address[base.id] }
     ],
     [unichain.id]: [
       eth,
@@ -121,11 +115,6 @@ export const defaultConfig: WidgetsConfig = {
       { ...usdc, address: usdcL2Address[arbitrum.id] },
       { ...usds, address: usdsL2Address[arbitrum.id] },
       { ...susds, address: sUsdsL2Address[arbitrum.id] }
-    ],
-    [TENDERLY_BASE_CHAIN_ID]: [
-      { ...usdc, address: usdcL2Address[base.id] },
-      { ...usds, address: usdsL2Address[base.id] },
-      { ...susds, address: sUsdsL2Address[base.id] }
     ],
     [sepolia.id]: [
       // The USDC token that COW uses has 18 decimals, instead of 6

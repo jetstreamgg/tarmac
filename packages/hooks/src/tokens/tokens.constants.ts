@@ -20,7 +20,7 @@ import {
   stUsdsAddress
 } from '../generated';
 import { TokenMapping, Token, TokenForChain } from './types';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../constants';
+import { TENDERLY_CHAIN_ID } from '../constants';
 
 export function getTokenDecimals(token: Token | TokenForChain, chainId: number): number {
   if (typeof token.decimals === 'number') {
@@ -50,7 +50,6 @@ export const TOKENS: TokenMapping = {
       [TENDERLY_CHAIN_ID]: ETH_ADDRESS,
       [base.id]: ETH_ADDRESS,
       [arbitrum.id]: ETH_ADDRESS,
-      [TENDERLY_BASE_CHAIN_ID]: ETH_ADDRESS,
       [optimism.id]: ETH_ADDRESS,
       [unichain.id]: ETH_ADDRESS
     },
@@ -88,7 +87,6 @@ export const TOKENS: TokenMapping = {
       ...usdsConfig.address,
       [base.id]: usdsL2Address[base.id],
       [arbitrum.id]: usdsL2Address[arbitrum.id],
-      [TENDERLY_BASE_CHAIN_ID]: usdsL2Address[TENDERLY_BASE_CHAIN_ID],
       [optimism.id]: usdsL2Address[optimism.id],
       [unichain.id]: usdsL2Address[unichain.id]
     },
@@ -111,7 +109,6 @@ export const TOKENS: TokenMapping = {
       ...usdcConfig.address,
       [base.id]: usdcL2Address[base.id],
       [arbitrum.id]: usdcL2Address[arbitrum.id],
-      [TENDERLY_BASE_CHAIN_ID]: usdcL2Address[TENDERLY_BASE_CHAIN_ID],
       [optimism.id]: usdcL2Address[optimism.id],
       [unichain.id]: usdcL2Address[unichain.id]
     },
@@ -124,7 +121,6 @@ export const TOKENS: TokenMapping = {
       [arbitrum.id]: 6,
       [sepolia.id]: 18,
       [TENDERLY_CHAIN_ID]: 6,
-      [TENDERLY_BASE_CHAIN_ID]: 6,
       [optimism.id]: 6,
       [unichain.id]: 6
     }
@@ -156,7 +152,6 @@ export const TOKENS: TokenMapping = {
       ...sUsdsConfig.address,
       [base.id]: sUsdsL2Address[base.id],
       [arbitrum.id]: sUsdsL2Address[arbitrum.id],
-      [TENDERLY_BASE_CHAIN_ID]: sUsdsL2Address[TENDERLY_BASE_CHAIN_ID],
       [optimism.id]: sUsdsL2Address[optimism.id],
       [unichain.id]: sUsdsL2Address[unichain.id]
     },
@@ -222,11 +217,6 @@ export const TRADE_TOKENS = {
     usdc: { ...TOKENS.usdc, address: usdcL2Address[arbitrum.id] },
     usds: { ...TOKENS.usds, address: usdsL2Address[arbitrum.id] },
     susds: { ...TOKENS.susds, address: sUsdsL2Address[arbitrum.id] }
-  },
-  [TENDERLY_BASE_CHAIN_ID]: {
-    usdc: { ...TOKENS.usdc, address: usdcL2Address[TENDERLY_BASE_CHAIN_ID] },
-    usds: { ...TOKENS.usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] },
-    susds: { ...TOKENS.susds, address: sUsdsL2Address[TENDERLY_BASE_CHAIN_ID] }
   },
   [optimism.id]: {
     usdc: { ...TOKENS.usdc, address: usdcL2Address[optimism.id] },

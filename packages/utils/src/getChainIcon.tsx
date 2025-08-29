@@ -7,7 +7,7 @@ import { UnichainChain } from './icons/UnichainChain';
 
 //TODO: handle optimism and unichain
 export const getChainIcon = (chainId: number, className?: string) =>
-  chainId === chainIdMap.base || chainId === chainIdMap.tenderlyBase ? (
+  chainId === chainIdMap.base ? (
     <BaseChain className={className} />
   ) : chainId === chainIdMap.arbitrum ? (
     <ArbitrumChain className={className} />

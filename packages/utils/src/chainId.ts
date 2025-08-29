@@ -4,7 +4,6 @@ export const chainId = {
   sepolia: 11155111,
   base: 8453,
   arbitrum: 42161,
-  tenderlyBase: 8555,
   optimism: 10,
   unichain: 130
 };

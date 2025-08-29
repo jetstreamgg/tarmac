@@ -17,8 +17,8 @@ import {
   usdcL2Address,
   usdsL2Address
 } from '@jetstreamgg/sky-hooks';
-import { tenderly, tenderlyBase } from '@/data/wagmi/config/config.default';
-import { TENDERLY_CHAIN_ID, TENDERLY_BASE_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { tenderly } from '@/data/wagmi/config/config.default';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 
 const { usdc, usdt, eth, weth, dai, usds, mkr, sky, spk } = TOKENS;
 
@@ -63,10 +63,6 @@ export const restrictedBalancesTokenList = {
     { ...usds, address: usdsL2Address[arbitrum.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
-  [tenderlyBase.id]: [
-    { ...usdc, address: usdcL2Address[TENDERLY_BASE_CHAIN_ID] },
-    { ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }
-  ],
   [optimism.id]: [
     { ...usdc, address: usdcL2Address[optimism.id] },
     { ...usds, address: usdsL2Address[optimism.id] }
@@ -110,7 +106,6 @@ export const restrictedBalancesTokenListMiCa = {
     { ...usds, address: usdsL2Address[arbitrum.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
-  [tenderlyBase.id]: [{ ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }],
   [optimism.id]: [
     { ...usds, address: usdsL2Address[optimism.id] },
     { ...eth, address: ETH_ADDRESS }
@@ -153,10 +148,6 @@ export const restrictedTradeTokenList = {
   [arbitrum.id]: [
     { ...usdc, address: usdcL2Address[arbitrum.id] },
     { ...usds, address: usdsL2Address[arbitrum.id] }
-  ],
-  [tenderlyBase.id]: [
-    { ...usdc, address: usdcL2Address[TENDERLY_BASE_CHAIN_ID] },
-    { ...usds, address: usdsL2Address[TENDERLY_BASE_CHAIN_ID] }
   ],
   [optimism.id]: [
     { ...usdc, address: usdcL2Address[optimism.id] },

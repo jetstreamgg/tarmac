@@ -13,7 +13,7 @@ import {
   usdsAddress,
   usdsL2Address
 } from '@jetstreamgg/sky-hooks';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { NetworkName } from './utils/constants';
 import { getTestWalletAddress } from './utils/testWallets';
 import { optimism, unichain, arbitrum } from 'viem/chains';
@@ -36,9 +36,8 @@ const setupMainnetBalances = async (address: string) => {
 
 const setupBaseBalances = async (address: string) => {
   await setEthBalance('100', NetworkName.base, address);
-  // TODO: should this be set to base.id?
-  await setErc20Balance(usdsL2Address[TENDERLY_BASE_CHAIN_ID], '100', 18, NetworkName.base, address);
-  await setErc20Balance(usdcL2Address[TENDERLY_BASE_CHAIN_ID], '100', 6, NetworkName.base, address);
+  await setErc20Balance(usdsL2Address[8453], '100', 18, NetworkName.base, address);
+  await setErc20Balance(usdcL2Address[8453], '100', 6, NetworkName.base, address);
 };
 
 const setupArbitrumBalances = async (address: string) => {

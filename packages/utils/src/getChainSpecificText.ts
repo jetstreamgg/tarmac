@@ -19,7 +19,6 @@ export const getChainSpecificText = (
     case chainId.tenderly:
       return chainTexts.ethereum || chainTexts.default;
     case chainId.base:
-    case chainId.tenderlyBase:
       return chainTexts.base || chainTexts.allL2s || chainTexts.default;
     case chainId.arbitrum:
       return chainTexts.arbitrum || chainTexts.allL2s || chainTexts.default;

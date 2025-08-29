@@ -1,7 +1,7 @@
 import { Chain, defineChain } from 'viem';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../src/constants';
+import { TENDERLY_CHAIN_ID } from '../src/constants';
 import { readFileSync } from 'fs';
-import { arbitrum, optimism, unichain } from 'viem/chains';
+import { arbitrum, base, optimism, unichain } from 'viem/chains';
 import { NetworkName } from './constants';
 
 export const getTenderlyChains = () => {
@@ -23,19 +23,18 @@ export const getTenderlyChains = () => {
         default: { http: [mainnetData.TENDERLY_RPC_URL] }
       }
     }),
-    defineChain({
-      id: TENDERLY_BASE_CHAIN_ID,
-      name: 'Tenderly Base',
-      nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-      rpcUrls: {
-        default: { http: [baseData.TENDERLY_RPC_URL] }
-      }
-    }),
     {
       ...arbitrum,
       name: 'Tenderly Arbitrum',
       rpcUrls: {
         default: { http: [arbitrumData.TENDERLY_RPC_URL] }
+      }
+    },
+    {
+      ...base,
+      name: 'Tenderly Base',
+      rpcUrls: {
+        default: { http: [baseData.TENDERLY_RPC_URL] }
       }
     },
     {

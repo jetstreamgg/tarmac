@@ -6,9 +6,7 @@ import {
   URL_BA_LABS_API_TENDERLY,
   URL_BA_LABS_API_MAINNET,
   URL_BASE_SUBGRAPH_MAINNET,
-  URL_BASE_SUBGRAPH_TENDERLY,
   BASE_CHAIN_ID,
-  TENDERLY_BASE_CHAIN_ID,
   ARBITRUM_CHAIN_ID,
   URL_ARBITRUM_SUBGRAPH_MAINNET,
   OPTIMISM_CHAIN_ID,
@@ -29,7 +27,6 @@ export function getMakerSubgraphUrl(chainId: number): string | null {
     case UNICHAIN_CHAIN_ID:
       return URL_MAKER_SUBGRAPH_MAINNET;
     case TENDERLY_CHAIN_ID:
-    case TENDERLY_BASE_CHAIN_ID:
       return URL_MAKER_SUBGRAPH_TENDERLY;
     default:
       return defaultSubgraphUrl;
@@ -42,8 +39,7 @@ export function getL2SubgraphUrl(chainId: number): string | null {
     case BASE_CHAIN_ID:
       return URL_BASE_SUBGRAPH_MAINNET;
     case TENDERLY_CHAIN_ID:
-    case TENDERLY_BASE_CHAIN_ID:
-      return URL_BASE_SUBGRAPH_TENDERLY;
+      return URL_BASE_SUBGRAPH_MAINNET;
     case ARBITRUM_CHAIN_ID:
       return URL_ARBITRUM_SUBGRAPH_MAINNET;
     case OPTIMISM_CHAIN_ID:

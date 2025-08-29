@@ -5,7 +5,7 @@ export const isArbitrumChainId = (chainId: number) => {
 };
 
 export const isBaseChainId = (chainId: number) => {
-  return chainId === chainIdMap.base || chainId === chainIdMap.tenderlyBase;
+  return chainId === chainIdMap.base;
 };
 
 export const isUnichainChainId = (chainId: number) => {

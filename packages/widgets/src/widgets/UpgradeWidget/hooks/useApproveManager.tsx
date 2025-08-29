@@ -33,7 +33,6 @@ export function useApproveManager({
     return mkrSkyRes;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   return {
     execute: () => {},
     data: null,

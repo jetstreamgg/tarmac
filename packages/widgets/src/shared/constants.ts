@@ -36,7 +36,6 @@ export const approveLoadingButtonText: TxCardCopyText = {
 };
 
 export const TENDERLY_CHAIN_ID = 314310;
-export const TENDERLY_BASE_CHAIN_ID = 8555;
 
 export const tokenColors = [
   { symbol: 'ETH', color: '#6d7ce3' },
