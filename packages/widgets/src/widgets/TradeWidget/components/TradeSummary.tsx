@@ -202,7 +202,7 @@ export function TradeSummary({
                 <Text className={`mt-2 text-[13px] ${batchEnabled ? 'text-white/60' : 'text-error'}`}>
                   {batchEnabled ? (
                     <Trans>
-                      USDT allowance will be reset to 0 then set to the required amount in a single batched
+                      USDT allowance will be reset to 0 then set to the required amount in a single bundled
                       transaction.
                     </Trans>
                   ) : (

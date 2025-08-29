@@ -849,13 +849,14 @@ function TradeWidgetWrapped({
           isAmountWaitingForDebounce);
       setIsDisabled(reviewDisabled);
     } else {
-      setIsDisabled(
+      const shouldDisable =
         isConnectedAndEnabled &&
-          !!(
-            (widgetState.action === TradeAction.APPROVE && approveDisabled) ||
-            (widgetState.action === TradeAction.TRADE && tradeDisabled)
-          )
-      );
+        !!(
+          (widgetState.action === TradeAction.APPROVE && approveDisabled && txStatus !== TxStatus.SUCCESS) ||
+          (widgetState.action === TradeAction.TRADE && tradeDisabled && txStatus !== TxStatus.SUCCESS)
+        );
+
+      setIsDisabled(shouldDisable);
     }
   }, [
     isQuoteLoading,
