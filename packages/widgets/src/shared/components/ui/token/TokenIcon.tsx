@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@widgets/components/ui/avat
 import { cn } from '@widgets/lib/utils';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { Token } from '@jetstreamgg/sky-hooks';
+import { useChainImage } from '@widgets/shared/hooks/useChainImage';
 
 export function TokenIcon({
   token,
@@ -20,16 +21,22 @@ export function TokenIcon({
   fallbackDelay?: number;
   noChain?: boolean;
 }): React.ReactElement {
-  const imageSrc = useTokenImage(token.symbol, chainId, noChain);
+  const tokenImageSrc = useTokenImage(token.symbol);
+  const chainImageSrc = noChain ? undefined : useChainImage(chainId);
 
-  if (!imageSrc) return <></>;
+  if (!tokenImageSrc) return <></>;
 
   return (
-    <Avatar className={cn('', className)}>
-      <AvatarImage width={width} height={width} src={imageSrc} alt={token.name} />
+    <Avatar className={cn('relative overflow-visible', className)}>
+      <AvatarImage width={width} height={width} src={tokenImageSrc} alt={token.name} />
       <AvatarFallback className={cn('bg-slate-200 text-xs', fallbackClassName)} delayMs={fallbackDelay}>
         {token.symbol.toUpperCase()}
       </AvatarFallback>
+      {chainImageSrc && (
+        <Avatar className={cn('absolute -right-px bottom-0 h-1/2 w-1/2')}>
+          <AvatarImage src={chainImageSrc} alt="chain-icon" className="h-full w-full" />
+        </Avatar>
+      )}
     </Avatar>
   );
 }

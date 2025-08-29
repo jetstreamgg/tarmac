@@ -1,10 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Token } from '@jetstreamgg/sky-hooks';
-import { getChainSpecificText } from '@jetstreamgg/sky-utils';
-
-import React from 'react';
-import { useChainId } from 'wagmi';
+import { useChainImage, useTokenImage } from '@jetstreamgg/sky-widgets';
 
 export function TokenIcon({
   token,
@@ -19,28 +16,22 @@ export function TokenIcon({
   fallbackClassName?: string;
   chainId?: number;
 }): React.ReactElement {
-  const connectedChainId = useChainId();
-  const chainIdToUse = chainId ?? connectedChainId;
+  const tokenImageSrc = useTokenImage(token.symbol);
+  const chainImageSrc = useChainImage(chainId);
+
   if (!token.symbol) return <></>;
 
-  const path = `/tokens/${getChainSpecificText(
-    {
-      base: 'base/',
-      arbitrum: 'arbitrum/',
-      optimism: 'optimism/',
-      unichain: 'unichain/',
-      ethereum: 'ethereum/',
-      default: ''
-    },
-    chainIdToUse
-  )}${token.symbol.toLowerCase()}.svg`;
-
   return (
-    <Avatar className={cn('', className)}>
-      <AvatarImage width={width} height={width} src={path} alt={token.name} />
+    <Avatar className={cn('relative overflow-visible', className)}>
+      <AvatarImage width={width} height={width} src={tokenImageSrc} alt={token.name} />
       <AvatarFallback className={cn('bg-slate-200 text-xs', fallbackClassName)} delayMs={500}>
         {token.symbol.toUpperCase()}
       </AvatarFallback>
+      {chainImageSrc && (
+        <Avatar className={cn('absolute -right-px bottom-0 h-1/2 w-1/2')}>
+          <AvatarImage src={chainImageSrc} alt="chain-icon" className="h-full w-full" />
+        </Avatar>
+      )}
     </Avatar>
   );
 }
