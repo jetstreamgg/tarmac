@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from '@widgets/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@widgets/components/ui/card';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { getTokenDecimals, OrderQuoteResponse } from '@jetstreamgg/sky-hooks';
@@ -16,6 +16,8 @@ import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack'
 import { formatUnits } from 'viem';
 import { TokenForChain } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
+import { Switch } from '@widgets/components/ui/switch';
+import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
 
 type TradeSummaryProps = {
   quoteData: OrderQuoteResponse;
@@ -23,6 +25,9 @@ type TradeSummaryProps = {
   originToken: TokenForChain;
   targetToken: TokenForChain;
   priceImpact: number | undefined;
+  allowance?: bigint;
+  batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 export function TradeSummary({
@@ -30,9 +35,23 @@ export function TradeSummary({
   lastUpdated,
   originToken,
   targetToken,
-  priceImpact
+  priceImpact,
+  allowance,
+  batchEnabled = true,
+  setBatchEnabled
 }: TradeSummaryProps) {
   const chainId = useChainId();
+  const { data: batchSupported } = useIsBatchSupported();
+
+  // Check if USDT reset is needed
+  const isUsdt = originToken?.symbol === 'USDT';
+  const needsReset =
+    isUsdt &&
+    allowance !== undefined &&
+    quoteData.quote.sellAmountToSign !== undefined &&
+    allowance > 0n &&
+    allowance < quoteData.quote.sellAmountToSign;
+
   if (priceImpact === undefined) {
     return null;
   }
@@ -172,6 +191,31 @@ export function TradeSummary({
             </motion.div>
           </VStack>
         </CardContent>
+        {needsReset && batchEnabled !== undefined && !!setBatchEnabled && !!batchSupported && (
+          <motion.div variants={positionAnimations}>
+            <CardFooter className="border-selectActive mt-4 border-t pt-5">
+              <div className="w-full">
+                <HStack className="w-full items-center justify-between">
+                  <Text className="text-[13px]">Bundle transactions</Text>
+                  <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} />
+                </HStack>
+                <Text className={`mt-2 text-[13px] ${batchEnabled ? 'text-white/60' : 'text-error'}`}>
+                  {batchEnabled ? (
+                    <Trans>
+                      USDT allowance will be reset to 0 then set to the required amount in a single batched
+                      transaction.
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      USDT requires allowance reset. Please enable bundled transactions to complete this
+                      trade.
+                    </Trans>
+                  )}
+                </Text>
+              </div>
+            </CardFooter>
+          </motion.div>
+        )}
       </Card>
       <motion.div variants={positionAnimations}>
         <Text className="text-textSecondary text-balance text-center">
