@@ -48,14 +48,18 @@ async function fetchSavingsChartInfo(url: URL): Promise<SavingsChartInfoParsed[]
   }
 }
 
-export function useSavingsChartInfo(paramChainId?: number): ReadHook & { data?: SavingsChartInfoParsed[] } {
+export function useSavingsChartInfo(
+  paramChainId?: number,
+  options: { limit?: number } = { limit: 100 }
+): ReadHook & { data?: SavingsChartInfoParsed[] } {
+  const { limit } = options;
   const wagmiChainId = useChainId();
   const chainId = paramChainId || wagmiChainId;
   const baseUrl = getBaLabsApiUrl(chainId) || '';
   const savingsAddress = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
   let url: URL | undefined;
   if (baseUrl && savingsAddress) {
-    const endpoint = `${baseUrl}/overall/historic/`;
+    const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 

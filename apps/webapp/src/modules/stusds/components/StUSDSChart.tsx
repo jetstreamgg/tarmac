@@ -6,14 +6,16 @@ import { Trans } from '@lingui/react/macro';
 import { useParseSavingsChartData } from '@/modules/savings/hooks/useParseSavingsChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChainId } from 'wagmi';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 
 export function StUSDSChart() {
   const [activeChart, setActiveChart] = useState('tvl');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
   const chainId = useChainId();
+  const limit = getDayCountFromTimeFrame(timeFrame);
 
   // TODO: Replace with useStUSDSChartInfo when available
-  const { data: stUsdsChartInfo, isLoading, error } = useSavingsChartInfo(chainId);
+  const { data: stUsdsChartInfo, isLoading, error } = useSavingsChartInfo(chainId, { limit });
   const chartData = useParseSavingsChartData(timeFrame, stUsdsChartInfo || []);
 
   return (

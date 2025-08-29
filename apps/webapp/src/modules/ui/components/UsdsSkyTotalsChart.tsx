@@ -7,6 +7,7 @@ import { Trans } from '@lingui/react/macro';
 import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartData';
 import { useChainId } from 'wagmi';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 
 enum ChartName {
   USDS = 'Total USDS',
@@ -23,17 +24,19 @@ export function UsdsSkyTotalsChart() {
   const nstTokenAddress = isL2 ? usdsAddress[1] : usdsAddress[chainId as keyof typeof usdsAddress]; // Display mainnet data on L2s
   const skyTokenAddress = isL2 ? skyAddress[1] : skyAddress[chainId as keyof typeof skyAddress]; // Display mainnet data on L2s
 
+  const limit = getDayCountFromTimeFrame(timeFrame);
+
   const {
     data: usdsData,
     error: usdsError,
     isLoading: usdsIsLoading
-  } = useTokenChartInfo({ tokenAddress: nstTokenAddress });
+  } = useTokenChartInfo({ tokenAddress: nstTokenAddress, limit });
 
   const {
     data: skyData,
     error: skyError,
     isLoading: skyIsLoading
-  } = useTokenChartInfo({ tokenAddress: skyTokenAddress });
+  } = useTokenChartInfo({ tokenAddress: skyTokenAddress, limit });
 
   const chartDataMapping = {
     [ChartName.USDS]: useParseTokenChartData(timeFrame, usdsData || []),

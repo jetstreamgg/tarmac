@@ -3,8 +3,6 @@ import { TimeFrame } from '@/modules/ui/components/Chart';
 // Determine the interval in seconds for each timeframe
 export const getTimeFrameInterval = (timeFrame: TimeFrame): number => {
   switch (timeFrame) {
-    case 'd':
-      return 3600; // 1 hour in seconds
     case 'w':
     case 'm':
       return 86400; // 1 day in seconds, recognizing that weeks and months vary in length

@@ -64,15 +64,17 @@ async function fetchRewardsChartInfo(url: URL): Promise<RewardsChartInfoParsed[]
 }
 
 export function useRewardsChartInfo({
-  rewardContractAddress
+  rewardContractAddress,
+  limit = 100
 }: {
   rewardContractAddress: string;
+  limit?: number;
 }): ReadHook & { data?: RewardsChartInfoParsed[] } {
   const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl(chainId);
   let url: URL | undefined;
   if (baseUrl && rewardContractAddress) {
-    const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/`;
+    const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 

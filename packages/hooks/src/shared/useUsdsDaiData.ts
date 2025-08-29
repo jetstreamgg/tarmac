@@ -54,12 +54,15 @@ async function fetchUsdsDaiData(url: URL): Promise<UsdsDaiChartInfo[]> {
   }
 }
 
-export function useUsdsDaiData(): ReadHook & { data?: UsdsDaiChartInfo[] } {
+export function useUsdsDaiData(
+  props: { limit?: number } = { limit: 100 }
+): ReadHook & { data?: UsdsDaiChartInfo[] } {
+  const { limit } = props;
   const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl(chainId) || '';
   let url: URL | undefined;
   if (baseUrl) {
-    const endpoint = `${baseUrl}/overall/historic/`;
+    const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 

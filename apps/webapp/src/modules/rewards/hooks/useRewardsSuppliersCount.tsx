@@ -13,7 +13,8 @@ export const useRewardsSuppliersCount = (overrideChainId?: number) => {
     isLoading: isLoadingSky,
     error: errorSky
   } = useRewardsChartInfo({
-    rewardContractAddress: skyRewardContract.contractAddress.toLowerCase()
+    rewardContractAddress: skyRewardContract.contractAddress.toLowerCase(),
+    limit: 1
   });
 
   const {
@@ -21,7 +22,8 @@ export const useRewardsSuppliersCount = (overrideChainId?: number) => {
     isLoading: isLoadingSpk,
     error: errorSpk
   } = useRewardsChartInfo({
-    rewardContractAddress: spkRewardContract.contractAddress.toLowerCase()
+    rewardContractAddress: spkRewardContract.contractAddress.toLowerCase(),
+    limit: 1
   });
 
   const {
@@ -29,14 +31,13 @@ export const useRewardsSuppliersCount = (overrideChainId?: number) => {
     isLoading: isLoadingCron,
     error: errorCron
   } = useRewardsChartInfo({
-    rewardContractAddress: cronRewardContract.contractAddress.toLowerCase()
+    rewardContractAddress: cronRewardContract.contractAddress.toLowerCase(),
+    limit: 1
   });
 
-  const mostRecentSkyData = [...(skyChartData || [])].sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0];
-  const mostRecentCronData = [...(cronChartData || [])].sort(
-    (a, b) => b.blockTimestamp - a.blockTimestamp
-  )[0];
-  const mostRecentSpkData = [...(spkChartData || [])].sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0];
+  const mostRecentSkyData = skyChartData?.[0];
+  const mostRecentCronData = cronChartData?.[0];
+  const mostRecentSpkData = spkChartData?.[0];
 
   const totalSuppliers =
     (mostRecentSkyData?.suppliers || 0) +

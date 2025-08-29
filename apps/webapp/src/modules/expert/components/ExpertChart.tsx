@@ -7,6 +7,7 @@ import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartDat
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useChainId } from 'wagmi';
 import { getExpertModules, ExpertModule } from '../../advanced/helpers/expertModules';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 
 function calculateCumulativeTotalSupply(tokenChartData: TokenChartInfoParsed[]) {
   if (!tokenChartData || tokenChartData.length === 0) return [];
@@ -29,7 +30,13 @@ function calculateCumulativeTotalSupply(tokenChartData: TokenChartInfoParsed[]) 
 }
 
 // Hook to fetch and aggregate expert modules chart data
-function useExpertModulesChartInfo({ expertModules }: { expertModules: ExpertModule[] }) {
+function useExpertModulesChartInfo({
+  expertModules,
+  limit
+}: {
+  expertModules: ExpertModule[];
+  limit?: number | undefined;
+}) {
   // TODO: Loop through all expert modules when more are added
   // Currently only handling stUSDS
   const [stUsdsModule] = expertModules;
@@ -39,7 +46,8 @@ function useExpertModulesChartInfo({ expertModules }: { expertModules: ExpertMod
     isLoading: isLoadingStUsds,
     error: errorStUsds
   } = useTokenChartInfo({
-    tokenAddress: stUsdsModule?.tokenAddress
+    tokenAddress: stUsdsModule?.tokenAddress,
+    limit
   });
 
   // When more modules are added, fetch their data and combine like this:
@@ -59,12 +67,17 @@ export function ExpertChart() {
   const [activeChart, setActiveChart] = useState('tvl');
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
   const chainId = useChainId();
+  const limit = getDayCountFromTimeFrame(timeFrame);
 
   // Get all expert modules for the current chain
   const expertModules = getExpertModules(chainId);
 
   // Fetch and aggregate chart data for all expert modules
-  const { data: expertModulesChartData, isLoading, error } = useExpertModulesChartInfo({ expertModules });
+  const {
+    data: expertModulesChartData,
+    isLoading,
+    error
+  } = useExpertModulesChartInfo({ expertModules, limit });
 
   const chartData = useParseTokenChartData(timeFrame, expertModulesChartData);
 

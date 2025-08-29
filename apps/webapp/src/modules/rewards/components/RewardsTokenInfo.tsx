@@ -26,12 +26,11 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
     isLoading: historicRewardsTokenIsLoading,
     error: historicRewardsTokenError
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress
+    rewardContractAddress: rewardContract.contractAddress,
+    limit: 1
   });
 
-  const mostRecentReward = historicRewardsTokenData
-    ?.slice()
-    .sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0];
+  const mostRecentReward = historicRewardsTokenData?.[0];
   const mostRecentRate = mostRecentReward?.rate;
 
   return (

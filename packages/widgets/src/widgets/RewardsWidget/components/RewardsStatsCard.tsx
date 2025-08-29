@@ -30,12 +30,9 @@ export const RewardsStatsCard = ({
     isLoading: isLoadingChart,
     error: errorChart
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress
+    rewardContractAddress: rewardContract.contractAddress,
+    limit: 1
   });
-
-  const mostRecentData = chartData
-    ? [...chartData].sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0]
-    : null;
 
   return (
     <RewardsStatsCardCore
@@ -57,8 +54,8 @@ export const RewardsStatsCard = ({
           </MotionVStack>
           <MotionVStack className="items-end justify-between" gap={2} variants={positionAnimations}>
             <Text className="text-textSecondary text-sm leading-4">{t`Suppliers`}</Text>
-            {mostRecentData ? (
-              <Text>{formatNumber(mostRecentData?.suppliers, { maxDecimals: 0 })}</Text>
+            {chartData ? (
+              <Text>{formatNumber(chartData[0].suppliers, { maxDecimals: 0 })}</Text>
             ) : isLoadingChart ? (
               <Skeleton className="bg-textSecondary h-5 w-10" />
             ) : errorChart ? (

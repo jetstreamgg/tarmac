@@ -28,10 +28,9 @@ import { VStack } from '@/modules/layout/components/VStack';
 import { Warning } from '@/modules/icons/Warning';
 
 const dateFormat = 'MMM d';
-const timeFormat = 'HH:mm';
 const monthFormat = 'MMM';
 
-export type TimeFrame = 'd' | 'w' | 'm' | 'y' | 'all';
+export type TimeFrame = 'w' | 'm' | 'y' | 'all';
 
 const TimeframeControls = ({
   activeTimeframe,
@@ -46,7 +45,7 @@ const TimeframeControls = ({
   bpi: BP;
   compact: boolean;
 }) => {
-  const keys: TimeFrame[] = ['d', 'w', 'm', 'y', 'all'];
+  const keys: TimeFrame[] = ['w', 'm', 'y', 'all'];
 
   if (bpi < BP.lg || compact) {
     return (
@@ -171,22 +170,12 @@ const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
 
   filteredData.push(data[data.length - 1]); // Always include the last element
 
-  let finalFormat = dateFormat;
-  if (tf === 'd') {
-    finalFormat = timeFormat;
-  } else if (tf === 'y') {
-    finalFormat = monthFormat;
-  }
+  const finalFormat = tf === 'y' ? monthFormat : dateFormat;
   return filteredData.map(item => format(new Date(item.date?.toISOString()), finalFormat));
 };
 
 const formatDate = (date: Date, tf: TimeFrame) => {
-  let finalFormat = dateFormat;
-  if (tf === 'd') {
-    finalFormat = timeFormat;
-  } else if (tf === 'y') {
-    finalFormat = monthFormat;
-  }
+  const finalFormat = tf === 'y' ? monthFormat : dateFormat;
   return format(date, finalFormat);
 };
 

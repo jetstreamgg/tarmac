@@ -5,6 +5,7 @@ import { Trans } from '@lingui/react/macro';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseRewardsChartData } from '@/modules/rewards/hooks/useParseRewardsChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 
 enum ChartName {
   TVL = 'TVL',
@@ -32,15 +33,24 @@ function calculateCumulativeTotalSupplied(rewardChartData: RewardsChartInfoParse
 }
 
 // TODO: Move this logic to helipad
-function useRewardListChartInfo({ rewardContracts }: { rewardContracts: RewardContract[] }) {
+function useRewardListChartInfo({
+  rewardContracts,
+  timeFrame
+}: {
+  rewardContracts: RewardContract[];
+  timeFrame: TimeFrame;
+}) {
   // TODO: need to do this in a loop rather than hardcoding reward contracts
   const [skyRewardContract, cronRewardContract] = rewardContracts;
+  const limit = getDayCountFromTimeFrame(timeFrame);
+
   const {
     data: skyChartData,
     isLoading: isLoadingSky,
     error: errorSky
   } = useRewardsChartInfo({
-    rewardContractAddress: skyRewardContract.contractAddress.toLowerCase()
+    rewardContractAddress: skyRewardContract.contractAddress.toLowerCase(),
+    limit
   });
 
   const {
@@ -48,7 +58,8 @@ function useRewardListChartInfo({ rewardContracts }: { rewardContracts: RewardCo
     isLoading: isLoadingCron,
     error: errorCron
   } = useRewardsChartInfo({
-    rewardContractAddress: cronRewardContract.contractAddress.toLowerCase()
+    rewardContractAddress: cronRewardContract.contractAddress.toLowerCase(),
+    limit
   });
   const combinedChartData = skyChartData && cronChartData ? [...skyChartData, ...cronChartData] : [];
 
@@ -66,7 +77,7 @@ export function RewardsOverviewCharts({ rewardContracts }: { rewardContracts: Re
   const [activeChart, setActiveChart] = useState<ChartName>(ChartName.TVL);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
-  const { data: rewardsChartData, isLoading, error } = useRewardListChartInfo({ rewardContracts });
+  const { data: rewardsChartData, isLoading, error } = useRewardListChartInfo({ rewardContracts, timeFrame });
 
   const chartData = useParseRewardsChartData(timeFrame, rewardsChartData || []);
 
