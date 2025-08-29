@@ -5,8 +5,7 @@ import { WriteHookParams } from '../hooks';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchOrderStatus } from './fetchOrderStatus';
-import { gPv2SettlementAddress, gPv2SettlementSepoliaAddress } from '../generated';
-import { sepolia } from 'viem/chains';
+import { gPv2SettlementAddress } from '../generated';
 
 const createTradeOrder = async (order: OrderQuoteResponse, signature: `0x${string}`, chainId: number) => {
   try {
@@ -118,10 +117,7 @@ export const useSignAndCreateTradeOrder = ({
             name: 'Gnosis Protocol',
             version: 'v2',
             chainId,
-            verifyingContract:
-              chainId === sepolia.id
-                ? gPv2SettlementSepoliaAddress[chainId as keyof typeof gPv2SettlementSepoliaAddress]
-                : gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress]
+            verifyingContract: gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress]
           },
           types: {
             Order: ORDER_TYPE_FIELDS

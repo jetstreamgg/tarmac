@@ -2,8 +2,7 @@ import { WAD_PRECISION, math } from '@jetstreamgg/sky-utils';
 import { OrderQuoteSideKind, cowApiClient } from './constants';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId } from 'wagmi';
-import { sepolia } from 'viem/chains';
-import { mcdDaiAddress, mcdDaiSepoliaAddress } from '../generated';
+import { mcdDaiAddress } from '../generated';
 import { useQueries } from '@tanstack/react-query';
 import { ReadHook } from '../hooks';
 import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum } from '../constants';
@@ -56,10 +55,7 @@ export const useTradeCosts = ({
   kind: OrderQuoteSideKind | undefined;
 }): ReadHook & { data: { priceImpact: number | undefined; feePercentage: number | undefined } } => {
   const chainId = useChainId();
-  const daiAddress =
-    chainId === sepolia.id
-      ? mcdDaiSepoliaAddress[chainId as keyof typeof mcdDaiSepoliaAddress]
-      : mcdDaiAddress[chainId as keyof typeof mcdDaiAddress];
+  const daiAddress = mcdDaiAddress[chainId as keyof typeof mcdDaiAddress];
   const isNative = sellToken?.isNative;
   const tokens = [isNative ? ETH_ADDRESS : sellToken?.address, buyToken?.address, daiAddress];
 

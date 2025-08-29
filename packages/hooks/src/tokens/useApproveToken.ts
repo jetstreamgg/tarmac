@@ -2,9 +2,8 @@ import { useChainId } from 'wagmi';
 import { erc20Abi } from 'viem';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useAccount } from 'wagmi';
-import { usdtAbi, usdtAddress, usdtSepoliaAddress } from '../generated';
+import { usdtAbi, usdtAddress } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
-import { sepolia } from 'viem/chains';
 
 // Returns the tx hash
 type ApproveHookParams = WriteHookParams & {
@@ -25,10 +24,7 @@ export function useApproveToken({
 }: ApproveHookParams): WriteHook {
   const chainId = useChainId();
   const { isConnected } = useAccount();
-  const isUsdt =
-    chainId === sepolia.id
-      ? contractAddress === usdtSepoliaAddress[chainId as keyof typeof usdtSepoliaAddress]
-      : contractAddress === usdtAddress[chainId as keyof typeof usdtAddress];
+  const isUsdt = contractAddress === usdtAddress[chainId as keyof typeof usdtAddress];
 
   const enabled = isConnected && !!spender && !!amount && paramEnabled;
 

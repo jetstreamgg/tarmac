@@ -7,10 +7,13 @@ export function getCowExplorerLink(chainId: number, orderId: string) {
 
 function getCowPrefix(id: number) {
   switch (id) {
+    case chainId.base:
+    case chainId.tenderlyBase:
+      return 'explorer.cow.fi/base';
+    case chainId.arbitrum:
+    case chainId.tenderlyArbitrum:
+      return 'explorer.cow.fi/arb1';
     case chainId.mainnet:
-      return 'explorer.cow.fi';
-    case chainId.sepolia:
-      return 'explorer.cow.fi/sepolia';
     default:
       return 'explorer.cow.fi';
   }

@@ -1,4 +1,4 @@
-import { base, mainnet, sepolia, arbitrum, optimism, unichain } from 'wagmi/chains';
+import { base, mainnet, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   mcdDaiConfig,
   skyConfig,
@@ -8,10 +8,6 @@ import {
   usdcConfig,
   usdtConfig,
   lsMkrConfig,
-  wethSepoliaAddress,
-  mcdDaiSepoliaAddress,
-  usdcSepoliaAddress,
-  usdtSepoliaAddress,
   sUsdsConfig,
   sUsdsL2Address,
   usdcL2Address,
@@ -125,7 +121,6 @@ export const TOKENS: TokenMapping = {
       [mainnet.id]: 6,
       [base.id]: 6,
       [arbitrum.id]: 6,
-      [sepolia.id]: 18,
       [TENDERLY_CHAIN_ID]: 6,
       [TENDERLY_BASE_CHAIN_ID]: 6,
       [TENDERLY_ARBITRUM_CHAIN_ID]: 6,
@@ -198,13 +193,6 @@ export const TRADE_TOKENS = {
     sky: { ...TOKENS.sky, address: skyConfig.address[mainnet.id] },
     susds: { ...TOKENS.susds, address: sUsdsConfig.address[mainnet.id] },
     spk: { ...TOKENS.spk, address: spkConfig.address[mainnet.id] }
-  },
-  [sepolia.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcSepoliaAddress[sepolia.id] },
-    usdt: { ...TOKENS.usdt, address: usdtSepoliaAddress[sepolia.id] },
-    eth: { ...TOKENS.eth, address: ETH_ADDRESS },
-    weth: { ...TOKENS.weth, address: wethSepoliaAddress[sepolia.id] },
-    dai: { ...TOKENS.dai, address: mcdDaiSepoliaAddress[sepolia.id] }
   },
   [TENDERLY_CHAIN_ID]: {
     usdc: { ...TOKENS.usdc, address: usdcConfig.address[TENDERLY_CHAIN_ID] },

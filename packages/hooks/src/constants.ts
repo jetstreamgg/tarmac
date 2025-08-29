@@ -54,7 +54,6 @@ export const URL_UNICHAIN_SUBGRAPH_MAINNET =
 export const URL_BLOCKS_SUBGRAPH_MAINNET =
   'https://gateway-arbitrum.network.thegraph.com/api/937ce273344a610ea828ebe9702f6b65/subgraphs/id/9A6bkprqEG2XsZUYJ5B2XXp6ymz9fNcn4tVPxMWDztYC';
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
-export const URL_BA_LABS_API_TENDERLY = 'https://sky-tenderly.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;
 export const ARBITRUM_CHAIN_ID = 42161;

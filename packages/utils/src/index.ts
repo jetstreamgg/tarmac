@@ -13,6 +13,7 @@ export {
   isUnichainChainId,
   isOptimismChainId
 } from './isL2ChainId';
+export { isCowSupportedChainId } from './isCowSupportedChainId';
 export { formatAddress } from './formatAddress';
 export { normalizeAddress } from './normalizeAddress';
 export { chainId } from './chainId';

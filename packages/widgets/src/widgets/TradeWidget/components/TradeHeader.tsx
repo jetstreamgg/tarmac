@@ -3,9 +3,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { TradeConfigMenu } from './TradeConfigMenu';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
-import { useAccount } from 'wagmi';
 import { TokenForChain } from '@jetstreamgg/sky-hooks';
-import { sepolia } from 'viem/chains';
 
 type PropTypes = {
   slippage: string;
@@ -65,8 +63,7 @@ export const TradePoweredBy = ({
 );
 
 export const TradeWarning = ({ originToken }: { originToken?: TokenForChain }) => {
-  const { chainId } = useAccount();
-  const shouldShowUSDTWarning = originToken?.symbol === 'USDT' && chainId === sepolia.id;
+  const shouldShowUSDTWarning = originToken?.symbol === 'USDT';
 
   if (!shouldShowUSDTWarning) return null;
 

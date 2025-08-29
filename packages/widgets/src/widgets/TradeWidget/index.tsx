@@ -33,7 +33,8 @@ import {
   getTransactionLink,
   useIsSafeWallet,
   useDebounce,
-  useIsSmartContractWallet
+  useIsSmartContractWallet,
+  getCowExplorerLink
 } from '@jetstreamgg/sky-utils';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -54,7 +55,6 @@ import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
-import { sepolia } from 'viem/chains';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 
@@ -346,7 +346,7 @@ function TradeWidgetWrapped({
     order: quoteData,
     onStart: (orderId: string) => {
       setOrderId(orderId as `0x${string}`);
-      setExternalLink(`https://explorer.cow.fi/${chainId === sepolia.id ? 'sepolia/' : ''}orders/${orderId}`);
+      setExternalLink(getCowExplorerLink(chainId, orderId));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash: orderId, widgetState, txStatus: TxStatus.LOADING });
       setCancelButtonText(t`Cancel order`);
@@ -406,7 +406,7 @@ function TradeWidgetWrapped({
     order: quoteData,
     onStart: (orderId: string) => {
       setOrderId(orderId as `0x${string}`);
-      setExternalLink(`https://explorer.cow.fi/${chainId === sepolia.id ? 'sepolia/' : ''}orders/${orderId}`);
+      setExternalLink(getCowExplorerLink(chainId, orderId));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash: orderId, widgetState, txStatus: TxStatus.LOADING });
       setCancelButtonText(t`Cancel order`);
@@ -497,7 +497,7 @@ function TradeWidgetWrapped({
       setEthFlowTxStatus(EthFlowTxStatus.CREATING_ORDER);
     },
     onOrderCreated: (orderId: string) => {
-      setExternalLink(`https://explorer.cow.fi/${chainId === sepolia.id ? 'sepolia/' : ''}orders/${orderId}`);
+      setExternalLink(getCowExplorerLink(chainId, orderId));
       setEthFlowTxStatus(EthFlowTxStatus.ORDER_CREATED);
       onWidgetStateChange?.({ widgetState, txStatus: TxStatus.LOADING });
     },

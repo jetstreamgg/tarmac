@@ -1,13 +1,5 @@
 import { hashTypedData, keccak256, parseEventLogs, toBytes, TransactionReceipt } from 'viem';
-import { sepolia } from 'viem/chains';
-import {
-  ethFlowAbi,
-  ethFlowAddress,
-  ethFlowSepoliaAbi,
-  ethFlowSepoliaAddress,
-  gPv2SettlementAddress,
-  gPv2SettlementSepoliaAddress
-} from '../generated';
+import { ethFlowAbi, ethFlowAddress, gPv2SettlementAddress } from '../generated';
 import { ORDER_TYPE_FIELDS, OrderBalance, OrderQuoteSideKind } from './constants';
 
 const getBalance = (balance: string, isSell: boolean) => {
@@ -44,16 +36,12 @@ export const getOrderId = (
   txReceipt: TransactionReceipt | undefined,
   chainId: number
 ): string | undefined => {
-  const ethFlowContractAddress =
-    chainId === sepolia.id
-      ? ethFlowSepoliaAddress[chainId as keyof typeof ethFlowSepoliaAddress]
-      : ethFlowAddress[chainId as keyof typeof ethFlowAddress];
-  const abi = chainId === sepolia.id ? ethFlowSepoliaAbi : ethFlowAbi;
+  const ethFlowContractAddress = ethFlowAddress[chainId as keyof typeof ethFlowAddress];
 
   const parsedLogs =
     txReceipt &&
     parseEventLogs({
-      abi,
+      abi: ethFlowAbi,
       logs: txReceipt.logs
     });
 
@@ -70,10 +58,7 @@ export const getOrderId = (
           name: 'Gnosis Protocol',
           version: 'v2',
           chainId,
-          verifyingContract:
-            chainId === sepolia.id
-              ? gPv2SettlementSepoliaAddress[chainId as keyof typeof gPv2SettlementSepoliaAddress]
-              : gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress]
+          verifyingContract: gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress]
         },
         types: {
           Order: ORDER_TYPE_FIELDS

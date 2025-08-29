@@ -4,8 +4,7 @@ import { cowApiClient } from './constants';
 import { WriteHookParams } from '../hooks';
 import { fetchOrderStatus } from './fetchOrderStatus';
 import { useCallback, useEffect, useState } from 'react';
-import { gPv2SettlementAddress, gPv2SettlementSepoliaAddress } from '../generated';
-import { sepolia } from 'viem/chains';
+import { gPv2SettlementAddress } from '../generated';
 
 const cancelOrders = async (orderUids: `0x${string}`[], signature: `0x${string}`, chainId: number) => {
   try {
@@ -114,10 +113,7 @@ export const useSignAndCancelOrder = ({
             name: 'Gnosis Protocol',
             version: 'v2',
             chainId,
-            verifyingContract:
-              chainId === sepolia.id
-                ? gPv2SettlementSepoliaAddress[chainId as keyof typeof gPv2SettlementSepoliaAddress]
-                : gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress]
+            verifyingContract: gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress]
           },
           types: {
             OrderCancellations: [

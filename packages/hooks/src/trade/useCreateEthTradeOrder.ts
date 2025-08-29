@@ -1,8 +1,7 @@
 import { useAccount, useChainId, useTransactionReceipt } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
-import { sepolia } from 'viem/chains';
-import { ethFlowAbi, ethFlowAddress, ethFlowSepoliaAbi, ethFlowSepoliaAddress } from '../generated';
+import { ethFlowAbi, ethFlowAddress } from '../generated';
 import { OrderQuoteResponse } from './trade';
 import { useCallback, useEffect, useState } from 'react';
 import { getOrderId } from './getOrderId';
@@ -30,11 +29,6 @@ export const useCreateEthTradeOrder = ({
 
   const { address: connectedAddress, isConnected } = useAccount();
   const chainId = useChainId();
-  const ethFlowContractAddress =
-    chainId === sepolia.id
-      ? ethFlowSepoliaAddress[chainId as keyof typeof ethFlowSepoliaAddress]
-      : ethFlowAddress[chainId as keyof typeof ethFlowAddress];
-  const abi = chainId === sepolia.id ? ethFlowSepoliaAbi : ethFlowAbi;
 
   const enabled = isConnected && ethFlowEnabled && !!order && !!connectedAddress;
 
@@ -98,8 +92,8 @@ export const useCreateEthTradeOrder = ({
   }, [order, resetState]);
 
   return useWriteContractFlow({
-    address: ethFlowContractAddress,
-    abi,
+    address: ethFlowAddress[chainId as keyof typeof ethFlowAddress],
+    abi: ethFlowAbi,
     functionName: 'createOrder',
     args: [ethFlowOrder!],
     value: order?.quote.sellAmountToSign,
