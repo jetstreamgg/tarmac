@@ -3,8 +3,8 @@ import { CHATBOT_USE_TESTNET_NETWORK_NAME, COMING_SOON_MAP, QueryParams } from '
 import { ChatIntent } from '../types/Chat';
 import { Intent } from '@/lib/enums';
 import { isIntentAllowed } from '@/lib/utils';
-import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
 
 export const networkMapping = {
   [normalizeUrlParam(mainnet.name)]: 1,
@@ -148,7 +148,41 @@ export const processNetworkNameInUrl = (url: string): string => {
   return url;
 };
 
-export const isChatIntentAllowed = (intent: ChatIntent, currentChainId: number): boolean => {
+export const ensureIntentHasNetwork = (intentUrl: string, currentChainId: number): string => {
+  const urlObj = new URL(intentUrl, window.location.origin);
+
+  // If network is already present, return as-is
+  if (urlObj.searchParams.has('network')) {
+    return intentUrl;
+  }
+
+  // Get the widget to determine which network to use
+  const intentWidget = urlObj.searchParams.get('widget');
+  if (!intentWidget) {
+    // No widget specified, can't determine network, return as-is
+    return intentUrl;
+  }
+
+  // Look up the Intent enum for this widget
+  const intentEnum = intents[intentWidget as keyof typeof intents];
+  if (!intentEnum) {
+    // Unknown widget, return as-is
+    return intentUrl;
+  }
+
+  // Check if the widget is supported on the current chain
+  const supportedOnCurrentChain = isIntentAllowed(intentEnum, currentChainId);
+
+  // Use current chain if supported, otherwise default to Ethereum
+  const targetChainId = supportedOnCurrentChain ? currentChainId : mainnet.id;
+  const networkName =
+    chainIdNameMapping[targetChainId as keyof typeof chainIdNameMapping] || normalizeUrlParam(mainnet.name);
+
+  urlObj.searchParams.set('network', networkName);
+  return urlObj.pathname + urlObj.search;
+};
+
+export const isChatIntentAllowed = (intent: ChatIntent): boolean => {
   try {
     const urlObj = new URL(intent.url, window.location.origin);
     const intentWidget = urlObj.searchParams.get(QueryParams.Widget);
@@ -167,20 +201,22 @@ export const isChatIntentAllowed = (intent: ChatIntent, currentChainId: number):
       return false; // Widget name is not recognized
     }
 
-    // In case the network param is missing, we use the current chainId as fallback
-    let chainIdToCheck: number = currentChainId;
-
-    // If the network param is present and it's a valid network, we use the mapped chainId
-    if (intentNetwork) {
-      const mappedChainId = networkMapping[intentNetwork as keyof typeof networkMapping];
-      if (mappedChainId === undefined) {
-        // Invalid network param value, intent is not allowed
-        return false;
-      }
-      chainIdToCheck = mappedChainId;
+    // If intent has no network parameter, always allow it
+    // The app will handle network switching internally (usually to Ethereum or current chain)
+    if (!intentNetwork) {
+      return true;
     }
+
+    // If the network param is present and it's a valid network, check if allowed on that network
+    const mappedChainId = networkMapping[intentNetwork as keyof typeof networkMapping];
+    if (mappedChainId === undefined) {
+      // Invalid network param value, intent is not allowed
+      return false;
+    }
+
+    // Check if the intent is allowed on the specified network
     return (
-      isIntentAllowed(intentEnum, chainIdToCheck) && !COMING_SOON_MAP[chainIdToCheck]?.includes(intentEnum)
+      isIntentAllowed(intentEnum, mappedChainId) && !COMING_SOON_MAP[mappedChainId]?.includes(intentEnum)
     );
   } catch (error) {
     console.error('Failed to parse intent URL or check allowance:', error);

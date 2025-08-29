@@ -56,11 +56,28 @@ export const ChatIntentsRow = ({ intents }: ChatIntentsRowProps) => {
   const { shouldShowConfirmationWarning, shouldDisableActionButtons, triggerScroll } = useChatContext();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Group intents by title
+  // Group intents by title and filter duplicates with same title + network
   const groupedIntents = useMemo(() => {
     const groups = new Map<string, GroupedIntent>();
+    // Track seen title+network combinations to filter duplicates
+    const seenCombos = new Set<string>();
 
     intents.forEach(intent => {
+      // Extract network from the intent URL to check for duplicates
+      const intentUrl = new URL(intent.url, window.location.origin);
+      const network = intentUrl.searchParams.get('network')?.toLowerCase();
+
+      // Create a unique key combining title and network
+      // All intents should have networks now thanks to ensureIntentHasNetwork
+      const comboKey = `${intent.title}::${network}`;
+
+      // Skip if we've already seen this title+network combination
+      if (seenCombos.has(comboKey)) {
+        return; // Skip duplicate
+      }
+      seenCombos.add(comboKey);
+
+      // Add to grouped intents
       if (!groups.has(intent.title)) {
         groups.set(intent.title, {
           title: intent.title,
@@ -73,7 +90,8 @@ export const ChatIntentsRow = ({ intents }: ChatIntentsRowProps) => {
     });
 
     // Convert Map to array and sort if needed
-    // TODO: Sort by priority when priority field is available from the endpoint
+    // TODO: When priority field becomes available from the backend,
+    // use it for sorting instead of relying on array order
     return Array.from(groups.values());
   }, [intents]);
 

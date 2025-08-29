@@ -6,7 +6,12 @@ import { CHATBOT_NAME, MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '.
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { chainIdNameMapping, isChatIntentAllowed, processNetworkNameInUrl } from '../lib/intentUtils';
+import {
+  chainIdNameMapping,
+  isChatIntentAllowed,
+  processNetworkNameInUrl,
+  ensureIntentHasNetwork
+} from '../lib/intentUtils';
 import { CHATBOT_DOMAIN, CHATBOT_ENABLED, MAX_HISTORY_LENGTH } from '@/lib/constants';
 
 interface ChatbotResponse {
@@ -133,8 +138,12 @@ export const useSendMessage = () => {
       {
         onSuccess: data => {
           const intents = data.intents
-            ?.filter(chatIntent => isChatIntentAllowed(chatIntent, chainId))
-            .map(intent => ({ ...intent, url: processNetworkNameInUrl(intent.url) }));
+            ?.filter(chatIntent => isChatIntentAllowed(chatIntent))
+            .map(intent => {
+              const processedUrl = processNetworkNameInUrl(intent.url);
+              const urlWithNetwork = ensureIntentHasNetwork(processedUrl, chainId);
+              return { ...intent, url: urlWithNetwork };
+            });
 
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED
