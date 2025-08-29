@@ -24,7 +24,8 @@ import {
   TokenForChain,
   getTokenDecimals,
   useCreatePreSignTradeOrder,
-  useOnChainCancelOrder
+  useOnChainCancelOrder,
+  useBatchUsdtApprove
 } from '@jetstreamgg/sky-hooks';
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
@@ -64,6 +65,7 @@ export type TradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
   tokensLocked?: boolean;
+  batchEnabled?: boolean;
 };
 
 function TradeWidgetWrapped({
@@ -81,7 +83,8 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   enabled = true,
-  tokensLocked = false
+  tokensLocked = false,
+  batchEnabled = true
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
@@ -294,6 +297,73 @@ function TradeWidgetWrapped({
     !originToken.isNative &&
     !!(!allowance || allowance < quoteData.quote.sellAmountToSign);
 
+  // Check if this is USDT and needs allowance reset
+  const isUsdt = originToken?.symbol === 'USDT';
+  const needsUsdtReset =
+    isUsdt &&
+    allowance !== undefined &&
+    quoteData?.quote.sellAmountToSign !== undefined &&
+    allowance > 0n &&
+    allowance < quoteData.quote.sellAmountToSign;
+
+  // Get the trade spender address (same as used in useTradeApprove)
+  const tradeSpenderAddress = useMemo(() => {
+    const addresses = {
+      [1]: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110' as const, // mainnet
+      [11155111]: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110' as const // sepolia
+    };
+    return addresses[chainId as keyof typeof addresses];
+  }, [chainId]);
+
+  // Use batched USDT approve for USDT tokens that need reset
+  const {
+    execute: batchUsdtApproveExecute,
+    prepared: batchUsdtApprovePrepared,
+    isLoading: batchUsdtApproveIsLoading,
+    error: batchUsdtApproveError
+  } = useBatchUsdtApprove({
+    tokenAddress: originTokenAddress,
+    spender: tradeSpenderAddress,
+    amount: quoteData?.quote.sellAmountToSign,
+    shouldUseBatch: batchEnabled,
+    onStart: () => {
+      setTxStatus(TxStatus.LOADING);
+      onWidgetStateChange?.({ widgetState, txStatus: TxStatus.LOADING });
+    },
+    onSuccess: (hash: string | undefined) => {
+      onNotification?.({
+        title: t`Approve successful`,
+        description: t`You approved ${originToken?.symbol ?? ''}`,
+        status: TxStatus.SUCCESS
+      });
+      setTxStatus(TxStatus.SUCCESS);
+      mutateAllowance();
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+      }
+    },
+    onError: (error: Error, hash: string | undefined) => {
+      onNotification?.({
+        title: t`Approval failed`,
+        description: t`We could not approve your token allowance.`,
+        status: TxStatus.ERROR
+      });
+      setTxStatus(TxStatus.ERROR);
+      mutateAllowance();
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
+      console.log(error);
+    },
+    enabled:
+      isUsdt &&
+      needsUsdtReset &&
+      widgetState.action === TradeAction.APPROVE &&
+      allowance !== undefined &&
+      originToken &&
+      !originToken.isNative
+  });
+
+  // Use regular approve for non-USDT tokens or USDT that doesn't need reset
   const {
     execute: approveExecute,
     prepareError: approvePrepareError,
@@ -339,7 +409,8 @@ function TradeWidgetWrapped({
       widgetState.action === TradeAction.APPROVE &&
       allowance !== undefined &&
       originToken &&
-      !originToken.isNative
+      !originToken.isNative &&
+      (!isUsdt || !needsUsdtReset)
   });
 
   const { execute: tradeExecute } = useSignAndCreateTradeOrder({
@@ -619,7 +690,7 @@ function TradeWidgetWrapped({
     }
   }, [isSmartContractWallet, onChainCancelExecute, offChainCancelExecute]);
 
-  const prepareError = approvePrepareError || ethTradePrepareError;
+  const prepareError = approvePrepareError || ethTradePrepareError || batchUsdtApproveError;
 
   const isAmountWaitingForDebounce =
     debouncedOriginAmount !== originAmount || debouncedTargetAmount !== targetAmount;
@@ -630,18 +701,23 @@ function TradeWidgetWrapped({
     !tradeAnyway &&
     txStatus === TxStatus.IDLE;
 
+  // Determine which approval method is prepared
+  const approvalPrepared = needsUsdtReset ? batchUsdtApprovePrepared : approvePrepared;
+  const approvalLoading = needsUsdtReset ? batchUsdtApproveIsLoading : approveIsLoading;
+
   const approveDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isBalanceError ||
-    (!originToken?.isNative && !approvePrepared) ||
+    (!originToken?.isNative && !approvalPrepared) ||
     (originToken?.isNative && !ethTradePrepared) ||
-    approveIsLoading ||
+    approvalLoading ||
     isQuoteLoading ||
     !pairValid ||
     disabledDueToHighCosts ||
     (!originToken.isNative && allowance === undefined) ||
     allowanceLoading ||
-    isAmountWaitingForDebounce;
+    isAmountWaitingForDebounce ||
+    (needsUsdtReset && !batchEnabled); // Disable approve if USDT reset needed but batch disabled
 
   const tradeDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
@@ -942,7 +1018,13 @@ function TradeWidgetWrapped({
     }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-    approveExecute();
+
+    // Use appropriate approve function based on USDT reset requirement
+    if (needsUsdtReset) {
+      batchUsdtApproveExecute();
+    } else {
+      approveExecute();
+    }
   };
 
   const tradeOnClick = () => {
@@ -1233,6 +1315,7 @@ function TradeWidgetWrapped({
               enableSearch={true}
               tokensLocked={tokensLocked}
               allowance={allowance}
+              batchEnabled={batchEnabled}
               onOriginTokenChange={(token: TokenForChain) => {
                 onWidgetStateChange?.({
                   originToken: token.symbol,

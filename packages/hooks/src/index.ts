@@ -60,6 +60,7 @@ export { useVpnCheck } from './authentication/useVpnCheck';
 // Tokens
 export { useTokenAllowance } from './tokens/useTokenAllowance';
 export { useApproveToken } from './tokens/useApproveToken';
+export { useBatchUsdtApprove } from './tokens/useBatchUsdtApprove';
 export { useTokens } from './tokens/useTokens';
 export { useTokenBalance, useTokenBalances, type TokenItem } from './tokens/useTokenBalance';
 export { useTokenChartInfo } from './tokens/useTokenChartInfo';

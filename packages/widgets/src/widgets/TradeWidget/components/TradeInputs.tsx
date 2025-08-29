@@ -51,6 +51,7 @@ type TradeInputsProps = {
   onOriginInputChange?: (val: bigint, userTriggered?: boolean) => void;
   enableSearch?: boolean;
   tokensLocked?: boolean;
+  batchEnabled?: boolean;
 };
 
 export function TradeInput(props: TokenInputProps) {
@@ -91,7 +92,8 @@ export function TradeInputs({
   onOriginInputChange,
   enableSearch = false,
   tokensLocked = false,
-  allowance
+  allowance,
+  batchEnabled = true
 }: TradeInputsProps) {
   const separationPx = 12;
   const separationMb = 'mb-[12px]';
@@ -299,6 +301,7 @@ export function TradeInputs({
           originToken={originToken}
           currentAllowance={allowance}
           neededAllowance={quoteData?.quote.sellAmountToSign}
+          batchEnabled={batchEnabled}
         />
       </motion.div>
       <motion.div variants={positionAnimations}>

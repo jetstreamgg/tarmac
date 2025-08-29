@@ -6,11 +6,13 @@ import { Info } from '@widgets/shared/components/icons/Info';
 export const TradeWarning = ({
   originToken,
   currentAllowance,
-  neededAllowance
+  neededAllowance,
+  batchEnabled = true
 }: {
   originToken?: TokenForChain;
   currentAllowance?: bigint;
   neededAllowance?: bigint;
+  batchEnabled?: boolean;
 }) => {
   const isUsdt = originToken?.symbol === 'USDT';
 
@@ -31,10 +33,15 @@ export const TradeWarning = ({
     <div className="ml-3 mt-2 flex items-start text-white">
       <Info className="mt-1 shrink-0" />
       <Text variant="small" className="ml-2 flex gap-2">
-        <Trans>
-          You will be asked to reset your allowance to 0. The USDT token requires this when approving a new
-          amount.
-        </Trans>
+        {batchEnabled ? (
+          <Trans>
+            USDT allowance will be reset to 0 then set to the required amount in a single batched transaction.
+          </Trans>
+        ) : (
+          <Trans>
+            USDT requires allowance reset. Please enable batch transactions to complete this trade.
+          </Trans>
+        )}
       </Text>
     </div>
   );
