@@ -29,7 +29,7 @@ export function TokenIcon({
       </AvatarFallback>
       {chainImageSrc && (
         <Avatar className={cn('absolute -right-px bottom-0 h-1/2 w-1/2')}>
-          <AvatarImage src={chainImageSrc} alt="chain-icon" className="h-full w-full" />
+          <AvatarImage src={chainImageSrc} className="h-full w-full" />
         </Avatar>
       )}
     </Avatar>
