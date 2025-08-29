@@ -143,6 +143,21 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
       [TENDERLY_CHAIN_ID]: '0x4e7991e5C547ce825BdEb665EE14a3274f9F61e0'
     }
   },
+  // stUSDS module
+  {
+    name: 'stUsds',
+    address: {
+      [mainnet.id]: '0x6c7df3575f1d69eb3b245a082937794794c2b82e',
+      [TENDERLY_CHAIN_ID]: '0x6c7df3575f1d69eb3b245a082937794794c2b82e'
+    }
+  },
+  {
+    name: 'stUsdsImplementation',
+    address: {
+      [mainnet.id]: '0x6c9a2f9a94770336403e69e9ea5d88c97ef3b78a',
+      [TENDERLY_CHAIN_ID]: '0x6c9a2f9a94770336403e69e9ea5d88c97ef3b78a'
+    }
+  },
   // Rewards module
   {
     name: 'usdsSkyReward',

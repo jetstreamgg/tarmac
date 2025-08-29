@@ -1,6 +1,6 @@
 {
   "name": "@jetstreamgg/sky-hooks",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -64,5 +64,12 @@
     "sky ecosystem"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jetstreamgg/tarmac"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

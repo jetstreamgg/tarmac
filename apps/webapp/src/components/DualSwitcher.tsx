@@ -4,10 +4,11 @@ import { NetworkSwitcher } from './NetworkSwitcher';
 import { ChatSwitcher } from './ChatSwitcher';
 import { JSX } from 'react';
 import { CHATBOT_ENABLED } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
-export function DualSwitcher(): JSX.Element {
+export function DualSwitcher({ className }: { className?: string }): JSX.Element {
   return (
-    <HStack className="items-start gap-4 space-x-0">
+    <HStack className={cn('items-start gap-4 space-x-0', className)}>
       <NetworkSwitcher />
       <HStack className="items-center space-x-0">
         <DetailsSwitcher />

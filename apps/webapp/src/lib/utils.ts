@@ -1,7 +1,7 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
-import { ALLOWED_EXTERNAL_DOMAINS, CHAIN_WIDGET_MAP, restrictedIntents } from './constants';
+import { ALLOWED_EXTERNAL_DOMAINS, CHAIN_WIDGET_MAP, IntentMapping, restrictedIntents } from './constants';
 import { Intent } from './enums';
 
 export function cn(...inputs: ClassValue[]) {
@@ -24,7 +24,20 @@ export function getFooterLinks(): { url: string; name: string }[] {
 }
 
 export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
-  return actions.filter(x => x.intent === intent || (x as LinkedAction)?.la === intent);
+  // For expert module intents (like 'stusds'), also include actions with la='expert'
+  const isExpertModuleIntent = ['stusds'].includes(intent);
+
+  return actions.filter(x => {
+    // Direct match on intent or linked action
+    if (x.intent === intent || (x as LinkedAction)?.la === intent) {
+      return true;
+    }
+    // For advanced module pages (stusds), show actions that lead to advanced modules
+    if (isExpertModuleIntent && (x as LinkedAction)?.la === IntentMapping[Intent.EXPERT_INTENT]) {
+      return true;
+    }
+    return false;
+  });
 }
 
 /**

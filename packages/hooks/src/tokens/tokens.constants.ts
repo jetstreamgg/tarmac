@@ -16,7 +16,8 @@ import {
   sUsdsL2Address,
   usdcL2Address,
   usdsL2Address,
-  spkConfig
+  spkConfig,
+  stUsdsAddress
 } from '../generated';
 import { TokenMapping, Token, TokenForChain } from './types';
 import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID, TENDERLY_ARBITRUM_CHAIN_ID } from '../constants';
@@ -174,6 +175,13 @@ export const TOKENS: TokenMapping = {
     name: 'Spark',
     symbol: 'SPK',
     color: '#FA5768',
+    decimals: 18
+  },
+  stusds: {
+    address: stUsdsAddress, // TODO: no stUsdsConfig for now as it comes from the wagmi etherscan plugin
+    name: 'stUSDS',
+    symbol: 'stUSDS',
+    color: '#EB5EDF',
     decimals: 18
   }
 };

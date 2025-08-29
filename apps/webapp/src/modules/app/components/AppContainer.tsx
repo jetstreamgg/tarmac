@@ -8,7 +8,7 @@ export function AppContainer({ children }: { children: React.ReactNode }): React
 
   return (
     <motion.main
-      className="scrollbar-hidden md:scrollbar-thin bg-container group flex h-screen min-w-[375px] max-w-[480px] flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] has-[.chat-pane]:w-full has-[.details-pane]:w-full md:my-auto md:max-h-[1080px] md:max-w-[1150px] md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pr-0.5 xl:max-w-[calc(100vw-128px)] 2xl:max-w-[1570px]"
+      className="scrollbar-hidden md:scrollbar-thin bg-container group flex h-dvh min-w-[375px] max-w-[480px] flex-col gap-1.5 overflow-y-auto overflow-x-hidden rounded-t-3xl border bg-blend-overlay backdrop-blur-[50px] has-[.chat-pane]:w-full has-[.details-pane]:w-full md:my-auto md:h-[calc(100dvh-70px)] md:max-w-[1150px] md:flex-row md:overflow-hidden md:rounded-3xl md:p-3 md:pl-[10px] md:pr-0.5 xl:max-h-[1080px] xl:max-w-[calc(100vw-128px)] 2xl:max-w-[1570px]"
       layout
       // This style block is needed so the border radius is not distorted when applying the layout transition
       style={

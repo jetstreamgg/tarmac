@@ -1,5 +1,5 @@
-import { RewardsModule, Savings, Trade, Upgrade, Seal } from '@/modules/icons';
-import { Intent } from './enums';
+import { RewardsModule, Savings, Trade, Upgrade, Seal, Expert } from '@/modules/icons';
+import { ExpertIntent, Intent } from './enums';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 import { base, mainnet, sepolia, arbitrum, unichain, optimism } from 'viem/chains';
@@ -21,7 +21,8 @@ export enum QueryParams {
   Reset = 'reset',
   Flow = 'flow',
   StakeTab = 'stake_tab',
-  SealTab = 'seal_tab'
+  SealTab = 'seal_tab',
+  ExpertModule = 'expert_module'
 }
 
 const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
@@ -38,7 +39,12 @@ export const IntentMapping = {
   [Intent.SAVINGS_INTENT]: 'savings',
   [Intent.REWARDS_INTENT]: 'rewards',
   [Intent.SEAL_INTENT]: 'seal',
-  [Intent.STAKE_INTENT]: 'stake'
+  [Intent.STAKE_INTENT]: 'stake',
+  [Intent.EXPERT_INTENT]: 'expert'
+};
+
+export const ExpertIntentMapping: Record<ExpertIntent, string> = {
+  [ExpertIntent.STUSDS_INTENT]: 'stusds'
 };
 
 export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
@@ -49,7 +55,8 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.UPGRADE_INTENT,
     Intent.TRADE_INTENT,
     Intent.SEAL_INTENT,
-    Intent.STAKE_INTENT
+    Intent.STAKE_INTENT,
+    Intent.EXPERT_INTENT
   ],
   [tenderly.id]: [
     Intent.BALANCES_INTENT,
@@ -57,7 +64,8 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.SAVINGS_INTENT,
     Intent.UPGRADE_INTENT,
     Intent.SEAL_INTENT,
-    Intent.STAKE_INTENT
+    Intent.STAKE_INTENT,
+    Intent.EXPERT_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.REWARDS_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.REWARDS_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
@@ -92,15 +100,27 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   trade: msg`trade`,
   upgrade: msg`upgrade`,
   savings: msg`savings`,
+  stusds: msg`stusds`,
   rewards: msg`rewards`,
   balances: msg`balances`,
   seal: msg`seal`,
   stake: msg`stake`
 };
 
+export const EXPERT_WIDGET_OPTIONS: {
+  id: ExpertIntent;
+  name: string;
+}[] = [
+  {
+    id: ExpertIntent.STUSDS_INTENT,
+    name: 'stUSDS'
+  }
+];
+
 export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.REWARDS_INTENT],
-  IntentMapping[Intent.SAVINGS_INTENT]
+  IntentMapping[Intent.SAVINGS_INTENT],
+  IntentMapping[Intent.EXPERT_INTENT]
 ];
 
 const AvailableIntentMapping = Object.entries(IntentMapping).reduce(
@@ -133,7 +153,8 @@ export const linkedActionMetadata = {
   [IntentMapping[Intent.SAVINGS_INTENT]]: { text: 'Access Savings', icon: Savings },
   [IntentMapping[Intent.REWARDS_INTENT]]: { text: 'Get Rewards', icon: RewardsModule },
   [IntentMapping[Intent.SEAL_INTENT]]: { text: 'Seal', icon: Seal },
-  [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Activate', icon: Seal }
+  [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Activate', icon: Seal },
+  [IntentMapping[Intent.EXPERT_INTENT]]: { text: 'Expert Modules', icon: Expert }
 };
 
 export const ALLOWED_EXTERNAL_DOMAINS = [
@@ -173,7 +194,7 @@ export const STAGING_URL_SKY_SUBGRAPH_UNICHAIN =
 export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
 export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');
 export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHAT_SUGGESTIONS_ENABLED === 'true';
-export const ADVANCED_CHAT_ENABLED = import.meta.env.VITE_ADVANCED_CHAT_ENABLED === 'true';
+export const EXPERT_CHAT_ENABLED = import.meta.env.VITE_EXPERT_CHAT_ENABLED === 'true';
 export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =

@@ -18,6 +18,41 @@ export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
 export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
 export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
 
+// stUSDS
+export {
+  useStUsdsData,
+  useStUsdsDeposit,
+  useBatchStUsdsDeposit,
+  useStUsdsWithdraw,
+  useStUsdsAllowance,
+  useStUsdsApprove,
+  useStUsdsConvertToShares,
+  useStUsdsConvertToAssets,
+  useStUsdsPreviewDeposit,
+  useStUsdsPreviewWithdraw,
+  useStUsdsRateData,
+  useStUsdsCapacityData,
+  useStUsdsHistory
+} from './stusds';
+
+export type {
+  StUsdsHookData,
+  StUsdsHook,
+  StUsdsAllowanceHookResponse,
+  StUsdsConvertToSharesHookResponse,
+  StUsdsConvertToAssetsHookResponse,
+  StUsdsPreviewDepositHookResponse,
+  StUsdsPreviewWithdrawHookResponse,
+  StUsdsRateData,
+  StUsdsRateDataHook,
+  StUsdsCapacityData,
+  StUsdsCapacityDataHook,
+  StUsdsHistoryHook,
+  StUsdsHistoryItem,
+  StUsdsVaultMetrics,
+  StUsdsUserMetrics
+} from './stusds';
+
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';
@@ -77,6 +112,7 @@ export { useMkrSkyApprove } from './upgrade/useMkrSkyApprove';
 export { useUpgradeHistory } from './upgrade/useUpgradeHistory';
 export { useUpgradeTotals } from './upgrade/useUpgradeTotals';
 export { useMkrSkyFee } from './upgrade/useMkrSkyFee';
+export { useMigrationStats } from './upgrade/useMigrationStats';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';
@@ -255,6 +291,7 @@ export {
   stakeModuleAddress,
   usdcL2Address,
   usdsL2Address,
+  stUsdsAddress,
   sUsdsL2Address,
   psm3L2Address,
   useReadPsm3L2ConvertToShares,

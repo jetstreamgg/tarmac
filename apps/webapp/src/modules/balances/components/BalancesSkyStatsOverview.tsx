@@ -1,5 +1,5 @@
-import { UpgradedDaiToUsds } from '@/modules/upgrade/components/UpgradedDaiToUsds';
-import { UpgradedMkrToSky } from '@/modules/upgrade/components/UpgradedMkrToSky';
+import { MkrUpgradedToSky } from '@/modules/upgrade/components/MkrUpgradedToSky';
+import { MkrUpgradedPercentage } from '@/modules/upgrade/components/MkrUpgradedPercentage';
 import { RewardsSuppliersCard } from '@/modules/rewards/components/RewardsSuppliersCard';
 import { SavingsRateCard } from '@/modules/savings/components/SavingsRateCard';
 import { SkySavingsRatePoolCard } from '@/modules/savings/components/SkySavingsRatePoolCard';
@@ -25,10 +25,10 @@ export function BalancesSkyStatsOverview(): React.ReactElement {
         </div>
       )}
       <div className="min-w-[250px] flex-1">
-        <UpgradedMkrToSky />
+        <MkrUpgradedToSky />
       </div>
       <div className="min-w-[250px] flex-1">
-        <UpgradedDaiToUsds />
+        <MkrUpgradedPercentage />
       </div>
       {!isRestricted && (
         <div className="min-w-[250px] flex-1">

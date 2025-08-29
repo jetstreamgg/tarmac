@@ -1,5 +1,5 @@
-import { UpgradedMkrToSky } from './UpgradedMkrToSky';
-import { UpgradedDaiToUsds } from './UpgradedDaiToUsds';
+import { MkrUpgradedToSky } from './MkrUpgradedToSky';
+import { MkrUpgradedPercentage } from './MkrUpgradedPercentage';
 
 export function UpgradeStats() {
   return (
@@ -7,8 +7,8 @@ export function UpgradeStats() {
       data-testid="upgrade-stats-details"
       className="flex w-full flex-wrap justify-between gap-3 xl:flex-nowrap"
     >
-      <UpgradedDaiToUsds />
-      <UpgradedMkrToSky />
+      <MkrUpgradedToSky />
+      <MkrUpgradedPercentage />
     </div>
   );
 }

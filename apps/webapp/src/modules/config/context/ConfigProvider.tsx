@@ -2,7 +2,7 @@ import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } fr
 import { UserConfig } from '../types/user-config';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
-import { Intent } from '@/lib/enums';
+import { ExpertIntent, Intent } from '@/lib/enums';
 import { dynamicActivate } from '@jetstreamgg/sky-utils';
 import { i18n } from '@lingui/core';
 import {
@@ -22,6 +22,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   const [linkedActionConfig, setLinkedActionConfig] = useState(defaultLinkedActionConfig);
   const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
   const [externalLinkModalUrl, setExternalLinkModalUrl] = useState('');
+  const [selectedExpertOption, setSelectedExpertOption] = useState<ExpertIntent | undefined>(undefined);
 
   // Check the user settings on load, and set locale
   useEffect(() => {
@@ -41,7 +42,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         locale: 'en',
         batchEnabled:
           // If the feature flag is enabled, but the local storage item is not set, default to enabled
-          import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined
+          import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
+        expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false
       });
     } catch (e) {
       console.log('Error parsing user settings', e);
@@ -103,6 +105,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     [setExternalLinkModalUrl, setExternalLinkModalOpened]
   );
 
+  const setExpertRiskDisclaimerShown = (shown: boolean) => {
+    updateUserConfig({
+      ...userConfig,
+      expertRiskDisclaimerShown: shown
+    });
+  };
+
   return (
     <ConfigContext.Provider
       value={{
@@ -125,7 +134,11 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         setExternalLinkModalOpened,
         externalLinkModalUrl,
         setExternalLinkModalUrl,
-        onExternalLinkClicked
+        onExternalLinkClicked,
+        selectedExpertOption,
+        setSelectedExpertOption,
+        expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
+        setExpertRiskDisclaimerShown
       }}
     >
       {children}

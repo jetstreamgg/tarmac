@@ -7,7 +7,9 @@ import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { TOKENS } from '@jetstreamgg/sky-hooks';
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 import { useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, formatYsrAsApy } from '@jetstreamgg/sky-utils';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useStUsdsData } from '@jetstreamgg/sky-hooks';
 
 // TODO export PairTokenIcons from widgets?
 // import { PairTokenIcons } from '@widgets/shared/components/ui/token/PairTokenIcon';
@@ -139,4 +141,40 @@ export function RewardsRate({
       )}
     </LoadingErrorWrapper>
   );
+}
+
+export function AdvancedRate({ expertModule }: { expertModule?: string }) {
+  const { linkedActionConfig } = useConfigContext();
+  const module = expertModule || linkedActionConfig?.expertModule;
+  const { data: stUsdsData } = useStUsdsData();
+  const moduleRate = stUsdsData?.moduleRate || 0n;
+  const formattedRate = moduleRate > 0n ? formatYsrAsApy(moduleRate) : '0.00%';
+
+  const moduleConfigs: Record<string, { inputToken: string; outputToken: string; rateType: string }> = {
+    stusds: { inputToken: 'USDS', outputToken: 'stUSDS', rateType: 'stusds' }
+    // Future modules can be added here:
+    // someModule: { inputToken: 'TOKEN1', outputToken: 'TOKEN2', rateType: 'type' }
+  };
+
+  const config = module ? moduleConfigs[module] : null;
+
+  if (config) {
+    return (
+      <VStack>
+        <div className="flex items-center gap-2">
+          <PairTokenIcons leftToken={config.inputToken} rightToken={config.outputToken} />
+          <Text variant="medium" className="text-white/80">
+            With: {config.inputToken} Get: {config.outputToken}
+          </Text>
+        </div>
+        <div className="flex items-center gap-2">
+          <Heading className="text-[32px]">Rate: {formattedRate}</Heading>
+          <PopoverInfo type={config.rateType as any} />
+        </div>
+      </VStack>
+    );
+  }
+
+  // No valid module, don't show anything
+  return <></>;
 }

@@ -129,8 +129,11 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       const reward = linkedActionConfig.rewardContract
         ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}`
         : '';
+      const expertModule = linkedActionConfig.expertModule
+        ? `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}`
+        : '';
       setCustomHref(
-        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}`
+        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}${expertModule}`
       );
       setCustomNavLabel(`Go to ${capitalizeFirstLetter(linkedActionConfig.linkedAction)}`);
     } else {
@@ -151,6 +154,10 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
 
   const Widget = isL2 ? L2TradeWidget : TradeWidget;
 
+  const shouldLockTokens =
+    linkedActionConfig.showLinkedAction &&
+    !!linkedActionConfig.sourceToken &&
+    !!linkedActionConfig.targetToken;
   return (
     <Widget
       key={externalWidgetState.timestamp}
@@ -173,6 +180,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       )}
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
+      tokensLocked={shouldLockTokens}
     />
   );
 }

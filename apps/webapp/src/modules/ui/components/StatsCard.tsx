@@ -9,12 +9,14 @@ interface StatsCardProps {
   isLoading?: boolean;
   error?: Error | null;
   visible?: boolean;
+  className?: string;
 }
 
-export function StatsCard({ title, content, isLoading, error, visible = true }: StatsCardProps) {
+export function StatsCard({ title, content, isLoading, error, visible = true, className }: StatsCardProps) {
   if (!visible) return null;
   return (
     <BaseStatsCard
+      className={className}
       title={title}
       content={
         <LoadingErrorWrapper
@@ -34,9 +36,9 @@ export function StatsCard({ title, content, isLoading, error, visible = true }: 
   );
 }
 
-function BaseStatsCard({ title, content }: StatsCardProps): React.ReactElement {
+function BaseStatsCard({ title, content, className }: StatsCardProps): React.ReactElement {
   return (
-    <Card variant="stats">
+    <Card variant="stats" className={className}>
       <CardTitle>{title}</CardTitle>
       <CardContent>{content}</CardContent>
     </Card>

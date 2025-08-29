@@ -12,3 +12,20 @@ export type SharedProps = {
   shouldReset: boolean;
   legalBatchTxUrl: string;
 };
+
+export type WidgetItem = [
+  Intent,
+  string,
+  (props: IconProps) => React.ReactNode,
+  React.ReactNode | null,
+  boolean,
+  { disabled?: boolean }?,
+  string? // description for tooltip
+];
+
+export type WidgetGroup = {
+  id: string;
+  items: WidgetItem[];
+};
+
+export type WidgetContent = WidgetGroup[];
