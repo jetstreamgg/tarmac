@@ -32,7 +32,6 @@ import { getSupportedChainIds, getMainnetChainName } from '@/data/wagmi/config/c
 import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
-import { isIntentAllowed } from '@/lib/utils';
 import { WidgetContent, WidgetItem } from '../types/Widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
@@ -242,16 +241,12 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     return () => clearTimeout(timer); // cleanup
   }, [searchParams, setSearchParams]);
 
-  // Filter widget groups to only include allowed intents
-  const filteredWidgetContent: WidgetContent = widgetContent
-    .map(group => ({
-      ...group,
-      items: group.items.filter(([widgetIntent]) => isIntentAllowed(widgetIntent, chainId))
-    }))
-    .filter(group => group.items.length > 0);
+  // Show all widget items regardless of network for better discoverability
+  // Auto-switching will be handled in WidgetNavigation
+  const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
   return (
-    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent}>
+    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent} currentChainId={chainId}>
       {children}
     </WidgetNavigation>
   );

@@ -10,6 +10,9 @@ import { cardAnimations } from '@/modules/ui/animation/presets';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
+import { requiresMainnet } from '@/lib/widget-network-map';
+import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
@@ -31,13 +34,15 @@ interface WidgetNavigationProps {
   intent?: Intent;
   children?: React.ReactNode;
   hideTabs?: boolean;
+  currentChainId?: number;
 }
 
 export function WidgetNavigation({
   widgetContent,
   intent,
   children,
-  hideTabs
+  hideTabs,
+  currentChainId
 }: WidgetNavigationProps): JSX.Element {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
@@ -55,24 +60,41 @@ export function WidgetNavigation({
   const [, setSearchParams] = useSearchParams();
 
   const handleWidgetChange = (value: string) => {
-    const queryParam = mapIntentToQueryParam(value as Intent);
+    const targetIntent = value as Intent;
+    const queryParam = mapIntentToQueryParam(targetIntent);
 
-    setSearchParams(prevParams => {
-      // delete the query params when we navigate to a different widget by tab click
-      const searchParams = deleteSearchParams(prevParams);
+    // Check if we need to switch networks
+    if (currentChainId && requiresMainnet(targetIntent) && isL2ChainId(currentChainId)) {
+      // Auto-switch to mainnet
+      setSearchParams(prevParams => {
+        const searchParams = deleteSearchParams(prevParams);
+        // Set network to Ethereum mainnet
+        searchParams.set(QueryParams.Network, normalizeUrlParam('Ethereum'));
+        searchParams.set(QueryParams.Widget, queryParam);
 
-      // set the new widget parameter
-      searchParams.set(QueryParams.Widget, queryParam);
-
-      // I think this part needs to move too
-      if (value === Intent.REWARDS_INTENT) {
-        if (selectedRewardContract?.contractAddress)
+        // Handle rewards-specific params
+        if (targetIntent === Intent.REWARDS_INTENT && selectedRewardContract?.contractAddress) {
           searchParams.set(QueryParams.Reward, selectedRewardContract.contractAddress);
-      } else {
-        searchParams.delete(QueryParams.Reward);
-      }
-      return searchParams;
-    });
+        }
+
+        return searchParams;
+      });
+    } else {
+      // Normal widget change without network switch
+      setSearchParams(prevParams => {
+        const searchParams = deleteSearchParams(prevParams);
+        searchParams.set(QueryParams.Widget, queryParam);
+
+        // Handle rewards-specific params
+        if (targetIntent === Intent.REWARDS_INTENT) {
+          if (selectedRewardContract?.contractAddress)
+            searchParams.set(QueryParams.Reward, selectedRewardContract.contractAddress);
+        } else {
+          searchParams.delete(QueryParams.Reward);
+        }
+        return searchParams;
+      });
+    }
   };
 
   useEffect(() => {

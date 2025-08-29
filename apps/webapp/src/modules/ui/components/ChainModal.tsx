@@ -43,7 +43,8 @@ export function ChainModal({
   variant = 'default',
   dataTestId = 'chain-modal-trigger',
   children,
-  nextIntent
+  nextIntent,
+  disabled = false
 }: {
   showLabel?: boolean;
   showDropdownIcon?: boolean;
@@ -51,6 +52,7 @@ export function ChainModal({
   dataTestId?: string;
   children?: React.ReactNode;
   nextIntent?: Intent;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const chainId = useChainId();
@@ -65,8 +67,8 @@ export function ChainModal({
   } = useChainModalContext();
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Dialog open={open} onOpenChange={disabled ? undefined : setOpen}>
+      <DialogTrigger asChild disabled={disabled}>
         {variant === ChainModalVariant.wrapper ? (
           <button className="h-full w-full">{children}</button>
         ) : (
