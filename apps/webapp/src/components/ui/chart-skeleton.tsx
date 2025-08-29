@@ -6,7 +6,7 @@ const path =
 
 function ChartSkeleton() {
   return (
-    <svg width="876" height="167" viewBox="0 0 876 167" fill="none">
+    <svg width="100%" height="167" viewBox="0 0 876 167" fill="none" preserveAspectRatio="none">
       <path
         d={path}
         stroke="url(#paint0_linear_5613_46096)"
