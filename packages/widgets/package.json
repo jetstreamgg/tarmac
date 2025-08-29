@@ -79,9 +79,9 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "5.9.2",
     "viem": "^2.33.2",
-    "vite": "^6.3.5",
+    "vite": "^7.0.0",
     "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-static-copy": "^2.3.2",
+    "vite-plugin-static-copy": "^3.1.1",
     "vitest": "^3.2.4",
     "vitest-canvas-mock": "^0.3.3",
     "wagmi": "^2.16.1"
