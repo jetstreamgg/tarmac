@@ -1,14 +1,9 @@
 import { http, WalletRpcSchema, EIP1193Parameters } from 'viem';
 import { createConfig, createConnector, createStorage, noopStorage } from 'wagmi';
-import {
-  getTestTenderlyChains,
-  TENDERLY_ARBITRUM_CHAIN_ID,
-  TENDERLY_BASE_CHAIN_ID,
-  TENDERLY_CHAIN_ID
-} from './testTenderlyChain';
+import { getTestTenderlyChains, TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from './testTenderlyChain';
 import { mock, MockParameters } from 'wagmi/connectors';
 import { TEST_WALLET_ADDRESSES } from '@/test/e2e/utils/testWallets';
-import { optimism, unichain } from 'viem/chains';
+import { arbitrum, optimism, unichain } from 'viem/chains';
 
 const [tenderlyMainnet, tenderlyBase, tenderlyArbitrum, tenderlyOptimism, tenderlyUnichain] =
   getTestTenderlyChains();
@@ -33,7 +28,7 @@ function extendedMock(params: MockParameters) {
                     // Add capabilities for different chains
                     [TENDERLY_CHAIN_ID]: { atomic: { status: 'supported' } },
                     [TENDERLY_BASE_CHAIN_ID]: { atomic: { status: 'supported' } },
-                    [TENDERLY_ARBITRUM_CHAIN_ID]: { atomic: { status: 'supported' } },
+                    [arbitrum.id]: { atomic: { status: 'supported' } },
                     [optimism.id]: { atomic: { status: 'supported' } },
                     [unichain.id]: { atomic: { status: 'supported' } }
                   };
@@ -106,7 +101,7 @@ export const mockWagmiConfig = createConfig({
   transports: {
     [tenderlyMainnet.id]: http(),
     [tenderlyBase.id]: http(),
-    [tenderlyArbitrum.id]: http(),
+    [arbitrum.id]: http(),
     [optimism.id]: http(),
     [unichain.id]: http()
   },

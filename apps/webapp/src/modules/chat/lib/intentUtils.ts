@@ -3,7 +3,7 @@ import { CHATBOT_USE_TESTNET_NETWORK_NAME, COMING_SOON_MAP, QueryParams } from '
 import { ChatIntent } from '../types/Chat';
 import { Intent } from '@/lib/enums';
 import { isIntentAllowed } from '@/lib/utils';
-import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
+import { tenderly, tenderlyBase } from '@/data/wagmi/config/config.default';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const networkMapping = {
@@ -23,7 +23,6 @@ export const chainIdNameMapping = {
   [arbitrum.id]: 'arbitrumone',
   [tenderly.id]: 'ethereum',
   [tenderlyBase.id]: 'base',
-  [tenderlyArbitrum.id]: 'arbitrumone',
   [unichain.id]: 'unichain',
   [optimism.id]: 'optimism'
 } as const;
@@ -34,7 +33,6 @@ export const testnetNameMapping = {
   [normalizeUrlParam(arbitrum.name)]: normalizeUrlParam(arbitrum.name),
   [normalizeUrlParam(tenderly.name)]: normalizeUrlParam(mainnet.name),
   [normalizeUrlParam(tenderlyBase.name)]: normalizeUrlParam(base.name),
-  [normalizeUrlParam(tenderlyArbitrum.name)]: normalizeUrlParam(arbitrum.name),
   [normalizeUrlParam(unichain.name)]: normalizeUrlParam(unichain.name),
   [normalizeUrlParam(optimism.name)]: normalizeUrlParam(optimism.name)
 } as const;
@@ -116,7 +114,6 @@ export const processNetworkNameInUrl = (url: string): string => {
     const networkMappings = {
       [normalizeUrlParam(mainnet.name)]: tenderly.name,
       [normalizeUrlParam(base.name)]: tenderlyBase.name,
-      [normalizeUrlParam(arbitrum.name)]: tenderlyArbitrum.name,
       [normalizeUrlParam(unichain.name)]: normalizeUrlParam(unichain.name), // Uni and OP have no testnet
       [normalizeUrlParam(optimism.name)]: normalizeUrlParam(optimism.name)
     } as const;

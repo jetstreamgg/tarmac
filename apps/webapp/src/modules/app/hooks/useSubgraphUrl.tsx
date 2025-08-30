@@ -7,7 +7,6 @@ import {
   PROD_URL_SKY_SUBGRAPH_BASE,
   PROD_URL_SKY_SUBGRAPH_ARBITRUM,
   STAGING_URL_SKY_SUBGRAPH_ARBITRUM,
-  STAGING_URL_SKY_SUBGRAPH_ARBITRUM_TENDERLY,
   PROD_URL_SKY_SUBGRAPH_UNICHAIN,
   PROD_URL_SKY_SUBGRAPH_OPTIMISM,
   STAGING_URL_SKY_SUBGRAPH_OPTIMISM,
@@ -16,7 +15,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useChainId } from 'wagmi';
 import { mainnet, base, arbitrum, unichain, optimism } from 'viem/chains';
-import { tenderly, tenderlyArbitrum, tenderlyBase } from '@/data/wagmi/config/config.default';
+import { tenderly, tenderlyBase } from '@/data/wagmi/config/config.default';
 
 export function useSubgraphUrl(overrideChainId?: number) {
   const connectedChainId = useChainId();
@@ -43,9 +42,6 @@ export function useSubgraphUrl(overrideChainId?: number) {
           break;
         case tenderlyBase.id:
           setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_BASE_TENDERLY);
-          break;
-        case tenderlyArbitrum.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_ARBITRUM_TENDERLY);
           break;
         case tenderly.id:
           setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_TESTNET);

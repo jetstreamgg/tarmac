@@ -7,7 +7,7 @@ import { MainnetChain, BaseChain, ArbitrumChain, Close, OptimismChain, UnichainC
 import { cn } from '@/lib/utils';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
 import { ChevronDown } from 'lucide-react';
-import { tenderlyBase, tenderlyArbitrum } from '@/data/wagmi/config/config.default';
+import { tenderlyBase } from '@/data/wagmi/config/config.default';
 import { useState } from 'react';
 import { Intent } from '@/lib/enums';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
@@ -27,7 +27,7 @@ enum ChainModalVariant {
 const getChainIcon = (chainId: number, className?: string) =>
   [base.id, tenderlyBase.id].includes(chainId) ? (
     <BaseChain className={className} />
-  ) : [arbitrum.id, tenderlyArbitrum.id].includes(chainId) ? (
+  ) : arbitrum.id === chainId ? (
     <ArbitrumChain className={className} />
   ) : chainId === optimism.id ? (
     <OptimismChain className={className} />

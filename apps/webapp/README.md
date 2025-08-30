@@ -35,7 +35,6 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_RPC_PROVIDER_BASE`: URL for the Base RPC provider
 - `VITE_RPC_PROVIDER_TENDERLY_BASE`: URL for the Tenderly Base RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_ARBITRUM`: URL for the Arbitrum RPC provider
-- `VITE_RPC_PROVIDER_TENDERLY_ARBITRUM`: URL for the Tenderly Arbitrum RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_OPTIMISM`: URL for the Optimism RPC provider
 - `VITE_RPC_PROVIDER_UNICHAIN`: URL for the Unichain provider
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production

@@ -9,7 +9,7 @@ import { UnichainChain } from './icons/UnichainChain';
 export const getChainIcon = (chainId: number, className?: string) =>
   chainId === chainIdMap.base || chainId === chainIdMap.tenderlyBase ? (
     <BaseChain className={className} />
-  ) : chainId === chainIdMap.arbitrum || chainId === chainIdMap.tenderlyArbitrum ? (
+  ) : chainId === chainIdMap.arbitrum ? (
     <ArbitrumChain className={className} />
   ) : chainId === chainIdMap.optimism ? (
     <OptimismChain className={className} />
