@@ -1,36 +1,13 @@
 import { TransactionTypeEnum, ModuleEnum } from '@jetstreamgg/sky-hooks';
-import {
-  isBaseChainId,
-  isArbitrumChainId,
-  isOptimismChainId,
-  isUnichainChainId
-} from '@jetstreamgg/sky-utils';
 
 export const getHistoryIconSource = ({
   type,
-  module,
-  chainId
+  module
 }: {
   type?: TransactionTypeEnum;
   module: ModuleEnum;
-  chainId: number;
 }) => {
-  const isBase = isBaseChainId(chainId);
-  const isArbitrum = isArbitrumChainId(chainId);
-  const isOptimism = isOptimismChainId(chainId);
-  const isUnichain = isUnichainChainId(chainId);
-
-  const src =
-    'history-icons/' +
-    (isBase
-      ? 'base/'
-      : isArbitrum
-        ? 'arbitrum/'
-        : isOptimism
-          ? 'optimism/'
-          : isUnichain
-            ? 'unichain/'
-            : 'ethereum/');
+  const src = 'history-icons/';
   switch (module) {
     case ModuleEnum.SAVINGS:
     case ModuleEnum.STUSDS:

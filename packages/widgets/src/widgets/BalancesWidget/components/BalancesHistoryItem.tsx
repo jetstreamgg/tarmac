@@ -17,6 +17,7 @@ import { getHistoryRightText } from '../lib/getHistoryRightText';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Avatar, AvatarImage } from '@widgets/components/ui/avatar';
 import { Skeleton } from '@widgets/components/ui/skeleton';
+import { useChainImage } from '@widgets/shared/hooks/useChainImage';
 
 interface BalancesHistoryItemProps {
   transactionHash: string;
@@ -58,7 +59,9 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
 
   const explorerName = getExplorerName(chainId || 1, false);
   const positive = getPositive({ type });
-  const iconSrc = getHistoryIconSource({ type, module, chainId: chainId || 1 });
+  const iconSrc = getHistoryIconSource({ type, module });
+  const chainImageSrc = useChainImage(chainId || 1);
+
   return (
     <ExternalLink
       href={href}
@@ -75,8 +78,15 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
       >
         <div className="flex items-center">
           <div className="mr-3">
-            <Avatar className="bg-transparent">
-              <AvatarImage src={iconSrc} alt={getTitle({ type, module })} />
+            <Avatar className="relative">
+              <div className="bg-textSecondary/25 mt-0.5 flex h-8 w-8 items-center justify-center rounded-full">
+                <AvatarImage src={iconSrc} alt={getTitle({ type, module })} className="h-4 w-4" />
+              </div>
+              {chainImageSrc && (
+                <Avatar className="absolute bottom-0.5 right-0 h-[40%] w-[40%]">
+                  <AvatarImage src={chainImageSrc} alt="chain-icon" className="h-full w-full" />
+                </Avatar>
+              )}
             </Avatar>
           </div>
           <div className="flex w-full items-center justify-between">
