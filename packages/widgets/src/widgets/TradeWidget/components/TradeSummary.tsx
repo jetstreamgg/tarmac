@@ -196,14 +196,33 @@ export function TradeSummary({
             <CardFooter className="border-selectActive mt-4 border-t pt-5">
               <div className="w-full">
                 <HStack className="w-full items-center justify-between">
-                  <Text className="text-[13px]">Bundle transactions</Text>
+                  <HStack className="flex-wrap gap-1 space-x-0">
+                    <HStack className="gap-1 space-x-0">
+                      <Text className="text-[13px]">Bundle transactions</Text>
+                      <InfoTooltip
+                        contentClassname="max-w-[350px]"
+                        iconClassName="text-[13px]"
+                        content={
+                          <>
+                            <Text className="text-[13px]">Bundle transactions</Text>
+                            <Text className="text-[13px] text-white/60">
+                              Bundled transactions are set &apos;on&apos; by default to complete transactions
+                              in a single step. Combining actions improves the user experience and reduces gas
+                              fees. Manually toggle off to cancel this feature.
+                            </Text>
+                          </>
+                        }
+                      />
+                    </HStack>
+                    <Text className="text-textSecondary text-[13px]">(toggled on by default)</Text>
+                  </HStack>
                   <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} />
                 </HStack>
                 <Text className={`mt-2 text-[13px] ${batchEnabled ? 'text-white/60' : 'text-error'}`}>
                   {batchEnabled ? (
                     <Trans>
                       USDT allowance will be reset to 0 and then set to the required amount in a single
-                      bundled transaction.
+                      bundled transaction. Then you will sign to complete the trade.
                     </Trans>
                   ) : (
                     <Trans>
