@@ -49,6 +49,7 @@ export function TradeSummary({
     isUsdt &&
     allowance !== undefined &&
     quoteData.quote.sellAmountToSign !== undefined &&
+    quoteData.quote.sellAmountToSign > 0n &&
     allowance > 0n &&
     allowance < quoteData.quote.sellAmountToSign;
 
