@@ -151,6 +151,8 @@ export function WidgetNavigation({
             <SheetContent
               side="left"
               className="border-borderPrimary w-[280px] bg-black/10 p-0 backdrop-blur-xl"
+              closeButtonClassName="text-white"
+              closeIconClassName="size-[22px]"
             >
               <div className="flex h-full flex-col">
                 <div className="p-6 pb-4">
