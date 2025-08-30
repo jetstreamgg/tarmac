@@ -24,7 +24,9 @@ import {
   TokenForChain,
   getTokenDecimals,
   useCreatePreSignTradeOrder,
-  useOnChainCancelOrder
+  useOnChainCancelOrder,
+  useBatchUsdtApprove,
+  gpv2VaultRelayerAddress
 } from '@jetstreamgg/sky-hooks';
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
@@ -45,7 +47,7 @@ import { TradeInputs } from './components/TradeInputs';
 import { getAllowedTargetTokens, getQuoteErrorForType, verifySlippage } from './lib/utils';
 import { defaultConfig } from '@widgets/config/default-config';
 import { useLingui } from '@lingui/react';
-import { TradeHeader, TradeSubHeader, TradePoweredBy, TradeWarning } from './components/TradeHeader';
+import { TradeHeader, TradeSubHeader, TradePoweredBy } from './components/TradeHeader';
 import { formatUnits, parseUnits } from 'viem';
 import { getValidatedState } from '@widgets/lib/utils';
 import { TradeSummary } from './components/TradeSummary';
@@ -64,6 +66,8 @@ export type TradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
   tokensLocked?: boolean;
+  batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 function TradeWidgetWrapped({
@@ -81,13 +85,20 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   enabled = true,
-  tokensLocked = false
+  tokensLocked = false,
+  batchEnabled: initialBatchEnabled = true,
+  setBatchEnabled: externalSetBatchEnabled
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const [tradeAnyway, setTradeAnyway] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [ethFlowTxStatus, setEthFlowTxStatus] = useState<EthFlowTxStatus>(EthFlowTxStatus.IDLE);
+  const [internalBatchEnabled, setInternalBatchEnabled] = useState(initialBatchEnabled);
+
+  // Use external setter if provided, otherwise use internal state
+  const batchEnabled = externalSetBatchEnabled ? initialBatchEnabled : internalBatchEnabled;
+  const setBatchEnabled = externalSetBatchEnabled || setInternalBatchEnabled;
   const validatedExternalState = getValidatedState(externalWidgetState);
 
   useEffect(() => {
@@ -294,6 +305,68 @@ function TradeWidgetWrapped({
     !originToken.isNative &&
     !!(!allowance || allowance < quoteData.quote.sellAmountToSign);
 
+  // Check if this is USDT and needs allowance reset
+  const isUsdt = originToken?.symbol === 'USDT';
+  const needsUsdtReset =
+    isUsdt &&
+    allowance !== undefined &&
+    quoteData?.quote.sellAmountToSign !== undefined &&
+    allowance > 0n &&
+    allowance < quoteData.quote.sellAmountToSign;
+
+  // Get the trade spender address (same as used in useTradeApprove)
+  const tradeSpenderAddress = useMemo(() => {
+    return gpv2VaultRelayerAddress[chainId as keyof typeof gpv2VaultRelayerAddress];
+  }, [chainId]);
+
+  // Use batched USDT approve for USDT tokens that need reset
+  const {
+    execute: batchUsdtApproveExecute,
+    prepared: batchUsdtApprovePrepared,
+    isLoading: batchUsdtApproveIsLoading,
+    error: batchUsdtApproveError
+  } = useBatchUsdtApprove({
+    tokenAddress: originTokenAddress,
+    spender: tradeSpenderAddress,
+    amount: quoteData?.quote.sellAmountToSign,
+    shouldUseBatch: batchEnabled,
+    onStart: () => {
+      setTxStatus(TxStatus.LOADING);
+      onWidgetStateChange?.({ widgetState, txStatus: TxStatus.LOADING });
+    },
+    onSuccess: (hash: string | undefined) => {
+      onNotification?.({
+        title: t`Approve successful`,
+        description: t`You approved ${originToken?.symbol ?? ''}`,
+        status: TxStatus.SUCCESS
+      });
+      setTxStatus(TxStatus.SUCCESS);
+      mutateAllowance();
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+      }
+    },
+    onError: (error: Error, hash: string | undefined) => {
+      onNotification?.({
+        title: t`Approval failed`,
+        description: t`We could not approve your token allowance.`,
+        status: TxStatus.ERROR
+      });
+      setTxStatus(TxStatus.ERROR);
+      mutateAllowance();
+      onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
+      console.log(error);
+    },
+    enabled:
+      needsUsdtReset &&
+      widgetState.action === TradeAction.APPROVE &&
+      allowance !== undefined &&
+      originToken &&
+      !originToken.isNative
+  });
+
+  // Use regular approve for non-USDT tokens or USDT that doesn't need reset
   const {
     execute: approveExecute,
     prepareError: approvePrepareError,
@@ -339,7 +412,8 @@ function TradeWidgetWrapped({
       widgetState.action === TradeAction.APPROVE &&
       allowance !== undefined &&
       originToken &&
-      !originToken.isNative
+      !originToken.isNative &&
+      !needsUsdtReset
   });
 
   const { execute: tradeExecute } = useSignAndCreateTradeOrder({
@@ -619,7 +693,7 @@ function TradeWidgetWrapped({
     }
   }, [isSmartContractWallet, onChainCancelExecute, offChainCancelExecute]);
 
-  const prepareError = approvePrepareError || ethTradePrepareError;
+  const prepareError = approvePrepareError || ethTradePrepareError || batchUsdtApproveError;
 
   const isAmountWaitingForDebounce =
     debouncedOriginAmount !== originAmount || debouncedTargetAmount !== targetAmount;
@@ -630,18 +704,23 @@ function TradeWidgetWrapped({
     !tradeAnyway &&
     txStatus === TxStatus.IDLE;
 
+  // Determine which approval method is prepared
+  const approvalPrepared = needsUsdtReset ? batchUsdtApprovePrepared : approvePrepared;
+  const approvalLoading = needsUsdtReset ? batchUsdtApproveIsLoading : approveIsLoading;
+
   const approveDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isBalanceError ||
-    (!originToken?.isNative && !approvePrepared) ||
+    (!originToken?.isNative && !approvalPrepared) ||
     (originToken?.isNative && !ethTradePrepared) ||
-    approveIsLoading ||
+    approvalLoading ||
     isQuoteLoading ||
     !pairValid ||
     disabledDueToHighCosts ||
     (!originToken.isNative && allowance === undefined) ||
     allowanceLoading ||
-    isAmountWaitingForDebounce;
+    isAmountWaitingForDebounce ||
+    (needsUsdtReset && !batchEnabled); // Disable approve if USDT reset needed but batch disabled
 
   const tradeDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
@@ -750,14 +829,48 @@ function TradeWidgetWrapped({
 
   // set widget button to be disabled depending on which action we're performing
   useEffect(() => {
-    setIsDisabled(
-      isConnectedAndEnabled &&
+    // For review screen, only check basic conditions
+    if (widgetState.screen === TradeScreen.ACTION) {
+      const reviewDisabled =
+        isConnectedAndEnabled &&
+        (isBalanceError ||
+          !pairValid ||
+          disabledDueToHighCosts ||
+          !originToken ||
+          !targetToken ||
+          originAmount === 0n ||
+          !quoteData ||
+          isQuoteLoading ||
+          allowanceLoading ||
+          isAmountWaitingForDebounce);
+      setIsDisabled(reviewDisabled);
+    } else {
+      const shouldDisable =
+        isConnectedAndEnabled &&
         !!(
-          (widgetState.action === TradeAction.APPROVE && approveDisabled) ||
-          (widgetState.action === TradeAction.TRADE && tradeDisabled)
-        )
-    );
-  }, [isQuoteLoading, isConnectedAndEnabled, approveDisabled, tradeDisabled, widgetState.action]);
+          (widgetState.action === TradeAction.APPROVE && approveDisabled && txStatus !== TxStatus.SUCCESS) ||
+          (widgetState.action === TradeAction.TRADE && tradeDisabled && txStatus !== TxStatus.SUCCESS)
+        );
+
+      setIsDisabled(shouldDisable);
+    }
+  }, [
+    isQuoteLoading,
+    isConnectedAndEnabled,
+    approveDisabled,
+    tradeDisabled,
+    widgetState.action,
+    widgetState.screen,
+    isBalanceError,
+    pairValid,
+    disabledDueToHighCosts,
+    originToken,
+    targetToken,
+    originAmount,
+    quoteData,
+    allowanceLoading,
+    isAmountWaitingForDebounce
+  ]);
 
   // set isLoading to be consumed by WidgetButton
   useEffect(() => {
@@ -942,7 +1055,13 @@ function TradeWidgetWrapped({
     }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-    approveExecute();
+
+    // Use appropriate approve function based on USDT reset requirement
+    if (needsUsdtReset) {
+      batchUsdtApproveExecute();
+    } else {
+      approveExecute();
+    }
   };
 
   const tradeOnClick = () => {
@@ -1177,7 +1296,6 @@ function TradeWidgetWrapped({
     >
       <div className="mt-[-16px] space-y-0">
         <TradePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
-        <TradeWarning originToken={originToken} />
       </div>
       <AnimatePresence mode="popLayout" initial={false}>
         {widgetState.screen === TradeScreen.REVIEW && quoteData && originToken && targetToken ? (
@@ -1188,6 +1306,9 @@ function TradeWidgetWrapped({
               originToken={originToken}
               targetToken={targetToken}
               priceImpact={priceImpact}
+              allowance={allowance}
+              batchEnabled={batchEnabled}
+              setBatchEnabled={setBatchEnabled}
             />
           </CardAnimationWrapper>
         ) : txStatus !== TxStatus.IDLE ? (
