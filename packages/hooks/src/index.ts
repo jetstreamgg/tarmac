@@ -224,7 +224,7 @@ export {
 export { SupportedCollateralTypes } from './vaults/vaults.constants';
 export { getIlkName } from './vaults/helpers';
 
-export { OrderQuoteSideKind } from './trade/constants';
+export { OrderQuoteSideKind, gpv2VaultRelayerAddress } from './trade/constants';
 
 export {
   TOKENS,

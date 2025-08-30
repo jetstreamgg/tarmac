@@ -25,7 +25,8 @@ import {
   getTokenDecimals,
   useCreatePreSignTradeOrder,
   useOnChainCancelOrder,
-  useBatchUsdtApprove
+  useBatchUsdtApprove,
+  gpv2VaultRelayerAddress
 } from '@jetstreamgg/sky-hooks';
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
@@ -315,11 +316,7 @@ function TradeWidgetWrapped({
 
   // Get the trade spender address (same as used in useTradeApprove)
   const tradeSpenderAddress = useMemo(() => {
-    const addresses = {
-      [1]: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110' as const, // mainnet
-      [11155111]: '0xC92E8bdf79f0507f65a392b0ab4667716BFE0110' as const // sepolia
-    };
-    return addresses[chainId as keyof typeof addresses];
+    return gpv2VaultRelayerAddress[chainId as keyof typeof gpv2VaultRelayerAddress];
   }, [chainId]);
 
   // Use batched USDT approve for USDT tokens that need reset
@@ -362,7 +359,6 @@ function TradeWidgetWrapped({
       console.log(error);
     },
     enabled:
-      isUsdt &&
       needsUsdtReset &&
       widgetState.action === TradeAction.APPROVE &&
       allowance !== undefined &&
@@ -417,7 +413,7 @@ function TradeWidgetWrapped({
       allowance !== undefined &&
       originToken &&
       !originToken.isNative &&
-      (!isUsdt || !needsUsdtReset)
+      !needsUsdtReset
   });
 
   const { execute: tradeExecute } = useSignAndCreateTradeOrder({

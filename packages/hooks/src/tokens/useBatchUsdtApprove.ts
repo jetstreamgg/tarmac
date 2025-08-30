@@ -1,11 +1,9 @@
 import { useAccount, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { Call, erc20Abi } from 'viem';
+import { Call } from 'viem';
 import { useTransactionFlow } from '../shared/useTransactionFlow';
-import { usdtAbi, usdtAddress, usdtSepoliaAddress } from '../generated';
-import { sepolia } from 'viem/chains';
-import { useTradeAllowance } from '../trade/useTradeAllowance';
+import { usdtAbi } from '../generated';
 
 export function useBatchUsdtApprove({
   tokenAddress,
@@ -24,26 +22,11 @@ export function useBatchUsdtApprove({
 }): BatchWriteHook {
   const { isConnected } = useAccount();
   const chainId = useChainId();
-  const { data: currentAllowance } = useTradeAllowance(tokenAddress);
 
-  // Check if this is a USDT contract
-  const isUsdt =
-    chainId === sepolia.id
-      ? tokenAddress === usdtSepoliaAddress[chainId as keyof typeof usdtSepoliaAddress]
-      : tokenAddress === usdtAddress[chainId as keyof typeof usdtAddress];
-
-  // Check if we need to reset allowance (USDT only)
-  const needsReset =
-    isUsdt &&
-    currentAllowance !== undefined &&
-    amount !== undefined &&
-    currentAllowance > 0n &&
-    currentAllowance < amount;
-
-  // Calls for the batch transaction
+  // Build calls for USDT reset + approve batch transaction
   const calls: Call[] = [];
 
-  if (needsReset && spender && tokenAddress) {
+  if (spender && tokenAddress && amount) {
     // First call: Reset allowance to 0
     const resetCall = getWriteContractCall({
       to: tokenAddress,
@@ -58,34 +41,19 @@ export function useBatchUsdtApprove({
       to: tokenAddress,
       abi: usdtAbi,
       functionName: 'approve',
-      args: [spender, amount!]
-    });
-    calls.push(approveCall);
-  } else if (!needsReset && spender && tokenAddress && amount) {
-    // Normal approval for non-USDT or when no reset is needed
-    const approveCall = getWriteContractCall({
-      to: tokenAddress,
-      abi: isUsdt ? usdtAbi : erc20Abi, // Use appropriate ABI
-      functionName: 'approve',
       args: [spender, amount]
     });
     calls.push(approveCall);
   }
 
   const enabled =
-    isConnected &&
-    !!tokenAddress &&
-    !!spender &&
-    !!amount &&
-    activeTabEnabled &&
-    currentAllowance !== undefined &&
-    calls.length > 0;
+    isConnected && !!tokenAddress && !!spender && !!amount && activeTabEnabled && calls.length === 2;
 
   const transactionFlowResults = useTransactionFlow({
     calls,
     chainId,
     enabled,
-    shouldUseBatch: shouldUseBatch && needsReset, // Only use batch for USDT reset
+    shouldUseBatch,
     onMutate,
     onSuccess,
     onError,
@@ -94,7 +62,7 @@ export function useBatchUsdtApprove({
 
   return {
     ...transactionFlowResults,
-    // Override prepared to indicate whether we need a batch transaction
-    prepared: transactionFlowResults.prepared && (needsReset ? calls.length === 2 : calls.length === 1)
+    // Ensure we have both calls prepared
+    prepared: transactionFlowResults.prepared && calls.length === 2
   };
 }
