@@ -386,7 +386,7 @@ export function Chart({
     return ((last - first) / first) * 100;
   }, [data]);
   const formattedPercentage = formatPercentage(percentage, isLarge);
-  const isZeroPercentage = formattedPercentage.replace('-', '').replace('%', '') === '0';
+  const isZeroPercentage = formattedPercentage.replace('-', '').replace(/%/g, '') === '0';
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');
   const [width, setWidth] = useState<number>(0);
   const dateAxis = formatedXAxis(data, activeTimeframe, bpi);

@@ -1,7 +1,18 @@
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { expect, test } from '../fixtures.ts';
 import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { mineBlock } from '../utils/mineBlock.ts';
+import { NetworkName } from '../utils/constants.ts';
+import { getTestWalletAddress } from '../utils/testWallets.ts';
+import { setErc20Balance } from '../utils/setBalance.ts';
+import { mcdDaiAddress } from '@jetstreamgg/sky-hooks';
+
+const setTestBalance = async (tokenAddress: string, amount: string, decimals = 18) => {
+  const workerIndex = Number(process.env.VITE_TEST_WORKER_INDEX ?? 1);
+  const address = getTestWalletAddress(workerIndex);
+  await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
+};
 
 test.describe('Expert Module - stUSDS', () => {
   test.beforeEach(async ({ page }) => {
@@ -14,6 +25,20 @@ test.describe('Expert Module - stUSDS', () => {
   });
 
   test('Navigate back to Expert menu', async ({ page }) => {
+    // Should display Message
+    await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
+    await expect(page.getByTestId('expert-risk-disclaimer')).toContainText(
+      'Expert Modules are intended for experienced users and may function differently than modules to which ordinary users are accustomed. Please be sure you understand the unique features and the associated risks of any Expert Module before proceeding. Be sure to review the FAQs and'
+    );
+
+    // Verify User Risks hyperlink is present
+    const userRisksLink = page
+      .getByTestId('expert-risk-disclaimer')
+      .getByRole('link', { name: 'User Risks' });
+    await expect(userRisksLink).toBeVisible();
+    await expect(userRisksLink).toHaveAttribute('href', 'https://docs.sky.money/user-risks');
+    await expect(userRisksLink).toHaveAttribute('target', '_blank');
+
     // Click back button
     await page.getByRole('button', { name: 'Back to Expert' }).click();
 
@@ -51,6 +76,16 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(
       page.getByTestId('widget-container').getByRole('heading', { name: 'stUSDS Module' })
     ).toBeVisible();
+
+    // go to balance page
+    await page.getByRole('tab', { name: 'Balance' }).click();
+    await expect(page.getByText('USDS supplied to stUSDS')).toBeVisible();
+
+    // Click using the href that contains the stusds expert module path
+    await page.locator('a[href*="expert_module=stusds"]').first().click();
+
+    // should land on the stusds balance page
+    expect(page.getByText('stUSDS Module')).toBeTruthy();
   });
 
   test('Withdraw USDS from stUSDS module', async ({ page }) => {
@@ -161,5 +196,64 @@ test.describe('Expert Module - stUSDS', () => {
     // Clear amount - transaction overview should disappear
     await page.getByTestId('supply-input-stusds').clear();
     await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+  });
+
+  test('Upgrade and access rewards', async ({ page }) => {
+    await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
+    // Navigate to Expert menu
+    await page.getByRole('tab', { name: 'Expert' }).click();
+
+    // Click on Upgrade button
+    await page.getByText('Upgrade and access rewards').first().click();
+
+    await page.getByTestId('upgrade-input-origin').click();
+    await page.getByTestId('upgrade-input-origin').fill('1');
+    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await approveOrPerformAction(page, 'Upgrade');
+
+    // Check that Rewards modal is visible
+    await expect(page.getByText('Go to Expert')).toBeVisible();
+
+    // Click on Close button
+    await page.getByRole('button', { name: 'Go to Expert' }).click();
+
+    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await expect(page.getByText('You will supply')).toBeVisible();
+
+    // Perform the supply action (handles approval if needed)
+    await approveOrPerformAction(page, 'Supply');
+
+    // Check success message
+    await expect(page.getByText("You've supplied 1 USDS to the stUSDS module")).toBeVisible();
+  });
+
+  test('Expert risk modal dismissal persists after reload and navigation', async ({ page }) => {
+    // Verify expert risk modal is initially visible
+    await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
+
+    // Wait for the dismiss button to be stable and click it
+    const dismissButton = page.getByTestId('expert-risk-dismiss');
+    await expect(dismissButton).toBeVisible();
+    await dismissButton.click({ force: true });
+
+    // Verify modal is dismissed
+    await expect(page.getByTestId('expert-risk-disclaimer')).not.toBeVisible();
+
+    // Navigate away from the module
+    await page.getByRole('button', { name: 'Back to Expert' }).click();
+    await expect(page.getByRole('heading', { name: 'Expert Modules', exact: true })).toBeVisible();
+
+    // Reload the browser
+    await page.reload();
+    await connectMockWalletAndAcceptTerms(page);
+
+    // Navigate back to Expert module
+    await page.getByRole('tab', { name: 'Expert' }).click();
+
+    // Navigate back to stUSDS module
+    await page.getByTestId('stusds-stats-card').click();
+
+    // Verify the risk modal is still dismissed (not visible)
+    await expect(page.getByTestId('expert-risk-disclaimer')).not.toBeVisible();
   });
 });

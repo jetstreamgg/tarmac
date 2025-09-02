@@ -10,7 +10,7 @@ import { TEST_WALLET_ADDRESS } from './constants';
 import { createTestClient, EIP1193Parameters, WalletRpcSchema } from 'viem';
 import { optimism, unichain } from 'viem/chains';
 
-const [tenderlyMainnet, tenderlyBase, tenderlyArbitrum] = getTenderlyChains();
+const [tenderlyMainnet, tenderlyArbitrum, tenderlyBase] = getTenderlyChains();
 
 function extendedMock(params: MockParameters) {
   return createConnector(config => {

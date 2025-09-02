@@ -9,9 +9,7 @@ export function useAllNetworksCombinedHistory() {
   const chainId = useChainId();
   const baseHistory = useL2CombinedHistory(isTestnetId(chainId) ? chainIdMap.tenderlyBase : chainIdMap.base);
   const ethereumHistory = useEthereumCombinedHistory();
-  const arbitrumHistory = useL2CombinedHistory(
-    isTestnetId(chainId) ? chainIdMap.tenderlyArbitrum : chainIdMap.arbitrum
-  );
+  const arbitrumHistory = useL2CombinedHistory(chainIdMap.arbitrum);
   const optimismHistory = useL2CombinedHistory(chainIdMap.optimism);
   const unichainHistory = useL2CombinedHistory(chainIdMap.unichain);
 
