@@ -806,7 +806,11 @@ function TradeWidgetWrapped({
         widgetState.screen === TradeScreen.REVIEW &&
         (widgetState.action === TradeAction.APPROVE || widgetState.action === TradeAction.TRADE)
       ) {
-        setButtonText(t`Confirm trade details`);
+        if (needsUsdtReset && !batchEnabled) {
+          setButtonText(t`Confirm 2 approval transactions`);
+        } else {
+          setButtonText(t`Confirm trade details`);
+        }
       }
     } else {
       setButtonText(t`Connect Wallet`);
