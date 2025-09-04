@@ -29,6 +29,7 @@ export { useStUsdsCapacityData } from './useStUsdsCapacityData';
 export type { StUsdsCapacityData, StUsdsCapacityDataHook } from './useStUsdsCapacityData';
 export { useStUsdsHistory } from './useStUsdsHistory';
 export type { StUsdsHistoryHook } from './useStUsdsHistory';
+export { useStUsdsChartInfo } from './useStUsdsChartInfo';
 
 // Types
 export type { StUsdsHistoryItem, StUsdsVaultMetrics, StUsdsUserMetrics } from './stusds.d';

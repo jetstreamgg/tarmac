@@ -13,6 +13,7 @@ import {
   unichainFaqItems
 } from './sharedFaqItems';
 import { getBundledTransactionsFaqItems } from './getBundledTransactionsFaqItems';
+import { deduplicateFaqItems } from './utils';
 
 export const getBalancesFaqItems = (chainId: number) => {
   const items = [
@@ -24,7 +25,8 @@ export const getBalancesFaqItems = (chainId: number) => {
     ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
     ...getBundledTransactionsFaqItems()
   ];
-  return items.sort((a, b) => a.index - b.index);
+
+  return deduplicateFaqItems(items);
 };
 
 const generalFaqItems = [

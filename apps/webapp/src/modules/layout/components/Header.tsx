@@ -8,12 +8,68 @@ import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
+import { erc20Abi, parseEther } from 'viem';
+import {
+  daiUsdsAbi,
+  daiUsdsAddress,
+  getWriteContractCall,
+  mcdDaiAddress,
+  sUsdsAddress,
+  sUsdsImplementationAbi,
+  usdsAddress,
+  useTransactionFlow
+} from '@jetstreamgg/sky-hooks';
+import { mainnet } from 'viem/chains';
+import { useAccount } from 'wagmi';
+import { Button } from '@/components/ui/button';
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 
 export function Header(): React.ReactElement {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
+  const { address: connectedAddress, isConnected } = useAccount();
+
+  const amount = parseEther('2');
+
+  const approveDaiCall = getWriteContractCall({
+    to: mcdDaiAddress[mainnet.id],
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [daiUsdsAddress[mainnet.id], amount]
+  });
+
+  const upgradeCall = getWriteContractCall({
+    to: daiUsdsAddress[mainnet.id],
+    abi: daiUsdsAbi,
+    functionName: 'daiToUsds',
+    args: [connectedAddress!, amount]
+  });
+
+  const approveUsdsCall = getWriteContractCall({
+    to: usdsAddress[mainnet.id],
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [sUsdsAddress[mainnet.id], amount]
+  });
+
+  const supplyCall = getWriteContractCall({
+    to: sUsdsAddress[mainnet.id],
+    abi: sUsdsImplementationAbi,
+    functionName: 'deposit',
+    args: [amount, connectedAddress!, 0]
+  });
+
+  const calls = [approveDaiCall, upgradeCall, approveUsdsCall, supplyCall];
+
+  const enabled = isConnected && !!amount && amount !== 0n && !!connectedAddress;
+
+  const { execute, prepared } = useTransactionFlow({
+    calls,
+    chainId: mainnet.id,
+    enabled,
+    shouldUseBatch: true
+  });
 
   return (
     <div
@@ -26,6 +82,9 @@ export function Header(): React.ReactElement {
           </div>
         </Link>
         <div className="flex items-center gap-3">
+          <Button variant="connectPrimary" onClick={execute} disabled={!prepared}>
+            Test batch upgrade and savings supply
+          </Button>
           <ChainModal dataTestId="chain-modal-trigger-header" showLabel={!isMobile} />
           <CustomConnectButton />
           {useMock ? <MockConnectButton /> : null}

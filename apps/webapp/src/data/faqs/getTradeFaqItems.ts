@@ -13,6 +13,7 @@ import {
   optimismFaqItems,
   unichainFaqItems
 } from './sharedFaqItems';
+import { deduplicateFaqItems } from './utils';
 
 export const getTradeFaqItems = (chainId: number) => {
   const items = [
@@ -24,7 +25,8 @@ export const getTradeFaqItems = (chainId: number) => {
     ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
     ...(isL2ChainId(chainId) ? L2TradeFaqItems : [])
   ];
-  return items.sort((a, b) => a.index - b.index);
+
+  return deduplicateFaqItems(items);
 };
 
 const generalFaqItems = [

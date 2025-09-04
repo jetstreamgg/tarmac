@@ -32,7 +32,8 @@ export {
   useStUsdsPreviewWithdraw,
   useStUsdsRateData,
   useStUsdsCapacityData,
-  useStUsdsHistory
+  useStUsdsHistory,
+  useStUsdsChartInfo
 } from './stusds';
 
 export type {
