@@ -6,9 +6,10 @@ import {
   VALID_LINKED_ACTIONS,
   CHAIN_WIDGET_MAP,
   mapQueryParamToIntent,
-  COMING_SOON_MAP
+  COMING_SOON_MAP,
+  ExpertIntentMapping
 } from '@/lib/constants';
-import { Intent } from '@/lib/enums';
+import { ExpertIntent, Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Chain } from 'viem';
@@ -20,7 +21,9 @@ export const validateSearchParams = (
   widget: string,
   setSelectedRewardContract: (rewardContract?: RewardContract) => void,
   chainId: number,
-  chains: readonly [Chain, ...Chain[]]
+  chains: readonly [Chain, ...Chain[]],
+  setSelectedExpertOption: (expertOption: ExpertIntent | undefined) => void,
+  expertRiskDisclaimerShown: boolean
 ) => {
   const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
   const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
@@ -86,6 +89,36 @@ export const validateSearchParams = (
     ) {
       searchParams.delete(QueryParams.Reward);
       setSelectedRewardContract(undefined);
+    }
+
+    // removes expertModule param if value is not a valid expert intent or if the expert risk hasn't been acknowledged
+    // also sets the selected expert option if the expertIntent is valid
+    if (key === QueryParams.ExpertModule) {
+      const intent = Object.entries(ExpertIntentMapping).find(
+        ([, intentValue]) => intentValue === value
+      )?.[0] as ExpertIntent | undefined;
+      if (!intent || !expertRiskDisclaimerShown) {
+        searchParams.delete(key);
+      } else {
+        setSelectedExpertOption(intent);
+      }
+    }
+
+    // Reset the selected expert option if the widget is set to expert and no valid expert option parameter exists.
+    if (widget === IntentMapping[Intent.EXPERT_INTENT]) {
+      if (!searchParams.get(QueryParams.ExpertModule)) {
+        setSelectedExpertOption(undefined);
+        searchParams.delete(QueryParams.InputAmount);
+      }
+    }
+
+    // if widget changes to something other than advanced, and we're not in an advanced linked action, reset the selected advanced option
+    if (
+      widget !== IntentMapping[Intent.EXPERT_INTENT] &&
+      searchParams.get(QueryParams.LinkedAction) !== IntentMapping[Intent.EXPERT_INTENT]
+    ) {
+      searchParams.delete(QueryParams.ExpertModule);
+      setSelectedExpertOption(undefined);
     }
 
     // validate source token

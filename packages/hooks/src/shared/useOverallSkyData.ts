@@ -13,6 +13,7 @@ type OverallSkyApiResponse = {
   total_save?: string;
   sky_ecosystem_tvl?: string;
   ssr_depositor_count?: number;
+  stusds_depositor_count?: number;
   sky_price_usd?: string;
   usdc_price_usd?: string;
   weth_price_usd?: string;
@@ -28,6 +29,7 @@ type OverallSkyData = {
   totalSavingsTvl: string;
   skyEcosystemTvl: string;
   ssrSuppliers: number;
+  stusdsSuppliers: number;
   skyPriceUsd: string;
   usdcPriceUsd: string;
   wethPriceUsd: string;
@@ -44,6 +46,7 @@ function transformOverallSkyData(data: OverallSkyApiResponse[]): OverallSkyData 
     totalSavingsTvl: '',
     skyEcosystemTvl: '',
     ssrSuppliers: 0,
+    stusdsSuppliers: 0,
     skyPriceUsd: '',
     usdcPriceUsd: '',
     wethPriceUsd: '',
@@ -60,6 +63,7 @@ function transformOverallSkyData(data: OverallSkyApiResponse[]): OverallSkyData 
       result.totalSavingsTvl = item.total_save ?? '';
       result.skyEcosystemTvl = item.sky_ecosystem_tvl ?? '';
       result.ssrSuppliers = item.ssr_depositor_count ?? 0;
+      result.stusdsSuppliers = item.stusds_depositor_count ?? 0;
     } else if ('sky_price_usd' in item) {
       result.skyPriceUsd = item.sky_price_usd ?? '';
     } else if ('usdc_price_usd' in item) {

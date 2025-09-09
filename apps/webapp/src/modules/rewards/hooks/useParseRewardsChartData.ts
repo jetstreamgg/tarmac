@@ -8,7 +8,7 @@ export function useParseRewardsChartData(
   chartData: RewardsChartInfoParsed[]
 ): { totalSupplied: Data[]; rate: Data[] } {
   return useMemo(() => {
-    const sortedChartData = chartData.sort((a, b) => a.blockTimestamp - b.blockTimestamp);
+    const sortedChartData = [...chartData].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
     // Determine the start and end timestamps based on the timeFrame
     const { startTimestamp, endTimestamp } = determineTimeframeBounds(timeFrame, sortedChartData);
@@ -87,18 +87,18 @@ function generateDataPoints(
   dataType: 'totalSupplied' | 'rate'
 ): Data[] {
   // Sort chartData by timestamp in ascending order to ensure correct processing
-  chartData.sort((a, b) => a.blockTimestamp - b.blockTimestamp);
+  const sortedChartData = [...chartData].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
   let dataPoints;
   if (timeFrame === 'all' || timeFrame === 'y') {
     // Handle 'all' timeframe by generating equidistant points across the entire dataset
     const totalPoints = 7; // Including start and end, with 5 in between
     const interval = (endTimestamp - startTimestamp) / (totalPoints - 1);
-    dataPoints = interpolateDataPoints(chartData, startTimestamp, endTimestamp, interval, dataType);
+    dataPoints = interpolateDataPoints(sortedChartData, startTimestamp, endTimestamp, interval, dataType);
   } else {
     // For other timeframes, calculate the interval based on the timeframe
     const interval = getTimeFrameInterval(timeFrame);
-    dataPoints = interpolateDataPoints(chartData, startTimestamp, endTimestamp, interval, dataType);
+    dataPoints = interpolateDataPoints(sortedChartData, startTimestamp, endTimestamp, interval, dataType);
   }
 
   //Find min and max points

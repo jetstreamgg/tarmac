@@ -20,9 +20,7 @@ export default ({ mode }: { mode: modeEnum }) => {
   const RPC_PROVIDER_SEPOLIA = process.env.VITE_RPC_PROVIDER_SEPOLIA || '';
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
   const RPC_PROVIDER_BASE = process.env.VITE_RPC_PROVIDER_BASE || '';
-  const RPC_PROVIDER_TENDERLY_BASE = process.env.VITE_RPC_PROVIDER_TENDERLY_BASE || '';
   const RPC_PROVIDER_ARBITRUM = process.env.VITE_RPC_PROVIDER_ARBITRUM || '';
-  const RPC_PROVIDER_TENDERLY_ARBITRUM = process.env.VITE_RPC_PROVIDER_TENDERLY_ARBITRUM || '';
   const RPC_PROVIDER_OPTIMISM = process.env.VITE_RPC_PROVIDER_OPTIMISM || '';
   const RPC_PROVIDER_UNICHAIN = process.env.VITE_RPC_PROVIDER_UNICHAIN || '';
 
@@ -40,9 +38,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       ${RPC_PROVIDER_TENDERLY}
       ${RPC_PROVIDER_SEPOLIA}
       ${RPC_PROVIDER_BASE}
-      ${RPC_PROVIDER_TENDERLY_BASE}
       ${RPC_PROVIDER_ARBITRUM}
-      ${RPC_PROVIDER_TENDERLY_ARBITRUM}
       ${RPC_PROVIDER_OPTIMISM}
       ${RPC_PROVIDER_UNICHAIN}
       https://virtual.mainnet.rpc.tenderly.co

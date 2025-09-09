@@ -33,9 +33,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_SEPOLIA`: URL for the Sepolia network RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_BASE`: URL for the Base RPC provider
-- `VITE_RPC_PROVIDER_TENDERLY_BASE`: URL for the Tenderly Base RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_ARBITRUM`: URL for the Arbitrum RPC provider
-- `VITE_RPC_PROVIDER_TENDERLY_ARBITRUM`: URL for the Tenderly Arbitrum RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_OPTIMISM`: URL for the Optimism RPC provider
 - `VITE_RPC_PROVIDER_UNICHAIN`: URL for the Unichain provider
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production
@@ -44,7 +42,6 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_RESTRICTED_BUILD_MICA`: Boolean flag to enable certain restrictions for MiCa compliance
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
-- `NPM_TOKEN`: Token for accessing private npm packages or registries
 - `TENDERLY_API_KEY`: API key for Tenderly (used for forking and managing virtual networks for testing)
 - `VITE_USE_MOCK_WALLET`: Boolean flag to enable the use of a mock wallet for testing purposes
 - `VITE_TERMS_ENDPOINT`: URL endpoint for submitting and checking terms acceptance

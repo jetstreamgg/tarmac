@@ -7,7 +7,7 @@ import { useRetainedQueryParams } from '../hooks/useRetainedQueryParams';
 import { useLingui } from '@lingui/react';
 import { Button } from '@/components/ui/button';
 import { VStack } from '@/modules/layout/components/VStack';
-import { RewardsRate, SavingsRate } from './HighlightRate';
+import { RewardsRate, SavingsRate, AdvancedRate } from './HighlightRate';
 import { Logo, LogoName } from './HighlightLogo';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -17,9 +17,10 @@ import { useEffect, useState } from 'react';
 import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
-const secondaryTagline = {
+const secondaryTagline: Record<string, string> = {
   [IntentMapping.SAVINGS_INTENT]: 'to get the Sky Savings Rate',
-  [IntentMapping.REWARDS_INTENT]: 'to get rewards'
+  [IntentMapping.REWARDS_INTENT]: 'to get rewards',
+  [IntentMapping.EXPERT_INTENT]: 'to access expert modules'
 };
 
 export const LinkedActionCard = ({
@@ -49,16 +50,19 @@ export const LinkedActionCard = ({
   const chainId = useChainId();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
 
-  // Extract reward contract address
+  // Extract reward contract address and advanced module
   const urlObj = new URL(urlWithRetainedParams, window.location.origin);
   const rewardContractAddress = urlObj.searchParams.get(QueryParams.Reward);
+  const expertModule = urlObj.searchParams.get(QueryParams.ExpertModule);
   const selectedRewardContract = rewardContracts.find(
     contract => contract.contractAddress?.toLowerCase() === rewardContractAddress?.toLowerCase()
   );
 
   const handleClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     event.preventDefault();
-    updateLinkedActionConfig({ step: LinkedActionSteps.CURRENT_FUTURE });
+    updateLinkedActionConfig({
+      step: LinkedActionSteps.CURRENT_FUTURE
+    });
     const modifiedUrl = `${urlWithRetainedParams}${urlWithRetainedParams.includes('widget=trade') ? `&${QueryParams.Timestamp}=${new Date().getTime()}` : ''}`;
     navigate(modifiedUrl);
   };
@@ -84,6 +88,8 @@ export const LinkedActionCard = ({
           </Heading>
           {la === IntentMapping.REWARDS_INTENT ? (
             <RewardsRate token={secondaryToken} currentRewardContract={selectedRewardContract} />
+          ) : la === IntentMapping.EXPERT_INTENT ? (
+            <AdvancedRate expertModule={expertModule || undefined} />
           ) : (
             <SavingsRate />
           )}

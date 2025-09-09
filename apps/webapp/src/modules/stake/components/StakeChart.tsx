@@ -1,6 +1,6 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
-import { useParseSavingsChartData } from '@/modules/savings/hooks/useParseSavingsChartData';
+import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useStakeHistoricData } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
@@ -19,8 +19,8 @@ export function StakeChart() {
       amount: parseEther(normalizedSupply)
     };
   });
-  // We can reuse the useParseSavingsChartData hook here as the format of the data is the same
-  const chartData = useParseSavingsChartData(timeFrame, formattedStakeChartInfo || []);
+
+  const chartData = useParseTvlChartData(timeFrame, formattedStakeChartInfo || []);
 
   return (
     <div>

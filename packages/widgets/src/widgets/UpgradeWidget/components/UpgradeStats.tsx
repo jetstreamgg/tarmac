@@ -37,14 +37,7 @@ export const UpgradeStats = () => {
         }
       ></StatsCard>
 
-      <StatsCard
-        title={t`% of MKR upgraded`}
-        content={
-          <div className="mt-1 flex items-center">
-            <Text className="ml-2">{percentageValue} %</Text>
-          </div>
-        }
-      ></StatsCard>
+      <StatsCard title={t`% of MKR upgraded`} content={<Text>{percentageValue} %</Text>}></StatsCard>
     </div>
   );
 };

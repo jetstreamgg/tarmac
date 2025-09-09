@@ -336,7 +336,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
         token={usds}
         tokenList={[usds]}
         balance={existingVault?.debtValue}
-        borrowLimitText={
+        limitText={
           (existingVault?.debtValue || 0n) <= 0n
             ? t`You have no debt to repay`
             : dustDelta > 0n

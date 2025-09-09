@@ -54,6 +54,7 @@ export type TradeWidgetProps = WidgetProps & {
   widgetTitle?: ReactNode;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
+  tokensLocked?: boolean;
 };
 
 function TradeWidgetWrapped({
@@ -75,7 +76,8 @@ function TradeWidgetWrapped({
   referralCode,
   widgetTitle,
   batchEnabled,
-  setBatchEnabled
+  setBatchEnabled,
+  tokensLocked = false
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
@@ -853,10 +855,11 @@ function TradeWidgetWrapped({
               }}
               lastUpdated={lastUpdated}
               targetAmount={targetAmount}
-              originTokenList={originTokenList}
-              targetTokenList={targetTokenList}
+              originTokenList={tokensLocked && originToken ? [originToken] : originTokenList}
+              targetTokenList={tokensLocked && targetToken ? [targetToken] : targetTokenList}
               isBalanceError={isBalanceError}
-              canSwitchTokens={true}
+              canSwitchTokens={!tokensLocked}
+              tokensLocked={tokensLocked}
               isConnectedAndEnabled={isConnectedAndEnabled}
             />
             {!!originAmount && !!targetAmount && !isBalanceError && (

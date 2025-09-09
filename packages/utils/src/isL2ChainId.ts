@@ -1,11 +1,11 @@
 import { chainId as chainIdMap } from './chainId';
 
 export const isArbitrumChainId = (chainId: number) => {
-  return chainId === chainIdMap.arbitrum || chainId === chainIdMap.tenderlyArbitrum;
+  return chainId === chainIdMap.arbitrum;
 };
 
 export const isBaseChainId = (chainId: number) => {
-  return chainId === chainIdMap.base || chainId === chainIdMap.tenderlyBase;
+  return chainId === chainIdMap.base;
 };
 
 export const isUnichainChainId = (chainId: number) => {

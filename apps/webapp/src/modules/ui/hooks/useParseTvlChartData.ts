@@ -3,17 +3,17 @@ import { useMemo } from 'react';
 import { Data, TimeFrame } from '@/modules/ui/components/Chart';
 import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInterval';
 
-type SavingsTvl = { blockTimestamp: number; amount: bigint };
+type TvlData = { blockTimestamp: number; amount: bigint };
 
-export function useParseSavingsChartData(timeFrame: TimeFrame, tvl: SavingsTvl[]): Data[] {
+export function useParseTvlChartData(timeFrame: TimeFrame, tvl: TvlData[]): Data[] {
   return useMemo(() => {
-    const sortedTvl = tvl.sort((a, b) => a.blockTimestamp - b.blockTimestamp);
+    const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
     // Determine the start and end timestamps based on the timeFrame
     const { startTimestamp, endTimestamp } = determineTimeframeBounds(timeFrame, sortedTvl);
 
     // Filter TVL changes within the determined timeframe
-    let prevItem: SavingsTvl | undefined;
+    let prevItem: TvlData | undefined;
     const relevantChanges = sortedTvl.filter((item, index) => {
       const found = item.blockTimestamp >= startTimestamp && item.blockTimestamp <= endTimestamp;
       if (found && !prevItem && index > 0) {
@@ -39,7 +39,7 @@ export function useParseSavingsChartData(timeFrame: TimeFrame, tvl: SavingsTvl[]
 
 function determineTimeframeBounds(
   timeFrame: TimeFrame,
-  tvl: SavingsTvl[]
+  tvl: TvlData[]
 ): { startTimestamp: number; endTimestamp: number } {
   const now = Date.now() / 1000; // Current timestamp in seconds
   let startTimestamp: number;
@@ -70,7 +70,7 @@ function determineTimeframeBounds(
 }
 
 const interpolateDataPoints = (
-  tvl: SavingsTvl[],
+  tvl: TvlData[],
   startTimestamp: number,
   endTimestamp: number,
   interval: number,
@@ -113,7 +113,7 @@ const interpolateDataPoints = (
 };
 
 // Helper function to find the most recent change before or at currentTime
-function findMostRecentChange(tvl: SavingsTvl[], currentTime: number): [SavingsTvl, number] | undefined {
+function findMostRecentChange(tvl: TvlData[], currentTime: number): [TvlData, number] | undefined {
   for (let i = tvl.length - 1; i >= 0; i--) {
     if (tvl[i].blockTimestamp <= currentTime) {
       return [tvl[i], i];
@@ -123,24 +123,24 @@ function findMostRecentChange(tvl: SavingsTvl[], currentTime: number): [SavingsT
 }
 
 function generateDataPoints(
-  tvl: SavingsTvl[],
+  tvl: TvlData[],
   startTimestamp: number,
   endTimestamp: number,
   timeFrame: TimeFrame
 ): Data[] {
   // Sort tvl by timestamp in ascending order to ensure correct processing
-  tvl.sort((a, b) => a.blockTimestamp - b.blockTimestamp);
+  const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
   let dataPoints;
   if (timeFrame === 'all' || timeFrame === 'y') {
     // Handle 'all' timeframe by generating equidistant points across the entire dataset
     const totalPoints = 7; // Including start and end, with 5 in between
     const interval = (endTimestamp - startTimestamp) / (totalPoints - 1);
-    dataPoints = interpolateDataPoints(tvl, startTimestamp, endTimestamp, interval);
+    dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
   } else {
     // For other timeframes, calculate the interval based on the timeframe
     const interval = getTimeFrameInterval(timeFrame);
-    dataPoints = interpolateDataPoints(tvl, startTimestamp, endTimestamp, interval);
+    dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval);
   }
 
   //Find min and max points

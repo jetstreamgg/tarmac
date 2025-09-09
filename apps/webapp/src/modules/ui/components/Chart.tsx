@@ -379,14 +379,14 @@ export function Chart({
       return 0;
     }
 
-    const offset = 1; // to prevent Infinity values. maybe it should be a smaller number
+    const offset = isPercentage ? 0.001 : 1;
     const first = data[0].value + offset;
-    const last = data[data.length - 1].value;
+    const last = data[data.length - 1].value + offset;
 
     return ((last - first) / first) * 100;
-  }, [data]);
+  }, [data, isPercentage]);
   const formattedPercentage = formatPercentage(percentage, isLarge);
-  const isZeroPercentage = formattedPercentage.replace('-', '').replace('%', '') === '0';
+  const isZeroPercentage = formattedPercentage.replace('-', '').replace(/%/g, '') === '0';
   const [activeTimeframe, setActiveTimeframe] = useState<TimeFrame>('w');
   const [width, setWidth] = useState<number>(0);
   const dateAxis = formatedXAxis(data, activeTimeframe, bpi);

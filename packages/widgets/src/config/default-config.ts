@@ -20,16 +20,13 @@ import {
   usdcL2Address,
   usdsL2Address,
   sUsdsL2Address,
-  spkAddress
+  spkAddress,
+  stUsdsAddress
 } from '@jetstreamgg/sky-hooks';
-import {
-  TENDERLY_ARBITRUM_CHAIN_ID,
-  TENDERLY_BASE_CHAIN_ID,
-  TENDERLY_CHAIN_ID
-} from '@widgets/shared/constants';
+import { TENDERLY_CHAIN_ID } from '@widgets/shared/constants';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 
-const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk } = TOKENS;
+const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKENS;
 
 // It stores all the RPCs the application will use, and also the user configured-ones
 export const defaultConfig: WidgetsConfig = {
@@ -44,7 +41,8 @@ export const defaultConfig: WidgetsConfig = {
       { ...susds, address: sUsdsAddress[mainnet.id] },
       { ...mkr, address: mkrAddress[mainnet.id] },
       { ...sky, address: skyAddress[mainnet.id] },
-      { ...spk, address: spkAddress[mainnet.id] }
+      { ...spk, address: spkAddress[mainnet.id] },
+      { ...stusds, address: stUsdsAddress[mainnet.id] }
     ],
     [TENDERLY_CHAIN_ID]: [
       eth,
@@ -56,7 +54,8 @@ export const defaultConfig: WidgetsConfig = {
       { ...susds, address: sUsdsAddress[TENDERLY_CHAIN_ID] },
       { ...mkr, address: mkrAddress[TENDERLY_CHAIN_ID] },
       { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] },
-      { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] }
+      { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] },
+      { ...stusds, address: stUsdsAddress[TENDERLY_CHAIN_ID] }
     ],
     [base.id]: [
       eth,
@@ -69,18 +68,6 @@ export const defaultConfig: WidgetsConfig = {
       { ...usdc, address: usdcL2Address[arbitrum.id] },
       { ...usds, address: usdsL2Address[arbitrum.id] },
       { ...susds, address: sUsdsL2Address[arbitrum.id] }
-    ],
-    [TENDERLY_BASE_CHAIN_ID]: [
-      eth,
-      { ...usdc, address: usdcL2Address[base.id] },
-      { ...usds, address: usdsL2Address[base.id] },
-      { ...susds, address: sUsdsL2Address[base.id] }
-    ],
-    [TENDERLY_ARBITRUM_CHAIN_ID]: [
-      eth,
-      { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
-      { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
-      { ...susds, address: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
     ],
     [unichain.id]: [
       eth,
@@ -128,16 +115,6 @@ export const defaultConfig: WidgetsConfig = {
       { ...usdc, address: usdcL2Address[arbitrum.id] },
       { ...usds, address: usdsL2Address[arbitrum.id] },
       { ...susds, address: sUsdsL2Address[arbitrum.id] }
-    ],
-    [TENDERLY_BASE_CHAIN_ID]: [
-      { ...usdc, address: usdcL2Address[base.id] },
-      { ...usds, address: usdsL2Address[base.id] },
-      { ...susds, address: sUsdsL2Address[base.id] }
-    ],
-    [TENDERLY_ARBITRUM_CHAIN_ID]: [
-      { ...usdc, address: usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
-      { ...usds, address: usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] },
-      { ...susds, address: sUsdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID] }
     ],
     [sepolia.id]: [
       // The USDC token that COW uses has 18 decimals, instead of 6

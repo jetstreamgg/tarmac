@@ -18,11 +18,7 @@ export function MkrUpgradedPercentage() {
       title={t`% of MKR upgraded`}
       isLoading={isLoading}
       error={error}
-      content={
-        <div className="mt-2 flex items-center">
-          <Text className="ml-2">{percentageValue} %</Text>
-        </div>
-      }
+      content={<Text>{percentageValue} %</Text>}
     />
   );
 }

@@ -19,7 +19,7 @@ export const usePreviewSwapExactIn = (
       outToken?.address[chainId] || ZERO_ADDRESS,
       amount || 0n
     ],
-    chainId: chainId as 8453 | 8555 | 42161 | 42012
+    chainId: chainId as 8453 | 42161
   });
 
   if (!amount || !amountOut || !inToken || !outToken) {

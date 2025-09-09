@@ -36,6 +36,7 @@ export const getAmount = ({
         ? ''
         : formatBigInt(absBigInt('amount' in item ? item.amount : 0n), { compact: true });
     case ModuleEnum.SAVINGS:
+    case ModuleEnum.STUSDS:
       return formatBigInt(absBigInt('assets' in item ? item.assets : 0n), {
         compact: true,
         unit: getTokenDecimals('token' in item ? item.token : undefined, chainId)

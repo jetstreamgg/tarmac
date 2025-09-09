@@ -13,14 +13,10 @@ import {
   usdsAddress,
   usdsL2Address
 } from '@jetstreamgg/sky-hooks';
-import {
-  TENDERLY_ARBITRUM_CHAIN_ID,
-  TENDERLY_BASE_CHAIN_ID,
-  TENDERLY_CHAIN_ID
-} from '@/data/wagmi/config/testTenderlyChain';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { NetworkName } from './utils/constants';
 import { getTestWalletAddress } from './utils/testWallets';
-import { optimism, unichain } from 'viem/chains';
+import { optimism, unichain, arbitrum, base } from 'viem/chains';
 
 type WorkerFixture = {
   snapshotId: string | SnapshotInfo[];
@@ -40,14 +36,14 @@ const setupMainnetBalances = async (address: string) => {
 
 const setupBaseBalances = async (address: string) => {
   await setEthBalance('100', NetworkName.base, address);
-  await setErc20Balance(usdsL2Address[TENDERLY_BASE_CHAIN_ID], '100', 18, NetworkName.base, address);
-  await setErc20Balance(usdcL2Address[TENDERLY_BASE_CHAIN_ID], '100', 6, NetworkName.base, address);
+  await setErc20Balance(usdsL2Address[base.id], '100', 18, NetworkName.base, address);
+  await setErc20Balance(usdcL2Address[base.id], '100', 6, NetworkName.base, address);
 };
 
 const setupArbitrumBalances = async (address: string) => {
   await setEthBalance('100', NetworkName.arbitrum, address);
-  await setErc20Balance(usdsL2Address[TENDERLY_ARBITRUM_CHAIN_ID], '100', 18, NetworkName.arbitrum, address);
-  await setErc20Balance(usdcL2Address[TENDERLY_ARBITRUM_CHAIN_ID], '100', 6, NetworkName.arbitrum, address);
+  await setErc20Balance(usdsL2Address[arbitrum.id], '100', 18, NetworkName.arbitrum, address);
+  await setErc20Balance(usdcL2Address[arbitrum.id], '100', 6, NetworkName.arbitrum, address);
 };
 
 const setupOptimismBalances = async (address: string) => {

@@ -2,16 +2,12 @@ import { useL2CombinedHistory } from './useL2CombinedHistory';
 import { useEthereumCombinedHistory } from './useEthereumCombinedHistory';
 import { CombinedHistoryItem } from './shared';
 import { useMemo } from 'react';
-import { useChainId } from 'wagmi';
-import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
+import { chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 export function useAllNetworksCombinedHistory() {
-  const chainId = useChainId();
-  const baseHistory = useL2CombinedHistory(isTestnetId(chainId) ? chainIdMap.tenderlyBase : chainIdMap.base);
+  const baseHistory = useL2CombinedHistory(chainIdMap.base);
   const ethereumHistory = useEthereumCombinedHistory();
-  const arbitrumHistory = useL2CombinedHistory(
-    isTestnetId(chainId) ? chainIdMap.tenderlyArbitrum : chainIdMap.arbitrum
-  );
+  const arbitrumHistory = useL2CombinedHistory(chainIdMap.arbitrum);
   const optimismHistory = useL2CombinedHistory(chainIdMap.optimism);
   const unichainHistory = useL2CombinedHistory(chainIdMap.unichain);
 

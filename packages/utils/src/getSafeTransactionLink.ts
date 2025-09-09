@@ -10,10 +10,8 @@ function getSafePrefix(id: number) {
     case chainId.sepolia:
       return 'sep';
     case chainId.base:
-    case chainId.tenderlyBase:
       return 'base';
     case chainId.arbitrum:
-    case chainId.tenderlyArbitrum:
       return 'arb1';
     case chainId.optimism:
       return 'oeth';

@@ -311,6 +311,7 @@ import {
   unichainFaqItems
 } from './sharedFaqItems';
 import { getBundledTransactionsFaqItems } from './getBundledTransactionsFaqItems';
+import { deduplicateFaqItems } from './utils';
 
 export const getBalancesFaqItems = (chainId: number) => {
   const items = [
@@ -322,7 +323,8 @@ export const getBalancesFaqItems = (chainId: number) => {
     ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
     ...getBundledTransactionsFaqItems()
   ];
-  return items.sort((a, b) => a.index - b.index);
+  
+  return deduplicateFaqItems(items);
 };
 
 const generalFaqItems = ${match[1]};
@@ -362,6 +364,7 @@ import {
   optimismFaqItems,
   unichainFaqItems
 } from './sharedFaqItems';
+import { deduplicateFaqItems } from './utils';
 
 export const getSavingsFaqItems = (chainId: number) => {
   const items = [
@@ -373,7 +376,8 @@ export const getSavingsFaqItems = (chainId: number) => {
     ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
     ...(isL2ChainId(chainId) ? L2SavingsFaqItems : [])
   ];
-  return items.sort((a, b) => a.index - b.index);
+  
+  return deduplicateFaqItems(items);
 };
 
 const generalFaqItems = ${match[1]};
@@ -415,6 +419,7 @@ import {
   optimismFaqItems,
   unichainFaqItems
 } from './sharedFaqItems';
+import { deduplicateFaqItems } from './utils';
 
 export const getTradeFaqItems = (chainId: number) => {
   const items = [
@@ -426,7 +431,8 @@ export const getTradeFaqItems = (chainId: number) => {
     ...(isUnichainChainId(chainId) ? unichainFaqItems : []),
     ...(isL2ChainId(chainId) ? L2TradeFaqItems : [])
   ];
-  return items.sort((a, b) => a.index - b.index);
+  
+  return deduplicateFaqItems(items);
 };
 
 const generalFaqItems = ${match[1]};

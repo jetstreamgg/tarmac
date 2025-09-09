@@ -2,6 +2,7 @@ import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
 import { StakeBalanceCard } from './StakeBalanceCard';
+import { StUSDSBalanceCard } from './StUSDSBalanceCard';
 
 export interface CardProps {
   url?: string;
@@ -36,6 +37,9 @@ interface ModulesBalancesProps {
   stakeLoading?: boolean;
   hideStake?: boolean;
   stakeCardUrl?: string;
+  hideStUSDS?: boolean;
+  stusdsLoading?: boolean;
+  stusdsCardUrl?: string;
 }
 
 export const ModulesBalances = ({
@@ -56,7 +60,10 @@ export const ModulesBalances = ({
   stakeBalance,
   stakeLoading,
   hideStake,
-  stakeCardUrl
+  stakeCardUrl,
+  hideStUSDS,
+  stusdsLoading,
+  stusdsCardUrl
 }: ModulesBalancesProps): React.ReactElement => {
   return (
     <div className="flex flex-col gap-2">
@@ -74,6 +81,13 @@ export const ModulesBalances = ({
           onExternalLinkClicked={onExternalLinkClicked}
           loading={savingsLoading}
           savingsBalances={savingsBalances}
+        />
+      )}
+      {!hideModuleBalances && !hideStUSDS && (
+        <StUSDSBalanceCard
+          url={stusdsCardUrl}
+          onExternalLinkClicked={onExternalLinkClicked}
+          loading={stusdsLoading}
         />
       )}
       {!hideStake && (

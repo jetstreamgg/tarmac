@@ -18,6 +18,42 @@ export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
 export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
 export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
 
+// stUSDS
+export {
+  useStUsdsData,
+  useStUsdsDeposit,
+  useBatchStUsdsDeposit,
+  useStUsdsWithdraw,
+  useStUsdsAllowance,
+  useStUsdsApprove,
+  useStUsdsConvertToShares,
+  useStUsdsConvertToAssets,
+  useStUsdsPreviewDeposit,
+  useStUsdsPreviewWithdraw,
+  useStUsdsRateData,
+  useStUsdsCapacityData,
+  useStUsdsHistory,
+  useStUsdsChartInfo
+} from './stusds';
+
+export type {
+  StUsdsHookData,
+  StUsdsHook,
+  StUsdsAllowanceHookResponse,
+  StUsdsConvertToSharesHookResponse,
+  StUsdsConvertToAssetsHookResponse,
+  StUsdsPreviewDepositHookResponse,
+  StUsdsPreviewWithdrawHookResponse,
+  StUsdsRateData,
+  StUsdsRateDataHook,
+  StUsdsCapacityData,
+  StUsdsCapacityDataHook,
+  StUsdsHistoryHook,
+  StUsdsHistoryItem,
+  StUsdsVaultMetrics,
+  StUsdsUserMetrics
+} from './stusds';
+
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';
@@ -259,6 +295,7 @@ export {
   stakeModuleAddress,
   usdcL2Address,
   usdsL2Address,
+  stUsdsAddress,
   sUsdsL2Address,
   psm3L2Address,
   useReadPsm3L2ConvertToShares,

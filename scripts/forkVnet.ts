@@ -2,16 +2,17 @@ require('dotenv').config();
 //@ts-expect-error readFile is already declared
 const { writeFile, readFile } = require('fs/promises');
 
-// https://dashboard.tenderly.co/jetstreamgg/jetstream/testnet/e5dab530-23ab-4542-98d0-93c656f38661
-const MAINNET_FORK_CONTAINER_ID = 'e5dab530-23ab-4542-98d0-93c656f38661';
-// corresponds to https://dashboard.tenderly.co/jetstreamgg/jetstream/testnet/d382d976-02a4-4fc2-a9ba-db43a1602719
-const BASE_FORK_CONTAINER_ID = 'd382d976-02a4-4fc2-a9ba-db43a1602719';
-// corresponds to https://dashboard.tenderly.co/jetstreamgg/jetstream/testnet/d720e619-0124-4c51-aae9-f32dcba6de2a
-// const ARBITRUM_FORK_CONTAINER_ID = 'd720e619-0124-4c51-aae9-f32dcba6de2a';
+const MAINNET_FORK_CONTAINER_ID = 'b6296491-f7e7-461b-aa3c-822ecc0c4efc';
 
 const ARBITRUM_CONFIG = {
   chainId: 42161,
+  // Fixed block from after the Arbitrum PSM was funded
   forkBlock: '343221023'
+};
+const BASE_CONFIG = {
+  chainId: 8453,
+  // Fixed block from after the Base PSM was funded
+  forkBlock: '31758878'
 };
 const OPTIMISM_CONFIG = {
   chainId: 10,
@@ -48,7 +49,7 @@ const forkVnets = async chainType => {
             })
           });
         case 'base':
-          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets/fork', {
+          return fetch('https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets', {
             headers: [
               ['accept', 'application/json, text/plain, */*'],
               ['content-type', 'application/json'],
@@ -56,8 +57,17 @@ const forkVnets = async chainType => {
             ],
             method: 'POST',
             body: JSON.stringify({
-              vnet_id: BASE_FORK_CONTAINER_ID,
-              display_name: 'ci-tests-testnet'
+              slug: `ci-tests-testnet-${BASE_CONFIG.chainId}-${currentTime}`,
+              display_name: 'ci-tests-testnet',
+              fork_config: {
+                network_id: BASE_CONFIG.chainId,
+                block_number: BASE_CONFIG.forkBlock
+              },
+              virtual_network_config: {
+                chain_config: {
+                  chain_id: BASE_CONFIG.chainId
+                }
+              }
             })
           });
         case 'arbitrum':

@@ -168,7 +168,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       linkedActionConfig.step === LinkedActionSteps.SUCCESS_FUTURE
     ) {
       setCustomHref(
-        `/?${QueryParams.Widget}=${linkedActionConfig.linkedAction}&${QueryParams.InputAmount}=${linkedActionConfig?.inputAmount}&${QueryParams.LinkedAction}=${linkedActionConfig.linkedAction}${linkedActionConfig.rewardContract ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}` : ''}`
+        `/?${QueryParams.Widget}=${linkedActionConfig.linkedAction}&${QueryParams.InputAmount}=${linkedActionConfig?.inputAmount}&${QueryParams.LinkedAction}=${linkedActionConfig.linkedAction}${linkedActionConfig.rewardContract ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}` : ''}${linkedActionConfig.expertModule ? `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}` : ''}`
       );
       setCustomNavLabel(`Go to ${capitalizeFirstLetter(linkedActionConfig.linkedAction)}`);
     } else {
@@ -217,6 +217,11 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     }
   };
 
+  const disallowedFlow =
+    linkedActionConfig.showLinkedAction && linkedActionConfig.sourceToken
+      ? UpgradeFlow.REVERT // If in linked action, disallow revert
+      : undefined;
+
   return (
     <UpgradeWidget
       {...sharedProps}
@@ -233,7 +238,12 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       onWidgetStateChange={onUpgradeWidgetStateChange}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
-      upgradeOptions={[TOKENS.dai, TOKENS.mkr]}
+      upgradeOptions={
+        linkedActionConfig.showLinkedAction && linkedActionConfig.sourceToken
+          ? [linkedActionConfig.sourceToken]
+          : [TOKENS.dai, TOKENS.mkr]
+      }
+      disallowedFlow={disallowedFlow}
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
     />

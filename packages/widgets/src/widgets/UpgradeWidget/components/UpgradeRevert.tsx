@@ -31,6 +31,8 @@ type Props = WidgetProps & {
   onOriginInputChange: (val: bigint, userTriggered?: boolean) => void;
   onMenuItemChange?: (token: Token) => void;
   isConnectedAndEnabled: boolean;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  disallowedFlow?: string;
   mkrSkyFee?: bigint;
   isFeeLoading?: boolean;
 };
@@ -52,10 +54,15 @@ export function UpgradeRevert({
   onOriginInputChange,
   onMenuItemChange,
   isConnectedAndEnabled = true,
+  disallowedFlow,
   mkrSkyFee,
   isFeeLoading
 }: Props): React.ReactElement {
   const chainId = useChainId();
+
+  // Check if each flow is disabled
+  const isUpgradeDisabled = disallowedFlow === UpgradeFlow.UPGRADE;
+  const isRevertDisabled = disallowedFlow === UpgradeFlow.REVERT;
 
   // Calculate the upgrade penalty percentage for display
   const upgradePenalty = math.calculateUpgradePenalty(mkrSkyFee);
@@ -70,6 +77,8 @@ export function UpgradeRevert({
               data-testid="upgrade-toggle-left"
               value={UpgradeFlow.UPGRADE}
               onClick={() => onToggle(0)}
+              disabled={isUpgradeDisabled}
+              className={isUpgradeDisabled ? '!pointer-events-auto !cursor-not-allowed opacity-50' : ''}
             >
               {leftTabTitle}
             </TabsTrigger>
@@ -78,6 +87,8 @@ export function UpgradeRevert({
               data-testid="upgrade-toggle-right"
               value={UpgradeFlow.REVERT}
               onClick={() => onToggle(1)}
+              disabled={isRevertDisabled}
+              className={isRevertDisabled ? '!pointer-events-auto !cursor-not-allowed opacity-50' : ''}
             >
               {rightTabTitle}
             </TabsTrigger>

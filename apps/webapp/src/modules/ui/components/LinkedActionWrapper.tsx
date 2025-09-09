@@ -16,10 +16,10 @@ export const LinkedActionWrapper = () => {
     : null;
 
   const secondStepText = linkedActionConfig.linkedAction
-    ? linkedActionMetadata[linkedActionConfig.linkedAction].text
+    ? linkedActionMetadata[linkedActionConfig.linkedAction]?.text
     : '';
   const secondStepIcon = linkedActionConfig.linkedAction
-    ? linkedActionMetadata[linkedActionConfig.linkedAction].icon
+    ? linkedActionMetadata[linkedActionConfig.linkedAction]?.icon
     : null;
 
   return (

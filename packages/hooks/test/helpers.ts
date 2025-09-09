@@ -12,7 +12,13 @@ export const waitForPreparedExecuteAndMine = async (
     () => {
       expect(result.current.prepared).toBe(true);
     },
-    { timeout: 15000 }
+    {
+      timeout: 15000,
+      onTimeout: error => {
+        console.log({ writeHookResponse: result.current });
+        return error;
+      }
+    }
   );
   result.current.execute();
 

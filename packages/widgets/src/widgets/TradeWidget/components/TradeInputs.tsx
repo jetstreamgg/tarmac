@@ -48,6 +48,7 @@ type TradeInputsProps = {
   onTargetTokenChange?: (token: TokenForChain) => void;
   onOriginInputChange?: (val: bigint, userTriggered?: boolean) => void;
   enableSearch?: boolean;
+  tokensLocked?: boolean;
 };
 
 export function TradeInput(props: TokenInputProps) {
@@ -86,7 +87,8 @@ export function TradeInputs({
   onOriginTokenChange,
   onTargetTokenChange,
   onOriginInputChange,
-  enableSearch = false
+  enableSearch = false,
+  tokensLocked = false
 }: TradeInputsProps) {
   const separationPx = 12;
   const separationMb = 'mb-[12px]';
@@ -206,50 +208,52 @@ export function TradeInputs({
             onOriginTokenChange?.(option as TokenForChain);
           }}
           error={isBalanceError ? t`Insufficient funds` : undefined}
-          variant="top"
-          extraPadding={true}
+          variant={tokensLocked ? undefined : 'top'}
+          extraPadding={!tokensLocked}
           showPercentageButtons={isConnectedAndEnabled}
           enabled={isConnectedAndEnabled}
           enableSearch={enableSearch}
         />
       </motion.div>
-      <div
-        className="flex justify-center"
-        style={{
-          position: 'absolute',
-          zIndex: 10,
-          left: switchPosition.left,
-          top: switchPosition.top,
-          transform: 'translate(-50%, -50%)',
-          visibility: isSwitchVisible ? 'visible' : 'hidden',
-          cursor: switchDisabled ? 'not-allowed' : 'pointer'
-        }}
-      >
-        <Button
-          aria-label="Switch token inputs"
-          size="icon"
-          className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
-          onClick={() => {
-            setLastSwitchTimestamp(Date.now());
-            const auxOriginAmount = originAmount;
-            const auxOriginToken = originToken;
-            setLastUpdated(TradeSide.OUT);
-            setOriginToken(targetToken);
-            setTargetToken(auxOriginToken);
-            setOriginAmount(0n);
-            setTargetAmount(auxOriginAmount);
-            onUserSwitchTokens?.(targetToken?.symbol, auxOriginToken?.symbol);
+      {!tokensLocked && (
+        <div
+          className="flex justify-center"
+          style={{
+            position: 'absolute',
+            zIndex: 10,
+            left: switchPosition.left,
+            top: switchPosition.top,
+            transform: 'translate(-50%, -50%)',
+            visibility: isSwitchVisible ? 'visible' : 'hidden',
+            cursor: switchDisabled ? 'not-allowed' : 'pointer'
           }}
-          disabled={switchDisabled}
         >
-          <ShiftArrow height={24} className="text-textDesaturated" />
-        </Button>
-      </div>
+          <Button
+            aria-label="Switch token inputs"
+            size="icon"
+            className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
+            onClick={() => {
+              setLastSwitchTimestamp(Date.now());
+              const auxOriginAmount = originAmount;
+              const auxOriginToken = originToken;
+              setLastUpdated(TradeSide.OUT);
+              setOriginToken(targetToken);
+              setTargetToken(auxOriginToken);
+              setOriginAmount(0n);
+              setTargetAmount(auxOriginAmount);
+              onUserSwitchTokens?.(targetToken?.symbol, auxOriginToken?.symbol);
+            }}
+            disabled={switchDisabled}
+          >
+            <ShiftArrow height={24} className="text-textDesaturated" />
+          </Button>
+        </div>
+      )}
       <motion.div variants={positionAnimations} ref={bottomInputRef}>
         <TradeInput
           className="w-full"
           label={t`Choose a token to receive`}
-          variant="bottom"
+          variant={tokensLocked ? undefined : 'bottom'}
           token={targetToken as Token}
           balance={targetBalance?.value}
           onChange={newValue => {

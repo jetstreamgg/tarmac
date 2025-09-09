@@ -1,4 +1,6 @@
 name: Webapp E2E tests
+permissions:
+  contents: read
 
 on:
   pull_request:
@@ -28,6 +30,9 @@ jobs:
             vnet: true
             chain: mainnet
           - test: stake.spec
+            vnet: true
+            chain: mainnet
+          - test: expert-stusds.spec
             vnet: true
             chain: mainnet
           - test: landing.spec
@@ -65,8 +70,6 @@ jobs:
             chain: unichain
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -98,7 +101,6 @@ jobs:
         run: pnpm run e2e:no-vnet ${{ matrix.test }}
         env:
           TEST_CHAIN: ${{ matrix.chain }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           VITE_ENV_NAME: development
           VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
           VITE_BATCH_TX_ENABLED: 'true'

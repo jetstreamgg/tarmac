@@ -35,7 +35,7 @@ function Typography({ children, tag = 'span', className, dataTestId, ...props }:
   );
 }
 
-type HeadingVariant = 'large' | 'medium' | 'small' | 'extraSmall';
+type HeadingVariant = 'x-large' | 'large' | 'medium' | 'small' | 'extraSmall';
 
 interface HeadingProps {
   children: React.ReactNode;
@@ -46,6 +46,7 @@ interface HeadingProps {
 }
 
 const HEADING_VARIANTS: Record<HeadingVariant, string> = {
+  'x-large': 'text-[32px] text-text font-circle leading-10 font-normal',
   large: 'text-3xl text-text font-circle',
   medium: 'text-2xl text-text font-circle',
   small: 'text-lg text-text font-circle',

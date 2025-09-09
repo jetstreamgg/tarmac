@@ -1,6 +1,6 @@
 import { TestProject } from 'vitest/node';
 import { mcdDaiAddress, mkrAddress, skyAddress, TOKENS, usdsAddress } from '../src';
-import { TENDERLY_BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../src/constants';
+import { BASE_CHAIN_ID, TENDERLY_CHAIN_ID } from '../src/constants';
 import { setErc20Balance, setEthBalance, waitForVnetsReady } from './utils';
 import { testClientMainnet, testClientBase, testClientArbitrum } from './WagmiWrapper';
 import { NetworkName } from './constants';
@@ -17,8 +17,8 @@ export async function setup({ provide }: TestProject) {
     setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], '0'),
     // Tenderly Base
     setEthBalance('10', NetworkName.base),
-    setErc20Balance(TOKENS.usds.address[TENDERLY_BASE_CHAIN_ID], '200', 18, NetworkName.base),
-    setErc20Balance(TOKENS.susds.address[TENDERLY_BASE_CHAIN_ID], '100', 18, NetworkName.base)
+    setErc20Balance(TOKENS.usds.address[BASE_CHAIN_ID], '200', 18, NetworkName.base),
+    setErc20Balance(TOKENS.susds.address[BASE_CHAIN_ID], '100', 18, NetworkName.base)
   ]);
 
   const [snapshotIdMainnet, snapshotIdBase, snapshotIdArbitrum] = await Promise.all([

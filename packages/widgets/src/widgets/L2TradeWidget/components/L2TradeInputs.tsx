@@ -39,6 +39,7 @@ type TradeInputsProps = {
   setMaxWithdraw?: (val: boolean) => void;
   onOriginTokenChange?: (token: TokenForChain) => void;
   onTargetTokenChange?: (token: TokenForChain) => void;
+  tokensLocked?: boolean;
 };
 
 export function L2TradeInputs({
@@ -64,7 +65,8 @@ export function L2TradeInputs({
   onOriginInputInput,
   onTargetInputInput,
   onOriginTokenChange,
-  onTargetTokenChange
+  onTargetTokenChange,
+  tokensLocked = false
   // setMaxWithdraw
 }: TradeInputsProps) {
   const separationPx = 12;
@@ -153,59 +155,61 @@ export function L2TradeInputs({
             onOriginTokenChange?.(option as TokenForChain);
           }}
           error={isBalanceError ? t`Insufficient funds` : undefined}
-          variant="top"
-          extraPadding={true}
+          variant={tokensLocked ? undefined : 'top'}
+          extraPadding={!tokensLocked}
           showPercentageButtons={isConnectedAndEnabled}
           enabled={isConnectedAndEnabled}
         />
       </motion.div>
-      <div
-        className="flex justify-center"
-        style={{
-          position: 'absolute',
-          zIndex: 10,
-          left: switchPosition.left,
-          top: switchPosition.top,
-          transform: 'translate(-50%, -50%)',
-          visibility: isSwitchVisible ? 'visible' : 'hidden',
-          cursor: switchDisabled ? 'not-allowed' : 'pointer'
-        }}
-      >
-        <Button
-          aria-label="Switch token inputs"
-          size="icon"
-          className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
-          onClick={() => {
-            const tempToken = originToken;
-            const prevOriginAmount = originAmount;
-            const prevTargetAmount = targetAmount;
-            setOriginAmount(0n);
-            setTargetAmount(0n);
-            setTimeout(() => {
-              setOriginToken(targetToken);
-              setTargetToken(tempToken);
-              setTimeout(() => {
-                if (lastUpdated === TradeSide.IN) {
-                  setTargetAmount(prevOriginAmount);
-                  setOriginAmount(0n);
-                } else {
-                  setOriginAmount(prevTargetAmount);
-                  setTargetAmount(0n);
-                }
-                onUserSwitchTokens?.(targetToken?.symbol, originToken?.symbol);
-              }, 500);
-            }, 500);
+      {!tokensLocked && (
+        <div
+          className="flex justify-center"
+          style={{
+            position: 'absolute',
+            zIndex: 10,
+            left: switchPosition.left,
+            top: switchPosition.top,
+            transform: 'translate(-50%, -50%)',
+            visibility: isSwitchVisible ? 'visible' : 'hidden',
+            cursor: switchDisabled ? 'not-allowed' : 'pointer'
           }}
-          disabled={switchDisabled}
         >
-          <ShiftArrow height={24} className="text-textDesaturated" />
-        </Button>
-      </div>
+          <Button
+            aria-label="Switch token inputs"
+            size="icon"
+            className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
+            onClick={() => {
+              const tempToken = originToken;
+              const prevOriginAmount = originAmount;
+              const prevTargetAmount = targetAmount;
+              setOriginAmount(0n);
+              setTargetAmount(0n);
+              setTimeout(() => {
+                setOriginToken(targetToken);
+                setTargetToken(tempToken);
+                setTimeout(() => {
+                  if (lastUpdated === TradeSide.IN) {
+                    setTargetAmount(prevOriginAmount);
+                    setOriginAmount(0n);
+                  } else {
+                    setOriginAmount(prevTargetAmount);
+                    setTargetAmount(0n);
+                  }
+                  onUserSwitchTokens?.(targetToken?.symbol, originToken?.symbol);
+                }, 500);
+              }, 500);
+            }}
+            disabled={switchDisabled}
+          >
+            <ShiftArrow height={24} className="text-textDesaturated" />
+          </Button>
+        </div>
+      )}
       <motion.div variants={positionAnimations} ref={bottomInputRef}>
         <TradeInput
           className="w-full"
           label={t`Choose a token to receive`}
-          variant="bottom"
+          variant={tokensLocked ? undefined : 'bottom'}
           token={targetToken as Token}
           balance={targetBalance?.value}
           onChange={onTargetInputChange}

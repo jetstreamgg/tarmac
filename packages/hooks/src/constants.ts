@@ -37,13 +37,9 @@ export const URL_MAKER_SUBGRAPH_TENDERLY =
 
 export const URL_BASE_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const URL_BASE_SUBGRAPH_TENDERLY =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-baseTenderly';
 
 export const URL_ARBITRUM_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const URL_ARBITRUM_SUBGRAPH_TENDERLY =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrumTenderly';
 
 export const URL_OPTIMISM_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
@@ -62,8 +58,6 @@ export const OPTIMISM_CHAIN_ID = 10;
 export const UNICHAIN_CHAIN_ID = 130;
 
 export const TENDERLY_CHAIN_ID = 314310;
-export const TENDERLY_BASE_CHAIN_ID = 8555;
-export const TENDERLY_ARBITRUM_CHAIN_ID = 42012;
 
 export enum ModuleEnum {
   SAVINGS = 'SAVINGS',
@@ -71,7 +65,8 @@ export enum ModuleEnum {
   TRADE = 'TRADE',
   REWARDS = 'REWARDS',
   SEAL = 'SEAL',
-  STAKE = 'STAKE'
+  STAKE = 'STAKE',
+  STUSDS = 'STUSDS'
 }
 
 export enum TransactionTypeEnum {

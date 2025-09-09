@@ -34,7 +34,9 @@ export function MainApp() {
     updateUserConfig,
     linkedActionConfig,
     updateLinkedActionConfig,
-    setSelectedRewardContract
+    setSelectedRewardContract,
+    setSelectedExpertOption,
+    expertRiskDisclaimerShown
   } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
 
@@ -85,6 +87,7 @@ export function MainApp() {
   const widgetParam = searchParams.get(QueryParams.Widget);
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const rewardContract = searchParams.get(QueryParams.Reward) || undefined;
+  const expertModule = searchParams.get(QueryParams.ExpertModule) || undefined;
   const sourceToken = searchParams.get(QueryParams.SourceToken) || undefined;
   const targetToken = searchParams.get(QueryParams.TargetToken) || undefined;
   const linkedAction = searchParams.get(QueryParams.LinkedAction) || undefined;
@@ -137,7 +140,9 @@ export function MainApp() {
           widgetParam || '',
           setSelectedRewardContract,
           newChainId,
-          chains
+          chains,
+          setSelectedExpertOption,
+          expertRiskDisclaimerShown
         );
         // Runs second validation for linked-action-specific criteria
         const validatedLinkedActionParams = validateLinkedActionSearchParams(validatedParams);
@@ -145,7 +150,14 @@ export function MainApp() {
       },
       { replace: true }
     );
-  }, [searchParams, rewardContracts, setSelectedRewardContract, widgetParam]);
+  }, [
+    searchParams,
+    rewardContracts,
+    setSelectedRewardContract,
+    widgetParam,
+    setSelectedExpertOption,
+    expertRiskDisclaimerShown
+  ]);
 
   useEffect(() => {
     // If there's no network param, default to the current chain
@@ -231,6 +243,7 @@ export function MainApp() {
       linkedAction,
       inputAmount,
       rewardContract,
+      expertModule,
       step,
       showLinkedAction: !!linkedAction,
       timestamp
@@ -240,6 +253,8 @@ export function MainApp() {
     targetToken,
     linkedAction,
     inputAmount,
+    rewardContract,
+    expertModule,
     step,
     widgetParam,
     linkedActionConfig.initialAction
