@@ -61,6 +61,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.536.0",
+    "porto": "^0.0.88",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-intersection-observer": "^9.16.0",

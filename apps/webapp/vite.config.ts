@@ -89,6 +89,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     frame-src 'self'
       https://verify.walletconnect.com
       https://verify.walletconnect.org
+      https://id.porto.sh/
 `;
 
   // Need to remove whitespaces otherwise the app won't build due to unsupported characters

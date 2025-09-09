@@ -19,6 +19,7 @@ import {
 } from './testTenderlyChain';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { baseAccount } from './baseAccount';
+import { Porto } from 'porto';
 
 export const tenderly = {
   ...mainnet,
@@ -82,6 +83,9 @@ export const tenderlyArbitrum = {
     default: { name: '', url: '' }
   }
 };
+
+// Initialize porto connector so it can be included in the modal via EIP-6963.
+Porto.create();
 
 const connectors = connectorsForWallets(
   [
