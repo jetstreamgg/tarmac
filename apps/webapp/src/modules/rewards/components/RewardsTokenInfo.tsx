@@ -26,7 +26,8 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
     isLoading: historicRewardsTokenIsLoading,
     error: historicRewardsTokenError
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress
+    rewardContractAddress: rewardContract.contractAddress,
+    limit: 1
   });
 
   const mostRecentReward = historicRewardsTokenData

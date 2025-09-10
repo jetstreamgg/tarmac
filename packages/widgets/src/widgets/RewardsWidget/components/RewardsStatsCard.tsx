@@ -30,7 +30,8 @@ export const RewardsStatsCard = ({
     isLoading: isLoadingChart,
     error: errorChart
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress
+    rewardContractAddress: rewardContract.contractAddress,
+    limit: 1
   });
 
   const mostRecentData = chartData

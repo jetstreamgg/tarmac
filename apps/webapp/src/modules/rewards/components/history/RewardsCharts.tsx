@@ -5,6 +5,7 @@ import { Trans } from '@lingui/react/macro';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useParseRewardsChartData } from '@/modules/rewards/hooks/useParseRewardsChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
 
 enum ChartName {
   TVL = 'TVL',
@@ -14,13 +15,15 @@ enum ChartName {
 export function RewardsCharts({ rewardContract }: { rewardContract: RewardContract }) {
   const [activeChart, setActiveChart] = useState<ChartName>(ChartName.TVL);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
+  const limit = getDayCountFromTimeFrame(timeFrame);
 
   const {
     data: rewardContractChartData,
     isLoading,
     error
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress.toLowerCase()
+    rewardContractAddress: rewardContract.contractAddress.toLowerCase(),
+    limit
   });
 
   const chartData = useParseRewardsChartData(timeFrame, rewardContractChartData || []);

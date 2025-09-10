@@ -50,7 +50,8 @@ export const RewardsStatsCardCore = ({
     isLoading,
     error
   } = useRewardsChartInfo({
-    rewardContractAddress: rewardContract.contractAddress
+    rewardContractAddress: rewardContract.contractAddress,
+    limit: 1
   });
 
   // Get the most recent data

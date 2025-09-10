@@ -36,11 +36,13 @@ export const RewardsBalanceCard = ({
 
   // Fetch chart data for both reward contracts
   const { data: usdsSkyChartData, isLoading: usdsSkyChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: usdsSkyRewardContract?.contractAddress as string
+    rewardContractAddress: usdsSkyRewardContract?.contractAddress as string,
+    limit: 1
   });
 
   const { data: usdsSpkChartData, isLoading: usdsSpkChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: usdsSpkRewardContract?.contractAddress as string
+    rewardContractAddress: usdsSpkRewardContract?.contractAddress as string,
+    limit: 1
   });
 
   // Find the highest rate from both contracts
