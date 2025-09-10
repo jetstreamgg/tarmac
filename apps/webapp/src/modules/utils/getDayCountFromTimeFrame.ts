@@ -1,6 +1,6 @@
 import { TimeFrame } from '@/modules/ui/components/Chart';
 
-export function getDayCountFromTimeFrame(timeFrame: TimeFrame): number {
+export function getDayCountFromTimeFrame(timeFrame: TimeFrame): number | undefined {
   switch (timeFrame) {
     case 'w':
       return 7;
@@ -12,6 +12,8 @@ export function getDayCountFromTimeFrame(timeFrame: TimeFrame): number {
       return 180;
     case 'y':
       return 365;
+    case 'all':
+      return undefined; // No limit for 'all' timeframe
     default:
       return 30;
   }

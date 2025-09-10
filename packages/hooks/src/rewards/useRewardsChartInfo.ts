@@ -74,7 +74,9 @@ export function useRewardsChartInfo({
   const baseUrl = getBaLabsApiUrl(chainId);
   let url: URL | undefined;
   if (baseUrl && rewardContractAddress) {
-    const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`;
+    const endpoint = limit
+      ? `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`
+      : `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/`;
     url = formatBaLabsUrl(new URL(endpoint));
   }
 

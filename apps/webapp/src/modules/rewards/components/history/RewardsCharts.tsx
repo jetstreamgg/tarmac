@@ -23,7 +23,7 @@ export function RewardsCharts({ rewardContract }: { rewardContract: RewardContra
     error
   } = useRewardsChartInfo({
     rewardContractAddress: rewardContract.contractAddress.toLowerCase(),
-    limit
+    ...(limit !== undefined && { limit })
   });
 
   const chartData = useParseRewardsChartData(timeFrame, rewardContractChartData || []);

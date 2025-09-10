@@ -50,7 +50,7 @@ function useRewardListChartInfo({
     error: errorSky
   } = useRewardsChartInfo({
     rewardContractAddress: skyRewardContract.contractAddress.toLowerCase(),
-    limit
+    ...(limit !== undefined && { limit })
   });
 
   const {
@@ -59,7 +59,7 @@ function useRewardListChartInfo({
     error: errorCron
   } = useRewardsChartInfo({
     rewardContractAddress: cronRewardContract.contractAddress.toLowerCase(),
-    limit
+    ...(limit !== undefined && { limit })
   });
   const combinedChartData = skyChartData && cronChartData ? [...skyChartData, ...cronChartData] : [];
 
