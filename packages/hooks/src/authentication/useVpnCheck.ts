@@ -15,14 +15,8 @@ const checkVpn = async (authUrl: string): Promise<VpnResponse> => {
   let isConnectedToVpn = false;
   let isRestrictedRegion = false;
   let countryCode = '';
-  // TODO is this the best way to get a user's IP address?
-  const ipRes = await fetch('https://api.ipify.org/?format=json');
-  if (!ipRes.ok) {
-    throw new Error('Could not fetch IP address');
-  }
 
-  const { ip } = await ipRes.json();
-  const vpnRes = await fetch(`${authUrl}/ip/status?ip=${ip}`);
+  const vpnRes = await fetch(`${authUrl}/ip/status`);
   if (!vpnRes.ok) {
     throw new Error('Could not fetch VPN status');
   }

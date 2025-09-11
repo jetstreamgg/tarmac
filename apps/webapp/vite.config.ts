@@ -73,7 +73,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://api.thegraph.com
       https://staging-api.sky.money
       https://api.sky.money
-      https://api.ipify.org
       https://info-sky.blockanalitica.com
       https://sky-tenderly.blockanalitica.com
       https://api.cow.fi/

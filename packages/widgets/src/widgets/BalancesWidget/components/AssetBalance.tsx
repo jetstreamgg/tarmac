@@ -84,7 +84,7 @@ export const AssetBalance = ({
             {isLoading ? (
               <Skeleton className="bg-textSecondary h-5" />
             ) : (
-              <Text className="text-textSecondary text-[13px]">
+              <Text className="text-textSecondary text-right text-[13px]">
                 {priceData
                   ? `$${formatNumber(parseFloat(formatUnits(value, decimals)) * parseFloat(priceData.price), {
                       maxDecimals: 2

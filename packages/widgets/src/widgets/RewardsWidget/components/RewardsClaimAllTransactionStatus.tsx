@@ -17,8 +17,21 @@ export const RewardsClaimAllTransactionStatus = ({
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
   const { i18n } = useLingui();
-  const { setTxTitle, setTxSubtitle, setTxDescription, txStatus, setLoadingText, setStep } =
-    useContext(WidgetContext);
+  const {
+    setTxTitle,
+    setTxSubtitle,
+    setTxDescription,
+    txStatus,
+    setLoadingText,
+    setStep,
+    setOriginAmount,
+    setOriginToken
+  } = useContext(WidgetContext);
+
+  useEffect(() => {
+    setOriginToken();
+    setOriginAmount();
+  }, []);
 
   // Sets the title and subtitle of the card
   useEffect(() => {
