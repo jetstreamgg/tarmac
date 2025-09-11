@@ -50,7 +50,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     error: authError
   } = useRestrictedAddressCheck({ address, authUrl, enabled });
 
-  const { data: vpnData, isLoading: vpnIsLoading, error: vpnError } = useVpnCheck({ authUrl });
+  const {
+    data: vpnData,
+    isLoading: vpnIsLoading,
+    error: vpnError
+  } = useVpnCheck({ authUrl, refetchOnWindowFocus: true });
 
   useEffect(() => {
     setEnabled(!!address);
