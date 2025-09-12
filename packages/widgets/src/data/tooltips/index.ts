@@ -92,7 +92,9 @@ Delegates in receipt of token voting power can never directly access any tokens 
     title: 'Delayed Upgrade Penalty',
     tooltip: `The Delayed Upgrade Penalty is a time-based upgrade mechanism approved by Sky Ecosystem Governance and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
 
-The penalty, which will begin sometime in September 2025, reduces the amount of SKY received per MKR upgraded at a rate of 1%, and increases by 1% every three months thereafter until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in`
+The vote to confirm the penalty will [be held on September 18, 2025](https://upgrademkrtosky.sky.money/). If the vote passes, the penalty will take effect on September 22, 2025.
+
+Once in effect, the amount of SKY received per MKR upgraded during the first three months will be reduced by 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.`
   },
   {
     id: 'eip-7702-bundled-transactions-not-supported',
@@ -131,8 +133,8 @@ Bundled transaction: Active`
     tooltip: 'This reflects your slippage tolerance level.'
   },
   {
-    id: 'slippage-tolerancee',
-    title: 'Slippage Tolerancee',
+    id: 'slippage-tolerance',
+    title: 'Slippage Tolerance',
     tooltip:
       'By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain. If the actual slippage is greater than your chosen tolerance level, the transaction will fail and be reverted. Note that reverted transactions may still incur gas fees.'
   },
@@ -141,12 +143,6 @@ Bundled transaction: Active`
     title: 'Rate',
     tooltip:
       'The Sky Savings Rate is variable, determined by decentralized, onchain Sky Ecosystem Governance, and configured on the Ethereum blockchain. Sky Ecosystem Governance is able to adapt the SSR and other relevant parameters at any time at its discretion and without notice, based on market conditions, protocol surplus and other factors. The rate shown here is an estimate of the Sky Savings Rate representing the expected compounded rate per annum. It should be automatically updated every 5 minutes, and is powered by data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
-  },
-  {
-    id: 'rewards-info-lock',
-    title: 'Rewards Info [Lock]',
-    tooltip:
-      'Wallet connection required. To access detailed Sky Token Rewards information, please connect your wallet.'
   },
   {
     id: 'rewards-rate',
