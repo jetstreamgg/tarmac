@@ -139,7 +139,7 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
     process.env.VITE_TEST_WORKER_INDEX = String(workerInfo.workerIndex);
 
     await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
-    await page.route('**/ip/status?ip=*', mockVpnCheck);
+    await page.route('**/ip/status', mockVpnCheck);
 
     await use(page);
   }
