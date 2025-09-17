@@ -57,7 +57,7 @@ const amountValidationRule = z
   );
 
 const TokenSchema = z.object({
-  address: z.record(z.string()),
+  address: z.record(z.string(), z.string()),
   abi: z.any().optional(),
   name: z.string(),
   color: z.string(),
