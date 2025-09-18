@@ -11,6 +11,7 @@ import { IntentMapping } from '@/lib/constants';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { filterActionsByIntent } from '@/lib/utils';
+import { StarTokenDetails } from './StarTokenDetails';
 
 export function TradeDetails(): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -29,6 +30,16 @@ export function TradeDetails(): React.ReactElement {
             </DetailSectionRow>
           </DetailSection>
         )}
+      <DetailSection title={t`Star Ecosystem Tokens`}>
+        <DetailSectionRow>
+          <StarTokenDetails />
+        </DetailSectionRow>
+      </DetailSection>
+      <DetailSection title={t`About Native Sky Protocol Tokens`}>
+        <DetailSectionRow>
+          <AboutUsds />
+        </DetailSectionRow>
+      </DetailSection>
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your Trade transaction history`}>
           <DetailSectionRow>
@@ -36,11 +47,6 @@ export function TradeDetails(): React.ReactElement {
           </DetailSectionRow>
         </DetailSection>
       )}
-      <DetailSection title={t`About Native Sky Protocol Tokens`}>
-        <DetailSectionRow>
-          <AboutUsds />
-        </DetailSectionRow>
-      </DetailSection>
       <DetailSection title={t`FAQs`}>
         <DetailSectionRow>
           <TradeFaq />
