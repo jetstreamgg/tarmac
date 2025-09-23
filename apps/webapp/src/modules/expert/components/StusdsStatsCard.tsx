@@ -72,9 +72,7 @@ export const StusdsStatsCard = ({ onClick, disabled = false }: StusdsStatsCardPr
 
           {/* TVL */}
           <VStack className="items-stretch justify-between text-right" gap={2} data-testid="tvl-container">
-            <Text className="text-textSecondary text-sm leading-4">
-              {i18n._(msg`Total Value Locked (TVL)`)}
-            </Text>
+            <Text className="text-textSecondary text-sm leading-4">{i18n._(msg`Total Value Locked`)}</Text>
             {stUsdsLoading ? (
               <div className="flex justify-end">
                 <Skeleton className="bg-textSecondary h-6 w-10" />

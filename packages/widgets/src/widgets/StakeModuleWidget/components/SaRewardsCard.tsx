@@ -100,7 +100,7 @@ export const SaRewardsCard = ({
       content={
         <HStack className="mt-5 justify-between" gap={2}>
           <MotionVStack className="justify-between" gap={2} variants={positionAnimations}>
-            <Text className="text-textSecondary text-sm leading-4">{t`Total Value Locked (TVL)`}</Text>
+            <Text className="text-textSecondary text-sm leading-4">{t`Total Value Locked`}</Text>
             {rewardContractInfo ? (
               <Text>{formatBigInt(rewardContractInfo.totalSupplied, { maxDecimals: 0 })} SKY</Text>
             ) : isRewardContractInfoLoading ? (

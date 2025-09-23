@@ -70,7 +70,7 @@ export const SavingsStatsCard = ({
         variants={positionAnimations}
         data-testid="savings-tvl-container"
       >
-        <Text className="text-textSecondary text-sm leading-4">{t`Total Value Locked (TVL)`}</Text>
+        <Text className="text-textSecondary text-sm leading-4">{t`Total Value Locked`}</Text>
         {isOverallDataLoading ? (
           <div className="flex justify-end">
             <Skeleton className="bg-textSecondary h-6 w-10" />

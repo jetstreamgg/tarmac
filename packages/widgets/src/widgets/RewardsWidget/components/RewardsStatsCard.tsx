@@ -81,7 +81,7 @@ export const RewardsStatsCard = ({
         <HStack className="mt-5 justify-between" gap={2}>
           <MotionVStack className="justify-between" gap={2} variants={positionAnimations}>
             <Text className="text-textSecondary text-sm leading-4">
-              {hasUserBalance ? t`Supplied Balance` : t`Total Value Locked (TVL)`}
+              {hasUserBalance ? t`Supplied Balance` : t`Total Value Locked`}
             </Text>
             {hasUserBalance ? (
               // Show user's supplied balance

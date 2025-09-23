@@ -82,7 +82,7 @@ const SealRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${str
         content={<Text className="mt-2">{rewardRate.formatted}</Text>}
       /> */}
       <StatsCard
-        title={t`Total Value Locked (TVL)`}
+        title={t`Total Value Locked`}
         isLoading={historicRewardsTokenIsLoading || sealHistoricIsLoading}
         error={historicRewardsTokenError || sealHistoricError}
         content={<Text className="mt-2">{`$${formatNumber(totalSuppliedInDollars)}`}</Text>}

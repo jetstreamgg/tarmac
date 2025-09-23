@@ -12,7 +12,7 @@ export function ExpertTvlCard(): React.ReactElement {
 
   return (
     <StatsCard
-      title={t`Expert TVL`}
+      title={t`Expert Total Value Locked`}
       content={
         <Text className="mt-2" variant="large">
           {formatBigInt(totalTvl, { unit: 18 })} USDS
