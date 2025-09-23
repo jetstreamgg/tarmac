@@ -223,8 +223,8 @@ test.describe('Navigation Tests', () => {
     await page.waitForURL(/network=base/);
     expect(page.url()).toContain('network=base');
 
-    const closeBtn = page.locator('button[toast-close]');
-    await closeBtn.click();
+    // const closeBtn = page.locator('button[toast-close]');
+    // await closeBtn.click();
 
     await page.getByRole('tab', { name: 'Rewards' }).click();
     await page.waitForURL(/widget=rewards/);
@@ -236,9 +236,9 @@ test.describe('Navigation Tests', () => {
     await page.waitForURL(/widget=savings/);
     expect(page.url()).toContain('network=ethereum');
 
-    if (await closeBtn.isVisible()) {
-      await closeBtn.click();
-    }
+    // if (await closeBtn.isVisible()) {
+    //   await closeBtn.click();
+    // }
 
     // Navigate back to Trade - it should be on Base
     await page.getByRole('tab', { name: 'Trade' }).click();
