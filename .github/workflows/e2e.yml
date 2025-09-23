@@ -68,6 +68,10 @@ jobs:
           - test: unichain-trade.spec
             vnet: true
             chain: unichain
+          - test: navigation.spec
+            vnet: false
+            chain: mainnet
+            config: playwright.navigation.config.ts
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -98,7 +102,12 @@ jobs:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
       - name: Run E2E Test
-        run: pnpm run e2e:no-vnet ${{ matrix.test }}
+        run: |
+          if [ -n "${{ matrix.config }}" ]; then
+            pnpm -F webapp exec playwright test --config ${{ matrix.config }} --trace on ${{ matrix.test }}
+          else
+            pnpm run e2e:no-vnet ${{ matrix.test }}
+          fi
         env:
           TEST_CHAIN: ${{ matrix.chain }}
           VITE_ENV_NAME: development
