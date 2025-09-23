@@ -14,6 +14,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - test: network-switching-behavior.spec
+            vnet: true
+            chain: mainnet,arbitrum,base,optimism,unichain
           - test: reward-1.spec
             vnet: true
             chain: mainnet
