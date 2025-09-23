@@ -4,10 +4,12 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 
 export const TermsMarkdownRenderer = ({
   markdown,
-  ulVariant = 'unordered'
+  ulVariant = 'unordered',
+  className = ''
 }: {
   markdown: string;
   ulVariant?: ListVariant;
+  className?: string;
 }) => (
   <SafeMarkdownRenderer
     markdown={markdown}
@@ -28,7 +30,7 @@ export const TermsMarkdownRenderer = ({
         </Heading>
       ),
       p: ({ children, ...props }) => (
-        <Text variant="terms" tag="p" className="pb-6" {...props}>
+        <Text variant="terms" tag="p" className={`pb-6 ${className}`} {...props}>
           {children}
         </Text>
       ),

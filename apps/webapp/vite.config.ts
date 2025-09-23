@@ -24,6 +24,7 @@ export default ({ mode }: { mode: modeEnum }) => {
   const RPC_PROVIDER_OPTIMISM = process.env.VITE_RPC_PROVIDER_OPTIMISM || '';
   const RPC_PROVIDER_UNICHAIN = process.env.VITE_RPC_PROVIDER_UNICHAIN || '';
 
+  // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
   const CONTENT_SECURITY_POLICY = `
     default-src 'self';
     script-src 'self'

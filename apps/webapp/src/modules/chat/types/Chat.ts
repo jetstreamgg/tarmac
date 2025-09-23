@@ -2,9 +2,8 @@ import { MessageType, UserType } from '../constants';
 
 export interface SendMessageRequest {
   session_id: string;
-  accepted_terms_hash: string;
   messages: ChatMessage[];
-  promptText: string;
+  promptText?: string;
   network: string;
 }
 
@@ -31,6 +30,8 @@ export interface ChatIntent {
   intent_id: string;
   title: string;
   url: string;
+  widget: string;
+  priority: number;
 }
 
 export enum SlotType {

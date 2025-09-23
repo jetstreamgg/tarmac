@@ -20,7 +20,10 @@ TOOLTIPS_SOURCE_PATH="output/webapp/tooltips"
 TOOLTIPS_DESTINATION_PATH="../../packages/widgets/src/data/tooltips"
 BANNERS_SOURCE_PATH="output/webapp/banner"
 BANNERS_DESTINATION_PATH="src/data/banners"
+SPEED_BUMPS_SOURCE_PATH="output/webapp/speed-bumps"
+SPEED_BUMPS_DESTINATION_PATH="src/data/chat/speed-bumps"
 EXTRACT_SCRIPT="scripts/extract_webapp_faqs.js"
+SPEED_BUMP_EXTRACT_SCRIPT="scripts/extract_speed_bump_copy.js"
 
 # Function to print colored output
 print_status() {
@@ -132,6 +135,24 @@ if [ $EXTRACT_EXIT_CODE -ne 0 ]; then
     cd ..
     rm -rf "$TEMP_DIR"
     exit 1
+fi
+
+# Run the speed bump extraction script if it exists
+if [ -f "$SPEED_BUMP_EXTRACT_SCRIPT" ]; then
+    print_status "Running speed bump extraction script..."
+
+    # Run the speed bump extraction script
+    node "$SPEED_BUMP_EXTRACT_SCRIPT"
+    SPEED_BUMP_EXIT_CODE=$?
+
+    # Check if the speed bump extraction script succeeded
+    if [ $SPEED_BUMP_EXIT_CODE -ne 0 ]; then
+        print_warning "Speed bump extraction script failed, continuing without speed bump content"
+    else
+        print_status "Speed bump extraction completed successfully"
+    fi
+else
+    print_warning "Speed bump extraction script not found, skipping speed bump extraction"
 fi
 
 # Check if output was generated
@@ -510,21 +531,49 @@ fi
 # Copy banners if they exist
 if [ -d "$TEMP_DIR/$BANNERS_SOURCE_PATH" ]; then
     print_status "Syncing banners to webapp..."
-    
+
     # Check if banners.ts exists in the output
     if [ -f "$TEMP_DIR/$BANNERS_SOURCE_PATH/banners.ts" ]; then
         # Ensure destination directory exists
         mkdir -p "$BANNERS_DESTINATION_PATH"
-        
+
         # Copy the banners file
         cp "$TEMP_DIR/$BANNERS_SOURCE_PATH/banners.ts" "$BANNERS_DESTINATION_PATH/banners.ts"
-        
+
         print_status "Banners synced successfully to $BANNERS_DESTINATION_PATH/banners.ts"
     else
         print_warning "No banners.ts file found in corpus output"
     fi
 else
     print_warning "No banners directory found in corpus output"
+fi
+
+# Copy speed bumps if they exist
+if [ -d "$TEMP_DIR/$SPEED_BUMPS_SOURCE_PATH" ]; then
+    print_status "Syncing speed bumps to webapp chat directory..."
+
+    # Ensure destination directory exists
+    mkdir -p "$SPEED_BUMPS_DESTINATION_PATH"
+
+    # Copy all files from speed-bumps directory
+    if command -v rsync &> /dev/null; then
+        rsync -av "$TEMP_DIR/$SPEED_BUMPS_SOURCE_PATH/" "$SPEED_BUMPS_DESTINATION_PATH/"
+    else
+        # Fallback to cp if rsync is not available
+        print_warning "rsync not found, using cp instead"
+        cp -r "$TEMP_DIR/$SPEED_BUMPS_SOURCE_PATH/"* "$SPEED_BUMPS_DESTINATION_PATH/" 2>/dev/null || true
+    fi
+
+    # Count copied files
+    SPEED_BUMP_COUNT=$(find "$SPEED_BUMPS_DESTINATION_PATH" -type f \( -name "*.ts" -o -name "*.json" \) 2>/dev/null | wc -l | tr -d ' ')
+
+    if [ "$SPEED_BUMP_COUNT" -gt 0 ]; then
+        print_status "Speed bumps synced successfully ($SPEED_BUMP_COUNT files) to $SPEED_BUMPS_DESTINATION_PATH"
+    else
+        print_warning "No speed bump files found to copy"
+    fi
+else
+    print_warning "No speed bumps directory found in corpus output"
 fi
 
 # Track all generated files for formatting
@@ -547,6 +596,16 @@ fi
 # Add banner file if it exists
 if [ -f "$BANNERS_DESTINATION_PATH/banners.ts" ]; then
     GENERATED_FILES+=("apps/webapp/$BANNERS_DESTINATION_PATH/banners.ts")
+fi
+
+# Add speed bump files if they exist
+if [ -d "$SPEED_BUMPS_DESTINATION_PATH" ]; then
+    for file in "$SPEED_BUMPS_DESTINATION_PATH"/*.ts "$SPEED_BUMPS_DESTINATION_PATH"/*.json; do
+        if [ -f "$file" ]; then
+            # Convert to path relative to monorepo root
+            GENERATED_FILES+=("apps/webapp/$file")
+        fi
+    done
 fi
 
 # Format only the generated files
@@ -592,4 +651,23 @@ if [ -f "$TOOLTIPS_DESTINATION_PATH/index.ts" ]; then
     echo ""
     print_status "Tooltip files:"
     echo "  - $TOOLTIPS_DESTINATION_PATH/index.ts"
+fi
+
+# List banner files
+if [ -f "$BANNERS_DESTINATION_PATH/banners.ts" ]; then
+    echo ""
+    print_status "Banner files:"
+    echo "  - $BANNERS_DESTINATION_PATH/banners.ts"
+fi
+
+# List speed bump files
+if [ -d "$SPEED_BUMPS_DESTINATION_PATH" ]; then
+    SPEED_BUMP_FILES=$(find "$SPEED_BUMPS_DESTINATION_PATH" -type f \( -name "*.ts" -o -name "*.json" \) 2>/dev/null)
+    if [ -n "$SPEED_BUMP_FILES" ]; then
+        echo ""
+        print_status "Speed bump files:"
+        echo "$SPEED_BUMP_FILES" | sort | while read file; do
+            echo "  - $file"
+        done
+    fi
 fi

@@ -177,9 +177,10 @@ export const STAGING_URL_SKY_SUBGRAPH_UNICHAIN =
 
 export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
 export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');
-export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHAT_SUGGESTIONS_ENABLED === 'true';
-export const EXPERT_CHAT_ENABLED = import.meta.env.VITE_EXPERT_CHAT_ENABLED === 'true';
+export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHATBOT_SUGGESTIONS_ENABLED !== 'false'; // Default true
+
 export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
+export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&

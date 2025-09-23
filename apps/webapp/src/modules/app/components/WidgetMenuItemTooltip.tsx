@@ -15,7 +15,6 @@ interface WidgetMenuItemTooltipProps {
   description?: string;
   widgetIntent: Intent;
   currentChainId?: number;
-  currentIntent?: Intent;
   label: string;
   isMobile: boolean;
   disabled?: boolean;
@@ -31,7 +30,6 @@ export function WidgetMenuItemTooltip({
   description,
   widgetIntent,
   currentChainId,
-  currentIntent,
   label,
   isMobile,
   disabled = false,
@@ -39,19 +37,9 @@ export function WidgetMenuItemTooltip({
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
   const [, setSearchParams] = useSearchParams();
-  const { setIsSwitchingNetwork, saveWidgetNetwork } = useNetworkSwitch();
+  const { setIsSwitchingNetwork } = useNetworkSwitch();
 
   const handleNetworkSwitch = (chainId: number) => {
-    // Save current network if switching from multichain widget
-    if (
-      currentIntent &&
-      currentChainId &&
-      isMultichain(currentIntent) &&
-      currentIntent !== Intent.BALANCES_INTENT
-    ) {
-      saveWidgetNetwork(currentIntent, currentChainId);
-    }
-
     // Navigate to widget on selected network
     const chain = chains.find(c => c.id === chainId);
     if (chain) {

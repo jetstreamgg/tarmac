@@ -872,10 +872,18 @@ function TradeWidgetWrapped({
                     label: t`Exchange Rate`,
                     tooltipText: getTooltipById('exchange-rate')?.tooltip || '',
                     value: (() => {
-                      if (!originAmount || originAmount === 0n || !targetAmount) return '1:1';
+                      if (
+                        !originAmount ||
+                        originAmount === 0n ||
+                        !targetAmount ||
+                        !originToken ||
+                        !targetToken
+                      ) {
+                        return '1:1';
+                      }
 
-                      const originDecimals = getTokenDecimals(originToken as Token, chainId);
-                      const targetDecimals = getTokenDecimals(targetToken as Token, chainId);
+                      const originDecimals = getTokenDecimals(originToken, chainId);
+                      const targetDecimals = getTokenDecimals(targetToken, chainId);
 
                       // Convert to decimal values
                       const originValue = Number(formatUnits(originAmount, originDecimals));
@@ -895,22 +903,24 @@ function TradeWidgetWrapped({
                   },
                   {
                     label: t`Tokens to receive`,
-                    value: `${formatBigInt(targetAmount, {
-                      unit: getTokenDecimals(targetToken as Token, chainId),
-                      compact: true
-                    })} ${targetToken?.symbol}`
+                    value: targetToken
+                      ? `${formatBigInt(targetAmount, {
+                          unit: getTokenDecimals(targetToken, chainId),
+                          compact: true
+                        })} ${targetToken.symbol}`
+                      : '--'
                   },
                   {
                     label: t`Your wallet ${originToken?.symbol || ''} balance`,
                     value:
-                      originBalance?.value !== undefined && originAmount > 0n
+                      originBalance?.value !== undefined && originAmount > 0n && originToken
                         ? [
                             formatBigInt(originBalance.value, {
-                              unit: getTokenDecimals(originToken as Token, chainId),
+                              unit: getTokenDecimals(originToken, chainId),
                               compact: true
                             }),
                             formatBigInt(originBalance.value - originAmount, {
-                              unit: getTokenDecimals(originToken as Token, chainId),
+                              unit: getTokenDecimals(originToken, chainId),
                               compact: true
                             })
                           ]
@@ -919,14 +929,14 @@ function TradeWidgetWrapped({
                   {
                     label: t`Your wallet ${targetToken?.symbol || ''} balance`,
                     value:
-                      targetBalance?.value !== undefined && targetAmount > 0n
+                      targetBalance?.value !== undefined && targetAmount > 0n && targetToken
                         ? [
                             formatBigInt(targetBalance.value, {
-                              unit: getTokenDecimals(targetToken as Token, chainId),
+                              unit: getTokenDecimals(targetToken, chainId),
                               compact: true
                             }),
                             formatBigInt(targetBalance.value + targetAmount, {
-                              unit: getTokenDecimals(targetToken as Token, chainId),
+                              unit: getTokenDecimals(targetToken, chainId),
                               compact: true
                             })
                           ]

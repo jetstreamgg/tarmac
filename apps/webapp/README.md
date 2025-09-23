@@ -54,16 +54,21 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_ENV_NAME`: (Optional) Environment name (e.g., 'development', 'staging', 'production')
 - `VITE_CF_PAGES_COMMIT_SHA`: (Optional) Git commit hash of the current build
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
-- `VITE_CHATBOT_ENABLED`: If set to `'true`, enables the chatbot functionality
+- `VITE_CHATBOT_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom chatbot terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-chatbot-terms.md`). If not specified, uses the default `chatbot_terms.md` file. This allows external teams to provide their own chatbot-specific terms file
+- `VITE_CHATBOT_ENABLED`: If set to `'true'`, enables the chatbot functionality
+- `VITE_CHATBOT_FEEDBACK_ENABLED`: If set to `'true'`, enables the chatbot feedback functionality
 - `VITE_CHATBOT_USE_TESTNET_NETWORK_NAME`: If set to `'true'` replaces network names for their testnet counterpart. Only in development or staging.
-- `VITE_ADVANCED_CHAT_ENABLED`: If set to `'true`, enables advanced chat features
-- `VITE_CHAT_SUGGESTIONS_ENABLED`: If set to `'true`, enables chat suggestions functionality, set to 'true' to enable
+- `VITE_CHATBOT_SUGGESTIONS_ENABLED`: Chat suggestions are enabled by default. Set to `'false'` to disable
 - `VITE_CHATBOT_NAME`: The name of the chatbot
 - `VITE_CHATBOT_DOMAIN`: The base URL for the chatbot backend API
 - `VITE_CHATBOT_MAX_HISTORY`: Maximum number of previous messages to include in chat context.
 - `VITE_CHATBOT_MAX_MESSAGE_LENGTH`: Maximum character length for user input messages.
 - `VITE_CHATBOT_CF_ACCESS_CLIENT_ID`: (Optional) Cloudflare Access client ID for authentication headers in development/staging environments
 - `VITE_CHATBOT_CF_ACCESS_CLIENT_SECRET`: (Optional) Cloudflare Access client secret for authentication headers in development/staging environments
+- `VITE_CHATBOT_SUGGESTED_QUESTIONS`: (Optional) Array of suggested questions displayed when the chatbot first loads (e.g., `'["Question 1", "Question 2"]'`). If not provided, default questions will be shown
+- `VITE_CHATBOT_CHECKBOX_LABEL`: (Optional) Additional instructional text displayed above the terms acceptance checkboxes in the chatbot terms modal.
+- `VITE_CHATBOT_CHECKBOX_TERMS_LABEL`: (Optional) Custom label for the terms checkbox in the chatbot terms modal. Supports markdown formatting.
+- `VITE_CHATBOT_CHECKBOX_PRIVACY_LABEL`: (Optional) Custom label for the privacy checkbox in the chatbot terms modal. Supports markdown formatting.
 
 ## Running the App
 

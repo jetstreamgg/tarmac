@@ -1,5 +1,11 @@
 # @jetstreamgg/sky-utils
 
+## 2.0.0
+
+### Major Changes
+
+- ad09570: Migrate to pnpm catalogs
+
 ## 1.0.1
 
 ### Patch Changes

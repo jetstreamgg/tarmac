@@ -1,5 +1,20 @@
 # @jetstreamgg/sky-widgets
 
+## 2.0.0
+
+### Major Changes
+
+- ad09570: Migrate to pnpm catalogs
+
+### Patch Changes
+
+- 47a8c84: Add limit param to historic endpoint fetching hooks to limit the amount of data fetched
+- 0718c5a: Introduce support for chain agnostic token and history icons
+- Updated dependencies [47a8c84]
+- Updated dependencies [ad09570]
+  - @jetstreamgg/sky-hooks@2.0.0
+  - @jetstreamgg/sky-utils@2.0.0
+
 ## 1.1.0
 
 ### Minor Changes

@@ -12,7 +12,7 @@ import { useAccount, useAccountEffect, useChainId, useChains, useSwitchChain } f
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
-import { ChatPane } from './ChatPane';
+import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
 import { useChatNotification } from '../hooks/useChatNotification';
 import { useBatchTxNotification } from '../hooks/useBatchTxNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
@@ -247,7 +247,7 @@ export function MainApp() {
         </WidgetPane>
       )}
       {(bpi >= BP.xl || (bpi > BP.sm && !chatParam)) && detailsParam && <DetailsPane intent={intent} />}
-      {chatParam && <ChatPane sendMessage={sendMessage} />}
+      {chatParam && <ChatWithTerms sendMessage={sendMessage} />}
     </AppContainer>
   );
 }
