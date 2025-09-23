@@ -39,19 +39,11 @@ export function WidgetMenuItemTooltip({
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
   const [, setSearchParams] = useSearchParams();
-  const { setIsSwitchingNetwork, saveWidgetNetwork } = useNetworkSwitch();
+  const { setIsSwitchingNetwork } = useNetworkSwitch();
 
   const handleNetworkSwitch = (chainId: number) => {
-    // Save current network if switching from multichain widget
-    if (
-      currentIntent &&
-      currentChainId &&
-      isMultichain(currentIntent) &&
-      currentIntent !== Intent.BALANCES_INTENT
-    ) {
-      saveWidgetNetwork(currentIntent, currentChainId);
-    }
-
+    // Rule 1: Manual network changes always win
+    // Return-to-Origin pattern will handle auto-switching as needed
     // Navigate to widget on selected network
     const chain = chains.find(c => c.id === chainId);
     if (chain) {

@@ -24,11 +24,12 @@ interface UseNetworkAutoSwitchReturn {
 
 /**
  * Hook to handle automatic network switching when navigating between widgets
+ * Implements Return-to-Origin pattern:
  *
- * Responsibilities:
- * - Auto-switches to mainnet for mainnet-only widgets
- * - Restores saved network preferences for multichain widgets
- * - Manages search params for network and widget navigation
+ * - When forced to mainnet by a mainnet-only widget, saves the origin network
+ * - When navigating from mainnet-only to multichain, returns to origin once and clears it
+ * - No per-widget network memory
+ * - Manual network changes are always respected
  * - Tracks auto-switching state for UI feedback
  */
 export function useNetworkAutoSwitch({
@@ -37,7 +38,7 @@ export function useNetworkAutoSwitch({
 }: UseNetworkAutoSwitchProps): UseNetworkAutoSwitchReturn {
   const [, setSearchParams] = useSearchParams();
   const chains = useChains();
-  const { setIsSwitchingNetwork, saveWidgetNetwork, getWidgetNetwork } = useNetworkSwitch();
+  const { setIsSwitchingNetwork, originNetwork, setOriginNetwork, clearOriginNetwork } = useNetworkSwitch();
   const { selectedRewardContract } = useConfigContext();
   const [isAutoSwitching, setIsAutoSwitching] = useState(false);
   const [previousIntent, setPreviousIntent] = useState<Intent | undefined>(currentIntent);
@@ -81,35 +82,16 @@ export function useNetworkAutoSwitch({
         return; // Exit early for testnets
       }
 
-      // Save current network for multichain widgets before switching (except Balances)
-      if (
-        currentIntent &&
-        currentChainId &&
-        isMultichain(currentIntent) &&
-        currentIntent !== Intent.BALANCES_INTENT
-      ) {
-        saveWidgetNetwork(currentIntent, currentChainId);
-      }
+      // Rule 2: Entering a mainnet-only widget
+      // If current network is not mainnet, save origin and force switch to mainnet
+      const isMainnet = currentChainId === 1; // Ethereum mainnet chain ID
+      const isGoingToMainnetOnly = requiresMainnet(targetIntent);
+      const isLeavingMainnetOnly = currentIntent && requiresMainnet(currentIntent);
+      const isGoingToMultichain = isMultichain(targetIntent);
 
-      // Check if target widget has a saved network preference
-      const savedNetwork = getWidgetNetwork(targetIntent);
-
-      // Determine if we should restore a saved network preference
-      // This happens when either:
-      // Case 1: Coming FROM a mainnet-only widget TO a multichain widget with saved preference
-      // Case 2: Switching between two different multichain widgets where target has saved preference
-      const shouldRestoreNetwork =
-        isMultichain(targetIntent) && // Going to multichain widget
-        targetIntent !== Intent.BALANCES_INTENT &&
-        savedNetwork &&
-        savedNetwork !== currentChainId && // Saved network is different
-        currentIntent &&
-        (requiresMainnet(currentIntent) || // Coming from mainnet-only widget
-          (isMultichain(currentIntent) && currentIntent !== targetIntent)); // Or from different multichain widget
-
-      // Check if we need to switch networks (only for non-testnets)
-      if (currentChainId && requiresMainnet(targetIntent) && isL2ChainId(currentChainId)) {
-        // Auto-switch to mainnet for mainnet-only widgets (they're not available on L2)
+      if (isGoingToMainnetOnly && currentChainId && !isMainnet && isL2ChainId(currentChainId)) {
+        // Save current L2 as origin before forcing to mainnet
+        setOriginNetwork(currentChainId);
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
 
@@ -126,16 +108,21 @@ export function useNetworkAutoSwitch({
 
           return searchParams;
         });
-      } else if (shouldRestoreNetwork) {
-        // Returning from mainnet-only widget to multichain widget, restore previous L2 network
-        const savedChain = chains.find(c => c.id === savedNetwork);
-        if (savedChain) {
+      }
+      // Rule 3: Navigating from mainnet-only to multichain widget
+      // If origin exists, return to it once and clear it
+      else if (isLeavingMainnetOnly && isGoingToMultichain && originNetwork) {
+        const originChain = chains.find(c => c.id === originNetwork);
+
+        if (originChain) {
+          // Use origin network and clear it immediately
+          clearOriginNetwork();
           setIsSwitchingNetwork(true);
           setIsAutoSwitching(true);
 
           setSearchParams(prevParams => {
             const searchParams = deleteSearchParams(prevParams);
-            searchParams.set(QueryParams.Network, normalizeUrlParam(savedChain.name));
+            searchParams.set(QueryParams.Network, normalizeUrlParam(originChain.name));
             searchParams.set(QueryParams.Widget, queryParam);
 
             // Handle rewards-specific params
@@ -149,7 +136,8 @@ export function useNetworkAutoSwitch({
             return searchParams;
           });
         } else {
-          // Fallback to normal widget change if saved chain not found
+          // Origin chain not found, clear origin and stay on current network
+          clearOriginNetwork();
           setSearchParams(prevParams => {
             const searchParams = deleteSearchParams(prevParams);
             searchParams.set(QueryParams.Widget, queryParam);
@@ -165,8 +153,10 @@ export function useNetworkAutoSwitch({
             return searchParams;
           });
         }
-      } else {
-        // Normal widget change without network switch
+      }
+      // Rule 4: All other navigation (multichain to multichain, mainnet-only to mainnet-only, etc.)
+      // Just change widget without network switch
+      else {
         setSearchParams(prevParams => {
           const searchParams = deleteSearchParams(prevParams);
           searchParams.set(QueryParams.Widget, queryParam);
@@ -187,8 +177,9 @@ export function useNetworkAutoSwitch({
       currentChainId,
       currentIntent,
       chains,
-      saveWidgetNetwork,
-      getWidgetNetwork,
+      originNetwork,
+      setOriginNetwork,
+      clearOriginNetwork,
       setIsSwitchingNetwork,
       setSearchParams,
       selectedRewardContract

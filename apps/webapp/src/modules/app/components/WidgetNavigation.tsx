@@ -51,7 +51,7 @@ export function WidgetNavigation({
   } = useConfigContext();
   const isRewardsOverview = !selectedRewardContract && intent === Intent.REWARDS_INTENT;
 
-  const { setIsSwitchingNetwork, saveWidgetNetwork } = useNetworkSwitch();
+  const { setIsSwitchingNetwork } = useNetworkSwitch();
   const chains = useChains();
   const { showNetworkToast } = useEnhancedNetworkToast();
   const [previousChainId, setPreviousChainId] = useState<number | undefined>(currentChainId);
@@ -85,10 +85,8 @@ export function WidgetNavigation({
           previousIntent: previousIntent,
           isAutoSwitch: isAutoSwitching,
           onNetworkSwitch: chainId => {
-            // Save the manually selected network for the current widget
-            if (intent && isMultichain(intent) && intent !== Intent.BALANCES_INTENT) {
-              saveWidgetNetwork(intent, chainId);
-            }
+            // Rule 1: Manual network changes always win
+            // No need to track per-widget - Return-to-Origin pattern handles this
           }
         });
       }
@@ -100,7 +98,6 @@ export function WidgetNavigation({
     intent,
     previousIntent,
     showNetworkToast,
-    saveWidgetNetwork,
     setIsSwitchingNetwork,
     isAutoSwitching
   ]);

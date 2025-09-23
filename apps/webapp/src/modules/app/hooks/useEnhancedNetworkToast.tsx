@@ -152,7 +152,7 @@ export function useEnhancedNetworkToast() {
           const widgetName = getWidgetName(currentIntent);
           title = `To access ${widgetName}, you need to be on mainnet. We've switched your network automatically.`;
         }
-        // Check if switching BACK to L2 for a multichain widget that was previously used on L2
+        // Check if switching BACK to L2 from a mainnet-only widget (Return-to-Origin)
         else if (
           previousIntent &&
           requiresMainnet(previousIntent) &&
@@ -161,13 +161,11 @@ export function useEnhancedNetworkToast() {
           isL2ChainId(currentChain.id) &&
           currentIntent !== previousIntent
         ) {
-          const widgetName = getWidgetName(currentIntent);
-          title = `We've switched you back to ${currentChain.name}, the last network you used for ${widgetName}.`;
+          title = `We've returned you to ${currentChain.name}, your last network before mainnet.`;
         }
-        // Generic auto-switch for returning to a saved network preference
+        // Generic auto-switch message for other cases
         else if (currentIntent && isMultichain(currentIntent) && previousChain) {
-          const widgetName = getWidgetName(currentIntent);
-          title = `We've switched you to ${currentChain.name}, the last network you used for ${widgetName}.`;
+          title = `We've switched you to ${currentChain.name}.`;
         }
         // Default auto-switch message
         else {

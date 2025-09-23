@@ -1,47 +1,21 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { Intent } from '@/lib/enums';
-
-type WidgetNetworkState = {
-  [Intent.TRADE_INTENT]?: number;
-  [Intent.SAVINGS_INTENT]?: number;
-  // Balances widget is excluded from tracking
-};
 
 interface NetworkSwitchContextValue {
   isSwitchingNetwork: boolean;
   setIsSwitchingNetwork: (isSwitching: boolean) => void;
-  widgetNetworks: WidgetNetworkState;
-  saveWidgetNetwork: (intent: Intent, chainId: number) => void;
-  getWidgetNetwork: (intent: Intent) => number | undefined;
-  clearWidgetNetwork: (intent: Intent) => void;
+  originNetwork: number | undefined;
+  setOriginNetwork: (chainId: number | undefined) => void;
+  clearOriginNetwork: () => void;
 }
 
 const NetworkSwitchContext = createContext<NetworkSwitchContextValue | undefined>(undefined);
 
 export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
   const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false);
-  const [widgetNetworks, setWidgetNetworks] = useState<WidgetNetworkState>({});
+  const [originNetwork, setOriginNetwork] = useState<number | undefined>(undefined);
 
-  const saveWidgetNetwork = useCallback((intent: Intent, chainId: number) => {
-    setWidgetNetworks(prev => ({
-      ...prev,
-      [intent]: chainId
-    }));
-  }, []);
-
-  const getWidgetNetwork = useCallback(
-    (intent: Intent): number | undefined => {
-      return widgetNetworks[intent as keyof WidgetNetworkState];
-    },
-    [widgetNetworks]
-  );
-
-  const clearWidgetNetwork = useCallback((intent: Intent) => {
-    setWidgetNetworks(prev => {
-      const next = { ...prev };
-      delete next[intent as keyof WidgetNetworkState];
-      return next;
-    });
+  const clearOriginNetwork = useCallback(() => {
+    setOriginNetwork(undefined);
   }, []);
 
   return (
@@ -49,10 +23,9 @@ export function NetworkSwitchProvider({ children }: { children: ReactNode }) {
       value={{
         isSwitchingNetwork,
         setIsSwitchingNetwork,
-        widgetNetworks,
-        saveWidgetNetwork,
-        getWidgetNetwork,
-        clearWidgetNetwork
+        originNetwork,
+        setOriginNetwork,
+        clearOriginNetwork
       }}
     >
       {children}
