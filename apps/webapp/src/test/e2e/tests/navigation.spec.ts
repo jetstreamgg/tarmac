@@ -166,7 +166,7 @@ test.describe('Navigation Tests', () => {
     await page.getByRole('tab', { name: 'Trade' }).click();
     await page.waitForURL(/widget=trade/);
 
-    await page.getByRole('tab', { name: 'Savings' }).hover();
+    await page.getByRole('tab', { name: 'Savings' }).click();
     await page.getByRole('tab', { name: 'Trade' }).hover();
 
     const tradeButton = page.getByRole('button', { name: 'Go to Trade on Unichain' }).first();
