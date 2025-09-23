@@ -104,6 +104,7 @@ jobs:
       - name: Run E2E Test
         run: |
           if [ -n "${{ matrix.config }}" ]; then
+            pnpm messages
             pnpm -F webapp exec playwright test --config ${{ matrix.config }} --trace on ${{ matrix.test }}
           else
             pnpm run e2e:no-vnet ${{ matrix.test }}
