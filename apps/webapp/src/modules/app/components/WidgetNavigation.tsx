@@ -9,7 +9,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { cardAnimations } from '@/modules/ui/animation/presets';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { isMultichain } from '@/lib/widget-network-map';
 import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper';
 import { cn } from '@/lib/utils';
 import { Menu } from 'lucide-react';
@@ -55,6 +54,13 @@ export function WidgetNavigation({
   const chains = useChains();
   const { showNetworkToast } = useEnhancedNetworkToast();
   const [previousChainId, setPreviousChainId] = useState<number | undefined>(currentChainId);
+  const intentBeforeNetworkChangeRef = useRef<Intent | undefined>(intent);
+
+  // Track when we need to show a network change toast
+  const [pendingToast, setPendingToast] = useState<{
+    prevChain: { id: number; name: string };
+    currChain: { id: number; name: string };
+  } | null>(null);
 
   // Use the new network auto-switch hook
   const { handleWidgetNavigation, isAutoSwitching, previousIntent } = useNetworkAutoSwitch({
@@ -67,7 +73,16 @@ export function WidgetNavigation({
     handleWidgetNavigation(targetIntent);
   };
 
-  // Track network changes and show enhanced toast
+  // Update the intent ref when intent changes but NOT immediately after a network change
+  // We need to keep the old intent value through the network change and validation cycle
+  useEffect(() => {
+    // Only update if we don't have a pending toast (network change in progress)
+    if (!pendingToast && currentChainId === previousChainId) {
+      intentBeforeNetworkChangeRef.current = intent;
+    }
+  }, [intent, currentChainId, previousChainId, pendingToast]);
+
+  // Detect network changes and prepare for toast
   useEffect(() => {
     if (currentChainId && previousChainId && currentChainId !== previousChainId) {
       const prevChain = chains.find(c => c.id === previousChainId);
@@ -77,30 +92,66 @@ export function WidgetNavigation({
         // Reset switching state when network change completes
         setIsSwitchingNetwork(false);
 
-        // Show enhanced network toast with quick switch options
-        showNetworkToast({
-          previousChain: { id: prevChain.id, name: prevChain.name },
-          currentChain: { id: currChain.id, name: currChain.name },
-          currentIntent: intent,
-          previousIntent: previousIntent,
-          isAutoSwitch: isAutoSwitching,
-          onNetworkSwitch: chainId => {
-            // Rule 1: Manual network changes always win
-            // No need to track per-widget - Return-to-Origin pattern handles this
-          }
+        // Set pending toast to be shown after validation
+        setPendingToast({
+          prevChain: { id: prevChain.id, name: prevChain.name },
+          currChain: { id: currChain.id, name: currChain.name }
         });
       }
     }
     setPreviousChainId(currentChainId);
-  }, [
-    currentChainId,
-    chains,
-    intent,
-    previousIntent,
-    showNetworkToast,
-    setIsSwitchingNetwork,
-    isAutoSwitching
-  ]);
+  }, [currentChainId, previousChainId, chains, setIsSwitchingNetwork]);
+
+  // Show the toast after intent has potentially changed due to validation
+  // Only show once per network change
+  useEffect(() => {
+    if (pendingToast && !isAutoSwitching) {
+      // For manual switches, wait until the intent stabilizes (validation complete)
+      // We detect this by checking if the intent has changed to BALANCES_INTENT
+      // If it has, use the ref which still contains the previous intent
+
+      const timeoutId = setTimeout(() => {
+        console.log('Showing toast after delay:', {
+          currentIntent: intent,
+          previousIntentFromRef: intentBeforeNetworkChangeRef.current,
+          isAutoSwitching
+        });
+
+        showNetworkToast({
+          previousChain: pendingToast.prevChain,
+          currentChain: pendingToast.currChain,
+          currentIntent: intent,
+          previousIntent: intentBeforeNetworkChangeRef.current,
+          isAutoSwitch: false,
+          onNetworkSwitch: () => {
+            // Rule 1: Manual network changes always win
+            // No need to track per-widget - Return-to-Origin pattern handles this
+          }
+        });
+
+        // After showing the toast, update the ref for next time
+        intentBeforeNetworkChangeRef.current = intent;
+
+        // Clear the pending toast
+        setPendingToast(null);
+      }, 200); // Give time for validation to complete
+
+      return () => clearTimeout(timeoutId);
+    } else if (pendingToast && isAutoSwitching) {
+      // For auto-switches, show immediately
+      showNetworkToast({
+        previousChain: pendingToast.prevChain,
+        currentChain: pendingToast.currChain,
+        currentIntent: intent,
+        previousIntent: previousIntent,
+        isAutoSwitch: true,
+        onNetworkSwitch: () => {}
+      });
+
+      intentBeforeNetworkChangeRef.current = intent;
+      setPendingToast(null);
+    }
+  }, [pendingToast, intent, previousIntent, isAutoSwitching, showNetworkToast]);
 
   useEffect(() => {
     const containerElement = containerRef.current;
@@ -262,7 +313,6 @@ export function WidgetNavigation({
                           description={description}
                           widgetIntent={widgetIntent}
                           currentChainId={currentChainId}
-                          currentIntent={intent}
                           label={label as string}
                           isMobile={isMobile}
                           disabled={options?.disabled || false}

@@ -15,7 +15,6 @@ interface WidgetMenuItemTooltipProps {
   description?: string;
   widgetIntent: Intent;
   currentChainId?: number;
-  currentIntent?: Intent;
   label: string;
   isMobile: boolean;
   disabled?: boolean;
@@ -31,7 +30,6 @@ export function WidgetMenuItemTooltip({
   description,
   widgetIntent,
   currentChainId,
-  currentIntent,
   label,
   isMobile,
   disabled = false,

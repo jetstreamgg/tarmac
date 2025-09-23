@@ -172,8 +172,17 @@ export function useEnhancedNetworkToast() {
           title = previousChain ? 'The network has changed' : `Switched to ${currentChain.name}`;
         }
       } else {
-        // Manual network switch
-        title = previousChain ? 'The network has changed' : `Switched to ${currentChain.name}`;
+        // Check if user manually switched from a mainnet-only widget to L2 and was redirected to Balances
+        if (
+          previousIntent &&
+          requiresMainnet(previousIntent) &&
+          currentIntent === Intent.BALANCES_INTENT &&
+          isL2ChainId(currentChain.id)
+        ) {
+          title = 'We\'ve redirected you to Balances. The previous module is only available on mainnet.';
+        } else {
+          title = previousChain ? 'The network has changed' : `Switched to ${currentChain.name}`;
+        }
       }
 
       const toastContent = (
