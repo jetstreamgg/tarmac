@@ -15,7 +15,7 @@ export function StUSDSTvlCard() {
     <StatsCard
       className="h-full"
       isLoading={isLoading}
-      title={i18n._(msg`Total Value Locked`)}
+      title={i18n._(msg`Total Value Locked (TVL)`)}
       content={
         <Text variant="large" className="mt-2">
           {formatBigInt(totalAssets, { unit: 18 })} USDS

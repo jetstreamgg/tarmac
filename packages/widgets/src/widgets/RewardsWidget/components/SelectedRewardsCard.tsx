@@ -70,7 +70,7 @@ export const SelectedRewardsCard = ({
         gap={2}
         variants={positionAnimations}
       >
-        <Text className="text-textSecondary text-sm leading-4">{t`TVL`}</Text>
+        <Text className="text-textSecondary text-sm leading-4">{t`Total Value Locked (TVL)`}</Text>
         {isLoading ? (
           <div className="flex justify-end">
             <Skeleton className="bg-textSecondary h-6 w-10" />

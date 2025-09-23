@@ -9,7 +9,7 @@ export function TotalRewardsTvl() {
 
   return (
     <StatsCard
-      title={t`Total TVL`}
+      title={t`Rewards TVL`}
       isLoading={isLoading}
       error={error}
       content={

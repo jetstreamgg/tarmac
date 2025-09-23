@@ -115,7 +115,7 @@ export function StakeOverview() {
             </div>
             <div className="min-w-[250px] flex-1">
               <StatsCard
-                title={t`TVL`}
+                title={t`Total Value Locked (TVL)`}
                 isLoading={isLoading}
                 error={error}
                 content={<Text className="mt-2">{`$${formatNumber(tvl)}`}</Text>}

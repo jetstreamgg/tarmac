@@ -73,7 +73,7 @@ export const L2SavingsStatsCard = ({
         variants={positionAnimations}
         data-testid="savings-tvl-container"
       >
-        <Text className="text-textSecondary text-sm leading-4">{t`TVL`}</Text>
+        <Text className="text-textSecondary text-sm leading-4">{t`Total Value Locked (TVL)`}</Text>
         {savingsTvl ? (
           <Text dataTestId="savings-tvl">{formatNumber(parseFloat(savingsTvl), { compact: true })} USDS</Text>
         ) : (
