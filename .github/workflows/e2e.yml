@@ -69,7 +69,7 @@ jobs:
             vnet: true
             chain: unichain
           - test: navigation.spec
-            vnet: false
+            vnet: true
             chain: mainnet
             config: playwright.navigation.config.ts
     runs-on: ubuntu-latest
