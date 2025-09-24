@@ -109,7 +109,7 @@ test('Details pane shows correct history data and layout subsections', async ({ 
     .getByText(/\d/)
     .innerText();
   const tvlDetails = await page
-    .getByRole('heading', { name: 'TVL', exact: true })
+    .getByRole('heading', { name: 'Total Value Locked', exact: true })
     .locator('xpath=ancestor::div[1]')
     .getByText(/^\d.*USDS$/)
     .innerText();
