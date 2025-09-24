@@ -18,6 +18,7 @@ interface WidgetMenuItemTooltipProps {
   label: string;
   isMobile: boolean;
   disabled?: boolean;
+  isCurrentWidget?: boolean;
   children: React.ReactNode;
 }
 
@@ -33,6 +34,7 @@ export function WidgetMenuItemTooltip({
   label,
   isMobile,
   disabled = false,
+  isCurrentWidget = false,
   children
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
@@ -66,16 +68,24 @@ export function WidgetMenuItemTooltip({
         const chain = chains.find(c => c.id === chainId);
         if (!chain) return null;
 
+        const isCurrentNetwork = chainId === currentChainId;
+        const shouldDisable = isCurrentNetwork && isCurrentWidget;
+
         return (
           <button
             key={chainId}
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
-              handleNetworkSwitch(chainId);
+              if (!shouldDisable) {
+                handleNetworkSwitch(chainId);
+              }
             }}
-            className="flex items-center justify-center rounded-full p-1 transition-all hover:bg-white/10"
-            title={`Go to ${label} on ${chain.name}`}
+            disabled={shouldDisable}
+            className={`flex items-center justify-center rounded-full p-1 transition-all ${
+              shouldDisable ? 'opacity-60' : 'hover:bg-white/10'
+            }`}
+            title={shouldDisable ? `Already on ${label} on ${chain.name}` : `Go to ${label} on ${chain.name}`}
           >
             {getChainIcon(chainId, 'h-5 w-5')}
           </button>
@@ -92,16 +102,24 @@ export function WidgetMenuItemTooltip({
       const chain = chains.find(c => c.id === mainnetId);
       if (!chain) return null;
 
+      const isCurrentNetwork = mainnetId === currentChainId;
+      const shouldDisable = isCurrentNetwork && isCurrentWidget;
+
       return (
         <button
           key={mainnetId}
           onClick={e => {
             e.preventDefault();
             e.stopPropagation();
-            handleNetworkSwitch(mainnetId);
+            if (!shouldDisable) {
+              handleNetworkSwitch(mainnetId);
+            }
           }}
-          className="flex items-center justify-center rounded-full p-1 transition-all hover:bg-white/10"
-          title={`Go to ${label} on ${chain.name}`}
+          disabled={shouldDisable}
+          className={`flex items-center justify-center rounded-full p-1 transition-all ${
+            shouldDisable ? 'opacity-50' : 'hover:bg-white/10'
+          }`}
+          title={shouldDisable ? `Already on ${label} on ${chain.name}` : `Go to ${label} on ${chain.name}`}
         >
           {getChainIcon(mainnetId, 'h-5 w-5')}
         </button>

@@ -260,6 +260,7 @@ export function WidgetNavigation({
                           label={label as string}
                           isMobile={isMobile}
                           disabled={options?.disabled || false}
+                          isCurrentWidget={intent === widgetIntent}
                         >
                           <TabsTrigger
                             variant="icons"
