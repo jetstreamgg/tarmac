@@ -98,7 +98,7 @@ test('Details pane shows correct history data and layout subsections', async ({ 
     .innerText();
   const tvlWidget = await page
     .getByTestId('widget-container')
-    .getByText('TVL', { exact: true })
+    .getByText('Total Value Locked', { exact: true })
     .locator('xpath=ancestor::div[1]')
     .getByText(/^\d.*USDS$/)
     .first()
