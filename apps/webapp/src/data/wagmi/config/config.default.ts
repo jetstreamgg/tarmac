@@ -1,17 +1,8 @@
-import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { createConfig, createStorage, http, noopStorage } from 'wagmi';
 import { mainnet, base, sepolia, arbitrum, optimism, unichain } from 'wagmi/chains';
-import {
-  safeWallet,
-  rainbowWallet,
-  walletConnectWallet,
-  metaMaskWallet,
-  binanceWallet,
-  coinbaseWallet
-} from '@rainbow-me/rainbowkit/wallets';
+import { metaMask, safe, walletConnect, coinbaseWallet, baseAccount, porto } from 'wagmi/connectors';
 import { TENDERLY_CHAIN_ID, TENDERLY_RPC_URL } from './testTenderlyChain';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
-import { baseAccount } from './baseAccount';
 
 export const tenderly = {
   ...mainnet,
@@ -34,31 +25,35 @@ export const tenderly = {
   }
 };
 
-const connectors = connectorsForWallets(
-  [
-    {
-      groupName: 'Suggested',
-      wallets: [
-        metaMaskWallet,
-        baseAccount,
-        coinbaseWallet,
-        walletConnectWallet,
-        rainbowWallet,
-        safeWallet,
-        binanceWallet
-      ]
-    }
-  ],
-  {
+const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'd5c6af7c0680adbaad12f33744ee4413';
+
+const connectors = [
+  // Core wallets
+  metaMask(),
+  baseAccount({
     appName: 'sky.money',
-    appIcon: 'https://app.sky.money/images/sky.svg',
-    projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'd5c6af7c0680adbaad12f33744ee4413'
-  }
-);
+    appLogoUrl: 'https://app.sky.money/images/sky.svg'
+  }),
+  coinbaseWallet({
+    appName: 'sky.money',
+    appLogoUrl: 'https://app.sky.money/images/sky.svg'
+  }),
+  walletConnect({
+    projectId,
+    metadata: {
+      name: 'sky.money',
+      description: 'Sky Protocol DeFi Application',
+      url: 'https://app.sky.money',
+      icons: ['https://app.sky.money/images/sky.svg']
+    }
+  }),
+  safe(),
+  porto()
+];
 
 export const wagmiConfigDev = createConfig({
   chains: [mainnet, tenderly, base, arbitrum, sepolia, optimism, unichain],
-  connectors,
+  connectors: connectors,
   transports: {
     [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
     [tenderly.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY || ''),
@@ -79,7 +74,7 @@ export const wagmiConfigDev = createConfig({
 
 export const wagmiConfigMainnet = createConfig({
   chains: [mainnet, base, arbitrum, optimism, unichain],
-  connectors,
+  connectors: connectors,
   transports: {
     [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
     [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),

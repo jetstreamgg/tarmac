@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useAccountEffect } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useConnectModal } from '../context/ConnectModalContext';
 import { useConnectedContext } from './ConnectedContext';
 const TermsModalContext = React.createContext({
   isModalOpen: false,

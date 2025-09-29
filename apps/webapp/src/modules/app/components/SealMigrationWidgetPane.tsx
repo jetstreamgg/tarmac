@@ -4,7 +4,6 @@ import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
-import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
@@ -39,7 +38,8 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const { i18n } = useLingui();
   const onConnect = useCustomConnectModal();
   const { data: currentUrnIndex } = useSealCurrentIndex();
-  const addRecentTransaction = useAddRecentTransaction();
+  // Transaction tracking removed - was using RainbowKit
+  const addRecentTransaction = () => {}; // No-op for now
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const onNotification = useNotification();
   const { onExternalLinkClicked, setSelectedSealUrnIndex } = useConfigContext();

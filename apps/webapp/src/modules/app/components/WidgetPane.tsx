@@ -2,7 +2,6 @@ import { Balances, Upgrade, Trade, RewardsModule, Savings, Stake, Expert } from 
 import { ExpertIntent, Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
-import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import {
   ExpertIntentMapping,
   BATCH_TX_LEGAL_NOTICE_URL,
@@ -47,7 +46,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { i18n } = useLingui();
   const chainId = useChainId();
   const onConnect = useCustomConnectModal();
-  const addRecentTransaction = useAddRecentTransaction();
+  // Transaction tracking removed - was using RainbowKit
+  const addRecentTransaction = () => {}; // No-op for now
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const onNotification = useNotification();
   const { onExternalLinkClicked } = useConfigContext();

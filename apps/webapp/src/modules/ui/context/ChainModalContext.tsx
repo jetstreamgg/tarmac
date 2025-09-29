@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import { useSwitchChain } from 'wagmi';
+import { useSwitchChain, useAccount, useChains } from 'wagmi';
+import { toast } from '@/components/ui/use-toast';
 
 type ChainModalContextType = {
   handleSwitchChain: ({
@@ -23,6 +24,8 @@ const ChainModalContext = createContext<ChainModalContextType>({
 
 export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { switchChain, isPending, variables } = useSwitchChain();
+  const { connector } = useAccount();
+  const chains = useChains();
 
   const handleSwitchChain = useCallback(
     ({
@@ -41,11 +44,37 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           onSettled,
           onError: error => {
             console.error('[ChainModalContext] switchChain failed:', error);
+
+            // Get chain name from the chainId
+            const targetChain = chains.find(chain => chain.id === chainId);
+            const chainName = targetChain?.name || `chain ID ${chainId}`;
+            const walletName = connector?.name || 'Your wallet';
+
+            // Check if it's specifically an unsupported chain error
+            const errorMessage = error.message || '';
+            const isUnsupportedChain =
+              errorMessage.includes('does not support the requested chain') ||
+              errorMessage.includes('UnsupportedChainIdError') ||
+              errorMessage.includes('Unsupported chain');
+
+            if (isUnsupportedChain) {
+              toast({
+                title: 'Chain not supported',
+                description: `${walletName} does not support ${chainName}. Please switch to a supported network or use a different wallet.`,
+                variant: 'failure'
+              });
+            } else {
+              toast({
+                title: 'Failed to switch network',
+                description: `Unable to switch to ${chainName}. Please try again.`,
+                variant: 'failure'
+              });
+            }
           }
         }
       );
     },
-    [switchChain]
+    [switchChain, connector, chains]
   );
 
   return (
