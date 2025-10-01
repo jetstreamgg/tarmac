@@ -3,7 +3,13 @@ import { Card } from '@/components/ui/card';
 import { Heading } from '@/modules/layout/components/Typography';
 import { SafeMarkdownRenderer } from './markdown/SafeMarkdownRenderer';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import {
+  PopoverRateInfo,
+  PopoverInfo,
+  getTooltipById,
+  POPOVER_TOOLTIP_TYPES,
+  type PopoverTooltipType
+} from '@jetstreamgg/sky-widgets';
 
 interface Item {
   question: string;
@@ -27,19 +33,31 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
                   a: ({ children, href, ...props }) => {
                     // Handle tooltip syntax: [text](#tooltip-type)
                     if (href?.startsWith('#tooltip-')) {
-                      const tooltipType = href.replace('#tooltip-', '') as
-                        | 'str'
-                        | 'ssr'
-                        | 'sbr'
-                        | 'srr'
-                        | 'dtc'
-                        | 'psm';
-                      return (
-                        <span className="inline-flex items-center gap-1">
-                          {children}
-                          <PopoverInfo type={tooltipType} />
-                        </span>
-                      );
+                      const tooltipId = href.replace('#tooltip-', '');
+
+                      // Check if it's a hardcoded PopoverRateInfo tooltip type
+                      if (POPOVER_TOOLTIP_TYPES.includes(tooltipId as PopoverTooltipType)) {
+                        return (
+                          <span className="inline-flex items-center gap-1">
+                            {children}
+                            <PopoverRateInfo type={tooltipId as PopoverTooltipType} />
+                          </span>
+                        );
+                      }
+
+                      // Otherwise, try to get it from the dynamic tooltip system
+                      const tooltip = getTooltipById(tooltipId);
+                      if (tooltip) {
+                        return (
+                          <span className="inline-flex items-center gap-1">
+                            {children}
+                            <PopoverInfo title={tooltip.title} description={tooltip.tooltip} />
+                          </span>
+                        );
+                      }
+
+                      // If tooltip not found, just render the text without tooltip
+                      return <>{children}</>;
                     }
 
                     // Handle regular links

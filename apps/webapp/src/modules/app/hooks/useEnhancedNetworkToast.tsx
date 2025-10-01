@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useChains } from 'wagmi';
 import type { Chain } from 'viem';
-import { toast } from '@/components/ui/use-toast';
+import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
 import { getChainIcon, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { ArrowRightLong } from '@/modules/icons';
@@ -52,7 +52,8 @@ const NetworkQuickSwitchButtons = ({
   currentIntent,
   chains,
   handleSwitchChain,
-  setSearchParams
+  setSearchParams,
+  toastId
 }: {
   currentChainId: number;
   currentIntent?: Intent;
@@ -63,6 +64,7 @@ const NetworkQuickSwitchButtons = ({
     onSettled?: () => void;
   }) => void;
   setSearchParams: SetURLSearchParams;
+  toastId?: string | number;
 }) => {
   const [switchingTo, setSwitchingTo] = useState<number | null>(null);
 
@@ -102,6 +104,14 @@ const NetworkQuickSwitchButtons = ({
             disabled={switchingTo !== null}
             onClick={() => {
               setSwitchingTo(chain.id);
+
+              // Dismiss the toast after a delay
+              if (toastId) {
+                setTimeout(() => {
+                  toast.dismiss(toastId);
+                }, 350);
+              }
+
               handleSwitchChain({
                 chainId: chain.id,
                 onSuccess: (_: any, { chainId: newChainId }: { chainId: number }) => {
@@ -155,7 +165,8 @@ export function useEnhancedNetworkToast() {
         title = previousChain ? 'The network has changed' : `Switched to ${currentChain.name}`;
       }
 
-      const toastContent = (
+      // Create a function to generate content with toast ID
+      const createToastContent = (toastId?: string | number) => (
         <div className="mt-2 w-full">
           <div className="flex items-center gap-5">
             {previousChain && (
@@ -178,6 +189,7 @@ export function useEnhancedNetworkToast() {
             chains={chains}
             handleSwitchChain={handleSwitchChain}
             setSearchParams={setSearchParams}
+            toastId={toastId}
           />
         </div>
       );
@@ -195,11 +207,22 @@ export function useEnhancedNetworkToast() {
       // Set new timeout with proper cleanup reference
       toastTimeoutRef.current = setTimeout(
         () => {
-          toast({
-            title,
-            description: toastContent,
-            duration: hasQuickSwitch || hasLongTitle ? 8000 : 5000 // Extended duration for multichain widgets or longer messages
-          });
+          // Create a unique ID for this toast
+          const toastId = `network-toast-${Date.now()}`;
+
+          toastWithClose(
+            <div>
+              <Text variant="medium">{title}</Text>
+              {createToastContent(toastId)}
+            </div>,
+            {
+              id: toastId,
+              duration: hasQuickSwitch || hasLongTitle ? 8000 : 5000, // Extended duration for multichain widgets or longer messages
+              classNames: {
+                toast: 'md:min-w-[400px]'
+              }
+            }
+          );
           // Clear the ref after the toast is shown
           toastTimeoutRef.current = null;
         },

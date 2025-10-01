@@ -8,7 +8,7 @@ export function FooterLinks() {
 
   return (
     <div className={'flex w-full pt-2'}>
-      <div className="flex w-full justify-end gap-3">
+      <div className="flex w-full justify-end gap-3 md:justify-start">
         {footerLinks.map((link, i) => (
           <ExternalLink
             key={link.url || `link-${i}`}

@@ -4,13 +4,13 @@ import { TradeFaq } from './TradeFaq';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
-import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { IntentMapping } from '@/lib/constants';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { filterActionsByIntent } from '@/lib/utils';
+import { AboutTokensCarousel } from './AboutTokensCarousel';
 
 export function TradeDetails(): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -36,10 +36,8 @@ export function TradeDetails(): React.ReactElement {
           </DetailSectionRow>
         </DetailSection>
       )}
-      <DetailSection title={t`About Native Sky Protocol Tokens`}>
-        <DetailSectionRow>
-          <AboutUsds />
-        </DetailSectionRow>
+      <DetailSection title={t`About Sky Ecosystem Tokens`}>
+        <AboutTokensCarousel />
       </DetailSection>
       <DetailSection title={t`FAQs`}>
         <DetailSectionRow>

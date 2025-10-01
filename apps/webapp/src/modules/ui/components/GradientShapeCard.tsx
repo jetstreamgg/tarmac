@@ -18,7 +18,7 @@ export function GradientShapeCard({
   const { bpi } = useBreakpointIndex();
   const isMobileOrTablet = bpi < BP.lg;
   return (
-    <Card className={cn('mb-10 w-full p-0 lg:p-0', className)}>
+    <Card className={cn('mb-6 w-full p-0 lg:p-0', className)}>
       <div className="relative h-full w-full overflow-hidden rounded-[20px]">
         <div
           className="absolute h-full w-[110%] lg:w-[90%]"

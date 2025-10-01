@@ -7,6 +7,7 @@ import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 import { sUsdsAddress, sUsdsL2Address } from '@jetstreamgg/sky-hooks';
 import { GradientShapeCard } from './GradientShapeCard';
+import { TokenIcon } from './TokenIcon';
 
 export const AboutSUsds = () => {
   const chainId = useChainId();
@@ -22,12 +23,13 @@ export const AboutSUsds = () => {
   return (
     <GradientShapeCard
       colorLeft="radial-gradient(258.73% 268.92% at 116.69% 275.4%, #F7A7F9 0%, #6D28FF 100%)"
-      colorMiddle="linear-gradient(0deg, #F7A7F9 0%, #00DDFB 300%)"
+      colorMiddle="linear-gradient(0deg, #FFEF79 0%, #00C2A1 300%)"
       colorRight="bg-card"
       className="mb-6"
     >
       <div className="w-[80%] space-y-2 lg:w-2/3">
-        <Heading>
+        <Heading className="flex items-center gap-2">
+          <TokenIcon token={{ symbol: 'sUSDS' }} width={24} className="h-6 w-6" showChainIcon={false} />
           <Trans>sUSDS</Trans>
         </Heading>
         <Text variant="small">

@@ -22,7 +22,7 @@ When bundled transactions are toggled off, you will need to confirm two separate
       question: 'How do I know if my wallet is compatible with EIP-7702 bundled transactions?',
       answer: `On first use, if your connected wallet supports EIP-7702 functionality, it will ask if you would like to use a Smart Account, which accommodates features such as bundled transactions. You will also be shown some of the benefits of opting for a Smart Account. On Metamask, for example, those benefits include:
 
-• Faster transactions and lower gas fees.
+• Faster transactions and lower [gas fees](#tooltip-gas-fee).
 • The ability to pay network fees with any token in your wallet.
 • The ability to keep the same wallet address and turn the functionality on or off any time.
 

@@ -7,6 +7,7 @@ import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 import { stUsdsAddress } from '@jetstreamgg/sky-hooks';
 import { GradientShapeCard } from './GradientShapeCard';
+import { TokenIcon } from './TokenIcon';
 
 export const AboutStUsds = ({ isOverview = false }: { isOverview?: boolean }) => {
   const chainId = useChainId();
@@ -21,12 +22,12 @@ export const AboutStUsds = ({ isOverview = false }: { isOverview?: boolean }) =>
   const colors = isOverview
     ? {
         colorLeft: 'radial-gradient(217.45% 249.6% at 116.69% 275.4%, #A273FF 0%, #4331E9 100%)',
-        colorMiddle: 'linear-gradient(360deg, #FFD2B9 0%, #FF6D6D 300%)',
+        colorMiddle: 'linear-gradient(360deg, #FDC079 0%, #EC63DA 300%)',
         colorRight: '#1e1a4b'
       }
     : {
         colorLeft: 'radial-gradient(258.73% 268.92% at 116.69% 275.4%, #F7A7F9 0%, #6D28FF 100%)',
-        colorMiddle: 'linear-gradient(0deg, #F7A7F9 0%, #00DDFB 300%)',
+        colorMiddle: 'linear-gradient(0deg, #FDC079 0%, #EC63DA 300%)',
         colorRight: 'bg-card'
       };
 
@@ -38,7 +39,8 @@ export const AboutStUsds = ({ isOverview = false }: { isOverview?: boolean }) =>
       className="mb-6"
     >
       <div className="w-[80%] space-y-2 lg:w-2/3">
-        <Heading>
+        <Heading className="flex items-center gap-2">
+          <TokenIcon token={{ symbol: 'stUSDS' }} width={24} className="h-6 w-6" showChainIcon={false} />
           <Trans>stUSDS</Trans>
         </Heading>
         <Text variant="small">

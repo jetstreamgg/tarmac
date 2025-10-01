@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { toast, useToast } from '@/components/ui/use-toast';
+import { toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Button } from '@/components/ui/button';
@@ -7,29 +7,23 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { GOVERNANCE_MIGRATION_NOTIFICATION_KEY } from '@/lib/constants';
 
 export const useGovernanceMigrationToast = (isAuthorized: boolean) => {
-  const { dismiss } = useToast();
-
   const onClose = useCallback(() => {
     localStorage.setItem(GOVERNANCE_MIGRATION_NOTIFICATION_KEY, 'true');
-    dismiss();
   }, []);
 
   useEffect(() => {
     // Only show if authorized by the notification queue
     if (!isAuthorized) {
-      dismiss();
       return;
     }
 
     // Add a small delay to ensure smooth UX
     const timer = setTimeout(() => {
-      toast({
-        title: (
+      toastWithClose(
+        <div>
           <Text variant="medium" className="text-selectActive">
             MKR to SKY Migration
           </Text>
-        ),
-        description: (
           <VStack className="mt-4 gap-4">
             <Text variant="medium">
               Sky Ecosystem Governance has{' '}
@@ -50,11 +44,13 @@ export const useGovernanceMigrationToast = (isAuthorized: boolean) => {
               </ExternalLink>
             </Button>
           </VStack>
-        ),
-        variant: 'info',
-        duration: 15000,
-        onClose
-      });
+        </div>,
+        {
+          duration: 15000,
+          dismissible: true,
+          onDismiss: onClose
+        }
+      );
     }, 1000); // 1 second delay
 
     return () => {

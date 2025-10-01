@@ -16,8 +16,11 @@ import {
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useAccount, useChainId, useChains } from 'wagmi';
 import { isExpertModulesEnabled } from '@/lib/feature-flags';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { mainnet } from 'wagmi/chains';
+import { tenderly } from '@/data/wagmi/config/config.default';
 
 export type LinkedAction = SuggestedAction & {
   stepOne: string;
@@ -45,19 +48,30 @@ type TokenBalance = {
   chainId: number;
 };
 
+const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Network } = QueryParams;
+
+// Helper function to add network parameter to URL
+const addNetworkParam = (url: string, chainId: number, chains?: readonly any[]): string => {
+  // Dynamically get the chain name from the chains array
+  const chain = chains?.find(c => c.id === chainId && [mainnet.id, tenderly.id].includes(c.id));
+  const chainName = chain?.name || mainnet.name;
+  const networkValue = normalizeUrlParam(chainName);
+  return `${url}&${Network}=${networkValue}`;
+};
+
 // Note: some suggested actions are disabled because they aren't compatible with the Rate highlight cards, leaving them here in case we want to re-enable
 const fetchUserSuggestedActions = (
   chainId: number,
   tokenBalances?: TokenBalance[],
   rewardContracts?: RewardContract[],
-  currentRewardContract?: RewardContract
+  currentRewardContract?: RewardContract,
+  chains?: readonly any[]
 ): {
   suggestedActions: SuggestedAction[];
   linkedActions: LinkedAction[];
 } => {
   const suggestedActions: SuggestedAction[] = [];
   const linkedActions: LinkedAction[] = [];
-  const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget } = QueryParams;
   const {
     REWARDS_INTENT: REWARDS,
     SAVINGS_INTENT: SAVINGS,
@@ -460,6 +474,16 @@ const fetchUserSuggestedActions = (
     }
   }
 
+  // Add network parameter to all URLs in suggested actions
+  suggestedActions.forEach(action => {
+    action.url = addNetworkParam(action.url, chainId, chains);
+  });
+
+  // Add network parameter to all URLs in linked actions
+  linkedActions.forEach(action => {
+    action.url = addNetworkParam(action.url, chainId, chains);
+  });
+
   // Convert Intent enums to their string mappings for comparison
   const restrictedIntentStrings = RESTRICTED_INTENTS.map(intent => IntentMapping[intent]);
 
@@ -495,6 +519,7 @@ const fetchUserSuggestedActions = (
 export const useUserSuggestedActions = (currentRewardContract?: RewardContract) => {
   const { address } = useAccount();
   const chainId = useChainId();
+  const chains = useChains();
   const tokens = useTokens(chainId);
   const [data, setData] = useState<
     { suggestedActions: SuggestedAction[]; linkedActions: LinkedAction[] } | undefined
@@ -536,7 +561,8 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
             chainId,
             tokenBalances,
             rewardContracts,
-            currentRewardContract
+            currentRewardContract,
+            chains
           );
           setData(result);
           setError(undefined);
@@ -551,7 +577,15 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
     fetchData();
     // Update the ref to the current tokenBalances after fetching data
     prevTokenBalances.current = tokenBalances;
-  }, [address, tokenBalances, tokenBalancesIsLoading, tokenBalanceError, currentRewardContract]);
+  }, [
+    address,
+    tokenBalances,
+    tokenBalancesIsLoading,
+    tokenBalanceError,
+    currentRewardContract,
+    chainId,
+    chains
+  ]);
 
   return { data, isLoading: isLoading || tokenBalancesIsLoading, error: error || tokenBalanceError };
 };

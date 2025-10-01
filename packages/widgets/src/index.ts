@@ -40,6 +40,7 @@ export {
 } from './shared/components/ui/PopoverRateInfo';
 export { PopoverInfo } from './shared/components/ui/PopoverInfo';
 export type { PopoverInfoProps } from './shared/components/ui/PopoverInfo';
+export { getTooltipById } from './data/tooltips';
 export { UtilizationBar } from './shared/components/ui/UtilizationBar';
 export type { UtilizationBarProps } from './shared/components/ui/UtilizationBar';
 export { PairTokenIcons } from './shared/components/ui/token/PairTokenIcon';

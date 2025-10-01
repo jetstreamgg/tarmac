@@ -40,10 +40,14 @@ type GroupedIntent = {
   intents: ChatIntent[];
 };
 
-const addResetParam = (url: string): string => {
+const prepareUrlParams = (url: string, isMobile: boolean): string => {
   try {
     const urlObj = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://temp');
     urlObj.searchParams.set(QueryParams.Reset, 'true');
+    if (isMobile) {
+      // Disable chat on mobile since the chat is covering the screen
+      urlObj.searchParams.set(QueryParams.Chat, 'false');
+    }
     return urlObj.pathname + urlObj.search;
   } catch (error) {
     console.error('Failed to parse URL:', error);
@@ -204,6 +208,8 @@ const GroupedIntentButton = ({ groupedIntent, shouldDisableActionButtons }: Grou
   const [isOpen, setIsOpen] = useState(false);
   const chainId = useChainId();
   const [searchParams] = useSearchParams();
+  const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
 
   // If only one intent, render the standard IntentRow with tooltip
   if (groupedIntent.intents.length === 1) {
@@ -214,14 +220,14 @@ const GroupedIntentButton = ({ groupedIntent, shouldDisableActionButtons }: Grou
       searchParams
     );
     const network =
-      getNetworkFromIntentUrl(addResetParam(intentUrl)) ||
+      getNetworkFromIntentUrl(prepareUrlParams(intentUrl, isMobile)) ||
       chainIdNameMapping[chainId as keyof typeof chainIdNameMapping];
 
     return (
       <IntentTooltip title={groupedIntent.title} network={network}>
         <div className="inline-flex">
           <IntentRow
-            intent={{ ...intent, url: addResetParam(intent.url) }}
+            intent={{ ...intent, url: prepareUrlParams(intent.url, isMobile) }}
             shouldDisableActionButtons={shouldDisableActionButtons}
           />
         </div>
@@ -237,14 +243,14 @@ const GroupedIntentButton = ({ groupedIntent, shouldDisableActionButtons }: Grou
     searchParams
   );
   const network =
-    getNetworkFromIntentUrl(addResetParam(intentUrl)) ||
+    getNetworkFromIntentUrl(prepareUrlParams(intentUrl, isMobile)) ||
     chainIdNameMapping[chainId as keyof typeof chainIdNameMapping];
 
   return (
     <IntentTooltip title={groupedIntent.title} network={network}>
       <div className="inline-flex">
         <IntentRow
-          intent={{ ...selectedIntent, url: addResetParam(selectedIntent.url) }}
+          intent={{ ...selectedIntent, url: prepareUrlParams(selectedIntent.url, isMobile) }}
           shouldDisableActionButtons={shouldDisableActionButtons}
           className="rounded-r-none border-r-0"
           hideIcon
@@ -295,7 +301,7 @@ const NetworkDropdown = ({
   ]);
 
   const network =
-    useNetworkFromIntentUrl(addResetParam(intentUrl)) ||
+    useNetworkFromIntentUrl(prepareUrlParams(intentUrl, isMobile)) ||
     chainIdNameMapping[chainId as keyof typeof chainIdNameMapping];
 
   const networkIcons = {
@@ -319,10 +325,16 @@ const NetworkDropdown = ({
 
     // Execute the intent action immediately
     const intent = intents[index];
-    const intentWithResetParam = { ...intent, url: addResetParam(intent.url) };
+    const intentWithResetParam = { ...intent, url: prepareUrlParams(intent.url, isMobile) };
+
+    // On mobile, don't retain the chat param to ensure it closes
+    const retainedParams = isMobile
+      ? defaultRetainedParams.filter(param => param !== QueryParams.Chat)
+      : defaultRetainedParams;
+
     const targetUrl = getRetainedQueryParams(
-      addResetParam(intent.url) || '',
-      defaultRetainedParams,
+      prepareUrlParams(intent.url, isMobile) || '',
+      retainedParams,
       searchParams
     );
     executeIntent(intentWithResetParam, targetUrl);
@@ -341,7 +353,7 @@ const NetworkDropdown = ({
         // Calculate network using pure functions instead of hooks
         const intentUrl = getRetainedQueryParams(intent?.url || '', defaultRetainedParams, searchParams);
         const network =
-          getNetworkFromIntentUrl(addResetParam(intentUrl)) ||
+          getNetworkFromIntentUrl(prepareUrlParams(intentUrl, isMobile)) ||
           chainIdNameMapping[chainId as keyof typeof chainIdNameMapping];
         const NetworkIcon =
           networkIcons[capitalizeFirstLetter(network || '') as keyof typeof networkIcons] || Ethereum;
@@ -410,11 +422,7 @@ const IntentRow = ({
 }: IntentRowProps & { className?: string; hideIcon?: boolean }) => {
   const chainId = useChainId();
   const executeIntent = useIntentExecution();
-  const intentUrl = useRetainedQueryParams(intent?.url || '', [
-    QueryParams.Locale,
-    QueryParams.Details,
-    QueryParams.Chat
-  ]);
+  const intentUrl = useRetainedQueryParams(intent?.url || '', [QueryParams.Locale, QueryParams.Details]);
 
   const network =
     useNetworkFromIntentUrl(intentUrl) || chainIdNameMapping[chainId as keyof typeof chainIdNameMapping];

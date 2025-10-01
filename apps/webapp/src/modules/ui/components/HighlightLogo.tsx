@@ -35,6 +35,13 @@ const logoMetadata = [
     alt: 'Staking Engine logo',
     position: '-bottom-8 -right-5',
     size: 'w-50 2xl:w-56'
+  },
+  {
+    name: 'expert',
+    src: '/images/expert_icon_large.svg',
+    alt: 'Expert logo',
+    position: '-bottom-4 -right-2',
+    size: 'w-48 2xl:w-56'
   }
 ] as const;
 

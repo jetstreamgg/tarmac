@@ -17,6 +17,7 @@
     "dev:packages": "pnpm messages && pnpm --parallel -F './packages/**' dev",
     "preview": "pnpm --filter='./apps/webapp' preview",
     "preview:restricted": "pnpm --filter='./apps/webapp' preview:restricted",
+    "preview:restricted-mica": "pnpm --filter='./apps/webapp' preview:restricted-mica",
     "test": "pnpm -r --filter='!./packages/hooks' --parallel run test && pnpm test:hooks",
     "test:coverage": "pnpm vnet:fork && pnpm -r --workspace-concurrency=1 run test:coverage && pnpm vnet:delete",
     "test:coverage:ci": "pnpm -r --workspace-concurrency=1 --filter './packages/**' run test:coverage",

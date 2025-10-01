@@ -8,13 +8,15 @@ export function TokenIcon({
   width = 50,
   className,
   fallbackClassName,
-  chainId
+  chainId,
+  showChainIcon = true
 }: {
   token: Partial<Token> & { symbol: string };
   width?: number;
   className?: string;
   fallbackClassName?: string;
   chainId?: number;
+  showChainIcon?: boolean;
 }): React.ReactElement {
   const tokenImageSrc = useTokenImage(token.symbol);
   const chainImageSrc = useChainImage(chainId);
@@ -27,7 +29,7 @@ export function TokenIcon({
       <AvatarFallback className={cn('bg-slate-200 text-xs', fallbackClassName)} delayMs={500}>
         {token.symbol.toUpperCase()}
       </AvatarFallback>
-      {chainImageSrc && (
+      {showChainIcon && chainImageSrc && (
         <Avatar className={cn('absolute -right-px bottom-0 h-1/2 w-1/2')}>
           <AvatarImage src={chainImageSrc} className="h-full w-full" />
         </Avatar>

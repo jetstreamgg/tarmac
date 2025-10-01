@@ -17,7 +17,7 @@ catalog:
   '@lingui/react': ^5.5.0
   '@lingui/swc-plugin': ^5.6.1
   '@lingui/vite-plugin': ^5.5.0
-  '@playwright/test': ^1.55.0
+  '@playwright/test': ^1.55.1
   '@radix-ui/react-accordion': ^1.2.12
   '@radix-ui/react-avatar': ^1.1.10
   '@radix-ui/react-checkbox': ^1.3.3
@@ -35,14 +35,14 @@ catalog:
   '@radix-ui/react-tooltip': ^1.2.8
   '@rainbow-me/rainbowkit': 2.2.7
   '@tailwindcss/vite': ^4.1.13
-  '@tanstack/eslint-plugin-query': ^5.83.1
-  '@tanstack/react-query': ^5.85.6
+  '@tanstack/eslint-plugin-query': ^5.91.0
+  '@tanstack/react-query': ^5.90.2
   '@testing-library/dom': ^10.4.1
   '@testing-library/react': ^16.3.0
   '@types/react': ^19.1.13
   '@types/react-dom': ^19.1.9
-  '@typescript-eslint/eslint-plugin': ^8.44.0
-  '@typescript-eslint/parser': ^8.44.0
+  '@typescript-eslint/eslint-plugin': ^8.45.0
+  '@typescript-eslint/parser': ^8.45.0
   '@vitejs/plugin-react-swc': ^3.11.0
   '@vitest/coverage-v8': ^3.2.4
   '@wagmi/cli': ^2.5.1
@@ -56,7 +56,7 @@ catalog:
   embla-carousel-react: ^8.6.0
   eslint: ^9.36.0
   eslint-plugin-react: ^7.37.5
-  eslint-plugin-testing-library: ^7.6.6
+  eslint-plugin-testing-library: ^7.11.0
   ethers: ^6.15.0
   framer-motion: ^11.18.2
   globals: ^15.15.0
@@ -64,7 +64,7 @@ catalog:
   graphql-request: ^7.2.0
   happy-dom: ^15.11.7
   husky: ^9.0.11
-  knip: ^5.63.0
+  knip: ^5.64.1
   lint-staged: ^15.5.1
   lucide-react: ^0.544.0
   openapi-fetch: ^0.14.0
@@ -79,13 +79,14 @@ catalog:
   recharts: ^2.15.4
   rehype-sanitize: ^6.0.0
   rollup-plugin-visualizer: ^5.14.0
+  sonner: ^2.0.7
   tailwind-merge: ^2.6.0
   tailwindcss: ^4.1.13
   tailwindcss-animate: ^1.0.7
   tiny-invariant: ^1.3.1
   typescript: 5.9.2
   viem: ^2.37.7
-  vite: ^7.1.5
+  vite: ^7.1.7
   vite-plugin-dts: ^4.5.4
   vite-plugin-node-polyfills: ^0.24.0
   vite-plugin-simple-html: ^1.0.1

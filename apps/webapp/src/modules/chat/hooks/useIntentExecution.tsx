@@ -4,11 +4,13 @@ import { useChatContext } from '../context/ChatContext';
 import { ChatIntent } from '../types/Chat';
 import { intentModifiesState } from '../lib/intentUtils';
 import { intentSelectedMessage } from '../lib/intentSelectedMessage';
+import { useChatbotPrefillNotification } from '@/modules/app/hooks/useChatbotPrefillNotification';
 
 export const useIntentExecution = () => {
   const { setConfirmationWarningOpened, setSelectedIntent, setChatHistory, hasShownIntent } =
     useChatContext();
   const navigate = useNavigate();
+  const { showPrefillNotification } = useChatbotPrefillNotification();
 
   const executeIntent = useCallback(
     (intent: ChatIntent, targetUrl: string) => {
@@ -22,9 +24,18 @@ export const useIntentExecution = () => {
       } else {
         setChatHistory(prev => [...prev, intentSelectedMessage(intent)]);
         navigate(targetUrl);
+        // Show notification that inputs have been prefilled
+        showPrefillNotification();
       }
     },
-    [setConfirmationWarningOpened, setSelectedIntent, setChatHistory, hasShownIntent, navigate]
+    [
+      setConfirmationWarningOpened,
+      setSelectedIntent,
+      setChatHistory,
+      hasShownIntent,
+      navigate,
+      showPrefillNotification
+    ]
   );
 
   return executeIntent;

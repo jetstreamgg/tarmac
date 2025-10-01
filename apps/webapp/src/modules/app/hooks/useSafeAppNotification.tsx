@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
+import { toastWithClose } from '@/components/ui/use-toast';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -17,13 +17,11 @@ export const useSafeAppNotification = () => {
     const toastDismissed = window.localStorage.getItem('safe-wallet-toast-dismissed');
 
     if (isSafeWallet && connector?.id === WALLET_CONNECT_CONNECTOR_ID && toastDismissed !== 'true') {
-      toast({
-        title: (
+      toastWithClose(
+        <div>
           <Text variant="medium" className="text-selectActive">
             {'Sky.money is a Safe{Wallet} Safe App'}
           </Text>
-        ),
-        description: (
           <VStack className="mt-4 gap-4">
             <Text variant="medium">
               {'You can now open the app directly through your Safe{Wallet} interface.'}
@@ -38,13 +36,15 @@ export const useSafeAppNotification = () => {
               </ExternalLink>
             </Button>
           </VStack>
-        ),
-        variant: 'info',
-        duration: Infinity,
-        onClose: () => {
-          window.localStorage.setItem('safe-wallet-toast-dismissed', 'true');
+        </div>,
+        {
+          duration: Infinity,
+          dismissible: true,
+          onDismiss: () => {
+            window.localStorage.setItem('safe-wallet-toast-dismissed', 'true');
+          }
         }
-      });
+      );
     }
   }, [connector?.id, isSafeWallet]);
 };

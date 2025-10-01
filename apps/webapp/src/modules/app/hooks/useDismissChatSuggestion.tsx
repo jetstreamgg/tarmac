@@ -1,9 +1,8 @@
-import { useToast } from '@/components/ui/use-toast';
-import { CHATBOT_ENABLED, CHAT_NOTIFICATION_KEY } from '@/lib/constants';
+import { CHATBOT_ENABLED, CHAT_NOTIFICATION_KEY, CHAT_NOTIFICATION_TOAST_ID } from '@/lib/constants';
 import { useEffect, useState } from 'react';
+import { toast } from '@/components/ui/use-toast';
 
 export const useDismissChatSuggestion = () => {
-  const { toasts, dismiss } = useToast();
   const [chatSuggested, setChatSuggested] = useState(() => {
     return localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true';
   });
@@ -13,12 +12,9 @@ export const useDismissChatSuggestion = () => {
       if (!chatSuggested) {
         localStorage.setItem(CHAT_NOTIFICATION_KEY, 'true');
         setChatSuggested(true);
-        // Dismiss chat notification
-        const chatToast = toasts.find(toast => toast.variant === 'chat');
-        if (chatToast) {
-          dismiss(chatToast.id);
-        }
       }
+      // Dismiss the specific chat notification toast when chat pane is visible
+      toast.dismiss(CHAT_NOTIFICATION_TOAST_ID);
     }
-  }, [chatSuggested, toasts, dismiss]);
+  }, [chatSuggested]);
 };

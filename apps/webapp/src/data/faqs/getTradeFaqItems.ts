@@ -45,14 +45,14 @@ Note that price slippage—a change in price between the time of the trade order
 
 Market participants trade crypto for a variety of reasons. For example, users may trade crypto for portfolio diversification and to participate in DeFi. Regardless of the motivation, crypto trading can provide a diverse range of opportunities to market participants depending on their goals and risk appetite
 
-When you trade USDC, USDT, ETH or SKY for USDS via the Sky Protocol, you can use your USDS to access the Sky Savings Rate to access additional USDS over time, and to access Sky Token Rewards.
+When you trade USDC, USDT, ETH or SKY for USDS via the Sky Protocol, you can use your USDS to access the [Sky Savings Rate](#tooltip-sky-savings-rate) to access additional USDS over time, and to access Sky Token Rewards.
 
-When you trade USDC, USDT, ETH and USDS for SKY, you can supply your SKY tokens to the Staking Engine of the Sky Protocol to access Staking Rewards. The Staking Engine enables you to create one or more positions, including positions that enable you to generate and borrow USDS against your supplied SKY and to delegate the voting power the SKY token provides.`,
+When you trade USDC, USDT, ETH and USDS for SKY, you can supply your SKY tokens to the Staking Engine of the Sky Protocol to access Staking Rewards. The Staking Engine enables you to create one or more positions, including positions that enable you to generate and [borrow](#tooltip-borrow) USDS against your supplied SKY and to delegate the voting power the SKY token provides.`,
     index: 1
   },
   {
     question: 'Is trading using Sky.money free?',
-    answer: `Accessing the Sky.money web app is free. Trading, however, may involve a fee imposed by the third-party decentralized exchange (i.e., [CoW Swap](https://swap.cow.fi/#/1/swap/WETH)) integrated with the non-custodial Sky Protocol that is used to make the trade. In addition, you will likely pay a blockchain network transaction fee called a gas fee, which is neither controlled, imposed nor received by Sky.money or the Sky Protocol. This fee is calculated based on current Ethereum network demand and the amount of gas required to process your transaction.
+    answer: `Accessing the Sky.money web app is free. Trading, however, may involve a fee imposed by the third-party decentralized exchange (i.e., [CoW Swap](https://swap.cow.fi/#/1/swap/WETH)) integrated with the non-custodial Sky Protocol that is used to make the trade. In addition, you will likely pay a blockchain network transaction fee called a [gas fee](#tooltip-gas-fee), which is neither controlled, imposed nor received by Sky.money or the Sky Protocol. This fee is calculated based on current Ethereum network demand and the amount of gas required to process your transaction.
 
 If you have shied away from the Ethereum blockchain due to the high price of gas, the Sky Protocol's SkyLink system enables users to move their Ethereum Mainnet-based Sky assets between supported L2 networks, including Base and Arbitrum, with reduced fees and faster transaction speeds.
 
@@ -101,7 +101,7 @@ const L2TradeFaqItems = [
     question: 'Which tokens can I trade on supported L2s?',
     answer: `Using the Sky.money web app, you can interact with the Peg Stability Module [(PSM)](#tooltip-psm) for conversions to/from USDS, sUSDS and USDC. The PSM handles conversions programmatically, driven at your direction, between these pairs directly.
 
-On some supported L2s, you can also access the Sky Savings Rate.
+On some supported L2s, you can also access the [Sky Savings Rate](#tooltip-sky-savings-rate).
 
 SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.`,
     index: 1
@@ -116,7 +116,7 @@ SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to 
     question:
       "Why do I see activity in my Trade transaction history in the Sky.money web app if I've never used the Trade feature?",
     answer:
-      "If you've accessed the Sky Savings Rate on a supported Layer 2 (L2) network, a conversion from USDS or USDC to sUSDS would have been automatically triggered via the Peg Stability Module [(PSM)](#tooltip-psm). Therefore, you will see such activity in your Trade transaction history, despite not having traded.",
+      "If you've accessed the [Sky Savings Rate](#tooltip-sky-savings-rate) on a supported Layer 2 (L2) network, a conversion from USDS or USDC to sUSDS would have been automatically triggered via the Peg Stability Module [(PSM)](#tooltip-psm). Therefore, you will see such activity in your Trade transaction history, despite not having traded.",
     index: 3
   }
 ];

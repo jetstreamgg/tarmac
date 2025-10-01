@@ -1,4 +1,3 @@
-import { useToast } from '@/components/ui/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { IntentMapping, QueryParams } from '@/lib/constants';
 import { LinkedAction, useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
@@ -22,7 +21,6 @@ export const usePrepareNotification = () => {
   const isUpgradeModule = widgetParam === IntentMapping[Intent.UPGRADE_INTENT];
   const isTradeModule = widgetParam === IntentMapping[Intent.TRADE_INTENT];
   const isL2 = isL2ChainId(chainId);
-  const { dismiss } = useToast();
   const navigate = useNavigate();
 
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
@@ -106,9 +104,8 @@ export const usePrepareNotification = () => {
 
     if (targetUrl) {
       navigate(targetUrl);
-      dismiss();
     }
-  }, [url, upgradeUrl, tradeUrl, navigate, dismiss, isUpgradeModule, isTradeModule]);
+  }, [url, upgradeUrl, tradeUrl, navigate, isUpgradeModule, isTradeModule]);
 
   return {
     url: isUpgradeModule ? upgradeUrl : isTradeModule ? tradeUrl : url,

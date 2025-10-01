@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { toast, useToast } from '@/components/ui/use-toast';
+import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Trans } from '@lingui/react/macro';
 import { Text } from '@/modules/layout/components/Typography';
@@ -12,7 +12,6 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 
 export const useBatchTxNotification = (isAuthorized: boolean) => {
   const { updateUserConfig } = useConfigContext();
-  const { dismiss } = useToast();
   const [batchEnabled] = useBatchToggle();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,13 +35,11 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
       console.error('Error parsing user settings', error);
     }
     setNotificationShown(true);
-    dismiss();
-  }, [dismiss, updateUserConfig]);
+  }, [updateUserConfig]);
 
   useEffect(() => {
     // Only show if authorized by the notification queue
     if (!isAuthorized) {
-      dismiss();
       return;
     }
 
@@ -50,48 +47,61 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
     // (regardless of whether batch is already enabled)
     if (isAuthorized && !notificationShown) {
       timerRef.current = setTimeout(() => {
-        toast({
-          icon: <Zap width={22} height={22} />,
-          title: (
-            <Text variant="medium" className="text-text">
-              <Trans>EIP-7702 Bundled transactions now supported</Trans>
-            </Text>
-          ),
-          description: (
-            <VStack className="mt-3 w-full gap-3">
-              <Text variant="medium">
-                <Trans>
-                  Bundled transactions enable a one-click, gas-optimized user experience that aligns with the
-                  best practices of the broader Ethereum ecosystem.
-                </Trans>
-              </Text>
-              {batchEnabled && (
-                <Text variant="medium" className="text-muted-foreground">
+        toastWithClose(
+          toastId => (
+            <div>
+              <div className="flex items-center gap-2">
+                <Zap width={22} height={22} />
+                <Text variant="medium" className="text-text">
+                  <Trans>EIP-7702 Bundled transactions now supported</Trans>
+                </Text>
+              </div>
+              <VStack className="mt-3 w-full gap-3">
+                <Text variant="medium">
                   <Trans>
-                    Bundled transactions:{' '}
-                    <Text tag="span" variant="medium" className="text-bullish">
-                      Active
-                    </Text>
+                    Bundled transactions enable a one-click, gas-optimized user experience that aligns with
+                    the best practices of the broader Ethereum ecosystem.
                   </Trans>
                 </Text>
-              )}
-              <ExternalLink
-                href={BATCH_TX_LEGAL_NOTICE_URL}
-                className="text-textEmphasis hover:text-textEmphasis self-start text-sm hover:underline"
-                showIcon={false}
-              >
-                <Trans>Legal Notice</Trans>
-              </ExternalLink>
-              {!batchEnabled && (
-                <Button className="self-start" variant="pill" size="xs" onClick={onActivate}>
-                  <Trans>Activate smart account</Trans>
-                </Button>
-              )}
-            </VStack>
+                {batchEnabled && (
+                  <Text variant="medium" className="text-muted-foreground">
+                    <Trans>
+                      Bundled transactions:{' '}
+                      <Text tag="span" variant="medium" className="text-bullish">
+                        Active
+                      </Text>
+                    </Trans>
+                  </Text>
+                )}
+                <ExternalLink
+                  href={BATCH_TX_LEGAL_NOTICE_URL}
+                  className="text-textEmphasis hover:text-textEmphasis self-start text-sm hover:underline"
+                  showIcon={false}
+                >
+                  <Trans>Legal Notice</Trans>
+                </ExternalLink>
+                {!batchEnabled && (
+                  <Button
+                    className="self-start"
+                    variant="pill"
+                    size="xs"
+                    onClick={() => {
+                      onActivate();
+                      toast.dismiss(toastId);
+                    }}
+                  >
+                    <Trans>Activate smart account</Trans>
+                  </Button>
+                )}
+              </VStack>
+            </div>
           ),
-          duration: Infinity,
-          onClose
-        });
+          {
+            duration: Infinity,
+            dismissible: true,
+            onDismiss: onClose
+          }
+        );
       }, 3000);
     } else if (timerRef.current) {
       clearTimeout(timerRef.current);

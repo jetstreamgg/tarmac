@@ -150,11 +150,7 @@ export const SavingsTransactionStatus = ({
           )
         );
 
-        if (isBatchTransaction) setStep(2);
-        else if (flowTxStatus !== TxStatus.SUCCESS) {
-          if (needsAllowance) setStep(1);
-          else setStep(2);
-        }
+        setStep(2);
       }
     }
   }, [txStatus, flow, action, screen, i18n.locale, needsAllowance]);

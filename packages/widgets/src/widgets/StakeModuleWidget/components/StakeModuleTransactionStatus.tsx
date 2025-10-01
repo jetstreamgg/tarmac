@@ -257,6 +257,7 @@ export const StakeModuleTransactionStatus = ({
       setLoadingText(i18n._(claimLoadingButtonText({ txStatus })));
       setTxTitle(i18n._(claimTitle[txStatus]));
       setTxSubtitle(i18n._(claimSubtitle[txStatus]));
+      setStep(2);
     }
   }, [txStatus, screen, flow, action, i18n.locale, needsAllowance]);
 

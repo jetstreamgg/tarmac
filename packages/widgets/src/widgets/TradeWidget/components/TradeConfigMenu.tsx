@@ -18,6 +18,8 @@ import { Popover, PopoverArrow, PopoverContent, PopoverTrigger } from '@widgets/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { verifySlippage } from '../lib/utils';
+import { getTooltipById } from '@widgets/data/tooltips';
+import { parseMarkdownLinks } from '@widgets/shared/utils/parseMarkdownLinks';
 
 type PropTypes = {
   slippage: string;
@@ -64,20 +66,7 @@ export const TradeConfigMenu = ({
               <Trans>Slippage</Trans>
             </Heading>
             <Text variant="medium" className="text-textSecondary">
-              <Trans>
-                By setting your slippage tolerance level, you control the degree of token price fluctuation
-                that you will accept between the time you initiate a trade transaction and its execution on
-                the blockchain.
-              </Trans>
-            </Text>
-            <Text variant="medium" className="text-textSecondary">
-              <Trans>
-                If the actual slippage is greater than your chosen tolerance level, the transaction will fail
-                and be reverted.
-              </Trans>
-            </Text>
-            <Text variant="medium" className="text-textSecondary">
-              <Trans>Note that reverted transactions may still incur gas fees.</Trans>
+              {parseMarkdownLinks(getTooltipById('slippage-tolerance')?.tooltip || '')}
             </Text>
           </div>
           <HStack className="w-full justify-between">

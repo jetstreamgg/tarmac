@@ -80,6 +80,11 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
       <DialogTitle asChild>
         <Text className="text-text text-center text-[26px] sm:text-[28px] md:text-[32px]">{title}</Text>
       </DialogTitle>
+      {termsVersion && (
+        <Text className="text-center text-xs text-white/50">
+          <Trans>Terms version: {termsVersion}</Trans>
+        </Text>
+      )}
 
       <Card className="scrollbar-thin mx-auto max-h-[256px] w-full overflow-y-auto bg-[#181720] p-3 sm:max-h-[432px] sm:p-4">
         {content}
@@ -94,12 +99,6 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
               afterward.
             </Trans>
           )}
-        </Text>
-      )}
-
-      {termsVersion && (
-        <Text className="text-center text-xs text-white/50">
-          <Trans>Terms version: {termsVersion}</Trans>
         </Text>
       )}
 

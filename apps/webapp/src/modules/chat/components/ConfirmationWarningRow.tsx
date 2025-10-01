@@ -11,6 +11,7 @@ import { Warning } from '@/modules/icons/Warning';
 import { getConfirmationWarningMetadata } from '../lib/confirmationWarningMetadata';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
 import { Trans } from '@lingui/react/macro';
+import { useChatbotPrefillNotification } from '@/modules/app/hooks/useChatbotPrefillNotification';
 
 export const ConfirmationWarningRow = () => {
   const {
@@ -24,6 +25,7 @@ export const ConfirmationWarningRow = () => {
   } = useChatContext();
 
   const navigate = useNavigate();
+  const { showPrefillNotification } = useChatbotPrefillNotification();
 
   const onIntentSelected = useCallback(
     (intent: ChatIntent) => setChatHistory(prev => [...prev, intentSelectedMessage(intent)]),
@@ -40,8 +42,7 @@ export const ConfirmationWarningRow = () => {
 
   const selectedIntentUrl = useRetainedQueryParams(selectedIntent?.url || '', [
     QueryParams.Locale,
-    QueryParams.Details,
-    QueryParams.Chat
+    QueryParams.Details
   ]);
 
   const handleConfirm = useCallback(() => {
@@ -49,7 +50,11 @@ export const ConfirmationWarningRow = () => {
     if (selectedIntent && !hasShownIntent(selectedIntent)) {
       setWarningShown([...warningShown, selectedIntent]);
     }
-    if (selectedIntentUrl) navigate(selectedIntentUrl);
+    if (selectedIntentUrl) {
+      navigate(selectedIntentUrl);
+      // Show notification that inputs have been prefilled
+      showPrefillNotification();
+    }
     if (selectedIntent) onIntentSelected(selectedIntent);
   }, [
     selectedIntentUrl,
@@ -58,7 +63,8 @@ export const ConfirmationWarningRow = () => {
     selectedIntent,
     onIntentSelected,
     warningShown,
-    hasShownIntent
+    hasShownIntent,
+    showPrefillNotification
   ]);
 
   const disclaimerMetadata = getConfirmationWarningMetadata(selectedIntent);

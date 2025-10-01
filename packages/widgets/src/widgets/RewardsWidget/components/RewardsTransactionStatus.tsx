@@ -104,6 +104,7 @@ export const RewardsTransactionStatus = ({
       if (selectedRewardContract) {
         setTxDescription(i18n._(rewardsClaimTxDescription({ txStatus, selectedRewardContract })));
       }
+      setStep(2);
     } else if (flow === RewardsFlow.SUPPLY) {
       setStepTwoTitle(t`Supply`);
 

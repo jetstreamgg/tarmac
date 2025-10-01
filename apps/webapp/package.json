@@ -68,6 +68,7 @@
     "react-router-dom": "catalog:",
     "recharts": "catalog:",
     "rehype-sanitize": "catalog:",
+    "sonner": "catalog:",
     "viem": "catalog:",
     "vite": "catalog:",
     "wagmi": "catalog:"
