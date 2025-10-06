@@ -60,7 +60,7 @@ export const ArrowStepIndicator = ({
       style={{
         backgroundImage: arrowBg,
         backgroundRepeat: 'no-repeat',
-        backgroundSize: 'contain',
+        backgroundSize: '100% 100%',
         height: `${newHeight}px`
       }}
       data-testid="arrow-step-indicator"

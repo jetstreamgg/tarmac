@@ -15,6 +15,7 @@ import { ExpertIntent } from '@/lib/enums';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { filterActionsByIntent } from '@/lib/utils';
+import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 
 export function StUSDSDetails(): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -59,7 +60,10 @@ export function StUSDSDetails(): React.ReactElement {
       </DetailSection>
       <DetailSection title={t`About Native Sky Protocol Tokens`}>
         <DetailSectionRow>
-          <AboutStUsds />
+          <div>
+            <AboutStUsds />
+            <AboutUsds />
+          </div>
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`FAQs`}>

@@ -700,7 +700,7 @@ function StakeModuleWidgetWrapped({
         ) : (
           <div>
             {showStep && (
-              <motion.div className="py-6 pr-3" exit={{ opacity: 0, transition: { duration: 0 } }}>
+              <motion.div className="py-6" exit={{ opacity: 0, transition: { duration: 0 } }}>
                 <StepperBar
                   step={stepIndex}
                   totalSteps={totalSteps}

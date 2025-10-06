@@ -24,7 +24,7 @@ export const SavingsBalanceCard = ({
   return (
     <InteractiveStatsCardWithAccordion
       title={t`Savings balance`}
-      tokenSymbol="USDS"
+      tokenSymbol="sUSDS"
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />

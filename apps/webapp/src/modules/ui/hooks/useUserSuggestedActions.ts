@@ -17,7 +17,6 @@ import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useChainId, useChains } from 'wagmi';
-import { isExpertModulesEnabled } from '@/lib/feature-flags';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { mainnet } from 'wagmi/chains';
 import { tenderly } from '@/data/wagmi/config/config.default';
@@ -118,7 +117,7 @@ const fetchUserSuggestedActions = (
       linkedActions.push({
         primaryToken: 'DAI',
         secondaryToken: 'USDS',
-        title: t`Upgrade and access rewards`,
+        title: t`Upgrade and access Expert rewards`,
         balance: daiBalance.formatted,
         stepOne: t`Upgrade DAI to USDS`,
         stepTwo: t`Access stUSDS rewards`,
@@ -233,7 +232,7 @@ const fetchUserSuggestedActions = (
         balance: usdcBalance.formatted,
         primaryToken: 'USDC',
         secondaryToken: 'USDS',
-        title: t`Trade and access rewards`,
+        title: t`Trade and access Expert rewards`,
         stepOne: t`Trade USDC for USDS`,
         stepTwo: t`Access stUSDS rewards`,
         url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
@@ -330,7 +329,7 @@ const fetchUserSuggestedActions = (
         balance: usdtBalance.formatted,
         primaryToken: 'USDT',
         secondaryToken: 'USDS',
-        title: t`Trade and access rewards`,
+        title: t`Trade and access Expert rewards`,
         stepOne: t`Trade USDT for USDS`,
         stepTwo: t`Access stUSDS rewards`,
         url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
@@ -494,8 +493,6 @@ const fetchUserSuggestedActions = (
       | Intent
       | undefined;
     if (!intentEnum) return false;
-    // Check if Expert intent is disabled via feature flag
-    if (intentEnum === Intent.EXPERT_INTENT && !isExpertModulesEnabled()) return false;
     return supportedIntents.includes(intentEnum);
   };
 

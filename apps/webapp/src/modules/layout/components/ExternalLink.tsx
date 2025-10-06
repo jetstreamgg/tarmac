@@ -36,7 +36,7 @@ export function ExternalLink({
       href={href}
       onClick={skipConfirm ? undefined : onExternalLinkClicked}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       className={cn('text-text inline-flex items-center', className)}
     >
       {['string', 'number'].includes(typeof children) || children === undefined ? (

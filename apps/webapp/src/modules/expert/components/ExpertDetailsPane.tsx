@@ -3,10 +3,10 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { t } from '@lingui/core/macro';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { Text } from '@/modules/layout/components/Typography';
 import { ExpertOverview } from './ExpertOverview';
 import { ExpertChart } from './ExpertChart';
 import { ExpertAbout } from './ExpertAbout';
+import { ExpertFaq } from './ExpertFaq';
 import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
 import { IntentMapping } from '@/lib/constants';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -21,7 +21,7 @@ export function ExpertDetailsPane() {
 
   return (
     <DetailSectionWrapper>
-      <DetailSection title={t`Expert modules overview`}>
+      <DetailSection title={t`Expert overview`}>
         <DetailSectionRow>
           <ExpertOverview />
         </DetailSectionRow>
@@ -47,7 +47,7 @@ export function ExpertDetailsPane() {
       </DetailSection>
       <DetailSection title={t`FAQs`}>
         <DetailSectionRow>
-          <Text className="text-text">TODO</Text>
+          <ExpertFaq />
         </DetailSectionRow>
       </DetailSection>
     </DetailSectionWrapper>

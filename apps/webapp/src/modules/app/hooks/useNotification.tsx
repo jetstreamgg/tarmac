@@ -330,13 +330,17 @@ export const useNotification = () => {
       } else if (type && type !== NotificationType.INSUFFICIENT_BALANCE) {
         if (status === TxStatus.SUCCESS) {
           toast.success(title, {
+            unstyled: true,
             description,
-            duration
+            duration,
+            className: 'justify-start'
           });
         } else {
           toast.error(title, {
+            unstyled: true,
             description,
-            duration
+            duration,
+            className: 'justify-start'
           });
         }
         handleTokenReceived(type);

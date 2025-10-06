@@ -35,12 +35,12 @@ describe('StUSDS widget tests', () => {
     expect(withdrawTab).toBeTruthy();
   });
 
-  it('displays stUSDS Module header', async () => {
+  it('displays stUSDS header', async () => {
     renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
-    const header = await screen.findByText('stUSDS Module');
+    const header = await screen.findByRole('heading', { name: 'stUSDS' });
     const description = await screen.findByText(
-      'Earn a variable rate on USDS by participating in SKY-backed borrowing'
+      'Access a variable reward rate on USDS by participating in SKY-backed borrowing'
     );
 
     expect(header).toBeTruthy();

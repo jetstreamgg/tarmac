@@ -23,7 +23,7 @@ export const LinkedActionWrapper = () => {
     : null;
 
   return (
-    <div className="m-6 mb-0 flex w-full justify-between pr-6 md:mx-3 md:mt-0">
+    <div className="mb-1 mt-4 flex w-full justify-between px-4 md:mb-0 md:mt-2 md:pl-1.5 md:pr-2.5 lg:mt-0 lg:pl-3 lg:pr-1.5">
       <ArrowStepIndicator
         text={firstStepText}
         position={0}

@@ -383,15 +383,15 @@ const StUSDSWidgetWrapped = ({
               </HStack>
             </Button>
           )}
-          <div className="space-y-1">
-            <Heading variant="x-large">
-              <Trans>stUSDS Module</Trans>
-            </Heading>
-            <Text className="text-textSecondary" variant="small">
-              <Trans>Earn a variable rate on USDS by participating in SKY-backed borrowing</Trans>
-            </Text>
-          </div>
+          <Heading variant="x-large">
+            <Trans>stUSDS</Trans>
+          </Heading>
         </div>
+      }
+      subHeader={
+        <Text className="text-textSecondary" variant="small">
+          <Trans>Access a variable reward rate on USDS by participating in SKY-backed borrowing</Trans>
+        </Text>
       }
       rightHeader={rightHeaderComponent}
       footer={

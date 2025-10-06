@@ -1,8 +1,8 @@
-import { getStUSDSFaqItems } from '../getStUSDSFaqItems';
+import { getStusdsFaqsFaqItems } from '@/data/faqs/getStusdsFaqsFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 
 export function StUSDSFaq() {
-  const faqItems = getStUSDSFaqItems();
+  const faqItems = getStusdsFaqsFaqItems();
 
   return <FaqAccordion items={faqItems} />;
 }

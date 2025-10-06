@@ -9,6 +9,7 @@ import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAcco
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { stUsdsAddress } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 
 export type StUSDSStats = {
   totalAssets: bigint;
@@ -60,7 +61,10 @@ export const StUSDSStatsCard = ({
         variants={positionAnimations}
         data-testid="withdrawal-liquidity-container"
       >
-        <Text className="text-textSecondary text-sm leading-4">{t`Withdrawal liquidity`}</Text>
+        <div className="text-textSecondary flex w-fit items-center gap-1.5">
+          <Text className="text-textSecondary text-sm leading-4">{t`Withdrawal liquidity`}</Text>
+          <PopoverRateInfo type="withdrawalLiquidity" onExternalLinkClicked={onExternalLinkClicked} />
+        </div>
         {isLoading ? (
           <div className="flex justify-end">
             <Skeleton className="bg-textSecondary h-6 w-20" />

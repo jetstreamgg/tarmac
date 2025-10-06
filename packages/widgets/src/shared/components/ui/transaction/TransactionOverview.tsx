@@ -76,7 +76,7 @@ export function TransactionOverview({
                         >
                           {label}
                         </Text>
-                        {label === 'Rate' && rateType && (
+                        {(label === 'Rate' || label === 'stUSDS Rate') && rateType && (
                           <span className="mt-1">
                             <PopoverRateInfo
                               type={rateType}

@@ -10,7 +10,7 @@ export function ExpertSuppliersCard(): React.ReactElement {
 
   return (
     <StatsCard
-      title={t`Expert Suppliers`}
+      title={t`Expert suppliers`}
       content={
         <Text className="mt-2" variant="large">
           {suppliersCount || 0}

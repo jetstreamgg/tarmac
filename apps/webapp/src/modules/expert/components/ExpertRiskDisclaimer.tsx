@@ -44,7 +44,7 @@ export function ExpertRiskDisclaimer() {
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-500" />
           <div className="flex-1">
             <Text variant="medium" dataTestId="expert-risk-disclaimer">
-              Expert Modules are intended for experienced users and may function differently than modules to
+              Expert modules are intended for experienced users and may function differently than modules to
               which ordinary users are accustomed. Please be sure you understand the unique features and the
               associated risks of any Expert Module before proceeding. Be sure to review the FAQs and{' '}
               <ExternalLink

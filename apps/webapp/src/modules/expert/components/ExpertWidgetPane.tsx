@@ -31,14 +31,14 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
         ) : (
           <WidgetContainer
             header={
-              <div className="space-y-1">
-                <Heading variant="x-large">
-                  <Trans>Expert Modules</Trans>
-                </Heading>
-                <Text className="text-textSecondary" variant="small">
-                  <Trans>Higher-Risk Options: For experienced users</Trans>
-                </Text>
-              </div>
+              <Heading variant="x-large">
+                <Trans>Expert</Trans>
+              </Heading>
+            }
+            subHeader={
+              <Text className="text-textSecondary" variant="small">
+                <Trans>Higher-risk options for more experienced users</Trans>
+              </Text>
             }
             rightHeader={sharedProps.rightHeaderComponent}
           >

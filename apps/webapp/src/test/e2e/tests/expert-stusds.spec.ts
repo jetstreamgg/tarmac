@@ -14,7 +14,7 @@ const setTestBalance = async (tokenAddress: string, amount: string, decimals = 1
   await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
 };
 
-test.describe.skip('Expert Module - stUSDS', () => {
+test.describe('Expert Module - stUSDS', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await connectMockWalletAndAcceptTerms(page);
@@ -28,7 +28,7 @@ test.describe.skip('Expert Module - stUSDS', () => {
     // Should display Message
     await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
     await expect(page.getByTestId('expert-risk-disclaimer')).toContainText(
-      'Expert Modules are intended for experienced users and may function differently than modules to which ordinary users are accustomed. Please be sure you understand the unique features and the associated risks of any Expert Module before proceeding. Be sure to review the FAQs and'
+      'Expert modules are intended for experienced users and may function differently than modules to which ordinary users are accustomed. Please be sure you understand the unique features and the associated risks of any Expert Module before proceeding. Be sure to review the FAQs and'
     );
 
     // Verify User Risks hyperlink is present
@@ -43,7 +43,7 @@ test.describe.skip('Expert Module - stUSDS', () => {
     await page.getByRole('button', { name: 'Back to Expert' }).click();
 
     // Should be back at Expert menu
-    await expect(page.getByRole('heading', { name: 'Expert Modules', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
     await expect(page.getByTestId('stusds-stats-card')).toBeVisible();
   });
 
@@ -74,7 +74,7 @@ test.describe.skip('Expert Module - stUSDS', () => {
 
     // Should still be in stUSDS module
     await expect(
-      page.getByTestId('widget-container').getByRole('heading', { name: 'stUSDS Module' })
+      page.getByTestId('widget-container').getByRole('heading', { name: 'stUSDS', exact: true })
     ).toBeVisible();
 
     // go to balance page
@@ -85,7 +85,7 @@ test.describe.skip('Expert Module - stUSDS', () => {
     await page.locator('a[href*="expert_module=stusds"]').first().click();
 
     // should land on the stusds balance page
-    expect(page.getByText('stUSDS Module')).toBeTruthy();
+    expect(page.getByText('stUSDS')).toBeTruthy();
   });
 
   test('Withdraw USDS from stUSDS module', async ({ page }) => {
@@ -198,13 +198,13 @@ test.describe.skip('Expert Module - stUSDS', () => {
     await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
   });
 
-  test('Upgrade and access rewards', async ({ page }) => {
+  test('Upgrade and access Expert rewards', async ({ page }) => {
     await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
     // Navigate to Expert menu
     await page.getByRole('tab', { name: 'Expert' }).click();
 
     // Click on Upgrade button
-    await page.getByText('Upgrade and access rewards').first().click();
+    await page.getByText('Upgrade and access Expert rewards').first().click();
 
     await page.getByTestId('upgrade-input-origin').click();
     await page.getByTestId('upgrade-input-origin').fill('1');
@@ -241,7 +241,7 @@ test.describe.skip('Expert Module - stUSDS', () => {
 
     // Navigate away from the module
     await page.getByRole('button', { name: 'Back to Expert' }).click();
-    await expect(page.getByRole('heading', { name: 'Expert Modules', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
 
     // Reload the browser
     await page.reload();

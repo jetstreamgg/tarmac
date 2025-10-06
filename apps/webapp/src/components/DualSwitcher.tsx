@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 export function DualSwitcher({ className }: { className?: string }): JSX.Element {
   return (
-    <HStack className={cn('items-start gap-4 space-x-0', className)}>
+    <HStack className={cn('items-start gap-3 space-x-0', className)}>
       <NetworkSwitcher />
       <HStack className="items-center space-x-0">
         <DetailsSwitcher />

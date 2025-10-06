@@ -12,162 +12,58 @@ import { getTooltipById } from '@widgets/data/tooltips';
 import { parseMarkdownLinks } from '@widgets/shared/utils/parseMarkdownLinks';
 import { cn } from '@widgets/lib/utils';
 
-const getContent = (onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void) => {
-  // Get tooltips from centralized system
-  const rewardsRateTooltip = getTooltipById('rewards-rate');
-  const rateTooltip = getTooltipById('rate');
-  const borrowRateTooltip = getTooltipById('borrow-rate');
-  const debtCeilingTooltip = getTooltipById('debt-ceiling');
-  const psmTooltip = getTooltipById('psm');
-  const borrowTooltip = getTooltipById('borrow');
-  const delegateTooltip = getTooltipById('choose-your-delegate');
-  const liquidationTooltip = getTooltipById('liquidation-price');
-  const delayedUpgradeTooltip = getTooltipById('delayed-upgrade-penalty');
-  const stakingRewardsRateSrrsTooltip = getTooltipById('staking-rewards-rates-srrs');
-  const stUsdsRateTooltip = getTooltipById('stusds-rate');
-  const availableLiquidityTooltip = getTooltipById('available-liquidity');
-  const totalStakingEngineDebtTooltip = getTooltipById('total-staking-engine-debt');
+// Mapping of popover types to tooltip IDs
+const TOOLTIP_ID_MAP = {
+  str: 'rewards-rate',
+  ssr: 'rate',
+  srr: 'staking-rewards-rates-srrs',
+  dtc: 'debt-ceiling',
+  sbr: 'borrow-rate',
+  psm: 'psm',
+  stakingRewards: 'staking-rewards',
+  borrow: 'borrow',
+  delegate: 'choose-your-delegate',
+  liquidation: 'liquidation-price',
+  stusds: 'stusds-rate',
+  stusdsLiquidity: 'available-liquidity',
+  totalStakingDebt: 'total-staking-engine-debt',
+  delayedUpgradePenalty: 'delayed-upgrade-penalty',
+  remainingCapacity: 'remaining-capacity',
+  withdrawalLiquidity: 'withdrawal-liquidity',
+  maximumCapacity: 'maximum-capacity'
+} as const;
 
+// Helper to create tooltip content with consistent styling
+const createTooltipContent = (
+  tooltipId: string,
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
+) => {
+  const tooltip = getTooltipById(tooltipId);
   return {
-    str: {
-      title: rewardsRateTooltip?.title || '',
-      description: (
-        <Text variant="small" className="leading-5 text-white/80">
-          {parseMarkdownLinks(rewardsRateTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    ssr: {
-      title: rateTooltip?.title || '',
-      description: (
-        <Text variant="small" className="leading-5 text-white/80">
-          {parseMarkdownLinks(rateTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    srr: {
-      title: stakingRewardsRateSrrsTooltip?.title || '',
-      description: (
-        <Text variant="small" className="leading-5 text-white/80">
-          {rateTooltip?.tooltip || ''}
-        </Text>
-      )
-    },
-    dtc: {
-      title: debtCeilingTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(debtCeilingTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    sbr: {
-      title: borrowRateTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(borrowRateTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    psm: {
-      title: psmTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(psmTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    stakingRewards: {
-      title: 'Staking Rewards',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized,
-          non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward
-          rates are determined by Sky Ecosystem Governance through the process of decentralized onchain
-          voting.
-        </Text>
-      )
-    },
-    borrow: {
-      title: borrowTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(borrowTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    delegate: {
-      title: delegateTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(delegateTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    liquidation: {
-      title: liquidationTooltip?.title || '',
-
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(liquidationTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    stusds: {
-      title: stUsdsRateTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(stUsdsRateTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    stusdsLiquidity: {
-      title: availableLiquidityTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(availableLiquidityTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    totalStakingDebt: {
-      title: totalStakingEngineDebtTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(totalStakingEngineDebtTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    },
-    delayedUpgradePenalty: {
-      title: delayedUpgradeTooltip?.title || '',
-      description: (
-        <Text className="leading-5 text-white/80" variant="small">
-          {parseMarkdownLinks(delayedUpgradeTooltip?.tooltip, onExternalLinkClicked)}
-        </Text>
-      )
-    }
+    title: tooltip?.title || '',
+    description: (
+      <Text variant="small" className="leading-5 text-white/80">
+        {parseMarkdownLinks(tooltip?.tooltip, onExternalLinkClicked)}
+      </Text>
+    )
   };
 };
 
-// Export the valid tooltip types as a runtime constant
-export const POPOVER_TOOLTIP_TYPES = [
-  'str',
-  'ssr',
-  'sbr',
-  'srr',
-  'dtc',
-  'psm',
-  'stakingRewards',
-  'borrow',
-  'delegate',
-  'liquidation',
-  'stusds',
-  'stusdsLiquidity',
-  'totalStakingDebt',
-  'delayedUpgradePenalty'
-] as const;
+const getContent = (onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void) => {
+  return Object.entries(TOOLTIP_ID_MAP).reduce(
+    (acc, [key, tooltipId]) => {
+      acc[key as keyof typeof TOOLTIP_ID_MAP] = createTooltipContent(tooltipId, onExternalLinkClicked);
+      return acc;
+    },
+    {} as Record<keyof typeof TOOLTIP_ID_MAP, { title: string; description: React.ReactElement }>
+  );
+};
 
-// Derive the type from the constant
-export type PopoverTooltipType = (typeof POPOVER_TOOLTIP_TYPES)[number];
+// Export the valid tooltip types as a runtime constant derived from the map
+export const POPOVER_TOOLTIP_TYPES = Object.keys(TOOLTIP_ID_MAP) as (keyof typeof TOOLTIP_ID_MAP)[];
+
+// Derive the type from the map
+export type PopoverTooltipType = keyof typeof TOOLTIP_ID_MAP;
 
 export const PopoverRateInfo = ({
   type,

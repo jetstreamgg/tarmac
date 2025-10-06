@@ -17,7 +17,7 @@ export function StUSDSRateCard() {
     <StatsCard
       className="h-full"
       isLoading={isLoading}
-      title={i18n._(msg`Rate`)}
+      title={i18n._(msg`stUSDS Rate`)}
       content={
         <div className="mt-2 flex items-center gap-1.5">
           <Text variant="large" className="text-bullish">

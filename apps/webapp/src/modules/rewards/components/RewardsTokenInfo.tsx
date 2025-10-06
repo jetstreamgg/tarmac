@@ -32,31 +32,32 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
 
   const mostRecentReward = historicRewardsTokenData?.[0];
   const mostRecentRate = mostRecentReward?.rate;
+  const isRateVisible =
+    !!rewardContract.supplyToken.symbol &&
+    !!rewardContract.rewardToken.symbol &&
+    !!mostRecentRate &&
+    !isNaN(parseFloat(mostRecentRate)) &&
+    parseFloat(mostRecentRate) > 0;
 
   return (
     <div className="flex w-full flex-wrap justify-between gap-3">
-      <div className="min-w-[250px] flex-1">
-        <StatsCard
-          visible={
-            !!rewardContract.supplyToken.symbol &&
-            !!rewardContract.rewardToken.symbol &&
-            !!mostRecentRate &&
-            !isNaN(parseFloat(mostRecentRate)) &&
-            parseFloat(mostRecentRate) > 0
-          }
-          title={t`Rate`}
-          isLoading={historicRewardsTokenIsLoading}
-          error={historicRewardsTokenError}
-          content={
-            <div className="mt-2 flex flex-row items-center gap-2">
-              <Text className="text-bullish" variant="large">
-                {formatDecimalPercentage(parseFloat(mostRecentRate || '0'))}
-              </Text>
-              <PopoverInfo type="str" />
-            </div>
-          }
-        />
-      </div>
+      {isRateVisible && (
+        <div className="min-w-[250px] flex-1">
+          <StatsCard
+            title={t`Rate`}
+            isLoading={historicRewardsTokenIsLoading}
+            error={historicRewardsTokenError}
+            content={
+              <div className="mt-2 flex flex-row items-center gap-2">
+                <Text className="text-bullish" variant="large">
+                  {formatDecimalPercentage(parseFloat(mostRecentRate || '0'))}
+                </Text>
+                <PopoverInfo type="str" />
+              </div>
+            }
+          />
+        </div>
+      )}
       <div className="min-w-[250px] flex-1">
         <StatsCard
           title={t`Total Value Locked`}
