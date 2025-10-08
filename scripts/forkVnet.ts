@@ -29,7 +29,7 @@ const UNICHAIN_CONFIG = {
 const forkVnets = async chainType => {
   const currentTime = Date.now();
 
-  const chainsToFork = chainType ?? ['mainnet', 'base', 'arbitrum' /*'optimism', 'unichain'*/]; // Re-enable when we add tests for these chains
+  const chainsToFork = chainType ?? ['mainnet', 'base', 'arbitrum', 'optimism', 'unichain']; // Re-enable when we add tests for these chains
 
   const responses = await Promise.all(
     //@ts-expect-error script doesn't work with TS
@@ -143,10 +143,35 @@ const forkVnets = async chainType => {
   const testnetsData = await Promise.all(responses.map(response => response.json()));
 
   for (const res of responses) {
+    console.log('Response:', res);
     if (res.status !== 200) {
       console.error('There was an error while forking the virtual testnet:', res.statusText);
       process.exit(1);
     }
+  }
+
+  // Log the current state of vnets after creation
+  console.log('Fetching current vnets state...');
+  try {
+    const vnetsResponse = await fetch(
+      'https://api.tenderly.co/api/v1/account/jetstreamgg/project/jetstream/vnets',
+      {
+        headers: [
+          ['accept', 'application/json, text/plain, */*'],
+          ['X-Access-Key', `${process.env.TENDERLY_API_KEY}`]
+        ],
+        method: 'GET'
+      }
+    );
+
+    if (vnetsResponse.ok) {
+      const vnetsData = await vnetsResponse.json();
+      console.log('Current vnets state:', JSON.stringify(vnetsData, null, 2));
+    } else {
+      console.error('Failed to fetch vnets state:', vnetsResponse.status, vnetsResponse.statusText);
+    }
+  } catch (error) {
+    console.error('Error fetching vnets state:', error);
   }
 
   // Read existing data if file exists

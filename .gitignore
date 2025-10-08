@@ -78,6 +78,9 @@ apps/*/stats.html
 tenderlyTestnetData.json
 apps/webapp/playwright-report
 apps/webapp/test-results
+apps/webapp/test-results.json
+**/test-account-pool-state.json
+**/account-pool.lock
 
 # locales
 packages/utils/src/locales/*.po

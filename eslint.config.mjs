@@ -24,6 +24,7 @@ export default [
       '**/dev-dist',
       '**/sw.js',
       '**/generated.ts',
+      '**/playwright-report/**',
       'packages/components',
       'packages/utils/src/locales/*'
     ]

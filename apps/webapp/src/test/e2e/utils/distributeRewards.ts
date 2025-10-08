@@ -1,5 +1,6 @@
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 import { NetworkName } from './constants';
+import { TENDERLY_RPC_URL } from '@/data/wagmi/config/testTenderlyChain';
 
 export const distributeRewards = async () => {
   const TENDERLY_RPC_URL = await getRpcUrlFromFile(NetworkName.mainnet);
@@ -31,6 +32,25 @@ export const distributeRewards = async () => {
     throw new Error(`Error: ${distributeResponse.statusText}`);
   }
 
+  const blockMineResponse = await fetch(TENDERLY_RPC_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'evm_increaseTime',
+      params: ['0xE10']
+    })
+  });
+
+  if (!blockMineResponse.ok) {
+    throw new Error(`Error: ${blockMineResponse.statusText}`);
+  }
+};
+
+export const evmIncreaseTime = async () => {
   const blockMineResponse = await fetch(TENDERLY_RPC_URL, {
     method: 'POST',
     headers: {

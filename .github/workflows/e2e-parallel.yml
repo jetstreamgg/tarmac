@@ -1,0 +1,139 @@
+name: Parallel E2E Tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'apps/webapp/**'
+      - 'packages/**'
+      - '.github/workflows/e2e-parallel.yml'
+  workflow_dispatch:
+    inputs:
+      skip_funding:
+        description: 'Skip funding accounts (for retry runs)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      workers:
+        description: 'Number of parallel workers'
+        required: false
+        default: '6'
+        type: string
+      networks:
+        description: 'Networks to fund (comma-separated)'
+        required: false
+        default: 'mainnet,base,arbitrum,optimism,unichain'
+        type: string
+
+jobs:
+  parallel-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      # Base environment variables
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      # Parallel test configuration
+      TEST_WORKERS: ${{ github.event.inputs.workers || '3' }}
+      SKIP_FUNDING: ${{ github.event.inputs.skip_funding || 'false' }}
+      FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Install Playwright browsers
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Setup Tenderly VNets
+        run: |
+          echo "Setting up Tenderly virtual networks..."
+          pnpm run vnet:fork:ci
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Run parallel E2E tests
+        run: |
+          echo "Running parallel E2E tests with $TEST_WORKERS workers"
+          echo "Skip funding: $SKIP_FUNDING"
+          echo "Fund networks: $FUND_NETWORKS"
+
+          # Run the parallel tests with retry script
+          chmod +x ./apps/webapp/run-tests-with-retry.sh
+          cd apps/webapp && ./run-tests-with-retry.sh
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Upload test results (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parallel-test-results-${{ github.run_id }}
+          path: |
+            apps/webapp/playwright-report/
+            apps/webapp/test-results/
+            apps/webapp/test-results.json
+          retention-days: 7
+
+      - name: Upload test traces (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parallel-test-traces-${{ github.run_id }}
+          path: apps/webapp/test-results/
+          retention-days: 3
+
+      - name: Cleanup Tenderly VNets
+        if: always()
+        run: |
+          echo "Cleaning up Tenderly virtual networks..."
+          pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## Parallel E2E Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers**: $TEST_WORKERS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Networks**: $FUND_NETWORKS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skip Funding**: $SKIP_FUNDING" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "apps/webapp/test-results.json" ]; then
+            echo "- **Test Results**: Available in artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "- **Status**: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Artifacts**: Check uploaded test results and traces" >> $GITHUB_STEP_SUMMARY
+          fi
