@@ -304,6 +304,7 @@
   &::-webkit-scrollbar {
     width: 0;
   }
+  scrollbar-width: none;
 }
 
 @utility scrollbar-thin {
@@ -317,6 +318,12 @@
     box-shadow: inset 0 0 10px 10px var(--transparent-white-15);
     border: solid 3px transparent;
     border-radius: 5px;
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  &:hover {
+    scrollbar-color: var(--transparent-white-15) transparent;
   }
 }
 
@@ -336,6 +343,9 @@
   &:hover::-webkit-scrollbar-thumb {
     box-shadow: inset 0 0 10px 10px var(--transparent-white-20);
   }
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--transparent-white-15) transparent;
 }
 
 @utility chevron-down {
