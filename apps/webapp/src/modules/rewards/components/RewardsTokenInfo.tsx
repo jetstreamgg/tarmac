@@ -60,7 +60,7 @@ export function RewardsTokenInfo({ rewardContract }: { rewardContract: RewardCon
       )}
       <div className="min-w-[250px] flex-1">
         <StatsCard
-          title={t`TVL`}
+          title={t`Total Value Locked`}
           isLoading={rewardContractInfoIsLoading}
           error={rewardContractInfoError}
           content={
