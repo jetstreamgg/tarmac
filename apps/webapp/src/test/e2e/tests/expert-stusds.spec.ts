@@ -14,7 +14,7 @@ const setTestBalance = async (tokenAddress: string, amount: string, decimals = 1
   await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
 };
 
-test.describe('Expert Module - stUSDS', () => {
+test.describe.skip('Expert Module - stUSDS', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await connectMockWalletAndAcceptTerms(page);

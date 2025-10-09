@@ -1,12 +1,6 @@
 import { useAccount, useChainId } from 'wagmi';
 import { WriteHookParams } from '../hooks';
-import {
-  gPv2SettlementAbi,
-  gPv2SettlementAddress,
-  gPv2SettlementSepoliaAbi,
-  gPv2SettlementSepoliaAddress
-} from '../generated';
-import { sepolia } from 'viem/chains';
+import { gPv2SettlementAbi, gPv2SettlementAddress } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
 export const useOnChainCancelOrder = ({
@@ -27,11 +21,8 @@ export const useOnChainCancelOrder = ({
   const enabled = paramEnabled && isConnected && !!connectedAddress && !!orderUid;
 
   return useWriteContractFlow({
-    address:
-      chainId === sepolia.id
-        ? gPv2SettlementSepoliaAddress[chainId as keyof typeof gPv2SettlementSepoliaAddress]
-        : gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress],
-    abi: chainId === sepolia.id ? gPv2SettlementSepoliaAbi : gPv2SettlementAbi,
+    address: gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress],
+    abi: gPv2SettlementAbi,
     functionName: 'setPreSignature',
     args: [orderUid!, false],
     chainId,

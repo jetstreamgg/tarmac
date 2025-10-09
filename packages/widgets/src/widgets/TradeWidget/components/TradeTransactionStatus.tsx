@@ -8,7 +8,8 @@ import {
   ExplorerName,
   getExplorerName,
   isL2ChainId,
-  useIsSafeWallet
+  useIsSafeWallet,
+  isCowSupportedChainId
 } from '@jetstreamgg/sky-utils';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -118,6 +119,7 @@ export const TradeTransactionStatus = ({
       : undefined;
 
   const isL2 = isL2ChainId(chainId);
+  const isCowSupported = isCowSupportedChainId(chainId);
   const chainExplorerName = getExplorerName(chainId, isSafeWallet);
 
   useEffect(() => {
@@ -275,7 +277,7 @@ export const TradeTransactionStatus = ({
   return (
     <TransactionStatus
       explorerName={
-        action === TradeAction.APPROVE || isL2
+        action === TradeAction.APPROVE || (isL2 && !isCowSupported)
           ? chainExplorerName
           : isEthFlow &&
               (ethFlowTxStatus === EthFlowTxStatus.SENDING_ETH ||

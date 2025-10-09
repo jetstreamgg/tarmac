@@ -119,7 +119,7 @@ export { useMigrationStats } from './upgrade/useMigrationStats';
 
 // Trade
 export { useTradeHistory } from './trade/useTradeHistory';
-export { useEthereumTradeHistory } from './trade/useEthereumTradeHistory';
+export { useCowswapTradeHistory } from './trade/useCowswapTradeHistory';
 export { useQuoteTrade } from './trade/useQuoteTrade';
 export { useSignAndCreateTradeOrder } from './trade/useSignAndCreateTradeOrder';
 export { useCreateEthTradeOrder } from './trade/useCreateEthTradeOrder';
@@ -208,7 +208,7 @@ export { usePsmSwapExactOut } from './psm/usePsmSwapExactOut';
 export { useBatchPsmSwapExactIn } from './psm/useBatchPsmSwapExactIn';
 export { useBatchPsmSwapExactOut } from './psm/useBatchPsmSwapExactOut';
 export { useL2SavingsHistory } from './psm/useL2SavingsHistory';
-export { useL2TradeHistory } from './psm/useL2TradeHistory';
+export { usePsmTradeHistory } from './psm/usePsmTradeHistory';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
 export { usePreviewSwapExactIn } from './psm/usePreviewSwapExactIn';
 export { usePreviewSwapExactOut } from './psm/usePreviewSwapExactOut';
@@ -287,10 +287,6 @@ export {
   usdcAddress,
   usdtAddress,
   spkAddress,
-  wethSepoliaAddress,
-  usdcSepoliaAddress,
-  usdtSepoliaAddress,
-  mcdDaiSepoliaAddress,
   sealModuleAddress,
   stakeModuleAddress,
   usdcL2Address,
@@ -311,7 +307,7 @@ export {
   lsSkyUsdsRewardAddress,
   lsSkySpkRewardAddress
 } from './generated';
-export { contracts, /*tenderlyContracts,*/ sepoliaContracts, l2Contracts } from './contracts';
+export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';
 
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';

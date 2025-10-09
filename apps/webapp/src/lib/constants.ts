@@ -2,7 +2,7 @@ import { RewardsModule, Savings, Trade, Upgrade, Seal, Expert } from '@/modules/
 import { ExpertIntent, Intent } from './enums';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { base, mainnet, sepolia, arbitrum, unichain, optimism } from 'viem/chains';
+import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
 import { tenderly } from '@/data/wagmi/config/config.default';
 
 export enum QueryParams {
@@ -68,13 +68,13 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.REWARDS_INTENT,
     Intent.SAVINGS_INTENT,
     Intent.UPGRADE_INTENT,
+    Intent.TRADE_INTENT,
     Intent.SEAL_INTENT,
     Intent.STAKE_INTENT,
     Intent.EXPERT_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
-  [sepolia.id]: [Intent.BALANCES_INTENT, Intent.TRADE_INTENT],
   [unichain.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT],
   [optimism.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT]
 };

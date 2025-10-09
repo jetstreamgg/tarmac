@@ -17,7 +17,7 @@ import { useSearchParams } from 'react-router-dom';
 import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { getChainSpecificText, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -32,7 +32,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
-  const isL2 = isL2ChainId(chainId);
+  const isCowSupported = isCowSupportedChainId(chainId);
   const { setShouldDisableActionButtons } = useChatContext();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
@@ -121,7 +121,13 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       widgetState.action === TradeAction.TRADE &&
       (txStatus === TxStatus.LOADING || txStatus === TxStatus.SUCCESS)
     ) {
-      queryClient.invalidateQueries({ queryKey: ['trade-history'] });
+      setTimeout(() => {
+        if (isCowSupported) {
+          queryClient.invalidateQueries({ queryKey: ['cowswap-trade-history'] });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['psm-trade-history'] });
+        }
+      }, REFRESH_DELAY);
     }
 
     if (
@@ -132,7 +138,11 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     ) {
       updateParamsFromTransaction(hash, wagmiConfig, setSearchParams);
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['trade-history'] });
+        if (isCowSupported) {
+          queryClient.invalidateQueries({ queryKey: ['cowswap-trade-history'] });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['psm-trade-history'] });
+        }
       }, REFRESH_DELAY);
     }
 
@@ -170,7 +180,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     [linkedActionConfig]
   );
 
-  const Widget = isL2 ? L2TradeWidget : TradeWidget;
+  const Widget = isCowSupported ? TradeWidget : L2TradeWidget;
 
   const shouldLockTokens =
     linkedActionConfig.showLinkedAction &&

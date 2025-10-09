@@ -7,8 +7,6 @@ export function getSafeTransactionLink(chainId: number, safeAddress: string, saf
 
 function getSafePrefix(id: number) {
   switch (id) {
-    case chainId.sepolia:
-      return 'sep';
     case chainId.base:
       return 'base';
     case chainId.arbitrum:

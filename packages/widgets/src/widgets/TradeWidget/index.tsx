@@ -9,7 +9,9 @@ import {
   ethFlowSlippageConfig,
   ercFlowSlippageConfig,
   ETH_SLIPPAGE_STORAGE_KEY,
-  ERC_SLIPPAGE_STORAGE_KEY
+  ERC_SLIPPAGE_STORAGE_KEY,
+  l2EthFlowSlippageConfig,
+  L2_ETH_SLIPPAGE_STORAGE_KEY
 } from './lib/constants';
 import {
   useTradeApprove,
@@ -35,7 +37,9 @@ import {
   getTransactionLink,
   useIsSafeWallet,
   useDebounce,
-  useIsSmartContractWallet
+  useIsSmartContractWallet,
+  getCowExplorerLink,
+  isL2ChainId
 } from '@jetstreamgg/sky-utils';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -56,7 +60,6 @@ import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
-import { sepolia } from 'viem/chains';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 
@@ -112,6 +115,7 @@ function TradeWidgetWrapped({
   const [formattedExecutedBuyAmount, setFormattedExecutedBuyAmount] = useState<string | undefined>(undefined);
 
   const chainId = useChainId();
+  const isChainL2 = isL2ChainId(chainId);
   const { address, isConnecting, isConnected } = useAccount();
   const isSafeWallet = useIsSafeWallet();
   const isSmartContractWallet = useIsSmartContractWallet();
@@ -182,13 +186,18 @@ function TradeWidgetWrapped({
   const [ethFlowSlippage, setEthFlowSlippage] = useState(
     verifySlippage(window.localStorage.getItem(ETH_SLIPPAGE_STORAGE_KEY) || '', ethFlowSlippageConfig)
   );
+  const [l2EthFlowSlippage, setL2EthFlowSlippage] = useState(
+    verifySlippage(window.localStorage.getItem(L2_ETH_SLIPPAGE_STORAGE_KEY) || '', l2EthFlowSlippageConfig)
+  );
   const [ttl, setTtl] = useState('');
 
   const [slippage, setSlippage] = useMemo(() => {
     return originToken?.isNative
-      ? [ethFlowSlippage, setEthFlowSlippage]
+      ? isChainL2
+        ? [l2EthFlowSlippage, setL2EthFlowSlippage]
+        : [ethFlowSlippage, setEthFlowSlippage]
       : [ercFlowSlippage, setErcFlowSlippage];
-  }, [originToken, ethFlowSlippage, ercFlowSlippage]);
+  }, [originToken, l2EthFlowSlippage, ethFlowSlippage, ercFlowSlippage, isChainL2]);
 
   const {
     setButtonText,
@@ -440,7 +449,7 @@ function TradeWidgetWrapped({
     order: quoteData,
     onStart: (orderId: string) => {
       setOrderId(orderId as `0x${string}`);
-      setExternalLink(`https://explorer.cow.fi/${chainId === sepolia.id ? 'sepolia/' : ''}orders/${orderId}`);
+      setExternalLink(getCowExplorerLink(chainId, orderId));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash: orderId, widgetState, txStatus: TxStatus.LOADING });
       setCancelButtonText(t`Cancel order`);
@@ -500,7 +509,7 @@ function TradeWidgetWrapped({
     order: quoteData,
     onStart: (orderId: string) => {
       setOrderId(orderId as `0x${string}`);
-      setExternalLink(`https://explorer.cow.fi/${chainId === sepolia.id ? 'sepolia/' : ''}orders/${orderId}`);
+      setExternalLink(getCowExplorerLink(chainId, orderId));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash: orderId, widgetState, txStatus: TxStatus.LOADING });
       setCancelButtonText(t`Cancel order`);
@@ -591,7 +600,7 @@ function TradeWidgetWrapped({
       setEthFlowTxStatus(EthFlowTxStatus.CREATING_ORDER);
     },
     onOrderCreated: (orderId: string) => {
-      setExternalLink(`https://explorer.cow.fi/${chainId === sepolia.id ? 'sepolia/' : ''}orders/${orderId}`);
+      setExternalLink(getCowExplorerLink(chainId, orderId));
       setEthFlowTxStatus(EthFlowTxStatus.ORDER_CREATED);
       onWidgetStateChange?.({ widgetState, txStatus: TxStatus.LOADING });
     },

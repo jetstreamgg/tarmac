@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { getTokenDecimals, TokenForChain, useTradeHistory } from '@jetstreamgg/sky-hooks';
-import { formatNumber, useFormatDates, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatNumber, useFormatDates, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
@@ -31,10 +31,9 @@ export function TradeHistory() {
     formattedDate: formattedDates.length > index ? formattedDates[index] : '',
     rawDate: s.blockTimestamp,
     transactionHash: s.transactionHash,
-    ...('cowOrderStatus' in s ? { cowOrderStatus: s.cowOrderStatus } : {})
+    ...('cowOrderStatus' in s ? { cowOrderStatus: s.cowOrderStatus } : {}),
+    useCowExplorer: 'cowOrderStatus' in s
   }));
-
-  const isL2 = isL2ChainId(chainId);
 
   return (
     <HistoryTable
@@ -42,8 +41,7 @@ export function TradeHistory() {
       error={error}
       isLoading={tradeHistoryLoading}
       transactionHeader={t`Trades`}
-      statusColumn={!isL2}
-      cowExplorerLink={!isL2}
+      statusColumn={isCowSupportedChainId(chainId)}
     />
   );
 }

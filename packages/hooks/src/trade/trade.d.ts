@@ -41,6 +41,7 @@ export type ParsedTradeRecord = Pick<TradeRecord, 'id' | 'blockTimestamp' | 'tra
   cowOrderStatus: OrderStatus;
   module: ModuleEnum;
   type: TransactionTypeEnum;
+  appCode?: string;
 };
 
 export type TradeHistoryRaw = TradeRecord[];

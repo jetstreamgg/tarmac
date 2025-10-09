@@ -6,13 +6,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { fetchOrderStatus } from './fetchOrderStatus';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
-import {
-  gPv2SettlementAbi,
-  gPv2SettlementAddress,
-  gPv2SettlementSepoliaAbi,
-  gPv2SettlementSepoliaAddress
-} from '../generated';
-import { sepolia } from 'viem/chains';
+import { gPv2SettlementAbi, gPv2SettlementAddress } from '../generated';
 
 const createTradeOrder = async (order: OrderQuoteResponse, chainId: number) => {
   try {
@@ -83,11 +77,8 @@ export const useCreatePreSignTradeOrder = ({
   });
 
   const { execute, prepared } = useWriteContractFlow({
-    address:
-      chainId === sepolia.id
-        ? gPv2SettlementSepoliaAddress[chainId as keyof typeof gPv2SettlementSepoliaAddress]
-        : gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress],
-    abi: chainId === sepolia.id ? gPv2SettlementSepoliaAbi : gPv2SettlementAbi,
+    address: gPv2SettlementAddress[chainId as keyof typeof gPv2SettlementAddress],
+    abi: gPv2SettlementAbi,
     functionName: 'setPreSignature',
     args: [orderId! as `0x${string}`, true],
     chainId,

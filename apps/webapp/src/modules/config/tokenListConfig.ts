@@ -1,14 +1,10 @@
-import { sepolia, mainnet, base, arbitrum, optimism, unichain } from 'wagmi/chains';
+import { mainnet, base, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   usdcAddress,
-  usdcSepoliaAddress,
   usdtAddress,
-  usdtSepoliaAddress,
   TOKENS,
   wethAddress,
   mcdDaiAddress,
-  wethSepoliaAddress,
-  mcdDaiSepoliaAddress,
   usdsAddress,
   ETH_ADDRESS,
   mkrAddress,
@@ -45,23 +41,21 @@ export const restrictedBalancesTokenList = {
     { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] },
     { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] }
   ],
-  [sepolia.id]: [
-    // The USDC token that COW uses has 18 decimals, instead of 6
-    { ...usdc, address: usdcSepoliaAddress[sepolia.id], decimals: 18 },
-    { ...usdt, address: usdtSepoliaAddress[sepolia.id] },
-    { ...eth, address: ETH_ADDRESS },
-    { ...weth, address: wethSepoliaAddress[sepolia.id] },
-    { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
-  ],
   [base.id]: [
     { ...usdc, address: usdcL2Address[base.id] },
+    { ...usdt, address: usdtAddress[base.id] },
     { ...usds, address: usdsL2Address[base.id] },
-    { ...eth, address: ETH_ADDRESS }
+    { ...eth, address: ETH_ADDRESS },
+    { ...weth, address: wethAddress[base.id] },
+    { ...dai, address: mcdDaiAddress[base.id] }
   ],
   [arbitrum.id]: [
     { ...usdc, address: usdcL2Address[arbitrum.id] },
+    { ...usdt, address: usdtAddress[arbitrum.id] },
     { ...usds, address: usdsL2Address[arbitrum.id] },
-    { ...eth, address: ETH_ADDRESS }
+    { ...eth, address: ETH_ADDRESS },
+    { ...weth, address: wethAddress[arbitrum.id] },
+    { ...dai, address: mcdDaiAddress[arbitrum.id] }
   ],
   [optimism.id]: [
     { ...usdc, address: usdcL2Address[optimism.id] },
@@ -93,25 +87,24 @@ export const restrictedBalancesTokenListMiCa = {
     { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] },
     { ...spk, address: spkAddress[TENDERLY_CHAIN_ID] }
   ],
-  [sepolia.id]: [
-    { ...eth, address: ETH_ADDRESS },
-    { ...weth, address: wethSepoliaAddress[sepolia.id] },
-    { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
-  ],
   [base.id]: [
     { ...usds, address: usdsL2Address[base.id] },
+    { ...usdc, address: usdcL2Address[base.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
   [arbitrum.id]: [
     { ...usds, address: usdsL2Address[arbitrum.id] },
+    { ...usdc, address: usdcL2Address[arbitrum.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
   [optimism.id]: [
     { ...usds, address: usdsL2Address[optimism.id] },
+    { ...usdc, address: usdcL2Address[optimism.id] },
     { ...eth, address: ETH_ADDRESS }
   ],
   [unichain.id]: [
     { ...usds, address: usdsL2Address[unichain.id] },
+    { ...usdc, address: usdcL2Address[unichain.id] },
     { ...eth, address: ETH_ADDRESS }
   ]
 };
@@ -133,20 +126,20 @@ export const restrictedTradeTokenList = {
     { ...dai, address: mcdDaiAddress[TENDERLY_CHAIN_ID] },
     { ...usds, address: usdsAddress[TENDERLY_CHAIN_ID] }
   ],
-  [sepolia.id]: [
-    // The USDC token that COW uses has 18 decimals, instead of 6
-    { ...usdc, address: usdcSepoliaAddress[sepolia.id], decimals: 18 },
-    { ...usdt, address: usdtSepoliaAddress[sepolia.id] },
-    { ...eth, address: ETH_ADDRESS },
-    { ...weth, address: wethSepoliaAddress[sepolia.id] },
-    { ...dai, address: mcdDaiSepoliaAddress[sepolia.id] }
-  ],
   [base.id]: [
     { ...usdc, address: usdcL2Address[base.id] },
+    { ...usdt, address: usdtAddress[base.id] },
+    { ...eth, address: eth.address[base.id] },
+    { ...weth, address: wethAddress[base.id] },
+    { ...dai, address: mcdDaiAddress[base.id] },
     { ...usds, address: usdsL2Address[base.id] }
   ],
   [arbitrum.id]: [
     { ...usdc, address: usdcL2Address[arbitrum.id] },
+    { ...usdt, address: usdtAddress[arbitrum.id] },
+    { ...eth, address: eth.address[arbitrum.id] },
+    { ...weth, address: wethAddress[arbitrum.id] },
+    { ...dai, address: mcdDaiAddress[arbitrum.id] },
     { ...usds, address: usdsL2Address[arbitrum.id] }
   ],
   [optimism.id]: [

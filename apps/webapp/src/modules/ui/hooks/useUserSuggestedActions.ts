@@ -17,6 +17,7 @@ import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
 import { useAccount, useChainId, useChains } from 'wagmi';
+import { isExpertModulesEnabled } from '@/lib/feature-flags';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { mainnet } from 'wagmi/chains';
 import { tenderly } from '@/data/wagmi/config/config.default';
@@ -493,6 +494,8 @@ const fetchUserSuggestedActions = (
       | Intent
       | undefined;
     if (!intentEnum) return false;
+    // Check if Expert intent is disabled via feature flag
+    if (intentEnum === Intent.EXPERT_INTENT && !isExpertModulesEnabled()) return false;
     return supportedIntents.includes(intentEnum);
   };
 

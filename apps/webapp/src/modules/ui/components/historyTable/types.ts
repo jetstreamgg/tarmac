@@ -19,6 +19,7 @@ export interface HistoryRow {
   highlightText?: boolean;
   highlightColor?: HighlightColor;
   cowOrderStatus?: string;
+  useCowExplorer?: boolean;
 }
 
 export interface HistoryTableProps {
@@ -34,7 +35,6 @@ export interface HistoryTableProps {
   statusColumn?: boolean;
   typeHeader?: string;
   dataTestId?: string;
-  cowExplorerLink?: boolean;
 }
 
 export enum SortDirection {

@@ -1,15 +1,50 @@
-import { useEthereumTradeHistory } from './useEthereumTradeHistory';
-import { useL2TradeHistory } from '../psm/useL2TradeHistory';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { useCowswapTradeHistory } from './useCowswapTradeHistory';
+import { usePsmTradeHistory } from '../psm/usePsmTradeHistory';
+import { useHybridTradeHistory } from './useHybridTradeHistory';
+import { isCowSupportedChainId, TRADE_CUTOFF_DATES } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 
-export function useTradeHistory(subgraphUrl?: string) {
-  const chainId = useChainId();
-  const l2TradeHistory = useL2TradeHistory({ subgraphUrl, enabled: isL2ChainId(chainId) });
-  const ethereumTradeHistory = useEthereumTradeHistory({ enabled: !isL2ChainId(chainId) });
+export function useTradeHistory({
+  subgraphUrl,
+  chainId: providedChainId,
+  excludeSUsds = false
+}: {
+  subgraphUrl?: string;
+  chainId?: number;
+  excludeSUsds?: boolean;
+} = {}) {
+  const currentChainId = useChainId();
+  const chainId = providedChainId ?? currentChainId;
 
-  if (isL2ChainId(chainId)) {
-    return l2TradeHistory;
+  //use hybrid trade history if the chain has a cutoff date
+  const shouldUseHybrid = !!TRADE_CUTOFF_DATES[chainId];
+
+  const hybridTradeHistory = useHybridTradeHistory({
+    chainId,
+    excludeSUsds,
+    subgraphUrl,
+    enabled: shouldUseHybrid
+  });
+
+  const cowswapTradeHistory = useCowswapTradeHistory({
+    enabled: !shouldUseHybrid && isCowSupportedChainId(chainId),
+    chainId
+  });
+
+  const psmTradeHistory = usePsmTradeHistory({
+    subgraphUrl,
+    enabled: !shouldUseHybrid && !isCowSupportedChainId(chainId),
+    chainId,
+    excludeSUsds
+  });
+
+  if (shouldUseHybrid) {
+    return hybridTradeHistory;
   }
-  return ethereumTradeHistory;
+
+  if (isCowSupportedChainId(chainId)) {
+    return cowswapTradeHistory;
+  }
+
+  return psmTradeHistory;
 }
