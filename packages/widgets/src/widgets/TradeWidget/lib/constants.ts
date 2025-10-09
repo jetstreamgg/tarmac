@@ -167,6 +167,7 @@ export enum SUPPORTED_TOKEN_SYMBOLS {
 }
 
 export const ETH_SLIPPAGE_STORAGE_KEY = 'eth-trade-slippage';
+export const L2_ETH_SLIPPAGE_STORAGE_KEY = 'l2-eth-trade-slippage';
 export const ERC_SLIPPAGE_STORAGE_KEY = 'erc-trade-slippage';
 
 export const ercFlowSlippageConfig = {
@@ -178,6 +179,11 @@ export const ethFlowSlippageConfig = {
   min: 2,
   max: 50,
   default: 2
+};
+export const l2EthFlowSlippageConfig = {
+  min: 0.5,
+  max: 50,
+  default: 0.5
 };
 
 export const MAX_SLIPPAGE_WITHOUT_WARNING = 2;

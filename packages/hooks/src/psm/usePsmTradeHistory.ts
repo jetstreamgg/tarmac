@@ -9,7 +9,7 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { Token } from '../tokens/types';
 
-type L2TradeHistoryItem = HistoryItem & {
+type PsmTradeHistoryItem = HistoryItem & {
   fromAmount: bigint;
   toAmount: bigint;
   referralCode: string;
@@ -18,15 +18,16 @@ type L2TradeHistoryItem = HistoryItem & {
   address: string;
 };
 
-type L2TradeHistory = L2TradeHistoryItem[];
+type PsmTradeHistory = PsmTradeHistoryItem[];
 
-async function fetchL2TradeHistory(
+async function fetchPsmTradeHistory(
   urlSubgraph: string,
   chainId: number,
   tokenAddressMap: { [address: string]: (typeof TOKENS)[keyof typeof TOKENS] },
   address?: string,
-  excludeSUsds: boolean = false
-): Promise<L2TradeHistory | undefined> {
+  excludeSUsds: boolean = false,
+  maxBlockTimestamp?: number
+): Promise<PsmTradeHistory | undefined> {
   if (!address) return [];
 
   if (!tokenAddressMap || Object.keys(tokenAddressMap).length === 0) {
@@ -34,17 +35,23 @@ async function fetchL2TradeHistory(
   }
 
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
-  const whereClause = excludeSUsds
-    ? `{
-      sender: "${address}",
-      receiver: "${address}",
-      assetIn_not: "${sUsdsAddressForChain.toLowerCase()}",
-      assetOut_not: "${sUsdsAddressForChain.toLowerCase()}"
-    }`
-    : `{
-      sender: "${address}",
-      receiver: "${address}"
-    }`;
+
+  let whereClause = `{
+    sender: "${address}",
+    receiver: "${address}"`;
+
+  if (excludeSUsds) {
+    whereClause += `,
+    assetIn_not: "${sUsdsAddressForChain.toLowerCase()}",
+    assetOut_not: "${sUsdsAddressForChain.toLowerCase()}"`;
+  }
+
+  if (maxBlockTimestamp) {
+    whereClause += `,
+    blockTimestamp_lte: "${maxBlockTimestamp}"`;
+  }
+
+  whereClause += '}';
 
   const query = gql`
   {
@@ -65,7 +72,7 @@ async function fetchL2TradeHistory(
 
   const response = (await request(urlSubgraph, query)) as any;
 
-  const swaps: L2TradeHistory = response.swaps
+  const swaps: PsmTradeHistory = response.swaps
     .map((e: any) => {
       const fromTokenAddress = e.assetIn.toLowerCase();
       const toTokenAddress = e.assetOut.toLowerCase();
@@ -96,24 +103,27 @@ async function fetchL2TradeHistory(
         chainId
       };
     })
-    .filter((swap: L2TradeHistoryItem | null) => swap !== null);
+    .filter((swap: PsmTradeHistoryItem | null) => swap !== null);
 
   return swaps.sort(
-    (a: L2TradeHistoryItem, b: L2TradeHistoryItem) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
+    (a: PsmTradeHistoryItem, b: PsmTradeHistoryItem) =>
+      b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
   );
 }
 
-export function useL2TradeHistory({
+export function usePsmTradeHistory({
   subgraphUrl,
   enabled: enabledProp = true,
   excludeSUsds = false,
-  chainId
+  chainId,
+  maxBlockTimestamp
 }: {
   subgraphUrl?: string;
   enabled?: boolean;
   excludeSUsds?: boolean;
   chainId?: number;
-} = {}): ReadHook & { data?: L2TradeHistory } {
+  maxBlockTimestamp?: number;
+} = {}): ReadHook & { data?: PsmTradeHistory } {
   const { address } = useAccount();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
@@ -127,8 +137,16 @@ export function useL2TradeHistory({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph) && enabledProp && Boolean(tokenAddressMap) && Boolean(address),
-    queryKey: ['L2-trade-history', urlSubgraph, address, excludeSUsds, chainIdToUse],
-    queryFn: () => fetchL2TradeHistory(urlSubgraph, chainIdToUse, tokenAddressMap, address, excludeSUsds)
+    queryKey: ['psm-trade-history', urlSubgraph, address, excludeSUsds, chainIdToUse, maxBlockTimestamp],
+    queryFn: () =>
+      fetchPsmTradeHistory(
+        urlSubgraph,
+        chainIdToUse,
+        tokenAddressMap,
+        address,
+        excludeSUsds,
+        maxBlockTimestamp
+      )
   });
 
   return {

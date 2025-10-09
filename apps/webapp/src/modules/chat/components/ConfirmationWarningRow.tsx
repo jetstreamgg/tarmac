@@ -70,26 +70,31 @@ export const ConfirmationWarningRow = () => {
   const disclaimerMetadata = getConfirmationWarningMetadata(selectedIntent);
 
   return (
-    <div className="text-text mt-5 rounded-xl bg-[#0b0b0c]/60 p-5">
-      <div className="bg-white/6 @sm/chat:flex-row flex flex-col items-center gap-2 rounded-lg p-4">
-        <Warning boxSize={20} viewBox="0 0 16 16" fill="#fdc134" className="flex-shrink-0" />
-        <Text variant="medium" className="@sm/chat:text-left text-center">
+    <div className="text-text @max-sm/chat:mt-3 @max-sm/chat:p-3 mt-5 rounded-xl bg-[#0b0b0c]/60 p-5">
+      <div className="bg-white/6 @sm/chat:flex-row @max-sm/chat:gap-1.5 @max-sm/chat:p-3 flex flex-col items-center gap-2 rounded-lg p-4">
+        <Warning
+          boxSize={20}
+          viewBox="0 0 16 16"
+          fill="#fdc134"
+          className="@max-sm/chat:h-4 @max-sm/chat:w-4 flex-shrink-0"
+        />
+        <Text variant="medium" className="@sm/chat:text-left @max-sm/chat:text-sm text-center">
           {disclaimerMetadata?.description}
         </Text>
       </div>
-      <Heading variant="medium" tag="h4" className="mt-4">
+      <Heading variant="medium" tag="h4" className="@max-sm/chat:mt-2 @max-sm/chat:text-sm mt-4">
         <Trans>How it works:</Trans>
       </Heading>
-      <div className="ml-4 mt-4 text-[13px]">
+      <div className="@max-sm/chat:ml-3 @max-sm/chat:mt-2 ml-4 mt-4 text-[13px]">
         <ChatMarkdownRenderer markdown={disclaimerMetadata?.disclaimer} />
       </div>
-      <Heading variant="medium" tag="h4" className="mt-4">
+      <Heading variant="medium" tag="h4" className="@max-sm/chat:mt-2 @max-sm/chat:text-sm mt-4">
         <Trans>Associated risks:</Trans>
       </Heading>
-      <div className="ml-4 mt-4 text-[13px]">
+      <div className="@max-sm/chat:ml-3 @max-sm/chat:mt-2 ml-4 mt-4 text-[13px]">
         <ChatMarkdownRenderer markdown={disclaimerMetadata?.associatedRisks?.join('\n') ?? ''} />
       </div>
-      <div className="mt-3 flex gap-5">
+      <div className="@max-sm/chat:mt-2 @max-sm/chat:gap-3 mt-3 flex gap-5">
         <Button
           variant="pill"
           size="xs"

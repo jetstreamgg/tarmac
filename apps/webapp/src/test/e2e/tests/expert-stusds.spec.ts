@@ -14,7 +14,7 @@ const setTestBalance = async (tokenAddress: string, amount: string, decimals = 1
   await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
 };
 
-test.describe('Expert Module - stUSDS', () => {
+test.describe.skip('Expert Module - stUSDS', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await connectMockWalletAndAcceptTerms(page);
@@ -25,6 +25,13 @@ test.describe('Expert Module - stUSDS', () => {
   });
 
   test('Navigate back to Expert menu', async ({ page }) => {
+    // Click back button
+    await page.getByRole('button', { name: 'Back to Expert' }).click();
+
+    // Should be back at Expert menu
+    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
+    await expect(page.getByTestId('stusds-stats-card')).toBeVisible();
+
     // Should display Message
     await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
     await expect(page.getByTestId('expert-risk-disclaimer')).toContainText(
@@ -38,13 +45,6 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(userRisksLink).toBeVisible();
     await expect(userRisksLink).toHaveAttribute('href', 'https://docs.sky.money/user-risks');
     await expect(userRisksLink).toHaveAttribute('target', '_blank');
-
-    // Click back button
-    await page.getByRole('button', { name: 'Back to Expert' }).click();
-
-    // Should be back at Expert menu
-    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
-    await expect(page.getByTestId('stusds-stats-card')).toBeVisible();
   });
 
   test('Supply USDS', async ({ page }) => {
@@ -228,6 +228,10 @@ test.describe('Expert Module - stUSDS', () => {
   });
 
   test('Expert risk modal dismissal persists after reload and navigation', async ({ page }) => {
+    // Navigate away from the module
+    await page.getByRole('button', { name: 'Back to Expert' }).click();
+    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
+
     // Verify expert risk modal is initially visible
     await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
 
@@ -238,10 +242,6 @@ test.describe('Expert Module - stUSDS', () => {
 
     // Verify modal is dismissed
     await expect(page.getByTestId('expert-risk-disclaimer')).not.toBeVisible();
-
-    // Navigate away from the module
-    await page.getByRole('button', { name: 'Back to Expert' }).click();
-    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
 
     // Reload the browser
     await page.reload();

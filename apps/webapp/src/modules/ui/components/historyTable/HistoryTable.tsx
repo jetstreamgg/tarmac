@@ -22,8 +22,7 @@ function HistoryTableUiComponents({
   typeColumn = false,
   typeHeader,
   statusColumn = false,
-  dataTestId,
-  cowExplorerLink
+  dataTestId
 }: HistoryTableProps) {
   const { address } = useAccount();
   const chainId = useChainId();
@@ -100,7 +99,6 @@ function HistoryTableUiComponents({
                 index={index}
                 typeColumn={typeColumn}
                 statusColumn={statusColumn}
-                cowExplorerLink={cowExplorerLink}
               />
             ))}
           </TableBody>

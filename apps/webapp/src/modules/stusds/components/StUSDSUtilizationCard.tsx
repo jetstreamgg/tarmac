@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
-import { msg, t } from '@lingui/core/macro';
+import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { UtilizationBar, PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { UtilizationBar, PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
 import { useStUsdsCapacityData } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 
@@ -11,8 +11,10 @@ export function StUSDSUtilizationCard() {
 
   const utilizationRate = capacityData?.utilizationRate ?? 0;
 
-  const utilizationColor =
-    utilizationRate > 90 ? 'text-error' : utilizationRate > 75 ? 'text-orange-400' : '';
+  // const utilizationColor =
+  //   utilizationRate > 90 ? 'text-error' : utilizationRate > 75 ? 'text-orange-400' : '';
+  const utilizationColor = '';
+  const tooltipContent = getTooltipById('utilization');
 
   return (
     <StatsCard
@@ -22,8 +24,8 @@ export function StUSDSUtilizationCard() {
         <div className="flex items-center gap-1">
           <span>{i18n._(msg`Utilization`)}</span>
           <PopoverInfo
-            title={t`Vault Utilization`}
-            description={t`The percentage of vault capacity currently in use. High utilization may limit deposits and withdrawals. When utilization exceeds 90%, the vault approaches its operational limits.`}
+            title={i18n._(msg`${tooltipContent?.title || 'Utilization'}`)}
+            description={i18n._(msg`${tooltipContent?.tooltip || ''}`)}
             iconClassName="text-textSecondary hover:text-white transition-colors"
             width={14}
             height={14}

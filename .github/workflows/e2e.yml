@@ -26,6 +26,9 @@ jobs:
           - test: mainnet-savings.spec
             vnet: true
             chain: mainnet
+          - test: mainnet-trade.spec
+            vnet: true
+            chain: mainnet
           - test: seal.spec
             vnet: true
             chain: mainnet

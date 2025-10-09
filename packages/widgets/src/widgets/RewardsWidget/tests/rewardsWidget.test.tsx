@@ -104,26 +104,6 @@ vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
         1: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         1337: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6'
       };
-    }),
-    wethSepoliaAddress: vi.fn(() => {
-      return {
-        11155111: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14'
-      };
-    }),
-    usdcSepoliaAddress: vi.fn(() => {
-      return {
-        11155111: '0xbe72E441BF55620febc26715db68d3494213D8Cb'
-      };
-    }),
-    usdtSepoliaAddress: vi.fn(() => {
-      return {
-        11155111: '0x58Eb19eF91e8A6327FEd391b51aE1887b833cc91'
-      };
-    }),
-    mcdDaiSepoliaAddress: vi.fn(() => {
-      return {
-        11155111: '0xB4F1737Af37711e9A5890D9510c9bB60e170CB0D'
-      };
     })
   };
 });

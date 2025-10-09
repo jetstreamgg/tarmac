@@ -1,6 +1,6 @@
 import { connectorsForWallets } from '@rainbow-me/rainbowkit';
 import { createConfig, createStorage, http, noopStorage } from 'wagmi';
-import { mainnet, base, sepolia, arbitrum, optimism, unichain } from 'wagmi/chains';
+import { mainnet, base, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   safeWallet,
   rainbowWallet,
@@ -57,14 +57,13 @@ const connectors = connectorsForWallets(
 );
 
 export const wagmiConfigDev = createConfig({
-  chains: [mainnet, tenderly, base, arbitrum, sepolia, optimism, unichain],
+  chains: [mainnet, tenderly, base, arbitrum, optimism, unichain],
   connectors,
   transports: {
     [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
     [tenderly.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY || ''),
     [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
     [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || ''),
-    [sepolia.id]: http(import.meta.env.VITE_RPC_PROVIDER_SEPOLIA || ''),
     [unichain.id]: http(import.meta.env.VITE_RPC_PROVIDER_UNICHAIN || ''),
     [optimism.id]: http(import.meta.env.VITE_RPC_PROVIDER_OPTIMISM || '')
   },

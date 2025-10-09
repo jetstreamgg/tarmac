@@ -25,7 +25,6 @@ export const getExplorerName = (chainId: number, isSafeWallet: boolean) => {
     case chainIdMap.unichain:
       return ExplorerName.UNISCAN;
     case chainIdMap.mainnet:
-    case chainIdMap.sepolia:
     case chainIdMap.tenderly:
     default:
       return ExplorerName.ETHERSCAN;

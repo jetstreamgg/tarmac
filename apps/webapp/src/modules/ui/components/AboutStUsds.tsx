@@ -18,8 +18,8 @@ export const AboutStUsds = ({ isOverview = false }: { isOverview?: boolean }) =>
 
   // Use different colorMiddle for overview vs details
   const colorMiddle = isOverview
-    ? 'linear-gradient(360deg, #FDC079 0%, #EC63DA 300%)'
-    : 'linear-gradient(0deg, #FDC079 0%, #EC63DA 300%)';
+    ? 'linear-gradient(360deg, #F38FAA 0%, #EB63D9 300%)'
+    : 'linear-gradient(0deg, #F38FAA 0%, #EB63D9 300%)';
 
   // Determine banner ID based on connection status and isOverview
   const bannerId = isOverview

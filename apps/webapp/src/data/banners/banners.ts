@@ -51,7 +51,7 @@ export const banners: Banner[] = [
     id: 'stusds-3',
     title: 'stUSDS',
     description:
-      'stUSDS is a risk capital token that offers higher risk/higher reward to fund and support liquidity for SKY stakers. Offering additional reward options for SKY stakers encourages more people to participate in governance of the Sky Ecosystem, which increases the stability and security of the protocol and ecosystem.',
+      'stUSDS is a risk token that offers higher risk/higher reward to fund and support liquidity for SKY stakers. Offering additional reward options for SKY stakers encourages more people to participate in governance of the Sky Ecosystem, which increases the stability and security of the protocol and ecosystem.',
     display: ['disconnected']
   },
   {
@@ -65,7 +65,7 @@ export const banners: Banner[] = [
     id: 'stusds-4',
     title: 'stUSDS',
     description:
-      'stUSDS is a risk capital token that offers higher risk/higher reward to fund and support liquidity for SKY stakers. Offering additional reward options for SKY stakers encourages more people to participate in governance of the Sky Ecosystem, which increases the stability and security of the protocol and ecosystem.',
+      'stUSDS is a risk token that offers higher risk/higher reward to fund and support liquidity for SKY stakers. Offering additional reward options for SKY stakers encourages more people to participate in governance of the Sky Ecosystem, which increases the stability and security of the protocol and ecosystem.',
     display: ['connected']
   },
   {

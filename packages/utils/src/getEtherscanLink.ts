@@ -9,8 +9,6 @@ function getEtherscanPrefix(id: number) {
   switch (id) {
     case chainId.mainnet:
       return 'etherscan.io';
-    case chainId.sepolia:
-      return 'sepolia.etherscan.io';
     case chainId.base:
       return 'basescan.org';
     case chainId.arbitrum:

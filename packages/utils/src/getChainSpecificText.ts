@@ -15,7 +15,6 @@ export const getChainSpecificText = (
 ) => {
   switch (id) {
     case chainId.mainnet:
-    case chainId.sepolia:
     case chainId.tenderly:
       return chainTexts.ethereum || chainTexts.default;
     case chainId.base:

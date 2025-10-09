@@ -1,10 +1,11 @@
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface FeatureFlags {
-  // Add feature flags here as needed
+  enableExpertModules: boolean;
 }
 
 const featureFlags: FeatureFlags = {
-  // Add feature flag values here
+  enableExpertModules: import.meta.env.VITE_ENABLE_EXPERT_MODULES === 'true'
 };
+
+export const isExpertModulesEnabled = () => featureFlags.enableExpertModules;
 
 export default featureFlags;

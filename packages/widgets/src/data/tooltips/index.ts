@@ -34,7 +34,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
   {
     id: 'maximum-capacity',
     title: 'Maximum capacity',
-    tooltip: 'The governance-set limit on how much USDS the vault will accept..'
+    tooltip: 'The governance-set limit on how much USDS the vault will accept.'
   },
   {
     id: 'stusds-debt-ceiling',
@@ -57,8 +57,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
   {
     id: 'total-staking-engine-debt',
     title: 'Total Staking Engine debt',
-    tooltip:
-      'The total amount of USDS the Sky Protocol owes to stakers as future rewards. This reflects rewards that have been committed but not yet paid out.'
+    tooltip: 'The current sum of USDS that Staking Engine borrowers owe (principal plus accrued interest).'
   },
   {
     id: 'withdrawal-liquidity',
@@ -122,7 +121,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     id: 'debt-ceiling-utilization',
     title: 'Debt ceiling utilization',
     tooltip:
-      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky ecosystem governance through a process of decentralized onchain voting.'
+      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky Ecosystem Governance through a process of decentralized onchain voting.'
   },
   {
     id: 'choose-your-delegate',
@@ -139,10 +138,18 @@ Delegates in receipt of token voting power can never directly access any tokens 
     tooltip: 'The amount of MKR you’ve sealed in this position.'
   },
   {
-    id: 'deprecation-warning',
-    title: 'Deprecation warning',
-    tooltip:
-      'Seal Engine is being deprecated. Exit your positions now. Migration to Staking Engine coming soon.'
+    id: 'deprecation-warning-if-the-user-has-positions',
+    title: 'Deprecation warning (if the user has positions)',
+    tooltip: `Seal Engine is deprecated. Creation of new positions has been disabled. Management of existing positions remains available.
+
+Exit your positions now.`
+  },
+  {
+    id: 'deprecation-warning-if-the-user-has-no-positions',
+    title: 'Deprecation warning (if the user has no positions)',
+    tooltip: `Seal Engine is deprecated. Creation of new positions has been disabled. Management of existing positions remains available.
+
+You don't have any open positions.`
   },
   {
     id: 'delayed-upgrade-penalty',

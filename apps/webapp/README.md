@@ -31,7 +31,6 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 
 - `VITE_RPC_PROVIDER_MAINNET`: URL for the Ethereum mainnet RPC provider
 - `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
-- `VITE_RPC_PROVIDER_SEPOLIA`: URL for the Sepolia network RPC provider (used for testing and development)
 - `VITE_RPC_PROVIDER_BASE`: URL for the Base RPC provider
 - `VITE_RPC_PROVIDER_ARBITRUM`: URL for the Arbitrum RPC provider
 - `VITE_RPC_PROVIDER_OPTIMISM`: URL for the Optimism RPC provider

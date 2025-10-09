@@ -14,15 +14,16 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
   const { updateUserConfig } = useConfigContext();
   const [batchEnabled] = useBatchToggle();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [notificationShown, setNotificationShown] = useState(false);
 
   // Use localStorage directly for notification state
-  const [notificationShown, setNotificationShown] = useState(() => {
+  const [notificationDismissed, setNotificationDismissed] = useState(() => {
     return localStorage.getItem(BATCH_TX_NOTIFICATION_KEY) === 'true';
   });
 
   const onClose = useCallback(() => {
     localStorage.setItem(BATCH_TX_NOTIFICATION_KEY, 'true');
-    setNotificationShown(true);
+    setNotificationDismissed(true);
   }, []);
 
   const onActivate = useCallback(() => {
@@ -34,7 +35,7 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
     } catch (error) {
       console.error('Error parsing user settings', error);
     }
-    setNotificationShown(true);
+    setNotificationDismissed(true);
   }, [updateUserConfig]);
 
   useEffect(() => {
@@ -43,9 +44,9 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
       return;
     }
 
-    // Show notification if feature is enabled and hasn't been shown yet
+    // Show notification if feature is enabled and hasn't been dismissed yet and not already shown
     // (regardless of whether batch is already enabled)
-    if (isAuthorized && !notificationShown) {
+    if (isAuthorized && !notificationDismissed && !notificationShown) {
       timerRef.current = setTimeout(() => {
         toastWithClose(
           toastId => (
@@ -102,6 +103,7 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
             onDismiss: onClose
           }
         );
+        setNotificationShown(true);
       }, 3000);
     } else if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -111,5 +113,5 @@ export const useBatchTxNotification = (isAuthorized: boolean) => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [isAuthorized, notificationShown, batchEnabled]);
+  }, [isAuthorized, notificationDismissed, batchEnabled, notificationShown]);
 };

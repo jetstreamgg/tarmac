@@ -13,6 +13,8 @@ export {
   isUnichainChainId,
   isOptimismChainId
 } from './isL2ChainId';
+export { isCowSupportedChainId } from './isCowSupportedChainId';
+export { TRADE_CUTOFF_DATES } from './tradeCutoffDates';
 export { formatAddress } from './formatAddress';
 export { normalizeAddress } from './normalizeAddress';
 export { chainId } from './chainId';
@@ -36,4 +38,5 @@ export * from './collection';
 export * from './getChainIcon';
 export * from './i18n';
 export * from './hooks/useIsTouchDevice';
+export * from './hooks/useMediaQuery';
 export { copyToClipboard } from './clipboard';

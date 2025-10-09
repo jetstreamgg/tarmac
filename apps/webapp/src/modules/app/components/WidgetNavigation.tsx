@@ -117,7 +117,7 @@ export function WidgetNavigation({
   const contentMarginTop = isMobile ? 0 : 8;
   const contentPaddingTop = isMobile ? 0 : 2;
   const laExtraHeight = isMobile ? 61 : showDrawerMenu ? 44 : 100; // LA Wrapper and action button height
-  const tabContentClasses = 'pl-4 pt-2 pr-1.5 pb-4 md:pl-1.5 md:pr-0 md:pb-0 lg:p-4 lg:pr-0';
+  const tabContentClasses = 'pl-4 pt-2 pr-1.5 pb-4 md:pl-1.5 md:pr-0 md:pb-1 lg:py-1 lg:pr-0';
   // If it's mobile, use the widget navigation row height + the height of the webiste header
   // as we're using 100vh for the content style, if not, just use the height of the navigation row
   // If the tab list is hidden, don't count it's height
@@ -129,7 +129,7 @@ export function WidgetNavigation({
       ? { height: `${height - 52 - (showLinkedAction ? laExtraHeight : 0)}px` }
       : undefined;
   const verticalTabGlowClasses =
-    'before:-left-[11px] before:absolute before:top-1/2 before:-translate-y-1/2 before:h-[120%] before:w-px before:bg-nav-light-vertical';
+    'before:-left-[17px] before:absolute before:top-1/2 before:-translate-y-1/2 before:h-[120%] before:w-px before:bg-nav-light-vertical';
 
   // Memoized scroll function
   const scrollToTop = useCallback(() => {
@@ -226,15 +226,14 @@ export function WidgetNavigation({
       >
         <motion.div layout transition={{ layout: { duration: 0 } }} className="lg:flex lg:w-full lg:flex-row">
           {/* Desktop vertical tabs, hidden on mobile and tablet */}
-          <div className={cn('border-r-1 h-full justify-center', hideTabs && 'border-transparent')}>
+          <div>
             <TooltipProvider>
               <TabsList
                 className={cn(
-                  'sticky top-0 z-20 mt-4 flex w-full justify-around rounded-none rounded-t-3xl border-b backdrop-blur-2xl',
-                  'lg:scrollbar-thin lg:static lg:h-fit lg:max-h-[calc(100vh-120px)] lg:w-auto lg:flex-col lg:justify-start lg:gap-2 lg:self-start lg:overflow-y-auto lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:pr-[10px] lg:backdrop-filter-none',
+                  'scrollbar-thin flex h-fit max-h-[calc(100vh-120px)] flex-col justify-start gap-2 overflow-y-auto py-1 pl-1 pr-[10px]',
                   hideTabs && 'hidden',
                   showDrawerMenu && 'hidden',
-                  'lg:overflow-visible'
+                  'overflow-visible'
                 )}
                 data-testid="widget-navigation"
               >

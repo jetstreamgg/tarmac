@@ -443,10 +443,15 @@ const IntentRow = ({
       variant="suggest"
       disabled={shouldDisableActionButtons}
       onClick={() => executeIntent(intent, intentUrl)}
-      className={className}
+      className={cn(
+        '@sm/chat:whitespace-nowrap @sm/chat:h-auto @sm/chat:text-sm h-auto min-h-9 max-w-full justify-start whitespace-normal text-left text-[13px]',
+        className
+      )}
     >
-      {intent.title}
-      {!hideIcon && <IconComponent className="h-4.5 w-4.5 ml-2" />}
+      <span className="overflow-hidden break-words">{intent.title}</span>
+      {!hideIcon && (
+        <IconComponent className="@sm/chat:h-4.5 @sm/chat:w-4.5 @sm/chat:ml-2 ml-2 h-4 w-4 flex-shrink-0" />
+      )}
     </Button>
   );
 };

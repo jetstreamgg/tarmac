@@ -25,9 +25,10 @@ export function useStUsdsCapacityData(): StUsdsCapacityDataHook {
     const maxCapacity = stUsdsData.cap;
 
     // Calculate utilization rate as percentage
+    const borrowedAmount = currentCapacity - stUsdsData.availableLiquidity;
     const utilizationRate =
-      maxCapacity > 0n
-        ? Number((currentCapacity * 10000n) / maxCapacity) / 100 // Convert to percentage with 2 decimal places
+      currentCapacity > 0n
+        ? Number((borrowedAmount * 10000n) / currentCapacity) / 100 // Convert to percentage with 2 decimal places
         : 0;
 
     // Calculate remaining capacity

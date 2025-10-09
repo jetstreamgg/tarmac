@@ -1,4 +1,4 @@
-import { base, mainnet, sepolia, arbitrum, optimism, unichain } from 'wagmi/chains';
+import { base, mainnet, arbitrum, optimism, unichain } from 'wagmi/chains';
 import {
   mcdDaiConfig,
   skyConfig,
@@ -8,16 +8,12 @@ import {
   usdcConfig,
   usdtConfig,
   lsMkrConfig,
-  wethSepoliaAddress,
-  mcdDaiSepoliaAddress,
-  usdcSepoliaAddress,
-  usdtSepoliaAddress,
   sUsdsConfig,
   sUsdsL2Address,
   usdcL2Address,
   usdsL2Address,
-  spkConfig,
-  stUsdsAddress
+  stUsdsAddress,
+  spkConfig
 } from '../generated';
 import { TokenMapping, Token, TokenForChain } from './types';
 import { TENDERLY_CHAIN_ID } from '../constants';
@@ -126,7 +122,6 @@ export const TOKENS: TokenMapping = {
       [mainnet.id]: 6,
       [base.id]: 6,
       [arbitrum.id]: 6,
-      [sepolia.id]: 18,
       [TENDERLY_CHAIN_ID]: 6,
       [optimism.id]: 6,
       [unichain.id]: 6
@@ -183,56 +178,18 @@ export const TOKENS: TokenMapping = {
   }
 };
 
-export const TRADE_TOKENS = {
-  [mainnet.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcConfig.address[mainnet.id] },
-    usdt: { ...TOKENS.usdt, address: usdtConfig.address[mainnet.id] },
-    eth: { ...TOKENS.eth, address: TOKENS.eth.address[mainnet.id] },
-    weth: { ...TOKENS.weth, address: wethConfig.address[mainnet.id] },
-    dai: { ...TOKENS.dai, address: mcdDaiConfig.address[mainnet.id] },
-    mkr: { ...TOKENS.mkr, address: mkrConfig.address[mainnet.id] },
-    usds: { ...TOKENS.usds, address: usdsConfig.address[mainnet.id] },
-    sky: { ...TOKENS.sky, address: skyConfig.address[mainnet.id] },
-    susds: { ...TOKENS.susds, address: sUsdsConfig.address[mainnet.id] },
-    spk: { ...TOKENS.spk, address: spkConfig.address[mainnet.id] }
-  },
-  [sepolia.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcSepoliaAddress[sepolia.id] },
-    usdt: { ...TOKENS.usdt, address: usdtSepoliaAddress[sepolia.id] },
-    eth: { ...TOKENS.eth, address: ETH_ADDRESS },
-    weth: { ...TOKENS.weth, address: wethSepoliaAddress[sepolia.id] },
-    dai: { ...TOKENS.dai, address: mcdDaiSepoliaAddress[sepolia.id] }
-  },
-  [TENDERLY_CHAIN_ID]: {
-    usdc: { ...TOKENS.usdc, address: usdcConfig.address[TENDERLY_CHAIN_ID] },
-    usdt: { ...TOKENS.usdt, address: usdtConfig.address[TENDERLY_CHAIN_ID] },
-    eth: { ...TOKENS.eth, address: TOKENS.eth.address[TENDERLY_CHAIN_ID] },
-    weth: { ...TOKENS.weth, address: wethConfig.address[TENDERLY_CHAIN_ID] },
-    dai: { ...TOKENS.dai, address: mcdDaiConfig.address[TENDERLY_CHAIN_ID] },
-    mkr: { ...TOKENS.mkr, address: mkrConfig.address[TENDERLY_CHAIN_ID] },
-    usds: { ...TOKENS.usds, address: usdsConfig.address[TENDERLY_CHAIN_ID] },
-    sky: { ...TOKENS.sky, address: skyConfig.address[TENDERLY_CHAIN_ID] },
-    susds: { ...TOKENS.susds, address: sUsdsConfig.address[TENDERLY_CHAIN_ID] },
-    spk: { ...TOKENS.spk, address: spkConfig.address[TENDERLY_CHAIN_ID] }
-  },
-  [base.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcL2Address[base.id] },
-    usds: { ...TOKENS.usds, address: usdsL2Address[base.id] },
-    susds: { ...TOKENS.susds, address: sUsdsL2Address[base.id] }
-  },
-  [arbitrum.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcL2Address[arbitrum.id] },
-    usds: { ...TOKENS.usds, address: usdsL2Address[arbitrum.id] },
-    susds: { ...TOKENS.susds, address: sUsdsL2Address[arbitrum.id] }
-  },
-  [optimism.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcL2Address[optimism.id] },
-    usds: { ...TOKENS.usds, address: usdsL2Address[optimism.id] },
-    susds: { ...TOKENS.susds, address: sUsdsL2Address[optimism.id] }
-  },
-  [unichain.id]: {
-    usdc: { ...TOKENS.usdc, address: usdcL2Address[unichain.id] },
-    usds: { ...TOKENS.usds, address: usdsL2Address[unichain.id] },
-    susds: { ...TOKENS.susds, address: sUsdsL2Address[unichain.id] }
+export function getTokensForChain(chainId: number): TokenForChain[] {
+  const tokensForChain: TokenForChain[] = [];
+
+  for (const token of Object.values(TOKENS)) {
+    const address = token.address[chainId];
+    if (address) {
+      tokensForChain.push({
+        ...token,
+        address
+      });
+    }
   }
-};
+
+  return tokensForChain;
+}

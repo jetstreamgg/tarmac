@@ -1,6 +1,6 @@
 import { useEthereumSavingsHistory } from '../savings/useEthereumSavingsHistory';
 import { useUpgradeHistory } from '../upgrade/useUpgradeHistory';
-import { useEthereumTradeHistory } from '../trade/useEthereumTradeHistory';
+import { useCowswapTradeHistory } from '../trade/useCowswapTradeHistory';
 import { useAllRewardsUserHistory } from '../rewards/useAllRewardsUserHistory';
 import { useMemo } from 'react';
 import { useSealHistory } from '../seal/useSealHistory';
@@ -10,7 +10,7 @@ import { useStUsdsHistory } from '../stusds/useStUsdsHistory';
 export function useEthereumCombinedHistory() {
   const savingsHistory = useEthereumSavingsHistory();
   const upgradeHistory = useUpgradeHistory();
-  const tradeHistory = useEthereumTradeHistory({});
+  const tradeHistory = useCowswapTradeHistory({ chainId: 1 });
   const combinedRewardHistory = useAllRewardsUserHistory();
   const sealHistory = useSealHistory();
   const stakeHistory = useStakeHistory();

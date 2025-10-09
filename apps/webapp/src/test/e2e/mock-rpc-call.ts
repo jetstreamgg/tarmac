@@ -34,8 +34,28 @@ export const mockRpcCalls = (route: Route, request: Request) => {
     //   return;
     // }
 
-    // Check if the method is eth_sendTransaction or eth_call
-    if (
+    // Handle `eth_signTypedData_v4` calls for CoW swap orders
+    if (postData.method === 'eth_signTypedData_v4') {
+      const rawMessageData = postData.params?.[1];
+      const dataToSign = JSON.parse(rawMessageData || '{}');
+
+      if (dataToSign.domain.name === 'Gnosis Protocol') {
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          // Mocked message signature
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: postData.id,
+            result: '0xabc123'
+          })
+        });
+        return;
+      } else {
+        route.continue();
+      }
+      // Check if the method is eth_sendTransaction or eth_call
+    } else if (
       (postData.method === 'eth_sendTransaction' || postData.method === 'eth_call') &&
       postData.params &&
       postData.params.length > 0

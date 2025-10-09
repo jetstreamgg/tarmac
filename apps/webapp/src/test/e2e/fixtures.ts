@@ -27,6 +27,7 @@ type TestFixture = {
 };
 
 const setupMainnetBalances = async (address: string) => {
+  await setEthBalance('1', NetworkName.mainnet, address);
   await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '100', 18, NetworkName.mainnet, address);
   await setErc20Balance(mcdDaiAddress[TENDERLY_CHAIN_ID], '100', 18, NetworkName.mainnet, address);
   await setErc20Balance(mkrAddress[TENDERLY_CHAIN_ID], '10', 18, NetworkName.mainnet, address);
@@ -38,12 +39,14 @@ const setupBaseBalances = async (address: string) => {
   await setEthBalance('100', NetworkName.base, address);
   await setErc20Balance(usdsL2Address[base.id], '100', 18, NetworkName.base, address);
   await setErc20Balance(usdcL2Address[base.id], '100', 6, NetworkName.base, address);
+  await setErc20Balance(mcdDaiAddress[base.id], '100', 18, NetworkName.base, address);
 };
 
 const setupArbitrumBalances = async (address: string) => {
   await setEthBalance('100', NetworkName.arbitrum, address);
   await setErc20Balance(usdsL2Address[arbitrum.id], '100', 18, NetworkName.arbitrum, address);
   await setErc20Balance(usdcL2Address[arbitrum.id], '100', 6, NetworkName.arbitrum, address);
+  await setErc20Balance(mcdDaiAddress[arbitrum.id], '100', 18, NetworkName.arbitrum, address);
 };
 
 const setupOptimismBalances = async (address: string) => {

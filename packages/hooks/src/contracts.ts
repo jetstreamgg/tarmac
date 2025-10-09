@@ -1,10 +1,12 @@
-import { mainnet, sepolia, base, arbitrum, optimism, unichain } from 'wagmi/chains';
+import { mainnet, base, arbitrum, optimism, unichain } from 'wagmi/chains';
 import { TENDERLY_CHAIN_ID } from './constants';
 
-type ChainId = typeof mainnet.id | typeof TENDERLY_CHAIN_ID;
 type L2ChainId = typeof base.id | typeof arbitrum.id | typeof optimism.id | typeof unichain.id;
 
-export const contracts: { name: string; address: Record<ChainId, `0x${string}`> }[] = [
+export const contracts: {
+  name: string;
+  address: Record<typeof mainnet.id, `0x${string}`> & Partial<Record<number, `0x${string}`>>;
+}[] = [
   // Savings module
   {
     name: 'mcdPot',
@@ -19,7 +21,9 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'mcdDai',
     address: {
       [mainnet.id]: '0x6b175474e89094c44da98b954eedeac495271d0f',
-      [TENDERLY_CHAIN_ID]: '0x6b175474e89094c44da98b954eedeac495271d0f'
+      [TENDERLY_CHAIN_ID]: '0x6b175474e89094c44da98b954eedeac495271d0f',
+      [base.id]: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
+      [arbitrum.id]: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1'
     }
   },
   {
@@ -35,7 +39,9 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'weth',
     address: {
       [mainnet.id]: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-      [TENDERLY_CHAIN_ID]: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
+      [TENDERLY_CHAIN_ID]: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+      [base.id]: '0x4200000000000000000000000000000000000006',
+      [arbitrum.id]: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'
     }
   },
   {
@@ -49,7 +55,9 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     name: 'usdt',
     address: {
       [mainnet.id]: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-      [TENDERLY_CHAIN_ID]: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+      [TENDERLY_CHAIN_ID]: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+      [base.id]: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+      [arbitrum.id]: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
     }
   },
 
@@ -97,13 +105,6 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
     address: {
       [mainnet.id]: '0x19c0976f590d67707e62397c87829d896dc0f1f1',
       [TENDERLY_CHAIN_ID]: '0x19c0976f590d67707e62397c87829d896dc0f1f1'
-    }
-  },
-  {
-    name: 'ethFlow',
-    address: {
-      [mainnet.id]: '0xba3cb449bd2b4adddbc894d8697f5170800eadec',
-      [TENDERLY_CHAIN_ID]: '0xba3cb449bd2b4adddbc894d8697f5170800eadec'
     }
   },
   // new Sky contracts
@@ -228,14 +229,6 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
       [TENDERLY_CHAIN_ID]: '0xca9eF7F3404B23C77A2a0Dee8ab54B3338d35eAe'
     }
   },
-  // CoW Protocol
-  {
-    name: 'gPv2Settlement',
-    address: {
-      [mainnet.id]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
-      [TENDERLY_CHAIN_ID]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41'
-    }
-  },
   // StakeModule
   {
     name: 'stakeModule',
@@ -267,6 +260,26 @@ export const contracts: { name: string; address: Record<ChainId, `0x${string}`> 
       [mainnet.id]: '0x99cBC0e4E6427F6939536eD24d1275B95ff77404',
       [TENDERLY_CHAIN_ID]: '0x99cBC0e4E6427F6939536eD24d1275B95ff77404'
     }
+  },
+
+  // CoW Protocol
+  {
+    name: 'gPv2Settlement',
+    address: {
+      [mainnet.id]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
+      [base.id]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
+      [arbitrum.id]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41',
+      [TENDERLY_CHAIN_ID]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41'
+    }
+  },
+  {
+    name: 'ethFlow',
+    address: {
+      [mainnet.id]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
+      [base.id]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
+      [arbitrum.id]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
+      [TENDERLY_CHAIN_ID]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC'
+    }
   }
 ];
 
@@ -280,46 +293,6 @@ export const tenderlyContracts: { name: string; address: Record<typeof TENDERLY_
     //   }
     // }
   ];
-
-export const sepoliaContracts: { name: string; address: Record<typeof sepolia.id, `0x${string}`> }[] = [
-  {
-    name: 'wethSepolia',
-    address: {
-      [sepolia.id]: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14'
-    }
-  },
-  {
-    name: 'mcdDaiSepolia',
-    address: {
-      [sepolia.id]: '0xB4F1737Af37711e9A5890D9510c9bB60e170CB0D'
-    }
-  },
-  {
-    name: 'usdcSepolia',
-    address: {
-      [sepolia.id]: '0xbe72E441BF55620febc26715db68d3494213D8Cb'
-    }
-  },
-  {
-    name: 'usdtSepolia',
-    address: {
-      [sepolia.id]: '0x58Eb19eF91e8A6327FEd391b51aE1887b833cc91'
-    }
-  },
-  {
-    name: 'ethFlowSepolia',
-    address: {
-      [sepolia.id]: '0x0b7795E18767259CC253a2dF471db34c72B49516'
-    }
-  },
-  // CoW Protocol
-  {
-    name: 'gPv2SettlementSepolia',
-    address: {
-      [sepolia.id]: '0x9008D19f58AAbD9eD0D60971565AA8510560ab41'
-    }
-  }
-];
 
 export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string}`> }[] = [
   {

@@ -27,7 +27,6 @@ type HistoryRowProps = {
   typeColumn?: boolean;
   statusColumn?: boolean;
   transactionArrow?: boolean;
-  cowExplorerLink?: boolean;
 };
 
 const TableCellSkeleton = ({ className }: { className?: string }) => (
@@ -86,14 +85,7 @@ const LoadingHistoryRow = ({ index, typeColumn }: Omit<HistoryRowProps, 'chainId
   return <BaseRow typeColumn={typeColumn} content={content} />;
 };
 
-const HistoryRowContent = ({
-  row,
-  chainId,
-  index,
-  typeColumn,
-  statusColumn,
-  cowExplorerLink = false
-}: HistoryRowProps) => {
+const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: HistoryRowProps) => {
   const explorerName = getExplorerName(chainId, false);
 
   const content = useMemo(
@@ -128,7 +120,8 @@ const HistoryRowContent = ({
         </Text>
       </Fragment>,
       <Text key="fourth-content" className="text-right xl:text-left">
-        {row?.type || row?.cowOrderStatus}
+        {row?.type || row?.cowOrderStatus || 'Completed'}{' '}
+        {/* "Completed" falback is used for psm trades on networks that now support cow swap*/}
       </Text>,
       <Fragment key="fifth-content">
         <Text variant="small" className="text-selectActive xl:hidden">
@@ -143,7 +136,7 @@ const HistoryRowContent = ({
             <TooltipTrigger>
               <ExternalLink
                 href={
-                  cowExplorerLink
+                  row?.useCowExplorer
                     ? getCowExplorerLink(chainId, row?.transactionHash || '')
                     : getEtherscanLink(chainId, row?.transactionHash || '', 'tx')
                 }
@@ -153,7 +146,7 @@ const HistoryRowContent = ({
             <TooltipPortal>
               <TooltipContent arrowPadding={10}>
                 <Text variant="small">
-                  {cowExplorerLink ? (
+                  {row?.useCowExplorer ? (
                     <Trans>View transaction on CoW Explorer</Trans>
                   ) : (
                     t`View transaction on ${explorerName}`
@@ -185,14 +178,7 @@ const HistoryRowContent = ({
   return <BaseRow typeColumn={typeColumn} statusColumn={statusColumn} content={content} />;
 };
 
-export const HistoryRow = ({
-  row,
-  chainId,
-  index,
-  typeColumn,
-  statusColumn,
-  cowExplorerLink
-}: HistoryRowProps) => {
+export const HistoryRow = ({ row, chainId, index, typeColumn, statusColumn }: HistoryRowProps) => {
   return (
     <TableRow className="flex flex-wrap xl:table-row">
       <LoadingErrorWrapper
@@ -206,7 +192,6 @@ export const HistoryRow = ({
           index={index}
           typeColumn={typeColumn}
           statusColumn={statusColumn}
-          cowExplorerLink={cowExplorerLink}
         />
       </LoadingErrorWrapper>
     </TableRow>

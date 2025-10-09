@@ -32,11 +32,13 @@ export const UtilizationBar = ({
   popoverDescription
 }: UtilizationBarProps) => {
   const isHighUtilization = utilizationRate > 90;
-  const utilizationColor =
-    utilizationRate > 90 ? 'text-error' : utilizationRate > 75 ? 'text-orange-400' : 'text-textSecondary';
+  // const utilizationColor =
+  //   utilizationRate > 90 ? 'text-error' : utilizationRate > 75 ? 'text-orange-400' : 'text-textSecondary';
+  const utilizationColor = 'text-textSecondary';
 
-  const barColor =
-    utilizationRate > 90 ? 'bg-error' : utilizationRate > 75 ? 'bg-orange-400' : 'bg-textSecondary';
+  // const barColor =
+  //   utilizationRate > 90 ? 'bg-error' : utilizationRate > 75 ? 'bg-orange-400' : 'bg-textSecondary';
+  const barColor = 'bg-textSecondary';
 
   return (
     <div className={cn('w-full', className)} data-testid={dataTestId}>
