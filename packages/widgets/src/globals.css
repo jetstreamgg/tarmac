@@ -210,18 +210,26 @@
 }
 
 @utility scrollbar-thin {
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  &:hover {
-    scrollbar-color: var(--transparent-white-15) transparent;
+  /* Styles for devices with a precise pointing device (e.g. mouse) */
+  /* and that support hover */
+  @media (hover: hover) and (pointer: fine) {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    &:hover {
+      scrollbar-color: var(--transparent-white-15) transparent;
+    }
   }
 }
 
 @utility scrollbar-thin-always {
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--transparent-white-15) transparent;
+  /* Styles for devices with a precise pointing device (e.g. mouse) */
+  /* and that support hover */
+  @media (hover: hover) and (pointer: fine) {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--transparent-white-15) transparent;
+  }
 }
 
 @utility chevron-down {
