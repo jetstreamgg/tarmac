@@ -760,6 +760,7 @@ function TradeWidgetWrapped({
     (originToken.isNative && !ethTradePrepared) ||
     (originToken.isNative && isEthTradeLoading) ||
     allowanceLoading ||
+    needsAllowance ||
     isAmountWaitingForDebounce;
 
   useEffect(() => {
@@ -875,7 +876,8 @@ function TradeWidgetWrapped({
       const shouldDisable =
         isConnectedAndEnabled &&
         !!(
-          (widgetState.action === TradeAction.APPROVE && approveDisabled && txStatus !== TxStatus.SUCCESS) ||
+          (widgetState.action === TradeAction.APPROVE &&
+            (txStatus === TxStatus.SUCCESS ? tradeDisabled : approveDisabled)) ||
           (widgetState.action === TradeAction.TRADE && tradeDisabled && txStatus !== TxStatus.SUCCESS)
         );
 

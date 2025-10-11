@@ -412,7 +412,7 @@ export default async function globalSetup() {
       const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
       existingSnapshots = JSON.parse(snapshotData);
       console.log('\n3. ✅ Found existing VNet snapshots!');
-      console.log('   Snapshots:', Object.keys(existingSnapshots).join(', '));
+      console.log('   Snapshots:', existingSnapshots ? Object.keys(existingSnapshots).join(', ') : 'none');
       console.log('   Skipping funding - will revert to snapshots');
     } catch {
       console.log('\n3. No existing snapshots found - will fund accounts and create snapshots');
