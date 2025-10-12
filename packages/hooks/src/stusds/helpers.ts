@@ -1,6 +1,12 @@
 /**
- * Calculate how much the stusds available liquidity will decrease over the next bufferMinutes
- * by accounting for both yield accrual and stability fee accrual on staking engine debt
+ * Calculate the buffered available liquidity for stUSDS withdrawals.
+ * This function compares current liquidity to projected liquidity after bufferMinutes
+ * and returns the minimum of the two. This prevents withdrawal failures in all scenarios:
+ *
+ * - When debt rate > supply rate: future liquidity < current liquidity (debt grows faster)
+ * - When supply rate > debt rate: future liquidity >= current liquidity (assets grow faster)
+ *
+ * By taking the minimum, we ensure withdrawals won't fail due to liquidity changes over time.
  */
 export function calculateLiquidityBuffer(
   currentTotalAssets: bigint, // scaled by 1e18
@@ -9,12 +15,27 @@ export function calculateLiquidityBuffer(
   stakingDuty: bigint, // scaled by 1e27, 1 + per second rate
   bufferMinutes: number = 30 //30 minutes
 ): bigint {
+  // Calculate current liquidity
+  const currentLiquidity =
+    currentTotalAssets > stakingEngineDebt ? currentTotalAssets - stakingEngineDebt : 0n;
+
+  // Calculate total assets after buffer period
   const yieldAccrual = calculateYieldAccrual(currentTotalAssets, str, bufferMinutes);
+  const totalAssetsInFuture = currentTotalAssets + yieldAccrual;
 
+  // Calculate total debt after buffer period
   const debtAccrual = calculateDebtAccrual(stakingEngineDebt, stakingDuty, bufferMinutes);
+  const stakingEngineDebtInFuture = stakingEngineDebt + debtAccrual;
 
-  // Return net buffer (debt growth minus yield growth)
-  return debtAccrual > yieldAccrual ? debtAccrual - yieldAccrual : 0n;
+  // Calculate future liquidity
+  const futureLiquidity =
+    totalAssetsInFuture > stakingEngineDebtInFuture ? totalAssetsInFuture - stakingEngineDebtInFuture : 0n;
+
+  // Return the minimum of current and future liquidity
+  // This naturally handles both rate scenarios:
+  // - If debt rate > supply rate: futureLiquidity < currentLiquidity (apply buffer)
+  // - If supply rate > debt rate: futureLiquidity >= currentLiquidity (no extra buffer)
+  return currentLiquidity < futureLiquidity ? currentLiquidity : futureLiquidity;
 }
 
 /**

@@ -5,91 +5,99 @@ describe('stUSDS Buffer Calculations', () => {
   describe('calculateLiquidityBuffer', () => {
     const BASE_RATE = 10n ** 27n;
 
-    it('should return 0 when debt accrual is less than yield accrual', () => {
+    it('should return current liquidity when supply rate exceeds debt rate', () => {
       const totalAssets = 1000000n * 10n ** 18n; // 1M USDS
       const str = BASE_RATE + 317097919837645865n; // 1% APR
       const stakingEngineDebt = 100000n * 10n ** 18n; // 100k debt
       const stakingDuty = BASE_RATE + 158548959918822932n; // 0.5% APR
 
-      const buffer = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
+      const bufferedLiquidity = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
 
-      // Yield accrual on 1M should exceed debt accrual on 100k at these rates
-      expect(buffer).toBe(0n);
+      // When yield rate > debt rate, future liquidity > current liquidity
+      // So buffered liquidity should equal current liquidity
+      const currentLiquidity = totalAssets - stakingEngineDebt;
+      expect(bufferedLiquidity).toBe(currentLiquidity);
     });
 
-    it('should return positive buffer when debt accrual exceeds yield accrual', () => {
+    it('should return future liquidity when debt rate exceeds supply rate', () => {
       const totalAssets = 100000n * 10n ** 18n; // 100k USDS
       const str = BASE_RATE + 158548959918822932n; // 0.5% APR
-      const stakingEngineDebt = 1000000n * 10n ** 18n; // 1M debt
+      const stakingEngineDebt = 90000n * 10n ** 18n; // 90k debt
       const stakingDuty = BASE_RATE + 317097919837645865n; // 1% APR
 
-      const buffer = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
+      const bufferedLiquidity = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
 
-      // Debt accrual on 1M should exceed yield accrual on 100k
-      expect(buffer).toBeGreaterThan(0n);
+      // When debt rate > yield rate, future liquidity < current liquidity
+      // So buffered liquidity should be less than current liquidity
+      const currentLiquidity = totalAssets - stakingEngineDebt;
+      expect(bufferedLiquidity).toBeLessThan(currentLiquidity);
+      expect(bufferedLiquidity).toBeGreaterThan(0n);
     });
 
-    it('should handle zero total assets', () => {
-      const totalAssets = 0n;
+    it('should return 0 when debt exceeds assets', () => {
+      const totalAssets = 100000n * 10n ** 18n;
       const str = BASE_RATE + 317097919837645865n; // 1% APR
-      const stakingEngineDebt = 1000000n * 10n ** 18n;
+      const stakingEngineDebt = 200000n * 10n ** 18n;
       const stakingDuty = BASE_RATE + 317097919837645865n; // 1% APR
 
-      const buffer = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
+      const bufferedLiquidity = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
 
-      // With no assets, only debt accrual matters
-      expect(buffer).toBeGreaterThan(0n);
+      // No liquidity available
+      expect(bufferedLiquidity).toBe(0n);
     });
 
-    it('should handle zero debt', () => {
+    it('should return full assets when there is no debt', () => {
       const totalAssets = 1000000n * 10n ** 18n;
       const str = BASE_RATE + 317097919837645865n; // 1% APR
       const stakingEngineDebt = 0n;
       const stakingDuty = BASE_RATE + 317097919837645865n; // 1% APR
 
-      const buffer = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
+      const bufferedLiquidity = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
 
-      // With no debt, buffer should be 0 (yield accrual only increases liquidity)
-      expect(buffer).toBe(0n);
+      // With no debt, full assets are available as liquidity
+      expect(bufferedLiquidity).toBe(totalAssets);
     });
 
-    it('should handle base rate (no yield or duty)', () => {
+    it('should return current liquidity when there is no rate movement', () => {
       const totalAssets = 1000000n * 10n ** 18n;
       const str = BASE_RATE; // No yield
-      const stakingEngineDebt = 1000000n * 10n ** 18n;
+      const stakingEngineDebt = 400000n * 10n ** 18n;
       const stakingDuty = BASE_RATE; // No duty
 
-      const buffer = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
+      const bufferedLiquidity = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
 
-      // No accrual on either side
-      expect(buffer).toBe(0n);
+      // No accrual on either side, so current = future
+      const currentLiquidity = totalAssets - stakingEngineDebt;
+      expect(bufferedLiquidity).toBe(currentLiquidity);
     });
 
-    it('should scale with buffer time', () => {
+    it('should have lower buffer with longer time when debt rate exceeds supply rate', () => {
       const totalAssets = 100000n * 10n ** 18n;
       const str = BASE_RATE + 158548959918822932n; // 0.5% APR
-      const stakingEngineDebt = 1000000n * 10n ** 18n;
+      const stakingEngineDebt = 90000n * 10n ** 18n;
       const stakingDuty = BASE_RATE + 317097919837645865n; // 1% APR
 
       const buffer30 = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty, 30);
       const buffer60 = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty, 60);
 
-      // 60 minute buffer should be ~2x the 30 minute buffer
-      expect(buffer60).toBeGreaterThan(buffer30);
-      expect(buffer60).toBeLessThan(buffer30 * 3n); // Sanity check
+      // Longer time = more debt accrual relative to yield = lower buffered liquidity
+      expect(buffer60).toBeLessThan(buffer30);
+      expect(buffer60).toBeGreaterThan(0n);
     });
 
-    it('should return 0 for zero or negative buffer time', () => {
+    it('should return current liquidity for zero or negative buffer time', () => {
       const totalAssets = 100000n * 10n ** 18n;
       const str = BASE_RATE + 158548959918822932n; // 0.5% APR
-      const stakingEngineDebt = 1000000n * 10n ** 18n;
+      const stakingEngineDebt = 90000n * 10n ** 18n;
       const stakingDuty = BASE_RATE + 317097919837645865n; // 1% APR
 
+      const currentLiquidity = totalAssets - stakingEngineDebt;
       const buffer0 = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty, 0);
       const bufferNeg = calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty, -10);
 
-      expect(buffer0).toBe(0n);
-      expect(bufferNeg).toBe(0n);
+      // No time buffer means no accrual, so current = future
+      expect(buffer0).toBe(currentLiquidity);
+      expect(bufferNeg).toBe(currentLiquidity);
     });
   });
 

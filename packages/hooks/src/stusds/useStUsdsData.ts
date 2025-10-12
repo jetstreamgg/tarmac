@@ -177,7 +177,7 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     return assets > stakingEngineDebt ? assets - stakingEngineDebt : 0n;
   }, [totalAssets, stakingEngineData?.totalDaiDebt]);
 
-  const liquidityBuffer = useMemo(() => {
+  const availableLiquidityBuffered = useMemo(() => {
     if (!totalAssets || !str) return 0n;
     const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
     const stakingDuty = stakingEngineRaw?.duty?.value || 0n;
@@ -185,23 +185,15 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
   }, [totalAssets, str, stakingEngineData?.totalDaiDebt, stakingEngineRaw?.duty]);
 
   const userMaxWithdrawBuffered = useMemo(() => {
-    if (!userMaxWithdraw || !availableLiquidity) return 0n;
-
-    const bufferedLiquidity =
-      availableLiquidity > liquidityBuffer ? availableLiquidity - liquidityBuffer : 0n;
+    if (!userMaxWithdraw || !availableLiquidityBuffered) return 0n;
 
     // Only apply buffer if protocol liquidity is the limiting factor
-    if (userMaxWithdraw <= bufferedLiquidity) {
+    if (userMaxWithdraw <= availableLiquidityBuffered) {
       return userMaxWithdraw;
     }
 
-    return bufferedLiquidity;
-  }, [userMaxWithdraw, availableLiquidity, liquidityBuffer]);
-
-  const availableLiquidityBuffered = useMemo(() => {
-    if (!availableLiquidity) return 0n;
-    return availableLiquidity > liquidityBuffer ? availableLiquidity - liquidityBuffer : 0n;
-  }, [availableLiquidity, liquidityBuffer]);
+    return availableLiquidityBuffered;
+  }, [userMaxWithdraw, availableLiquidityBuffered]);
 
   const isLoading = isContractLoading || (!!acct && userUsdsLoading) || isLoadingStakingEngine;
 
