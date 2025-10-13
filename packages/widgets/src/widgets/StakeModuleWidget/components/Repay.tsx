@@ -160,7 +160,7 @@ const PositionManagerOverviewContainer = ({
             ],
         {
           label: t`Current SKY price`,
-          value: `$${formatNumber(parseFloat(pricesData?.SKY?.price || '0'))}`
+          value: `$${formatNumber(Number(pricesData?.SKY?.price) || 0)}`
         }
       ].flat(),
     [

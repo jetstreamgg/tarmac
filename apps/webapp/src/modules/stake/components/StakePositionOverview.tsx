@@ -57,7 +57,7 @@ export function StakePositionOverview({
   const riskColor = vault?.riskLevel ? RISK_COLORS[vault?.riskLevel] : undefined;
   const { usds } = TOKENS;
 
-  const { data: pricesData } = usePrices();
+  const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
 
   // const skySealed = useMemo(() => {
   //   return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
@@ -132,11 +132,9 @@ export function StakePositionOverview({
             />
             <StatsCard
               title={t`Current SKY price`}
-              isLoading={urnAddressLoading || vaultLoading}
-              error={urnAddressLoading ? null : vaultError}
-              content={
-                <Text className="mt-2">${formatNumber(parseFloat(pricesData?.SKY?.price || '0'))}</Text>
-              }
+              isLoading={urnAddressLoading || vaultLoading || pricesLoading}
+              error={urnAddressLoading ? null : vaultError || pricesError}
+              content={<Text className="mt-2">${formatNumber(Number(pricesData?.SKY?.price) || 0)}</Text>}
             />
           </HStack>
         </VStack>
