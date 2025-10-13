@@ -7,10 +7,10 @@ import {
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
+import { capitalizeFirstLetter, formatBigInt, formatNumber, formatPercent } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
 import { getRiskTextColor } from '../lib/utils';
-import { getIlkName, RiskLevel, useCollateralData } from '@jetstreamgg/sky-hooks';
+import { getIlkName, RiskLevel, useCollateralData, usePrices } from '@jetstreamgg/sky-hooks';
 import { cn } from '@widgets/lib/utils';
 import { getTooltipById } from '../../../data/tooltips';
 
@@ -23,7 +23,6 @@ type Props = {
     isInLiquidatedState: boolean;
     urnAddress: string;
   };
-  delayedPrice?: bigint;
   liquidationPrice?: bigint;
 };
 
@@ -33,12 +32,12 @@ export function PositionDetailAccordion({
   sealedAmount,
   borrowedAmount,
   liquidationData,
-  delayedPrice,
   liquidationPrice
 }: Props) {
   const ilkName = getIlkName(2);
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
   const { data: collateralData } = useCollateralData(ilkName);
+  const { data: pricesData } = usePrices();
 
   return (
     <Accordion type="single" collapsible>
@@ -112,10 +111,10 @@ export function PositionDetailAccordion({
               <Text className="text-right text-sm">${formatBigInt(liquidationPrice)}</Text>
             </motion.div>
           )}
-          {!!delayedPrice && delayedPrice > 0n && (
+          {!!pricesData?.SKY?.price && parseFloat(pricesData.SKY.price) > 0 && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
               <Text className="text-textSecondary text-sm font-normal leading-4">Current SKY price</Text>
-              <Text className="text-right text-sm">${formatBigInt(delayedPrice)}</Text>
+              <Text className="text-right text-sm">${formatNumber(parseFloat(pricesData.SKY.price))}</Text>
             </motion.div>
           )}
           {!!riskLevel && (

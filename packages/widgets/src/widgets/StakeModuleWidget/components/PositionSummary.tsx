@@ -16,14 +16,21 @@ import {
   useDelegateOwner,
   useCollateralData,
   Token,
-  useIsBatchSupported
+  useIsBatchSupported,
+  usePrices
 } from '@jetstreamgg/sky-hooks';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { WAD_PRECISION, capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
+import {
+  WAD_PRECISION,
+  capitalizeFirstLetter,
+  formatBigInt,
+  formatNumber,
+  formatPercent
+} from '@jetstreamgg/sky-utils';
 import { cn } from '@widgets/lib/utils';
 import { getRiskTextColor } from '../lib/utils';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
@@ -233,6 +240,8 @@ export const PositionSummary = ({
 
   const { data: collateralData } = useCollateralData(ilkName);
 
+  const { data: pricesData } = usePrices();
+
   const lineItems = useMemo(() => {
     return [
       {
@@ -301,7 +310,7 @@ export const PositionSummary = ({
       },
       {
         label: t`Current SKY price`,
-        value: `$${formatBigInt(updatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`
+        value: `$${formatNumber(parseFloat(pricesData?.SKY?.price || '0'))}`
       },
       {
         label: t`Liquidation price`,
@@ -437,6 +446,7 @@ export const PositionSummary = ({
   }, [
     existingVault,
     updatedVault,
+    pricesData?.SKY,
     existingRewardContract,
     selectedRewardContract,
     existingRewardContractTokens,

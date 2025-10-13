@@ -5,6 +5,7 @@ import {
   RiskLevel,
   TOKENS,
   useCollateralData,
+  usePrices,
   useSimulatedVault,
   useTokenBalance,
   useVault,
@@ -19,6 +20,7 @@ import {
   capitalizeFirstLetter,
   formatBigInt,
   formatBigIntAsCeiledAbsoluteWithSymbol,
+  formatNumber,
   formatPercent,
   useDebounce
 } from '@jetstreamgg/sky-utils';
@@ -117,6 +119,8 @@ const PositionManagerOverviewContainer = ({
 
   const { data: exitFee } = useSealExitFee();
 
+  const { data: pricesData } = usePrices();
+
   const initialTxData = useMemo(
     () =>
       [
@@ -156,7 +160,7 @@ const PositionManagerOverviewContainer = ({
             ],
         {
           label: t`Current SKY price`,
-          value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`
+          value: `$${formatNumber(parseFloat(pricesData?.SKY?.price || '0'))}`
         }
       ].flat(),
     [
@@ -166,7 +170,7 @@ const PositionManagerOverviewContainer = ({
       newBorrowAmount,
       existingBorrowAmount,
       minDebtNotMet,
-      simulatedVault?.delayedPrice,
+      pricesData?.SKY,
       formattedMinBorrowable,
       formattedMaxBorrowable,
       exitFee

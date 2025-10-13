@@ -4,6 +4,7 @@ import {
   getTokenDecimals,
   RiskLevel,
   TOKENS,
+  usePrices,
   // TOKENS,
   useStakePosition,
   useStakeUrnAddress,
@@ -11,7 +12,7 @@ import {
   useVault,
   ZERO_ADDRESS
 } from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol, formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { StakeToken } from '../constants';
@@ -55,6 +56,8 @@ export function StakePositionOverview({
 
   const riskColor = vault?.riskLevel ? RISK_COLORS[vault?.riskLevel] : undefined;
   const { usds } = TOKENS;
+
+  const { data: pricesData } = usePrices();
 
   // const skySealed = useMemo(() => {
   //   return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
@@ -131,7 +134,9 @@ export function StakePositionOverview({
               title={t`Current SKY price`}
               isLoading={urnAddressLoading || vaultLoading}
               error={urnAddressLoading ? null : vaultError}
-              content={<Text className="mt-2">${formatBigInt(vault?.delayedPrice || 0n)}</Text>}
+              content={
+                <Text className="mt-2">${formatNumber(parseFloat(pricesData?.SKY?.price || '0'))}</Text>
+              }
             />
           </HStack>
         </VStack>

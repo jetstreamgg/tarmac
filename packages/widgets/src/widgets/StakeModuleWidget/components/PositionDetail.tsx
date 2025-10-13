@@ -35,7 +35,6 @@ type Props = {
     urnAddress: string;
     liquidationAuctionUrl: string;
   };
-  delayedPrice?: bigint;
   liquidationPrice?: bigint;
   urnAddress?: `0x${string}`;
   index: bigint;
@@ -55,7 +54,6 @@ export function PositionDetail({
   sealedAmount,
   borrowedAmount,
   liquidationData,
-  delayedPrice,
   liquidationPrice,
   urnAddress,
   index,
@@ -173,7 +171,6 @@ export function PositionDetail({
         sealedAmount={sealedAmount}
         borrowedAmount={borrowedAmount}
         liquidationData={liquidationData}
-        delayedPrice={delayedPrice}
         liquidationPrice={liquidationPrice}
       />
       {stakeRewardContracts && urnAddress && (

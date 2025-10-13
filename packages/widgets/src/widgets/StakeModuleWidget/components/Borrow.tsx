@@ -9,7 +9,8 @@ import {
   useVault,
   Vault,
   CollateralRiskParameters,
-  useSealExitFee
+  useSealExitFee,
+  usePrices
 } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
@@ -21,7 +22,8 @@ import {
   formatBigInt,
   formatPercent,
   useDebounce,
-  math
+  math,
+  formatNumber
 } from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
 import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
@@ -133,6 +135,8 @@ const PositionManagerOverviewContainer = ({
 
   const { data: exitFee } = useSealExitFee();
 
+  const { data: pricesData } = usePrices();
+
   const initialTxData = useMemo(
     () =>
       [
@@ -176,7 +180,7 @@ const PositionManagerOverviewContainer = ({
             ],
         {
           label: t`Current SKY price`,
-          value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`
+          value: `$${formatNumber(parseFloat(pricesData?.SKY?.price || '0'))}`
         }
       ].flat(),
     [
@@ -185,7 +189,7 @@ const PositionManagerOverviewContainer = ({
       minCollateralNotMet,
       formattedMaxBorrowable,
       formattedMinBorrowable,
-      simulatedVault?.delayedPrice,
+      pricesData?.SKY,
       existingColAmount,
       existingBorrowAmount,
       hasPositions,

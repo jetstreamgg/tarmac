@@ -120,7 +120,6 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
         selectedVoteDelegate={urnSelectedVoteDelegate}
         sealedAmount={vaultData?.collateralAmount}
         borrowedAmount={vaultData?.debtValue}
-        delayedPrice={vaultData?.delayedPrice}
         liquidationPrice={vaultData?.liquidationPrice}
         liquidationData={liquidationData}
         urnAddress={urnAddress}
