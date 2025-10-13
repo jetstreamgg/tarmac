@@ -17,15 +17,16 @@ import { JSX } from 'react';
 export function ChatSwitcher(): JSX.Element {
   const { bpi } = useBreakpointIndex();
   const [searchParams, setSearchParams] = useSearchParams();
-  const showingChat =
-    bpi >= BP['3xl']
-      ? !(searchParams.get(QueryParams.Chat) === 'false')
-      : searchParams.get(QueryParams.Chat) === 'true';
+  // Chat is now opt-in on all screen sizes
+  const showingChat = searchParams.get(QueryParams.Chat) === 'true';
 
   const handleSwitch = (pressed: boolean) => {
     const queryParam = pressed ? 'true' : 'false';
     searchParams.set(QueryParams.Chat, queryParam);
-    if (bpi < BP['3xl'] && queryParam) searchParams.set(QueryParams.Details, 'false');
+    // On mobile (< xl), hide details when chat is shown
+    if (bpi < BP.xl && pressed) {
+      searchParams.set(QueryParams.Details, 'false');
+    }
     setSearchParams(searchParams);
   };
 

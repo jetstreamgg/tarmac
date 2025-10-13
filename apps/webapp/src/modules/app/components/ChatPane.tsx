@@ -26,7 +26,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
   return (
     // `chat-pane` class is used by the AppContainer component to make the container full width if the chat pane is visible
     <motion.div
-      className="chat-pane md:bg-panel flex h-full w-full flex-col group-has-[.details-pane]:w-[324px] md:rounded-3xl"
+      className="chat-pane md:bg-panel flex h-full w-full flex-col md:rounded-3xl"
       layout
       key="chat-pane"
       initial={{ opacity: 0 }}

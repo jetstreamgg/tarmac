@@ -91,30 +91,42 @@ L2s used with Ethereum not only offer users much lower fees and much faster spee
 ];
 
 const L2TradeFaqItems = [
-  // TODO rewrite this
-  // {
-  //   question: 'Which native Sky tokens can I trade on supported L2s?',
-  //   answer:
-  //     'USDS and sUSDS are available to trade on supported Layer 2 (L2) networks using the Sky.money web app.',
-  //   index: 0
-  // },
-  // TODO rewrite this
-  //   {
-  //     question: 'Which tokens can I trade on supported L2s?',
-  //     answer: `Using the Sky.money web app, you can interact with the Peg Stability Module [(PSM)](#tooltip-psm) for conversions to/from USDS, sUSDS and USDC. The PSM handles conversions programmatically, driven at your direction, between these pairs directly.
+  {
+    question: 'Which native Sky tokens can I trade on supported L2s?',
+    answer:
+      'USDS and sUSDS are available to trade on all supported Layer 2 (L2) networks. On Ethereum Mainnet, additional Sky ecosystem tokens such as SKY, MKR, and SPK are also available for trading.',
+    index: 0
+  },
+  {
+    question: 'Which tokens can I trade on supported L2s?',
+    answer: `Supported trading pairs vary by network:
 
-  // On some supported L2s, you can also access the [Sky Savings Rate](#tooltip-sky-savings-rate).
+• **Ethereum Mainnet:** USDC, USDT, ETH, WETH, DAI, MKR, USDS, sUSDS, SKY, SPK
 
-  // SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.`,
-  //     index: 1
-  //   },
-  // TODO edit or remove this
-  // {
-  //   question: 'How does trading on supported L2s differ from trading on Ethereum?',
-  //   answer:
-  //     'On Ethereum mainnet, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. On supported L2s, converting between tokens is made possible through a Peg Stability Module [(PSM)](#tooltip-psm). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.',
-  //   index: 2
-  // },
+• **Base:** USDC, USDT, ETH, WETH, DAI, USDS, sUSDS
+
+• **Arbitrum:** USDC, USDT, ETH, WETH, DAI, USDS, sUSDS
+
+• **Optimism:** USDC, USDS, sUSDS
+
+• **Unichain:** USDC, USDS, sUSDS
+
+Using the Sky.money web app, you can interact with the Peg Stability Module (PSM) for conversions to and from **USDS**, **sUSDS**, and **USDC**. The PSM handles conversions programmatically, driven at your direction, between these pairs directly.
+
+On some supported L2s, you can also access the [Sky Savings Rate](#tooltip-sky-savings-rate).
+
+SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
+
+Available tokens may evolve over time as new trading pairs are added.`,
+    index: 1
+  },
+  {
+    question: 'How does trading on supported L2s differ from trading on Ethereum?',
+    answer: `On Ethereum Mainnet, Base, and Arbitrum, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
+
+On Optimism and Unichain, converting between tokens is made possible through a Peg Stability Module [(PSM)](#tooltip-psm).`,
+    index: 2
+  },
   {
     question:
       "Why do I see activity in my Trade transaction history in the Sky.money web app if I've never used the Trade feature?",
