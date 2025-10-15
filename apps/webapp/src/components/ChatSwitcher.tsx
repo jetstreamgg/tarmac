@@ -24,7 +24,7 @@ export function ChatSwitcher(): JSX.Element {
     const queryParam = pressed ? 'true' : 'false';
     searchParams.set(QueryParams.Chat, queryParam);
     // On mobile (< xl), hide details when chat is shown
-    if (bpi < BP.xl && pressed) {
+    if (bpi < BP['3xl'] && pressed) {
       searchParams.set(QueryParams.Details, 'false');
     }
     setSearchParams(searchParams);

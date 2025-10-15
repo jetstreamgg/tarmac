@@ -12,6 +12,7 @@ import { getConfirmationWarningMetadata } from '../lib/confirmationWarningMetada
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
 import { Trans } from '@lingui/react/macro';
 import { useChatbotPrefillNotification } from '@/modules/app/hooks/useChatbotPrefillNotification';
+import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 
 export const ConfirmationWarningRow = () => {
   const {
@@ -26,6 +27,7 @@ export const ConfirmationWarningRow = () => {
 
   const navigate = useNavigate();
   const { showPrefillNotification } = useChatbotPrefillNotification();
+  const { bpi } = useBreakpointIndex();
 
   const onIntentSelected = useCallback(
     (intent: ChatIntent) => setChatHistory(prev => [...prev, intentSelectedMessage(intent)]),
@@ -40,10 +42,13 @@ export const ConfirmationWarningRow = () => {
     [setConfirmationWarningOpened, setSelectedIntent]
   );
 
-  const selectedIntentUrl = useRetainedQueryParams(selectedIntent?.url || '', [
-    QueryParams.Locale,
-    QueryParams.Details
-  ]);
+  // On desktop (xl+) where chat floats, retain chat param to keep it open
+  // On mobile (< xl) where chat is fullscreen, don't retain to allow it to close
+  const retainedParams =
+    bpi >= BP.md
+      ? [QueryParams.Locale, QueryParams.Details, QueryParams.Chat]
+      : [QueryParams.Locale, QueryParams.Details];
+  const selectedIntentUrl = useRetainedQueryParams(selectedIntent?.url || '', retainedParams);
 
   const handleConfirm = useCallback(() => {
     setConfirmationWarningOpened(false);

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 
 // Close All button positioned above the toast stack
 // Only shows when there are active toasts
 // Uses Sonner's getToasts() API with interval checking
 export const ToastCloseAll = () => {
   const [hasToasts, setHasToasts] = useState(false);
+  const { bpi } = useBreakpointIndex();
 
   useEffect(() => {
     // Check for active toasts using Sonner's API
@@ -32,11 +34,12 @@ export const ToastCloseAll = () => {
   return (
     <div
       className={cn(
-        'animate-in fade-in slide-in-from-bottom-2 fixed z-[41] duration-200',
-        // Mobile: Inside toast area (top-right corner)
-        'bottom-8 right-8',
-        // Desktop: Below the toast stack with more separation
-        'md:bottom-2 md:right-8'
+        'animate-in fade-in fixed z-[41] duration-200',
+        // Desktop (xl+): Top-center with offset to right of toast stack
+        // Mobile: Bottom-right as before
+        bpi >= BP.xl
+          ? 'fade-in slide-in-from-top-2 left-1/2 top-1.5 -translate-x-1/2 translate-x-[180px]'
+          : 'fade-in slide-in-from-bottom-2 bottom-8 right-8'
       )}
     >
       <button

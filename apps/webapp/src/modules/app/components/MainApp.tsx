@@ -102,8 +102,8 @@ export function MainApp() {
   const chatParam = CHATBOT_ENABLED && searchParams.get(QueryParams.Chat) === 'true';
 
   // On desktop (xl+), chat is floating; on mobile, it's inline
-  const showInlineChat = chatParam && bpi < BP.xl;
-  const showFloatingChat = chatParam && bpi >= BP.xl;
+  const showInlineChat = chatParam && bpi < BP['3xl'];
+  const showFloatingChat = chatParam && bpi >= BP['3xl'];
 
   const newChainId = network
     ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)

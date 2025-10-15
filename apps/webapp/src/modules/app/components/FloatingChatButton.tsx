@@ -12,7 +12,7 @@ export const FloatingChatButton = () => {
   const isChatOpen = searchParams.get(QueryParams.Chat) === 'true';
 
   // Only show on desktop (xl and above)
-  const shouldShow = bpi >= BP.xl;
+  const shouldShow = bpi >= BP['3xl'];
 
   const handleClick = () => {
     setSearchParams(params => {
@@ -33,7 +33,7 @@ export const FloatingChatButton = () => {
         >
           <Button
             onClick={handleClick}
-            className="bg-container focus:bg-container hover:bg-container/90 active:bg-container focus-visible:bg-container h-14 w-14 rounded-full p-0 shadow-lg transition-all hover:scale-105"
+            className="bg-brandDark focus:bg-brandDark hover:bg-brandDark/90 active:bg-brandDark focus-visible:bg-brandDark h-14 w-14 rounded-full p-0 shadow-lg transition-all hover:scale-105"
             aria-label={isChatOpen ? 'Close chat' : 'Open chat'}
           >
             <AnimatePresence mode="wait">
