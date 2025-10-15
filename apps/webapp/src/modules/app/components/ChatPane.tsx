@@ -8,7 +8,13 @@ import { formatMessage } from '@/modules/chat/lib/formatMessage';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useDismissChatSuggestion } from '../hooks/useDismissChatSuggestion';
 
-export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
+export const ChatPane = ({
+  sendMessage,
+  scrollBehavior = 'smooth'
+}: {
+  sendMessage: (message: string) => void;
+  scrollBehavior?: ScrollBehavior;
+}) => {
   const { chatHistory, shouldShowConfirmationWarning, scrollTrigger } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -16,10 +22,10 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
         top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: scrollBehavior
       });
     }
-  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger]);
+  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger, scrollBehavior]);
 
   useDismissChatSuggestion();
 

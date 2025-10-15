@@ -32,7 +32,7 @@ export const FloatingChatPane = ({ sendMessage }: FloatingChatPaneProps) => {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="bg-brandDark fixed bottom-[84px] right-6 z-[45] h-[calc(100vh-250px)] w-[440px] overflow-hidden rounded-3xl shadow-2xl xl:w-[465px]"
           >
-            <ChatWithTerms sendMessage={sendMessage} />
+            <ChatWithTerms sendMessage={sendMessage} scrollBehavior="auto" />
           </motion.div>
         </>
       )}
