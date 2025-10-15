@@ -14,7 +14,7 @@ const setTestBalance = async (tokenAddress: string, amount: string, decimals = 1
   await setErc20Balance(tokenAddress, amount, decimals, NetworkName.mainnet, address);
 };
 
-test.describe.skip('Expert Module - stUSDS', () => {
+test.describe('Expert Module - stUSDS', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await connectMockWalletAndAcceptTerms(page);
@@ -63,6 +63,9 @@ test.describe.skip('Expert Module - stUSDS', () => {
     await expect(page.getByText('You will supply')).toBeVisible();
     await expect(page.getByText('10 USDS')).toBeVisible();
 
+    // Check the disclaimer checkbox
+    await page.getByRole('checkbox').click();
+
     // Perform the supply action (handles approval if needed)
     await approveOrPerformAction(page, 'Supply');
 
@@ -92,6 +95,7 @@ test.describe.skip('Expert Module - stUSDS', () => {
     // Supply first
     await page.getByTestId('supply-input-stusds').click();
     await page.getByTestId('supply-input-stusds').fill('20');
+    await page.getByRole('checkbox').click();
     await approveOrPerformAction(page, 'Supply');
     await page.getByRole('button', { name: 'Back to stUSDS' }).click();
 
@@ -130,11 +134,15 @@ test.describe.skip('Expert Module - stUSDS', () => {
 
     // Transaction overview should be visible
     await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+
+    // Disclaimer checkbox should be visible
+    await expect(page.getByRole('checkbox')).toBeVisible();
   });
 
   test('Use max button for withdrawal', async ({ page }) => {
     await page.getByTestId('supply-input-stusds').click();
     await page.getByTestId('supply-input-stusds').fill('30');
+    await page.getByRole('checkbox').click();
     await approveOrPerformAction(page, 'Supply');
     await page.getByRole('button', { name: 'Back to stUSDS' }).click();
 
@@ -220,11 +228,40 @@ test.describe.skip('Expert Module - stUSDS', () => {
     await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
     await expect(page.getByText('You will supply')).toBeVisible();
 
+    // Check the disclaimer checkbox
+    await page.getByRole('checkbox').click();
+
     // Perform the supply action (handles approval if needed)
     await approveOrPerformAction(page, 'Supply');
 
     // Check success message
     await expect(page.getByText("You've supplied 1 USDS to the stUSDS module")).toBeVisible();
+  });
+
+  test('Review button disabled when disclaimer not checked', async ({ page }) => {
+    // Enter amount to supply
+    await page.getByTestId('supply-input-stusds').click();
+    await page.getByTestId('supply-input-stusds').fill('10');
+
+    // Transaction overview should be visible
+    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+
+    // Disclaimer checkbox should be visible and unchecked
+    const checkbox = page.getByRole('checkbox');
+    await expect(checkbox).toBeVisible();
+    await expect(checkbox).not.toBeChecked();
+
+    // Review button should be disabled
+    const reviewButton = page.getByTestId('widget-button');
+    await expect(reviewButton).toHaveText('Review');
+    await expect(reviewButton).toBeDisabled();
+
+    // Check the disclaimer checkbox
+    await checkbox.click();
+    await expect(checkbox).toBeChecked();
+
+    // Review button should now be enabled
+    await expect(reviewButton).toBeEnabled();
   });
 
   test('Expert risk modal dismissal persists after reload and navigation', async ({ page }) => {

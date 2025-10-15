@@ -187,6 +187,7 @@ export { useStakeRewardsData } from './stake/useStakeRewardsData';
 export { useStakePosition } from './stake/useStakePosition';
 export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';
 export { useHighestRateFromChartData } from './stake/useHighestRateFromChartData';
+export { useBorrowCapacityData } from './stake/useBorrowCapacityData';
 export * from './stake/calldata';
 
 //Vaults
@@ -262,6 +263,7 @@ export type { RewardsChartInfoParsed } from './rewards/useRewardsChartInfo';
 export type { Vault, CollateralRiskParameters } from './vaults/vault';
 export type { SealHistoryKick } from './seal/sealModule';
 export type { DelegateInfo } from './delegates/delegate';
+export type { BorrowCapacityData, BorrowCapacityDataHook } from './stake/useBorrowCapacityData';
 
 // Generated hooks and contracts data
 export {

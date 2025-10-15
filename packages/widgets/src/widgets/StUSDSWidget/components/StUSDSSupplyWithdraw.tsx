@@ -5,7 +5,7 @@ import { formatBigInt, formatStrAsApy } from '@jetstreamgg/sky-utils';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useId } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StUSDSFlow } from '../lib/constants';
 import { StUSDSStatsCard } from './StUSDSStatsCard';
@@ -15,6 +15,8 @@ import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { Checkbox } from '@widgets/components/ui/checkbox';
+import { cn } from '@widgets/lib/utils';
 
 type StUSDSSupplyWithdrawProps = {
   address?: string;
@@ -35,6 +37,8 @@ type StUSDSSupplyWithdrawProps = {
   enabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   remainingCapacityBuffered?: bigint;
+  disclaimerChecked?: boolean;
+  onDisclaimerChange?: (checked: boolean) => void;
 };
 
 export const StUSDSSupplyWithdraw = ({
@@ -55,7 +59,9 @@ export const StUSDSSupplyWithdraw = ({
   tabIndex,
   enabled = true,
   onExternalLinkClicked,
-  remainingCapacityBuffered
+  remainingCapacityBuffered,
+  disclaimerChecked = false,
+  onDisclaimerChange
 }: StUSDSSupplyWithdrawProps) => {
   const inputToken = TOKENS.usds;
   const chainId = useChainId();
@@ -118,6 +124,7 @@ export const StUSDSSupplyWithdraw = ({
   const { widgetState } = useContext(WidgetContext);
   const { isConnected } = useAccount();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
+  const disclaimerCheckboxId = useId();
 
   const finalBalance =
     widgetState.flow === StUSDSFlow.SUPPLY ? (nstBalance || 0n) - amount : (nstBalance || 0n) + amount;
@@ -206,19 +213,41 @@ export const StUSDSSupplyWithdraw = ({
             {!isStUsdsDataLoading && remainingCapacityBuffered === 0n ? (
               <div className="ml-3 mt-2 flex items-start text-amber-400">
                 <PopoverRateInfo type="remainingCapacity" iconClassName="mt-1 shrink-0" />
-                <Text variant="small" className="ml-2 flex gap-2">
+                <Text variant="small" className="mb-1 ml-2 flex gap-2">
                   Supply capacity reached. Deposits are temporarily unavailable.
                 </Text>
               </div>
             ) : !isStUsdsDataLoading && userBalanceExceedsCapacity ? (
               <div className="ml-3 mt-2 flex items-start text-white">
                 <PopoverRateInfo type="remainingCapacity" iconClassName="mt-1 shrink-0" />
-                <Text variant="small" className="ml-2 flex gap-2">
+                <Text variant="small" className="mb-1 ml-2 flex gap-2">
                   You cannot supply your full balance due to current capacity limits.
                 </Text>
               </div>
             ) : (
               <div className="mb-4" />
+            )}
+            {tabIndex === 0 && onDisclaimerChange && nstBalance !== undefined && nstBalance > 0n && (
+              <div className="flex items-center px-3 pt-1">
+                <Checkbox
+                  id={disclaimerCheckboxId}
+                  checked={disclaimerChecked}
+                  onCheckedChange={onDisclaimerChange}
+                />
+                <label htmlFor={disclaimerCheckboxId} className="ml-2">
+                  <Text
+                    variant="medium"
+                    className={cn(
+                      availableLiquidityBuffered === 0n ? 'text-amber-400' : 'text-textSecondary',
+                      'cursor-pointer'
+                    )}
+                  >
+                    {availableLiquidityBuffered === 0n
+                      ? 'I understand that USDS deposited into the stUSDS module is used to fund borrowing against SKY, and that I will not be able to withdraw as long as the Available Liquidity is 0'
+                      : 'I understand that USDS deposited into the stUSDS module is used to fund borrowing against SKY, and that I will not be able to withdraw if the Available Liquidity becomes exhausted'}
+                  </Text>
+                </label>
+              </div>
             )}
           </motion.div>
         </TabsContent>
@@ -255,14 +284,14 @@ export const StUSDSSupplyWithdraw = ({
             />
             {!isStUsdsDataLoading && availableLiquidityBuffered === 0n ? (
               <div className="ml-3 mt-2 flex items-start text-amber-400">
-                <PopoverRateInfo type="withdrawalLiquidity" iconClassName="mt-1 shrink-0" />
+                <PopoverRateInfo type="stusdsLiquidity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">
-                  Withdrawal liquidity exhausted. Withdrawals are temporarily unavailable.
+                  Available liquidity exhausted. Withdrawals are temporarily unavailable.
                 </Text>
               </div>
             ) : !isStUsdsDataLoading && userSuppliedExceedsLiquidity ? (
               <div className="ml-3 mt-2 flex items-start text-white">
-                <PopoverRateInfo type="withdrawalLiquidity" iconClassName="mt-1 shrink-0" />
+                <PopoverRateInfo type="stusdsLiquidity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">
                   You cannot withdraw your full balance due to current liquidity limits.
                 </Text>

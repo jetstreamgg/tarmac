@@ -25,8 +25,9 @@ import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { StakeDelegateCard } from './StakeDelegateCard';
 import { StakeRewardCard } from './StakeRewardCard';
+import { InfoTooltip } from '@/components/InfoTooltip';
 // import { useMemo } from 'react';
-import { formatUrnIndex } from '@jetstreamgg/sky-widgets';
+import { formatUrnIndex, getTooltipById } from '@jetstreamgg/sky-widgets';
 import { useChainId } from 'wagmi';
 import { formatPercent } from '@jetstreamgg/sky-utils';
 
@@ -55,6 +56,7 @@ export function StakePositionOverview({
 
   const riskColor = vault?.riskLevel ? RISK_COLORS[vault?.riskLevel] : undefined;
   const { usds } = TOKENS;
+  const osmCappedSkyPriceTooltip = getTooltipById('capped-osm-sky-price');
 
   // const skySealed = useMemo(() => {
   //   return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
@@ -128,7 +130,17 @@ export function StakePositionOverview({
               content={<Text className="mt-2">${formatBigInt(vault?.liquidationPrice || 0n)}</Text>}
             />
             <StatsCard
-              title={t`Current SKY price`}
+              title={
+                <div className="flex items-center gap-1">
+                  <span>{t`Capped OSM SKY price`}</span>
+                  {osmCappedSkyPriceTooltip && (
+                    <InfoTooltip
+                      content={osmCappedSkyPriceTooltip.tooltip}
+                      iconClassName="text-textSecondary"
+                    />
+                  )}
+                </div>
+              }
               isLoading={urnAddressLoading || vaultLoading}
               error={urnAddressLoading ? null : vaultError}
               content={<Text className="mt-2">${formatBigInt(vault?.delayedPrice || 0n)}</Text>}

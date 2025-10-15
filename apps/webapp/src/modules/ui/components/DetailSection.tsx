@@ -26,7 +26,7 @@ export function DetailSection({ title, children, dataTestId, fixedOpen }: Detail
     >
       <motion.div variants={positionAnimations}>
         <CollapsibleTrigger className="flex w-full items-center justify-between [&[data-state=open]>svg]:rotate-180">
-          {typeof title === 'string' ? <Heading className="my-4">{title}</Heading> : title}
+          {typeof title === 'string' ? <Heading className="my-4 text-left">{title}</Heading> : title}
           {fixedOpen === undefined && (
             <ChevronDown className="text-textSecondary h-6 w-6 shrink-0 transition-transform duration-200" />
           )}

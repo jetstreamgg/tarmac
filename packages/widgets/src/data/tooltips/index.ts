@@ -94,6 +94,12 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
       'The USDS limit is determined by the amount SKY locked in the Staking Engine, the current market price of SKY, and the amount of USDS borrowed.'
   },
   {
+    id: 'capped-osm-sky-price',
+    title: 'Capped OSM SKY price',
+    tooltip:
+      'The SKY price reported by the Oracle Security Module (OSM), capped at a governance-defined limit to prevent overvaluation during debt generation.'
+  },
+  {
     id: 'collateralization-ratio',
     title: 'Collateralization ratio',
     tooltip:

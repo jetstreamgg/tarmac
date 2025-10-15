@@ -13,16 +13,8 @@ export function calculateApyFromStr(str: bigint): number {
   // So we need to subtract 1e27 to get the actual rate
   const ratePerSecond = (Number(str) - 1e27) / 1e27;
 
-  // For small rates, use the approximation: (1 + r)^n ≈ 1 + n*r
-  // This avoids overflow issues with Math.pow or Math.exp
-  if (Math.abs(ratePerSecond) < 0.0001) {
-    // Simple linear approximation for small rates
-    const apy = ratePerSecond * secondsInYear * 100;
-    return apy;
-  }
-
-  // For larger rates, use the compound interest formula
-  // APY = (1 + r)^n - 1
+  // Use the compound interest formula: APY = (1 + r)^n - 1
+  // This is the correct formula for per-second compounding rates
   try {
     const apy = (Math.pow(1 + ratePerSecond, secondsInYear) - 1) * 100;
     // Safeguard against unrealistic values

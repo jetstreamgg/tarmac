@@ -11,7 +11,6 @@ import {
   QueryParams,
   RESTRICTED_INTENTS
 } from '@/lib/constants';
-import { isExpertModulesEnabled } from '@/lib/feature-flags';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -103,12 +102,9 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   );
   // Attempt to redirect to the stUSDS module, but if user hasn't acknowledged the risk checkbox,
   // they will be redirected to the overview of the expert widget
-  // Only generate URL if expert modules are enabled
-  const stusdsUrl = isExpertModulesEnabled()
-    ? getQueryParams(
-        `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
-      )
-    : undefined;
+  const stusdsUrl = getQueryParams(
+    `/?network=${mainnetName}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
+  );
 
   const widgetItems: WidgetItem[] = [
     [
@@ -184,19 +180,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       undefined,
       'Stake SKY to earn rewards, delegate votes, and borrow USDS'
     ],
-    ...(isExpertModulesEnabled()
-      ? [
-          [
-            Intent.EXPERT_INTENT,
-            'Expert',
-            Expert,
-            withErrorBoundary(<ExpertWidgetPane {...sharedProps} />),
-            false,
-            undefined,
-            'Higher-risk options for more experienced users'
-          ]
-        ]
-      : [])
+    [
+      Intent.EXPERT_INTENT,
+      'Expert',
+      Expert,
+      withErrorBoundary(<ExpertWidgetPane {...sharedProps} />),
+      false,
+      undefined,
+      'Higher-risk options for more experienced users'
+    ]
   ]
     .filter(([intent]) => !RESTRICTED_INTENTS.includes(intent as Intent))
     .map(([intent, label, icon, component, , , description]) => {

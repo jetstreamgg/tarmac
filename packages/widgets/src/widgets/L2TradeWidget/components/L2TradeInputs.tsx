@@ -58,7 +58,6 @@ export function L2TradeInputs({
   isBalanceError,
   canSwitchTokens,
   isConnectedAndEnabled = true,
-  lastUpdated,
   onUserSwitchTokens,
   onOriginInputChange,
   onTargetInputChange,
@@ -139,6 +138,7 @@ export function L2TradeInputs({
     <VStack className="relative h-auto items-stretch" gap={0}>
       <motion.div variants={positionAnimations} ref={topInputRef}>
         <TradeInput
+          key={originToken?.symbol || 'no-origin-token-l2'}
           className={`${separationMb} w-full`}
           label={t`Choose a token to trade, and enter an amount`}
           token={originToken as Token}
@@ -179,25 +179,15 @@ export function L2TradeInputs({
             size="icon"
             className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
             onClick={() => {
-              const tempToken = originToken;
-              const prevOriginAmount = originAmount;
-              const prevTargetAmount = targetAmount;
+              const auxOriginToken = originToken;
+              const auxTargetToken = targetToken;
+
+              // Call all setters together to batch the update
               setOriginAmount(0n);
               setTargetAmount(0n);
-              setTimeout(() => {
-                setOriginToken(targetToken);
-                setTargetToken(tempToken);
-                setTimeout(() => {
-                  if (lastUpdated === TradeSide.IN) {
-                    setTargetAmount(prevOriginAmount);
-                    setOriginAmount(0n);
-                  } else {
-                    setOriginAmount(prevTargetAmount);
-                    setTargetAmount(0n);
-                  }
-                  onUserSwitchTokens?.(targetToken?.symbol, originToken?.symbol);
-                }, 500);
-              }, 500);
+              setOriginToken(auxTargetToken);
+              setTargetToken(auxOriginToken);
+              onUserSwitchTokens?.(auxTargetToken?.symbol, auxOriginToken?.symbol);
             }}
             disabled={switchDisabled}
           >
@@ -207,6 +197,7 @@ export function L2TradeInputs({
       )}
       <motion.div variants={positionAnimations} ref={bottomInputRef}>
         <TradeInput
+          key={targetToken?.symbol || 'no-target-token-l2'}
           className="w-full"
           label={t`Choose a token to receive`}
           variant={tokensLocked ? undefined : 'bottom'}

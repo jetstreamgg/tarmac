@@ -78,11 +78,11 @@ describe('StUSDS widget tests', () => {
     expect(balanceLabel).toBeTruthy();
   });
 
-  it('displays withdrawal liquidity information', async () => {
+  it('displays available liquidity information', async () => {
     renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
-    const withdrawalLiquidityLabel = await screen.findByText('Withdrawal liquidity');
-    expect(withdrawalLiquidityLabel).toBeTruthy();
+    const availableLiquidityLabel = await screen.findByText('Available liquidity');
+    expect(availableLiquidityLabel).toBeTruthy();
   });
 
   it('handles external state for supply flow', async () => {

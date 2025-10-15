@@ -30,7 +30,16 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await page.getByTestId('trade-input-target').click();
     await page.getByTestId('trade-input-target').fill('10');
     await page.waitForTimeout(2000);
+
+    // Switch clears inputs, so we need to re-enter the amount
     await page.getByLabel('Switch token inputs').click();
+
+    // Verify both inputs are cleared after switch
+    await test.expect(page.getByTestId('trade-input-origin')).toHaveValue('');
+    await test.expect(page.getByTestId('trade-input-target')).toHaveValue('');
+
+    await page.getByTestId('trade-input-origin').click();
+    await page.getByTestId('trade-input-origin').fill('10');
 
     await approveOrPerformAction(page, 'Trade');
 
@@ -63,7 +72,15 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await page.getByTestId('trade-input-target').fill('9');
     await page.waitForTimeout(2000);
 
+    // Switch clears inputs, so we need to re-enter the amount
     await page.getByLabel('Switch token inputs').click();
+
+    // Verify both inputs are cleared after switch
+    await test.expect(page.getByTestId('trade-input-origin')).toHaveValue('');
+    await test.expect(page.getByTestId('trade-input-target')).toHaveValue('');
+
+    await page.getByTestId('trade-input-origin').click();
+    await page.getByTestId('trade-input-origin').fill('9');
 
     await approveOrPerformAction(page, 'Trade');
 
@@ -99,8 +116,14 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await page.getByRole('button', { name: 'Select token' }).click();
     await page.getByRole('button', { name: 'sUSDS sUSDS sUSDS' }).click();
 
+    // Switch clears inputs, tokens are swapped
     await page.getByLabel('Switch token inputs').click();
     await page.waitForTimeout(1000);
+
+    // Verify both inputs are cleared after switch
+    await test.expect(page.getByTestId('trade-input-origin')).toHaveValue('');
+    await test.expect(page.getByTestId('trade-input-target')).toHaveValue('');
+
     await page.getByTestId('trade-input-origin').click();
     await page.getByTestId('trade-input-origin').fill('5');
 

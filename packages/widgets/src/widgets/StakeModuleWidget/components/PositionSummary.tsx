@@ -300,8 +300,9 @@ export const PositionSummary = ({
         tooltipText: getTooltipById('borrow')?.tooltip || ''
       },
       {
-        label: t`Current SKY price`,
-        value: `$${formatBigInt(updatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`
+        label: t`Capped OSM SKY price`,
+        value: `$${formatBigInt(updatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
+        tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
       },
       {
         label: t`Liquidation price`,

@@ -114,7 +114,13 @@ export function PositionDetailAccordion({
           )}
           {!!delayedPrice && delayedPrice > 0n && (
             <motion.div className="flex justify-between" variants={positionAnimations}>
-              <Text className="text-textSecondary text-sm font-normal leading-4">Current SKY price</Text>
+              <TextWithTooltip
+                text={getTooltipById('capped-osm-sky-price')?.title || 'Capped OSM SKY price'}
+                tooltip={getTooltipById('capped-osm-sky-price')?.tooltip || ''}
+                textClassName="leading-4"
+                gap={1}
+                iconClassName="text-textSecondary"
+              />
               <Text className="text-right text-sm">${formatBigInt(delayedPrice)}</Text>
             </motion.div>
           )}

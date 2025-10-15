@@ -14,7 +14,6 @@ import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Chain } from 'viem';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { isExpertModulesEnabled } from '@/lib/feature-flags';
 
 export const validateSearchParams = (
   searchParams: URLSearchParams,
@@ -45,9 +44,7 @@ export const validateSearchParams = (
       key === QueryParams.Widget &&
       (!Object.values(IntentMapping).includes(value.toLowerCase()) ||
         !CHAIN_WIDGET_MAP[chainInUrl?.id || chainId].includes(mapQueryParamToIntent(value)) ||
-        COMING_SOON_MAP[chainInUrl?.id || chainId]?.includes(mapQueryParamToIntent(value)) ||
-        // Block Expert widget if feature flag is disabled
-        (value.toLowerCase() === IntentMapping[Intent.EXPERT_INTENT] && !isExpertModulesEnabled()))
+        COMING_SOON_MAP[chainInUrl?.id || chainId]?.includes(mapQueryParamToIntent(value)))
     ) {
       searchParams.delete(key);
     }
@@ -100,8 +97,7 @@ export const validateSearchParams = (
       const intent = Object.entries(ExpertIntentMapping).find(
         ([, intentValue]) => intentValue === value
       )?.[0] as ExpertIntent | undefined;
-      // Block expert module if feature flag is disabled
-      if (!intent || !expertRiskDisclaimerShown || !isExpertModulesEnabled()) {
+      if (!intent || !expertRiskDisclaimerShown) {
         searchParams.delete(key);
       } else {
         setSelectedExpertOption(intent);

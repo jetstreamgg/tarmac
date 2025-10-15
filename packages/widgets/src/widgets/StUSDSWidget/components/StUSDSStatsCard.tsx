@@ -68,8 +68,8 @@ export const StUSDSStatsCard = ({
         data-testid="withdrawal-liquidity-container"
       >
         <div className="text-textSecondary flex items-center justify-end gap-1.5">
-          <Text className="text-textSecondary whitespace-nowrap text-sm leading-4">{t`Withdrawal liquidity`}</Text>
-          <PopoverRateInfo type="withdrawalLiquidity" onExternalLinkClicked={onExternalLinkClicked} />
+          <Text className="text-textSecondary whitespace-nowrap text-sm leading-4">{t`Available liquidity`}</Text>
+          <PopoverRateInfo type="stusdsLiquidity" onExternalLinkClicked={onExternalLinkClicked} />
         </div>
         {isLoading ? (
           <div className="flex justify-end">

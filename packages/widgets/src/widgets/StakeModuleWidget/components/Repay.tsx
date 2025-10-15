@@ -155,8 +155,9 @@ const PositionManagerOverviewContainer = ({
               }
             ],
         {
-          label: t`Current SKY price`,
-          value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`
+          label: t`Capped OSM SKY price`,
+          value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
+          tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
         }
       ].flat(),
     [
