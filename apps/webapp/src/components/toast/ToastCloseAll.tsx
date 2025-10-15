@@ -35,9 +35,9 @@ export const ToastCloseAll = () => {
     <div
       className={cn(
         'animate-in fade-in fixed z-[41] duration-200',
-        // Desktop (xl+): Top-center with offset to right of toast stack
-        // Mobile: Bottom-right as before
-        bpi >= BP.xl
+        // Wide screens (3xl+): Top-center with offset to right of toast stack
+        // Smaller screens: Bottom-right as before
+        bpi >= BP['3xl']
           ? 'fade-in slide-in-from-top-2 left-1/2 top-1.5 -translate-x-1/2 translate-x-[180px]'
           : 'fade-in slide-in-from-bottom-2 bottom-8 right-8'
       )}

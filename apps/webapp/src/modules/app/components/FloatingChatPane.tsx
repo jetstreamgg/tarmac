@@ -1,23 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
-import { QueryParams } from '@/lib/constants';
-import { useSearchParams } from 'react-router-dom';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useRef } from 'react';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 
 interface FloatingChatPaneProps {
   sendMessage: (message: string) => void;
 }
 
 export const FloatingChatPane = ({ sendMessage }: FloatingChatPaneProps) => {
-  const { bpi } = useBreakpointIndex();
-  const [searchParams] = useSearchParams();
-  const isChatOpen = searchParams.get(QueryParams.Chat) === 'true';
   const chatPaneRef = useRef<HTMLDivElement>(null);
-
-  // Only show as floating on desktop (xl and above)
-  const shouldShowFloating = bpi >= BP['3xl'] && isChatOpen;
-  console.log('🚀 ~ FloatingChatPane ~ bpi:', bpi);
+  const { shouldShowFloating } = useFloatingChat();
 
   return (
     <AnimatePresence>

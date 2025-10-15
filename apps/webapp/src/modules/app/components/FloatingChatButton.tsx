@@ -3,16 +3,12 @@ import { Chat } from '@/modules/icons';
 import { QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { X } from 'lucide-react';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 
 export const FloatingChatButton = () => {
-  const { bpi } = useBreakpointIndex();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const isChatOpen = searchParams.get(QueryParams.Chat) === 'true';
-
-  // Only show on desktop (xl and above)
-  const shouldShow = bpi >= BP['3xl'];
+  const [, setSearchParams] = useSearchParams();
+  const { supportsFloatingChat, isChatOpen } = useFloatingChat();
 
   const handleClick = () => {
     setSearchParams(params => {
@@ -23,7 +19,7 @@ export const FloatingChatButton = () => {
 
   return (
     <AnimatePresence>
-      {shouldShow && (
+      {supportsFloatingChat && (
         <motion.div
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

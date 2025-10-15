@@ -11,20 +11,20 @@ import {
 } from '@/components/ui/tooltip';
 import { t } from '@lingui/core/macro';
 import { Chat } from '@/modules/icons';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 import { JSX } from 'react';
 
 export function ChatSwitcher(): JSX.Element {
-  const { bpi } = useBreakpointIndex();
   const [searchParams, setSearchParams] = useSearchParams();
-  // Chat is now opt-in on all screen sizes
-  const showingChat = searchParams.get(QueryParams.Chat) === 'true';
+  const { isChatOpen, supportsFloatingChat } = useFloatingChat();
+  console.log('🚀 ~ ChatSwitcher ~ supportsFloatingChat:', supportsFloatingChat);
 
   const handleSwitch = (pressed: boolean) => {
     const queryParam = pressed ? 'true' : 'false';
     searchParams.set(QueryParams.Chat, queryParam);
-    // On mobile (< xl), hide details when chat is shown
-    if (bpi < BP['3xl'] && pressed) {
+    // On mobile (< 3xl), hide details when chat is shown
+    if (!supportsFloatingChat && pressed) {
+      console.log('🚀 ~ CIERRA DETAILSSSS');
       searchParams.set(QueryParams.Details, 'false');
     }
     setSearchParams(searchParams);
@@ -39,7 +39,7 @@ export function ChatSwitcher(): JSX.Element {
           <Toggle
             variant="singleSwitcher"
             className="h-10 w-10 rounded-xl pb-2 pl-4 pr-[14px] pt-[9px] md:rounded-l-none"
-            pressed={showingChat}
+            pressed={isChatOpen}
             onPressedChange={handleSwitch}
             aria-label="Toggle chat"
           >
@@ -49,7 +49,7 @@ export function ChatSwitcher(): JSX.Element {
       </TooltipTrigger>
       <TooltipPortal>
         <TooltipContent arrowPadding={10}>
-          <Text variant="small">{showingChat ? t`Hide chat` : t`View chat`}</Text>
+          <Text variant="small">{isChatOpen ? t`Hide chat` : t`View chat`}</Text>
           <TooltipArrow width={12} height={8} />
         </TooltipContent>
       </TooltipPortal>

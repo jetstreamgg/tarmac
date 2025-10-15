@@ -10,8 +10,8 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
 const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
   const { bpi } = useBreakpointIndex();
 
-  // On desktop (xl+), position at top-center to avoid conflict with floating chat area
-  const position = bpi >= BP.xl ? 'top-center' : 'bottom-right';
+  // On wide screens (3xl+), position at top-center to avoid conflict with floating chat area
+  const position = bpi >= BP['3xl'] ? 'top-center' : 'bottom-right';
   const defaultClassNames: ToastClassnames = {
     toast:
       'group flex items-start justify-between space-x-4 rounded-xl bg-container text-text p-6 pr-8 shadow-lg backdrop-blur-[50px] border border-border min-w-[356px] md:min-w-[420px] max-w-[420px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-bottom-full data-[expanded=false]:overflow-hidden',

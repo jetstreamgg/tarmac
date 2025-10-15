@@ -24,6 +24,7 @@ import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 
 export function MainApp() {
   const {
@@ -36,6 +37,7 @@ export function MainApp() {
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
+  const { shouldShowFloating } = useFloatingChat();
 
   const intent = mapQueryParamToIntent(searchParams.get(QueryParams.Widget));
 
@@ -101,9 +103,8 @@ export function MainApp() {
   // Chat is now opt-in on all screen sizes (no longer auto-shown on 3xl+)
   const chatParam = CHATBOT_ENABLED && searchParams.get(QueryParams.Chat) === 'true';
 
-  // On desktop (xl+), chat is floating; on mobile, it's inline
-  const showInlineChat = chatParam && bpi < BP['3xl'];
-  const showFloatingChat = chatParam && bpi >= BP['3xl'];
+  // On desktop (3xl+), chat is floating; on mobile, it's inline
+  const showInlineChat = chatParam && !shouldShowFloating;
 
   const newChainId = network
     ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
@@ -259,8 +260,8 @@ export function MainApp() {
         {showInlineChat && <ChatWithTerms sendMessage={sendMessage} />}
       </AppContainer>
 
-      {/* Floating chat - only on desktop (xl+) */}
-      {showFloatingChat && <FloatingChatPane sendMessage={sendMessage} />}
+      {/* Floating chat - only on desktop (3xl+) */}
+      {shouldShowFloating && <FloatingChatPane sendMessage={sendMessage} />}
 
       {/* Floating chat button - shows when chat is closed on desktop */}
       <FloatingChatButton />
