@@ -30,16 +30,19 @@ export const ToastCloseAll = () => {
   }, []);
 
   if (!hasToasts) return null;
-
+  const isWideScreen = bpi >= BP['3xl'];
+  const isMobile = bpi < BP.md;
   return (
     <div
       className={cn(
         'animate-in fade-in fixed z-[41] duration-200',
-        // Wide screens (3xl+): Top-center with offset to right of toast stack
+        // Wide screens (3xl+): Bottom-right corner of toast stack (toast width is 420px, centered at 50vw)
         // Smaller screens: Bottom-right as before
-        bpi >= BP['3xl']
-          ? 'fade-in slide-in-from-top-2 left-1/2 top-1.5 -translate-x-1/2 translate-x-[180px]'
-          : 'fade-in slide-in-from-bottom-2 bottom-8 right-8'
+        isWideScreen
+          ? 'fade-in slide-in-from-top-2 left-92.5 bottom-3'
+          : isMobile
+            ? 'fade-in slide-in-from-bottom-2 bottom-7 right-8'
+            : 'fade-in slide-in-from-bottom-2 bottom-1 right-8'
       )}
     >
       <button
@@ -58,8 +61,7 @@ export const ToastCloseAll = () => {
           'flex items-center gap-1 rounded-md',
           'text-xs font-medium',
           'hover:bg-container/30 transition-all',
-          // No border or padding on any screen size
-          'p-0'
+          isMobile ? 'p-0' : 'px-2 py-1'
         )}
         aria-label="Close all notifications"
         title="Dismiss all notifications"
