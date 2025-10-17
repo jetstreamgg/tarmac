@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Chat } from '@/modules/icons';
 import { QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,7 +50,8 @@ export const FloatingChatButton = () => {
                   exit={{ opacity: 0, rotate: 90 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Chat width={24} height={24} />
+                  {/* <Chat width={24} height={24} /> */}
+                  <img src="/images/chatbot_logo.svg" alt="Chat" width={28} height={28} />
                 </motion.div>
               )}
             </AnimatePresence>
