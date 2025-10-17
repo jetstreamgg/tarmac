@@ -17,14 +17,12 @@ import { JSX } from 'react';
 export function ChatSwitcher(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isChatOpen, supportsFloatingChat } = useFloatingChat();
-  console.log('🚀 ~ ChatSwitcher ~ supportsFloatingChat:', supportsFloatingChat);
 
   const handleSwitch = (pressed: boolean) => {
     const queryParam = pressed ? 'true' : 'false';
     searchParams.set(QueryParams.Chat, queryParam);
     // On mobile (< 3xl), hide details when chat is shown
     if (!supportsFloatingChat && pressed) {
-      console.log('🚀 ~ CIERRA DETAILSSSS');
       searchParams.set(QueryParams.Details, 'false');
     }
     setSearchParams(searchParams);
