@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 
 interface FloatingChatPaneProps {
@@ -10,6 +10,20 @@ interface FloatingChatPaneProps {
 export const FloatingChatPane = ({ sendMessage }: FloatingChatPaneProps) => {
   const chatPaneRef = useRef<HTMLDivElement>(null);
   const { shouldShowFloating } = useFloatingChat();
+  const [scrollBehavior, setScrollBehavior] = useState<ScrollBehavior>('auto');
+
+  // When the chat opens, use 'auto' scroll, then switch to 'smooth' after 1500ms
+  useEffect(() => {
+    if (shouldShowFloating) {
+      setScrollBehavior('auto');
+
+      const timer = setTimeout(() => {
+        setScrollBehavior('smooth');
+      }, 1500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShowFloating]);
 
   return (
     <AnimatePresence>
@@ -24,7 +38,7 @@ export const FloatingChatPane = ({ sendMessage }: FloatingChatPaneProps) => {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="bg-floatingChatPane fixed bottom-[84px] right-6 z-[45] h-[calc(100vh-250px)] max-h-[1080px] w-[440px] overflow-hidden rounded-3xl border shadow-2xl xl:w-[465px]"
           >
-            <ChatWithTerms sendMessage={sendMessage} scrollBehavior="auto" />
+            <ChatWithTerms sendMessage={sendMessage} scrollBehavior={scrollBehavior} />
           </motion.div>
         </>
       )}
