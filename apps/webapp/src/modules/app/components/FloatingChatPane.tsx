@@ -24,7 +24,8 @@ export const FloatingChatPane = ({ sendMessage }: FloatingChatPaneProps) => {
             animate={{ opacity: 1, x: 0, y: 0 }}
             exit={{ opacity: 0, x: 400, y: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="bg-floatingChatPane fixed bottom-[84px] right-6 z-[45] h-[calc(100vh-250px)] max-h-[1080px] w-[440px] overflow-hidden rounded-3xl border shadow-2xl xl:w-[465px]"
+            // className="bg-floatingChatPane fixed bottom-[84px] right-6 z-[45] h-[calc(100vh-250px)] max-h-[1080px] w-[440px] overflow-hidden rounded-3xl border shadow-2xl xl:w-[465px]"
+            className="bg-floatingChatPane fixed bottom-[84px] right-6 z-[45] h-[calc(100vh-250px)] max-h-[1080px] w-[440px] overflow-hidden rounded-3xl border shadow-2xl backdrop-blur-md xl:w-[465px]"
           >
             <ChatWithTerms sendMessage={sendMessage} scrollBehavior={scrollBehavior} />
           </motion.div>
