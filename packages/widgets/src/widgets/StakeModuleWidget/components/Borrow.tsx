@@ -37,7 +37,7 @@ const { usds } = TOKENS;
 const { LOW } = RiskLevel;
 
 const SliderContainer = ({ vault }: { vault?: Vault }) => {
-  const { sliderValue, handleSliderChange, shouldShowSlider } = useRiskSlider({
+  const { sliderValue, handleSliderChange, shouldShowSlider, currentRiskFloor } = useRiskSlider({
     vault,
     isRepayMode: false
   });
@@ -48,12 +48,12 @@ const SliderContainer = ({ vault }: { vault?: Vault }) => {
       max={100}
       leftLabel={t`Low risk`}
       rightLabel={t`High risk`}
-      disabled={true}
       onValueCommit={v => {
         handleSliderChange(v[0]);
       }}
       liquidationLabel={t`Liquidation`}
       sliderLabel={t`Liquidation risk meter`}
+      currentRiskFloor={currentRiskFloor}
     />
   ) : null;
 };
