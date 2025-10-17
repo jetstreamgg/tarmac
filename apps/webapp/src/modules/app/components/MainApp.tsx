@@ -25,6 +25,7 @@ import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
+import { useChatScrollBehavior } from '@/modules/chat/hooks/useChatScrollBehavior';
 
 export function MainApp() {
   const {
@@ -105,6 +106,8 @@ export function MainApp() {
 
   // On desktop (3xl+), chat is floating; on mobile, it's inline
   const showInlineChat = chatParam && !shouldShowFloating;
+
+  const inlineChatScrollBehavior = useChatScrollBehavior(showInlineChat);
 
   const newChainId = network
     ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
@@ -257,7 +260,9 @@ export function MainApp() {
           <DetailsPane intent={intent} />
         )}
         {/* Inline chat - only on mobile */}
-        {showInlineChat && <ChatWithTerms sendMessage={sendMessage} />}
+        {showInlineChat && (
+          <ChatWithTerms sendMessage={sendMessage} scrollBehavior={inlineChatScrollBehavior} />
+        )}
       </AppContainer>
 
       {/* Floating chat - only on desktop (3xl+) */}
