@@ -1,10 +1,17 @@
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { getTokenDecimals, sUsdsAddress, TOKENS, useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import {
+  getTokenDecimals,
+  sUsdsAddress,
+  TOKENS,
+  useOverallSkyData,
+  useReadSavingsUsds
+} from '@jetstreamgg/sky-hooks';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { Skeleton } from '@widgets/components/ui/skeleton';
 import { useContext, useMemo } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SavingsFlow } from '../lib/constants';
@@ -70,6 +77,28 @@ export const SupplyWithdraw = ({
     widgetState.flow === SavingsFlow.SUPPLY
       ? (savingsBalance || 0n) + amount
       : (savingsBalance || 0n) - amount;
+
+  const { data: sUsdsDepositAmount } = useReadSavingsUsds({
+    functionName: 'previewDeposit',
+    args: [amount],
+    chainId: chainId as keyof typeof sUsdsAddress,
+    query: {
+      enabled: !!amount && amount > 0n && tabIndex === 0
+    }
+  });
+
+  const { data: sUsdsWithdrawAmount } = useReadSavingsUsds({
+    functionName: 'previewRedeem',
+    args: [amount],
+    chainId: chainId as keyof typeof sUsdsAddress,
+    query: {
+      enabled: !!amount && amount > 0n && tabIndex === 1
+    }
+  });
+
+  const sUsdsAmount = {
+    value: tabIndex === 0 ? sUsdsDepositAmount || 0n : sUsdsWithdrawAmount || 0n
+  };
 
   return (
     <MotionVStack gap={0} className="w-full" variants={positionAnimations}>
@@ -157,6 +186,38 @@ export const SupplyWithdraw = ({
                 compact: true
               })} ${inputToken?.symbol}`
             },
+            ...(tabIndex === 0
+              ? [
+                  {
+                    label: t`You will receive`,
+                    value:
+                      sUsdsAmount.value > 0n ? (
+                        `${formatBigInt(sUsdsAmount.value, {
+                          maxDecimals: 2,
+                          compact: true
+                        })} sUSDS`
+                      ) : (
+                        <Skeleton className="bg-textSecondary h-4 w-16" />
+                      )
+                  }
+                ]
+              : []),
+            ...(tabIndex === 1
+              ? [
+                  {
+                    label: t`You will supply`,
+                    value:
+                      sUsdsAmount.value > 0n ? (
+                        `${formatBigInt(sUsdsAmount.value, {
+                          maxDecimals: 2,
+                          compact: true
+                        })} sUSDS`
+                      ) : (
+                        <Skeleton className="bg-textSecondary h-4 w-16" />
+                      )
+                  }
+                ]
+              : []),
             {
               label: t`Rate`,
               value: stats.skySavingsRatecRate

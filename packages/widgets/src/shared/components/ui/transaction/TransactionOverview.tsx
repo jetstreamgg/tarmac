@@ -23,7 +23,7 @@ type TransactionOverviewParams = {
   transactionData:
     | {
         label: string;
-        value: string | string[];
+        value: string | string[] | React.ReactNode;
         error?: boolean;
         className?: string;
         classNamePrev?: string;
