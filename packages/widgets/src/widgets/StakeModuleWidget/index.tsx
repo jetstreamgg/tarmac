@@ -97,6 +97,7 @@ function StakeModuleWidgetWrapped({
     isLockCompleted,
     isSelectRewardContractCompleted,
     isSelectDelegateCompleted,
+    setIsSelectDelegateCompleted,
     isBorrowCompleted,
     calldata,
     setCalldata,
@@ -118,7 +119,8 @@ function StakeModuleWidgetWrapped({
     setIndexToClaim,
     rewardContractToClaim,
     setRewardContractToClaim,
-    wipeAll
+    wipeAll,
+    wantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   const initialTabIndex = validatedExternalState?.stakeTab === StakeAction.FREE ? 1 : 0;
@@ -200,6 +202,13 @@ function StakeModuleWidgetWrapped({
   useEffect(() => {
     setTabIndex(initialTabIndex);
   }, [initialTabIndex]);
+
+  // Auto-complete delegation step when user doesn't want to delegate
+  useEffect(() => {
+    if (!wantsToDelegate) {
+      setIsSelectDelegateCompleted(true);
+    }
+  }, [wantsToDelegate, setIsSelectDelegateCompleted]);
 
   // Generate calldata when all steps are complete
   useEffect(() => {
@@ -478,7 +487,7 @@ function StakeModuleWidgetWrapped({
 
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
-    setCurrentStep(getNextStep(currentStep));
+    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
 
     // setWidgetState((prev: WidgetState) => ({
     //   ...prev,
@@ -492,7 +501,7 @@ function StakeModuleWidgetWrapped({
     // TODO: This may need to handle other screens, this is for testing navigation in the wizard
     // const previousStep = getPreviousStep(widgetState.action);
     if (widgetState.screen !== StakeScreen.TRANSACTION) {
-      setCurrentStep(getPreviousStep(currentStep));
+      setCurrentStep(getPreviousStep(currentStep, !wantsToDelegate));
     } else {
       if (widgetState.action === StakeAction.CLAIM) {
         setIndexToClaim(undefined);

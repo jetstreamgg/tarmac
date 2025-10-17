@@ -5,20 +5,23 @@ const openFlowSequence = [StakeStep.OPEN_BORROW, StakeStep.REWARDS, StakeStep.DE
 
 const manageFlowSequence = [StakeStep.OPEN_BORROW, StakeStep.REWARDS, StakeStep.DELEGATE, StakeStep.SUMMARY];
 
-export function getPreviousStep(step: StakeStep): StakeStep {
+export function getPreviousStep(step: StakeStep, skipDelegate?: boolean): StakeStep {
   // TODO: This is for Open Flow, it should be different for Manage flow
+  const sequence = skipDelegate ? openFlowSequence.filter(s => s !== StakeStep.DELEGATE) : openFlowSequence;
 
-  const currentIndex = openFlowSequence.indexOf(step);
+  const currentIndex = sequence.indexOf(step);
   if (currentIndex > 0) {
-    return openFlowSequence[currentIndex - 1];
+    return sequence[currentIndex - 1];
   }
   return StakeStep.OPEN_BORROW; // or handle the case when there's no previous action
 }
 
-export function getNextStep(step: StakeStep): StakeStep {
-  const currentIndex = openFlowSequence.indexOf(step);
-  if (currentIndex >= 0 && currentIndex < openFlowSequence.length - 1) {
-    return openFlowSequence[currentIndex + 1];
+export function getNextStep(step: StakeStep, skipDelegate?: boolean): StakeStep {
+  const sequence = skipDelegate ? openFlowSequence.filter(s => s !== StakeStep.DELEGATE) : openFlowSequence;
+
+  const currentIndex = sequence.indexOf(step);
+  if (currentIndex >= 0 && currentIndex < sequence.length - 1) {
+    return sequence[currentIndex + 1];
   }
   return StakeStep.SUMMARY; // or handle the case when there's no next action
 }

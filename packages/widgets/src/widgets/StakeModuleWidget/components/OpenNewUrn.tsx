@@ -39,11 +39,11 @@ export const OpenNewUrn = ({
     activeUrn,
     setSkyToFree,
     setIsLockCompleted,
-    setIsBorrowCompleted
+    setIsBorrowCompleted,
+    wantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   const { data: urnAddress } = useStakeUrnAddress(activeUrn?.urnIndex || 0n);
-
   const { data: vaultData } = useVault(urnAddress, getIlkName(2));
 
   const showTabs = useMemo(
@@ -65,7 +65,7 @@ export const OpenNewUrn = ({
     clearInputs();
     setIsLockCompleted(true);
     setIsBorrowCompleted(true);
-    setCurrentStep(getNextStep(currentStep));
+    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
   };
 
   return (

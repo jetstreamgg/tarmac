@@ -82,6 +82,9 @@ export interface StakeModuleWidgetContextProps {
 
   rewardContractToClaim: `0x${string}` | undefined;
   setRewardContractToClaim: Dispatch<SetStateAction<`0x${string}` | undefined>>;
+
+  wantsToDelegate: boolean;
+  setWantsToDelegate: Dispatch<SetStateAction<boolean>>;
 }
 
 export const StakeModuleWidgetContext = createContext<StakeModuleWidgetContextProps>({
@@ -133,7 +136,10 @@ export const StakeModuleWidgetContext = createContext<StakeModuleWidgetContextPr
   setIndexToClaim: () => undefined,
 
   rewardContractToClaim: undefined,
-  setRewardContractToClaim: () => undefined
+  setRewardContractToClaim: () => undefined,
+
+  wantsToDelegate: false,
+  setWantsToDelegate: () => null
 });
 
 export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode }): ReactElement => {
@@ -155,6 +161,7 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
   >();
   const [indexToClaim, setIndexToClaim] = useState<bigint | undefined>();
   const [rewardContractToClaim, setRewardContractToClaim] = useState<`0x${string}` | undefined>();
+  const [wantsToDelegate, setWantsToDelegate] = useState<boolean>(false);
 
   const { widgetState } = useContext(WidgetContext);
 
@@ -316,7 +323,9 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
         indexToClaim,
         setIndexToClaim,
         rewardContractToClaim,
-        setRewardContractToClaim
+        setRewardContractToClaim,
+        wantsToDelegate,
+        setWantsToDelegate
       }}
     >
       {children}

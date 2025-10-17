@@ -9,10 +9,13 @@ import {
   useVault,
   Vault,
   CollateralRiskParameters,
-  useSkyPrice
+  useSkyPrice,
+  useStakeUrnSelectedVoteDelegate,
+  ZERO_ADDRESS
 } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
-import { useContext, useEffect, useMemo } from 'react';
+import { Trans } from '@lingui/react/macro';
+import { useContext, useEffect, useMemo, useId } from 'react';
 import { StakeModuleWidgetContext } from '../context/context';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import {
@@ -31,6 +34,10 @@ import { useRiskSlider } from '../hooks/useRiskSlider';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { getTooltipById } from '../../../data/tooltips';
+import { Checkbox } from '@widgets/components/ui/checkbox';
+import { cn } from '@widgets/lib/utils';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { StakeFlow } from '../lib/constants';
 
 const { usds } = TOKENS;
 
@@ -290,13 +297,39 @@ const PositionManagerOverviewContainer = ({
 };
 
 export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolean }) => {
-  const { setIsBorrowCompleted, usdsToBorrow, setUsdsToBorrow, activeUrn, skyToLock } =
-    useContext(StakeModuleWidgetContext);
+  const { widgetState } = useContext(WidgetContext);
+  const {
+    setIsBorrowCompleted,
+    usdsToBorrow,
+    setUsdsToBorrow,
+    activeUrn,
+    skyToLock,
+    wantsToDelegate,
+    setWantsToDelegate
+  } = useContext(StakeModuleWidgetContext);
 
   const chainId = useChainId();
   const ilkName = getIlkName(2);
 
   const { data: existingVault } = useVault(activeUrn?.urnAddress, ilkName);
+  const { data: urnSelectedVoteDelegate } = useStakeUrnSelectedVoteDelegate({
+    urn: activeUrn?.urnAddress || ZERO_ADDRESS
+  });
+
+  const delegateCheckboxId = useId();
+
+  // Determine if existing position has delegation
+  const hasExistingDelegate = urnSelectedVoteDelegate && urnSelectedVoteDelegate !== ZERO_ADDRESS;
+
+  // Update wantsToDelegate when activeUrn changes
+  useEffect(() => {
+    if (hasExistingDelegate) {
+      setWantsToDelegate(true);
+    } else if (widgetState.flow === StakeFlow.OPEN) {
+      // For new positions, default to unchecked
+      setWantsToDelegate(false);
+    }
+  }, [hasExistingDelegate, widgetState.flow, activeUrn?.urnIndex, setWantsToDelegate]);
 
   // Comes from user input amount
   const debouncedUsdsToBorrow = useDebounce(usdsToBorrow);
@@ -413,6 +446,29 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
         <div className="mb-4" />
       )}
       <SliderContainer vault={simulatedVault} />
+
+      {simulatedVault && (
+        <div className="flex items-center px-3 pt-1">
+          <Checkbox
+            id={delegateCheckboxId}
+            checked={wantsToDelegate}
+            onCheckedChange={checked => setWantsToDelegate(checked === true)}
+            disabled={!!hasExistingDelegate}
+          />
+          <label htmlFor={delegateCheckboxId} className="ml-2">
+            <Text
+              variant="medium"
+              className={cn(hasExistingDelegate ? 'text-textSecondary' : 'text-white', 'cursor-pointer')}
+            >
+              {hasExistingDelegate ? (
+                <Trans>You are delegating voting power for this position</Trans>
+              ) : (
+                <Trans>Do you want to delegate voting power?</Trans>
+              )}
+            </Text>
+          </label>
+        </div>
+      )}
 
       <PositionManagerOverviewContainer
         simulatedVault={simulatedVault}

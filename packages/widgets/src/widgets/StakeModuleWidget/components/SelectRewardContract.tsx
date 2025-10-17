@@ -29,7 +29,8 @@ export const SelectRewardContract = ({
     setIsSelectRewardContractCompleted,
     currentStep,
     setCurrentStep,
-    activeUrn
+    activeUrn,
+    wantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   // TODO handle error
@@ -48,7 +49,7 @@ export const SelectRewardContract = ({
     setSelectedRewardContract(urnSelectedRewardContract);
     // When we skip, we still set the step to complete
     setIsSelectRewardContractCompleted(true);
-    setCurrentStep(getNextStep(currentStep));
+    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
   };
 
   return (

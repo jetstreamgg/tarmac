@@ -35,7 +35,8 @@ export const SelectDelegate = ({
     setIsSelectDelegateCompleted,
     currentStep,
     setCurrentStep,
-    activeUrn
+    activeUrn,
+    wantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   const [search, setSearch] = useState('');
@@ -70,7 +71,7 @@ export const SelectDelegate = ({
     setSelectedDelegate(urnSelectedVoteDelegate);
     // When we skip, we still set the step to complete
     setIsSelectDelegateCompleted(true);
-    setCurrentStep(getNextStep(currentStep));
+    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
   };
 
   // Runs only once, when the component mounts
