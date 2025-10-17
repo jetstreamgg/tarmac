@@ -257,7 +257,7 @@ export function WidgetNavigation({
                             variant="icons"
                             value={widgetIntent}
                             className={cn(
-                              'text-textSecondary data-[state=active]:text-text relative w-full px-1',
+                              'text-textSecondary data-[state=active]:text-text relative h-[78px] w-full px-1',
                               'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',
                               'lg:data-[state=active]:text-text lg:data-[state=active]:bg-transparent',
                               'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)]',
@@ -268,7 +268,7 @@ export function WidgetNavigation({
                             )}
                             disabled={options?.disabled || false}
                           >
-                            <div className="flex flex-col items-center justify-center gap-1">
+                            <div className="flex h-full flex-col items-center justify-center gap-1">
                               {!isMobile && icon({ color: 'inherit' })}
                               <Text variant="small" className="leading-4 text-inherit">
                                 <Trans>{label}</Trans>
