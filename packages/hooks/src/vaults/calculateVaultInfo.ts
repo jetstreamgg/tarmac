@@ -11,9 +11,19 @@ type VaultCalcInputs = {
   par: bigint;
   mat: bigint;
   dust: bigint;
+  marketPrice?: bigint;
 };
 
-export function calculateVaultInfo({ spot, rate, art, ink, par, mat, dust }: VaultCalcInputs): VaultParams {
+export function calculateVaultInfo({
+  spot,
+  rate,
+  art,
+  ink,
+  par,
+  mat,
+  dust,
+  marketPrice
+}: VaultCalcInputs): VaultParams {
   const debtValue = math.debtValue(art, rate);
   const delayedPrice = math.delayedPrice(par, spot, mat);
   const minSafeCollateralAmount = math.minSafeCollateralAmount(debtValue, mat, delayedPrice);
@@ -25,7 +35,7 @@ export function calculateVaultInfo({ spot, rate, art, ink, par, mat, dust }: Vau
   const liquidationProximityPercentage = calculateLiquidationProximityPercentage(
     debtValue,
     liquidationPrice,
-    delayedPrice,
+    marketPrice || delayedPrice, // Use market price for accurate risk calculation, fallback to capped price
     collateralValue
   );
   const riskLevel = calculateRiskLevel(liquidationProximityPercentage);
@@ -51,20 +61,23 @@ export function calculateVaultInfo({ spot, rate, art, ink, par, mat, dust }: Vau
 function calculateLiquidationProximityPercentage(
   debtValue: bigint,
   liquidationPrice: bigint,
-  delayedPrice: bigint,
+  marketPrice: bigint,
   collateralValue: bigint
 ): number {
   if (debtValue === 0n) {
     return 0;
   }
-  if (liquidationPrice >= delayedPrice) {
+  if (liquidationPrice >= marketPrice) {
     return 100;
   }
   if (collateralValue === 0n && debtValue > 0n) {
     return 100;
   }
+  if (marketPrice === 0n) {
+    return 100;
+  }
 
-  const proximityPercentage = Number(((delayedPrice - liquidationPrice) * 100n) / delayedPrice);
+  const proximityPercentage = Number(((marketPrice - liquidationPrice) * 100n) / marketPrice);
   return 100 - proximityPercentage;
 }
 

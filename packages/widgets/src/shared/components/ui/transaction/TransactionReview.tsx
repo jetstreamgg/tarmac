@@ -68,7 +68,7 @@ export function TransactionReview({
           )}
           {transactionDetail ?? <TransactionDetail />}
         </CardContent>
-        {batchEnabled !== undefined && !!setBatchEnabled && !!batchSupported && (
+        {batchEnabled !== undefined && !!setBatchEnabled && !!batchSupported && showStepIndicator && (
           <motion.div variants={positionAnimations}>
             <CardFooter className="border-selectActive border-t pt-5">
               <div>

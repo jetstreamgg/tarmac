@@ -80,6 +80,10 @@ fi
 # Navigate to the temp directory
 cd "$TEMP_DIR"
 
+# Fetch all tags from the remote repository
+print_status "Fetching all tags from repository..."
+git fetch --tags --quiet 2>/dev/null
+
 # Checkout the specific version
 print_status "Checking out version: $CONTENT_VERSION"
 git checkout --quiet "$CONTENT_VERSION" 2>/dev/null
@@ -92,6 +96,20 @@ if [ $? -ne 0 ]; then
     rm -rf "$TEMP_DIR"
     exit 0
 fi
+
+# Get the latest tag pointing to the current HEAD
+print_status "Finding latest tag for the HEAD of branch: $CONTENT_VERSION"
+# First try to get exact tag match, then get the most recent tag reachable from HEAD
+CORPUS_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null)
+if [ -z "$CORPUS_TAG" ]; then
+    # If no exact match, get the most recent tag reachable from HEAD
+    CORPUS_TAG=$(git describe --tags --abbrev=0 HEAD 2>/dev/null)
+fi
+# If still no tag found, use "untagged" as fallback
+if [ -z "$CORPUS_TAG" ]; then
+    CORPUS_TAG="untagged"
+fi
+print_status "Corpus version tag: $CORPUS_TAG"
 
 # Check if the extract script exists
 if [ ! -f "$EXTRACT_SCRIPT" ]; then
@@ -182,6 +200,16 @@ else
     print_warning "rsync not found, using cp instead"
     cp -r "$TEMP_DIR/$OUTPUT_SOURCE_PATH/"* "$DESTINATION_PATH/"
 fi
+
+# Create version.ts file in src/data directory
+print_status "Creating corpus version file..."
+cat > "src/data/version.ts" << EOF
+// Version of the corpus content used to generate FAQs, tooltips, banners, and speed bumps
+export const CORPUS_VERSION = '$CORPUS_TAG';
+
+// Branch name used during content extraction
+export const CORPUS_BRANCH = '$CONTENT_VERSION';
+EOF
 
 # Post-process sharedFaqItems.ts and update getBalancesFaqItems.ts
 print_status "Processing sharedFaqItems and updating getBalancesFaqItems..."
@@ -588,6 +616,11 @@ for file in "$DESTINATION_PATH"/*.ts; do
     fi
 done
 
+# Add version file
+if [ -f "src/data/version.ts" ]; then
+    GENERATED_FILES+=("apps/webapp/src/data/version.ts")
+fi
+
 # Add tooltip file if it exists
 if [ -f "$TOOLTIPS_DESTINATION_PATH/index.ts" ]; then
     GENERATED_FILES+=("packages/widgets/src/data/tooltips/index.ts")
@@ -638,8 +671,16 @@ print_status "Content sync completed successfully!"
 echo ""
 print_status "Synced files:"
 
+# Show corpus version
+if [ -f "src/data/version.ts" ]; then
+    echo ""
+    print_status "Corpus version: $CORPUS_TAG"
+    echo "  - src/data/version.ts"
+fi
+
 # List FAQ files
 if [ -d "$DESTINATION_PATH" ]; then
+    echo ""
     print_status "FAQ files:"
     find "$DESTINATION_PATH" -type f \( -name "*.ts" -o -name "*.json" -o -name "*.md" \) | sort | while read file; do
         echo "  - $file"
@@ -671,3 +712,6 @@ if [ -d "$SPEED_BUMPS_DESTINATION_PATH" ]; then
         done
     fi
 fi
+
+echo ""
+print_status "All content synced with corpus version: $CORPUS_TAG"

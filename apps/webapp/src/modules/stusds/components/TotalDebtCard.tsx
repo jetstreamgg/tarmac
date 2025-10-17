@@ -18,7 +18,7 @@ export function TotalDebtCard() {
       isLoading={isCollateralLoading}
       title={
         <div className="flex items-center gap-1">
-          <span>{i18n._(msg`Total staking engine debt`)}</span>
+          <span>{i18n._(msg`Total Staking Engine debt`)}</span>
           <PopoverInfo type="totalStakingDebt" />
         </div>
       }

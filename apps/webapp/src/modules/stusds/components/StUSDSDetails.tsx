@@ -61,7 +61,7 @@ export function StUSDSDetails(): React.ReactElement {
       <DetailSection title={t`About Native Sky Protocol Tokens`}>
         <DetailSectionRow>
           <div>
-            <AboutStUsds />
+            <AboutStUsds module="stusds-module-banners" />
             <AboutUsds />
           </div>
         </DetailSectionRow>

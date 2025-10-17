@@ -4,12 +4,6 @@ export const tradeSpeedBump: SpeedBumpContent = {
   title: 'Trade',
   functionality: 'trade',
   slug: 'trade',
-  restrictions: ['- Not available in the E.U.'],
-  howItWorks:
-    'Users can trade their assets using an API integration with third-party DEX provider, CoW Swap.',
-  associatedRisks: [
-    '- **Market Risk**: Risk of value loss due to market volatility, liquidity issues, unforeseen changes in asset utility, or regulatory risk of the new asset being deemed a security by financial markets regulators, which could potentially lead to delisting from exchanges and other regulatory restrictions.',
-    '- **U.S. Regulatory Risk**: Although the Trade functionality is available in the U.S., there is a risk which persists that the function could be deemed by financial markets regulators as unlicensed broker or exchange activity.',
-    "- **Third-Party Risk**: This service is provided via an integration with a third party (CoW Swap) and users will be subject to CoW Swap's Terms of Use."
-  ]
+  content:
+    'By using the Trade feature, you acknowledge that trading digital assets involves market, liquidity, smart contract, and regulatory risks, including potential loss of value. The Trade feature is facilitated by the CoW Swap interface of the Cow Protocol, an independent, third-party DEX aggregator, and your activity is subject to their terms and conditions. Sky.money does not control or guarantee execution, pricing, or availability. Participation may have legal or tax implications depending on your jurisdiction. You should carefully evaluate these risks and seek independent professional advice before proceeding.'
 };

@@ -12,14 +12,19 @@ import {
   useReadMcdVat
 } from '../generated';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel } from '../vaults/vaults.constants';
-import { stringToHex } from 'viem';
+import { parseUnits, stringToHex } from 'viem';
 import { getEtherscanLink, math } from '@jetstreamgg/sky-utils';
 import { stakeDataSource } from './datasources';
 import { getIlkName } from '../vaults/helpers';
+import { usePrices } from '../prices/usePrices';
 
 export function usePositionsAtRisk(): ReadHook & { data?: number[] } {
   const { address } = useAccount();
   const chainId = useChainId();
+
+  // Fetch market price for accurate liquidation risk calculations
+  const { data: prices } = usePrices();
+  const marketPrice = prices?.['SKY']?.price ? parseUnits(prices['SKY'].price, 18) : undefined;
 
   const {
     data: currentUrnIndex,
@@ -131,13 +136,19 @@ export function usePositionsAtRisk(): ReadHook & { data?: number[] } {
       const delayedPrice = math.delayedPrice(par, spot, mat);
       const liquidationPrice = math.liquidationPrice(ink, math.debtValue(art, rate), mat);
 
-      if (liquidationPrice >= delayedPrice) {
+      // Use market price for accurate liquidation risk, fallback to capped price if unavailable
+      const priceForRiskCalc = marketPrice || delayedPrice;
+
+      if (liquidationPrice >= priceForRiskCalc) {
         // TODO: Is the position considered as liquidated at this point,
         // or can the user still take an action to avoid being liquidated?
         return i;
       }
+      if (priceForRiskCalc === 0n) {
+        return i;
+      }
       const liquidationProximityPercentage =
-        100 - Number(((delayedPrice - liquidationPrice) * 100n) / delayedPrice);
+        100 - Number(((priceForRiskCalc - liquidationPrice) * 100n) / priceForRiskCalc);
 
       const highRiskThreshold = RISK_LEVEL_THRESHOLDS.find(
         riskLevel => riskLevel.level === RiskLevel.HIGH

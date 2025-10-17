@@ -5,7 +5,7 @@ import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 export function ExpertAbout() {
   return (
     <div>
-      <AboutStUsds />
+      <AboutStUsds module="expert-modules-banners" />
       <AboutUsds />
     </div>
   );

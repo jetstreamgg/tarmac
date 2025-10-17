@@ -14,7 +14,7 @@ export function BalancesTableHeader() {
         <TableHead className="w-1/4">
           <Text variant="small">Balance</Text>
         </TableHead>
-        <TableHead className="w-1/4">
+        <TableHead className="w-1/4 [@container(width<375px)]:hidden">
           <Text variant="small">Balance (USD)</Text>
         </TableHead>
       </TableRow>

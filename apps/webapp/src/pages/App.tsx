@@ -21,6 +21,13 @@ import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext
 import '@rainbow-me/rainbowkit/styles.css';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
 import { ChatProvider } from '@/modules/chat/context/ChatContext';
+import { CORPUS_VERSION, CORPUS_BRANCH } from '@/data/version';
+
+// Expose corpus version to browser console for debugging
+if (typeof window !== 'undefined') {
+  (window as any).CORPUS_VERSION = CORPUS_VERSION;
+  (window as any).CORPUS_BRANCH = CORPUS_BRANCH;
+}
 
 const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 // Vite sets MODE to production when running vite build

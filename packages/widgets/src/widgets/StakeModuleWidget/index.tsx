@@ -177,7 +177,7 @@ function StakeModuleWidgetWrapped({
     indexToClaim,
     setIndexToClaim,
     rewardContractToClaim,
-    shouldUseBatch,
+    shouldUseBatch: !!batchEnabled && !!batchSupported && (needsAllowance || calldata.length > 1),
     setRewardContractToClaim,
     mutateStakeSkyAllowance,
     mutateStakeUsdsAllowance,

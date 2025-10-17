@@ -24,22 +24,20 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
     },
     {
       question: 'Is there a deadline to upgrade MKR to SKY?',
-      answer: `No, but all MKR holders are encouraged to upgrade to SKY promptly to maintain the ability to participate in key decisions shaping the Sky Protocol. Upgrading in a timely fashion ensures reduced governance complexity and a more effective, efficient and resilient ecosystem for all. Please note that while MKR will continue to exist, users cannot revert back to MKR from SKY via the Sky Protocol.
+      answer: `No, but all MKR holders are encouraged to upgrade to SKY promptly to maintain the ability to participate in key decisions shaping the Sky Protocol and avoid the Delayed Upgrade Penalty. Upgrading in a timely fashion ensures reduced governance complexity and a more effective, efficient and resilient ecosystem for all. Please note that while MKR will continue to exist, users cannot revert back to MKR from SKY via the Sky Protocol.
 
-To facilitate a smooth and prompt transition, Sky Ecosystem Governance [voted to introduce a Delayed Upgrade Penalty](https://vote.makerdao.com/polling/QmTVd4iq). The vote to confirm the penalty will [be held on September 18, 2025](https://upgrademkrtosky.sky.money/). If the vote passes, the penalty will take effect on September 22, 2025.
+The Delayed Upgrade Penalty is a time-based upgrade approved by Sky Ecosystem Governance and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
 
-Once in effect, the amount of SKY received per MKR upgraded during the first three months will be reduced by 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.
+The penalty, which took effect in September 2025, reduces the amount of SKY received per MKR upgraded by a rate of 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years.
 
 For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
       index: 3
     },
     {
       question: 'What is the Delayed Upgrade Penalty?',
-      answer: `The Delayed Upgrade Penalty is a time-based upgrade [introduced by Sky Ecosystem Governance](https://vote.makerdao.com/polling/QmTVd4iq) and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
+      answer: `The Delayed Upgrade Penalty is a time-based upgrade approved by [Sky Ecosystem Governance](https://vote.sky.money/executive/template-executive-vote-delayed-upgrade-penalty-launch-agent-2-allocator-adjustment-lsev2-sky-a-liquidation-ratio-increase-first-monthly-settlement-cycle-ad-compensation-for-september-2025-atlas-core-development-usds-and-sky-payments-spark-proxy-spell-september-18-2025).
 
-The vote to confirm the penalty will [be held on September 18, 2025](https://upgrademkrtosky.sky.money/). If the vote passes, the penalty will take effect on September 22, 2025.
-
-Once in effect, the amount of SKY received per MKR upgraded during the first three months will be reduced by 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.
+The penalty, which took effect in September 2025, reduces the amount of SKY received per MKR upgraded by a rate of 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years.
 
 ### **How the Delayed Upgrade Penalty works**
 
@@ -102,11 +100,10 @@ SKY is the sole governance token of the Sky Ecosystem and the upgrade of MKR. SK
     },
     {
       question: 'What happens if I never upgrade my MKR?',
-      answer: `All MKR holders are encouraged to upgrade to SKY promptly to maintain the ability to participate in key decisions shaping the Sky Protocol. Upgrading in a timely fashion ensures reduced governance complexity and a more effective, efficient and resilient ecosystem for all. Please note that while MKR will continue to exist, users cannot revert back to MKR from SKY via the Sky Protocol.
+      answer: `All MKR holders are encouraged to upgrade to SKY promptly to maintain the ability to participate in key decisions shaping the Sky Protocol and avoid the Delayed Upgrade Penalty. Upgrading in a timely fashion ensures reduced governance complexity and a more effective, efficient and resilient ecosystem for all. Please note that while MKR will continue to exist, users cannot revert back to MKR from SKY via the Sky Protocol.
 
-To facilitate a smooth and prompt transition, Sky Ecosystem Governance [voted to introduce a Delayed Upgrade Penalty](https://vote.makerdao.com/polling/QmTVd4iq). The vote to confirm the penalty will [be held on September 18, 2025](https://upgrademkrtosky.sky.money/). If the vote passes, the penalty will take effect on September 22, 2025.
-
-Once in effect, the amount of SKY received per MKR upgraded during the first three months will be reduced by 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years. The penalty will not apply to anyone upgrading their MKR to SKY before it kicks in.
+The Delayed Upgrade Penalty is a time-based upgrade [approved by Sky Ecosystem Governance](https://vote.sky.money/executive/template-executive-vote-delayed-upgrade-penalty-launch-agent-2-allocator-adjustment-lsev2-sky-a-liquidation-ratio-increase-first-monthly-settlement-cycle-ad-compensation-for-september-2025-atlas-core-development-usds-and-sky-payments-spark-proxy-spell-september-18-2025) and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
+The penalty, which took effect in September 2025, reduces the amount of SKY received per MKR upgraded by a rate of 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years.
 
 For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
       index: 10

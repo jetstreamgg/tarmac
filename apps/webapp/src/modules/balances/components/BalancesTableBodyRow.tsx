@@ -45,7 +45,7 @@ export function BalancesTableBodyRow({
       <TableCell className="h-auto px-4 py-2">
         <Text>{formatNumber(parseFloat(tokenBalance.formatted), { maxDecimals: 0, compact: true })}</Text>
       </TableCell>
-      <TableCell className="h-auto px-4 py-2">
+      <TableCell className="h-auto px-4 py-2 [@container(width<375px)]:hidden">
         <OracleInfo
           isLoading={isLoading}
           info={`$${formatNumber(

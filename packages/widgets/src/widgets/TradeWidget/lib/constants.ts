@@ -161,6 +161,7 @@ export enum SUPPORTED_TOKEN_SYMBOLS {
   DAI = 'DAI',
   USDS = 'USDS',
   sUSDS = 'sUSDS',
+  stUSDS = 'stUSDS',
   MKR = 'MKR',
   SKY = 'SKY',
   SPK = 'SPK'

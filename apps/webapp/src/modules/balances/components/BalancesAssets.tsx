@@ -91,7 +91,7 @@ export function BalancesAssets({ chainIds }: BalancesAssetsProps) {
         </Text>
       }
     >
-      <div>
+      <div className="@container">
         <Table>
           <BalancesTableHeader />
           <TableBody>

@@ -8,7 +8,8 @@ import {
   useSimulatedVault,
   useTokenBalance,
   useVault,
-  Vault
+  Vault,
+  usePrices
 } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
@@ -22,11 +23,10 @@ import {
   formatPercent,
   useDebounce
 } from '@jetstreamgg/sky-utils';
-import { formatUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor } from '../lib/utils';
 import { useAccount, useChainId } from 'wagmi';
-import { useSealExitFee } from '@jetstreamgg/sky-hooks';
 import { useRiskSlider } from '../hooks/useRiskSlider';
 import { getTooltipById } from '../../../data/tooltips';
 
@@ -115,7 +115,17 @@ const PositionManagerOverviewContainer = ({
       ? [formattedExistingMaxBorrowable, formatterSimulatedMaxBorrowable]
       : formatterSimulatedMaxBorrowable;
 
-  const { data: exitFee } = useSealExitFee();
+  const { data: prices } = usePrices();
+  const skyMarketPrice = useMemo(() => {
+    const priceStr = prices?.SKY?.price;
+    if (!priceStr) return undefined;
+
+    try {
+      return parseUnits(priceStr, 18);
+    } catch {
+      return undefined;
+    }
+  }, [prices?.SKY?.price]);
 
   const initialTxData = useMemo(
     () =>
@@ -155,6 +165,13 @@ const PositionManagerOverviewContainer = ({
               }
             ],
         {
+          label: t`SKY Price`,
+          value:
+            skyMarketPrice !== undefined
+              ? `$${formatBigInt(skyMarketPrice, { unit: WAD_PRECISION })}`
+              : t`Not available`
+        },
+        {
           label: t`Capped OSM SKY price`,
           value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
           tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
@@ -170,7 +187,7 @@ const PositionManagerOverviewContainer = ({
       simulatedVault?.delayedPrice,
       formattedMinBorrowable,
       formattedMaxBorrowable,
-      exitFee
+      skyMarketPrice
     ]
   );
 

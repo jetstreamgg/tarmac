@@ -21,7 +21,7 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
 
   // Map intents to banner IDs - all intents have a default, some have additional variants
   const bannerIdMap: Record<Intent, BannerConfig> = {
-    [Intent.BALANCES_INTENT]: { default: 'about-balances-2' },
+    [Intent.BALANCES_INTENT]: { default: 'about-balances' },
     [Intent.REWARDS_INTENT]: { default: 'about-sky-token-rewards' },
     [Intent.SAVINGS_INTENT]: { default: 'about-the-sky-savings-rate' },
     [Intent.UPGRADE_INTENT]: { default: 'ready-to-upgrade-and-explore' },

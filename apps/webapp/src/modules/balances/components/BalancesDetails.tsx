@@ -16,7 +16,7 @@ import { ConnectCard } from '@/modules/layout/components/ConnectCard';
 
 export function BalancesDetails() {
   const { bpi } = useBreakpointIndex();
-  const showDetails = bpi > BP.sm;
+  const showFundsTable = bpi > BP.md;
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const chainId = useChainId();
   const supportedChainIds = getSupportedChainIds(chainId);
@@ -31,7 +31,7 @@ export function BalancesDetails() {
           <ConnectCard intent={Intent.BALANCES_INTENT} className="mb-4" />
         </DetailSectionRow>
       )}
-      {isConnectedAndAcceptedTerms && showDetails && (
+      {isConnectedAndAcceptedTerms && showFundsTable && (
         <DetailSection title={t`Your funds`}>
           <DetailSectionRow>
             <BalancesAssets chainIds={supportedChainIds} />

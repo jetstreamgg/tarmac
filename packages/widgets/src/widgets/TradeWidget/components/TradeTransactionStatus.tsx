@@ -5,6 +5,7 @@ import { getTokenDecimals, OrderQuoteResponse, Token } from '@jetstreamgg/sky-ho
 import {
   WAD_PRECISION,
   formatBigInt,
+  formatNumber,
   ExplorerName,
   getExplorerName,
   isL2ChainId,
@@ -112,10 +113,10 @@ export const TradeTransactionStatus = ({
 
   const executionPrice =
     inputAmount && outputAmount
-      ? (
+      ? formatNumber(
           +formatUnits(inputAmount, getTokenDecimals(originToken, chainId) || WAD_PRECISION) /
-          +formatUnits(outputAmount, getTokenDecimals(targetToken, chainId) || WAD_PRECISION)
-        ).toString()
+            +formatUnits(outputAmount, getTokenDecimals(targetToken, chainId) || WAD_PRECISION)
+        )
       : undefined;
 
   const isL2 = isL2ChainId(chainId);

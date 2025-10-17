@@ -47,6 +47,7 @@ export function useBatchStakeMulticall({
       args: [stakeModuleAddress[chainId as keyof typeof stakeModuleAddress], usdsAmount]
     });
 
+    // Individual transaction using `multicall`
     const multicallCall = getWriteContractCall({
       to: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
       abi: stakeModuleAbi,
@@ -54,9 +55,19 @@ export function useBatchStakeMulticall({
       args: [calldata]
     });
 
+    // Array of individual transactions, intended to be used in a batch transaction
+    const individualCalls: Call[] = calldata.map(data => ({
+      to: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
+      data
+    }));
+
     if (!hasSkyAllowance) calls.push(approveSkyCall);
     if (!hasUsdsAllowance) calls.push(approveUsdsCall);
-    calls.push(multicallCall);
+    // If the user wallet supports it and user has batch tx enabled, send the calls individually
+    // in a batch tx for optimized gas consumption and improved transaction readability
+    if (shouldUseBatch) {
+      calls.push(...individualCalls);
+    } else calls.push(multicallCall);
   }
 
   const enabled =

@@ -3,6 +3,11 @@ export enum SupportedCollateralTypes {
   LSEV2_SKY_A = 'LSEV2-SKY-A' // Staking engine ilk name in Mainnet
 }
 
+export const COLLATERAL_PRICE_SYMBOL: Record<SupportedCollateralTypes, string> = {
+  [SupportedCollateralTypes.LSE_MKR_A]: 'MKR',
+  [SupportedCollateralTypes.LSEV2_SKY_A]: 'SKY'
+};
+
 export enum RiskLevel {
   LOW = 'LOW',
   MEDIUM = 'MEDIUM',

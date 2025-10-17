@@ -58,8 +58,8 @@ const TypingIndicator: React.FC<{ text?: string }> = ({ text = '' }) => {
 
   return (
     <HStack gap={2} className="items-end">
-      <Text className="text-white/75">{text || t`Typing`}</Text>
-      <div className="flex items-center">
+      {text && <Text className="text-white/75">{text}</Text>}
+      <div className="mt-3 flex items-center">
         {[0.1, 0.2, 0.3].map((delay, index) => (
           <motion.div
             key={index}
@@ -176,7 +176,7 @@ export const ChatBubble = ({
         </Text>
         {isLoading ? (
           <div className="space-y-5">
-            <TypingIndicator text={t`Let me think`} />
+            <TypingIndicator />
             <StopGeneratingButton />
           </div>
         ) : (

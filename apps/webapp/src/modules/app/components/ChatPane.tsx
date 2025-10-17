@@ -45,7 +45,7 @@ export const ChatPane = ({
         <div className="mx-auto flex h-full max-w-[600px] flex-col justify-between gap-5">
           <div
             ref={chatContainerRef}
-            className="scrollbar-thin flex w-full flex-col gap-10 overflow-y-auto pr-2 xl:gap-8"
+            className="scrollbar-thin-always flex w-full flex-col gap-10 overflow-y-auto pr-2 xl:gap-8"
           >
             {chatHistory.map(({ user, message, type, intents }, index) => {
               const formattedMessage = formatMessage(message);

@@ -258,11 +258,9 @@ export function WidgetNavigation({
                             value={widgetIntent}
                             className={cn(
                               'text-textSecondary data-[state=active]:text-text relative w-full px-1',
-                              'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:px-4 lg:py-2 lg:hover:bg-transparent',
+                              'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',
                               'lg:data-[state=active]:text-text lg:data-[state=active]:bg-transparent',
                               'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)]',
-                              'max-lg:before:opacity-0',
-                              'max-lg:disabled:before:opacity-0 max-lg:disabled:hover:before:opacity-0',
                               !showDrawerMenu && intent === widgetIntent && verticalTabGlowClasses,
                               showDrawerMenu &&
                                 intent === widgetIntent &&

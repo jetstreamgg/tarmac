@@ -173,7 +173,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     ],
     [
       Intent.STAKE_INTENT,
-      'Stake',
+      'Stake & Borrow',
       Stake,
       withErrorBoundary(<StakeWidgetPane {...sharedProps} />),
       false,
