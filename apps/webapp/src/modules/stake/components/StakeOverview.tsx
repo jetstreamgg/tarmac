@@ -169,12 +169,10 @@ export function StakeOverview() {
                   </div>
                 }
                 content={
-                  <div className="mt-2">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Text className={borrowUtilizationColor} variant="large">
-                        {borrowUtilization.toFixed(1)}%
-                      </Text>
-                    </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Text className={borrowUtilizationColor} variant="large">
+                      {borrowUtilization.toFixed(1)}%
+                    </Text>
                     <UtilizationBar
                       utilizationRate={borrowUtilization}
                       isLoading={isLoadingBorrowCapacity}

@@ -136,6 +136,7 @@ export { useOracles } from './oracles/useOracles';
 
 // Prices
 export { usePrices } from './prices/usePrices';
+export { useSkyPrice } from './prices/useSkyPrice';
 export { useLsMkrPrice } from './prices/useLsMkrPrice';
 
 // Seal Module

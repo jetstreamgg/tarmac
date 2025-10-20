@@ -9,7 +9,7 @@ import {
   useTokenBalance,
   useVault,
   Vault,
-  usePrices
+  useSkyPrice
 } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
@@ -23,7 +23,7 @@ import {
   formatPercent,
   useDebounce
 } from '@jetstreamgg/sky-utils';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor } from '../lib/utils';
 import { useAccount, useChainId } from 'wagmi';
@@ -115,23 +115,13 @@ const PositionManagerOverviewContainer = ({
       ? [formattedExistingMaxBorrowable, formatterSimulatedMaxBorrowable]
       : formatterSimulatedMaxBorrowable;
 
-  const { data: prices } = usePrices();
-  const skyMarketPrice = useMemo(() => {
-    const priceStr = prices?.SKY?.price;
-    if (!priceStr) return undefined;
-
-    try {
-      return parseUnits(priceStr, 18);
-    } catch {
-      return undefined;
-    }
-  }, [prices?.SKY?.price]);
+  const { data: skyMarketPrice } = useSkyPrice();
 
   const initialTxData = useMemo(
     () =>
       [
         {
-          label: t`You staked`,
+          label: t`Staking`,
           value:
             hasPositions && newCollateralAmount !== existingColAmount
               ? [
@@ -141,7 +131,7 @@ const PositionManagerOverviewContainer = ({
               : `${formatBigInt(newCollateralAmount, { compact: true })}  SKY`
         },
         {
-          label: t`You borrowed`,
+          label: t`Borrowing`,
           value:
             hasPositions && newBorrowAmount !== existingBorrowAmount
               ? [
@@ -165,7 +155,7 @@ const PositionManagerOverviewContainer = ({
               }
             ],
         {
-          label: t`SKY Price`,
+          label: t`SKY price`,
           value:
             skyMarketPrice !== undefined
               ? `$${formatBigInt(skyMarketPrice, { unit: WAD_PRECISION })}`

@@ -41,7 +41,8 @@ export function BalancesModuleShowcase() {
       },
       {
         id: 'staking',
-        component: <StakingRewardsCard />
+        component: <StakingRewardsCard />,
+        featured: true // Featured cards go first
       },
       {
         id: 'upgrade',
@@ -55,7 +56,6 @@ export function BalancesModuleShowcase() {
       {
         id: 'expert',
         component: <ExpertCard />,
-        featured: true, // Featured cards go first
         hideInRestrictedBuild: true
       }
     ],

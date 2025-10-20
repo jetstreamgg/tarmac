@@ -25,15 +25,17 @@ export function createNumberFormatter(options?: FormatOptions) {
   const locale = getSupportedNumberLocale(options?.locale);
   const amount = options?.amount ? Math.abs(options?.amount) : undefined;
   const maxDecimals =
-    options?.maxDecimals || amount === undefined
-      ? DEFAULT_DECIMALS
-      : amount < SMALL_NUM_CUTOFF
-        ? SMALL_NUM_DECIMALS
-        : amount < LARGE_NUM_CUTOFF
-          ? DEFAULT_DECIMALS
-          : options?.compact
-            ? COMPACT_LARGE_NUM_DECIMALS
-            : LARGE_NUM_DECIMALS;
+    options?.maxDecimals !== undefined
+      ? options.maxDecimals
+      : amount === undefined
+        ? DEFAULT_DECIMALS
+        : amount < SMALL_NUM_CUTOFF
+          ? SMALL_NUM_DECIMALS
+          : amount < LARGE_NUM_CUTOFF
+            ? DEFAULT_DECIMALS
+            : options?.compact
+              ? COMPACT_LARGE_NUM_DECIMALS
+              : LARGE_NUM_DECIMALS;
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: 0,

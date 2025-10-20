@@ -9,6 +9,7 @@ import {
   useStakeUrnAddress,
   // useUrnAddress,
   useVault,
+  useSkyPrice,
   ZERO_ADDRESS
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@jetstreamgg/sky-utils';
@@ -45,6 +46,7 @@ export function StakePositionOverview({
 }): React.ReactElement | null {
   const chainId = useChainId();
   const { data, isLoading, error } = useStakePosition({ urnIndex: positionIndex });
+  const { data: skyPrice } = useSkyPrice();
   const { data: urnAddress, isLoading: urnAddressLoading } = useStakeUrnAddress(BigInt(positionIndex));
   const {
     data: vault,
@@ -57,6 +59,7 @@ export function StakePositionOverview({
   const riskColor = vault?.riskLevel ? RISK_COLORS[vault?.riskLevel] : undefined;
   const { usds } = TOKENS;
   const osmCappedSkyPriceTooltip = getTooltipById('capped-osm-sky-price');
+  const formattedActualSkyPrice = skyPrice !== undefined ? formatBigInt(skyPrice) : undefined;
 
   // const skySealed = useMemo(() => {
   //   return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
@@ -129,6 +132,14 @@ export function StakePositionOverview({
               error={urnAddressLoading ? null : vaultError}
               content={<Text className="mt-2">${formatBigInt(vault?.liquidationPrice || 0n)}</Text>}
             />
+            {formattedActualSkyPrice !== undefined && (
+              <StatsCard
+                title={t`SKY Price`}
+                isLoading={urnAddressLoading || vaultLoading}
+                error={urnAddressLoading ? null : vaultError}
+                content={<Text className="mt-2">${formattedActualSkyPrice}</Text>}
+              />
+            )}
             <StatsCard
               title={
                 <div className="flex items-center gap-1">
