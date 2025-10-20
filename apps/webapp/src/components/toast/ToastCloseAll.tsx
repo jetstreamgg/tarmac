@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
+import { FLOATING_CHAT_BP } from '@/modules/chat/hooks/useFloatingChat';
 
 // Close All button positioned above the toast stack
 // Only shows when there are active toasts
@@ -30,7 +31,7 @@ export const ToastCloseAll = () => {
   }, []);
 
   if (!hasToasts) return null;
-  const isWideScreen = bpi >= BP['3xl'];
+  const isWideScreen = bpi >= FLOATING_CHAT_BP;
   const isMobile = bpi < BP.md;
   return (
     <div
