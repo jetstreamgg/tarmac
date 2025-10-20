@@ -6,19 +6,27 @@ export const FLOATING_CHAT_BP = BP['3xl'];
 
 /**
  * Hook to determine if floating chat should be shown
- * Floating chat is shown on wide screens (3xl+) when chat param is true
+ * Floating chat is shown by default on wide screens (3xl+) unless chat param is "false"
+ * On smaller screens, chat is opt-in and requires chat param to be "true"
  */
 export const useFloatingChat = () => {
   const { bpi } = useBreakpointIndex();
   const [searchParams] = useSearchParams();
-  const isChatOpen = searchParams.get(QueryParams.Chat) === 'true';
+  const chatParam = searchParams.get(QueryParams.Chat);
 
-  // Show floating chat on wide screens (3xl / 1680px and above) when chat is open
-  const shouldShowFloating = bpi >= FLOATING_CHAT_BP && isChatOpen;
+  const supportsFloatingChat = bpi >= FLOATING_CHAT_BP;
+
+  // For floating chat (3xl+): show by default unless explicitly set to "false"
+  // For smaller screens: opt-in behavior (must be "true")
+  const isChatOpen = supportsFloatingChat
+    ? chatParam !== 'false' // Default open on wide screens
+    : chatParam === 'true'; // Opt-in on smaller screens
+
+  const shouldShowFloating = supportsFloatingChat && isChatOpen;
 
   return {
     shouldShowFloating,
-    supportsFloatingChat: bpi >= FLOATING_CHAT_BP,
+    supportsFloatingChat,
     isChatOpen
   };
 };
