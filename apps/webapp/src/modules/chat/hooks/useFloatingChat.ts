@@ -16,7 +16,7 @@ export const useFloatingChat = () => {
 
   const supportsFloatingChat = bpi >= FLOATING_CHAT_BP;
 
-  // For floating chat (3xl+): show by default unless explicitly set to "false"
+  // For floating chat: show by default unless explicitly set to "false"
   // For smaller screens: opt-in behavior (must be "true")
   const isChatOpen = supportsFloatingChat
     ? chatParam !== 'false' // Default open on wide screens
