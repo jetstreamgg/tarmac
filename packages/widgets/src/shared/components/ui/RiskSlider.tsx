@@ -3,7 +3,7 @@ import * as SliderPrimitive from '@radix-ui/react-slider';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { cn } from '@widgets/lib/utils';
 import { HStack } from './layout/HStack';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@widgets/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@widgets/components/ui/tooltip';
 
 type RiskSliderProps = React.ComponentProps<typeof SliderPrimitive.Root> & {
   riskColor?: string;
@@ -18,6 +18,7 @@ type RiskSliderProps = React.ComponentProps<typeof SliderPrimitive.Root> & {
   currentRiskFloor?: number;
   currentRiskCeiling?: number;
   capIndicationPercentage?: number;
+  isRepayMode: boolean;
 };
 
 const RISK_INDICATOR_SIZE = 10;
@@ -87,6 +88,7 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
       currentRiskFloor,
       currentRiskCeiling,
       capIndicationPercentage,
+      isRepayMode,
       ...props
     },
     ref
@@ -189,12 +191,18 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   }}
                 />
               </TooltipTrigger>
-              <TooltipContent>Max permitted risk</TooltipContent>
+              <TooltipPortal>
+                <TooltipContent>Max permitted risk</TooltipContent>
+              </TooltipPortal>
             </Tooltip>
           )}
           {currentRiskFloor !== undefined &&
             (() => {
               const bgColor = trackColor || getGradientColorAtPercentage(currentRiskFloor);
+              // Calculate a darker shade for the border
+              const borderColor = trackColor
+                ? trackColor
+                : getGradientColorAtPercentage(Math.min(currentRiskFloor + 15, 100));
               return (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -205,17 +213,24 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                         transform: 'translateX(-50%)',
                         backgroundColor: bgColor,
                         height: `${indicatorSize}px`,
-                        width: `${indicatorSize}px`
+                        width: `${indicatorSize}px`,
+                        border: `2px solid ${borderColor}`
                       }}
                     />
                   </TooltipTrigger>
-                  <TooltipContent>Risk floor</TooltipContent>
+                  <TooltipPortal>
+                    <TooltipContent>Risk floor</TooltipContent>
+                  </TooltipPortal>
                 </Tooltip>
               );
             })()}
           {currentRiskCeiling !== undefined &&
             (() => {
               const bgColor = trackColor || getGradientColorAtPercentage(currentRiskCeiling);
+              // Calculate a darker shade for the border
+              const borderColor = trackColor
+                ? trackColor
+                : getGradientColorAtPercentage(Math.min(currentRiskCeiling + 15, 100));
               return (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -226,11 +241,14 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                         transform: 'translateX(-50%)',
                         backgroundColor: bgColor,
                         height: `${indicatorSize}px`,
-                        width: `${indicatorSize}px`
+                        width: `${indicatorSize}px`,
+                        border: `2px solid ${borderColor}`
                       }}
                     />
                   </TooltipTrigger>
-                  <TooltipContent>Risk ceiling</TooltipContent>
+                  <TooltipPortal>
+                    <TooltipContent>Risk ceiling</TooltipContent>
+                  </TooltipPortal>
                 </Tooltip>
               );
             })()}
@@ -241,7 +259,18 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
               />
             </SliderPrimitive.Thumb>
           ) : (
-            <SliderPrimitive.Thumb className="border-primary ring-offset-background focus-visible:ring-ring focus-visible:outline-hidden block rounded-full border-8 bg-white transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SliderPrimitive.Thumb className="border-primary ring-offset-background focus-visible:ring-ring focus-visible:outline-hidden block rounded-full border-8 bg-white transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+              </TooltipTrigger>
+              <TooltipPortal>
+                <TooltipContent arrowPadding={10} className="max-w-75">
+                  {isRepayMode
+                    ? 'Risk can only be adjusted downwards when repaying. To adjust upwards, you can unstake SKY, or borrow more USDS on the Stake and Borrow tab.'
+                    : 'Risk can only be adjusted upwards when borrowing. To adjust downwards, you can stake more SKY, or repay USDS on the Unstake and Repay tab.'}
+                </TooltipContent>
+              </TooltipPortal>
+            </Tooltip>
           )}
         </SliderPrimitive.Root>
         <HStack className="justify-between px-4 pt-1">

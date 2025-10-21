@@ -73,6 +73,7 @@ const SliderContainer = ({
       sliderLabel={t`Liquidation risk meter`}
       currentRiskFloor={currentRiskFloor}
       capIndicationPercentage={capPercentage}
+      isRepayMode={false}
     />
   ) : null;
 };
@@ -360,7 +361,7 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
   const newCollateralAmount = skyToLock + (existingVault?.collateralAmount || 0n);
 
   const { data: collateralData } = useCollateralData(ilkName);
-  console.log({ newBorrowAmount });
+
   const {
     data: simulatedVault,
     isLoading,
