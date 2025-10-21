@@ -46,12 +46,12 @@ const SliderContainer = ({ vault }: { vault?: Vault }) => {
       max={100}
       leftLabel={t`Low risk`}
       rightLabel={t`High risk`}
-      isRepayMode={true}
       onValueCommit={(v: number[]) => {
         handleSliderChange(v[0]);
       }}
       liquidationLabel={t`Liquidation`}
       sliderLabel={t`Liquidation risk meter`}
+      isRepayMode={true}
     />
   );
 };
