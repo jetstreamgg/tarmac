@@ -22,6 +22,51 @@ type RiskSliderProps = React.ComponentProps<typeof SliderPrimitive.Root> & {
 
 const RISK_INDICATOR_SIZE = 10;
 
+const GRADIENT_COLORS = [
+  { stop: 0, rgb: { r: 74, g: 222, b: 128 } }, // green
+  { stop: 40, rgb: { r: 251, g: 191, b: 36 } }, // amber
+  { stop: 80, rgb: { r: 248, g: 113, b: 113 } }, // orange
+  { stop: 100, rgb: { r: 239, g: 68, b: 68 } } // red
+];
+
+const rgbToString = (rgb: { r: number; g: number; b: number }) => `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+
+const CSS_GRADIENT = `linear-gradient(to right, ${GRADIENT_COLORS.map(
+  ({ stop, rgb }) => `${rgbToString(rgb)} ${stop}%`
+).join(', ')})`;
+
+const calculateColor = (
+  from: { r: number; g: number; b: number },
+  to: { r: number; g: number; b: number },
+  t: number
+) => {
+  const r = Math.round(from.r + (to.r - from.r) * t);
+  const g = Math.round(from.g + (to.g - from.g) * t);
+  const b = Math.round(from.b + (to.b - from.b) * t);
+  return rgbToString({ r, g, b });
+};
+
+const getGradientColorAtPercentage = (percentage: number): string => {
+  if (percentage <= GRADIENT_COLORS[0].stop)
+    return calculateColor(GRADIENT_COLORS[0].rgb, GRADIENT_COLORS[0].rgb, 0);
+  if (percentage >= GRADIENT_COLORS[GRADIENT_COLORS.length - 1].stop) {
+    const lastColor = GRADIENT_COLORS[GRADIENT_COLORS.length - 1].rgb;
+    return calculateColor(lastColor, lastColor, 0);
+  }
+
+  for (let i = 0; i < GRADIENT_COLORS.length - 1; i++) {
+    const current = GRADIENT_COLORS[i];
+    const next = GRADIENT_COLORS[i + 1];
+
+    if (percentage >= current.stop && percentage <= next.stop) {
+      const t = (percentage - current.stop) / (next.stop - current.stop);
+      return calculateColor(current.rgb, next.rgb, t);
+    }
+  }
+
+  return calculateColor(GRADIENT_COLORS[0].rgb, GRADIENT_COLORS[0].rgb, 0);
+};
+
 const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Root>, RiskSliderProps>(
   (
     {
@@ -112,9 +157,7 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
           <SliderPrimitive.Track
             className="relative h-1 w-full grow overflow-hidden rounded-full"
             style={{
-              background:
-                trackColor ||
-                'linear-gradient(to right, rgb(74, 222, 128) 0%, rgb(251, 191, 36) 40%, rgb(248, 113, 113) 80%, rgb(239, 68, 68) 100%)'
+              background: trackColor || CSS_GRADIENT
             }}
           >
             <SliderPrimitive.Range className="absolute h-full bg-transparent" />
@@ -149,42 +192,48 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
               <TooltipContent>Max permitted risk</TooltipContent>
             </Tooltip>
           )}
-          {currentRiskFloor !== undefined && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 transform rounded-full"
-                  style={{
-                    left: `calc(${currentRiskFloor}% + ${calculateOffset(currentRiskFloor)}px)`,
-                    transform: 'translateX(-50%)',
-                    backgroundColor: 'rgb(74, 222, 128)',
-                    height: `${indicatorSize}px`,
-                    width: `${indicatorSize}px`,
-                    border: '2px solid rgb(34, 197, 94)'
-                  }}
-                />
-              </TooltipTrigger>
-              <TooltipContent>Risk floor</TooltipContent>
-            </Tooltip>
-          )}
-          {currentRiskCeiling !== undefined && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 transform rounded-full"
-                  style={{
-                    left: `calc(${currentRiskCeiling}% + ${calculateOffset(currentRiskCeiling)}px)`,
-                    transform: 'translateX(-50%)',
-                    backgroundColor: 'rgb(248, 113, 113)',
-                    height: `${indicatorSize}px`,
-                    width: `${indicatorSize}px`,
-                    border: '2px solid rgb(239, 68, 68)'
-                  }}
-                />
-              </TooltipTrigger>
-              <TooltipContent>Risk ceiling</TooltipContent>
-            </Tooltip>
-          )}
+          {currentRiskFloor !== undefined &&
+            (() => {
+              const bgColor = trackColor || getGradientColorAtPercentage(currentRiskFloor);
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 transform rounded-full"
+                      style={{
+                        left: `calc(${currentRiskFloor}% + ${calculateOffset(currentRiskFloor)}px)`,
+                        transform: 'translateX(-50%)',
+                        backgroundColor: bgColor,
+                        height: `${indicatorSize}px`,
+                        width: `${indicatorSize}px`
+                      }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>Risk floor</TooltipContent>
+                </Tooltip>
+              );
+            })()}
+          {currentRiskCeiling !== undefined &&
+            (() => {
+              const bgColor = trackColor || getGradientColorAtPercentage(currentRiskCeiling);
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 transform rounded-full"
+                      style={{
+                        left: `calc(${currentRiskCeiling}% + ${calculateOffset(currentRiskCeiling)}px)`,
+                        transform: 'translateX(-50%)',
+                        backgroundColor: bgColor,
+                        height: `${indicatorSize}px`,
+                        width: `${indicatorSize}px`
+                      }}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>Risk ceiling</TooltipContent>
+                </Tooltip>
+              );
+            })()}
           {disabled ? (
             <SliderPrimitive.Thumb className="focus:outline-hidden block h-0 w-0" aria-label="Slider">
               <div
