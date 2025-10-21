@@ -18,7 +18,7 @@ type RiskSliderProps = React.ComponentProps<typeof SliderPrimitive.Root> & {
   currentRiskFloor?: number;
   currentRiskCeiling?: number;
   capIndicationPercentage?: number;
-  isRepayMode: boolean;
+  isRepayMode?: boolean;
 };
 
 const RISK_INDICATOR_SIZE = 10;

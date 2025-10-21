@@ -22,6 +22,12 @@ export const useRiskSlider = ({
   const riskPercentageNoBorrow = vaultNoBorrow?.liquidationProximityPercentage || 0;
   const hasExistingDebt = (existingVault?.debtValue || 0n) > 0n;
 
+  // Helper to round to whole USDS (18 decimals)
+  const roundToWholeUsds = (amount: bigint): bigint => {
+    const USDS_DECIMALS = 10n ** 18n;
+    return (amount / USDS_DECIMALS) * USDS_DECIMALS;
+  };
+
   const [sliderValue, setSliderValue] = useState([Math.max(1, riskPercentage)]);
 
   // Capture the initial risk floor for borrow mode (can't drag left past this)
@@ -79,7 +85,7 @@ export const useRiskSlider = ({
 
       // Cap the value at the capped amount if it exists
       const cappedAmount = vault?.maxSafeBorrowableIntAmount;
-      const finalValue = cappedAmount && newValue > cappedAmount ? cappedAmount : newValue;
+      const finalValue = cappedAmount && newValue > cappedAmount ? cappedAmount : roundToWholeUsds(newValue);
       setValue(finalValue < maxValue ? finalValue : maxValue);
     } else if (isRepayMode && initialRiskCeiling !== undefined) {
       // In repay mode, calculate repayment amount from initial risk level to selected value
@@ -105,11 +111,11 @@ export const useRiskSlider = ({
           ? (currentDebt * BigInt(Math.round(repayPercentage * 100))) /
             BigInt(Math.round(repayablePercentage * 100))
           : 0n;
-      setValue(newValue);
+      setValue(repayPercentage === repayablePercentage ? newValue : roundToWholeUsds(newValue));
     } else {
       // Original behavior for no existing debt
       const newValue = value === 0 ? 0n : (maxBorrowable * BigInt(value)) / 100n;
-      setValue(newValue < maxValue ? newValue : maxValue);
+      setValue(newValue < maxValue ? roundToWholeUsds(newValue) : maxValue);
     }
   };
 
