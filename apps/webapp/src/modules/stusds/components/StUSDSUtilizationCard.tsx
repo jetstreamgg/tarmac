@@ -33,12 +33,10 @@ export function StUSDSUtilizationCard() {
         </div>
       }
       content={
-        <div className="mt-2">
-          <div className="mb-2 flex items-center gap-2">
-            <Text className={utilizationColor} variant="large">
-              {utilizationRate.toFixed(1)}%
-            </Text>
-          </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Text className={utilizationColor} variant="large">
+            {utilizationRate.toFixed(1)}%
+          </Text>
           <UtilizationBar
             utilizationRate={utilizationRate}
             isLoading={isLoading}

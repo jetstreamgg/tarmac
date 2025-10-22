@@ -1,10 +1,16 @@
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { getTokenDecimals, TOKENS } from '@jetstreamgg/sky-hooks';
+import {
+  getTokenDecimals,
+  TOKENS,
+  useStUsdsPreviewDeposit,
+  useStUsdsPreviewWithdraw
+} from '@jetstreamgg/sky-hooks';
 import { formatBigInt, formatStrAsApy } from '@jetstreamgg/sky-utils';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { Skeleton } from '@widgets/components/ui/skeleton';
 import { useContext, useMemo, useId } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StUSDSFlow } from '../lib/constants';
@@ -132,6 +138,14 @@ export const StUSDSSupplyWithdraw = ({
     widgetState.flow === StUSDSFlow.SUPPLY
       ? (userUsdsBalance || 0n) + amount
       : (userUsdsBalance || 0n) - amount;
+
+  const { data: stUsdsDepositAmount } = useStUsdsPreviewDeposit(amount);
+
+  const { data: stUsdsWithdrawAmount } = useStUsdsPreviewWithdraw(amount);
+
+  const stUsdsAmount = {
+    value: tabIndex === 0 ? stUsdsDepositAmount || 0n : stUsdsWithdrawAmount || 0n
+  };
 
   return (
     <MotionVStack gap={0} className="w-full" variants={positionAnimations}>
@@ -317,6 +331,38 @@ export const StUSDSSupplyWithdraw = ({
                 compact: true
               })} ${inputToken?.symbol}`
             },
+            ...(tabIndex === 0
+              ? [
+                  {
+                    label: t`You will receive`,
+                    value:
+                      stUsdsAmount.value > 0n ? (
+                        `${formatBigInt(stUsdsAmount.value, {
+                          maxDecimals: 2,
+                          compact: true
+                        })} stUSDS`
+                      ) : (
+                        <Skeleton className="bg-textSecondary h-4 w-16" />
+                      )
+                  }
+                ]
+              : []),
+            ...(tabIndex === 1
+              ? [
+                  {
+                    label: t`You will supply`,
+                    value:
+                      stUsdsAmount.value > 0n ? (
+                        `${formatBigInt(stUsdsAmount.value, {
+                          maxDecimals: 2,
+                          compact: true
+                        })} stUSDS`
+                      ) : (
+                        <Skeleton className="bg-textSecondary h-4 w-16" />
+                      )
+                  }
+                ]
+              : []),
             {
               label: t`Rate`,
               value: moduleRate !== undefined && moduleRate > 0n ? formatStrAsApy(moduleRate) : '--'

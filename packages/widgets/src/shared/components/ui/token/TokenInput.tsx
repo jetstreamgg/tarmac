@@ -50,6 +50,7 @@ export interface TokenInputProps {
   showPercentageButtons?: boolean;
   buttonsToShow?: number[];
   extraPadding?: boolean;
+  hideIcon?: boolean;
   enabled?: boolean;
   maxIntegerDigits?: number;
   limitText?: string | undefined;
@@ -79,6 +80,7 @@ export function TokenInput({
   showPercentageButtons = true,
   buttonsToShow = [25, 50, 100],
   extraPadding = false,
+  hideIcon = false,
   enabled = true,
   limitText,
   maxIntegerDigits,
@@ -352,11 +354,17 @@ export function TokenInput({
                         className={`text-selectActive ${'w-full'} items-center overflow-clip`}
                         title={balanceText}
                       >
-                        {limitText && isConnectedAndEnabled && showGauge ? (
-                          <div>
-                            <Gauge height={20} width={20} className="text-textDesaturated" />
-                          </div>
-                        ) : !limitText || !isConnectedAndEnabled ? (
+                        {!hideIcon && limitText && isConnectedAndEnabled ? (
+                          showGauge ? (
+                            <div>
+                              <Gauge height={20} width={20} className="text-textDesaturated" />
+                            </div>
+                          ) : (
+                            <div>
+                              <Wallet height={20} width={20} className="text-textDesaturated" />
+                            </div>
+                          )
+                        ) : !hideIcon && !isConnectedAndEnabled ? (
                           <div>
                             <Wallet height={20} width={20} className="text-textDesaturated" />
                           </div>

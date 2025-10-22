@@ -3,8 +3,9 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
-import { Token, useOverallSkyData, getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import { Token, useOverallSkyData, getTokenDecimals, useSsrAssetsToShares } from '@jetstreamgg/sky-hooks';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { Skeleton } from '@widgets/components/ui/skeleton';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -62,6 +63,8 @@ export function L2SavingsSupplyWithdraw({
     tabIndex === 0
       ? (convertedBalance?.value || 0n) + originAmount
       : (convertedBalance?.value || 0n) - originAmount;
+
+  const sUsdsAmount = useSsrAssetsToShares(originAmount, originToken);
 
   return (
     <VStack className="w-full items-center justify-center">
@@ -156,6 +159,38 @@ export function L2SavingsSupplyWithdraw({
                       compact: true
                     })} ${originToken?.symbol}`
                   },
+                  ...(tabIndex === 0
+                    ? [
+                        {
+                          label: t`You will receive`,
+                          value:
+                            sUsdsAmount.value > 0n ? (
+                              `${formatBigInt(sUsdsAmount.value, {
+                                maxDecimals: 2,
+                                compact: true
+                              })} sUSDS`
+                            ) : (
+                              <Skeleton className="bg-textSecondary h-4 w-16" />
+                            )
+                        }
+                      ]
+                    : []),
+                  ...(tabIndex === 1
+                    ? [
+                        {
+                          label: t`You will supply`,
+                          value:
+                            sUsdsAmount.value > 0n ? (
+                              `${formatBigInt(sUsdsAmount.value, {
+                                maxDecimals: 2,
+                                compact: true
+                              })} sUSDS`
+                            ) : (
+                              <Skeleton className="bg-textSecondary h-4 w-16" />
+                            )
+                        }
+                      ]
+                    : []),
                   {
                     label: t`Rate`,
                     value: skySavingsRatecRate

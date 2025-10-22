@@ -25,8 +25,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit --project tsconfig.production.json",
     "sync-content": "./scripts/sync-content.sh",
-    "bump-content-version": "./scripts/bump-content-version.sh",
-    "prebuild": "pnpm sync-content"
+    "bump-content-version": "./scripts/bump-content-version.sh"
   },
   "dependencies": {
     "@jetstreamgg/sky-hooks": "workspace:^",

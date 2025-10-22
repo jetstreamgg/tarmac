@@ -23,6 +23,7 @@ import { StakeChart } from './StakeChart';
 import { getTooltipById, PopoverRateInfo, PopoverInfo, UtilizationBar } from '@jetstreamgg/sky-widgets';
 import { useMemo } from 'react';
 import { StakeToken } from '../constants';
+import { StakingRewardRateCard } from './StakingRewardRateCard';
 
 export function StakeOverview() {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -113,6 +114,9 @@ export function StakeOverview() {
                 error={error}
                 content={<Text className="mt-2">{formatDecimalPercentage(borrowRate)}</Text>}
               />
+            </div>
+            <div className="min-w-[250px] flex-1">
+              <StakingRewardRateCard />
             </div>
             <div className="min-w-[250px] flex-1">
               <StatsCard
