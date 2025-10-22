@@ -4,6 +4,8 @@ import { arbitrum, base, mainnet, optimism, unichain } from 'viem/chains';
 import { NetworkName } from '../../../test/e2e/utils/constants';
 
 export const TENDERLY_CHAIN_ID = 314310;
+export const TENDERLY_BASE_CHAIN_ID = base.id;
+export const TENDERLY_ARBITRUM_CHAIN_ID = arbitrum.id;
 
 // only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `mainnet-fork-sep-9-2025`
 export const TENDERLY_RPC_URL =
