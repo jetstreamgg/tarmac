@@ -14,6 +14,8 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
 import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
 import { useChatNotification } from '../hooks/useChatNotification';
+import { FloatingChatPane } from './FloatingChatPane';
+import { FloatingChatButton } from './FloatingChatButton';
 import { useBatchTxNotification } from '../hooks/useBatchTxNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
@@ -22,6 +24,8 @@ import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
+import { useChatScrollBehavior } from '@/modules/chat/hooks/useChatScrollBehavior';
 
 export function MainApp() {
   const {
@@ -34,6 +38,7 @@ export function MainApp() {
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
+  const { shouldShowFloating } = useFloatingChat();
 
   const intent = mapQueryParamToIntent(searchParams.get(QueryParams.Widget));
 
@@ -96,11 +101,13 @@ export function MainApp() {
   const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
-  const chatParam =
-    CHATBOT_ENABLED &&
-    (bpi >= BP['3xl']
-      ? !(searchParams.get(QueryParams.Chat) === 'false')
-      : searchParams.get(QueryParams.Chat) === 'true');
+  // Chat is now opt-in on all screen sizes (no longer auto-shown on 3xl+)
+  const chatParam = CHATBOT_ENABLED && searchParams.get(QueryParams.Chat) === 'true';
+
+  // On desktop (3xl+), chat is floating; on mobile, it's inline
+  const showInlineChat = chatParam && !shouldShowFloating;
+
+  const inlineChatScrollBehavior = useChatScrollBehavior(showInlineChat);
 
   const newChainId = network
     ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
@@ -240,14 +247,29 @@ export function MainApp() {
   ]);
 
   return (
-    <AppContainer>
-      {(bpi > BP.sm || !chatParam) && (
-        <WidgetPane key={`widget-pane-${bpi}`} intent={intent}>
-          {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
-        </WidgetPane>
-      )}
-      {(bpi >= BP.xl || (bpi > BP.sm && !chatParam)) && detailsParam && <DetailsPane intent={intent} />}
-      {chatParam && <ChatWithTerms sendMessage={sendMessage} />}
-    </AppContainer>
+    <>
+      <AppContainer>
+        {/* Widget pane - hide on mobile when inline chat is shown */}
+        {(bpi > BP.sm || !showInlineChat) && (
+          <WidgetPane key={`widget-pane-${bpi}`} intent={intent}>
+            {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
+          </WidgetPane>
+        )}
+        {/* Details pane - hide on mobile when inline chat is shown */}
+        {(bpi >= BP.xl || (bpi > BP.sm && !showInlineChat)) && detailsParam && (
+          <DetailsPane intent={intent} />
+        )}
+        {/* Inline chat - only on mobile */}
+        {showInlineChat && (
+          <ChatWithTerms sendMessage={sendMessage} scrollBehavior={inlineChatScrollBehavior} />
+        )}
+      </AppContainer>
+
+      {/* Floating chat - only on desktop (3xl+) */}
+      {shouldShowFloating && <FloatingChatPane sendMessage={sendMessage} />}
+
+      {/* Floating chat button - shows when chat is closed on desktop */}
+      <FloatingChatButton />
+    </>
   );
 }

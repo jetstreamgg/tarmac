@@ -64,6 +64,8 @@
   --color-brandLight: rgb(var(--brand-light-purple));
   --color-brandDark: rgb(var(--brand-dark-purple));
   --color-brandMiddle: rgb(var(--brand-middle-purple));
+  /* --color-floatingChatPane: rgba(35, 31, 64, 0.97); when used without backdrop-blur-md */
+  --color-floatingChatPane: rgba(35, 31, 64, 0.75);
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-chartSelect: rgba(22, 17, 53, 1);

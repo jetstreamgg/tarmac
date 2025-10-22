@@ -8,7 +8,13 @@ import { formatMessage } from '@/modules/chat/lib/formatMessage';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useDismissChatSuggestion } from '../hooks/useDismissChatSuggestion';
 
-export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
+export const ChatPane = ({
+  sendMessage,
+  scrollBehavior = 'smooth'
+}: {
+  sendMessage: (message: string) => void;
+  scrollBehavior?: ScrollBehavior;
+}) => {
   const { chatHistory, shouldShowConfirmationWarning, scrollTrigger } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -16,17 +22,17 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
         top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: scrollBehavior
       });
     }
-  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger]);
+  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger, scrollBehavior]);
 
   useDismissChatSuggestion();
 
   return (
     // `chat-pane` class is used by the AppContainer component to make the container full width if the chat pane is visible
     <motion.div
-      className="chat-pane md:bg-panel flex h-full w-full flex-col group-has-[.details-pane]:w-[324px] md:rounded-3xl"
+      className="chat-pane md:bg-panel flex h-full w-full flex-col md:rounded-3xl"
       layout
       key="chat-pane"
       initial={{ opacity: 0 }}
