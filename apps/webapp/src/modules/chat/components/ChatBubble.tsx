@@ -18,6 +18,7 @@ import { ChatError } from '@/modules/icons';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
 import { useChatContext } from '../context/ChatContext';
 import { Button } from '@/components/ui/button';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useMemo } from 'react';
 
@@ -205,6 +206,28 @@ export const ChatBubble = ({
                               </Text>
                             );
                           }
+
+                          // Check if this is a conversation rating feedback
+                          const isConversationRating = feedbackContent.message.includes('rating-');
+                          const isPositiveRating = feedbackContent.message.includes('rating-positive');
+
+                          if (isConversationRating) {
+                            // Show just the thumb icon for conversation ratings
+                            return (
+                              <HStack className="align-center items-center">
+                                <Text variant="small" className="text-white/75">
+                                  <Trans>Experience:</Trans>
+                                </Text>
+                                {isPositiveRating ? (
+                                  <ThumbsUp size={14} className="text-gray-300" />
+                                ) : (
+                                  <ThumbsDown size={14} className="text-gray-300" />
+                                )}
+                              </HStack>
+                            );
+                          }
+
+                          // Show full feedback details for non-conversation ratings
                           return (
                             <VStack className="gap-3">
                               <div className="min-w-0">
