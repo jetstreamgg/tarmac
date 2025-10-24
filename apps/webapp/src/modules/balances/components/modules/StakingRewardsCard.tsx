@@ -41,8 +41,8 @@ export function StakingRewardsCard() {
       subHeading={
         <div className="flex flex-wrap gap-2 lg:gap-4">
           <HStack gap={2}>
-            <PairTokenIcons leftToken="SKY" rightToken="USDS" chainId={mainnet.id} />
-            <Text className="text-textSecondary">With: SKY Get: USDS</Text>
+            <PairTokenIcons leftToken="SKY" rightToken="SKY" chainId={mainnet.id} />
+            <Text className="text-textSecondary">With: SKY Get: SKY</Text>
           </HStack>
           <HStack gap={2}>
             <PairTokenIcons leftToken="SKY" rightToken="SPK" chainId={mainnet.id} />

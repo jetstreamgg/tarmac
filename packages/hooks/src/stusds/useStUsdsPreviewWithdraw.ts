@@ -1,7 +1,7 @@
 import { useChainId } from 'wagmi';
-import { useReadStUsds } from '../generated';
 import { ReadHook } from '../hooks';
 import { useMemo } from 'react';
+import { useReadStUsdsImplementation } from './useReadStUsdsImplementation';
 
 export type StUsdsPreviewWithdrawHookResponse = ReadHook & {
   data?: bigint;
@@ -15,10 +15,10 @@ export function useStUsdsPreviewWithdraw(assets: bigint): StUsdsPreviewWithdrawH
     isLoading,
     error,
     refetch
-  } = useReadStUsds({
+  } = useReadStUsdsImplementation({
     functionName: 'previewWithdraw',
     args: [assets],
-    chainId: chainId as keyof typeof useReadStUsds,
+    chainId: chainId as keyof typeof useReadStUsdsImplementation,
     query: {
       enabled: !!assets && assets > 0n
     }
