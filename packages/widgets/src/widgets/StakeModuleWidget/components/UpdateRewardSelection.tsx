@@ -6,16 +6,30 @@ import { useChainId } from 'wagmi';
 import { SaRewardsCard } from './SaRewardsCard';
 import { ChevronDown } from 'lucide-react';
 
-export const UpdateRewardSelection = () => {
+type UpdateRewardSelectionProps = {
+  currentRewardContract?: `0x${string}`;
+};
+
+export const UpdateRewardSelection = ({ currentRewardContract }: UpdateRewardSelectionProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const chainId = useChainId();
 
   const { data: rewardContracts } = useStakeRewardContracts();
-  const filteredRewardContracts = rewardContracts?.filter(
-    ({ contractAddress }) =>
-      contractAddress.toLowerCase() !==
-      lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]?.toLowerCase()
-  );
+  const filteredRewardContracts = rewardContracts?.filter(({ contractAddress }) => {
+    const usdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
+
+    // Filter out USDS reward
+    if (contractAddress.toLowerCase() === usdsRewardAddress?.toLowerCase()) {
+      return false;
+    }
+
+    // Filter out the currently selected reward
+    if (currentRewardContract && contractAddress.toLowerCase() === currentRewardContract.toLowerCase()) {
+      return false;
+    }
+
+    return true;
+  });
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

@@ -133,7 +133,7 @@ export function PositionDetail({
                   <TokenIcon token={rewardContractTokens.rewardsToken} width={24} className="h-6 w-6" />
                   <Text className="ml-2">{rewardContractTokens.rewardsToken.symbol}</Text>
                 </div>
-                <UpdateRewardSelection />
+                <UpdateRewardSelection currentRewardContract={selectedRewardContract} />
               </div>
             </VStack>
           )}
