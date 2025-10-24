@@ -354,6 +354,7 @@ function StakeModuleWidgetWrapped({
       setUsdsToBorrow(0n);
       setSelectedDelegate(undefined);
       setSelectedRewardContract(undefined);
+      setRewardContractToClaim(undefined);
     }
   }, [widgetState.flow]);
 
@@ -569,6 +570,7 @@ function StakeModuleWidgetWrapped({
     setUsdsToWipe(0n);
     setUsdsToBorrow(0n);
     setTabIndex(0);
+    setRewardContractToClaim(undefined);
 
     onWidgetStateChange?.({
       widgetState,
@@ -644,6 +646,7 @@ function StakeModuleWidgetWrapped({
     setUsdsToWipe(0n);
     setUsdsToBorrow(0n);
     setTabIndex(0);
+    setRewardContractToClaim(undefined);
 
     onWidgetStateChange?.({
       widgetState,

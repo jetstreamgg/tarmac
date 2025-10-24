@@ -16,7 +16,8 @@ import {
   useDelegateOwner,
   useCollateralData,
   Token,
-  useIsBatchSupported
+  useIsBatchSupported,
+  useRewardContractsToClaim
 } from '@jetstreamgg/sky-hooks';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -43,6 +44,8 @@ import { TransactionReview } from '@widgets/shared/components/ui/transaction/Tra
 import { useLingui } from '@lingui/react/macro';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { BatchStatus } from '@widgets/shared/constants';
+import { useChainId } from 'wagmi';
+import { Switch } from '@widgets/components/ui/switch';
 
 const { usds } = TOKENS;
 
@@ -142,6 +145,7 @@ export const PositionSummary = ({
   const ilkName = getIlkName(2);
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
+  const chainId = useChainId();
 
   const {
     activeUrn,
@@ -150,7 +154,9 @@ export const PositionSummary = ({
     usdsToBorrow,
     usdsToWipe,
     selectedDelegate,
-    selectedRewardContract
+    selectedRewardContract,
+    rewardContractToClaim,
+    setRewardContractToClaim
   } = useContext(StakeModuleWidgetContext);
   const { setTxTitle, setTxSubtitle, setStepTwoTitle, widgetState } = useContext(WidgetContext);
   const { flow, action, screen } = widgetState;
@@ -192,6 +198,22 @@ export const PositionSummary = ({
     useRewardContractTokens(existingRewardContract);
   const { data: selectedRewardContractTokens, isLoading: isSelectedContractTokensLoading } =
     useRewardContractTokens(selectedRewardContract);
+
+  const { data: rewardContractsToClaim } = useRewardContractsToClaim({
+    rewardContractAddresses: existingRewardContract ? [existingRewardContract] : [],
+    userAddress: activeUrn?.urnAddress,
+    chainId
+  });
+
+  const selectedRewardContractRewards = rewardContractsToClaim?.find(
+    ({ contractAddress }) => contractAddress.toLowerCase() === existingRewardContract?.toLowerCase()
+  );
+
+  const handleClaimToggle = () => {
+    setRewardContractToClaim(prevContract =>
+      !prevContract && !!existingRewardContract ? existingRewardContract : undefined
+    );
+  };
 
   const { data: existingSelectedVoteDelegate, isLoading: isDelegateLoading } =
     useStakeUrnSelectedVoteDelegate({
@@ -523,6 +545,21 @@ export const PositionSummary = ({
                   />
                 );
               })}
+            </motion.div>
+          )}
+          {selectedRewardContractRewards && selectedRewardContractRewards.claimBalance > 0n && (
+            <motion.div
+              key="claim-rewards"
+              variants={positionAnimations}
+              className="border-selectActive mt-3 border-t pt-7"
+            >
+              <div className="flex w-full justify-between py-2">
+                <Text className="text-textSecondary text-sm">
+                  Claim {formatBigInt(selectedRewardContractRewards.claimBalance)}{' '}
+                  {selectedRewardContractRewards.rewardSymbol} rewards
+                </Text>
+                <Switch checked={!!rewardContractToClaim} onCheckedChange={handleClaimToggle} />
+              </div>
             </motion.div>
           )}
         </MotionVStack>
