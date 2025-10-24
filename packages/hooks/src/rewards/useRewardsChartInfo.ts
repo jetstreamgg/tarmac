@@ -5,6 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useChainId } from 'wagmi';
 import { formatBaLabsUrl } from '../helpers';
 
+// Mock contract address for SKY-SKY demo reward
+const MOCK_SKY_SKY_REWARD_CONTRACT = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
+
 type RewardsChartInfo = {
   apr: string;
   cRate: string;
@@ -72,6 +75,37 @@ export function useRewardsChartInfo({
 }): ReadHook & { data?: RewardsChartInfoParsed[] } {
   const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl(chainId);
+
+  // Return mock data for demo SKY-SKY contract
+  if (rewardContractAddress.toLowerCase() === MOCK_SKY_SKY_REWARD_CONTRACT.toLowerCase()) {
+    const now = Date.now() / 1000;
+    return {
+      data: [
+        {
+          blockTimestamp: now,
+          price: '0.05',
+          suppliers: 42,
+          suppliedVolume: '100000',
+          totalRewarded: '5000',
+          totalSupplied: '1000000',
+          withdrawVolume: '50000',
+          rate: '0.125' // 12.5% rate
+        }
+      ],
+      isLoading: false,
+      error: null as any,
+      mutate: () => Promise.resolve({} as any),
+      dataSources: [
+        {
+          title: 'Mock SKY-SKY Reward Contract (Demo)',
+          href: '',
+          onChain: false,
+          trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]
+        }
+      ]
+    };
+  }
+
   let url: URL | undefined;
   if (baseUrl && rewardContractAddress) {
     const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`;

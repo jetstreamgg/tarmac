@@ -394,7 +394,7 @@ function StakeModuleWidgetWrapped({
 
     // If we're already in the correct state, don't do anything
     // This is key to prevent the infinite loop - if we're already showing the correct urn, do nothing
-    if (activeUrn?.urnIndex === urlUrnIndex) {
+    if (activeUrn?.urnIndex !== undefined && urlUrnIndex !== undefined && activeUrn.urnIndex === BigInt(urlUrnIndex)) {
       return;
     }
 

@@ -48,6 +48,10 @@ type Props = {
   claimAllPrepared: boolean;
   claimAllExecute: () => void;
   batchEnabledAndSupported: boolean;
+  onStakeUrnChange?: (
+    urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
+  ) => void;
+  onWidgetStateChange?: (state: any) => void;
 };
 
 // Copied from TransactionDetail, it could be reusable
@@ -67,7 +71,9 @@ export function PositionDetail({
   claimExecute,
   claimAllPrepared,
   claimAllExecute,
-  batchEnabledAndSupported
+  batchEnabledAndSupported,
+  onStakeUrnChange,
+  onWidgetStateChange
 }: Props) {
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
@@ -133,7 +139,14 @@ export function PositionDetail({
                   <TokenIcon token={rewardContractTokens.rewardsToken} width={24} className="h-6 w-6" />
                   <Text className="ml-2">{rewardContractTokens.rewardsToken.symbol}</Text>
                 </div>
-                <UpdateRewardSelection />
+                <UpdateRewardSelection
+                  currentRewardContract={selectedRewardContract}
+                  currentDelegate={selectedVoteDelegate}
+                  urnAddress={urnAddress}
+                  urnIndex={index}
+                  onStakeUrnChange={onStakeUrnChange}
+                  onWidgetStateChange={onWidgetStateChange}
+                />
               </div>
             </VStack>
           )}
@@ -183,7 +196,8 @@ export function PositionDetail({
         <HStack gap={2} className="items-center">
           <YellowWarning boxSize={16} viewBox="0 0 16 16" className="flex-shrink-0" />
           <Text className="text-textSecondary text-sm">
-            <span className="font-bold text-white">Upgrade your reward selection.</span> USDS rewards are no longer available in favor of new SKY rewards.
+            <span className="font-bold text-white">Upgrade your reward selection.</span> USDS rewards are no
+            longer available in favor of new SKY rewards.
           </Text>
         </HStack>
       )}

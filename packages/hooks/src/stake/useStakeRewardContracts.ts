@@ -5,6 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 
+// Mock contract address for SKY-SKY demo reward
+const MOCK_SKY_SKY_REWARD_CONTRACT = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`;
+
 async function fetchStakeRewardContracts(urlSubgraph: string) {
   const query = gql`
     {
@@ -20,9 +23,16 @@ async function fetchStakeRewardContracts(urlSubgraph: string) {
     return [];
   }
 
-  return parsedRewardContracts.map(f => ({
+  const contracts = parsedRewardContracts.map(f => ({
     contractAddress: f.id
   }));
+
+  // Add mock SKY-SKY reward contract for demo purposes
+  contracts.push({
+    contractAddress: MOCK_SKY_SKY_REWARD_CONTRACT
+  });
+
+  return contracts;
 }
 
 export function useStakeRewardContracts({

@@ -1,12 +1,13 @@
 import {
   useStakeRewardContracts,
   useStakeUrnSelectedRewardContract,
-  ZERO_ADDRESS
+  ZERO_ADDRESS,
+  lsSkyUsdsRewardAddress
 } from '@jetstreamgg/sky-hooks';
 import { SaRewardsCard } from './SaRewardsCard';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { Card } from '@widgets/components/ui/card';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@widgets/components/ui/button';
@@ -16,6 +17,7 @@ import { getNextStep } from '../lib/utils';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeFlow } from '../lib/constants';
+import { useChainId } from 'wagmi';
 
 export const SelectRewardContract = ({
   onExternalLinkClicked
@@ -23,6 +25,7 @@ export const SelectRewardContract = ({
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
   const { widgetState } = useContext(WidgetContext);
+  const chainId = useChainId();
   const {
     selectedRewardContract,
     setSelectedRewardContract,
@@ -38,6 +41,25 @@ export const SelectRewardContract = ({
   const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
   });
+
+  const usdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
+  const currentRewardIsUsds =
+    urnSelectedRewardContract?.toLowerCase() === usdsRewardAddress?.toLowerCase();
+
+  // Filter out USDS reward unless user's current reward is already USDS
+  const filteredRewardContracts = useMemo(() => {
+    if (!stakeRewardContracts) return stakeRewardContracts;
+
+    // If current reward is USDS, show all options (including USDS, but it will be disabled)
+    if (currentRewardIsUsds) {
+      return stakeRewardContracts;
+    }
+
+    // Otherwise, filter out USDS from the options
+    return stakeRewardContracts.filter(
+      ({ contractAddress }) => contractAddress.toLowerCase() !== usdsRewardAddress?.toLowerCase()
+    );
+  }, [stakeRewardContracts, urnSelectedRewardContract, chainId, currentRewardIsUsds, usdsRewardAddress]);
 
   useEffect(() => {
     setIsSelectRewardContractCompleted(!!selectedRewardContract);
@@ -72,20 +94,27 @@ export const SelectRewardContract = ({
         </HStack>
       </div>
       <VStack className="py-3">
-        {isLoading || !stakeRewardContracts ? (
+        {isLoading || !filteredRewardContracts ? (
           <Card>
             <Skeleton />
           </Card>
         ) : (
-          stakeRewardContracts?.map(({ contractAddress }) => (
-            <SaRewardsCard
-              key={contractAddress}
-              contractAddress={contractAddress}
-              selectedRewardContract={selectedRewardContract}
-              setSelectedRewardContract={setSelectedRewardContract}
-              onExternalLinkClicked={onExternalLinkClicked}
-            />
-          ))
+          filteredRewardContracts?.map(({ contractAddress }) => {
+            // Disable USDS card if it's the current reward
+            const isUsdsCard = contractAddress.toLowerCase() === usdsRewardAddress?.toLowerCase();
+            const shouldDisable = isUsdsCard && currentRewardIsUsds;
+
+            return (
+              <SaRewardsCard
+                key={contractAddress}
+                contractAddress={contractAddress}
+                selectedRewardContract={selectedRewardContract}
+                setSelectedRewardContract={setSelectedRewardContract}
+                onExternalLinkClicked={onExternalLinkClicked}
+                disabled={shouldDisable}
+              />
+            );
+          })
         )}
       </VStack>
     </div>
