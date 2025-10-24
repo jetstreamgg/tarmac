@@ -5,6 +5,9 @@ import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 
+// Mock contract address for SKY-SKY demo reward
+const MOCK_SKY_SKY_REWARD_CONTRACT = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc';
+
 async function fetchRewardContractInfo(
   urlSubgraph: string,
   rewardContractId: string
@@ -108,6 +111,32 @@ export function useRewardContractInfo({
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardContractInfo | null } {
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+
+  // Return mock data for demo SKY-SKY contract
+  if (rewardContractAddress.toLowerCase() === MOCK_SKY_SKY_REWARD_CONTRACT.toLowerCase()) {
+    return {
+      data: {
+        totalSupplied: BigInt('1000000000000000000000000'), // 1M SKY
+        totalRewardsClaimed: BigInt('50000000000000000000000'), // 50k SKY
+        supplyInstances: [],
+        withdrawals: [],
+        rewardClaims: [],
+        tvl: [],
+        suppliers: []
+      },
+      isLoading: false,
+      error: null as any,
+      mutate: () => Promise.resolve({} as any),
+      dataSources: [
+        {
+          title: 'Mock SKY-SKY Reward Contract (Demo)',
+          href: '',
+          onChain: false,
+          trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]
+        }
+      ]
+    };
+  }
 
   const {
     data,

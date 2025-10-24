@@ -5,6 +5,7 @@ import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { erc20Abi } from 'viem';
 import { Token } from '../tokens/types';
+import { TOKENS } from '../tokens/tokens.constants';
 
 type UseRewardContractTokensData =
   | {
@@ -13,10 +14,34 @@ type UseRewardContractTokensData =
     }
   | undefined;
 
+// Mock contract address for SKY-SKY demo reward
+const MOCK_SKY_SKY_REWARD_CONTRACT = '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc' as `0x${string}`;
+
 export const useRewardContractTokens = (
   rewardContractAddress: `0x${string}` | undefined
 ): ReadHook & { data: UseRewardContractTokensData } => {
   const chainId = useChainId();
+
+  // Return mock data for demo SKY-SKY contract
+  if (rewardContractAddress === MOCK_SKY_SKY_REWARD_CONTRACT) {
+    return {
+      data: {
+        supplyToken: TOKENS.sky,
+        rewardsToken: TOKENS.sky
+      },
+      isLoading: false,
+      error: null,
+      mutate: () => Promise.resolve({} as any),
+      dataSources: [
+        {
+          title: 'Mock SKY-SKY Reward Contract (Demo)',
+          onChain: false,
+          href: '',
+          trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]
+        }
+      ]
+    };
+  }
 
   const {
     data: rewardContractTokens,
