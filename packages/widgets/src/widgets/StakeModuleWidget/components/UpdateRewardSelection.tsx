@@ -1,5 +1,5 @@
 import { Button } from '@widgets/components/ui/button';
-import { lsSkyUsdsRewardAddress, useStakeRewardContracts } from '@jetstreamgg/sky-hooks';
+import { lsSkyUsdsRewardAddress, useStakeRewardContracts, ZERO_ADDRESS } from '@jetstreamgg/sky-hooks';
 import { useState, useContext } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@widgets/components/ui/popover';
 import { useChainId } from 'wagmi';
@@ -45,7 +45,8 @@ export const UpdateRewardSelection = ({
     setSkyToLock,
     setSkyToFree,
     setUsdsToBorrow,
-    setUsdsToWipe
+    setUsdsToWipe,
+    setWantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   const { data: rewardContracts } = useStakeRewardContracts();
@@ -94,6 +95,8 @@ export const UpdateRewardSelection = ({
 
     // Set the current delegate and mark as complete since we're not changing it
     setSelectedDelegate(currentDelegate);
+    // Set wantsToDelegate based on whether user has a delegate
+    setWantsToDelegate(currentDelegate !== undefined && currentDelegate !== ZERO_ADDRESS);
     setIsSelectDelegateCompleted(true);
 
     // Update the selected reward contract to the new one

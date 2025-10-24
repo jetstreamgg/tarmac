@@ -196,7 +196,8 @@ export function PositionDetail({
         <HStack gap={2} className="items-center">
           <YellowWarning boxSize={16} viewBox="0 0 16 16" className="flex-shrink-0" />
           <Text className="text-textSecondary text-sm">
-            <span className="font-bold text-white">Upgrade your reward selection.</span> USDS rewards are no longer available in favor of new SKY rewards.
+            <span className="font-bold text-white">Upgrade your reward selection.</span> USDS rewards are no
+            longer available in favor of new SKY rewards.
           </Text>
         </HStack>
       )}
