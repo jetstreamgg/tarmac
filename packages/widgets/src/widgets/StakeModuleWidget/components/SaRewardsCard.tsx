@@ -52,6 +52,7 @@ export const SaRewardsCard = ({
   );
 
   const handleSelectRewardContract = () => {
+    console.log('handleSelectRewardContract', contractAddress);
     setSelectedRewardContract?.(prevRewardContract =>
       prevRewardContract === contractAddress ? undefined : contractAddress
     );
