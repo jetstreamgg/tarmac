@@ -11,7 +11,8 @@ export const UrnsList = ({
   claimAllPrepared,
   claimAllExecute,
   batchEnabledAndSupported,
-  onStakeUrnChange
+  onStakeUrnChange,
+  onExternalLinkClicked
 }: {
   claimPrepared: boolean;
   claimExecute: () => void;
@@ -19,6 +20,7 @@ export const UrnsList = ({
   claimAllExecute: () => void;
   batchEnabledAndSupported: boolean;
   onStakeUrnChange?: OnStakeUrnChange;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
   const { data: currentIndex } = useCurrentUrnIndex();
   const amountOfUrns = Array.from(Array(Number(currentIndex || 0n)).keys());
@@ -43,6 +45,7 @@ export const UrnsList = ({
               claimAllExecute={claimAllExecute}
               batchEnabledAndSupported={batchEnabledAndSupported}
               onStakeUrnChange={onStakeUrnChange}
+              onExternalLinkClicked={onExternalLinkClicked}
             />
           ))}
         </div>

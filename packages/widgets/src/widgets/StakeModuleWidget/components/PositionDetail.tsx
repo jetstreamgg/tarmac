@@ -9,7 +9,8 @@ import {
   useRewardContractTokens,
   useDelegateName,
   useDelegateOwner,
-  useStakeRewardContracts
+  useStakeRewardContracts,
+  lsSkyUsdsRewardAddress
 } from '@jetstreamgg/sky-hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -22,6 +23,10 @@ import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithT
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
 import { ClaimRewardsDropdown } from './ClaimRewardsDropdown';
 import { getTooltipById } from '../../../data/tooltips';
+import { useChainId } from 'wagmi';
+import { UpdateRewardSelection } from './UpdateRewardSelection';
+import { YellowWarning } from '@widgets/shared/components/icons/YellowWarning';
+import { OnStakeUrnChange } from '..';
 
 type Props = {
   collateralizationRatio?: bigint;
@@ -44,6 +49,8 @@ type Props = {
   claimAllPrepared: boolean;
   claimAllExecute: () => void;
   batchEnabledAndSupported: boolean;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onStakeUrnChange?: OnStakeUrnChange;
 };
 
 // Copied from TransactionDetail, it could be reusable
@@ -63,7 +70,9 @@ export function PositionDetail({
   claimExecute,
   claimAllPrepared,
   claimAllExecute,
-  batchEnabledAndSupported
+  batchEnabledAndSupported,
+  onExternalLinkClicked,
+  onStakeUrnChange
 }: Props) {
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
@@ -71,6 +80,11 @@ export function PositionDetail({
   const { data: stakeRewardContracts } = useStakeRewardContracts();
 
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
+
+  const chainId = useChainId();
+  const isUsdsReward =
+    selectedRewardContract?.toLowerCase() ===
+    lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]?.toLowerCase();
 
   return (
     <MotionVStack variants={positionAnimations} className="mt-4 justify-between space-y-6">
@@ -119,9 +133,18 @@ export function PositionDetail({
               <Text variant="medium" className="text-textSecondary leading-4">
                 Reward
               </Text>
-              <div className="flex items-start">
-                <TokenIcon token={rewardContractTokens.rewardsToken} width={24} className="h-6 w-6" />
-                <Text className="ml-2">{rewardContractTokens.rewardsToken.symbol}</Text>
+              <div className="flex items-center justify-start gap-1">
+                <div className="flex items-start">
+                  <TokenIcon token={rewardContractTokens.rewardsToken} width={24} className="h-6 w-6" />
+                  <Text className="ml-2">{rewardContractTokens.rewardsToken.symbol}</Text>
+                </div>
+                <UpdateRewardSelection
+                  urnAddress={urnAddress}
+                  index={index}
+                  selectedVoteDelegate={selectedVoteDelegate}
+                  onExternalLinkClicked={onExternalLinkClicked}
+                  onStakeUrnChange={onStakeUrnChange}
+                />
               </div>
             </VStack>
           )}
@@ -167,6 +190,15 @@ export function PositionDetail({
           )}
         </VStack>
       </HStack>
+      {isUsdsReward && (
+        <HStack gap={2} className="items-center">
+          <YellowWarning boxSize={16} viewBox="0 0 16 16" className="flex-shrink-0" />
+          <Text className="text-textSecondary text-sm">
+            <span className="font-bold text-white">Upgrade your reward selection.</span> USDS rewards are no
+            longer available in favor of new SKY rewards.
+          </Text>
+        </HStack>
+      )}
       <PositionDetailAccordion
         collateralizationRatio={collateralizationRatio}
         riskLevel={riskLevel}

@@ -54,6 +54,7 @@ export const ManagePosition = ({
       claimAllExecute={claimAllExecute}
       batchEnabledAndSupported={batchEnabledAndSupported}
       onStakeUrnChange={onStakeUrnChange}
+      onExternalLinkClicked={onExternalLinkClicked}
     />
   ) : (
     <Wizard
