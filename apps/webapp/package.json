@@ -21,6 +21,8 @@
     "test": "vitest run",
     "e2e": "playwright test --trace on",
     "e2e:ui": "playwright test --ui",
+    "e2e:navigation": "playwright test --config playwright.navigation.config.ts --trace on",
+    "e2e:navigation:ui": "playwright test --config playwright.navigation.config.ts --ui",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit --project tsconfig.production.json",
