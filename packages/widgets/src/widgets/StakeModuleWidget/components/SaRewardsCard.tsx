@@ -19,12 +19,14 @@ export const SaRewardsCard = ({
   contractAddress,
   selectedRewardContract,
   setSelectedRewardContract,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  disabled = false
 }: {
   contractAddress: `0x${string}`;
   selectedRewardContract?: `0x${string}` | undefined;
   setSelectedRewardContract?: Dispatch<SetStateAction<`0x${string}` | undefined>>;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  disabled?: boolean;
 }) => {
   const chainId = useChainId();
   const {
@@ -52,7 +54,7 @@ export const SaRewardsCard = ({
   );
 
   const handleSelectRewardContract = () => {
-    console.log('handleSelectRewardContract', contractAddress);
+    if (disabled) return;
     setSelectedRewardContract?.(prevRewardContract =>
       prevRewardContract === contractAddress ? undefined : contractAddress
     );
@@ -61,10 +63,12 @@ export const SaRewardsCard = ({
   return (
     <StatsOverviewCardCoreAccordion
       className={`bg-radial-(--gradient-position) transition-colors ${
-        selectedRewardContract && getAddress(selectedRewardContract) === getAddress(contractAddress)
-          ? 'from-primary-start/100 to-primary-end/100'
-          : 'from-card to-card hover:from-primary-start/40 hover:to-primary-end/40'
-      } ${setSelectedRewardContract ? 'cursor-pointer' : 'cursor-default'}`}
+        disabled
+          ? 'from-card to-card opacity-50 cursor-not-allowed'
+          : selectedRewardContract && getAddress(selectedRewardContract) === getAddress(contractAddress)
+            ? 'from-primary-start/100 to-primary-end/100'
+            : 'from-card to-card hover:from-primary-start/40 hover:to-primary-end/40'
+      } ${setSelectedRewardContract && !disabled ? 'cursor-pointer' : 'cursor-default'}`}
       headerLeftContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
           {rewardContractTokens ? (

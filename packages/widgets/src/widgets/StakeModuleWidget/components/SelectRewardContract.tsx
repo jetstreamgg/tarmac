@@ -42,15 +42,15 @@ export const SelectRewardContract = ({
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
   });
 
+  const usdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
+  const currentRewardIsUsds =
+    urnSelectedRewardContract?.toLowerCase() === usdsRewardAddress?.toLowerCase();
+
   // Filter out USDS reward unless user's current reward is already USDS
   const filteredRewardContracts = useMemo(() => {
     if (!stakeRewardContracts) return stakeRewardContracts;
 
-    const usdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
-    const currentRewardIsUsds =
-      urnSelectedRewardContract?.toLowerCase() === usdsRewardAddress?.toLowerCase();
-
-    // If current reward is USDS, show all options (including USDS)
+    // If current reward is USDS, show all options (including USDS, but it will be disabled)
     if (currentRewardIsUsds) {
       return stakeRewardContracts;
     }
@@ -59,7 +59,7 @@ export const SelectRewardContract = ({
     return stakeRewardContracts.filter(
       ({ contractAddress }) => contractAddress.toLowerCase() !== usdsRewardAddress?.toLowerCase()
     );
-  }, [stakeRewardContracts, urnSelectedRewardContract, chainId]);
+  }, [stakeRewardContracts, urnSelectedRewardContract, chainId, currentRewardIsUsds, usdsRewardAddress]);
 
   useEffect(() => {
     setIsSelectRewardContractCompleted(!!selectedRewardContract);
@@ -99,15 +99,22 @@ export const SelectRewardContract = ({
             <Skeleton />
           </Card>
         ) : (
-          filteredRewardContracts?.map(({ contractAddress }) => (
-            <SaRewardsCard
-              key={contractAddress}
-              contractAddress={contractAddress}
-              selectedRewardContract={selectedRewardContract}
-              setSelectedRewardContract={setSelectedRewardContract}
-              onExternalLinkClicked={onExternalLinkClicked}
-            />
-          ))
+          filteredRewardContracts?.map(({ contractAddress }) => {
+            // Disable USDS card if it's the current reward
+            const isUsdsCard = contractAddress.toLowerCase() === usdsRewardAddress?.toLowerCase();
+            const shouldDisable = isUsdsCard && currentRewardIsUsds;
+
+            return (
+              <SaRewardsCard
+                key={contractAddress}
+                contractAddress={contractAddress}
+                selectedRewardContract={selectedRewardContract}
+                setSelectedRewardContract={setSelectedRewardContract}
+                onExternalLinkClicked={onExternalLinkClicked}
+                disabled={shouldDisable}
+              />
+            );
+          })
         )}
       </VStack>
     </div>

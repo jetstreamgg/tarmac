@@ -373,16 +373,8 @@ function StakeModuleWidgetWrapped({
   }, [currentUrnIndexError]);
 
   useEffect(() => {
-    console.log('=== URL State Sync useEffect TRIGGERED ===');
-    console.log('currentUrnIndex:', currentUrnIndex);
-    console.log('activeUrn?.urnIndex:', activeUrn?.urnIndex);
-    console.log('urlUrnIndex:', validatedExternalState?.urnIndex);
-    console.log('externalParamUrnAddress:', externalParamUrnAddress);
-    console.log('currentStep:', currentStep);
-
     // If there are no urns open, set up initial open flow
     if (currentUrnIndex === 0n) {
-      console.log('→ No urns open, setting up open flow');
       setWidgetState({
         flow: StakeFlow.OPEN,
         action: StakeAction.MULTICALL,
@@ -394,7 +386,6 @@ function StakeModuleWidgetWrapped({
 
     // Skip effect if we don't have the current urn index yet
     if (currentUrnIndex === undefined) {
-      console.log('→ currentUrnIndex undefined, skipping');
       return;
     }
 
@@ -404,13 +395,11 @@ function StakeModuleWidgetWrapped({
     // If we're already in the correct state, don't do anything
     // This is key to prevent the infinite loop - if we're already showing the correct urn, do nothing
     if (activeUrn?.urnIndex !== undefined && urlUrnIndex !== undefined && activeUrn.urnIndex === BigInt(urlUrnIndex)) {
-      console.log('→ Already in correct state, skipping');
       return;
     }
 
     // Handle navigation to root (no urn index)
     if (urlUrnIndex === undefined || urlUrnIndex === null) {
-      console.log('→ No URL urn index, resetting to overview');
       resetToOverviewState();
       return;
     }
@@ -420,42 +409,33 @@ function StakeModuleWidgetWrapped({
 
     // Validate the urn index is within bounds
     if (urnIndexBigInt >= (currentUrnIndex || 0n)) {
-      console.log('→ Urn index out of bounds, resetting to overview');
       resetToOverviewState();
       return;
     }
 
     // Wait for the urn address before proceeding
     if (!externalParamUrnAddress) {
-      console.log('→ Waiting for urn address');
       return;
     }
 
-    console.log('→ Setting up urn state for urn index:', urnIndexBigInt);
-
     // Set up the urn state
     if (!!externalParamVaultData && externalUrnRewardContract) {
-      console.log('→ Setting reward contract to:', externalUrnRewardContract);
       setSelectedRewardContract(externalUrnRewardContract);
     } else {
-      console.log('→ Clearing reward contract');
       setSelectedRewardContract(undefined);
     }
 
     // Set delegate and wantsToDelegate
     if (!!externalParamVaultData && externalUrnVoteDelegate !== undefined) {
-      console.log('→ Setting delegate to:', externalUrnVoteDelegate);
       setSelectedDelegate(externalUrnVoteDelegate);
       // Set wantsToDelegate based on whether a delegate exists
       setWantsToDelegate(externalUrnVoteDelegate !== ZERO_ADDRESS);
     } else {
-      console.log('→ Clearing delegate');
       setSelectedDelegate(undefined);
       setWantsToDelegate(false);
     }
 
     // Update widget state first
-    console.log('→ Setting widget state to MANAGE/MULTICALL');
     setWidgetState({
       flow: StakeFlow.MANAGE,
       action: StakeAction.MULTICALL,
@@ -463,15 +443,12 @@ function StakeModuleWidgetWrapped({
     });
 
     // Then update the active urn
-    console.log('→ Setting active urn');
     setActiveUrn(
       { urnAddress: externalParamUrnAddress, urnIndex: urnIndexBigInt },
       onStakeUrnChange ?? (() => {})
     );
 
-    console.log('→ RESETTING STEP TO OPEN_BORROW (THIS IS THE PROBLEM!)');
     setCurrentStep(StakeStep.OPEN_BORROW);
-    console.log('=== URL State Sync useEffect END ===');
   }, [
     validatedExternalState?.urnIndex,
     externalParamUrnAddress,
