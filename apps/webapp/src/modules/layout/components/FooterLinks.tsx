@@ -1,6 +1,7 @@
 import { ExternalLink } from './ExternalLink';
 import { Text } from './Typography';
 import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export function FooterLinks() {
   const footerLinks = getFooterLinks();
@@ -21,6 +22,11 @@ export function FooterLinks() {
             </Text>
           </ExternalLink>
         ))}
+        <Button variant="primaryAlt" size="xs" className="px-4 py-2">
+          <ExternalLink href="https://jobs.ashbyhq.com/skyecosystem" showIcon={false}>
+            Careers
+          </ExternalLink>
+        </Button>
       </div>
     </div>
   );
