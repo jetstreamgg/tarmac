@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { I18n } from '@lingui/core';
 
 /**
@@ -20,18 +21,31 @@ export async function dynamicActivate(i18n: I18n, locale: string) {
   i18n.loadAndActivate({ locale, messages });
 }
 
+// Use Vite's import.meta.glob for static analysis compatibility
+const localeModules = import.meta.glob<{ messages: any }>('./locales/*.ts');
+
 /**
  * Helper function to load a given locale.
  * Returns messages if the locale file exists, otherwise null.
  * @param locale
  */
 async function loadLocale(locale?: string) {
+  if (!locale) return null;
+
   try {
-    const { messages } = await import(`./locales/${locale}.ts`);
+    const modulePath = `./locales/${locale}.ts`;
+    const loader = localeModules[modulePath];
+
+    if (!loader) {
+      console.error(`Locale file for ${locale} not found.`);
+      return null;
+    }
+
+    const { messages } = await loader();
     console.log(`Locale file for ${locale} loaded.`);
     return messages;
   } catch (error) {
-    console.error(`Locale file for ${locale} not found: `, error);
+    console.error(`Error loading locale file for ${locale}: `, error);
     return null;
   }
 }
