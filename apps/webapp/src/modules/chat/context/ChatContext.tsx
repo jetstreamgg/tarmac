@@ -21,6 +21,7 @@ interface ChatContextType {
   scrollTrigger: number;
   conversationFeedbackGiven: boolean;
   showConversationFeedback: boolean;
+  knowledgeDate: string | null;
   setTermsError: React.Dispatch<React.SetStateAction<string | null>>;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   setConfirmationWarningOpened: React.Dispatch<React.SetStateAction<boolean>>;
@@ -34,6 +35,7 @@ interface ChatContextType {
   triggerScroll: () => void;
   setConversationFeedbackGiven: React.Dispatch<React.SetStateAction<boolean>>;
   setShowConversationFeedback: React.Dispatch<React.SetStateAction<boolean>>;
+  setKnowledgeDate: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -64,7 +66,9 @@ const ChatContext = createContext<ChatContextType>({
   conversationFeedbackGiven: false,
   setConversationFeedbackGiven: () => {},
   showConversationFeedback: false,
-  setShowConversationFeedback: () => {}
+  setShowConversationFeedback: () => {},
+  knowledgeDate: null,
+  setKnowledgeDate: () => {}
 });
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -95,6 +99,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Conversation feedback state
   const [conversationFeedbackGiven, setConversationFeedbackGiven] = useState(false);
   const [showConversationFeedback, setShowConversationFeedback] = useState(false);
+
+  // Knowledge date state
+  const [knowledgeDate, setKnowledgeDate] = useState<string | null>(null);
 
   const triggerScroll = useCallback(() => {
     setScrollTrigger(prev => prev + 1);
@@ -143,7 +150,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         conversationFeedbackGiven,
         setConversationFeedbackGiven,
         showConversationFeedback,
-        setShowConversationFeedback
+        setShowConversationFeedback,
+        knowledgeDate,
+        setKnowledgeDate
       }}
     >
       {children}
