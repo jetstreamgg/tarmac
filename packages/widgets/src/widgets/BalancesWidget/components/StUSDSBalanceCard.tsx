@@ -17,8 +17,8 @@ export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardP
 
   return (
     <InteractiveStatsCard
-      title={t`USDS supplied to stUSDS`}
-      tokenSymbol="stUSDS"
+      title={t`USDS supplied to Expert`}
+      iconSrc="/images/expert_icon_large.svg"
       headerRightContent={
         loading || stUsdsLoading ? (
           <Skeleton className="w-32" />

@@ -24,7 +24,7 @@ export const SavingsBalanceCard = ({
   return (
     <InteractiveStatsCardWithAccordion
       title={t`USDS supplied to Savings`}
-      tokenSymbol="sUSDS"
+      iconSrc="/images/savings_icon_large.svg"
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />

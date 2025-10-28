@@ -56,7 +56,7 @@ export const RewardsBalanceCard = ({
   return (
     <InteractiveStatsCard
       title={t`USDS supplied to Rewards`}
-      tokenSymbol="USDS"
+      iconSrc="/images/rewards_icon_large.svg"
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />

@@ -37,8 +37,8 @@ export const StakeBalanceCard = ({ loading, stakeBalance, url, onExternalLinkCli
 
   return (
     <InteractiveStatsCard
-      title={t`SKY supplied to Staking Engine`}
-      tokenSymbol="SKY"
+      title={t`SKY supplied to Stake & Borrow`}
+      iconSrc="/images/staking_engine_icon_large.svg"
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />

@@ -24,16 +24,18 @@ export const InteractiveStatsCardWithAccordion = ({
   tokenSymbol,
   balancesByChain,
   urlMap,
-  pricesData
+  pricesData,
+  iconSrc
 }: {
   title: React.ReactElement | string;
   headerRightContent: React.ReactElement | string;
   footer: React.ReactElement | string;
   footerRightContent?: React.ReactElement | string;
-  tokenSymbol: string;
+  tokenSymbol?: string;
   balancesByChain: { chainId: number; balance: bigint }[];
   urlMap: Record<number, string>;
   pricesData: Record<string, PriceData>;
+  iconSrc?: string;
 }): React.ReactElement => {
   const chains = useChains();
   if (balancesByChain.length === 1) {
@@ -46,6 +48,7 @@ export const InteractiveStatsCardWithAccordion = ({
         tokenSymbol={tokenSymbol}
         url={urlMap[balancesByChain[0].chainId]}
         chainId={balancesByChain[0].chainId}
+        iconSrc={iconSrc}
       />
     );
   }
@@ -56,12 +59,16 @@ export const InteractiveStatsCardWithAccordion = ({
           <Card variant="stats" className="w-full px-0 pb-4 lg:px-0">
             <div className="px-4 lg:px-5">
               <div className="flex items-center gap-2">
-                {tokenSymbol && (
-                  <TokenIcon
-                    className="h-8 w-8"
-                    token={{ symbol: tokenSymbol, name: tokenSymbol }}
-                    noChain={true}
-                  />
+                {iconSrc ? (
+                  <img src={iconSrc} alt="Module icon" className="h-8 w-8" />
+                ) : (
+                  tokenSymbol && (
+                    <TokenIcon
+                      className="h-8 w-8"
+                      token={{ symbol: tokenSymbol, name: tokenSymbol }}
+                      noChain={true}
+                    />
+                  )
                 )}
                 <div className="grow">
                   <CardContent className="flex items-center justify-between gap-4">
