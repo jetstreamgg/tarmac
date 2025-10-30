@@ -31,6 +31,8 @@
     "e2e:parallel:optimism": "FUND_NETWORKS=optimism playwright test --config playwright-parallel.config.ts",
     "e2e:parallel:skip": "SKIP_FUNDING=true playwright test --config playwright-parallel.config.ts",
     "e2e:parallel:dev": "SKIP_FUNDING=true FUND_NETWORKS=mainnet playwright test --config playwright-parallel.config.ts",
+    "e2e:fund": "npx tsx src/test/e2e/fund-accounts.ts",
+    "e2e:fund:check": "SKIP_FUNDING=true npx tsx src/test/e2e/fund-accounts.ts",
     "e2e:validate-vnets": "npx tsx src/test/e2e/validate-vnets.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

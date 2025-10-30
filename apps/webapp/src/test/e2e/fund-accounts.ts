@@ -1,4 +1,17 @@
-import { accountPool } from './utils/accountPoolManager';
+#!/usr/bin/env tsx
+/**
+ * Standalone script to fund test accounts on Tenderly VNets.
+ * This script is separate from test execution and can be run independently.
+ *
+ * Usage:
+ *   pnpm tsx src/test/e2e/fund-accounts.ts
+ *
+ * Environment Variables:
+ *   - SKIP_FUNDING=true: Check if already funded, skip if so
+ *   - FUND_NETWORKS: Comma-separated list of networks (default: all)
+ *   - TENDERLY_API_KEY: Required for Tenderly API access
+ */
+
 import { getTestAddresses, TEST_WALLET_COUNT } from './utils/testWallets';
 import { getRpcUrlFromFile } from './utils/getRpcUrlFromFile';
 import { NetworkName } from './utils/constants';
@@ -24,11 +37,6 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-/**
- * Global setup for parallel test execution.
- * Initializes the account pool and pre-funds all test accounts on all vnets.
- */
 
 /**
  * Set ETH balances for multiple accounts using Tenderly's bulk API
@@ -72,10 +80,8 @@ async function setTokenBalancesInBulk(
   amount: string,
   decimals: number
 ): Promise<void> {
-  // Convert amount to wei/smallest unit
   const balance = '0x' + parseUnits(amount, decimals).toString(16);
 
-  // Tenderly supports bulk token balance setting
   const response = await fetch(rpcUrl, {
     method: 'POST',
     headers: {
@@ -155,7 +161,7 @@ async function logAccountBalances(
 ): Promise<void> {
   console.log(`\n  📊 Sample account balances on ${network}:`);
 
-  // With 100 accounts, only log first 2 for brevity
+  // Log first 2 accounts for brevity
   for (const address of addresses.slice(0, 2)) {
     console.log(`    Account ${address.slice(0, 10)}...:`);
 
@@ -256,32 +262,7 @@ async function createSnapshot(network: NetworkName): Promise<string> {
 }
 
 /**
- * Revert a VNet to a previous snapshot
- */
-async function revertToSnapshot(network: NetworkName, snapshotId: string): Promise<void> {
-  const rpcUrl = await getRpcUrlFromFile(network);
-
-  const response = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      id: 1,
-      jsonrpc: '2.0',
-      method: 'evm_revert',
-      params: [snapshotId]
-    })
-  });
-
-  const result = await response.json();
-  if (result.error) {
-    throw new Error(`Failed to revert snapshot for ${network}: ${result.error.message}`);
-  }
-
-  console.log(`  ⏮️  Reverted ${network} to snapshot: ${snapshotId}`);
-}
-
-/**
- * Pre-fund all test accounts on a specific vnet with ETH and common tokens
+ * Fund all test accounts on a specific VNet with ETH and common tokens
  */
 async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Promise<void> {
   console.log(`\nFunding ${addresses.length} accounts on ${network}...`);
@@ -319,7 +300,6 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
         { token: sUsdsAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'sUSDS' }
       ];
 
-      // Fund each token type in bulk
       for (const { token, amount, decimals, name } of tokenFunding) {
         if (token) {
           try {
@@ -387,134 +367,50 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
 }
 
 /**
- * Detect if we're running in shard mode
+ * Main funding script
  */
-function detectShardMode(): { isSharded: boolean; shardIndex: number; totalShards: number } {
-  const totalShards = process.env.PLAYWRIGHT_SHARD_TOTAL ? parseInt(process.env.PLAYWRIGHT_SHARD_TOTAL) : 1;
-  const shardIndex = process.env.PLAYWRIGHT_SHARD_INDEX
-    ? parseInt(process.env.PLAYWRIGHT_SHARD_INDEX) - 1 // Convert to 0-based
-    : 0;
-
-  const isSharded = totalShards > 1;
-
-  return { isSharded, shardIndex, totalShards };
-}
-
-/**
- * Standard setup for non-sharded execution (current behavior)
- */
-async function standardSetup(): Promise<void> {
-  console.log('\n2. Initializing account pool with all addresses...');
-  await accountPool.initialize(TEST_WALLET_COUNT);
-  console.log(`Account pool initialized with ${TEST_WALLET_COUNT} addresses`);
-}
-
-/**
- * Sharded setup with coordination between shards
- */
-async function shardedSetup(addresses: string[], shardIndex: number, totalShards: number): Promise<void> {
-  console.log(`\n2. Running in SHARD MODE (Shard ${shardIndex + 1}/${totalShards})`);
-
-  // Calculate account partition for this shard
-  const accountsPerShard = Math.ceil(TEST_WALLET_COUNT / totalShards);
-  const startIndex = shardIndex * accountsPerShard;
-  const endIndex = Math.min(startIndex + accountsPerShard, TEST_WALLET_COUNT);
-
-  console.log(
-    `   This shard will use accounts ${startIndex}-${endIndex - 1} (${endIndex - startIndex} accounts)`
-  );
-
-  // Initialize account pool with only this shard's partition
-  await accountPool.initializePartition(startIndex, endIndex);
-  console.log(`   Account pool initialized with partition [${startIndex}:${endIndex})`);
-}
-
-export default async function globalSetup() {
-  console.log('=== Global Setup for Parallel Tests ===');
+async function main() {
+  console.log('=== Funding Test Accounts ===\n');
 
   try {
-    // Detect shard mode
-    const { isSharded, shardIndex, totalShards } = detectShardMode();
+    // Step 1: Validate VNets (skip balance check since we're about to fund them)
+    console.log('1. Validating VNets (checking connectivity, not balances)...');
+    const validationResult = await validateVnets(true); // skipBalanceCheck = true
 
-    if (isSharded) {
-      console.log(`🔀 SHARD MODE DETECTED: Running as shard ${shardIndex + 1} of ${totalShards}`);
-    } else {
-      console.log('📦 WORKER MODE: Running with standard worker-based parallelism');
+    if (!validationResult.healthy) {
+      console.error('❌ VNet validation failed!');
+      console.error('Please ensure VNets are created using: pnpm vnet:fork:ci');
+
+      // Check if VNets are expired/deleted
+      const vnetNotFound = validationResult.results.some(r =>
+        r.errors.some(e => e.includes('not accessible') || e.includes('not found'))
+      );
+
+      if (vnetNotFound) {
+        console.error('⚠️  VNets appear to be expired/deleted');
+        console.error('💡 Run: pnpm vnet:fork:ci');
+      }
+
+      process.exit(1);
     }
 
-    // Step 1: Generate all test addresses (100 addresses for the pool)
-    console.log('\n1. Generating test addresses...');
+    console.log('✅ VNets validated (connectivity OK)\n');
+
+    // Step 2: Generate test addresses
+    console.log('2. Generating test addresses...');
     const addresses = getTestAddresses(TEST_WALLET_COUNT);
-    console.log(`Generated ${addresses.length} test addresses for the pool`);
+    console.log(`Generated ${addresses.length} test addresses`);
     console.log('Sample addresses:');
     addresses.slice(0, 3).forEach((addr, i) => {
       console.log(`  [${i}]: ${addr}`);
     });
-    console.log(`  ... (${addresses.length - 3} more addresses)`);
+    console.log(`  ... (${addresses.length - 3} more addresses)\n`);
 
-    // Step 2: Initialize account pool based on mode
-    if (isSharded) {
-      await shardedSetup(addresses, shardIndex, totalShards);
-    } else {
-      await standardSetup();
-    }
-
-    // Step 3: Check for existing snapshots and validate them
-    const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
-    let existingSnapshots: Record<string, string> | null = null;
-
-    try {
-      const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
-      existingSnapshots = JSON.parse(snapshotData);
-      console.log('\n3. ✅ Found existing VNet snapshots!');
-      console.log('   Snapshots:', existingSnapshots ? Object.keys(existingSnapshots).join(', ') : 'none');
-
-      // Validate snapshots before using them
-      console.log('\n   🔍 Validating snapshots...');
-      const validationResult = await validateVnets();
-
-      if (validationResult.healthy) {
-        console.log('   ✅ All snapshots valid - will revert to snapshots');
-      } else {
-        console.log('   ❌ Validation failed - will recreate snapshots by funding accounts');
-
-        // Check if validation failed due to VNet not found (expired/deleted)
-        const vnetNotFound = validationResult.results.some(r =>
-          r.errors.some(e => e.includes('not accessible') || e.includes('not found'))
-        );
-
-        if (vnetNotFound) {
-          console.log('   ⚠️  VNets appear to be expired/deleted - clearing cache files');
-          try {
-            // Delete both cache files to force VNet recreation
-            await fs
-              .unlink(path.join(__dirname, '..', '..', '..', 'tenderlyTestnetData.json'))
-              .catch(() => {});
-            await fs.unlink(snapshotFile).catch(() => {});
-            console.log('   🗑️  Deleted stale VNet cache files');
-            console.log('   💡 You need to recreate VNets using: pnpm vnet:fork:ci');
-            throw new Error('VNets expired - please recreate them with: pnpm vnet:fork:ci');
-          } catch (error) {
-            if (error instanceof Error && error.message.includes('VNets expired')) {
-              throw error;
-            }
-          }
-        }
-
-        existingSnapshots = null; // Force refunding
-      }
-    } catch {
-      console.log('\n3. No existing snapshots found - will fund accounts and create snapshots');
-    }
-
-    // Step 4: Determine which networks to work with
-
-    // Check if we should only fund specific networks (for debugging/development)
+    // Step 3: Determine which networks to fund
     const targetNetworks = process.env.FUND_NETWORKS || process.env.TEST_NETWORKS;
     let networks: NetworkName[];
 
     if (targetNetworks) {
-      // Parse comma-separated list of networks
       const requestedNetworks = targetNetworks.split(',').map(n => n.trim().toLowerCase());
       networks = requestedNetworks
         .map(n => {
@@ -536,9 +432,8 @@ export default async function globalSetup() {
         })
         .filter(n => n !== null) as NetworkName[];
 
-      console.log(`Funding only specified networks: ${networks.join(', ')}`);
+      console.log(`3. Funding specified networks: ${networks.join(', ')}\n`);
     } else {
-      // Default: fund all networks
       networks = [
         NetworkName.mainnet,
         NetworkName.base,
@@ -546,136 +441,40 @@ export default async function globalSetup() {
         NetworkName.optimism,
         NetworkName.unichain
       ];
-      console.log('Funding all networks (use FUND_NETWORKS env to limit)');
+      console.log('3. Funding all networks\n');
     }
 
-    // If snapshots exist, revert to them instead of funding
-    if (existingSnapshots) {
-      console.log('\n5. Reverting VNets to snapshots (restoring funded state)...');
-      const revertPromises = networks.map(network => {
-        const snapshotId = existingSnapshots[network];
-        if (snapshotId) {
-          return revertToSnapshot(network, snapshotId);
-        }
-        return Promise.resolve();
-      });
-      await Promise.all(revertPromises);
-      console.log('✅ All VNets reverted to funded state - ready for tests!');
-    } else {
-      // No snapshots - need to fund and create snapshots
-      // In shard mode, only shard 1 should fund; others should wait
-      if (isSharded && shardIndex > 0) {
-        console.log(`\n⏳ Shard ${shardIndex + 1} waiting for shard 1 to fund accounts...`);
-        console.log('   💡 TIP: In CI, the setup job should fund accounts before shards run.');
-        console.log('   💡 For local testing, run shard 1 first to fund accounts.');
+    // Step 4: Fund accounts on all networks
+    const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
+    await Promise.all(fundingPromises);
 
-        // Wait for snapshots to be created by shard 1
-        const maxWaitTime = 600000; // 10 minutes
-        const checkInterval = 5000; // 5 seconds
-        const startTime = Date.now();
+    // Step 5: Create snapshots after funding
+    console.log('\n4. Creating VNet snapshots after funding...');
+    const snapshotPromises = networks.map(async network => {
+      const snapshotId = await createSnapshot(network);
+      return { network, snapshotId };
+    });
+    const snapshots = await Promise.all(snapshotPromises);
 
-        while (Date.now() - startTime < maxWaitTime) {
-          try {
-            const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
-            const snapshots = JSON.parse(snapshotData);
-            if (snapshots && Object.keys(snapshots).length > 0) {
-              console.log('   ✅ Snapshots created by shard 1! Reverting to them...');
-              existingSnapshots = snapshots;
-
-              const revertPromises = networks.map(network => {
-                const snapshotId = existingSnapshots![network];
-                if (snapshotId) {
-                  return revertToSnapshot(network, snapshotId);
-                }
-                return Promise.resolve();
-              });
-              await Promise.all(revertPromises);
-              break;
-            }
-          } catch {
-            // Snapshot file doesn't exist yet, keep waiting
-          }
-
-          await new Promise(resolve => setTimeout(resolve, checkInterval));
-          process.stdout.write('.');
-        }
-
-        if (!existingSnapshots) {
-          throw new Error(
-            'Timeout waiting for shard 1 to fund accounts. Please run shard 1 first or use the CI workflow.'
-          );
-        }
-      } else {
-        // Worker mode OR shard 1: do the funding
-        if (isSharded) {
-          console.log(`\n💰 Shard 1 funding all ${addresses.length} accounts (other shards will wait)...`);
-        } else {
-          console.log('\n5. Pre-funding accounts on vnets...');
-        }
-
-        const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
-        await Promise.all(fundingPromises);
-
-        // Create snapshots after funding (for next run)
-        console.log('\n6. Creating VNet snapshots after funding...');
-        const snapshotPromises = networks.map(async network => {
-          const snapshotId = await createSnapshot(network);
-          return { network, snapshotId };
-        });
-        const snapshots = await Promise.all(snapshotPromises);
-
-        // Save snapshots to file for next run
-        const snapshotData = Object.fromEntries(snapshots.map(s => [s.network, s.snapshotId]));
-        await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
-        console.log(`✅ Snapshots saved to ${snapshotFile}`);
-        console.log('💡 These snapshots will be used for all future test runs (instant setup!)');
-      }
-    }
-
-    // Step 7: Display pool status
-    const status = await accountPool.getPoolStatus();
-    console.log('\n7. Account pool status:');
-    console.log(`   - Available: ${status.available}`);
-    console.log(`   - In use: ${status.inUse}`);
-    console.log(`   - Total: ${status.total}`);
-
-    console.log('\n=== Global Setup Complete ===\n');
-  } catch (error) {
-    console.error('Global setup failed:', error);
-    throw error;
-  }
-}
-
-// Support for cleanup if needed
-export async function globalTeardown() {
-  console.log('=== Global Teardown ===');
-
-  try {
-    // Step 1: Revert all VNets to snapshots (for next test run)
-    console.log('\n1. Reverting VNets to snapshots...');
-
+    // Step 6: Save snapshots to file
     const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
-    try {
-      const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
-      const snapshots = JSON.parse(snapshotData);
+    const snapshotData = Object.fromEntries(snapshots.map(s => [s.network, s.snapshotId]));
+    await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
+    console.log(`\n✅ Snapshots saved to ${snapshotFile}`);
+    console.log('💡 These snapshots will be used for instant test setup!\n');
 
-      const revertPromises = Object.entries(snapshots).map(([network, snapshotId]) =>
-        revertToSnapshot(network as NetworkName, snapshotId as string)
-      );
-
-      await Promise.all(revertPromises);
-      console.log('✅ All VNets reverted to clean snapshots');
-      console.log('🎉 VNets are ready for next test run (no funding needed)!');
-    } catch (error) {
-      console.log('ℹ️  No snapshots to revert (first run or snapshots not created)', error);
-    }
-
-    // Step 2: Reset the account pool to clean state
-    await accountPool.reset();
-    console.log('Account pool reset');
-
-    console.log('\n=== Global Teardown Complete ===');
+    console.log('=== Funding Complete ===');
+    console.log(`✅ Funded ${addresses.length} accounts on ${networks.length} networks`);
+    console.log(`✅ Created ${snapshots.length} snapshots`);
+    console.log('\nYou can now run tests with instant setup:');
+    console.log('  pnpm e2e');
+    console.log('  or');
+    console.log('  pnpm playwright test --config=playwright-parallel.config.ts');
   } catch (error) {
-    console.error('Global teardown failed:', error);
+    console.error('\n❌ Funding failed:', error);
+    process.exit(1);
   }
 }
+
+// Run the script
+main();

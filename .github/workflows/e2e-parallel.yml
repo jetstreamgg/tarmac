@@ -4,10 +4,11 @@ permissions:
   contents: read
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  # Temporarily disabled to test sharded workflow
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       skip_funding:
