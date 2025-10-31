@@ -243,7 +243,7 @@ Bundled transaction: Active`
       'By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain. If the actual slippage is greater than your chosen tolerance level, the transaction will fail and be reverted. Note that reverted transactions may still incur gas fees.'
   },
   {
-    id: 'rate',
+    id: 'ssr',
     title: 'Rate',
     tooltip:
       'The Sky Savings Rate is variable, determined by decentralized, onchain Sky Ecosystem Governance, and configured on the Ethereum blockchain. Sky Ecosystem Governance is able to adapt the SSR and other relevant parameters at any time at its discretion and without notice, based on market conditions, protocol surplus and other factors. The rate shown here is an estimate of the Sky Savings Rate representing the expected compounded rate per annum. It should be automatically updated every 5 minutes, and is powered by data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
@@ -265,14 +265,21 @@ Sky.money does not control the issuance, determination, or distribution of these
 
 // Helper function to get tooltip by ID with fallback to legacy tooltips
 export function getTooltipById(id: string): Tooltip | undefined {
+  // Handle alias mappings
+  const aliasMap: Record<string, string> = {
+    'sky-savings-rate': 'ssr'
+  };
+
+  const mappedId = aliasMap[id] || id;
+
   // First, try to find in current tooltips
-  const tooltip = tooltips.find(t => t.id === id);
+  const tooltip = tooltips.find(t => t.id === mappedId);
   if (tooltip) {
     return tooltip;
   }
 
   // If not found, fallback to legacy tooltips
-  return getLegacyTooltipById(id);
+  return getLegacyTooltipById(mappedId);
 }
 
 // Helper function to get multiple tooltips by IDs and return them as an array
