@@ -425,19 +425,14 @@ function StakeModuleWidgetWrapped({
     if (widgetState.flow !== StakeFlow.MANAGE || widgetState.action !== StakeAction.MULTICALL) {
       if (!!externalParamVaultData && externalUrnRewardContract) {
         setSelectedRewardContract(externalUrnRewardContract);
+        setSelectedDelegate(externalUrnVoteDelegate);
+        // Set wantsToDelegate based on whether a delegate exists
+        setWantsToDelegate(externalUrnVoteDelegate !== ZERO_ADDRESS);
       } else {
         setSelectedRewardContract(undefined);
+        setSelectedDelegate(undefined);
+        setWantsToDelegate(false);
       }
-    }
-
-    // Set delegate and wantsToDelegate
-    if (!!externalParamVaultData && externalUrnVoteDelegate !== undefined) {
-      setSelectedDelegate(externalUrnVoteDelegate);
-      // Set wantsToDelegate based on whether a delegate exists
-      setWantsToDelegate(externalUrnVoteDelegate !== ZERO_ADDRESS);
-    } else {
-      setSelectedDelegate(undefined);
-      setWantsToDelegate(false);
     }
 
     // Update widget state first

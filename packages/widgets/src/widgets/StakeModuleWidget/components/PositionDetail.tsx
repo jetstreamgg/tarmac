@@ -7,9 +7,9 @@ import {
   TOKENS,
   useRewardContractTokens,
   useDelegateName,
-  useDelegateOwner,
   useStakeRewardContracts,
-  lsSkyUsdsRewardAddress
+  lsSkyUsdsRewardAddress,
+  useDelegateOwner
 } from '@jetstreamgg/sky-hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -17,13 +17,13 @@ import { getRiskTextColor } from '../lib/utils';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
-import { JazziconComponent } from './Jazzicon';
 import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
 import { ClaimRewardsDropdown } from './ClaimRewardsDropdown';
 import { getTooltipById } from '../../../data/tooltips';
 import { useChainId } from 'wagmi';
 import { UpdateRewardSelection } from './UpdateRewardSelection';
+import { UpdateDelegateSelection } from './UpdateDelegateSelection';
 import { YellowWarning } from '@widgets/shared/components/icons/YellowWarning';
 import { OnStakeUrnChange } from '..';
 
@@ -178,9 +178,14 @@ export function PositionDetail({
               <Text variant="medium" className="text-textSecondary leading-4">
                 Delegate
               </Text>
-              <div className="flex items-start">
-                <JazziconComponent address={selectedDelegateOwner} />
-                <Text className="ml-2">{selectedDelegateName}</Text>
+              <div className="ml-8 flex items-center justify-start gap-1">
+                <UpdateDelegateSelection
+                  urnAddress={urnAddress}
+                  index={index}
+                  selectedRewardContract={selectedRewardContract}
+                  selectedVoteDelegate={selectedVoteDelegate}
+                  onStakeUrnChange={onStakeUrnChange}
+                />
               </div>
             </VStack>
           )}
