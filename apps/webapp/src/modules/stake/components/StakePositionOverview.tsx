@@ -26,9 +26,8 @@ import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { StakeDelegateCard } from './StakeDelegateCard';
 import { StakeRewardCard } from './StakeRewardCard';
-import { InfoTooltip } from '@/components/InfoTooltip';
 // import { useMemo } from 'react';
-import { formatUrnIndex, getTooltipById } from '@jetstreamgg/sky-widgets';
+import { formatUrnIndex, getTooltipById, PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { useChainId } from 'wagmi';
 import { formatPercent } from '@jetstreamgg/sky-utils';
 
@@ -145,9 +144,10 @@ export function StakePositionOverview({
                 <div className="flex items-center gap-1">
                   <span>{t`Capped OSM SKY price`}</span>
                   {osmCappedSkyPriceTooltip && (
-                    <InfoTooltip
-                      content={osmCappedSkyPriceTooltip.tooltip}
+                    <PopoverInfo
                       iconClassName="text-textSecondary"
+                      title={osmCappedSkyPriceTooltip.title}
+                      description={osmCappedSkyPriceTooltip.tooltip}
                     />
                   )}
                 </div>

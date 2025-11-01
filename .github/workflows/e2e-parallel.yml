@@ -1,0 +1,251 @@
+name: Parallel E2E Tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      skip_funding:
+        description: 'Skip funding accounts (for retry runs)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      workers:
+        description: 'Number of parallel workers'
+        required: false
+        default: '6'
+        type: string
+      networks:
+        description: 'Networks to fund (comma-separated)'
+        required: false
+        default: 'mainnet,base,arbitrum,optimism,unichain'
+        type: string
+
+concurrency:
+  group: vnets-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  parallel-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      # Base environment variables
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      # Parallel test configuration
+      TEST_WORKERS: ${{ github.event.inputs.workers || '3' }}
+      SKIP_FUNDING: ${{ github.event.inputs.skip_funding || 'false' }}
+      FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Diagnostics refs and cache keys
+        run: |
+          echo "ref_name=$GITHUB_REF_NAME"
+          echo "head_ref=$GITHUB_HEAD_REF"
+          echo "ref=$GITHUB_REF"
+          echo "restore_key=persistent-vnets-${{ github.head_ref || github.ref_name }}-v3-"
+          echo "concurrency_group=vnets-${{ github.head_ref || github.ref_name }}"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Install Playwright browsers
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Restore VNets from cache
+        id: cache-vnets
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            tenderlyTestnetData.json
+            apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+          key: persistent-vnets-${{ github.head_ref || github.ref_name }}-v3-
+          restore-keys: |
+            persistent-vnets-${{ github.head_ref || github.ref_name }}-v3-
+
+      - name: Check VNet files
+        id: check-files
+        run: |
+          echo "🔍 Checking VNet cache files..."
+          echo "VNet data file:"
+          if [ -f "tenderlyTestnetData.json" ]; then
+            echo "have_vnet_json=true" >> $GITHUB_OUTPUT
+            echo "  ✅ tenderlyTestnetData.json exists ($(wc -c < tenderlyTestnetData.json) bytes)"
+            echo "  Networks: $(cat tenderlyTestnetData.json | jq -r '.[].NETWORK' | tr '\n' ', ')"
+          else
+            echo "have_vnet_json=false" >> $GITHUB_OUTPUT
+            echo "  ❌ tenderlyTestnetData.json NOT FOUND"
+          fi
+          echo ""
+          echo "Snapshot file:"
+          if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
+            echo "have_snapshots=true" >> $GITHUB_OUTPUT
+            echo "  ✅ persistent-vnet-snapshots.json exists ($(wc -c < apps/webapp/src/test/e2e/persistent-vnet-snapshots.json) bytes)"
+            echo "  Networks: $(cat apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | jq -r 'keys[]' | tr '\n' ', ')"
+          else
+            echo "have_snapshots=false" >> $GITHUB_OUTPUT
+            echo "  ❌ persistent-vnet-snapshots.json NOT FOUND"
+          fi
+
+      - name: Validate VNets (if files present)
+        id: validate-vnets
+        if: steps.check-files.outputs.have_vnet_json == 'true'
+        run: |
+          echo "🔍 Validating cached VNets and snapshots..."
+          cd apps/webapp && npx tsx src/test/e2e/validate-vnets.ts
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+        continue-on-error: true
+
+      - name: Create or recreate VNets if needed
+        id: ensure-vnets
+        if: steps.check-files.outputs.have_vnet_json != 'true' || steps.validate-vnets.outcome == 'failure'
+        run: |
+          echo "================================================================"
+          echo "🔧 CREATING/RECREATING VNETS"
+          echo "================================================================"
+          pnpm run vnet:fork:ci
+          echo "created=true" >> $GITHUB_OUTPUT
+          echo "✅ VNet creation complete"
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Use cached VNets
+        if: steps.check-files.outputs.have_vnet_json == 'true' && steps.validate-vnets.outcome == 'success'
+        run: |
+          echo "================================================================"
+          echo "✅ USING CACHED VNETS"
+          echo "================================================================"
+          echo "VNets will be reverted to snapshots by globalSetup"
+          echo "This will be FAST (no funding needed)! ⚡"
+          echo "================================================================"
+
+      - name: Run parallel E2E tests
+        run: |
+          echo "Running parallel E2E tests with $TEST_WORKERS workers"
+          echo "Skip funding: $SKIP_FUNDING"
+          echo "Fund networks: $FUND_NETWORKS"
+
+          # Run the parallel tests with retry script
+          chmod +x ./apps/webapp/run-tests-with-retry.sh
+          cd apps/webapp && ./run-tests-with-retry.sh
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Upload test results (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parallel-test-results-${{ github.run_id }}
+          path: |
+            apps/webapp/playwright-report/
+            apps/webapp/test-results/
+            apps/webapp/test-results.json
+          retention-days: 7
+
+      - name: Upload test traces (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parallel-test-traces-${{ github.run_id }}
+          path: apps/webapp/test-results/
+          retention-days: 3
+
+      # Cleanup VNets on main branch only (keep feature branch VNets for reuse via cache)
+      # This prevents VNet accumulation while allowing fast reruns on feature branches
+      - name: Cleanup Tenderly VNets
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          echo "Cleaning up Tenderly VNets (main branch only)..."
+          pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## Parallel E2E Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers**: $TEST_WORKERS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Networks**: $FUND_NETWORKS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Skip Funding**: $SKIP_FUNDING" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "apps/webapp/test-results.json" ]; then
+            echo "- **Test Results**: Available in artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "- **Status**: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Artifacts**: Check uploaded test results and traces" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Verify snapshots before saving to cache
+        if: always() && github.ref != 'refs/heads/main'
+        run: |
+          echo "================================================================"
+          echo "📦 PREPARING TO SAVE VNETS TO CACHE"
+          echo "================================================================"
+          echo ""
+          echo "Checking what will be saved:"
+          echo ""
+          if [ -f "tenderlyTestnetData.json" ]; then
+            echo "✅ tenderlyTestnetData.json exists ($(wc -c < tenderlyTestnetData.json) bytes)"
+            echo "   Networks: $(cat tenderlyTestnetData.json | jq -r '.[].NETWORK' | tr '\n' ', ')"
+          else
+            echo "❌ tenderlyTestnetData.json NOT FOUND"
+          fi
+          echo ""
+          if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
+            echo "✅ persistent-vnet-snapshots.json exists ($(wc -c < apps/webapp/src/test/e2e/persistent-vnet-snapshots.json) bytes)"
+            echo "   Content:"
+            cat apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | jq '.'
+          else
+            echo "❌ persistent-vnet-snapshots.json NOT FOUND"
+            echo "⚠️  This means snapshots were not created during global setup!"
+          fi
+          echo ""
+          echo "================================================================"
+      
+      # Feature branch VNets are kept for fast reruns
+      - name: Save VNets to cache
+        if: always() && github.ref != 'refs/heads/main' && (steps.check-files.outputs.have_vnet_json == 'true' || steps.check-files.outputs.have_snapshots == 'true')
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            tenderlyTestnetData.json
+            apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+          key: persistent-vnets-${{ github.head_ref || github.ref_name }}-v3-${{ hashFiles('tenderlyTestnetData.json', 'apps/webapp/src/test/e2e/persistent-vnet-snapshots.json') }}
+        continue-on-error: true

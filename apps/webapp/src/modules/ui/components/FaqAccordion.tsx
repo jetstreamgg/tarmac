@@ -51,7 +51,11 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
                         return (
                           <span className="inline-flex items-center gap-1">
                             {children}
-                            <PopoverInfo title={tooltip.title} description={tooltip.tooltip} />
+                            <PopoverInfo
+                              title={tooltip.title}
+                              description={tooltip.tooltip}
+                              iconSize="large"
+                            />
                           </span>
                         );
                       }

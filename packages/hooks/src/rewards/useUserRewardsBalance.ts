@@ -51,13 +51,13 @@ export const useUserRewardsBalance = ({
   address,
   chainId
 }: {
-  contractAddress: `0x${string}`;
+  contractAddress?: `0x${string}`;
   address: `0x${string}`;
   chainId: number;
 }): ReadHook & { data?: RewardsData } => {
   const baseUrl = getBaLabsApiUrl(chainId) || '';
   let url: URL | undefined;
-  if (baseUrl) {
+  if (baseUrl && contractAddress && address) {
     const endpoint = `${baseUrl}/farms/${contractAddress.toLowerCase()}/wallets/${address.toLowerCase()}`;
     url = formatBaLabsUrl(new URL(endpoint));
   }

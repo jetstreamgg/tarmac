@@ -23,7 +23,7 @@ export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardP
         loading || stUsdsLoading ? (
           <Skeleton className="w-32" />
         ) : (
-          <Text>{formatBigInt(userSuppliedUsds, { unit: 18, maxDecimals: 0 })}</Text>
+          <Text>{formatBigInt(userSuppliedUsds)}</Text>
         )
       }
       footer={

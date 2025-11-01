@@ -2,8 +2,8 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { Text } from '@/modules/layout/components/Typography';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
+import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function StUSDSTvlCard() {
   const { i18n } = useLingui();
@@ -17,9 +17,11 @@ export function StUSDSTvlCard() {
       isLoading={isLoading}
       title={i18n._(msg`Total Value Locked`)}
       content={
-        <Text variant="large" className="mt-2">
-          {formatBigInt(totalAssets, { unit: 18 })} USDS
-        </Text>
+        <TokenIconWithBalance
+          className="mt-2"
+          token={{ symbol: 'USDS', name: 'usds' }}
+          balance={formatBigInt(totalAssets, { unit: 18 })}
+        />
       }
     />
   );

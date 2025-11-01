@@ -167,8 +167,7 @@ export function StakeOverview() {
                         msg`${borrowTooltipContent?.tooltip || 'The percentage of the debt ceiling currently being utilized for USDS borrowing.'}`
                       )}
                       iconClassName="text-textSecondary hover:text-white transition-colors"
-                      width={14}
-                      height={14}
+                      iconSize="medium"
                     />
                   </div>
                 }

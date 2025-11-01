@@ -55,9 +55,6 @@ export const SelectRewardContract = ({
             <Text>
               <Trans>Choose your reward token</Trans>
             </Text>
-            <Text variant="small" className="leading-4">
-              <Trans>More rewards coming soon</Trans>
-            </Text>
           </div>
           {widgetState.flow !== SealFlow.OPEN && (
             <Button variant="link" className="text-white" onClick={handleSkip}>

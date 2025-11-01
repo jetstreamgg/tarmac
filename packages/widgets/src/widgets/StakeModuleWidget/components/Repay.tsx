@@ -151,6 +151,7 @@ const PositionManagerOverviewContainer = ({
                   `${formatBigInt(newBorrowAmount, { compact: true })}  ${usds.symbol}`
                 ]
               : `${formatBigInt(newBorrowAmount, { compact: true })}  ${usds.symbol}`,
+          tooltipTitle: getTooltipById('borrow')?.title || '',
           tooltipText: getTooltipById('borrow')?.tooltip || ''
         },
         minDebtNotMet
@@ -163,6 +164,7 @@ const PositionManagerOverviewContainer = ({
               {
                 label: t`Max borrowable amount`,
                 value: formattedMaxBorrowable,
+                tooltipTitle: getTooltipById('borrow-limit')?.title || '',
                 tooltipText: getTooltipById('borrow-limit')?.tooltip || ''
               }
             ],
@@ -176,6 +178,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Capped OSM SKY price`,
           value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
+          tooltipTitle: getTooltipById('capped-osm-sky-price')?.title || '',
           tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
         }
       ].flat(),
@@ -198,6 +201,7 @@ const PositionManagerOverviewContainer = ({
       {
         label: t`Borrow Rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : '',
+        tooltipTitle: getTooltipById('borrow-rate')?.title || '',
         tooltipText: getTooltipById('borrow-rate')?.tooltip || ''
       },
       {
@@ -214,12 +218,14 @@ const PositionManagerOverviewContainer = ({
         label: t`Liquidation price`,
         value:
           hasPositions && existingLiqPrice !== newLiqPrice ? [existingLiqPrice, newLiqPrice] : newLiqPrice,
+        tooltipTitle: getTooltipById('liquidation-price')?.title || '',
         tooltipText: getTooltipById('liquidation-price')?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
         value:
           hasPositions && existingColRatio !== newColRatio ? [existingColRatio, newColRatio] : newColRatio,
+        tooltipTitle: getTooltipById('collateralization-ratio')?.title || '',
         tooltipText: getTooltipById('collateralization-ratio')?.tooltip || ''
       },
       {
@@ -235,6 +241,7 @@ const PositionManagerOverviewContainer = ({
                 `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
               ]
             : `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
+        tooltipTitle: getTooltipById('risk-level')?.title || '',
         tooltipText: getTooltipById('risk-level')?.tooltip || '',
         classNamePrev: existingRiskTextColor,
         className: riskTextColor

@@ -51,8 +51,7 @@ export const UtilizationBar = ({
                 title={popoverTitle}
                 description={popoverDescription}
                 iconClassName="text-textSecondary hover:text-white transition-colors"
-                width={14}
-                height={14}
+                iconSize="medium"
               />
             )}
           </HStack>

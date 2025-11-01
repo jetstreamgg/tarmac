@@ -1,10 +1,8 @@
 import { createUseWriteContract } from 'wagmi/codegen';
-import stUsdsImplementationAbi from '../abis/stUsdsImplementationAbi';
-import { stUsdsAddress } from '../generated';
-import { Abi } from 'viem';
+import { stUsdsAddress, stUsdsImplementationAbi } from '../generated';
 
 // We make all calls to the proxy token address, but use the implementation ABI
 export const useWriteStUsdsImplementation = /*#__PURE__*/ createUseWriteContract({
-  abi: stUsdsImplementationAbi as Abi,
+  abi: stUsdsImplementationAbi,
   address: stUsdsAddress
 });

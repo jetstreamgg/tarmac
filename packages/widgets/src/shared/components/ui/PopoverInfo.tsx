@@ -14,21 +14,23 @@ export interface PopoverInfoProps {
   title: string;
   description: ReactNode;
   iconClassName?: string;
-  width?: number;
-  height?: number;
+  iconSize?: 'small' | 'medium' | 'large' | number;
 }
 
-export const PopoverInfo = ({
-  title,
-  description,
-  iconClassName,
-  width = 16,
-  height = 15
-}: PopoverInfoProps) => {
+const getIconSize = (size: 'small' | 'medium' | 'large' | number) => {
+  if (size === 'medium') return 14;
+  else if (size === 'large') return 16;
+  else if (typeof size === 'number') return size;
+  else return 13;
+};
+
+export const PopoverInfo = ({ title, description, iconClassName, iconSize = 'small' }: PopoverInfoProps) => {
+  const size = getIconSize(iconSize);
+
   return (
     <Popover>
       <PopoverTrigger onClick={e => e.stopPropagation()} className="z-10">
-        <Info className={iconClassName} width={width} height={height} />
+        <Info className={iconClassName} width={size} height={size} />
       </PopoverTrigger>
       <PopoverContent
         align="center"

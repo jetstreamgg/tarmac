@@ -1,11 +1,11 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { Text } from '@/modules/layout/components/Typography';
 import { useCollateralData } from '@jetstreamgg/sky-hooks';
 import { getIlkName } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function TotalDebtCard() {
   const { i18n } = useLingui();
@@ -23,9 +23,11 @@ export function TotalDebtCard() {
         </div>
       }
       content={
-        <div className="mt-2">
-          <Text variant="large">{formatBigInt(totalStakingDebt)} USDS</Text>
-        </div>
+        <TokenIconWithBalance
+          className="mt-2"
+          token={{ symbol: 'USDS', name: 'usds' }}
+          balance={formatBigInt(totalStakingDebt)}
+        />
       }
     />
   );

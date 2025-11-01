@@ -21,7 +21,7 @@ export function MkrDelayedUpgradePenalty() {
       }
       isLoading={isLoading}
       error={error}
-      content={<Text>{penaltyValue} %</Text>}
+      content={<Text className="mt-2">{penaltyValue} %</Text>}
     />
   );
 }

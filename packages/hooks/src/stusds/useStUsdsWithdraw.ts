@@ -3,10 +3,9 @@ import { WriteHook, WriteHookParams } from '../hooks';
 import { useStUsdsData } from './useStUsdsData';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { stUsdsAddress } from '../generated';
-import { useReadStUsdsImplementation, stUsdsImplementationAbi } from './useReadStUsdsImplementation';
+import { stUsdsAddress, stUsdsImplementationAbi } from '../generated';
+import { useReadStUsdsImplementation } from './useReadStUsdsImplementation';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
-import { Abi } from 'viem';
 
 export function useStUsdsWithdraw({
   amount,
@@ -70,7 +69,7 @@ export function useStUsdsWithdraw({
 
   return useWriteContractFlow({
     address: stUsdsAddress[chainId as keyof typeof stUsdsAddress],
-    abi: stUsdsImplementationAbi as Abi,
+    abi: stUsdsImplementationAbi,
     functionName: 'withdraw',
     args: [withdrawAmount, connectedAddress!, connectedAddress!] as const,
     chainId,

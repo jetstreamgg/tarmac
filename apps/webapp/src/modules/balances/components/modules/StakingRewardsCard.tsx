@@ -8,10 +8,9 @@ import { Text } from '@/modules/layout/components/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage, isL2ChainId } from '@jetstreamgg/sky-utils';
 import {
-  lsSkySpkRewardAddress,
-  lsSkyUsdsRewardAddress,
   useHighestRateFromChartData,
-  useRewardsChartInfo
+  useMultipleRewardsChartInfo,
+  useStakeRewardContracts
 } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
@@ -19,18 +18,16 @@ export function StakingRewardsCard() {
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
 
-  // Fetch chart data for both reward contracts
-  const { data: lsSkyRewardsChartInfoData, isLoading: lsSkyUsdsChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: lsSkyUsdsRewardAddress[mainnet.id as keyof typeof lsSkyUsdsRewardAddress]
-  });
-
-  const { data: lsSpkRewardsChartInfoData, isLoading: lsSkySpkChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: lsSkySpkRewardAddress[mainnet.id as keyof typeof lsSkySpkRewardAddress]
-  });
+  // Fetch chart data for all stake reward contracts
+  const { data: stakeRewardContracts, isLoading: stakeRewardsContractsLoading } = useStakeRewardContracts();
+  const { data: stakeRewardsChartsInfoData, isLoading: stakeRewardsChartsDataLoading } =
+    useMultipleRewardsChartInfo({
+      rewardContractAddresses: stakeRewardContracts?.map(({ contractAddress }) => contractAddress) || []
+    });
 
   // Find the highest rate
-  const highestRateData = useHighestRateFromChartData([lsSkyRewardsChartInfoData, lsSpkRewardsChartInfoData]);
-  const chartDataLoading = lsSkyUsdsChartDataLoading || lsSkySpkChartDataLoading;
+  const highestRateData = useHighestRateFromChartData(stakeRewardsChartsInfoData || []);
+  const chartDataLoading = stakeRewardsContractsLoading || stakeRewardsChartsDataLoading;
   const mostRecentRateNumber = highestRateData ? parseFloat(highestRateData.rate) : null;
 
   return (
@@ -41,8 +38,8 @@ export function StakingRewardsCard() {
       subHeading={
         <div className="flex flex-wrap gap-2 lg:gap-4">
           <HStack gap={2}>
-            <PairTokenIcons leftToken="SKY" rightToken="USDS" chainId={mainnet.id} />
-            <Text className="text-textSecondary">With: SKY Get: USDS</Text>
+            <PairTokenIcons leftToken="SKY" rightToken="SKY" chainId={mainnet.id} />
+            <Text className="text-textSecondary">With: SKY Get: SKY</Text>
           </HStack>
           <HStack gap={2}>
             <PairTokenIcons leftToken="SKY" rightToken="SPK" chainId={mainnet.id} />
@@ -57,7 +54,7 @@ export function StakingRewardsCard() {
           <Text className="text-2xl lg:text-[32px]">
             Rates <span className="text-lg">up to</span>{' '}
             {mostRecentRateNumber ? formatDecimalPercentage(mostRecentRateNumber) : '0%'}
-            <PopoverRateInfo type="str" iconClassName="mt-auto -translate-y-1/4 ml-2" />
+            <PopoverRateInfo type="srr" iconClassName="mt-auto -translate-y-1/4 ml-2" />
           </Text>
         )
       }

@@ -891,6 +891,7 @@ function TradeWidgetWrapped({
                 transactionData={[
                   {
                     label: t`Exchange Rate`,
+                    tooltipTitle: getTooltipById('exchange-rate')?.title || '',
                     tooltipText: getTooltipById('exchange-rate')?.tooltip || '',
                     value: (() => {
                       if (

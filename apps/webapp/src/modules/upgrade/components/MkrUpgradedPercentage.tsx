@@ -18,7 +18,7 @@ export function MkrUpgradedPercentage() {
       title={t`% of MKR upgraded`}
       isLoading={isLoading}
       error={error}
-      content={<Text>{percentageValue} %</Text>}
+      content={<Text className="mt-2">{percentageValue} %</Text>}
     />
   );
 }
