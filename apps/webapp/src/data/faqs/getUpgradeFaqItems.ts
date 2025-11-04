@@ -193,7 +193,7 @@ For details on the risks associated with soft-pegged stablecoins, review the [Us
     },
     {
       question: 'Can I trade USDS on the open market?',
-      answer: `Yes, eligible sUSDS holders can access the Sky.money web app to trade the tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.fi/#/1/swap/WETH). sUSDS holders are also free to access any other protocol or exchange that supports sUSDS trading; however, users do so at their own risk. Sky.money is not responsible for any loss or damages incurred while using such third-party platforms.
+      answer: `Yes, eligible USDS holders can access the Sky.money web app to trade the tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.fi/#/1/swap/WETH). USDS holders are also free to access any other protocol or exchange that supports USDS trading; however, users do so at their own risk. Sky.money is not responsible for any loss or damages incurred while using such third-party platforms.
 
 Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.`,
       index: 20

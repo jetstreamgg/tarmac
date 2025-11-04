@@ -24,7 +24,8 @@ export const ManagePosition = ({
   batchEnabled,
   setBatchEnabled,
   isBatchTransaction,
-  legalBatchTxUrl
+  legalBatchTxUrl,
+  disclaimer
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -45,6 +46,7 @@ export const ManagePosition = ({
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
   legalBatchTxUrl?: string;
+  disclaimer?: React.ReactNode;
 }) => {
   return currentAction === StakeAction.OVERVIEW ? (
     <UrnsList
@@ -54,6 +56,8 @@ export const ManagePosition = ({
       claimAllExecute={claimAllExecute}
       batchEnabledAndSupported={batchEnabledAndSupported}
       onStakeUrnChange={onStakeUrnChange}
+      onExternalLinkClicked={onExternalLinkClicked}
+      disclaimer={disclaimer}
     />
   ) : (
     <Wizard

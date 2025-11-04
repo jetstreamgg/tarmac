@@ -123,11 +123,14 @@ export const useRiskSlider = ({
 
   // Use simulated vault first since it reflects current user input
   const existingOrNewVault = vault || existingVault;
-  const shouldShowSlider =
-    !!existingOrNewVault?.debtValue &&
-    existingOrNewVault?.debtValue > 0n &&
-    !!existingOrNewVault?.collateralAmount &&
-    existingOrNewVault?.collateralAmount > 0n;
+
+  // Show slider in repay mode if there is existing debt and collateral, even if the simulated debt is 0
+  const shouldShowSlider = isRepayMode
+    ? hasExistingDebt && !!existingVault?.collateralAmount && existingVault.collateralAmount > 0n
+    : !!existingOrNewVault?.debtValue &&
+      existingOrNewVault.debtValue > 0n &&
+      !!existingOrNewVault?.collateralAmount &&
+      existingOrNewVault.collateralAmount > 0n;
 
   // Calculate cap percentage based on capped vs uncapped max borrowable
   const capPercentage = useMemo(() => {

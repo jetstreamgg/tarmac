@@ -1,8 +1,8 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
-import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useTotalTvl } from '../hooks/useTotalTvl';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function TotalRewardsTvl() {
   const { data: totalTvl, isLoading, error } = useTotalTvl();
@@ -13,10 +13,11 @@ export function TotalRewardsTvl() {
       isLoading={isLoading}
       error={error}
       content={
-        <Text className="mt-2" variant="large">
-          {/* TODO make sure this will always be USDS */}
-          {formatBigInt(totalTvl)} USDS
-        </Text>
+        <TokenIconWithBalance
+          className="mt-2"
+          token={{ symbol: 'USDS', name: 'usds' }}
+          balance={formatBigInt(totalTvl)}
+        />
       }
     />
   );

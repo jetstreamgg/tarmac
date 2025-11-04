@@ -32,6 +32,7 @@ interface UrnPositionProps {
   claimAllExecute: () => void;
   batchEnabledAndSupported: boolean;
   onStakeUrnChange?: OnStakeUrnChange;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }
 
 export const UrnPosition: React.FC<UrnPositionProps> = ({
@@ -41,7 +42,8 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
   claimAllPrepared,
   claimAllExecute,
   batchEnabledAndSupported,
-  onStakeUrnChange
+  onStakeUrnChange,
+  onExternalLinkClicked
 }) => {
   const { data: urnAddress } = useStakeUrnAddress(index);
   const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
@@ -130,6 +132,8 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
         claimAllPrepared={claimAllPrepared}
         claimAllExecute={claimAllExecute}
         batchEnabledAndSupported={batchEnabledAndSupported}
+        onExternalLinkClicked={onExternalLinkClicked}
+        onStakeUrnChange={onStakeUrnChange}
       />
     </Card>
   );

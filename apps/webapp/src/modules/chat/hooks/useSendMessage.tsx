@@ -12,7 +12,7 @@ import {
   processNetworkNameInUrl,
   ensureIntentHasNetwork
 } from '../lib/intentUtils';
-import { CHATBOT_DOMAIN, CHATBOT_ENABLED, MAX_HISTORY_LENGTH } from '@/lib/constants';
+import { CHATBOT_DOMAIN, CHATBOT_ENABLED, IS_PRODUCTION_ENV, MAX_HISTORY_LENGTH } from '@/lib/constants';
 
 interface ChatbotResponse {
   chatResponse: {
@@ -32,7 +32,8 @@ const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
   const cfAccessClientId = import.meta.env.VITE_CHATBOT_CF_ACCESS_CLIENT_ID;
   const cfAccessClientSecret = import.meta.env.VITE_CHATBOT_CF_ACCESS_CLIENT_SECRET;
 
-  if (cfAccessClientId && cfAccessClientSecret) {
+  // Only add auth-related headers if not in production
+  if (!IS_PRODUCTION_ENV && cfAccessClientId && cfAccessClientSecret) {
     headers['CF-Access-Client-Id'] = cfAccessClientId;
     headers['CF-Access-Client-Secret'] = cfAccessClientSecret;
   }

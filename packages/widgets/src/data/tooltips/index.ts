@@ -76,6 +76,11 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     tooltip: 'The amount of SKY you have staked in this position.'
   },
   {
+    id: 'borrow-utilization',
+    title: 'Borrow utilization',
+    tooltip: 'The percentage of the debt ceiling currently being utilized for USDS borrowing.'
+  },
+  {
     id: 'borrow-rate',
     title: 'Borrow Rate',
     tooltip:
@@ -243,8 +248,8 @@ Bundled transaction: Active`
       'By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain. If the actual slippage is greater than your chosen tolerance level, the transaction will fail and be reverted. Note that reverted transactions may still incur gas fees.'
   },
   {
-    id: 'rate',
-    title: 'Rate',
+    id: 'sky-savings-rate',
+    title: 'Sky Savings Rate',
     tooltip:
       'The Sky Savings Rate is variable, determined by decentralized, onchain Sky Ecosystem Governance, and configured on the Ethereum blockchain. Sky Ecosystem Governance is able to adapt the SSR and other relevant parameters at any time at its discretion and without notice, based on market conditions, protocol surplus and other factors. The rate shown here is an estimate of the Sky Savings Rate representing the expected compounded rate per annum. It should be automatically updated every 5 minutes, and is powered by data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
   },

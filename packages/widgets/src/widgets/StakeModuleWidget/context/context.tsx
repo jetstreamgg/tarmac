@@ -1,6 +1,7 @@
 import {
   getStakeDrawCalldata,
   getStakeFreeCalldata,
+  getStakeGetRewardCalldata,
   getStakeLockCalldata,
   getStakeOpenCalldata,
   getStakeSelectDelegateCalldata,
@@ -245,6 +246,16 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
           })
         : undefined;
 
+      // Claim rewards
+      const claimRewardsCalldata = rewardContractToClaim
+        ? getStakeGetRewardCalldata({
+            ownerAddress,
+            urnIndex,
+            rewardContractAddress: rewardContractToClaim,
+            toAddress: ownerAddress
+          })
+        : undefined;
+
       // Order calldata based on the flow
       const sortedCalldata =
         widgetState.flow === StakeFlow.OPEN
@@ -266,7 +277,8 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
               selectRewardContractCalldata,
               selectDelegateCalldata,
               lockSkyCalldata,
-              borrowUsdsCalldata
+              borrowUsdsCalldata,
+              claimRewardsCalldata
             ];
 
       // Filter out undefined calldata
@@ -283,6 +295,7 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
       selectedDelegate,
       urnSelectedRewardContract,
       urnSelectedVoteDelegate,
+      rewardContractToClaim,
       activeUrn,
       widgetState.flow
     ]

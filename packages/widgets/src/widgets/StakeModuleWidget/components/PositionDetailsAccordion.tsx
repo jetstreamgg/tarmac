@@ -5,7 +5,7 @@ import {
   AccordionTrigger
 } from '@widgets/components/ui/accordion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
-import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
+import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
@@ -39,40 +39,41 @@ export function PositionDetailAccordion({ delayedPrice, liquidationPrice }: Prop
         </AccordionTrigger>
         <AccordionContent className="space-y-4 pt-4">
           {!!collateralData?.stabilityFee && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('borrow-rate')?.title || 'Borrow Rate'}
-                tooltip={getTooltipById('borrow-rate')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+            <motion.div className="flex items-center justify-between" variants={positionAnimations}>
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Borrow Rate
+                <PopoverInfo
+                  title={getTooltipById('borrow-rate')?.title || 'Borrow Rate'}
+                  description={getTooltipById('borrow-rate')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               <Text className="text-right text-sm">{formatPercent(collateralData.stabilityFee)}</Text>
             </motion.div>
           )}
           {!!liquidationPrice && liquidationPrice > 0n && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('liquidation-price')?.title || 'Liquidation price'}
-                tooltip={getTooltipById('liquidation-price')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+            <motion.div className="flex items-center justify-between" variants={positionAnimations}>
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Liquidation price
+                <PopoverInfo
+                  title={getTooltipById('liquidation-price')?.title || 'Liquidation price'}
+                  description={getTooltipById('liquidation-price')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               <Text className="text-right text-sm">${formatBigInt(liquidationPrice)}</Text>
             </motion.div>
           )}
           {!!delayedPrice && delayedPrice > 0n && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('capped-osm-sky-price')?.title || 'Capped OSM SKY price'}
-                tooltip={getTooltipById('capped-osm-sky-price')?.tooltip || ''}
-                textClassName="leading-4"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+            <motion.div className="flex items-center justify-between" variants={positionAnimations}>
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Capped OSM SKY price
+                <PopoverInfo
+                  title={getTooltipById('capped-osm-sky-price')?.title || 'Capped OSM SKY price'}
+                  description={getTooltipById('capped-osm-sky-price')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               <Text className="text-right text-sm">${formatBigInt(delayedPrice)}</Text>
             </motion.div>
           )}

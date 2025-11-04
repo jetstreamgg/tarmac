@@ -52,9 +52,9 @@ export const approveOrPerformAction = async (
 };
 
 export const performAction = async (page: Page, action: Action, options?: approveOrPerformActionOptions) => {
-  const { review = true } = options || {};
+  const { review = true, reject = false } = options || {};
   if (review) {
-    await page.getByTestId('widget-button').getByText('Review').click();
+    await page.getByTestId('widget-button').getByText('Review').first().click();
   }
   const actionButton = page
     // 'Confirm bundled transaction' is the expected value for approve + action flows
@@ -64,7 +64,16 @@ export const performAction = async (page: Page, action: Action, options?: approv
     .nth(0);
   await actionButton.waitFor({ state: 'attached' }); // Ensure the button is in the DOM
   await expect(actionButton).toBeEnabled(); // Wait for the button to be enabled
+  if (reject) {
+    await interceptAndRejectTransactions(page, 200, true);
+  }
   await actionButton.click();
+  // regex for success or success!, can be any capital case
+  await page
+    .getByText(/success|success!|Successfully withdrawn|error/i)
+    .first()
+    .waitFor({ state: 'visible', timeout: 10000 });
+  await page.waitForTimeout(1000);
 
   const stepIndicator = page.getByTestId('step-indicator').last();
   const isStepIndicatorVisible = await stepIndicator.isVisible();

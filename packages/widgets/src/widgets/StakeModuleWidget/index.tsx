@@ -57,6 +57,7 @@ type StakeModuleWidgetProps = WidgetProps & {
   addRecentTransaction: any;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
+  disclaimer?: React.ReactNode;
 };
 
 function StakeModuleWidgetWrapped({
@@ -73,7 +74,8 @@ function StakeModuleWidgetWrapped({
   legalBatchTxUrl,
   referralCode,
   batchEnabled,
-  setBatchEnabled
+  setBatchEnabled,
+  disclaimer
 }: StakeModuleWidgetProps) {
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -354,15 +356,16 @@ function StakeModuleWidgetWrapped({
       setUsdsToBorrow(0n);
       setSelectedDelegate(undefined);
       setSelectedRewardContract(undefined);
+      setRewardContractToClaim(undefined);
     }
   }, [widgetState.flow]);
 
   useEffect(() => {
-    // Scroll to top when the flow or step changes
+    // Scroll to top when the flow, action, or step changes
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: 'instant' });
     }
-  }, [widgetState.flow, currentStep]);
+  }, [widgetState.flow, widgetState.action, currentStep]);
 
   const showStep = !!widgetState.action && widgetState.action !== StakeAction.OVERVIEW;
 
@@ -418,11 +421,13 @@ function StakeModuleWidgetWrapped({
       return;
     }
 
-    // Set up the urn state
-    if (!!externalParamVaultData && externalUrnRewardContract) {
-      setSelectedRewardContract(externalUrnRewardContract);
-    } else {
-      setSelectedRewardContract(undefined);
+    // Set up the urn state only if we're not already in the manage flow with this urn
+    if (widgetState.flow !== StakeFlow.MANAGE || widgetState.action !== StakeAction.MULTICALL) {
+      if (!!externalParamVaultData && externalUrnRewardContract) {
+        setSelectedRewardContract(externalUrnRewardContract);
+      } else {
+        setSelectedRewardContract(undefined);
+      }
     }
 
     // Set delegate and wantsToDelegate
@@ -448,7 +453,10 @@ function StakeModuleWidgetWrapped({
       onStakeUrnChange ?? (() => {})
     );
 
-    setCurrentStep(StakeStep.OPEN_BORROW);
+    // Only reset to OPEN_BORROW if we're not already in the manage flow with this urn
+    if (widgetState.flow !== StakeFlow.MANAGE || widgetState.action !== StakeAction.MULTICALL) {
+      setCurrentStep(StakeStep.OPEN_BORROW);
+    }
   }, [
     validatedExternalState?.urnIndex,
     externalParamUrnAddress,
@@ -564,6 +572,7 @@ function StakeModuleWidgetWrapped({
     setUsdsToWipe(0n);
     setUsdsToBorrow(0n);
     setTabIndex(0);
+    setRewardContractToClaim(undefined);
 
     onWidgetStateChange?.({
       widgetState,
@@ -639,6 +648,7 @@ function StakeModuleWidgetWrapped({
     setUsdsToWipe(0n);
     setUsdsToBorrow(0n);
     setTabIndex(0);
+    setRewardContractToClaim(undefined);
 
     onWidgetStateChange?.({
       widgetState,
@@ -774,6 +784,7 @@ function StakeModuleWidgetWrapped({
                       setBatchEnabled={setBatchEnabled}
                       isBatchTransaction={shouldUseBatch}
                       legalBatchTxUrl={legalBatchTxUrl}
+                      disclaimer={disclaimer}
                     />
                   )}
                   {widgetState.flow === StakeFlow.OPEN && (

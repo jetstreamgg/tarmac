@@ -38,6 +38,7 @@ import { Checkbox } from '@widgets/components/ui/checkbox';
 import { cn } from '@widgets/lib/utils';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeFlow } from '../lib/constants';
+import { Button } from '@widgets/components/ui/button';
 
 const { usds } = TOKENS;
 
@@ -176,12 +177,14 @@ const PositionManagerOverviewContainer = ({
                   `${formatBigInt(newBorrowAmount, { compact: true })} ${usds.symbol}`
                 ]
               : `${formatBigInt(newBorrowAmount, { compact: true })} ${usds.symbol}`,
+          tooltipTitle: getTooltipById('borrow')?.title || '',
           tooltipText: getTooltipById('borrow')?.tooltip || ''
         },
         minCollateralNotMet
           ? {
               label: 'Borrow limit',
               value: t`Not enough collateral to borrow`,
+              tooltipTitle: getTooltipById('borrow-limit')?.title || '',
               tooltipText: getTooltipById('borrow-limit')?.tooltip || ''
             }
           : [
@@ -192,6 +195,7 @@ const PositionManagerOverviewContainer = ({
               {
                 label: t`Max borrowable amount`,
                 value: formattedMaxBorrowable,
+                tooltipTitle: getTooltipById('borrow-limit')?.title || '',
                 tooltipText: getTooltipById('borrow-limit')?.tooltip || ''
               }
             ],
@@ -205,6 +209,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Capped OSM SKY price`,
           value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
+          tooltipTitle: getTooltipById('capped-osm-sky-price')?.title || '',
           tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
         }
       ].flat(),
@@ -227,6 +232,7 @@ const PositionManagerOverviewContainer = ({
       {
         label: t`Borrow Rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : '',
+        tooltipTitle: getTooltipById('borrow-rate')?.title || '',
         tooltipText: getTooltipById('borrow-rate')?.tooltip || ''
       },
       {
@@ -243,12 +249,14 @@ const PositionManagerOverviewContainer = ({
         label: t`Liquidation price`,
         value:
           hasPositions && existingLiqPrice !== newLiqPrice ? [existingLiqPrice, newLiqPrice] : newLiqPrice,
+        tooltipTitle: getTooltipById('liquidation-price')?.title || '',
         tooltipText: getTooltipById('liquidation-price')?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
         value:
           hasPositions && existingColRatio !== newColRatio ? [existingColRatio, newColRatio] : newColRatio,
+        tooltipTitle: getTooltipById('collateralization-ratio')?.title || '',
         tooltipText: getTooltipById('collateralization-ratio')?.tooltip || ''
       },
       {
@@ -264,6 +272,7 @@ const PositionManagerOverviewContainer = ({
                 `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
               ]
             : `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
+        tooltipTitle: getTooltipById('risk-level')?.title || '',
         tooltipText: getTooltipById('risk-level')?.tooltip || '',
         classNamePrev: existingRiskTextColor,
         className: riskTextColor
@@ -277,6 +286,7 @@ const PositionManagerOverviewContainer = ({
                 `${Math.ceil(newDebtCeilingUtilization * 100)}%`
               ]
             : `${Math.ceil(newDebtCeilingUtilization * 100)}%`,
+        tooltipTitle: getTooltipById('debt-ceiling-utilization')?.title || '',
         tooltipText: getTooltipById('debt-ceiling-utilization')?.tooltip || '',
         classNamePrev: existingCeilingRiskTextColor,
         className: newCeilingTextColor
@@ -443,6 +453,19 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
           })} USDS`
         : `Limit ${formattedMinBorrowable.slice(0, -5)} <> ${formattedMaxBorrowable}`;
 
+  const handleMinClick = () => {
+    const minAmount = (existingVault?.debtValue || 0n) > 0n ? 0n : simulatedVault?.dust || 0n;
+    setUsdsToBorrow(minAmount);
+  };
+
+  const showMinButton =
+    isConnectedAndEnabled &&
+    collateralData?.debtCeilingUtilization !== 1 &&
+    !minCollateralNotMet &&
+    (existingVault?.debtValue || 0n) === 0n &&
+    simulatedVault?.dust &&
+    simulatedVault.dust > 0n;
+
   return (
     <div className="mb-8 space-y-2">
       <TokenInput
@@ -463,6 +486,13 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
         }
         enabled={isConnectedAndEnabled}
         hideIcon={isConnectedAndEnabled}
+        customActionButtons={
+          showMinButton ? (
+            <Button size="input" variant="input" onClick={handleMinClick} data-testid="borrow-input-min">
+              Min
+            </Button>
+          ) : undefined
+        }
       />
       {collateralData?.debtCeilingUtilization === 1 ? (
         <div className="ml-3 flex items-start text-amber-400">
@@ -488,11 +518,11 @@ export const Borrow = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boole
             onCheckedChange={checked => setWantsToDelegate(checked === true)}
             disabled={!!hasExistingDelegate}
           />
-          <label htmlFor={delegateCheckboxId} className="ml-2">
-            <Text
-              variant="medium"
-              className={cn(hasExistingDelegate ? 'text-textSecondary' : 'text-white', 'cursor-pointer')}
-            >
+          <label
+            htmlFor={delegateCheckboxId}
+            className={cn('ml-2', hasExistingDelegate ? 'cursor-not-allowed' : 'cursor-pointer')}
+          >
+            <Text variant="medium" className={cn(hasExistingDelegate ? 'text-textSecondary' : 'text-white')}>
               {hasExistingDelegate ? (
                 <Trans>You are delegating voting power for this position</Trans>
               ) : (

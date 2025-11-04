@@ -1,6 +1,6 @@
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
-import { expect, test } from '../fixtures.ts';
-import { approveOrPerformAction, performAction } from '../utils/approveOrPerformAction.ts';
+import { expect, test } from '../fixtures-parallel.ts';
+import { performAction } from '../utils/approveOrPerformAction';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { mineBlock } from '../utils/mineBlock.ts';
 import { NetworkName } from '../utils/constants.ts';
@@ -15,31 +15,31 @@ const setTestBalance = async (tokenAddress: string, amount: string, decimals = 1
 };
 
 test.describe('Expert Module - stUSDS', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await connectMockWalletAndAcceptTerms(page);
+  test.beforeEach(async ({ isolatedPage }) => {
+    await isolatedPage.goto('/');
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // Navigate to Expert module
-    await page.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
     // Navigate to stUSDS module
-    await page.getByTestId('stusds-stats-card').click();
+    await isolatedPage.getByTestId('stusds-stats-card').click();
   });
 
-  test('Navigate back to Expert menu', async ({ page }) => {
+  test('Navigate back to Expert menu', async ({ isolatedPage }) => {
     // Click back button
-    await page.getByRole('button', { name: 'Back to Expert' }).click();
+    await isolatedPage.getByRole('button', { name: 'Back to Expert' }).click();
 
     // Should be back at Expert menu
-    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
-    await expect(page.getByTestId('stusds-stats-card')).toBeVisible();
+    await expect(isolatedPage.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
+    await expect(isolatedPage.getByTestId('stusds-stats-card')).toBeVisible();
 
     // Should display Message
-    await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
-    await expect(page.getByTestId('expert-risk-disclaimer')).toContainText(
+    await expect(isolatedPage.getByTestId('expert-risk-disclaimer').first()).toBeVisible();
+    await expect(isolatedPage.getByTestId('expert-risk-disclaimer').first()).toContainText(
       'Expert modules are intended for experienced users and may function differently than modules to which ordinary users are accustomed. Please be sure you understand the unique features and the associated risks of any Expert Module before proceeding. Be sure to review the FAQs and'
     );
 
     // Verify User Risks hyperlink is present
-    const userRisksLink = page
+    const userRisksLink = isolatedPage
       .getByTestId('expert-risk-disclaimer')
       .getByRole('link', { name: 'User Risks' });
     await expect(userRisksLink).toBeVisible();
@@ -47,212 +47,212 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(userRisksLink).toHaveAttribute('target', '_blank');
   });
 
-  test('Supply USDS', async ({ page }) => {
+  test('Supply USDS', async ({ isolatedPage }) => {
     // Should be on Supply tab by default
-    await expect(page.getByRole('tab', { name: 'Supply', selected: true })).toBeVisible();
+    await expect(isolatedPage.getByRole('tab', { name: 'Supply', selected: true })).toBeVisible();
 
     // Check transaction overview is not visible initially
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
 
     // Enter amount to supply
-    await page.getByTestId('supply-input-stusds').click();
-    await page.getByTestId('supply-input-stusds').fill('10');
+    await isolatedPage.getByTestId('supply-input-stusds').click();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('10');
 
     // Transaction overview should now be visible
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-    await expect(page.getByText('You will supply')).toBeVisible();
-    await expect(page.getByText('10 USDS')).toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await expect(isolatedPage.getByText('You will supply')).toBeVisible();
+    await expect(isolatedPage.getByText('10 USDS')).toBeVisible();
 
     // Check the disclaimer checkbox
-    await page.getByRole('checkbox').click();
+    await isolatedPage.getByRole('checkbox').click();
 
     // Perform the supply action (handles approval if needed)
-    await approveOrPerformAction(page, 'Supply');
+    await performAction(isolatedPage, 'Supply');
 
     // Check success message
-    await expect(page.getByText("You've supplied 10 USDS to the stUSDS module")).toBeVisible();
+    await expect(isolatedPage.getByText("You've supplied 10 USDS to the stUSDS module")).toBeVisible();
 
     // Click back to stUSDS
-    await page.getByRole('button', { name: 'Back to stUSDS' }).click();
+    await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Should still be in stUSDS module
     await expect(
-      page.getByTestId('widget-container').getByRole('heading', { name: 'stUSDS', exact: true })
+      isolatedPage.getByTestId('widget-container').getByRole('heading', { name: 'stUSDS', exact: true })
     ).toBeVisible();
 
     // go to balance page
-    await page.getByRole('tab', { name: 'Balance' }).click();
-    await expect(page.getByText('USDS supplied to stUSDS')).toBeVisible();
+    await isolatedPage.getByRole('tab', { name: 'Balance' }).click();
+    await expect(isolatedPage.getByText('USDS supplied to stUSDS')).toBeVisible();
 
     // Click using the href that contains the stusds expert module path
-    await page.locator('a[href*="expert_module=stusds"]').first().click();
+    await isolatedPage.locator('a[href*="expert_module=stusds"]').first().click();
 
     // should land on the stusds balance page
-    expect(page.getByText('stUSDS')).toBeTruthy();
+    expect(isolatedPage.getByText('stUSDS')).toBeTruthy();
   });
 
-  test('Withdraw USDS from stUSDS module', async ({ page }) => {
+  test('Withdraw USDS from stUSDS module', async ({ isolatedPage }) => {
     // Supply first
-    await page.getByTestId('supply-input-stusds').click();
-    await page.getByTestId('supply-input-stusds').fill('20');
-    await page.getByRole('checkbox').click();
-    await approveOrPerformAction(page, 'Supply');
-    await page.getByRole('button', { name: 'Back to stUSDS' }).click();
+    await isolatedPage.getByTestId('supply-input-stusds').click();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('20');
+    await isolatedPage.getByRole('checkbox').click();
+    await performAction(isolatedPage, 'Supply');
+    await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Mine a block to increase the USDS amount
     await mineBlock();
 
     // Switch to Withdraw tab
-    await page.getByRole('tab', { name: 'Withdraw' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
 
     // Enter withdrawal amount
-    await page.getByTestId('withdraw-input-stusds').click();
-    await page.getByTestId('withdraw-input-stusds').fill('5');
+    await isolatedPage.getByTestId('withdraw-input-stusds').click();
+    await isolatedPage.getByTestId('withdraw-input-stusds').fill('5');
 
     // Check transaction overview
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-    await expect(page.getByText('You will withdraw')).toBeVisible();
-    await expect(page.getByText('5 USDS')).toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await expect(isolatedPage.getByText('You will withdraw')).toBeVisible();
+    await expect(isolatedPage.getByText('5 USDS').first()).toBeVisible();
 
     // Perform withdrawal
-    await performAction(page, 'Withdraw');
+    await performAction(isolatedPage, 'Withdraw');
 
     // Check success message
-    await expect(page.getByText("You've withdrawn 5 USDS from the stUSDS module.")).toBeVisible();
+    await expect(isolatedPage.getByText("You've withdrawn 5 USDS from the stUSDS module.")).toBeVisible();
 
     // Click back to stUSDS
-    await page.getByRole('button', { name: 'Back to stUSDS' }).click();
+    await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
   });
 
-  test('Use max button for supply', async ({ page }) => {
+  test('Use max button for supply', async ({ isolatedPage }) => {
     // Click max button
-    await page.getByTestId('supply-input-stusds-max').click();
+    await isolatedPage.getByTestId('supply-input-stusds-max').click();
 
     // Check that input is filled with balance
-    const inputValue = await page.getByTestId('supply-input-stusds').inputValue();
-    expect(parseFloat(inputValue)).toBe(100);
+    const inputValue = await isolatedPage.getByTestId('supply-input-stusds').inputValue();
+    expect(parseFloat(inputValue)).toBe(900);
 
     // Transaction overview should be visible
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
 
     // Disclaimer checkbox should be visible
-    await expect(page.getByRole('checkbox')).toBeVisible();
+    await expect(isolatedPage.getByRole('checkbox')).toBeVisible();
   });
 
-  test('Use max button for withdrawal', async ({ page }) => {
-    await page.getByTestId('supply-input-stusds').click();
-    await page.getByTestId('supply-input-stusds').fill('30');
-    await page.getByRole('checkbox').click();
-    await approveOrPerformAction(page, 'Supply');
-    await page.getByRole('button', { name: 'Back to stUSDS' }).click();
+  test('Use max button for withdrawal', async ({ isolatedPage }) => {
+    await isolatedPage.getByTestId('supply-input-stusds').click();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('30');
+    await isolatedPage.getByRole('checkbox').click();
+    await performAction(isolatedPage, 'Supply');
+    await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Mine a block to increase the USDS amount
     await mineBlock();
 
     // Switch to Withdraw tab
-    await page.getByRole('tab', { name: 'Withdraw' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
 
     // Click max button
-    await page.getByTestId('withdraw-input-stusds-max').click();
+    await isolatedPage.getByTestId('withdraw-input-stusds-max').click();
 
     // Check that input is filled with correct amount
-    const inputValue = await page.getByTestId('withdraw-input-stusds').inputValue();
+    const inputValue = await isolatedPage.getByTestId('withdraw-input-stusds').inputValue();
     expect(parseFloat(inputValue)).toBeGreaterThanOrEqual(30);
   });
 
-  test('Supply with insufficient USDS balance shows error', async ({ page }) => {
+  test('Supply with insufficient USDS balance shows error', async ({ isolatedPage }) => {
     // Try to supply more than balance
-    await page.getByTestId('supply-input-stusds').click();
-    await page.getByTestId('supply-input-stusds').fill('105');
+    await isolatedPage.getByTestId('supply-input-stusds').click();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('905');
 
     // Should show insufficient funds error
-    await expect(page.getByText('Insufficient funds')).toBeVisible();
+    await expect(isolatedPage.getByText('Insufficient funds')).toBeVisible();
 
     // Review button should be disabled
-    const reviewButton = page.getByTestId('widget-button');
+    const reviewButton = isolatedPage.getByTestId('widget-button');
     await expect(reviewButton).toHaveText('Review');
     await expect(reviewButton).toBeDisabled();
   });
 
-  test('Withdraw with insufficient stUSDS balance shows error', async ({ page }) => {
+  test('Withdraw with insufficient stUSDS balance shows error', async ({ isolatedPage }) => {
     // Switch to Withdraw tab
-    await page.getByRole('tab', { name: 'Withdraw' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
 
     // Try to withdraw with no supplied balance
-    await page.getByTestId('withdraw-input-stusds').click();
-    await page.getByTestId('withdraw-input-stusds').fill('100');
+    await isolatedPage.getByTestId('withdraw-input-stusds').click();
+    await isolatedPage.getByTestId('withdraw-input-stusds').fill('100');
 
     // Should show insufficient funds error
-    await expect(page.getByText('Insufficient funds')).toBeVisible();
+    await expect(isolatedPage.getByText('Insufficient funds')).toBeVisible();
 
     // Review button should be disabled
-    const reviewButton = page.getByTestId('widget-button');
+    const reviewButton = isolatedPage.getByTestId('widget-button');
     await expect(reviewButton).toHaveText('Review');
     await expect(reviewButton).toBeDisabled();
   });
 
-  test('Transaction overview updates when amount changes', async ({ page }) => {
+  test('Transaction overview updates when amount changes', async ({ isolatedPage }) => {
     // Enter first amount
-    await page.getByTestId('supply-input-stusds').click();
-    await page.getByTestId('supply-input-stusds').fill('10');
-    await expect(page.getByText('10 USDS')).toBeVisible();
+    await isolatedPage.getByTestId('supply-input-stusds').click();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('10');
+    await expect(isolatedPage.getByText('10 USDS')).toBeVisible();
 
     // Change amount
-    await page.getByTestId('supply-input-stusds').fill('25');
-    await expect(page.getByText('25 USDS')).toBeVisible();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('25');
+    await expect(isolatedPage.getByText('25 USDS')).toBeVisible();
 
     // Clear amount - transaction overview should disappear
-    await page.getByTestId('supply-input-stusds').clear();
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+    await isolatedPage.getByTestId('supply-input-stusds').clear();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
   });
 
-  test('Upgrade and access Expert rewards', async ({ page }) => {
+  test('Upgrade and access Expert rewards', async ({ isolatedPage }) => {
     await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
     // Navigate to Expert menu
-    await page.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
 
     // Click on Upgrade button
-    await page.getByText('Upgrade and access Expert rewards').first().click();
+    await isolatedPage.getByText('Upgrade and access Expert rewards').first().click();
 
-    await page.getByTestId('upgrade-input-origin').click();
-    await page.getByTestId('upgrade-input-origin').fill('1');
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-    await approveOrPerformAction(page, 'Upgrade');
+    await isolatedPage.getByTestId('upgrade-input-origin').click();
+    await isolatedPage.getByTestId('upgrade-input-origin').fill('1');
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await performAction(isolatedPage, 'Upgrade');
 
     // Check that Rewards modal is visible
-    await expect(page.getByRole('button', { name: 'Go to Expert' })).toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Go to Expert' })).toBeVisible();
 
     // Click on Close button
-    await page.getByRole('button', { name: 'Go to Expert' }).click();
+    await isolatedPage.getByRole('button', { name: 'Go to Expert' }).click();
 
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-    await expect(page.getByText('You will supply')).toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await expect(isolatedPage.getByText('You will supply')).toBeVisible();
 
     // Check the disclaimer checkbox
-    await page.getByRole('checkbox').click();
+    await isolatedPage.getByRole('checkbox').click();
 
     // Perform the supply action (handles approval if needed)
-    await approveOrPerformAction(page, 'Supply');
+    await performAction(isolatedPage, 'Supply');
 
     // Check success message
-    await expect(page.getByText("You've supplied 1 USDS to the stUSDS module")).toBeVisible();
+    await expect(isolatedPage.getByText("You've supplied 1 USDS to the stUSDS module")).toBeVisible();
   });
 
-  test('Review button disabled when disclaimer not checked', async ({ page }) => {
+  test('Review button disabled when disclaimer not checked', async ({ isolatedPage }) => {
     // Enter amount to supply
-    await page.getByTestId('supply-input-stusds').click();
-    await page.getByTestId('supply-input-stusds').fill('10');
+    await isolatedPage.getByTestId('supply-input-stusds').click();
+    await isolatedPage.getByTestId('supply-input-stusds').fill('10');
 
     // Transaction overview should be visible
-    await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+    await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
 
     // Disclaimer checkbox should be visible and unchecked
-    const checkbox = page.getByRole('checkbox');
+    const checkbox = isolatedPage.getByRole('checkbox');
     await expect(checkbox).toBeVisible();
     await expect(checkbox).not.toBeChecked();
 
     // Review button should be disabled
-    const reviewButton = page.getByTestId('widget-button');
+    const reviewButton = isolatedPage.getByTestId('widget-button');
     await expect(reviewButton).toHaveText('Review');
     await expect(reviewButton).toBeDisabled();
 
@@ -264,33 +264,33 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(reviewButton).toBeEnabled();
   });
 
-  test('Expert risk modal dismissal persists after reload and navigation', async ({ page }) => {
+  test('Expert risk modal dismissal persists after reload and navigation', async ({ isolatedPage }) => {
     // Navigate away from the module
-    await page.getByRole('button', { name: 'Back to Expert' }).click();
-    await expect(page.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
+    await isolatedPage.getByRole('button', { name: 'Back to Expert' }).click();
+    await expect(isolatedPage.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
 
     // Verify expert risk modal is initially visible
-    await expect(page.getByTestId('expert-risk-disclaimer')).toBeVisible();
+    await expect(isolatedPage.getByTestId('expert-risk-disclaimer').first()).toBeVisible();
 
     // Wait for the dismiss button to be stable and click it
-    const dismissButton = page.getByTestId('expert-risk-dismiss');
+    const dismissButton = isolatedPage.getByTestId('expert-risk-dismiss');
     await expect(dismissButton).toBeVisible();
     await dismissButton.click({ force: true });
 
     // Verify modal is dismissed
-    await expect(page.getByTestId('expert-risk-disclaimer')).not.toBeVisible();
+    await expect(isolatedPage.getByTestId('expert-risk-disclaimer').first()).not.toBeVisible();
 
     // Reload the browser
-    await page.reload();
-    await connectMockWalletAndAcceptTerms(page);
+    await isolatedPage.reload();
+    await connectMockWalletAndAcceptTerms(isolatedPage);
 
     // Navigate back to Expert module
-    await page.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
 
     // Navigate back to stUSDS module
-    await page.getByTestId('stusds-stats-card').click();
+    await isolatedPage.getByTestId('stusds-stats-card').click();
 
     // Verify the risk modal is still dismissed (not visible)
-    await expect(page.getByTestId('expert-risk-disclaimer')).not.toBeVisible();
+    await expect(isolatedPage.getByTestId('expert-risk-disclaimer').first()).not.toBeVisible();
   });
 });

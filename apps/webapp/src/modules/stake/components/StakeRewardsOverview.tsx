@@ -11,12 +11,14 @@ import {
   useRewardContractTokens,
   useRewardsChartInfo,
   useStakeHistoricData,
-  useStakeRewardContracts
+  useStakeRewardContracts,
+  lsSkyUsdsRewardAddress
 } from '@jetstreamgg/sky-hooks';
 import { formatAddress, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useMemo } from 'react';
+import { useChainId } from 'wagmi';
 
 const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${string}` }) => {
   const {
@@ -138,6 +140,18 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
 export function StakeRewardsOverview() {
   const { data, isLoading, error } = useStakeRewardContracts();
 
+  // Temporary hide usds reward contract until farm deactivation is complete
+  // TODO: Remove this filter once subgraph returns proper farm activation status
+  const chainId = useChainId();
+  const inactiveAddressesLower = useMemo(() => {
+    const usdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
+    return usdsRewardAddress ? new Set([usdsRewardAddress.toLowerCase()]) : new Set<string>();
+  }, [chainId]);
+
+  const visibleRewardContracts = data?.filter(
+    contract => !inactiveAddressesLower.has(contract.contractAddress.toLowerCase())
+  );
+
   return (
     <LoadingErrorWrapper
       isLoading={isLoading}
@@ -158,7 +172,7 @@ export function StakeRewardsOverview() {
       }
     >
       <VStack className="space-y-4">
-        {data?.map(({ contractAddress }) => (
+        {visibleRewardContracts?.map(({ contractAddress }) => (
           <StakeRewardsOverviewRow key={contractAddress} contractAddress={contractAddress} />
         ))}
       </VStack>

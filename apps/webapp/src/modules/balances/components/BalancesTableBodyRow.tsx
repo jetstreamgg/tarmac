@@ -43,7 +43,7 @@ export function BalancesTableBodyRow({
         />
       </TableCell>
       <TableCell className="h-auto px-4 py-2">
-        <Text>{formatNumber(parseFloat(tokenBalance.formatted), { maxDecimals: 0, compact: true })}</Text>
+        <Text>{formatNumber(parseFloat(tokenBalance.formatted), { maxDecimals: 2, compact: true })}</Text>
       </TableCell>
       <TableCell className="h-auto px-4 py-2 [@container(width<375px)]:hidden">
         <OracleInfo

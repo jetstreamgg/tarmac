@@ -1,7 +1,6 @@
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { TokenIconWithBalance } from '@widgets/shared/components/ui/token/TokenIconWithBalance';
 import {
   RiskLevel,
@@ -9,7 +8,8 @@ import {
   useRewardContractTokens,
   useDelegateName,
   useDelegateOwner,
-  useStakeRewardContracts
+  useStakeRewardContracts,
+  lsSkyUsdsRewardAddress
 } from '@jetstreamgg/sky-hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -18,10 +18,14 @@ import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack'
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { JazziconComponent } from './Jazzicon';
-import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
+import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
 import { ClaimRewardsDropdown } from './ClaimRewardsDropdown';
 import { getTooltipById } from '../../../data/tooltips';
+import { useChainId } from 'wagmi';
+import { UpdateRewardSelection } from './UpdateRewardSelection';
+import { YellowWarning } from '@widgets/shared/components/icons/YellowWarning';
+import { OnStakeUrnChange } from '..';
 
 type Props = {
   collateralizationRatio?: bigint;
@@ -44,6 +48,8 @@ type Props = {
   claimAllPrepared: boolean;
   claimAllExecute: () => void;
   batchEnabledAndSupported: boolean;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  onStakeUrnChange?: OnStakeUrnChange;
 };
 
 // Copied from TransactionDetail, it could be reusable
@@ -63,7 +69,9 @@ export function PositionDetail({
   claimExecute,
   claimAllPrepared,
   claimAllExecute,
-  batchEnabledAndSupported
+  batchEnabledAndSupported,
+  onExternalLinkClicked,
+  onStakeUrnChange
 }: Props) {
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
   const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
@@ -71,6 +79,11 @@ export function PositionDetail({
   const { data: stakeRewardContracts } = useStakeRewardContracts();
 
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
+
+  const chainId = useChainId();
+  const isUsdsReward =
+    selectedRewardContract?.toLowerCase() ===
+    lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]?.toLowerCase();
 
   return (
     <MotionVStack variants={positionAnimations} className="mt-4 justify-between space-y-6">
@@ -97,14 +110,14 @@ export function PositionDetail({
           {/* only display collateralization ratio when > 0 */}
           {collateralizationRatio !== undefined && collateralizationRatio !== 0n && (
             <VStack gap={3}>
-              <TextWithTooltip
-                text={getTooltipById('collateralization-ratio')?.title || 'Collateralization ratio'}
-                tooltip={getTooltipById('collateralization-ratio')?.tooltip || ''}
-                contentClassname="w-[400px]"
-                textClassName="leading-4"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Collateralization ratio
+                <PopoverInfo
+                  title={getTooltipById('collateralization-ratio')?.title || 'Collateralization ratio'}
+                  description={getTooltipById('collateralization-ratio')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               <Text className={`${riskTextColor}`}>{formatPercent(collateralizationRatio)}</Text>
             </VStack>
           )}
@@ -119,9 +132,15 @@ export function PositionDetail({
               <Text variant="medium" className="text-textSecondary leading-4">
                 Reward
               </Text>
-              <div className="flex items-start">
-                <TokenIcon token={rewardContractTokens.rewardsToken} width={24} className="h-6 w-6" />
-                <Text className="ml-2">{rewardContractTokens.rewardsToken.symbol}</Text>
+              <div className="ml-8 flex items-center justify-start gap-1">
+                <UpdateRewardSelection
+                  rewardToken={rewardContractTokens.rewardsToken}
+                  urnAddress={urnAddress}
+                  index={index}
+                  selectedVoteDelegate={selectedVoteDelegate}
+                  onExternalLinkClicked={onExternalLinkClicked}
+                  onStakeUrnChange={onStakeUrnChange}
+                />
               </div>
             </VStack>
           )}
@@ -130,14 +149,14 @@ export function PositionDetail({
           {/* only display risk level when active debt/borrow amount is > 0 */}
           {!!riskLevel && borrowedAmount !== undefined && borrowedAmount > 0n && (
             <VStack gap={3}>
-              <TextWithTooltip
-                text={getTooltipById('risk-level')?.title || 'Risk level'}
-                tooltip={getTooltipById('risk-level')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Risk level
+                <PopoverInfo
+                  title={getTooltipById('risk-level')?.title || 'Risk level'}
+                  description={getTooltipById('risk-level')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               {liquidationData?.isInLiquidatedState ? (
                 <Text className={'text-error text-right text-sm'}>Liquidated</Text>
               ) : (
@@ -167,6 +186,16 @@ export function PositionDetail({
           )}
         </VStack>
       </HStack>
+      {isUsdsReward && (
+        <HStack gap={2} className="items-center">
+          <YellowWarning boxSize={16} viewBox="0 0 16 16" className="mt-1 flex-shrink-0 self-start" />
+          <Text className="text-textSecondary text-sm">
+            Please <span className="font-bold text-white">choose another reward.</span> The USDS rewards are
+            disabled as a Staking Reward option, and the USDS rate set to zero. The pool of USDS will remain
+            forever so that you can claim your rewards anytime.
+          </Text>
+        </HStack>
+      )}
       <PositionDetailAccordion
         collateralizationRatio={collateralizationRatio}
         riskLevel={riskLevel}

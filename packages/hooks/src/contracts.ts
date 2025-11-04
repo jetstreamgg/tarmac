@@ -261,6 +261,23 @@ export const contracts: {
       [TENDERLY_CHAIN_ID]: '0x99cBC0e4E6427F6939536eD24d1275B95ff77404'
     }
   },
+  // Lockstake SKY Rewards
+  {
+    name: 'lsSkySkyReward',
+    address: {
+      [mainnet.id]: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc',
+      [TENDERLY_CHAIN_ID]: '0xB44C2Fb4181D7Cb06bdFf34A46FdFe4a259B40Fc'
+    }
+  },
+
+  // Liquidation
+  {
+    name: 'clipper',
+    address: {
+      [mainnet.id]: '0x836F56750517b1528B5078Cba4Ac4B94fBE4A399',
+      [TENDERLY_CHAIN_ID]: '0x836F56750517b1528B5078Cba4Ac4B94fBE4A399'
+    }
+  },
 
   // CoW Protocol
   {

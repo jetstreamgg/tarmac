@@ -57,6 +57,7 @@ export interface TokenInputProps {
   enableSearch?: boolean;
   showGauge?: boolean;
   maxVisibleTokenRows?: number;
+  customActionButtons?: React.ReactNode;
 }
 
 export function TokenInput({
@@ -86,7 +87,8 @@ export function TokenInput({
   maxIntegerDigits,
   enableSearch = false,
   showGauge = false,
-  maxVisibleTokenRows = 2
+  maxVisibleTokenRows = 2,
+  customActionButtons
 }: TokenInputProps): React.ReactElement {
   const cardRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -390,6 +392,11 @@ export function TokenInput({
                               {`${percentage}%`}
                             </Button>
                           ))}
+                        </HStack>
+                      )}
+                      {customActionButtons && (
+                        <HStack gap={2} className="text-selectActive items-center">
+                          {customActionButtons}
                         </HStack>
                       )}
                     </HStack>

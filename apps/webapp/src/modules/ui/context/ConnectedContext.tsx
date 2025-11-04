@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useMemo } from '
 import { useAccount } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { sanitizeUrl } from '@/lib/utils';
+import { IS_PRODUCTION_ENV } from '@/lib/constants';
 
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
@@ -40,8 +41,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [enabled, setEnabled] = useState(false);
 
-  const skipAuthCheck =
-    import.meta.env.VITE_ENV_NAME !== 'production' && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
+  const skipAuthCheck = !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
 
   const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
   const {

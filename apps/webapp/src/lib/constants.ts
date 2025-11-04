@@ -25,6 +25,12 @@ export enum QueryParams {
   ExpertModule = 'expert_module'
 }
 
+export enum Environment {
+  Production = 'production',
+  Staging = 'staging',
+  Development = 'development'
+}
+
 const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
 const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
 
@@ -149,8 +155,13 @@ export const ALLOWED_EXTERNAL_DOMAINS = [
   'sky.money',
   'app.sky.money',
   'docs.sky.money',
-  'upgrademkrtosky.sky.money'
+  'upgrademkrtosky.sky.money',
+  'jobs.ashbyhq.com'
 ];
+
+export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.Production;
+export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
+export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
 export const PROD_URL_SKY_SUBGRAPH_MAINNET =
   'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
@@ -183,8 +194,7 @@ export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
 export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
-  import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' &&
-  (import.meta.env.VITE_ENV_NAME === 'staging' || import.meta.env.VITE_ENV_NAME === 'development');
+  import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
