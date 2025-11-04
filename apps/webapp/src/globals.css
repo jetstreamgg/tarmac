@@ -347,6 +347,23 @@
   }
 }
 
+@keyframes scroll-hint-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+@utility scroll-hint-indicator {
+  animation: scroll-hint-bounce 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
 @utility hide-spin-button {
   /* InputStyles.module.css */
   -webkit-appearance: none;

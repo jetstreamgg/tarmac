@@ -1,8 +1,8 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import { Text } from '@/modules/layout/components/Typography';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function ExpertTvlCard(): React.ReactElement {
   const { data, isLoading, error } = useStUsdsData();
@@ -14,9 +14,11 @@ export function ExpertTvlCard(): React.ReactElement {
     <StatsCard
       title={t`Total TVL`}
       content={
-        <Text className="mt-2" variant="large">
-          {formatBigInt(totalTvl, { unit: 18 })} USDS
-        </Text>
+        <TokenIconWithBalance
+          className="mt-2"
+          token={{ symbol: 'USDS', name: 'usds' }}
+          balance={formatBigInt(totalTvl, { unit: 18 })}
+        />
       }
       isLoading={isLoading}
       error={error}

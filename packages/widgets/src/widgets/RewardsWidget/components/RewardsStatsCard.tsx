@@ -7,7 +7,9 @@ import {
   useRewardsChartInfo,
   useRewardsSuppliedBalance,
   useRewardsRewardsBalance,
-  TOKENS
+  useUserRewardsBalance,
+  TOKENS,
+  ZERO_ADDRESS
 } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { Skeleton } from '@widgets/components/ui/skeleton';
@@ -68,8 +70,23 @@ export const RewardsStatsCard = ({
     contractAddress: rewardContract.contractAddress as `0x${string}`
   });
 
+  const {
+    data: pointsData,
+    isLoading: pointsLoading,
+    error: pointsError
+  } = useUserRewardsBalance({
+    chainId,
+    address: (address || ZERO_ADDRESS) as `0x${string}`,
+    contractAddress: rewardContract.contractAddress as `0x${string}`
+  });
+
   // Check if user has a balance to determine which stats to show
   const hasUserBalance = suppliedBalance && suppliedBalance > 0n;
+  const shouldShowPoints = rewardContract.rewardToken.symbol === TOKENS.cle.symbol;
+  const formattedPoints = formatNumber(parseFloat(pointsData?.rewardBalance || '0'), {
+    compact: true,
+    maxDecimals: 2
+  });
 
   return (
     <RewardsStatsCardCore
@@ -110,8 +127,25 @@ export const RewardsStatsCard = ({
               {hasUserBalance ? t`Accumulated Rewards` : t`Suppliers`}
             </Text>
             {hasUserBalance ? (
-              // Show user's accumulated rewards
-              rewardsBalance !== undefined ? (
+              shouldShowPoints ? (
+                pointsData ? (
+                  <HStack className="items-center" gap={1}>
+                    <TokenIcon token={rewardContract.rewardToken} width={16} className="h-4 w-4" />
+                    <Text>
+                      {formattedPoints} {rewardContract.rewardToken.symbol} Points
+                    </Text>
+                  </HStack>
+                ) : pointsLoading ? (
+                  <Skeleton className="bg-textSecondary h-5 w-10" />
+                ) : pointsError ? (
+                  <Warning boxSize={16} viewBox="0 0 16 16" />
+                ) : (
+                  <HStack className="items-center" gap={1}>
+                    <TokenIcon token={rewardContract.rewardToken} width={16} className="h-4 w-4" />
+                    <Text>0 {rewardContract.rewardToken.symbol}</Text>
+                  </HStack>
+                )
+              ) : rewardsBalance !== undefined ? (
                 <HStack className="items-center" gap={1}>
                   <TokenIcon token={rewardContract.rewardToken} width={16} className="h-4 w-4" />
                   <Text>

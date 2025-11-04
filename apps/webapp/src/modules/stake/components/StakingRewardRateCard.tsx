@@ -5,27 +5,23 @@ import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import {
-  lsSkySpkRewardAddress,
-  lsSkyUsdsRewardAddress,
   useHighestRateFromChartData,
-  useRewardsChartInfo
+  useMultipleRewardsChartInfo,
+  useStakeRewardContracts
 } from '@jetstreamgg/sky-hooks';
 import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
-import { mainnet } from 'viem/chains';
 
 export function StakingRewardRateCard() {
-  // Fetch chart data for both reward contracts
-  const { data: lsSkyRewardsChartInfoData, isLoading: lsSkyUsdsChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: lsSkyUsdsRewardAddress[mainnet.id as keyof typeof lsSkyUsdsRewardAddress]
-  });
-
-  const { data: lsSpkRewardsChartInfoData, isLoading: lsSkySpkChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: lsSkySpkRewardAddress[mainnet.id as keyof typeof lsSkySpkRewardAddress]
-  });
+  // Fetch chart data for all stake reward contracts
+  const { data: stakeRewardContracts, isLoading: stakeRewardsContractsLoading } = useStakeRewardContracts();
+  const { data: stakeRewardsChartsInfoData, isLoading: stakeRewardsChartsDataLoading } =
+    useMultipleRewardsChartInfo({
+      rewardContractAddresses: stakeRewardContracts?.map(({ contractAddress }) => contractAddress) || []
+    });
 
   // Find the highest rate
-  const highestRateData = useHighestRateFromChartData([lsSkyRewardsChartInfoData, lsSpkRewardsChartInfoData]);
-  const chartDataLoading = lsSkyUsdsChartDataLoading || lsSkySpkChartDataLoading;
+  const highestRateData = useHighestRateFromChartData(stakeRewardsChartsInfoData || []);
+  const chartDataLoading = stakeRewardsContractsLoading || stakeRewardsChartsDataLoading;
   const highestRewardRate = highestRateData ? parseFloat(highestRateData.rate) : null;
 
   // Check if we have a valid rate (including 0)

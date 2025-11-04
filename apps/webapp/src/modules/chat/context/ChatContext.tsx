@@ -19,6 +19,8 @@ interface ChatContextType {
   isCheckingTerms: boolean;
   termsError: string | null;
   scrollTrigger: number;
+  conversationFeedbackGiven: boolean;
+  showConversationFeedback: boolean;
   setTermsError: React.Dispatch<React.SetStateAction<string | null>>;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   setConfirmationWarningOpened: React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,6 +32,8 @@ interface ChatContextType {
   setShowTermsModal: React.Dispatch<React.SetStateAction<boolean>>;
   setIsCheckingTerms: React.Dispatch<React.SetStateAction<boolean>>;
   triggerScroll: () => void;
+  setConversationFeedbackGiven: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowConversationFeedback: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -56,7 +60,11 @@ const ChatContext = createContext<ChatContextType>({
   termsError: null,
   setTermsError: () => {},
   scrollTrigger: 0,
-  triggerScroll: () => {}
+  triggerScroll: () => {},
+  conversationFeedbackGiven: false,
+  setConversationFeedbackGiven: () => {},
+  showConversationFeedback: false,
+  setShowConversationFeedback: () => {}
 });
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -83,6 +91,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
+
+  // Conversation feedback state
+  const [conversationFeedbackGiven, setConversationFeedbackGiven] = useState(false);
+  const [showConversationFeedback, setShowConversationFeedback] = useState(false);
 
   const triggerScroll = useCallback(() => {
     setScrollTrigger(prev => prev + 1);
@@ -127,7 +139,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         termsError,
         setTermsError,
         scrollTrigger,
-        triggerScroll
+        triggerScroll,
+        conversationFeedbackGiven,
+        setConversationFeedbackGiven,
+        showConversationFeedback,
+        setShowConversationFeedback
       }}
     >
       {children}

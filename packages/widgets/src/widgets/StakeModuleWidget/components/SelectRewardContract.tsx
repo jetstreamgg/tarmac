@@ -1,4 +1,5 @@
 import {
+  lsSkyUsdsRewardAddress,
   useStakeRewardContracts,
   useStakeUrnSelectedRewardContract,
   ZERO_ADDRESS
@@ -16,6 +17,7 @@ import { getNextStep } from '../lib/utils';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeFlow } from '../lib/constants';
+import { useChainId } from 'wagmi';
 
 export const SelectRewardContract = ({
   onExternalLinkClicked
@@ -23,13 +25,15 @@ export const SelectRewardContract = ({
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
   const { widgetState } = useContext(WidgetContext);
+  const chainId = useChainId();
   const {
     selectedRewardContract,
     setSelectedRewardContract,
     setIsSelectRewardContractCompleted,
     currentStep,
     setCurrentStep,
-    activeUrn
+    activeUrn,
+    wantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   // TODO handle error
@@ -48,8 +52,18 @@ export const SelectRewardContract = ({
     setSelectedRewardContract(urnSelectedRewardContract);
     // When we skip, we still set the step to complete
     setIsSelectRewardContractCompleted(true);
-    setCurrentStep(getNextStep(currentStep));
+    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
   };
+
+  const skyUsdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
+
+  // If user has the USDS reward selected, show all reward options,
+  // otherwise filter out the USDS reward
+  const rewardContractsToShow = stakeRewardContracts?.filter(({ contractAddress }) =>
+    urnSelectedRewardContract?.toLowerCase() === skyUsdsRewardAddress.toLowerCase()
+      ? true
+      : contractAddress.toLowerCase() !== skyUsdsRewardAddress.toLowerCase()
+  );
 
   return (
     <div>
@@ -58,9 +72,6 @@ export const SelectRewardContract = ({
           <div>
             <Text>
               <Trans>Choose your reward token</Trans>
-            </Text>
-            <Text variant="small" className="leading-4">
-              <Trans>(More rewards coming soon)</Trans>
             </Text>
           </div>
           {widgetState.flow !== StakeFlow.OPEN && (
@@ -71,12 +82,12 @@ export const SelectRewardContract = ({
         </HStack>
       </div>
       <VStack className="py-3">
-        {isLoading || !stakeRewardContracts ? (
+        {isLoading || !rewardContractsToShow ? (
           <Card>
             <Skeleton />
           </Card>
         ) : (
-          stakeRewardContracts?.map(({ contractAddress }) => (
+          rewardContractsToShow?.map(({ contractAddress }) => (
             <SaRewardsCard
               key={contractAddress}
               contractAddress={contractAddress}

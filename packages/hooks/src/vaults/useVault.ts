@@ -5,9 +5,10 @@ import { Vault, VaultRaw } from './vault';
 import { calculateVaultInfo, rawVaultInfo } from './calculateVaultInfo';
 import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { TRUST_LEVELS } from '../constants';
-import { stringToHex } from 'viem';
-import { SupportedCollateralTypes } from './vaults.constants';
+import { parseUnits, stringToHex } from 'viem';
+import { COLLATERAL_PRICE_SYMBOL, SupportedCollateralTypes } from './vaults.constants';
 import { getIlkName } from './helpers';
+import { usePrices } from '../prices/usePrices';
 
 // Get a user's vault
 export function useVault(
@@ -21,6 +22,14 @@ export function useVault(
 
   const ilkName = ilkNameParam || getIlkName(1);
   const ilkHex = stringToHex(ilkName, { size: 32 });
+
+  // Fetch market price for accurate liquidation risk calculations
+  const { data: prices } = usePrices();
+  const collateralPriceSymbol = COLLATERAL_PRICE_SYMBOL[ilkName];
+  const marketPrice =
+    collateralPriceSymbol && prices?.[collateralPriceSymbol]?.price
+      ? parseUnits(prices[collateralPriceSymbol].price, 18)
+      : undefined;
 
   const mcdVatSource = {
     title: 'MCD_VAT Contract. (ilks, urns)',
@@ -103,7 +112,8 @@ export function useVault(
     ink: ink as bigint,
     par: par as bigint,
     mat: mat as bigint,
-    dust: dust as bigint
+    dust: dust as bigint,
+    marketPrice
   };
   const data = allLoaded ? calculateVaultInfo(vaultParams) : undefined;
   const raw = allLoaded ? rawVaultInfo(vaultParams) : undefined;

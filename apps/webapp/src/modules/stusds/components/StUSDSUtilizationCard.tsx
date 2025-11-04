@@ -27,8 +27,7 @@ export function StUSDSUtilizationCard() {
             title={i18n._(msg`${tooltipContent?.title || 'Utilization'}`)}
             description={i18n._(msg`${tooltipContent?.tooltip || ''}`)}
             iconClassName="text-textSecondary hover:text-white transition-colors"
-            width={14}
-            height={14}
+            iconSize="medium"
           />
         </div>
       }

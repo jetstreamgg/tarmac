@@ -1,4 +1,4 @@
-import { test } from '../fixtures.ts';
+import { test } from '../fixtures-parallel';
 import { NetworkName } from '../utils/constants.ts';
 import { runL2SavingsTests } from './l2-savings.ts';
 

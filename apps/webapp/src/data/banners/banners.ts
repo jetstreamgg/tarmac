@@ -163,7 +163,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'upgrade-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can upgrade your MKR to SKY at the rate of 1:24,000, trade SKY for USDS and, soon, use it to accumulate Activation Token Rewards and participate in Sky ecosystem governance.',
+      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, and use SKY to access Staking Rewards and participate in Sky ecosystem governance.',
     display: ['connected', 'disconnected']
   },
   {
@@ -187,7 +187,7 @@ export const banners: Banner[] = [
     title: 'About the Sky Savings Rate',
     module: 'savings-banners',
     description:
-      'When you supply USDS to the Sky Savings Rate module of the decentralized Sky Protocol, you access the [Sky Savings Rate](#tooltip-ssr) and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied assets, as this feature is non-custodial.',
+      'When you supply USDS to the Sky Savings Rate module of the decentralized Sky Protocol, you access the [Sky Savings Rate](#tooltip-sky-savings-rate) and may accumulate additional USDS over time. No minimum supply amount is required, and you always maintain control of your supplied assets, as this feature is non-custodial.',
     display: ['disconnected']
   },
   {
@@ -227,7 +227,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'rewards-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can upgrade your MKR to SKY at the rate of 1:24,000, trade SKY for USDS and, soon, use it to accumulate Activation Token Rewards and participate in Sky ecosystem governance.',
+      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, and use SKY to access Staking Rewards and participate in Sky ecosystem governance.',
     display: ['connected', 'disconnected']
   },
   {

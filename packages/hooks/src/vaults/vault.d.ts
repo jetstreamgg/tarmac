@@ -11,6 +11,7 @@ export type VaultParams = {
   minSafeCollateralAmount?: bigint;
   maxSafeBorrowableAmount?: bigint;
   maxSafeBorrowableIntAmount?: bigint;
+  maxSafeBorrowableIntAmountNoCap?: bigint;
   liquidationProximityPercentage?: number;
   liquidationRatio?: bigint;
   riskLevel?: RiskLevel;

@@ -74,6 +74,7 @@ export { useRewardContractsInfo } from './rewards/useRewardContractsInfo';
 export { useRewardsUserHistory } from './rewards/useRewardsUserHistory';
 export { useAllRewardsUserHistory } from './rewards/useAllRewardsUserHistory';
 export { useRewardsChartInfo } from './rewards/useRewardsChartInfo';
+export { useMultipleRewardsChartInfo } from './rewards/useMultipleRewardsChartInfo';
 export { useRewardContractTokens } from './rewards/useRewardContractTokens';
 export { useUserRewardsBalance } from './rewards/useUserRewardsBalance';
 export { useRewardsWithUserBalance } from './rewards/useRewardsWithUserBalance';
@@ -308,7 +309,9 @@ export {
   useReadPsm3L2PreviewSwapExactOut,
   lsMkrUsdsRewardAddress,
   lsSkyUsdsRewardAddress,
-  lsSkySpkRewardAddress
+  lsSkySpkRewardAddress,
+  lsSkySkyRewardAddress,
+  useReadClipperDue
 } from './generated';
 export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';
 

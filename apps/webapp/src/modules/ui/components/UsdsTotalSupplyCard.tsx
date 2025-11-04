@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import { Text } from '@/modules/layout/components/Typography';
 import { useUsdsDaiData } from '@jetstreamgg/sky-hooks';
+import { TokenIconWithBalance } from './TokenIconWithBalance';
 
 export function UsdsTotalSupplyCard(): React.ReactElement {
   const { data, isLoading, error } = useUsdsDaiData({ limit: 1 });
@@ -17,9 +17,11 @@ export function UsdsTotalSupplyCard(): React.ReactElement {
     <StatsCard
       title={t`Total supply of USDS`}
       content={
-        <Text className="mt-2" variant="large">
-          {usdsTotalSupply} USDS
-        </Text>
+        <TokenIconWithBalance
+          className="mt-2"
+          token={{ symbol: 'USDS', name: 'usds' }}
+          balance={usdsTotalSupply || '0'}
+        />
       }
       isLoading={isLoading}
       error={error}

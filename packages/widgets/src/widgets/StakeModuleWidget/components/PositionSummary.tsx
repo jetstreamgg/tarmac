@@ -16,7 +16,8 @@ import {
   useDelegateOwner,
   useCollateralData,
   Token,
-  useIsBatchSupported
+  useIsBatchSupported,
+  useRewardContractsToClaim
 } from '@jetstreamgg/sky-hooks';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -30,7 +31,7 @@ import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowDown } from '@widgets/shared/components/icons/ArrowDown';
 import { JazziconComponent } from './Jazzicon';
-import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
+import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { getTooltipById } from '../../../data/tooltips';
 import {
   StakeFlow,
@@ -43,6 +44,8 @@ import { TransactionReview } from '@widgets/shared/components/ui/transaction/Tra
 import { useLingui } from '@lingui/react/macro';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { BatchStatus } from '@widgets/shared/constants';
+import { useChainId } from 'wagmi';
+import { Switch } from '@widgets/components/ui/switch';
 
 const { usds } = TOKENS;
 
@@ -56,17 +59,26 @@ const getBorrowLabel = (prev: bigint | undefined, next: bigint | undefined) => {
   return next > prev ? t`Borrowing` : next < prev ? t`Repaying` : t`Borrowed`;
 };
 
+const normalizeDelegate = (delegate: string | undefined): string => {
+  if (!delegate || delegate === ZERO_ADDRESS) {
+    return ZERO_ADDRESS;
+  }
+  return delegate.toLowerCase();
+};
+
 const LineItem = ({
   label,
   value,
   icon,
   className,
+  tooltipTitle,
   tooltipText
 }: {
   label: string;
   value?: string | (string | undefined)[] | string[];
   icon?: JSX.Element | (JSX.Element | null)[] | null;
   className?: string | string[];
+  tooltipTitle?: string;
   tooltipText?: string;
 }) => {
   return (
@@ -80,7 +92,13 @@ const LineItem = ({
             </span>
           )}
         </Text>
-        {tooltipText && <InfoTooltip content={tooltipText} iconClassName="text-textSecondary" />}
+        {tooltipText && (
+          <PopoverInfo
+            title={tooltipTitle || ''}
+            description={tooltipText}
+            iconClassName="text-textSecondary"
+          />
+        )}
       </HStack>
       {Array.isArray(value) && value.length >= 2 ? (
         <HStack className="shrink-0 items-center">
@@ -135,6 +153,7 @@ export const PositionSummary = ({
   const ilkName = getIlkName(2);
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
+  const chainId = useChainId();
 
   const {
     activeUrn,
@@ -143,7 +162,9 @@ export const PositionSummary = ({
     usdsToBorrow,
     usdsToWipe,
     selectedDelegate,
-    selectedRewardContract
+    selectedRewardContract,
+    rewardContractToClaim,
+    setRewardContractToClaim
   } = useContext(StakeModuleWidgetContext);
   const { setTxTitle, setTxSubtitle, setStepTwoTitle, widgetState } = useContext(WidgetContext);
   const { flow, action, screen } = widgetState;
@@ -185,6 +206,22 @@ export const PositionSummary = ({
     useRewardContractTokens(existingRewardContract);
   const { data: selectedRewardContractTokens, isLoading: isSelectedContractTokensLoading } =
     useRewardContractTokens(selectedRewardContract);
+
+  const { data: rewardContractsToClaim } = useRewardContractsToClaim({
+    rewardContractAddresses: existingRewardContract ? [existingRewardContract] : [],
+    userAddress: activeUrn?.urnAddress,
+    chainId
+  });
+
+  const selectedRewardContractRewards = rewardContractsToClaim?.find(
+    ({ contractAddress }) => contractAddress.toLowerCase() === existingRewardContract?.toLowerCase()
+  );
+
+  const handleClaimToggle = () => {
+    setRewardContractToClaim(prevContract =>
+      !prevContract && !!existingRewardContract ? existingRewardContract : undefined
+    );
+  };
 
   const { data: existingSelectedVoteDelegate, isLoading: isDelegateLoading } =
     useStakeUrnSelectedVoteDelegate({
@@ -263,7 +300,9 @@ export const PositionSummary = ({
               ? `${formatBigInt(existingVault?.debtValue || 0n, { compact: true })} ${usds.symbol}`
               : `${formatBigInt(updatedVault?.debtValue || 0n, { compact: true })} ${usds.symbol}`,
         icon: <TokenIcon token={usds} className="h-5 w-5" />,
-        hideIfNoDebt: true
+        hideIfNoDebt: true,
+        tooltipTitle: getTooltipById('borrow')?.title || '',
+        tooltipText: getTooltipById('borrow')?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
@@ -280,6 +319,7 @@ export const PositionSummary = ({
             : hasPositions
               ? `${formatPercent(existingVault?.collateralizationRatio || 0n)}`
               : `${formatPercent(updatedVault?.collateralizationRatio || 0n)}`,
+        tooltipTitle: getTooltipById('collateralization-ratio')?.title || '',
         tooltipText: getTooltipById('collateralization-ratio')?.tooltip || '',
         className:
           hasPositions &&
@@ -297,11 +337,13 @@ export const PositionSummary = ({
         label: t`Borrow Rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : undefined,
         hideIfNoDebt: true,
-        tooltipText: getTooltipById('borrow')?.tooltip || ''
+        tooltipTitle: getTooltipById('borrow-rate')?.title || '',
+        tooltipText: getTooltipById('borrow-rate')?.tooltip || ''
       },
       {
         label: t`Capped OSM SKY price`,
         value: `$${formatBigInt(updatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
+        tooltipTitle: getTooltipById('capped-osm-sky-price')?.title || '',
         tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
       },
       {
@@ -317,6 +359,7 @@ export const PositionSummary = ({
                 `$${formatBigInt(updatedLiquidationPrice, { unit: WAD_PRECISION })}`
               ]
             : `$${formatBigInt(updatedLiquidationPrice, { unit: WAD_PRECISION })}`,
+        tooltipTitle: getTooltipById('liquidation-price')?.title || '',
         tooltipText: getTooltipById('liquidation-price')?.tooltip || '',
         hideIfNoDebt: true
       },
@@ -332,6 +375,7 @@ export const PositionSummary = ({
         className: isRiskLevelUpdated
           ? [getRiskTextColor(existingVault?.riskLevel), getRiskTextColor(updatedVault?.riskLevel)]
           : getRiskTextColor(vaultToDisplay?.riskLevel),
+        tooltipTitle: getTooltipById('risk-level')?.title || '',
         tooltipText: getTooltipById('risk-level')?.tooltip || '',
         hideIfNoDebt: true
       },
@@ -380,9 +424,11 @@ export const PositionSummary = ({
       {
         label: t`Delegate`,
         updated:
-          hasPositions && existingSelectedVoteDelegate?.toLowerCase() !== selectedDelegate?.toLowerCase(),
+          hasPositions &&
+          normalizeDelegate(existingSelectedVoteDelegate) !== normalizeDelegate(selectedDelegate),
         value:
-          hasPositions && existingSelectedVoteDelegate?.toLowerCase() !== selectedDelegate?.toLowerCase()
+          hasPositions &&
+          normalizeDelegate(existingSelectedVoteDelegate) !== normalizeDelegate(selectedDelegate)
             ? [
                 !!existingSelectedVoteDelegate &&
                 existingDelegateName &&
@@ -407,7 +453,7 @@ export const PositionSummary = ({
         icon:
           selectedDelegate &&
           hasPositions &&
-          existingSelectedVoteDelegate?.toLowerCase() !== selectedDelegate.toLowerCase() ? (
+          normalizeDelegate(existingSelectedVoteDelegate) !== normalizeDelegate(selectedDelegate) ? (
             [
               loadingExistingDelegateOwner ? (
                 <Skeleton key="loading-existing-delegate" className="w-30 h-5" />
@@ -479,12 +525,13 @@ export const PositionSummary = ({
             </Text>
             {lineItemsFiltered
               .filter(item => !item.updated && !!item.value)
-              .map(({ label, value, icon, className, tooltipText }) => {
+              .map(({ label, value, icon, className, tooltipTitle, tooltipText }) => {
                 return (
                   <LineItem
                     key={label}
                     label={label}
                     value={value}
+                    tooltipTitle={tooltipTitle}
                     tooltipText={tooltipText}
                     icon={icon}
                     className={className}
@@ -501,18 +548,34 @@ export const PositionSummary = ({
               <Text variant="medium" className="mb-1 font-medium">
                 Position changes
               </Text>
-              {lineItemsUpdated.map(({ label, value, icon, className, tooltipText }) => {
+              {lineItemsUpdated.map(({ label, value, icon, className, tooltipTitle, tooltipText }) => {
                 return (
                   <LineItem
                     key={label}
                     label={label}
                     value={value}
+                    tooltipTitle={tooltipTitle}
                     tooltipText={tooltipText}
                     icon={icon}
                     className={className}
                   />
                 );
               })}
+            </motion.div>
+          )}
+          {selectedRewardContractRewards && selectedRewardContractRewards.claimBalance > 0n && (
+            <motion.div
+              key="claim-rewards"
+              variants={positionAnimations}
+              className="border-selectActive mt-3 border-t pt-7"
+            >
+              <div className="flex w-full justify-between py-2">
+                <Text className="text-textSecondary text-sm">
+                  Claim {formatBigInt(selectedRewardContractRewards.claimBalance)}{' '}
+                  {selectedRewardContractRewards.rewardSymbol} rewards
+                </Text>
+                <Switch checked={!!rewardContractToClaim} onCheckedChange={handleClaimToggle} />
+              </div>
             </motion.div>
           )}
         </MotionVStack>

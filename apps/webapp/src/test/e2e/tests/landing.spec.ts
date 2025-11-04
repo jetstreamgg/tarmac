@@ -1,42 +1,45 @@
-import { expect, test } from '../fixtures.ts';
+import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 
 test.describe('accept terms', () => {
-  test('accept terms', async ({ page }) => {
-    await page.goto('/');
+  test('accept terms', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/');
 
-    await connectMockWalletAndAcceptTerms(page);
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
+    await isolatedPage.waitForTimeout(1000);
   });
 });
 
 test.describe('Switch chains', () => {
-  test('Can switch chains through the app header', async ({ page }) => {
-    await page.goto('/');
-    await page.getByTestId('chain-modal-trigger-header').click();
-    await page.getByText('Tenderly Base').click();
+  test('Can switch chains through the app header', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/');
+    await isolatedPage.getByTestId('chain-modal-trigger-header').click();
+    await isolatedPage.getByText('Tenderly Base').click();
 
-    expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
-    expect(page.url()).toContain('network=tenderlybase');
+    expect(isolatedPage.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
+    expect(isolatedPage.url()).toContain('network=tenderlybase');
   });
 
-  test('Can switch chains through the widget header', async ({ page }) => {
-    await page.goto('/');
-    await page.getByTestId('chain-modal-trigger-widget').click();
-    await page.getByText('Tenderly Base').click();
+  test('Can switch chains through the widget header', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/');
+    await isolatedPage.getByTestId('chain-modal-trigger-widget').click();
+    await isolatedPage.getByText('Tenderly Base').click();
 
-    expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
-    expect(page.url()).toContain('network=tenderlybase');
+    expect(isolatedPage.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
+    expect(isolatedPage.url()).toContain('network=tenderlybase');
   });
 
-  test('Can switch chains through the URL', async ({ page }) => {
-    await page.goto('/?network=tenderlybase');
-    await connectMockWalletAndAcceptTerms(page);
+  test('Can switch chains through the URL', async ({ isolatedPage }) => {
+    await isolatedPage.goto('/?network=tenderlybase');
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
+    await isolatedPage.waitForTimeout(1000);
 
-    expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
+    expect(isolatedPage.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Base');
 
-    await page.goto('/?network=tenderlymainnet');
-    await connectMockWalletAndAcceptTerms(page);
+    await isolatedPage.goto('/?network=tenderlymainnet');
+    await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
+    await isolatedPage.waitForTimeout(1000);
 
-    expect(page.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Mainnet');
+    expect(isolatedPage.getByTestId('chain-modal-trigger-header')).toHaveText('Tenderly Mainnet');
   });
 });

@@ -15,7 +15,7 @@ import { cn } from '@widgets/lib/utils';
 // Mapping of popover types to tooltip IDs
 const TOOLTIP_ID_MAP = {
   str: 'rewards-rate',
-  ssr: 'rate',
+  ssr: 'sky-savings-rate',
   srr: 'staking-rewards-rates-srrs',
   dtc: 'debt-ceiling',
   sbr: 'borrow-rate',

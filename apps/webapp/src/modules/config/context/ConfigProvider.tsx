@@ -43,7 +43,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         batchEnabled:
           // If the feature flag is enabled, but the local storage item is not set, default to enabled
           import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
-        expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false
+        expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
+        stakingRewardsDisclaimerShown: parsed.stakingRewardsDisclaimerShown ?? false
       });
     } catch (e) {
       console.log('Error parsing user settings', e);
@@ -105,6 +106,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     });
   };
 
+  const setStakingRewardsDisclaimerShown = (shown: boolean) => {
+    updateUserConfig({
+      ...userConfig,
+      stakingRewardsDisclaimerShown: shown
+    });
+  };
+
   return (
     <ConfigContext.Provider
       value={{
@@ -130,7 +138,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         selectedExpertOption,
         setSelectedExpertOption,
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
-        setExpertRiskDisclaimerShown
+        setExpertRiskDisclaimerShown,
+        stakingRewardsDisclaimerShown: userConfig.stakingRewardsDisclaimerShown ?? false,
+        setStakingRewardsDisclaimerShown
       }}
     >
       {children}

@@ -40,6 +40,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       ${RPC_PROVIDER_ARBITRUM}
       ${RPC_PROVIDER_OPTIMISM}
       ${RPC_PROVIDER_UNICHAIN}
+      https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
       https://virtual.arbitrum.rpc.tenderly.co

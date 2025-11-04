@@ -92,12 +92,6 @@ L2s used with Ethereum not only offer users much lower fees and much faster spee
 
 const L2TradeFaqItems = [
   {
-    question: 'Which native Sky tokens can I trade on supported L2s?',
-    answer:
-      'USDS and sUSDS are available to trade on all supported Layer 2 (L2) networks. On Ethereum Mainnet, additional Sky ecosystem tokens such as SKY, MKR, and SPK are also available for trading.',
-    index: 0
-  },
-  {
     question: 'Which tokens can I trade on supported L2s?',
     answer: `Supported trading pairs vary by network:
 
@@ -118,20 +112,20 @@ On some supported L2s, you can also access the [Sky Savings Rate](#tooltip-sky-s
 SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
 
 Available tokens may evolve over time as new trading pairs are added.`,
-    index: 1
+    index: 0
   },
   {
     question: 'How does trading on supported L2s differ from trading on Ethereum?',
     answer: `On Ethereum Mainnet, Base, and Arbitrum, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
 On Optimism and Unichain, converting between tokens is made possible through a Peg Stability Module [(PSM)](#tooltip-psm).`,
-    index: 2
+    index: 1
   },
   {
     question:
       "Why do I see activity in my Trade transaction history in the Sky.money web app if I've never used the Trade feature?",
     answer:
       "If you've accessed the [Sky Savings Rate](#tooltip-sky-savings-rate) on a supported Layer 2 (L2) network, a conversion from USDS or USDC to sUSDS would have been automatically triggered via the Peg Stability Module [(PSM)](#tooltip-psm). Therefore, you will see such activity in your Trade transaction history, despite not having traded.",
-    index: 3
+    index: 2
   }
 ];

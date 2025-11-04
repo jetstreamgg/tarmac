@@ -76,6 +76,11 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     tooltip: 'The amount of SKY you have staked in this position.'
   },
   {
+    id: 'borrow-utilization',
+    title: 'Borrow utilization',
+    tooltip: 'The percentage of the debt ceiling currently being utilized for USDS borrowing.'
+  },
+  {
     id: 'borrow-rate',
     title: 'Borrow Rate',
     tooltip:
@@ -128,6 +133,36 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     title: 'Debt ceiling utilization',
     tooltip:
       'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky Ecosystem Governance through a process of decentralized onchain voting.'
+  },
+  {
+    id: 'max-permitted-risk',
+    title: 'Max permitted risk',
+    tooltip:
+      'Risk cannot exceed the Max permitted risk level, determined by the capped OSM price and collateralization ratio requirements. To borrow more, stake additional SKY collateral.'
+  },
+  {
+    id: 'risk-floor',
+    title: 'Risk floor',
+    tooltip:
+      'Given the current amount of SKY deposited and USDS borrowed in this position, risk cannot be adjusted below the Risk floor. To lower the Risk floor, you must stake more SKY or repay USDS on the Unstake and Repay tab.'
+  },
+  {
+    id: 'risk-ceiling',
+    title: 'Risk ceiling',
+    tooltip:
+      'Given the current amount of SKY deposited and USDS borrowed in this position, risk cannot be increased above the Risk ceiling. To raise the Risk ceiling, you must unstake SKY or borrow additional USDS.'
+  },
+  {
+    id: 'risk-borrow',
+    title: 'Risk (borrow)',
+    tooltip:
+      'Risk can only be adjusted upward when borrowing. To adjust downward, you can stake more SKY or repay USDS on the Unstake and Repay tab.'
+  },
+  {
+    id: 'risk-repay',
+    title: 'Risk (repay)',
+    tooltip:
+      'Risk can only be adjusted downward when repaying. To adjust upward, you can unstake SKY or borrow more USDS on the Stake and Borrow tab.'
   },
   {
     id: 'choose-your-delegate',
@@ -213,8 +248,8 @@ Bundled transaction: Active`
       'By setting your slippage tolerance level, you control the degree of token price fluctuation that you will accept between the time you initiate a trade transaction and its execution on the blockchain. If the actual slippage is greater than your chosen tolerance level, the transaction will fail and be reverted. Note that reverted transactions may still incur gas fees.'
   },
   {
-    id: 'rate',
-    title: 'Rate',
+    id: 'sky-savings-rate',
+    title: 'Sky Savings Rate',
     tooltip:
       'The Sky Savings Rate is variable, determined by decentralized, onchain Sky Ecosystem Governance, and configured on the Ethereum blockchain. Sky Ecosystem Governance is able to adapt the SSR and other relevant parameters at any time at its discretion and without notice, based on market conditions, protocol surplus and other factors. The rate shown here is an estimate of the Sky Savings Rate representing the expected compounded rate per annum. It should be automatically updated every 5 minutes, and is powered by data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
   },
@@ -243,4 +278,9 @@ export function getTooltipById(id: string): Tooltip | undefined {
 
   // If not found, fallback to legacy tooltips
   return getLegacyTooltipById(id);
+}
+
+// Helper function to get multiple tooltips by IDs and return them as an array
+export function getTooltipsByIds(ids: string[]): Tooltip[] {
+  return ids.map(id => getTooltipById(id)).filter((tooltip): tooltip is Tooltip => tooltip !== undefined);
 }

@@ -543,6 +543,11 @@ export function getTooltipById(id: string): Tooltip | undefined {
   // If not found, fallback to legacy tooltips
   return getLegacyTooltipById(id);
 }
+
+// Helper function to get multiple tooltips by IDs and return them as an array
+export function getTooltipsByIds(ids: string[]): Tooltip[] {
+  return ids.map(id => getTooltipById(id)).filter((tooltip): tooltip is Tooltip => tooltip !== undefined);
+}
 EOF
         
         # Replace the original file

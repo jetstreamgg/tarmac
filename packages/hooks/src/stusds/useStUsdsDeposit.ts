@@ -1,7 +1,6 @@
 import { useAccount, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
-import { stUsdsAddress } from '../generated';
-import { stUsdsImplementationAbi } from './useReadStUsdsImplementation';
+import { stUsdsAddress, stUsdsImplementationAbi } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 import { Abi } from 'viem';
 

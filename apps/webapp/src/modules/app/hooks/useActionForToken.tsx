@@ -7,7 +7,11 @@ import {
   isL2ChainId
 } from '@jetstreamgg/sky-utils';
 import { useCallback } from 'react';
-import { RewardContract, useAvailableTokenRewardContractsForChains } from '@jetstreamgg/sky-hooks';
+import {
+  RewardContract,
+  useAvailableTokenRewardContractsForChains,
+  useTotalUserStaked
+} from '@jetstreamgg/sky-hooks';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useSearchParams } from 'react-router-dom';
 import { IntentMapping, QueryParams } from '@/lib/constants';
@@ -22,6 +26,7 @@ export const useActionForToken = () => {
   const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
 
   const getRewardContracts = useAvailableTokenRewardContractsForChains();
+  const { data: totalUserStaked } = useTotalUserStaked();
 
   const chains = useChains();
 
@@ -116,12 +121,16 @@ export const useActionForToken = () => {
             [unichain.id]: undefined
           };
           break;
-        case 'sky':
+        case 'sky': {
+          // If user has existing staking positions, link to manage overview; otherwise link to open new position
+          const hasStakingPositions = totalUserStaked !== undefined && totalUserStaked > 0n;
+          const flowParam = hasStakingPositions ? '' : `&${Flow}=open`;
+
           action = {
             [mainnet.id]: {
               label: t`Stake your ${formattedBalance} ${upperSymbol} in the Staking Engine ${isDifferentChain ? 'on Mainnet' : ''}`,
               actionUrl: getQueryParams(
-                `?${Network}=${networkName}&${Widget}=${STAKE}&${InputAmount}=${balance}&${Flow}=open`
+                `?${Network}=${networkName}&${Widget}=${STAKE}&${InputAmount}=${balance}${flowParam}`
               ),
               image
             },
@@ -131,6 +140,7 @@ export const useActionForToken = () => {
             [unichain.id]: undefined
           };
           break;
+        }
         case 'usds':
           action = {
             [mainnet.id]: isRestrictedBuild
@@ -292,7 +302,7 @@ export const useActionForToken = () => {
       if (isUnichainChainAction) return action?.[unichain.id];
       return action?.[mainnet.id];
     },
-    [getRewardContracts, searchParams, isRestrictedBuild, isRestrictedMiCa, chainId, chains]
+    [getRewardContracts, searchParams, isRestrictedBuild, isRestrictedMiCa, chainId, chains, totalUserStaked]
   );
 
   return actionForToken;

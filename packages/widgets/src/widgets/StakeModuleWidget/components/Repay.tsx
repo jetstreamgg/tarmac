@@ -36,16 +36,25 @@ const { usds } = TOKENS;
 
 const { LOW } = RiskLevel;
 
-const SliderContainer = ({ vault }: { vault?: Vault }) => {
-  const { sliderValue, handleSliderChange } = useRiskSlider({
+const SliderContainer = ({
+  vault,
+  existingVault,
+  vaultNoBorrow
+}: {
+  vault?: Vault;
+  existingVault?: Vault;
+  vaultNoBorrow?: Vault;
+}) => {
+  const { sliderValue, handleSliderChange, shouldShowSlider, currentRiskCeiling } = useRiskSlider({
     vault,
+    existingVault,
+    vaultNoBorrow,
     isRepayMode: true
   });
 
-  return (
+  return shouldShowSlider ? (
     <RiskSlider
       value={sliderValue}
-      disabled
       max={100}
       leftLabel={t`Low risk`}
       rightLabel={t`High risk`}
@@ -54,8 +63,9 @@ const SliderContainer = ({ vault }: { vault?: Vault }) => {
       }}
       liquidationLabel={t`Liquidation`}
       sliderLabel={t`Liquidation risk meter`}
+      currentRiskCeiling={currentRiskCeiling}
     />
-  );
+  ) : null;
 };
 
 const PositionManagerOverviewContainer = ({
@@ -141,6 +151,7 @@ const PositionManagerOverviewContainer = ({
                   `${formatBigInt(newBorrowAmount, { compact: true })}  ${usds.symbol}`
                 ]
               : `${formatBigInt(newBorrowAmount, { compact: true })}  ${usds.symbol}`,
+          tooltipTitle: getTooltipById('borrow')?.title || '',
           tooltipText: getTooltipById('borrow')?.tooltip || ''
         },
         minDebtNotMet
@@ -153,6 +164,7 @@ const PositionManagerOverviewContainer = ({
               {
                 label: t`Max borrowable amount`,
                 value: formattedMaxBorrowable,
+                tooltipTitle: getTooltipById('borrow-limit')?.title || '',
                 tooltipText: getTooltipById('borrow-limit')?.tooltip || ''
               }
             ],
@@ -166,6 +178,7 @@ const PositionManagerOverviewContainer = ({
         {
           label: t`Capped OSM SKY price`,
           value: `$${formatBigInt(simulatedVault?.delayedPrice || 0n, { unit: WAD_PRECISION })}`,
+          tooltipTitle: getTooltipById('capped-osm-sky-price')?.title || '',
           tooltipText: getTooltipById('capped-osm-sky-price')?.tooltip || ''
         }
       ].flat(),
@@ -188,7 +201,8 @@ const PositionManagerOverviewContainer = ({
       {
         label: t`Borrow Rate`,
         value: collateralData?.stabilityFee ? formatPercent(collateralData?.stabilityFee) : '',
-        tooltipText: getTooltipById('borrow')?.tooltip || ''
+        tooltipTitle: getTooltipById('borrow-rate')?.title || '',
+        tooltipText: getTooltipById('borrow-rate')?.tooltip || ''
       },
       {
         label: t`Collateral value`,
@@ -204,12 +218,14 @@ const PositionManagerOverviewContainer = ({
         label: t`Liquidation price`,
         value:
           hasPositions && existingLiqPrice !== newLiqPrice ? [existingLiqPrice, newLiqPrice] : newLiqPrice,
+        tooltipTitle: getTooltipById('liquidation-price')?.title || '',
         tooltipText: getTooltipById('liquidation-price')?.tooltip || ''
       },
       {
         label: t`Collateralization ratio`,
         value:
           hasPositions && existingColRatio !== newColRatio ? [existingColRatio, newColRatio] : newColRatio,
+        tooltipTitle: getTooltipById('collateralization-ratio')?.title || '',
         tooltipText: getTooltipById('collateralization-ratio')?.tooltip || ''
       },
       {
@@ -225,6 +241,7 @@ const PositionManagerOverviewContainer = ({
                 `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`
               ]
             : `${capitalizeFirstLetter(simulatedVault?.riskLevel?.toLowerCase() || '')}`,
+        tooltipTitle: getTooltipById('risk-level')?.title || '',
         tooltipText: getTooltipById('risk-level')?.tooltip || '',
         classNamePrev: existingRiskTextColor,
         className: riskTextColor
@@ -286,6 +303,15 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
     // Collateral amounts must be > 0
     newCollateralAmount > 0n ? newCollateralAmount : 0n,
     newDebtValue > 0n ? newDebtValue : 0n,
+    existingVault?.debtValue || 0n,
+    ilkName
+  );
+
+  // Simulate a new vault using only the existing debt value (not taking into account new debt)
+  // to be able to calculate risk floor and ceiling values
+  const { data: simulatedVaultNoBorrow } = useSimulatedVault(
+    newCollateralAmount > 0n ? newCollateralAmount : 0n,
+    existingVault?.debtValue || 0n,
     existingVault?.debtValue || 0n,
     ilkName
   );
@@ -430,7 +456,11 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
         <div className="mb-4" />
       )}
 
-      <SliderContainer vault={simulatedVault} />
+      <SliderContainer
+        vault={simulatedVault}
+        existingVault={existingVault}
+        vaultNoBorrow={simulatedVaultNoBorrow}
+      />
 
       <PositionManagerOverviewContainer
         simulatedVault={simulatedVault}

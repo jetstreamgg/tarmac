@@ -8,8 +8,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function getFooterLinks(): { url: string; name: string }[] {
-  let footerLinks: { url: string; name: string }[] = [
+export type FooterLink = { url: string; name: string; highlight?: string };
+
+export function getFooterLinks(): FooterLink[] {
+  let footerLinks: FooterLink[] = [
     { url: '', name: '' },
     { url: '', name: '' },
     { url: '', name: '' }

@@ -5,13 +5,11 @@ import {
   AccordionTrigger
 } from '@widgets/components/ui/accordion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
-import { TextWithTooltip } from '@widgets/shared/components/ui/tooltip/TextWithTooltip';
+import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
-import { getRiskTextColor } from '../lib/utils';
-import { getIlkName, RiskLevel, useCollateralData } from '@jetstreamgg/sky-hooks';
-import { cn } from '@widgets/lib/utils';
+import { getIlkName, useCollateralData } from '@jetstreamgg/sky-hooks';
 import { getTooltipById } from '../../../data/tooltips';
 
 type Props = {
@@ -27,17 +25,8 @@ type Props = {
   liquidationPrice?: bigint;
 };
 
-export function PositionDetailAccordion({
-  collateralizationRatio,
-  riskLevel,
-  sealedAmount,
-  borrowedAmount,
-  liquidationData,
-  delayedPrice,
-  liquidationPrice
-}: Props) {
+export function PositionDetailAccordion({ delayedPrice, liquidationPrice }: Props) {
   const ilkName = getIlkName(2);
-  const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
   const { data: collateralData } = useCollateralData(ilkName);
 
   return (
@@ -49,101 +38,43 @@ export function PositionDetailAccordion({
           </Text>
         </AccordionTrigger>
         <AccordionContent className="space-y-4 pt-4">
-          <motion.div className="flex justify-between" variants={positionAnimations}>
-            <TextWithTooltip
-              text={getTooltipById('staked')?.title || 'Staked'}
-              tooltip={getTooltipById('staked')?.tooltip || ''}
-              textClassName="leading-4"
-              gap={1}
-              iconClassName="text-textSecondary"
-            />
-            <Text className="text-right text-sm">{formatBigInt(sealedAmount || 0n)} SKY</Text>
-          </motion.div>
-          {!!borrowedAmount && borrowedAmount > 0n && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('borrowed')?.title || 'Borrowed'}
-                tooltip={getTooltipById('borrowed')?.tooltip || ''}
-                textClassName="leading-4"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
-              <Text className="text-right text-sm">{formatBigInt(borrowedAmount)} USDS</Text>
-            </motion.div>
-          )}
           {!!collateralData?.stabilityFee && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('borrow')?.title || 'Borrow Rate'}
-                tooltip={getTooltipById('borrow')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+            <motion.div className="flex items-center justify-between" variants={positionAnimations}>
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Borrow Rate
+                <PopoverInfo
+                  title={getTooltipById('borrow-rate')?.title || 'Borrow Rate'}
+                  description={getTooltipById('borrow-rate')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               <Text className="text-right text-sm">{formatPercent(collateralData.stabilityFee)}</Text>
             </motion.div>
           )}
-          {!!collateralizationRatio && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('collateralization-ratio')?.title || 'Collateralization ratio'}
-                tooltip={getTooltipById('collateralization-ratio')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
-              <Text className={cn('text-right text-sm', riskTextColor)}>
-                {formatPercent(collateralizationRatio)}
-              </Text>
-            </motion.div>
-          )}
           {!!liquidationPrice && liquidationPrice > 0n && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('liquidation-price')?.title || 'Liquidation price'}
-                tooltip={getTooltipById('liquidation-price')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
+            <motion.div className="flex items-center justify-between" variants={positionAnimations}>
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Liquidation price
+                <PopoverInfo
+                  title={getTooltipById('liquidation-price')?.title || 'Liquidation price'}
+                  description={getTooltipById('liquidation-price')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
+              </Text>
               <Text className="text-right text-sm">${formatBigInt(liquidationPrice)}</Text>
             </motion.div>
           )}
           {!!delayedPrice && delayedPrice > 0n && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('capped-osm-sky-price')?.title || 'Capped OSM SKY price'}
-                tooltip={getTooltipById('capped-osm-sky-price')?.tooltip || ''}
-                textClassName="leading-4"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
-              <Text className="text-right text-sm">${formatBigInt(delayedPrice)}</Text>
-            </motion.div>
-          )}
-          {!!riskLevel && (
-            <motion.div className="flex justify-between" variants={positionAnimations}>
-              <TextWithTooltip
-                text={getTooltipById('risk-level')?.title || 'Risk level'}
-                tooltip={getTooltipById('risk-level')?.tooltip || ''}
-                textClassName="leading-4"
-                contentClassname="w-[400px]"
-                gap={1}
-                iconClassName="text-textSecondary"
-              />
-              <Text
-                className={cn(
-                  'text-right text-sm',
-                  liquidationData?.isInLiquidatedState ? 'text-red-500' : riskTextColor
-                )}
-              >
-                {liquidationData?.isInLiquidatedState
-                  ? 'Liquidated'
-                  : capitalizeFirstLetter(riskLevel.toLowerCase())}
+            <motion.div className="flex items-center justify-between" variants={positionAnimations}>
+              <Text variant="medium" className="text-textSecondary leading-4">
+                Capped OSM SKY price
+                <PopoverInfo
+                  title={getTooltipById('capped-osm-sky-price')?.title || 'Capped OSM SKY price'}
+                  description={getTooltipById('capped-osm-sky-price')?.tooltip || ''}
+                  iconClassName="text-textSecondary ml-1"
+                />
               </Text>
+              <Text className="text-right text-sm">${formatBigInt(delayedPrice)}</Text>
             </motion.div>
           )}
         </AccordionContent>

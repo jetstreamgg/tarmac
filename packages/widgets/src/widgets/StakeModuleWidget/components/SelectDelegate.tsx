@@ -9,7 +9,7 @@ import { DelegateCard } from './DelegateCard';
 import { StakeModuleWidgetContext } from '../context/context';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Trans } from '@lingui/react/macro';
-import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { Button } from '@widgets/components/ui/button';
 import { getNextStep } from '../lib/utils';
 // import { getAddress } from 'viem';
@@ -35,7 +35,8 @@ export const SelectDelegate = ({
     setIsSelectDelegateCompleted,
     currentStep,
     setCurrentStep,
-    activeUrn
+    activeUrn,
+    wantsToDelegate
   } = useContext(StakeModuleWidgetContext);
 
   const [search, setSearch] = useState('');
@@ -70,7 +71,7 @@ export const SelectDelegate = ({
     setSelectedDelegate(urnSelectedVoteDelegate);
     // When we skip, we still set the step to complete
     setIsSelectDelegateCompleted(true);
-    setCurrentStep(getNextStep(currentStep));
+    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
   };
 
   // Runs only once, when the component mounts
@@ -87,44 +88,7 @@ export const SelectDelegate = ({
       <HStack className="items-center justify-between">
         <HStack gap={1} className="items-center">
           <Text>{delegateTitle}</Text>
-          <InfoTooltip
-            content={
-              <>
-                <Text>{delegateTitle}</Text>
-                <br />
-                <Text>
-                  <Trans>
-                    When you hold SKY tokens, you maintain the right to participate in the process of Sky
-                    Ecosystem Governance voting. That means that you have the ability to contribute to the
-                    community-driven, decentralized ecosystem decision-making process, which occurs through
-                    onchain voting.
-                  </Trans>
-                </Text>
-                <br />
-                <Text>
-                  <Trans>
-                    The voting power delegation feature of the Staking Engine of the Sky Protocol enables you
-                    to entrust your voting power to a delegate of your choosing, who can then vote in the Sky
-                    Ecosystem Governance process on your behalf. You can choose one delegate per SKY position.
-                    If you want to entrust your SKY to two delegates using the Staking Engine, you will need
-                    to create two separate positions.
-                  </Trans>
-                </Text>
-                <br />
-                <Text>
-                  <Trans>
-                    Delegates in receipt of token voting power can never directly access any tokens delegated
-                    to them, including staked tokens. Throughout the delegation process, you always own and
-                    are in control of your staked tokens, and you can change your delegate at any time.
-                    Staking to delegate your voting power may be a useful option for governance token holders
-                    who have limited time to allocate to the process, who want to save on the cost of gas
-                    involved in voting on their own, and who also want to access Staking Rewards.
-                  </Trans>
-                </Text>
-                <br />
-              </>
-            }
-          />
+          <PopoverRateInfo type="delegate" width={13} height={13} />
         </HStack>
         <Button variant="link" className="text-white" onClick={handleSkip}>
           <Trans>Skip</Trans>

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAccount, useChainId, useReadContracts, useReadContract } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
-import { usdsAddress, stUsdsAddress, stUsdsAbi } from '../generated';
+import { usdsAddress, stUsdsAddress, stUsdsImplementationAbi, useReadClipperDue } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
 import { getEtherscanLink, isTestnetId } from '@jetstreamgg/sky-utils';
@@ -48,92 +48,92 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     mutate: refetchStakingEngine
   } = useCollateralData(stakingEngineIlk);
 
+  // Get pending liquidations debt
+  const {
+    data: clipperDue,
+    refetch: refetchClipperDue,
+    isLoading: isLoadingClipperDue
+  } = useReadClipperDue({
+    chainId
+  });
+
+  const stUsdsContract = {
+    address: stUsdsContractAddress,
+    abi: stUsdsImplementationAbi,
+    chainId
+  } as const;
+
   // Batch all contract reads into a single multicall
   const {
-    data: contractData,
+    data: readData,
     isLoading: isContractLoading,
     error: contractError,
     refetch: mutateContractData
   } = useReadContracts({
+    allowFailure: false,
     contracts: [
       {
-        address: stUsdsContractAddress,
-        abi: stUsdsAbi,
-        functionName: 'totalAssets',
-        chainId
+        ...stUsdsContract,
+        functionName: 'totalAssets'
       },
       {
-        address: stUsdsContractAddress,
-        abi: stUsdsAbi,
-        functionName: 'totalSupply',
-        chainId
+        ...stUsdsContract,
+        functionName: 'totalSupply'
       },
       {
-        address: stUsdsContractAddress,
-        abi: stUsdsAbi,
-        functionName: 'cap',
-        chainId
+        ...stUsdsContract,
+        functionName: 'cap'
       },
       {
-        address: stUsdsContractAddress,
-        abi: stUsdsAbi,
-        functionName: 'line',
-        chainId
+        ...stUsdsContract,
+        functionName: 'line'
       },
       {
-        address: stUsdsContractAddress,
-        abi: stUsdsAbi,
-        functionName: 'str',
-        chainId
+        ...stUsdsContract,
+        functionName: 'str'
       },
       {
-        address: stUsdsContractAddress,
-        abi: stUsdsAbi,
-        functionName: 'chi',
-        chainId
+        ...stUsdsContract,
+        functionName: 'chi'
       },
       ...(acct
         ? [
             {
-              address: stUsdsContractAddress,
-              abi: stUsdsAbi,
+              ...stUsdsContract,
               functionName: 'balanceOf',
-              args: [acct],
-              chainId
+              args: [acct]
             },
             {
-              address: stUsdsContractAddress,
-              abi: stUsdsAbi,
+              ...stUsdsContract,
               functionName: 'maxDeposit',
-              args: [acct],
-              chainId
+              args: [acct]
             },
             {
-              address: stUsdsContractAddress,
-              abi: stUsdsAbi,
+              ...stUsdsContract,
               functionName: 'maxWithdraw',
-              args: [acct],
-              chainId
+              args: [acct]
             }
           ]
         : [])
     ]
   });
 
+  const contractData = readData as (bigint | undefined)[] | undefined;
+
   // Extract results from multicall
-  const totalAssets = contractData?.[0]?.result as bigint | undefined;
-  const totalSupply = contractData?.[1]?.result as bigint | undefined;
-  const cap = contractData?.[2]?.result as bigint | undefined;
-  const line = contractData?.[3]?.result as bigint | undefined;
-  const str = contractData?.[4]?.result as bigint | undefined;
-  const chi = contractData?.[5]?.result as bigint | undefined;
-  const userStUsdsBalance = acct ? (contractData?.[6]?.result as bigint | undefined) : undefined;
-  const userMaxDeposit = acct ? (contractData?.[7]?.result as bigint | undefined) : undefined;
-  const userMaxWithdraw = acct ? (contractData?.[8]?.result as bigint | undefined) : undefined;
+  const totalAssets = contractData?.[0];
+  const totalSupply = contractData?.[1];
+  const cap = contractData?.[2];
+  const line = contractData?.[3];
+  const str = contractData?.[4];
+  const chi = contractData?.[5];
+  const userStUsdsBalance = acct ? contractData?.[6] : undefined;
+  const userMaxDeposit = acct ? contractData?.[7] : undefined;
+  const userMaxWithdraw = acct ? contractData?.[8] : undefined;
 
   const { data: userConvertedAssets, refetch: mutateConvertToAssets } = useReadContract({
     address: stUsdsContractAddress,
-    abi: stUsdsAbi,
+    abi: stUsdsImplementationAbi,
     functionName: 'convertToAssets',
     args: userStUsdsBalance ? [userStUsdsBalance] : [0n],
     chainId
@@ -173,9 +173,11 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
 
   const availableLiquidity = useMemo(() => {
     const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
+    const pendingLiquidations = clipperDue || 0n;
     const assets = totalAssets || 0n;
-    return assets > stakingEngineDebt ? assets - stakingEngineDebt : 0n;
-  }, [totalAssets, stakingEngineData?.totalDaiDebt]);
+    const totalDebt = stakingEngineDebt + pendingLiquidations;
+    return assets > totalDebt ? assets - totalDebt : 0n;
+  }, [totalAssets, stakingEngineData?.totalDaiDebt, clipperDue]);
 
   const liquidityBuffer = useMemo(() => {
     if (!totalAssets || !str) return 0n;
@@ -203,7 +205,8 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     return availableLiquidity > liquidityBuffer ? availableLiquidity - liquidityBuffer : 0n;
   }, [availableLiquidity, liquidityBuffer]);
 
-  const isLoading = isContractLoading || (!!acct && userUsdsLoading) || isLoadingStakingEngine;
+  const isLoading =
+    isContractLoading || (!!acct && userUsdsLoading) || isLoadingStakingEngine || isLoadingClipperDue;
 
   const data: StUsdsHookData | undefined = useMemo(() => {
     if (!contractData) return undefined;
@@ -262,6 +265,7 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
       mutateConvertToAssets();
       mutateUserUsdsBalance();
       refetchStakingEngine();
+      refetchClipperDue();
     },
     dataSources
   };

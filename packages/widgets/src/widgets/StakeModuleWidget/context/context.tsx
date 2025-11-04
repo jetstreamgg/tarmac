@@ -1,6 +1,7 @@
 import {
   getStakeDrawCalldata,
   getStakeFreeCalldata,
+  getStakeGetRewardCalldata,
   getStakeLockCalldata,
   getStakeOpenCalldata,
   getStakeSelectDelegateCalldata,
@@ -82,6 +83,9 @@ export interface StakeModuleWidgetContextProps {
 
   rewardContractToClaim: `0x${string}` | undefined;
   setRewardContractToClaim: Dispatch<SetStateAction<`0x${string}` | undefined>>;
+
+  wantsToDelegate: boolean | undefined;
+  setWantsToDelegate: Dispatch<SetStateAction<boolean | undefined>>;
 }
 
 export const StakeModuleWidgetContext = createContext<StakeModuleWidgetContextProps>({
@@ -133,7 +137,10 @@ export const StakeModuleWidgetContext = createContext<StakeModuleWidgetContextPr
   setIndexToClaim: () => undefined,
 
   rewardContractToClaim: undefined,
-  setRewardContractToClaim: () => undefined
+  setRewardContractToClaim: () => undefined,
+
+  wantsToDelegate: undefined,
+  setWantsToDelegate: () => null
 });
 
 export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode }): ReactElement => {
@@ -155,6 +162,7 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
   >();
   const [indexToClaim, setIndexToClaim] = useState<bigint | undefined>();
   const [rewardContractToClaim, setRewardContractToClaim] = useState<`0x${string}` | undefined>();
+  const [wantsToDelegate, setWantsToDelegate] = useState<boolean | undefined>(undefined);
 
   const { widgetState } = useContext(WidgetContext);
 
@@ -238,6 +246,16 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
           })
         : undefined;
 
+      // Claim rewards
+      const claimRewardsCalldata = rewardContractToClaim
+        ? getStakeGetRewardCalldata({
+            ownerAddress,
+            urnIndex,
+            rewardContractAddress: rewardContractToClaim,
+            toAddress: ownerAddress
+          })
+        : undefined;
+
       // Order calldata based on the flow
       const sortedCalldata =
         widgetState.flow === StakeFlow.OPEN
@@ -259,7 +277,8 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
               selectRewardContractCalldata,
               selectDelegateCalldata,
               lockSkyCalldata,
-              borrowUsdsCalldata
+              borrowUsdsCalldata,
+              claimRewardsCalldata
             ];
 
       // Filter out undefined calldata
@@ -276,6 +295,7 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
       selectedDelegate,
       urnSelectedRewardContract,
       urnSelectedVoteDelegate,
+      rewardContractToClaim,
       activeUrn,
       widgetState.flow
     ]
@@ -316,7 +336,9 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
         indexToClaim,
         setIndexToClaim,
         rewardContractToClaim,
-        setRewardContractToClaim
+        setRewardContractToClaim,
+        wantsToDelegate,
+        setWantsToDelegate
       }}
     >
       {children}

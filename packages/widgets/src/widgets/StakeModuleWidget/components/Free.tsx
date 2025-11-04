@@ -1,5 +1,12 @@
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
-import { TOKENS, useVault, useSimulatedVault, getIlkName } from '@jetstreamgg/sky-hooks';
+import {
+  TOKENS,
+  useVault,
+  useSimulatedVault,
+  getIlkName,
+  RISK_LEVEL_THRESHOLDS,
+  RiskLevel
+} from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect } from 'react';
 import { useAccount } from 'wagmi';
@@ -37,14 +44,20 @@ export const Free = ({
     // Collateral amounts must be > 0
     newCollateralAmount > 0n ? newCollateralAmount : 0n,
     newDebtValue > 0n ? newDebtValue : 0n,
-    existingVault?.debtValue || 0n
+    existingVault?.debtValue || 0n,
+    ilkName
   );
+
+  const liquidationRiskThreshold = RISK_LEVEL_THRESHOLDS.find(
+    riskLevel => riskLevel.level === RiskLevel.LIQUIDATION
+  )?.threshold;
 
   const isLiquidationError =
     !!skyToFree &&
     skyToFree > 0n &&
     simulatedVault?.liquidationProximityPercentage &&
-    simulatedVault?.liquidationProximityPercentage > 99;
+    liquidationRiskThreshold &&
+    simulatedVault?.liquidationProximityPercentage > liquidationRiskThreshold;
 
   useEffect(() => {
     const isFreeComplete = !!skySealed && skyToFree <= skySealed && !isLiquidationError && !isLoading;

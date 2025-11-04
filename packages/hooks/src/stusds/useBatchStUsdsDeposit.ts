@@ -1,7 +1,6 @@
 import { useAccount, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
-import { stUsdsAddress, usdsAddress } from '../generated';
-import { stUsdsImplementationAbi } from './useReadStUsdsImplementation';
+import { stUsdsAddress, stUsdsImplementationAbi, usdsAddress } from '../generated';
 import { Abi, Call, erc20Abi } from 'viem';
 import { useStUsdsAllowance } from './useStUsdsAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
