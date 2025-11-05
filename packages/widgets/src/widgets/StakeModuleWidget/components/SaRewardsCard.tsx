@@ -2,7 +2,7 @@ import { Skeleton } from '@widgets/components/ui/skeleton';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import { StatsOverviewCardCoreAccordion } from '@widgets/shared/components/ui/card/StatsOverviewCardCoreAccordion';
+import { Card, CardHeader, CardContent } from '@widgets/components/ui/card';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -58,47 +58,51 @@ export const SaRewardsCard = ({
   };
 
   return (
-    <StatsOverviewCardCoreAccordion
-      className={`bg-radial-(--gradient-position) transition-colors ${
+    <Card
+      variant="pool"
+      onClick={handleSelectRewardContract}
+      className={`hover-in-before bg-radial-(--gradient-position) overflow-hidden transition-colors ${
         selectedRewardContract && getAddress(selectedRewardContract) === getAddress(contractAddress)
           ? 'from-primary-start/100 to-primary-end/100'
           : 'from-card to-card hover:from-primary-start/40 hover:to-primary-end/40'
       } ${setSelectedRewardContract ? 'cursor-pointer' : 'cursor-default'}`}
-      headerLeftContent={
-        <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          {rewardContractTokens ? (
-            <>
-              <TokenIcon token={rewardContractTokens.rewardsToken} className="h-6 w-6" />
-              <Text>{rewardContractTokens.rewardsToken.symbol}</Text>
-            </>
-          ) : isRewardContractTokensLoading ? (
-            <>
-              <Skeleton className="bg-textSecondary h-6 w-6 rounded-full" />
-              <Skeleton className="bg-textSecondary h-5 w-10" />
-            </>
-          ) : rewardContractTokensError ? (
-            <Warning boxSize={16} viewBox="0 0 16 16" />
-          ) : null}
-        </MotionHStack>
-      }
-      headerRightContent={
-        <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          {mostRecentRewardsChartInfoData && parseFloat(mostRecentRewardsChartInfoData.rate) > 0 ? (
-            <div className="flex items-center gap-2">
-              <Text className="text-bullish">
-                {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData.rate))} Rate
-              </Text>
-              <PopoverRateInfo type="srr" onExternalLinkClicked={onExternalLinkClicked} />
-            </div>
-          ) : isRewardsChartInfoLoading ? (
-            <Skeleton className="bg-textSecondary h-6 w-10" />
-          ) : (
-            ''
-          )}
-        </MotionHStack>
-      }
-      content={
-        <HStack className="mt-5 justify-between" gap={2}>
+      data-testid="stake-reward-card"
+    >
+      <CardHeader>
+        <HStack className="w-full justify-between">
+          <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
+            {rewardContractTokens ? (
+              <>
+                <TokenIcon token={rewardContractTokens.rewardsToken} className="h-6 w-6" />
+                <Text>{rewardContractTokens.rewardsToken.symbol}</Text>
+              </>
+            ) : isRewardContractTokensLoading ? (
+              <>
+                <Skeleton className="bg-textSecondary h-6 w-6 rounded-full" />
+                <Skeleton className="bg-textSecondary h-5 w-10" />
+              </>
+            ) : rewardContractTokensError ? (
+              <Warning boxSize={16} viewBox="0 0 16 16" />
+            ) : null}
+          </MotionHStack>
+          <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
+            {mostRecentRewardsChartInfoData && parseFloat(mostRecentRewardsChartInfoData.rate) > 0 ? (
+              <div className="flex items-center gap-2">
+                <Text className="text-bullish">
+                  {formatDecimalPercentage(parseFloat(mostRecentRewardsChartInfoData.rate))} Rate
+                </Text>
+                <PopoverRateInfo type="srr" onExternalLinkClicked={onExternalLinkClicked} />
+              </div>
+            ) : isRewardsChartInfoLoading ? (
+              <Skeleton className="bg-textSecondary h-6 w-10" />
+            ) : (
+              <></>
+            )}
+          </MotionHStack>
+        </HStack>
+      </CardHeader>
+      <CardContent className="pt-5">
+        <HStack className="justify-between" gap={2}>
           <MotionVStack className="justify-between" gap={2} variants={positionAnimations}>
             <Text className="text-textSecondary text-sm leading-4">{t`TVL`}</Text>
             {rewardContractInfo ? (
@@ -120,9 +124,7 @@ export const SaRewardsCard = ({
             ) : null}
           </MotionVStack>
         </HStack>
-      }
-      onClick={handleSelectRewardContract}
-      dataTestId="stake-reward-card"
-    />
+      </CardContent>
+    </Card>
   );
 };

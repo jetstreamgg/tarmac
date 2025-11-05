@@ -24,9 +24,6 @@ function extendedMock(params: MockParameters) {
           get(target, prop) {
             if (prop === 'request') {
               return async (args: EIP1193Parameters<WalletRpcSchema>) => {
-                // Log all requests to see what's being called
-                console.log('extendedMock request:', args.method, args.params);
-
                 // Handle wallet_getCapabilities method
                 if (args.method === 'wallet_getCapabilities') {
                   return {
@@ -41,20 +38,11 @@ function extendedMock(params: MockParameters) {
 
                 // Handle eth_requestAccounts method
                 if (args.method === 'eth_requestAccounts') {
-                  // First, let's see what the original returns
-                  const originalAccounts = await target.request(args);
-                  console.log('Original eth_requestAccounts returned:', originalAccounts);
-                  console.log('extendedMock overriding with:', params.accounts);
                   return params.accounts;
                 }
 
                 // Handle eth_accounts method
                 if (args.method === 'eth_accounts') {
-                  // First, let's see what the original returns
-                  const originalAccounts = await target.request(args);
-                  console.log('Original eth_accounts returned:', originalAccounts);
-                  console.log('extendedMock overriding with:', params.accounts);
-
                   return params.accounts;
                 }
 
@@ -77,7 +65,6 @@ function extendedMock(params: MockParameters) {
                   const params = args.params as any;
                   const calls = params[0].calls;
                   const from = params[0].from;
-                  console.log('wallet_sendCalls params:', params);
                   // change from address to the first account in the worker accounts
                   // const workerIndex = Number(import.meta.env.VITE_TEST_WORKER_INDEX || 0);
                   // const account = TEST_WALLET_ADDRESSES[workerIndex % TEST_WALLET_ADDRESSES.length];
@@ -122,7 +109,6 @@ function getWorkerAccounts(): [`0x${string}`, ...`0x${string}`[]] {
   // First check if we have a specific account injected by the test
   if (typeof window !== 'undefined' && (window as any).__TEST_ACCOUNT__) {
     const account = (window as any).__TEST_ACCOUNT__ as `0x${string}`;
-    console.log('Using injected test account:', account);
     return [account];
   }
 
@@ -132,7 +118,6 @@ function getWorkerAccounts(): [`0x${string}`, ...`0x${string}`[]] {
   // - Unlimited address generation
   const workerIndex = Number(import.meta.env.VITE_TEST_WORKER_INDEX || 0);
   const account = getTestWalletAddress(workerIndex);
-  console.log('Using worker account:', account, 'for worker index:', workerIndex);
 
   // For parallel execution, return only the worker's specific account
   // This ensures each worker uses a different account
@@ -147,28 +132,23 @@ function getWorkerAccounts(): [`0x${string}`, ...`0x${string}`[]] {
 // Clear old wagmi storage to prevent cached address issues
 if (useMock && typeof window !== 'undefined' && window.localStorage) {
   // Clear ALL localStorage to ensure no cached state
-  console.log('Clearing all localStorage to prevent cached addresses');
   window.localStorage.clear();
 }
 
-// Debug the accounts being used
-const debugAccounts = getWorkerAccounts();
-console.log('Creating wagmi config with accounts:', debugAccounts);
-console.log('Worker index:', import.meta.env.VITE_TEST_WORKER_INDEX);
-console.log('Parallel test mode:', import.meta.env.VITE_PARALLEL_TEST);
+const workerAccounts = getWorkerAccounts();
 
 export const mockWagmiConfig = createConfig({
   chains: [tenderlyMainnet, tenderlyBase, tenderlyArbitrum, tenderlyOptimism, tenderlyUnichain],
   connectors: [
     mock({
-      accounts: getWorkerAccounts(),
+      accounts: workerAccounts,
       features: {
         reconnect: false // Disable reconnect to prevent using old cached accounts
       }
     }),
     // Mock connector that adds suport for batch transactions
     extendedMock({
-      accounts: getWorkerAccounts(),
+      accounts: workerAccounts,
       features: {
         reconnect: false // Disable reconnect to prevent using old cached accounts
       }

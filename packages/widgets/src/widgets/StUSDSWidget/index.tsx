@@ -149,8 +149,10 @@ const StUSDSWidgetWrapped = ({
   }, [tabIndex, isConnectedAndEnabled]);
 
   useEffect(() => {
-    setShowStepIndicator(widgetState.flow === StUSDSFlow.SUPPLY);
-  }, [widgetState.flow]);
+    if (txStatus === TxStatus.IDLE) {
+      setShowStepIndicator(widgetState.flow === StUSDSFlow.SUPPLY && needsAllowance);
+    }
+  }, [txStatus, widgetState.flow, needsAllowance, setShowStepIndicator]);
 
   const remainingCapacityBuffered = capacityData?.remainingCapacityBuffered || 0n;
 

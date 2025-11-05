@@ -153,7 +153,8 @@ export function UpgradeWidgetWrapped({
     setTxStatus,
     setExternalLink,
     widgetState,
-    setWidgetState
+    setWidgetState,
+    setShowStepIndicator
   } = useContext(WidgetContext);
 
   useNotifyWidgetState({
@@ -222,6 +223,12 @@ export function UpgradeWidgetWrapped({
     onWidgetStateChange,
     onNotification
   });
+
+  useEffect(() => {
+    if (txStatus === TxStatus.IDLE) {
+      setShowStepIndicator(!hasAllowance);
+    }
+  }, [txStatus, hasAllowance, setShowStepIndicator]);
 
   useEffect(() => {
     if (widgetState.screen === UpgradeScreen.TRANSACTION || widgetState.screen === UpgradeScreen.REVIEW)

@@ -199,8 +199,8 @@ function StakeModuleWidgetWrapped({
    */
 
   useEffect(() => {
-    setShowStepIndicator(widgetState.flow !== StakeFlow.CLAIM);
-  }, [setShowStepIndicator, widgetState.flow]);
+    setShowStepIndicator(widgetState.flow !== StakeFlow.CLAIM && needsAllowance);
+  }, [setShowStepIndicator, widgetState.flow, needsAllowance]);
 
   useEffect(() => {
     setTabIndex(initialTabIndex);

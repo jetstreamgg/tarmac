@@ -176,7 +176,8 @@ function TradeWidgetWrapped({
     txStatus,
     widgetState,
     setWidgetState,
-    setBackButtonText
+    setBackButtonText,
+    setShowStepIndicator
   } = useContext(WidgetContext);
 
   const pairValid = !!originToken && !!targetToken && originToken.symbol !== targetToken.symbol;
@@ -209,6 +210,11 @@ function TradeWidgetWrapped({
 
   const needsAllowance = !!(!allowance || allowance < debouncedOriginAmount);
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
+  useEffect(() => {
+    if (txStatus === TxStatus.IDLE) {
+      setShowStepIndicator(needsAllowance);
+    }
+  }, [txStatus, needsAllowance, setShowStepIndicator]);
 
   useEffect(() => {
     if (rho && dsr && chi) {

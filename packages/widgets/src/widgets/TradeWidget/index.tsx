@@ -1084,8 +1084,10 @@ function TradeWidgetWrapped({
   }, [externalWidgetState, txStatus]);
 
   useEffect(() => {
-    setShowStepIndicator(!originToken?.isNative);
-  }, [originToken?.isNative]);
+    if (txStatus === TxStatus.IDLE) {
+      setShowStepIndicator(!!(!originToken?.isNative && needsAllowance));
+    }
+  }, [txStatus, originToken?.isNative, needsAllowance, setShowStepIndicator]);
 
   useEffect(() => {
     if (targetToken === undefined) {
