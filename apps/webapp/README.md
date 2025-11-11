@@ -68,6 +68,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_CHATBOT_CHECKBOX_LABEL`: (Optional) Additional instructional text displayed above the terms acceptance checkboxes in the chatbot terms modal.
 - `VITE_CHATBOT_CHECKBOX_TERMS_LABEL`: (Optional) Custom label for the terms checkbox in the chatbot terms modal. Supports markdown formatting.
 - `VITE_CHATBOT_CHECKBOX_PRIVACY_LABEL`: (Optional) Custom label for the privacy checkbox in the chatbot terms modal. Supports markdown formatting.
+- `VITE_DISABLE_CHATBOT_PREFILL`: Controls whether chatbot intents with pre-filled amounts/tokens are filtered. Only applies to MICA builds (`VITE_RESTRICTED_BUILD_MICA=true`). For MICA builds, filtering is enabled by default unless explicitly set to `'false'`. Non-MICA builds are unaffected by this setting.
 
 ## Running the App
 
