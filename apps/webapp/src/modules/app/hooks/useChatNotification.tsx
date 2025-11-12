@@ -68,7 +68,7 @@ export const useChatNotification = (isAuthorized: boolean) => {
                   <img
                     src="/images/chatbot_logo.svg"
                     alt={`${CHATBOT_NAME} avatar`}
-                    className="@2xl/chat:h-8 @2xl/chat:w-8 h-5 w-5"
+                    className="h-5 w-5 @2xl/chat:h-8 @2xl/chat:w-8"
                   />
                   <Text variant="medium" className="text-selectActive ml-1">
                     {CHATBOT_NAME}

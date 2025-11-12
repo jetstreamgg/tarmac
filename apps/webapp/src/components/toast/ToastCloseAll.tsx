@@ -34,9 +34,9 @@ export const ToastCloseAll = () => {
       className={cn(
         'animate-in fade-in slide-in-from-bottom-2 fixed z-[41] duration-200',
         // Mobile: Inside toast area (top-right corner)
-        'bottom-8 right-8',
+        'right-8 bottom-8',
         // Desktop: Below the toast stack with more separation
-        'md:bottom-2 md:right-8'
+        'md:right-8 md:bottom-2'
       )}
     >
       <button

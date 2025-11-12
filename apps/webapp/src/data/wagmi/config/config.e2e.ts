@@ -24,6 +24,9 @@ function extendedMock(params: MockParameters) {
           get(target, prop) {
             if (prop === 'request') {
               return async (args: EIP1193Parameters<WalletRpcSchema>) => {
+                // Log all requests to see what's being called
+                console.log('extendedMock request:', args.method, args.params);
+
                 // Handle wallet_getCapabilities method
                 if (args.method === 'wallet_getCapabilities') {
                   return {

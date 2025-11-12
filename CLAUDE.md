@@ -136,8 +136,8 @@ pnpm messages        # Extract and compile translations
 
 ## Environment Setup
 
-- Node.js v18+ required
-- pnpm v8+ required
+- Node.js v20.19+ required (Vite 7 requires 20.19+ or 22.12+)
+- pnpm v10.17.0+ required
 - Key environment variables:
   - `TENDERLY_API_KEY` - For test network forking
   - `VITE_RPC_PROVIDER_*` - RPC endpoints

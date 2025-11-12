@@ -69,22 +69,22 @@ export const ConfirmationWarningRow = () => {
   const disclaimerMetadata = getConfirmationWarningMetadata(selectedIntent);
 
   return (
-    <div className="text-text @max-sm/chat:mt-3 @max-sm/chat:p-3 mt-5 rounded-xl bg-[#0b0b0c]/60 p-5">
-      <div className="bg-white/6 @sm/chat:flex-row @max-sm/chat:gap-1.5 @max-sm/chat:p-3 flex flex-col items-center gap-2 rounded-lg p-4">
+    <div className="text-text mt-5 rounded-xl bg-[#0b0b0c]/60 p-5 @max-sm/chat:mt-3 @max-sm/chat:p-3">
+      <div className="flex flex-col items-center gap-2 rounded-lg bg-white/6 p-4 @max-sm/chat:gap-1.5 @max-sm/chat:p-3 @sm/chat:flex-row">
         <Warning
           boxSize={20}
           viewBox="0 0 16 16"
           fill="#fdc134"
-          className="@max-sm/chat:h-4 @max-sm/chat:w-4 flex-shrink-0"
+          className="flex-shrink-0 @max-sm/chat:h-4 @max-sm/chat:w-4"
         />
-        <Text variant="medium" className="@sm/chat:text-left @max-sm/chat:text-sm text-center">
+        <Text variant="medium" className="text-center @max-sm/chat:text-sm @sm/chat:text-left">
           {disclaimerMetadata?.description}
         </Text>
       </div>
-      <div className="@max-sm/chat:ml-3 @max-sm/chat:mt-2 ml-4 mt-4 text-[13px]">
+      <div className="mt-4 ml-4 text-[13px] @max-sm/chat:mt-2 @max-sm/chat:ml-3">
         <ChatMarkdownRenderer markdown={disclaimerMetadata?.disclaimer} />
       </div>
-      <div className="@max-sm/chat:mt-2 @max-sm/chat:gap-3 mt-3 flex gap-5">
+      <div className="mt-3 flex gap-5 @max-sm/chat:mt-2 @max-sm/chat:gap-3">
         <Button
           variant="pill"
           size="xs"

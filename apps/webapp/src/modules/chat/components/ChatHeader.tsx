@@ -28,7 +28,7 @@ export const ChatHeader = () => {
         </div>
       </div>
       <div id="pepe" className="relative hidden md:block">
-        <Button variant="ghost" className="absolute right-4 top-4 h-10 w-10 p-0" onClick={handleBack}>
+        <Button variant="ghost" className="absolute top-4 right-4 h-10 w-10 p-0" onClick={handleBack}>
           <Close boxSize={18} />
         </Button>
       </div>

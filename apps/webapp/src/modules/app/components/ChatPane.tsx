@@ -76,7 +76,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
       >
         <ChatHeader />
         {/* The @container/chat class allows to style children based on breakpoints on this container */}
-        <div className="@container/chat h-[calc(100%-65px)] px-6 pb-4 pt-[22px] md:h-full xl:pb-5 xl:pt-8">
+        <div className="@container/chat h-[calc(100%-65px)] px-6 pt-[22px] pb-4 md:h-full xl:pt-8 xl:pb-5">
           <div className="mx-auto flex h-full max-w-[600px] flex-col justify-between gap-5">
             <div
               ref={chatContainerRef}
