@@ -31,6 +31,7 @@ import { getRiskTextColor } from '../lib/utils';
 import { useAccount, useChainId } from 'wagmi';
 import { useRiskSlider } from '../hooks/useRiskSlider';
 import { getTooltipById } from '../../../data/tooltips';
+import { DelegateCheckbox } from './DelegateCheckbox';
 
 const { usds } = TOKENS;
 
@@ -385,7 +386,10 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
 
   const isShowingDustRange = dustDelta > 0n && (usdsBalance?.value || 0n) >= (existingVault?.debtValue || 0n);
 
-  const shouldShowGauge = maxRepayableAmount < (usdsBalance?.value || 0n) && !isShowingDustRange;
+  const shouldShowGauge =
+    (existingVault?.debtValue || 0n) > 0n &&
+    maxRepayableAmount < (usdsBalance?.value || 0n) &&
+    !isShowingDustRange;
 
   const getLimitText = () => {
     if ((existingVault?.debtValue || 0n) <= 0n) {
@@ -426,7 +430,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
         balance={maxRepayableAmount}
         limitText={getLimitText()}
         showGauge={shouldShowGauge}
-        hideIcon={isShowingDustRange}
+        hideIcon={isShowingDustRange || (existingVault?.debtValue || 0n) <= 0n}
         value={debouncedUsdsToWipe}
         onChange={val => {
           setWipeAll(false);
@@ -461,6 +465,8 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
         existingVault={existingVault}
         vaultNoBorrow={simulatedVaultNoBorrow}
       />
+
+      <DelegateCheckbox isVisible={!!simulatedVault} />
 
       <PositionManagerOverviewContainer
         simulatedVault={simulatedVault}
