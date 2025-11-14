@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChatContext } from '../context/ChatContext';
 import { ChatIntent } from '../types/Chat';
-import { intentModifiesState } from '../lib/intentUtils';
+import { intentModifiesState, hasPreFillParameters } from '../lib/intentUtils';
 import { intentSelectedMessage } from '../lib/intentSelectedMessage';
 import { useChatbotPrefillNotification } from '@/modules/app/hooks/useChatbotPrefillNotification';
 
@@ -24,8 +24,10 @@ export const useIntentExecution = () => {
       } else {
         setChatHistory(prev => [...prev, intentSelectedMessage(intent)]);
         navigate(targetUrl);
-        // Show notification that inputs have been prefilled
-        showPrefillNotification();
+        // Show notification only if the intent has pre-fill parameters
+        if (hasPreFillParameters(intent)) {
+          showPrefillNotification();
+        }
       }
     },
     [

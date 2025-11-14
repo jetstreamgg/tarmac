@@ -195,6 +195,10 @@ export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_EN
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
+// Feature flag to disable chatbot pre-filling for MICA compliance
+// Only applies to MICA builds. Enabled by default unless explicitly set to 'false'
+export const CHATBOT_DISABLE_PREFILL =
+  isRestrictedMiCa && import.meta.env.VITE_DISABLE_CHATBOT_PREFILL !== 'false';
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
