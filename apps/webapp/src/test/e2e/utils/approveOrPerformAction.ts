@@ -54,6 +54,7 @@ export const approveOrPerformAction = async (
 export const performAction = async (page: Page, action: Action, options?: approveOrPerformActionOptions) => {
   const { review = true, reject = false } = options || {};
   if (review) {
+    // click if review the button
     await page.getByTestId('widget-button').getByText('Review').first().click();
   }
   const actionButton = page

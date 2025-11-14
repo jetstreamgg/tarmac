@@ -1,7 +1,8 @@
 import { expect, test } from '../fixtures-parallel';
-import { performAction } from '../utils/approveOrPerformAction.ts';
+import { performAction, approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { approveToken } from '../utils/approveToken.ts';
+import { toggleBundleTransactions } from '../utils/toggleBundleTransactions.ts';
 import { usdsAddress, usdsSkyRewardAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { NetworkName } from '../utils/constants.ts';
@@ -37,6 +38,57 @@ const getWithdrawInputBalance = async (page: Page): Promise<number> => {
   const balanceLabel = page.getByTestId('withdraw-input-rewards-balance');
   const balanceText = await balanceLabel.innerText();
   return parseBalanceText(balanceText);
+};
+
+/**
+ * Helper function to test percentage buttons
+ * Can be used for both bundled and non-bundled transaction flows
+ */
+const testPercentageButtons = async (page: Page, options: { bundled: boolean }): Promise<void> => {
+  const { bundled } = options;
+
+  // Get balance dynamically for percentage calculations
+  const balance = await getSupplyInputBalance(page);
+
+  await page.getByRole('button', { name: '25%' }).click();
+  const val25 = parseFloat(await page.getByTestId('supply-input-rewards').inputValue());
+  expect(val25).toBeCloseTo(balance * 0.25, 1);
+
+  await page.getByRole('button', { name: '100%' }).click();
+  const val100 = parseFloat(await page.getByTestId('supply-input-rewards').inputValue());
+  expect(val100).toBeCloseTo(balance, 1);
+
+  await page.getByRole('button', { name: '50%' }).click();
+  const val50 = parseFloat(await page.getByTestId('supply-input-rewards').inputValue());
+  expect(val50).toBeCloseTo(balance * 0.5, 1);
+
+  // Supply 50% so we can test the withdraw tab
+  if (bundled) {
+    await performAction(page, 'Supply');
+  } else {
+    await page.getByTestId('widget-button').getByText('Review').first().click();
+    await toggleBundleTransactions(page, false);
+    await approveOrPerformAction(page, 'Supply', { review: false });
+  }
+
+  await page.getByRole('button', { name: 'Back to Rewards' }).click();
+
+  await page.getByRole('tab', { name: 'Withdraw' }).click();
+
+  // Get withdraw balance
+  const withdrawBalance = await getWithdrawInputBalance(page);
+
+  await page.getByRole('button', { name: '25%' }).click();
+  const withdraw25 = parseFloat(await page.getByTestId('withdraw-input-rewards').inputValue());
+  expect(withdraw25).toBeCloseTo(withdrawBalance * 0.25, 1);
+
+  await page.getByRole('button', { name: '50%' }).click();
+  const withdraw50 = parseFloat(await page.getByTestId('withdraw-input-rewards').inputValue());
+  expect(withdraw50).toBeCloseTo(withdrawBalance * 0.5, 1);
+
+  await page.getByRole('button', { name: '100%' }).click();
+  const withdraw100 = parseFloat(await page.getByTestId('withdraw-input-rewards').inputValue());
+  expect(withdraw100).toBeCloseTo(withdrawBalance, 1);
 };
 
 test.beforeEach(async ({ isolatedPage }) => {
@@ -220,45 +272,12 @@ test('if not connected it should show a connect button', async ({ isolatedPage }
   await expect(widgetConnectButton).not.toBeVisible();
 });
 
-test('percentage buttons update the token input', async ({ isolatedPage }) => {
-  // Get balance dynamically for percentage calculations
-  const balance = await getSupplyInputBalance(isolatedPage);
+test('percentage buttons update the token input - Bundled', async ({ isolatedPage }) => {
+  await testPercentageButtons(isolatedPage, { bundled: true });
+});
 
-  await isolatedPage.getByRole('button', { name: '25%' }).click();
-  const val25 = parseFloat(await isolatedPage.getByTestId('supply-input-rewards').inputValue());
-  expect(val25).toBeCloseTo(balance * 0.25, 1);
-
-  await isolatedPage.getByRole('button', { name: '100%' }).click();
-  const val100 = parseFloat(await isolatedPage.getByTestId('supply-input-rewards').inputValue());
-  expect(val100).toBeCloseTo(balance, 1);
-
-  await isolatedPage.getByRole('button', { name: '50%' }).click();
-  const val50 = parseFloat(await isolatedPage.getByTestId('supply-input-rewards').inputValue());
-  expect(val50).toBeCloseTo(balance * 0.5, 1);
-
-  // Supply 50% so we can test the withdraw tab
-  await performAction(isolatedPage, 'Supply');
-  await isolatedPage.getByRole('button', { name: 'Back to Rewards' }).click();
-
-  await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
-
-  // Get withdraw balance
-  const withdrawBalance = await getWithdrawInputBalance(isolatedPage);
-
-  await isolatedPage.getByRole('button', { name: '25%' }).click();
-  const withdraw25 = parseFloat(await isolatedPage.getByTestId('withdraw-input-rewards').inputValue());
-  expect(withdraw25).toBeCloseTo(withdrawBalance * 0.25, 1);
-
-  await isolatedPage.getByRole('button', { name: '50%' }).click();
-  const withdraw50 = parseFloat(await isolatedPage.getByTestId('withdraw-input-rewards').inputValue());
-  expect(withdraw50).toBeCloseTo(withdrawBalance * 0.5, 1);
-
-  await isolatedPage.getByRole('button', { name: '100%' }).click();
-  const withdraw100 = parseFloat(await isolatedPage.getByTestId('withdraw-input-rewards').inputValue());
-  expect(withdraw100).toBeCloseTo(withdrawBalance, 1);
-
-  // Withdraw all to reset balances
-  // await withdrawAllAndReset(isolatedPage);
+test('percentage buttons update the token input - Non-bundled', async ({ isolatedPage }) => {
+  await testPercentageButtons(isolatedPage, { bundled: false });
 });
 
 test('Enter amount button only gets enabled with a valid amount', async ({ isolatedPage }) => {

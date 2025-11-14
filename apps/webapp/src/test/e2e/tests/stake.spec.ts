@@ -1,6 +1,177 @@
 import { expect, test } from '../fixtures-parallel';
-import { performAction } from '../utils/approveOrPerformAction.ts';
+import { performAction, approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.js';
+import { toggleBundleTransactions } from '../utils/toggleBundleTransactions.ts';
+import { Page } from '@playwright/test';
+
+/**
+ * Helper to perform stake action with bundled/non-bundled support
+ */
+const performStakeAction = async (
+  page: Page,
+  action: 'Open a position' | 'Change Position',
+  bundled: boolean
+): Promise<void> => {
+  if (bundled) {
+    await performAction(page, action, { review: false });
+  } else {
+    // For non-bundled flow, toggle bundle transactions off
+    await toggleBundleTransactions(page, false);
+    await approveOrPerformAction(page, action, { review: false });
+  }
+};
+
+/**
+ * Helper function to test the full stake lifecycle
+ * Can be used for both bundled and non-bundled transaction flows
+ */
+const testStakeLifecycle = async (page: Page, options: { bundled: boolean }): Promise<void> => {
+  const { bundled } = options;
+  const SKY_AMOUNT_TO_LOCK = '10000000';
+  const SKY_AMOUNT_TO_LOCK_DISPLAY = '10M';
+  const SKY_AMOUNT_DISPLAY = '10,000,000';
+  const USDS_AMOUNT_TO_BORROW = '30000';
+  const USDS_AMOUNT_TO_BORROW_DISPLAY = '30K';
+  const USDS_AMOUNT_DISPLAY = '30,000';
+  const expectedSkyBalance = '100,000,000';
+  const SKY_AMOUNT_TO_UNLOCK = '100';
+
+  await expect(page.getByTestId('supply-first-input-lse-balance')).toHaveText(`${expectedSkyBalance} SKY`);
+
+  // fill seal and borrow inputs and click next
+  await page.getByTestId('supply-first-input-lse').fill(SKY_AMOUNT_TO_LOCK);
+  await page.getByTestId('borrow-input-lse').first().fill(USDS_AMOUNT_TO_BORROW);
+
+  // check the delegation checkbox to enable delegate selection
+  await page.getByText('Do you want to delegate voting power?').click();
+
+  await expect(page.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
+  await page.getByTestId('widget-button').first().click();
+
+  // select rewards
+  await expect(page.getByText('Choose your reward token')).toBeVisible();
+  await page.getByTestId('stake-reward-card').first().click();
+  await expect(page.getByTestId('widget-button').first()).toBeEnabled();
+  await page.getByTestId('widget-button').first().click();
+
+  // select delegate
+  await expect(page.getByText('Choose your delegate')).toBeVisible();
+  await page
+    .getByTestId(/^delegate-card-/)
+    .first()
+    .click();
+  await expect(page.getByTestId('widget-button').first()).toBeEnabled();
+  await page.getByTestId('widget-button').first().click();
+
+  // position summary
+  await expect(page.getByText('Confirm your position').nth(0)).toBeVisible({ timeout: 10000 });
+  await page.waitForTimeout(1000);
+  await expect(page.getByTestId('position-summary-card').getByText('Staking').first()).toBeVisible();
+  await expect(page.getByText(`${SKY_AMOUNT_TO_LOCK_DISPLAY} SKY`)).toBeVisible();
+  await expect(page.getByTestId('position-summary-card').getByText('Borrowing')).toBeVisible();
+  await expect(page.getByText(`${USDS_AMOUNT_TO_BORROW_DISPLAY} USDS`).first()).toBeVisible();
+  await expect(page.getByTestId('position-summary-card').getByText('Staking reward')).toBeVisible();
+
+  // confirm position
+  await performStakeAction(page, 'Open a position', bundled);
+
+  await expect(page.getByRole('heading', { name: 'Success!' })).toBeVisible({ timeout: 10000 });
+  await expect(
+    page.getByText(
+      `You've borrowed ${USDS_AMOUNT_DISPLAY} USDS by staking ${SKY_AMOUNT_DISPLAY} SKY. Your new position is open.`
+    )
+  ).toBeVisible();
+  await page.waitForTimeout(5000);
+
+  // positions overview
+  await page.getByRole('button', { name: 'Manage your position(s)' }).click();
+  await expect(page.getByText('Position 1')).toBeVisible({ timeout: 10000 });
+
+  // manage position
+  await page.getByRole('button', { name: 'Manage Position' }).last().click();
+  await expect(page.getByText('Your position 1')).toBeVisible();
+  await expect(page.getByTestId('borrow-input-lse-balance')).toHaveText(/Limit 0 <> .+ USDS/);
+
+  // verify the delegate checkbox is selected and disabled
+  const delegateCheckbox = page.getByRole('checkbox', {
+    name: /You are delegating voting power for this position/i
+  });
+  await expect(delegateCheckbox).toBeChecked();
+  await expect(delegateCheckbox).toBeDisabled();
+
+  // borrow more and skip rewards and delegate selection
+  await page.getByTestId('borrow-input-lse').fill(USDS_AMOUNT_TO_BORROW);
+  await expect(page.getByText('Insufficient collateral')).not.toBeVisible();
+  await page.getByTestId('widget-button').first().click();
+
+  await expect(page.getByText('Choose your reward token')).toBeVisible();
+  await page.getByRole('button', { name: 'skip' }).click();
+  await expect(page.getByText('Change your delegate')).toBeVisible();
+  await page.getByRole('button', { name: 'skip' }).first().click();
+
+  await expect(page.getByText('Confirm your position').nth(0)).toBeVisible();
+  await performStakeAction(page, 'Change Position', bundled);
+  await expect(page.getByRole('heading', { name: 'Success!' })).toBeVisible({ timeout: 10000 });
+  await expect(
+    page.getByText(`You've borrowed ${USDS_AMOUNT_DISPLAY} USDS. Your position is updated.`)
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Manage your position(s)' }).click();
+  await expect(page.getByText('Position 1')).toBeVisible();
+
+  // repay all
+  await page.getByRole('button', { name: 'Manage Position' }).last().click();
+  await expect(page.getByText('Your position 1')).toBeVisible();
+  await expect(page.getByTestId('borrow-input-lse-balance')).toHaveText(/Limit 0 <> .+ USDS/);
+
+  // switch tabs
+  await page.getByRole('tab', { name: 'Unstake and pay back' }).click();
+
+  // click repay 100% button
+  await page.getByRole('button', { name: '25%' }).click();
+  await page.getByRole('button', { name: '100%' }).nth(1).click();
+
+  await page.getByTestId('widget-button').first().click();
+
+  // skip the rewards and delegates and confirm position
+  await expect(page.getByText('Choose your reward token')).toBeVisible();
+  await page.getByRole('button', { name: 'skip' }).click();
+  await expect(page.getByText('Change your delegate')).toBeVisible();
+  await page.getByRole('button', { name: 'skip' }).first().click();
+
+  await expect(page.getByText('Confirm your position').nth(0)).toBeVisible();
+
+  await performStakeAction(page, 'Change Position', bundled);
+  await expect(page.getByRole('heading', { name: 'Success!' })).toBeVisible({ timeout: 10000 });
+  await page.getByRole('button', { name: 'Manage your position(s)' }).click();
+  await expect(page.getByText('Position 1')).toBeVisible();
+
+  // unseal all
+  await page.getByRole('button', { name: 'Manage Position' }).last().click();
+  await expect(page.getByText('Your position 1')).toBeVisible();
+
+  // switch tabs
+  await page.getByRole('tab', { name: 'Unstake and pay back' }).click();
+  await expect(page.getByTestId('supply-first-input-lse-balance')).toHaveText('7,500,000 SKY');
+
+  // fill some SKY and proceed to skip the rewards and delegates and confirm position
+  await page.getByTestId('supply-first-input-lse').fill(SKY_AMOUNT_TO_UNLOCK);
+  await page.getByTestId('widget-button').first().click();
+
+  await expect(page.getByText('Choose your reward token')).toBeVisible();
+  await page.getByRole('button', { name: 'skip' }).click();
+  await expect(page.getByText('Change your delegate')).toBeVisible();
+  await page.getByRole('button', { name: 'skip' }).first().click();
+
+  await expect(page.getByText('Change your position').nth(0)).toBeVisible();
+
+  await performStakeAction(page, 'Change Position', bundled);
+  await expect(page.getByRole('heading', { name: 'Success!' })).toBeVisible({ timeout: 10000 });
+  await expect(
+    page.getByText(`You've unstaked ${SKY_AMOUNT_TO_UNLOCK} SKY to exit your position.`)
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Manage your position(s)' }).click();
+  await expect(page.getByText('Position 1')).toBeVisible();
+};
 
 test.beforeAll(async () => {});
 
@@ -11,7 +182,19 @@ test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
 });
 
-test('Lock SKY, select rewards, select delegate, and open position', async ({ isolatedPage }) => {
+test('Lock SKY, select rewards, select delegate, and open position - Bundled', async ({ isolatedPage }) => {
+  await testStakeLifecycle(isolatedPage, { bundled: true });
+});
+
+test('Lock SKY, select rewards, select delegate, and open position - Non-bundled', async ({
+  isolatedPage
+}) => {
+  await testStakeLifecycle(isolatedPage, { bundled: false });
+});
+
+test.skip('Lock SKY, select rewards, select delegate, and open position - ORIGINAL', async ({
+  isolatedPage
+}) => {
   const SKY_AMOUNT_TO_LOCK = '10000000';
   const SKY_AMOUNT_TO_LOCK_DISPLAY = '10M';
   const SKY_AMOUNT_DISPLAY = '10,000,000';

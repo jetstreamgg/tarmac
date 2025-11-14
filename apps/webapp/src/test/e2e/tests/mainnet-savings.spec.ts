@@ -3,9 +3,10 @@ import { setErc20Balance } from '../utils/setBalance.ts';
 import { NetworkName } from '../utils/constants';
 import { sUsdsAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
-import { performAction } from '../utils/approveOrPerformAction.ts';
+import { performAction, approveOrPerformAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { approveToken } from '../utils/approveToken.ts';
+import { toggleBundleTransactions } from '../utils/toggleBundleTransactions.ts';
 import { Page } from '@playwright/test';
 
 // Helper function to parse balance text and extract numeric value
@@ -28,36 +29,188 @@ const getSuppliedBalance = async (page: Page): Promise<number> => {
   return parseBalanceText(balanceText);
 };
 
-test('Supply and withdraw from Savings', async ({ isolatedPage }) => {
-  await isolatedPage.goto('/');
-  await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+/**
+ * Helper function to test supply and withdraw flow
+ * Can be used for both bundled and non-bundled transaction flows
+ */
+const testSupplyAndWithdraw = async (page: Page, options: { bundled: boolean }): Promise<void> => {
+  const { bundled } = options;
 
-  await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.waitForTimeout(1000);
+  await page.getByRole('tab', { name: 'Savings' }).click();
 
-  await isolatedPage.getByTestId('supply-input-savings').click();
-  await isolatedPage.getByTestId('supply-input-savings').click();
-  await isolatedPage.getByTestId('supply-input-savings').fill('.02');
-  await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-  await performAction(isolatedPage, 'Supply');
-  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
-  await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
 
-  await isolatedPage.getByTestId('withdraw-input-savings').click();
+  // Supply flow
+  await page.getByTestId('supply-input-savings').click();
+  await page.getByTestId('supply-input-savings').click();
+  await page.getByTestId('supply-input-savings').fill('.02');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+
+  if (bundled) {
+    await performAction(page, 'Supply');
+  } else {
+    // For non-bundled flow, go to review screen and disable bundle transactions
+    await page.getByTestId('widget-button').getByText('Review').first().click();
+    await toggleBundleTransactions(page, false);
+    await approveOrPerformAction(page, 'Supply', { review: false });
+  }
+
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
+
+  // Withdraw flow
+  await page.getByRole('tab', { name: 'Withdraw' }).click();
+
+  await page.getByTestId('withdraw-input-savings').click();
   // Tx overview should be hidden if the input is 0 or empty
-  await isolatedPage.getByTestId('withdraw-input-savings').fill('0');
-  await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
-  await isolatedPage.getByTestId('withdraw-input-savings').fill('.01');
-  await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+  await page.getByTestId('withdraw-input-savings').fill('0');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
+  await page.getByTestId('withdraw-input-savings').fill('.01');
+  await expect(page.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
 
-  performAction(isolatedPage, 'Withdraw');
+  // Withdraw doesn't require approval, so performAction works for both flows
+  await performAction(page, 'Withdraw');
 
-  await expect(
-    isolatedPage.getByText("You've withdrawn 0.01 USDS from the Sky Savings Rate module")
-  ).toBeVisible();
-  //TODO: why is the finish button disabled?
-  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+  await expect(page.getByText("You've withdrawn 0.01 USDS from the Sky Savings Rate module")).toBeVisible();
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
+};
+
+/**
+ * Helper function to test balance changes after supply
+ * Can be used for both bundled and non-bundled transaction flows
+ */
+const testBalanceChangesAfterSupply = async (
+  page: Page,
+  testAccount: string,
+  options: { bundled: boolean }
+): Promise<void> => {
+  const { bundled } = options;
+
+  console.log('🧪 Test starting with account:', testAccount);
+
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.waitForTimeout(1000);
+  await page.getByRole('tab', { name: 'Savings' }).click();
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.getByTestId('supply-input-savings-balance')).not.toHaveText('No wallet connected');
+
+  // Get initial balances using helper functions
+  const initialSupplyBalance = await getSupplyInputBalance(page);
+  const initialSuppliedBalance = await getSuppliedBalance(page);
+
+  console.log('💰 Initial balances:', { initialSupplyBalance, initialSuppliedBalance });
+
+  await page.getByTestId('supply-input-savings').click();
+  await page.getByTestId('supply-input-savings').fill('2');
+
+  if (bundled) {
+    await performAction(page, 'Supply');
+  } else {
+    await page.getByTestId('widget-button').getByText('Review').first().click();
+    await toggleBundleTransactions(page, false);
+    await approveOrPerformAction(page, 'Supply', { review: false });
+  }
+
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
+
+  await expect(page.getByTestId('supply-input-savings-balance')).toBeVisible();
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(5000);
+
+  // Check balances after supply using helper functions
+  const supplyBalanceAfterSupply = await getSupplyInputBalance(page);
+  const suppliedBalanceAfterSupply = await getSuppliedBalance(page);
+
+  console.log('💰 Balances after supply:', { supplyBalanceAfterSupply, suppliedBalanceAfterSupply });
+  console.log(
+    '🔍 Expected changes: supply should be',
+    initialSupplyBalance - 2,
+    'supplied should be',
+    initialSuppliedBalance + 2
+  );
+
+  expect(suppliedBalanceAfterSupply).toBeCloseTo(initialSuppliedBalance + 2, 1);
+};
+
+/**
+ * Helper function to test balance changes after withdraw
+ * Can be used for both bundled and non-bundled transaction flows
+ */
+const testBalanceChangesAfterWithdraw = async (page: Page, options: { bundled: boolean }): Promise<void> => {
+  const { bundled } = options;
+
+  await page.goto('/');
+  await connectMockWalletAndAcceptTerms(page, { batch: true });
+  await page.waitForTimeout(1000);
+  await page.getByRole('tab', { name: 'Savings' }).click();
+
+  // Supply some USDS
+  await page.getByTestId('supply-input-savings').click();
+  await page.getByTestId('supply-input-savings').fill('4');
+
+  if (bundled) {
+    await performAction(page, 'Supply');
+  } else {
+    await page.getByTestId('widget-button').getByText('Review').first().click();
+    await toggleBundleTransactions(page, false);
+    await approveOrPerformAction(page, 'Supply', { review: false });
+  }
+
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
+
+  // Withdraw
+  await page.getByRole('tab', { name: 'Withdraw' }).click();
+
+  const prewithdrawBalance = await getSuppliedBalance(page);
+  const withdrawBalance = prewithdrawBalance;
+
+  await page.getByRole('button', { name: '25%' }).click();
+  const input25 = await page.getByTestId('withdraw-input-savings').inputValue();
+  const val25 = parseFloat(input25);
+  console.log('input25', val25);
+  expect(val25).toBeCloseTo(withdrawBalance * 0.25, 0);
+
+  await page.getByRole('button', { name: '50%' }).click();
+  const input50 = await page.getByTestId('withdraw-input-savings').inputValue();
+  const val50 = parseFloat(input50);
+  console.log('input50', val50);
+  expect(val50).toBeCloseTo(withdrawBalance * 0.5, 0);
+
+  await page.getByRole('button', { name: '100%' }).click();
+  const input100 = await page.getByTestId('withdraw-input-savings').inputValue();
+  const val100 = parseFloat(input100);
+  console.log('input100', val100);
+  expect(val100).toBeCloseTo(withdrawBalance, 0);
+
+  await page.getByTestId('withdraw-input-savings').click();
+  await page.getByTestId('withdraw-input-savings').fill('2');
+  const reviewButton = await page
+    .waitForSelector('role=button[name="Review"]', { timeout: 500 })
+    .catch(() => null);
+  if (reviewButton) {
+    await performAction(page, 'Withdraw');
+  }
+  await page.getByRole('button', { name: 'Back to Savings' }).click();
+
+  const expectedBalance = prewithdrawBalance - 2;
+  if (expectedBalance >= 1) {
+    const actualBalance = await getSuppliedBalance(page);
+    expect(actualBalance).toBeCloseTo(expectedBalance, 1);
+  } else {
+    const zeroBalance = await getSuppliedBalance(page);
+    expect(zeroBalance).toBeLessThan(1);
+  }
+};
+
+test('Supply and withdraw from Savings - Bundled', async ({ isolatedPage }) => {
+  await testSupplyAndWithdraw(isolatedPage, { bundled: true });
+});
+
+test('Supply and withdraw from Savings - Non-bundled', async ({ isolatedPage }) => {
+  await testSupplyAndWithdraw(isolatedPage, { bundled: false });
 });
 
 test('supply with insufficient usds balance', async ({ isolatedPage }) => {
@@ -109,106 +262,20 @@ test('withdraw with insufficient savings balance', async ({ isolatedPage }) => {
   expect(reviewButtonDisabled).toBeDisabled();
 });
 
-test('Balance changes after a successful supply', async ({ isolatedPage, testAccount }) => {
-  console.log('🧪 Test starting with account:', testAccount);
-
-  await isolatedPage.goto('/');
-  await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
-  await isolatedPage.waitForLoadState('domcontentloaded');
-  await expect(isolatedPage.getByTestId('supply-input-savings-balance')).not.toHaveText(
-    'No wallet connected'
-  );
-
-  // Get initial balances using helper functions
-  const initialSupplyBalance = await getSupplyInputBalance(isolatedPage);
-  const initialSuppliedBalance = await getSuppliedBalance(isolatedPage);
-
-  console.log('💰 Initial balances:', { initialSupplyBalance, initialSuppliedBalance });
-
-  await isolatedPage.getByTestId('supply-input-savings').click();
-  await isolatedPage.getByTestId('supply-input-savings').fill('2');
-  await performAction(isolatedPage, 'Supply');
-  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
-
-  await expect(isolatedPage.getByTestId('supply-input-savings-balance')).toBeVisible();
-  await isolatedPage.waitForLoadState('domcontentloaded');
-  await isolatedPage.waitForTimeout(5000);
-
-  // Check balances after supply using helper functions
-  const supplyBalanceAfterSupply = await getSupplyInputBalance(isolatedPage);
-  const suppliedBalanceAfterSupply = await getSuppliedBalance(isolatedPage);
-
-  console.log('💰 Balances after supply:', { supplyBalanceAfterSupply, suppliedBalanceAfterSupply });
-  console.log(
-    '🔍 Expected changes: supply should be',
-    initialSupplyBalance - 2,
-    'supplied should be',
-    initialSuppliedBalance + 2
-  );
-
-  // expect(supplyBalanceAfterSupply).toBeCloseTo(initialSupplyBalance - 2, 2);
-  expect(suppliedBalanceAfterSupply).toBeCloseTo(initialSuppliedBalance + 2, 1);
+test('Balance changes after a successful supply - Bundled', async ({ isolatedPage, testAccount }) => {
+  await testBalanceChangesAfterSupply(isolatedPage, testAccount, { bundled: true });
 });
 
-test('Balance changes after a successful withdraw', async ({ isolatedPage }) => {
-  // await setErc20Balance(usdsAddress[TENDERLY_CHAIN_ID], '10', 18, NetworkName.mainnet, testAccount);
-  await isolatedPage.goto('/');
-  await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+test('Balance changes after a successful supply - Non-bundled', async ({ isolatedPage, testAccount }) => {
+  await testBalanceChangesAfterSupply(isolatedPage, testAccount, { bundled: false });
+});
 
-  // Supply some USDS
-  await isolatedPage.getByTestId('supply-input-savings').click();
-  await isolatedPage.getByTestId('supply-input-savings').fill('4');
-  await performAction(isolatedPage, 'Supply');
-  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+test('Balance changes after a successful withdraw - Bundled', async ({ isolatedPage }) => {
+  await testBalanceChangesAfterWithdraw(isolatedPage, { bundled: true });
+});
 
-  // Withdraw
-  await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
-
-  const prewithdrawBalance = await getSuppliedBalance(isolatedPage);
-  const withdrawBalance = prewithdrawBalance;
-
-  await isolatedPage.getByRole('button', { name: '25%' }).click();
-  const input25 = await isolatedPage.getByTestId('withdraw-input-savings').inputValue();
-  const val25 = parseFloat(input25);
-  console.log('input25', val25);
-  expect(val25).toBeCloseTo(withdrawBalance * 0.25, 0);
-
-  await isolatedPage.getByRole('button', { name: '50%' }).click();
-  const input50 = await isolatedPage.getByTestId('withdraw-input-savings').inputValue();
-  const val50 = parseFloat(input50);
-  console.log('input50', val50);
-  expect(val50).toBeCloseTo(withdrawBalance * 0.5, 0);
-
-  await isolatedPage.getByRole('button', { name: '100%' }).click();
-  const input100 = await isolatedPage.getByTestId('withdraw-input-savings').inputValue();
-  const val100 = parseFloat(input100);
-  console.log('input100', val100);
-  expect(val100).toBeCloseTo(withdrawBalance, 0);
-
-  await isolatedPage.getByTestId('withdraw-input-savings').click();
-  await isolatedPage.getByTestId('withdraw-input-savings').fill('2');
-  const reviewButton = await isolatedPage
-    .waitForSelector('role=button[name="Review"]', { timeout: 500 })
-    .catch(() => null);
-  if (reviewButton) {
-    await performAction(isolatedPage, 'Withdraw');
-  }
-  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
-
-  const expectedBalance = prewithdrawBalance - 2;
-  if (expectedBalance >= 1) {
-    // We supplied 4 and then withdrew 2
-    // Use a more flexible check that handles the sUSDS display format
-    const actualBalance = await getSuppliedBalance(isolatedPage);
-    expect(actualBalance).toBeCloseTo(expectedBalance, 1);
-  } else {
-    const zeroBalance = await getSuppliedBalance(isolatedPage);
-    expect(zeroBalance).toBeLessThan(1);
-  }
+test('Balance changes after a successful withdraw - Non-bundled', async ({ isolatedPage }) => {
+  await testBalanceChangesAfterWithdraw(isolatedPage, { bundled: false });
 });
 
 test('supply with enough allowance does not require approval', async ({ isolatedPage }) => {
