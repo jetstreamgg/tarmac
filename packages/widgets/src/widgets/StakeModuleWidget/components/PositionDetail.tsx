@@ -6,8 +6,6 @@ import {
   RiskLevel,
   TOKENS,
   useRewardContractTokens,
-  useDelegateName,
-  useDelegateOwner,
   useStakeRewardContracts,
   lsSkyUsdsRewardAddress
 } from '@jetstreamgg/sky-hooks';
@@ -17,13 +15,13 @@ import { getRiskTextColor } from '../lib/utils';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
-import { JazziconComponent } from './Jazzicon';
 import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { PositionDetailAccordion } from './PositionDetailsAccordion';
 import { ClaimRewardsDropdown } from './ClaimRewardsDropdown';
 import { getTooltipById } from '../../../data/tooltips';
 import { useChainId } from 'wagmi';
 import { UpdateRewardSelection } from './UpdateRewardSelection';
+import { UpdateDelegateSelection } from './UpdateDelegateSelection';
 import { YellowWarning } from '@widgets/shared/components/icons/YellowWarning';
 import { OnStakeUrnChange } from '..';
 
@@ -64,8 +62,6 @@ export function PositionDetail({
   onStakeUrnChange
 }: Props) {
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
-  const { data: selectedDelegateName } = useDelegateName(selectedVoteDelegate);
-  const { data: selectedDelegateOwner } = useDelegateOwner(selectedVoteDelegate);
   const { data: stakeRewardContracts } = useStakeRewardContracts();
 
   const riskTextColor = getRiskTextColor(riskLevel as RiskLevel);
@@ -162,18 +158,20 @@ export function PositionDetail({
               <TokenIconWithBalance token={TOKENS.usds} balance={formatBigInt(borrowedAmount)} />
             </VStack>
           )}
-
-          {selectedDelegateOwner && selectedDelegateName && (
-            <VStack gap={3}>
-              <Text variant="medium" className="text-textSecondary leading-4">
-                Delegate
-              </Text>
-              <div className="flex items-start">
-                <JazziconComponent address={selectedDelegateOwner} />
-                <Text className="ml-2">{selectedDelegateName}</Text>
-              </div>
-            </VStack>
-          )}
+          <VStack gap={3}>
+            <Text variant="medium" className="text-textSecondary leading-4">
+              Delegate
+            </Text>
+            <div className="flex items-center justify-start gap-1">
+              <UpdateDelegateSelection
+                urnAddress={urnAddress}
+                index={index}
+                selectedRewardContract={selectedRewardContract}
+                selectedVoteDelegate={selectedVoteDelegate}
+                onStakeUrnChange={onStakeUrnChange}
+              />
+            </div>
+          </VStack>
         </VStack>
       </HStack>
       {isUsdsReward && (
