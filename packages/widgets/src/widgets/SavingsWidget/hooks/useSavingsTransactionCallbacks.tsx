@@ -10,12 +10,14 @@ interface UseSavingsTransactionCallbacksParameters
   amount: bigint;
   mutateAllowance: () => void;
   mutateSavings: () => void;
+  mutateOriginBalance: () => void;
 }
 
 export const useSavingsTransactionCallbacks = ({
   amount,
   mutateAllowance,
   mutateSavings,
+  mutateOriginBalance,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
@@ -46,6 +48,7 @@ export const useSavingsTransactionCallbacks = ({
           notificationDescription: t`You supplied ${formatBigInt(amount)} USDS`
         });
         mutateAllowance();
+        mutateOriginBalance();
         mutateSavings();
       },
       onError: (error, hash) => {
@@ -59,7 +62,16 @@ export const useSavingsTransactionCallbacks = ({
         mutateSavings();
       }
     }),
-    [amount, handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
+    [
+      amount,
+      handleOnError,
+      handleOnMutate,
+      handleOnStart,
+      handleOnSuccess,
+      mutateAllowance,
+      mutateSavings,
+      mutateOriginBalance
+    ]
   );
 
   // Savings withdraw
@@ -76,6 +88,7 @@ export const useSavingsTransactionCallbacks = ({
           notificationDescription: t`You withdrew ${formatBigInt(amount)} USDS`
         });
         mutateSavings();
+        mutateOriginBalance();
       },
       onError: (error, hash) => {
         handleOnError({
@@ -88,7 +101,16 @@ export const useSavingsTransactionCallbacks = ({
         mutateSavings();
       }
     }),
-    [amount, handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, mutateAllowance, mutateSavings]
+    [
+      amount,
+      handleOnError,
+      handleOnMutate,
+      handleOnStart,
+      handleOnSuccess,
+      mutateAllowance,
+      mutateSavings,
+      mutateOriginBalance
+    ]
   );
 
   return { supplyTransactionCallbacks, withdrawTransactionCallbacks };
