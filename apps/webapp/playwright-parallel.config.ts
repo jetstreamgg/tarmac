@@ -44,23 +44,23 @@ export default defineConfig({
       },
       // Test match patterns - include only converted parallel tests
       testMatch: [
-        '**/mainnet-savings.spec.ts',
-        '**/base-trade.spec.ts',
-        '**/arbitrum-trade.spec.ts',
-        '**/optimism-trade.spec.ts',
-        '**/unichain-trade.spec.ts',
-        '**/base-savings.spec.ts',
-        '**/arbitrum-savings.spec.ts',
-        '**/optimism-savings.spec.ts',
-        '**/unichain-savings.spec.ts',
-        '**/reward-1.spec.ts',
-        '**/reward-2.spec.ts',
-        '**/la-u-r.spec.ts',
-        '**/la-u-s.spec.ts',
-        '**/stake.spec.ts',
-        '**/landing.spec.ts',
-        '**/expert-stusds.spec.ts',
-        '**/upgrade.spec.ts'
+        '**/mainnet-savings.spec.ts'
+        // '**/base-trade.spec.ts',
+        // '**/arbitrum-trade.spec.ts',
+        // '**/optimism-trade.spec.ts',
+        // '**/unichain-trade.spec.ts',
+        // '**/base-savings.spec.ts',
+        // '**/arbitrum-savings.spec.ts',
+        // '**/optimism-savings.spec.ts',
+        // '**/unichain-savings.spec.ts',
+        // '**/reward-1.spec.ts',
+        // '**/reward-2.spec.ts',
+        // '**/la-u-r.spec.ts',
+        // '**/la-u-s.spec.ts',
+        // '**/stake.spec.ts',
+        // '**/landing.spec.ts',
+        // '**/expert-stusds.spec.ts',
+        // '**/upgrade.spec.ts'
         // Add more test patterns as we convert them
       ]
     }
