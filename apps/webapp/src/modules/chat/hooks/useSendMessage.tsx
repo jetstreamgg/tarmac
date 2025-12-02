@@ -10,9 +10,16 @@ import {
   chainIdNameMapping,
   isChatIntentAllowed,
   processNetworkNameInUrl,
-  ensureIntentHasNetwork
+  ensureIntentHasNetwork,
+  hasPreFillParameters
 } from '../lib/intentUtils';
-import { CHATBOT_DOMAIN, CHATBOT_ENABLED, IS_PRODUCTION_ENV, MAX_HISTORY_LENGTH } from '@/lib/constants';
+import {
+  CHATBOT_DOMAIN,
+  CHATBOT_ENABLED,
+  CHATBOT_PREFILL_FILTERING_ENABLED,
+  IS_PRODUCTION_ENV,
+  MAX_HISTORY_LENGTH
+} from '@/lib/constants';
 
 interface ChatbotResponse {
   chatResponse: {
@@ -143,6 +150,10 @@ export const useSendMessage = () => {
         onSuccess: data => {
           const intents = data.intents
             ?.filter(chatIntent => isChatIntentAllowed(chatIntent))
+            ?.filter(chatIntent => {
+              // Filter out intents with pre-fill parameters if filtering is enabled
+              return !CHATBOT_PREFILL_FILTERING_ENABLED || !hasPreFillParameters(chatIntent);
+            })
             .map(intent => {
               const processedUrl = processNetworkNameInUrl(intent.url);
               const urlWithNetwork = ensureIntentHasNetwork(processedUrl, chainId);

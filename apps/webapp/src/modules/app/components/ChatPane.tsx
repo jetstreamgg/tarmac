@@ -52,9 +52,9 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
       session_id: sessionId
     });
 
-    // Only hide prompt and show success notification on successful submission
+    // Show success notification on successful submission
+    // Keep the feedback prompt visible to allow multiple submissions
     showFeedbackSuccess(rating);
-    setShowConversationFeedback(false);
   };
 
   useDismissChatSuggestion();

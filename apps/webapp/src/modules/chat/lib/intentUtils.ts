@@ -127,6 +127,32 @@ export const intentModifiesState = (intent?: ChatIntent): boolean => {
   );
 };
 
+/**
+ * Checks if an intent contains pre-fill parameters that would automatically
+ * populate form fields. Used to filter intents.
+ *
+ * @param intent - The chat intent to check
+ * @returns true if the intent has pre-fill parameters, false otherwise
+ */
+export const hasPreFillParameters = (intent?: ChatIntent): boolean => {
+  if (!intent?.url) return false;
+
+  try {
+    const urlObj = new URL(
+      intent.url,
+      typeof window !== 'undefined' ? window.location.origin : 'http://temp'
+    );
+    return (
+      urlObj.searchParams.has(QueryParams.InputAmount) ||
+      urlObj.searchParams.has(QueryParams.SourceToken) ||
+      urlObj.searchParams.has(QueryParams.TargetToken)
+    );
+  } catch {
+    // If URL parsing fails, assume it HAS pre-fill parameters
+    return true;
+  }
+};
+
 export const processNetworkNameInUrl = (url: string): string => {
   if (CHATBOT_USE_TESTNET_NETWORK_NAME) {
     const networkMappings = {

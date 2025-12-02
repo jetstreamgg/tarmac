@@ -11,9 +11,9 @@ interface UseConversationFeedbackParams {
  * Custom hook to manage conversation feedback prompt visibility based on chat history.
  *
  * Shows feedback prompt when:
- * - Conversation has at least 7 messages
+ * - Conversation has at least 3 messages (greeting, first user message, first bot response)
  * - Last message is from the bot (not loading)
- * - Total bot message content exceeds 1000 characters
+ * - Once shown, keeps it visible to allow multiple feedback submissions throughout the conversation
  *
  * Note: Feedback is now submitted via the /feedback API endpoint with toast notifications,
  * not as chat messages, so we don't check for feedback message prefixes anymore.
@@ -26,23 +26,12 @@ export const useConversationFeedback = ({
     const lastMessage = chatHistory[chatHistory.length - 1];
     const isLastMessageBot = lastMessage?.user === UserType.bot;
     const isLoadingMessage = lastMessage?.type === MessageType.loading;
-    const isNotInitialMessage = chatHistory.length > 1;
-    const isLongEnoughConversation = chatHistory.length >= 7;
+    const hasEnoughMessages = chatHistory.length >= 3; // greeting message, first user message, last bot message
 
-    // Check if total bot message content exceeds 1000 characters
-    const totalBotMessageLength = chatHistory
-      .filter(msg => msg.user === UserType.bot)
-      .reduce((total, msg) => total + msg.message.length, 0);
-    const hasSufficientBotContent = totalBotMessageLength > 1000;
-
-    const shouldShowFeedback =
-      isNotInitialMessage &&
-      isLastMessageBot &&
-      !isLoadingMessage &&
-      isLongEnoughConversation &&
-      hasSufficientBotContent;
+    const shouldShowFeedback = hasEnoughMessages && isLastMessageBot && !isLoadingMessage;
 
     // Show feedback when conditions are met
+    // Once shown, it stays visible (no logic to hide it)
     if (shouldShowFeedback) {
       setShowConversationFeedback(true);
     }

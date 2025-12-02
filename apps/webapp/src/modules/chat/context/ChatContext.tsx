@@ -73,7 +73,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     {
       id: generateUUID(),
       user: UserType.bot,
-      message: t`Hi, ${CHATBOT_NAME} here! How can I help you today?`
+      message: t`Hi, I'm ${CHATBOT_NAME}, your AI-powered assistant. How can I help you?`
     }
   ];
 
