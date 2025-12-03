@@ -17,11 +17,11 @@ Open Safe[Wallet]`
   {
     id: 'stusds-rate',
     title: 'stUSDS Rate',
-    tooltip: `The stUSDS rate is variable and calculated using the following formula:
+    tooltip: `The stUSDS Rate is variable and calculated using the following formula:
 
 stUSDS Rate = Utilization * (SKY Borrow Rate - stUSDS Accessibility Reward) + (1 - Utilization) * Sky Savings Rate
 
-The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of your capital and the Sky Savings Rate on the unutilized portion. Utilization is the percent of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
+The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Reward on the utilized portion of your capital and the Sky Savings Rate on the unutilized portion. Utilization is the percentage of funds in the stUSDS contract that are used to fund borrowing against staked SKY.
 
 The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers and is dynamic and market-driven, based on the utilization of funds within the stUSDS contract.`
   },
@@ -96,7 +96,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     id: 'borrow-limit',
     title: 'Borrow limit',
     tooltip:
-      'The USDS limit is determined by the amount SKY locked in the Staking Engine, the current market price of SKY, and the amount of USDS borrowed.'
+      'The USDS limit is determined by the amount of SKY locked in the Staking Engine, the current market price of SKY, and the amount of USDS borrowed.'
   },
   {
     id: 'capped-osm-sky-price',
@@ -126,7 +126,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     id: 'debt-ceiling',
     title: 'Debt ceiling',
     tooltip:
-      'The debt ceiling is the maximum amount of debt or tokens that can be issued within the SKY protocol, serving as a risk management tool to ensure stability and limit overexposure. It is a parameter subject to change by the Sky Ecosystem Governance.'
+      'The debt ceiling is the maximum amount of debt or tokens that can be issued within the SKY Protocol, serving as a risk management tool to ensure stability and limit overexposure. It is a parameter subject to change by the Sky Ecosystem Governance.'
   },
   {
     id: 'debt-ceiling-utilization',
@@ -144,13 +144,13 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     id: 'risk-floor',
     title: 'Risk floor',
     tooltip:
-      'Given the current amount of SKY deposited and USDS borrowed in this position, risk cannot be adjusted below the Risk floor. To lower the Risk floor, you must stake more SKY or repay USDS on the Unstake and Repay tab.'
+      'Given the current amount of SKY deposited and USDS borrowed in this position, risk cannot be adjusted below the Risk floor. To lower the Risk floor, you must stake more SKY or repay USDS using the Unstake and Repay tab.'
   },
   {
     id: 'risk-ceiling',
     title: 'Risk ceiling',
     tooltip:
-      'Given the current amount of SKY deposited and USDS borrowed in this position, risk cannot be increased above the Risk ceiling. To raise the Risk ceiling, you must unstake SKY or borrow additional USDS.'
+      'Given the current amount of SKY deposited and USDS borrowed in this position, risk cannot be increased above the Risk ceiling. To raise the Risk ceiling, you must either unstake SKY or borrow additional USDS.'
   },
   {
     id: 'risk-borrow',
@@ -171,7 +171,7 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
 
 The voting power delegation feature of the Staking Engine of the Sky Protocol enables you to entrust your voting power to a delegate of your choosing, who can then vote in the Sky Ecosystem Governance process on your behalf. You can choose one delegate per SKY position. If you want to entrust your SKY to two delegates using the Staking Engine, you will need to create two separate positions.
 
-Delegates in receipt of token voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time.Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to access Staking Rewards.`
+Delegates granted voting power can never directly access any tokens delegated to them, including staked tokens. Throughout the delegation process, you always own and are in control of your staked tokens, and you can change your delegate at any time.Staking to delegate your voting power may be a useful option for governance token holders who have limited time to allocate to the process, who want to save on the cost of gas involved in voting on their own, and who also want to access Staking Rewards.`
   },
   {
     id: 'sealed',
@@ -201,7 +201,7 @@ You don't have any open positions.`
   {
     id: 'delayed-upgrade-penalty',
     title: 'Delayed Upgrade Penalty',
-    tooltip: `The Delayed Upgrade Penalty is a time-based upgrade [approved by Sky Ecosystem Governance](https://vote.sky.money/executive/template-executive-vote-delayed-upgrade-penalty-launch-agent-2-allocator-adjustment-lsev2-sky-a-liquidation-ratio-increase-first-monthly-settlement-cycle-ad-compensation-for-september-2025-atlas-core-development-usds-and-sky-payments-spark-proxy-spell-september-18-2025) and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
+    tooltip: `The Delayed Upgrade Penalty is a time-based penalty [approved by Sky Ecosystem Governance](https://vote.sky.money/executive/template-executive-vote-delayed-upgrade-penalty-launch-agent-2-allocator-adjustment-lsev2-sky-a-liquidation-ratio-increase-first-monthly-settlement-cycle-ad-compensation-for-september-2025-atlas-core-development-usds-and-sky-payments-spark-proxy-spell-september-18-2025) and designed to facilitate a smooth and prompt upgrade of MKR to SKY.
 
 The penalty, which took effect in September 2025, reduces the amount of SKY received per MKR upgraded by a rate of 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years.`
   },
@@ -264,7 +264,7 @@ Bundled transaction: Active`
 
 - The user's proportional supply within the total pool of assets linked to the Sky Token Rewards module.
 
-Sky.money does not control the issuance, determination, or distribution of these rewards. The Sky Token Rewards Rate is variable and may fluctuate. It is determined by: (1) the current issuance rate of the reward token set through onchain governance processes, (2) the token's current market price, and (3) each user's proportional percentage of the total supply in the pool automatically accruing rewards. The STR rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica,). This estimate is for informational purposes only and does not guarantee future results.`
+Sky.money does not control the issuance, determination, or distribution of these rewards. The STR rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results.`
   }
 ];
 

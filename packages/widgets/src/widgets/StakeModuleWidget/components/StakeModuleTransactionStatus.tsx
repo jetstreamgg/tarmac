@@ -52,7 +52,8 @@ function TransactionDetail({ totalSkyAmount }: { totalSkyAmount: bigint }) {
     wipeAll,
     selectedRewardContract,
     selectedDelegate,
-    activeUrn
+    activeUrn,
+    rewardClaimAmounts
   } = useContext(StakeModuleWidgetContext);
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
 
@@ -77,6 +78,7 @@ function TransactionDetail({ totalSkyAmount }: { totalSkyAmount: bigint }) {
     needsDelegateUpdate(activeUrn?.urnAddress, selectedDelegate, urnSelectedVoteDelegate) &&
     selectedDelegateOwner &&
     selectedDelegateName;
+  const showRewardClaim = rewardClaimAmounts.length > 0;
 
   const transactionComponents = [
     {
@@ -150,7 +152,22 @@ function TransactionDetail({ totalSkyAmount }: { totalSkyAmount: bigint }) {
           </HStack>
         </VStack>
       )
-    }
+    },
+    ...rewardClaimAmounts.map(reward => ({
+      show: showRewardClaim,
+      component: (
+        <VStack gap={3} className="mt-2" key={reward.contractAddress}>
+          <Text variant="medium" className="text-textSecondary leading-4">
+            Claiming
+          </Text>
+          <TokenIconWithBalance
+            token={{ symbol: reward.rewardSymbol, name: reward.rewardSymbol }}
+            balance={formatBigInt(reward.claimBalance)}
+            textLarge
+          />
+        </VStack>
+      )
+    }))
   ];
 
   const transactionComponentsToShow = transactionComponents.filter(item => item.show);

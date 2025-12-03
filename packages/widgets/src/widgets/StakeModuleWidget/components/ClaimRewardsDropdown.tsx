@@ -56,7 +56,7 @@ export function ClaimRewardsDropdown({
 
   const { data: claimableRewardContracts } = useRewardContractsToClaim({
     rewardContractAddresses: stakeRewardContracts.map(({ contractAddress }) => contractAddress),
-    userAddress: urnAddress,
+    addresses: urnAddress,
     chainId
   });
 

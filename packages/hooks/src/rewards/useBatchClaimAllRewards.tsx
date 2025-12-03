@@ -22,7 +22,7 @@ export function useBatchClaimAllRewards({
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses:
       rewardContracts?.map(({ contractAddress }) => contractAddress as `0x${string}`) || [],
-    userAddress: address,
+    addresses: address,
     chainId,
     enabled: !!rewardContracts?.length && !!address
   });

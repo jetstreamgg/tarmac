@@ -10,10 +10,8 @@ import { useDismissChatSuggestion } from '../hooks/useDismissChatSuggestion';
 import { useConversationFeedback } from '@/modules/chat/hooks/useConversationFeedback';
 import { ConversationFeedbackPrompt } from '@/modules/chat/components/ConversationFeedbackPrompt';
 import { ConversationFeedbackModal } from '@/modules/chat/components/ConversationFeedbackModal';
-
-// Note: for now if you don't attach a message after the part "conversation-rating-", the chatbot won't acknowledge the feedback in its response
-const CONVERSATION_RATING_POSITIVE = 'conversation-rating-positive, positive';
-const CONVERSATION_RATING_NEGATIVE = 'conversation-rating-negative, negative';
+import { submitFeedback, FEEDBACK_TYPE } from '@/modules/chat/services/feedbackApi';
+import { useChatbotFeedbackNotification } from '@/modules/chat/hooks/useChatbotFeedbackNotification';
 
 export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const {
@@ -22,11 +20,13 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     scrollTrigger,
     showConversationFeedback,
     setShowConversationFeedback,
-    isLoading
+    isLoading,
+    sessionId
   } = useChatContext();
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [isConversationFeedbackModalOpen, setIsConversationFeedbackModalOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState<'positive' | 'negative' | undefined>(undefined);
+  const { showFeedbackSuccess } = useChatbotFeedbackNotification();
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -45,12 +45,16 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     setIsConversationFeedbackModalOpen(true);
   };
 
-  const handleFeedbackSubmit = (rating: 'positive' | 'negative') => {
-    const topic = rating === 'positive' ? CONVERSATION_RATING_POSITIVE : CONVERSATION_RATING_NEGATIVE;
-    const feedbackMessage = `/feedback ${topic}`;
-    sendMessage(feedbackMessage);
-    setIsConversationFeedbackModalOpen(false);
-    setShowConversationFeedback(false);
+  const handleFeedbackSubmit = async (rating: 'positive' | 'negative', comment: string | null) => {
+    await submitFeedback({
+      feedback_type: rating === 'positive' ? FEEDBACK_TYPE.THUMBS_UP : FEEDBACK_TYPE.THUMBS_DOWN,
+      comment,
+      session_id: sessionId
+    });
+
+    // Show success notification on successful submission
+    // Keep the feedback prompt visible to allow multiple submissions
+    showFeedbackSuccess(rating);
   };
 
   useDismissChatSuggestion();
@@ -76,7 +80,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
       >
         <ChatHeader />
         {/* The @container/chat class allows to style children based on breakpoints on this container */}
-        <div className="@container/chat h-[calc(100%-65px)] px-6 pb-4 pt-[22px] md:h-full xl:pb-5 xl:pt-8">
+        <div className="@container/chat h-[calc(100%-65px)] px-6 pt-[22px] pb-4 md:h-full xl:pt-8 xl:pb-5">
           <div className="mx-auto flex h-full max-w-[600px] flex-col justify-between gap-5">
             <div
               ref={chatContainerRef}

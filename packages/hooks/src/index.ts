@@ -179,6 +179,7 @@ export { useStakeUserDelegates } from './stake/useStakeUserDelegates';
 export { useStakeMulticall } from './stake/useStakeMulticall';
 export { useCurrentUrnIndex } from './stake/useCurrentUrnIndex';
 export { useUrnAddress as useStakeUrnAddress } from './stake/useUrnAddress';
+export { useAllStakeUrnAddresses } from './stake/useAllStakeUrnAddresses';
 export { useUrnSelectedRewardContract as useStakeUrnSelectedRewardContract } from './stake/useUrnSelectedRewardContract';
 export { useUrnSelectedVoteDelegate as useStakeUrnSelectedVoteDelegate } from './stake/useUrnSelectedVoteDelegate';
 export { useStakeSkyAllowance, useStakeUsdsAllowance } from './stake/useStakeAllowance';
@@ -293,6 +294,7 @@ export {
   spkAddress,
   sealModuleAddress,
   stakeModuleAddress,
+  stakeModuleAbi,
   usdcL2Address,
   usdsL2Address,
   stUsdsAddress,

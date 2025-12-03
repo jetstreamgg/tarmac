@@ -64,7 +64,7 @@ export const RewardsOverview = ({
 
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses: userRewards.map(({ contractAddress }) => contractAddress as `0x${string}`) || [],
-    userAddress: address,
+    addresses: address,
     chainId,
     enabled: !!userRewards.length && !!address
   });

@@ -17,3 +17,11 @@ export enum MessageType {
 }
 
 export const TERMS_ACCEPTANCE_MESSAGE = msg`Please accept the chatbot terms of service to continue.`;
+
+// Feedback types for the /feedback endpoint
+export const FEEDBACK_TYPE = {
+  THUMBS_UP: 'thumbs_up',
+  THUMBS_DOWN: 'thumbs_down'
+} as const;
+
+export type FeedbackType = (typeof FEEDBACK_TYPE)[keyof typeof FEEDBACK_TYPE];

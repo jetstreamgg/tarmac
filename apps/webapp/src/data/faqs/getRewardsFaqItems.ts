@@ -44,7 +44,7 @@ Sky.money does not control the issuance, determination, or distribution of these
     {
       question: 'How much does it cost to participate in Sky Token Rewards?',
       answer:
-        'There is no fee to participate in the Sky Token Rewards feature of the Sky Protocol; however, with each transaction, you will likely pay a transaction, or gas, fee for using the Ethereum blockchain network. That fee is neither controlled, imposed nor received by Sky.money or the Sky Protocol.',
+        'There is no fee to participate in the Sky Token Rewards feature of the Sky Protocol; however, with each transaction, you will likely pay a transaction (gas) fee for using the Ethereum blockchain network. That fee is neither controlled, imposed nor received by Sky.money or the Sky Protocol.',
       index: 5
     },
     {

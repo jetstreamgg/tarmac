@@ -37,6 +37,7 @@
     "vnet:delete:all:ci": "node ./scripts/deleteAllVnets.js 'ci-tests-testnet'",
     "vnet:delete:all:ci:local": "node --env-file=.env ./scripts/deleteAllVnets.js 'ci-tests-testnet'",
     "vnet:delete:ci": "node ./scripts/deleteVnet.ts",
+    "vnet:fund:single": "cd apps/webapp && npx tsx --tsconfig tsconfig.json src/test/e2e/fund-single-account.ts",
     "prepare": "husky",
     "typecheck": "pnpm --filter './packages/**' --filter './apps/**' typecheck",
     "messages:extract": "lingui extract --clean",

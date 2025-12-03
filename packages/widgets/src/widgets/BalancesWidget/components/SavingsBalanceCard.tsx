@@ -4,9 +4,9 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCardWithAccordion } from '@widgets/shared/components/ui/card/InteractiveStatsCardWithAccordion';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
+import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
 
 export const SavingsBalanceCard = ({
   urlMap,
@@ -36,16 +36,11 @@ export const SavingsBalanceCard = ({
         overallSkyDataLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : skySavingsRate > 0 ? (
-          <div className="flex w-fit items-center gap-1.5">
-            <Text variant="small" className="text-bullish leading-4">
-              {`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
-            </Text>
-            <PopoverRateInfo
-              type="ssr"
-              onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="h-[13px] w-[13px]"
-            />
-          </div>
+          <RateLineWithArrow
+            rateText={`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
+            popoverType="ssr"
+            onExternalLinkClicked={onExternalLinkClicked}
+          />
         ) : (
           <></>
         )

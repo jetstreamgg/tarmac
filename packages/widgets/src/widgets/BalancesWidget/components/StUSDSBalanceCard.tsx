@@ -4,9 +4,9 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
 import { CardProps } from './ModulesBalances';
+import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
 
 export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardProps) => {
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
@@ -30,16 +30,11 @@ export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardP
         stUsdsLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : moduleRate > 0n ? (
-          <div className="flex w-fit items-center gap-1.5">
-            <Text variant="small" className="text-bullish leading-4">
-              {`Rate: ${formatStrAsApy(moduleRate)}`}
-            </Text>
-            <PopoverRateInfo
-              type="stusds"
-              onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="h-[13px] w-[13px]"
-            />
-          </div>
+          <RateLineWithArrow
+            rateText={`Rate: ${formatStrAsApy(moduleRate)}`}
+            popoverType="stusds"
+            onExternalLinkClicked={onExternalLinkClicked}
+          />
         ) : (
           <></>
         )

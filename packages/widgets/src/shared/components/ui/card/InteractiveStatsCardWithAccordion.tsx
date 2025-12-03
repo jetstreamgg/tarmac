@@ -69,16 +69,8 @@ export const InteractiveStatsCardWithAccordion = ({
                     {headerRightContent}
                   </CardContent>
                   <CardFooter>
-                    <div className="flex w-full justify-between">
-                      <div className="flex grow items-center gap-2">
-                        {footer}
-                        <div className="h-4 w-4">
-                          <ArrowRight
-                            size={16}
-                            className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
-                          />
-                        </div>
-                      </div>
+                    <div className="flex w-full items-start justify-between">
+                      <div className="flex-1">{footer}</div>
                       {footerRightContent}
                     </div>
                   </CardFooter>
@@ -124,7 +116,7 @@ export const InteractiveStatsCardWithAccordion = ({
 
                 return (
                   <Link to={urlMap[chainId]} key={chainId}>
-                    <div className="group/interactive-card bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer transition-colors">
+                    <div className="group/interactive-card from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer bg-radial-(--gradient-position) transition-colors">
                       <div className="flex items-start gap-2 p-2 px-4 lg:px-5">
                         <TokenIcon
                           className="h-8 w-8"

@@ -48,3 +48,4 @@ export { useTokenImage } from './shared/hooks/useTokenImage';
 export { useChainImage } from './shared/hooks/useChainImage';
 export { WidgetContainer } from './shared/components/ui/widget/WidgetContainer';
 export { CardAnimationWrapper } from './shared/animation/Wrappers';
+export type { WithWidgetProviderProps } from './shared/hocs/withWidgetProvider';

@@ -2,7 +2,7 @@ import { ComponentType } from 'react';
 import { WidgetProvider } from '@widgets/context/WidgetContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-interface WithWidgetProviderProps {
+export interface WithWidgetProviderProps {
   locale?: string;
   shouldReset?: boolean;
   onWidgetStateChange?: (data: any) => void;

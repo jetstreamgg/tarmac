@@ -41,13 +41,14 @@ Note that price slippage—a change in price between the time of the trade order
   },
   {
     question: 'Why would I trade tokens?',
-    answer: `The following statements are provided for informational purposes only and are not intended to be construed as financial advice or recommendations on trading strategies. Your use of the Sky Protocol is at your own risk. Please see our [User Risk Documentation](https://docs.sky.money/user-risks). and [Terms of Use](https://docs.sky.money/legal-terms) for further information.
+    answer: `The following statements are provided for informational purposes only and are not intended to be construed as financial advice or recommendations on trading strategies. Your use of the Sky Protocol is at your own risk. Please see our [User Risk Documentation](https://docs.sky.money/user-risks) and [Terms of Use](https://docs.sky.money/legal-terms) for further information.
 
-Market participants trade crypto for a variety of reasons. For example, users may trade crypto for portfolio diversification and to participate in DeFi. Regardless of the motivation, crypto trading can provide a diverse range of opportunities to market participants depending on their goals and risk appetite
+Market participants trade crypto for a variety of reasons. For example, users may trade crypto for portfolio diversification and to participate in DeFi. Regardless of the motivation, crypto trading can provide a diverse range of opportunities to market participants depending on their goals and risk appetite.
 
-When you trade USDC, USDT, ETH or SKY for USDS via the Sky Protocol, you can use your USDS to access the [Sky Savings Rate](#tooltip-sky-savings-rate) to access additional USDS over time, and to access Sky Token Rewards.
+Depending on your location and other criteria, you can use the Sky.money web app to trade:
 
-When you trade USDC, USDT, ETH and USDS for SKY, you can supply your SKY tokens to the Staking Engine of the Sky Protocol to access Staking Rewards. The Staking Engine enables you to create one or more positions, including positions that enable you to generate and [borrow](#tooltip-borrow) USDS against your supplied SKY and to delegate the voting power the SKY token provides.`,
+• USDC, USDT, ETH and SKY for USDS, and vice versa. Once you have USDS, you can use it to access Sky Token Rewards and the [Sky Savings Rate](#tooltip-sky-savings-rate).
+• USDC, USDT, ETH and USDS for SKY, and vice versa. Once you have SKY, you can use it to access the Staking Engine. The Staking Engine enables you to access Staking Rewards and create one or more positions, including positions that enable you to generate and [borrow](#tooltip-borrow) USDS against your supplied SKY and to delegate the voting power the SKY token provides.`,
     index: 1
   },
   {
@@ -62,7 +63,7 @@ Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more infor
   {
     question: 'What are Sky Token Rewards?',
     answer:
-      'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
+      'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS tokens, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
     index: 3
   },
   {
@@ -75,17 +76,17 @@ Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more infor
     question: 'What are Layer 2 networks, and how do they benefit users?',
     answer: `Layer 2 (L2) networks are blockchain scalability solutions built on top of existing blockchains (Layer 1 or L1 networks). While L2s exist across several blockchains, they are most commonly used with the Ethereum blockchain, where they are designed to solve two major problems: high transaction (gas) fees and slow transaction speeds, which can hinder scalability.
 
-L2 solutions usually work by processing transactions on their own blockchain, and then bundling those transactions and submitting them back to the underlying L1 as a single transaction for final validation, which drastically increases the throughput.
+L2 solutions usually work by processing transactions on their own blockchain, and then bundling those transactions and submitting them back to the underlying L1 as a single transaction for final validation, which drastically increases throughput.
 
 Moving assets between L1 and L2 networks requires specialized protocols called bridges. While bridges can be designed to connect any two blockchain networks, L2 networks operate on top of L1s, inheriting their security, while delivering improved efficiency.
 
-L2s used with Ethereum not only offer users much lower fees and much faster speeds (transactions can be near-instant), they can enable users to transact using the wallets and tools they are already familiar with. There is a tradeoff, however, as users bridging their assets between L1 and L2 networks generally must pay a transaction fee. For users making multiple transactions, the savings may outweigh that cost and you must use your own discretion. Also, L1 networks may provide stronger security guarantees compared to L2s, which often rely on centralized components and actors, which could potentially introduce points of failure.`,
+L2s used with Ethereum not only offer users lower fees and faster speeds (transactions can be near-instant), they can enable users to transact using the wallets and tools they are already familiar with. There is a tradeoff, however, as users bridging their assets between L1 and L2 networks generally must pay a transaction fee. For users making multiple transactions, the savings may outweigh that cost and you must use your own discretion. Also, L1 networks may provide stronger security guarantees compared to L2s, which often rely on centralized components and actors, which could potentially introduce points of failure.`,
     index: 5
   },
   {
     question: 'What can I do with my assets once they are linked to an L2 network?',
     answer:
-      'On many L2s, you can perform the same types of transactions as on Ethereum Mainnet—i.e., trade tokens, use DeFi applications (dApps), etc.— but with reduced fees and faster transaction speeds. Many popular dApps have L2 versions, though not all are available on every L2. Please note that some features of Sky.money or the Sky Protocol will not be available on L2s.',
+      'On many L2s, you can perform the same types of transactions as on Ethereum Mainnet—i.e., trade tokens, use DeFi applications (dApps), etc.—but with reduced fees and faster transaction speeds. Many popular dApps have L2 versions, though not all are available on every L2. Please note that some features of Sky.money or the Sky Protocol may not be available on L2s.',
     index: 6
   }
 ];
@@ -93,7 +94,7 @@ L2s used with Ethereum not only offer users much lower fees and much faster spee
 const L2TradeFaqItems = [
   {
     question: 'Which tokens can I trade on supported L2s?',
-    answer: `Supported trading pairs vary by network:
+    answer: `Supported trading pairs vary by network, depending also on your location and other criteria:
 
 • **Ethereum Mainnet:** USDC, USDT, ETH, WETH, DAI, MKR, USDS, sUSDS, SKY, SPK
 
@@ -105,13 +106,13 @@ const L2TradeFaqItems = [
 
 • **Unichain:** USDC, USDS, sUSDS
 
-Using the Sky.money web app, you can interact with the Peg Stability Module (PSM) for conversions to and from **USDS**, **sUSDS**, and **USDC**. The PSM handles conversions programmatically, driven at your direction, between these pairs directly.
+Using the Sky.money web app, you can interact with the Peg Stability Module (PSM) for conversions to and from **USDS**, **sUSDS**, and **USDC**. The PSM handles conversions programmatically, executed at your direction, between these pairs directly.
 
 On some supported L2s, you can also access the [Sky Savings Rate](#tooltip-sky-savings-rate).
 
 SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
 
-Available tokens may evolve over time as new trading pairs are added.`,
+Available tokens may evolve over time as new trading pairs are added. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for Sky.money web app access eligibility.`,
     index: 0
   },
   {

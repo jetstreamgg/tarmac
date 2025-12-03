@@ -21,13 +21,13 @@ export const getSparkSpecificFaqItems = () => {
     {
       question: 'What is SparkLend?',
       answer:
-        'SparkLend is a decentralized non-custodial liquidity market protocol that powers the Spark Borrow product. It sources liquidity directly from Sky to provide the best borrow rates for USDS. Through [Spark.fi](https://Spark.fi), Spark Borrow users can participate as lenders or borrowers: lenders provide liquidity to the market to earn a passive income as their assets are lent out, while borrowers are able to borrow in an overcollateralized and perpetual fashion.',
+        'SparkLend is a decentralized, non-custodial liquidity market protocol that powers the Spark Borrow product. It sources liquidity directly from Sky to provide the best borrow rates for USDS. Through [Spark.fi](https://Spark.fi), Spark Borrow users can participate as lenders or borrowers: lenders provide liquidity to the market to earn a passive income as their assets are lent out, while borrowers are able to borrow USDS in an overcollateralized and perpetual fashion.',
       index: 3
     },
     {
       question: 'What is the Spark Liquidity Layer?',
       answer:
-        'The Spark Liquidity Layer directly and automatically provides USDS, sUSDS and USDC liquidity across networks and DeFi markets. This enables users to access the [Sky Savings Rate](#tooltip-sky-savings-rate) on their preferred network using sUSDS. Additionally, it allows Spark to automate liquidity provision into DeFi markets to optimize yield. Please see the [Spark Liquidity Layer documentation](https://docs.spark.fi/user-guides/spark-liquidity-layer) for more information.',
+        'The Spark Liquidity Layer directly and automatically provides USDS, sUSDS and USDC liquidity across networks and DeFi markets. This enables users to access the [Sky Savings Rate](#tooltip-sky-savings-rate) on their preferred network using sUSDS. Additionally, it allows Spark to automate liquidity provision into DeFi markets to optimize yield.  For more information, please see the [Spark Liquidity Layer documentation](https://docs.spark.fi/user-guides/spark-liquidity-layer).',
       index: 4
     },
     {
@@ -56,9 +56,9 @@ export const getSparkSpecificFaqItems = () => {
       index: 8
     },
     {
-      question: 'Where can find the Spark analytics dashboard?',
+      question: 'Where can I find the Spark Analytics Dashboard?',
       answer:
-        'View the most comprehensive information and data about Spark on the [Spark analytics dashboard](https://spark.blockanalitica.com/).',
+        'View the most comprehensive information and data about Spark on the [Spark Analytics Dashboard](https://spark.blockanalitica.com/).',
       index: 9
     }
   ];
