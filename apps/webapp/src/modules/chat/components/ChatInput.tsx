@@ -14,7 +14,7 @@ import { FeedbackModal } from './FeedbackModal';
 export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const [inputText, setInputText] = useState('');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const { isLoading, chatHistory, termsAccepted } = useChatContext();
+  const { isLoading, chatHistory, termsAccepted, knowledgeDate } = useChatContext();
   const isAuthError = chatHistory.at(-1)?.type === MessageType.authError && !termsAccepted;
   const isMessageSendingBlocked = !inputText.trim() || isLoading || isAuthError;
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -132,9 +132,16 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
             </Button>
           </HStack>
         </HStack>
-        <Text className="ml-1 mt-1 text-[8px] text-violet-200/50">
-          {inputText.length} / {MAX_MESSAGE_LENGTH}
-        </Text>
+        <HStack className="justify-between">
+          <Text className="ml-1 mt-1 text-[8px] text-violet-200/50">
+            {inputText.length} / {MAX_MESSAGE_LENGTH}
+          </Text>
+          {knowledgeDate && (
+            <Text className="ml-1 mt-1 text-[9px] italic text-violet-200/50">
+              <Trans>Last SkyWing update:</Trans> {knowledgeDate}
+            </Text>
+          )}
+        </HStack>
       </div>
     </>
   );

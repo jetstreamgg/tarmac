@@ -24,6 +24,7 @@ import {
 interface ChatbotResponse {
   chatResponse: {
     response: string;
+    knowledge_date?: string;
   };
   actionIntentResponse: Pick<ChatIntent, 'title' | 'url' | 'priority'>[];
 }
@@ -66,7 +67,8 @@ const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
   // Transform the advanced response to match the simple mode structure
   return {
     chatResponse: {
-      response: data?.response || ''
+      response: data?.response || '',
+      knowledge_date: data?.knowledge_date
     },
     actionIntentResponse: data?.actions || []
   } as ChatbotResponse;
@@ -87,7 +89,10 @@ const sendMessageMutation: MutationFunction<
   }
   // initally set data to the chat response
   // we will override the response if we detect an action intent
-  const data: SendMessageResponse = { ...chatResponse };
+  const data: SendMessageResponse = {
+    response: chatResponse.response,
+    knowledge_date: chatResponse.knowledge_date
+  };
 
   data.intents = actionIntentResponse
     .map(action => {
@@ -117,7 +122,7 @@ const sendMessageMutation: MutationFunction<
 };
 
 export const useSendMessage = () => {
-  const { setChatHistory, sessionId, chatHistory, setTermsAccepted } = useChatContext();
+  const { setChatHistory, sessionId, chatHistory, setTermsAccepted, setKnowledgeDate } = useChatContext();
   const chainId = useChainId();
   const { isConnected } = useAccount();
   const { i18n } = useLingui();
@@ -159,6 +164,11 @@ export const useSendMessage = () => {
               const urlWithNetwork = ensureIntentHasNetwork(processedUrl, chainId);
               return { ...intent, url: urlWithNetwork };
             });
+
+          // Update knowledge date if provided
+          if (data.knowledge_date) {
+            setKnowledgeDate(data.knowledge_date);
+          }
 
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED

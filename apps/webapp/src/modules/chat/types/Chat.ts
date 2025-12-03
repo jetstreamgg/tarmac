@@ -10,6 +10,7 @@ export interface SendMessageRequest {
 export interface SendMessageResponse {
   response: string;
   intents?: ChatIntent[];
+  knowledge_date?: string;
 }
 
 export interface ChatHistory {
