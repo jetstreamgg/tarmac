@@ -3,7 +3,6 @@ import { useReadCurveStUsdsUsdsPoolGetDy } from '../../generated';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { TENDERLY_CHAIN_ID } from '../../constants';
 import { useCurvePoolData } from './useCurvePoolData';
-import { STUSDS_PROVIDER_CONFIG, RATE_PRECISION } from './constants';
 
 export type CurveMaxWithdrawParams = {
   /** User's stUSDS balance */
@@ -60,16 +59,11 @@ export function useCurveMaxWithdraw(params: CurveMaxWithdrawParams): CurveMaxWit
     }
   });
 
-  // Apply slippage buffer to get a conservative max
-  // This ensures that when the user inputs this max amount, the required stUSDS
-  // will not exceed their balance due to rate fluctuations
-  const slippageMultiplier = RATE_PRECISION.BPS_DIVISOR - BigInt(STUSDS_PROVIDER_CONFIG.maxSlippageBps);
-
-  const maxUsdsOutput =
-    usdsOutput !== undefined ? (usdsOutput * slippageMultiplier) / RATE_PRECISION.BPS_DIVISOR : undefined;
-
+  // Return the raw get_dy output for display purposes
+  // The slippage protection is handled at the transaction level (minOutput in swap calls),
+  // not at the max amount display level
   return {
-    maxUsdsOutput,
+    maxUsdsOutput: usdsOutput,
     rawUsdsOutput: usdsOutput,
     isLoading: isPoolLoading || isOutputLoading,
     error: error as Error | null

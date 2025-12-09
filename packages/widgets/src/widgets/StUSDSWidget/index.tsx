@@ -212,24 +212,13 @@ const StUSDSWidgetWrapped = ({
     ? (providerSelection.curveProvider?.state?.maxDeposit ?? undefined)
     : (providerSelection.nativeProvider?.state?.maxDeposit ?? remainingCapacityBuffered);
 
-  // For Curve: limit by pool's max withdraw capacity (in USDS terms)
-  // For Native: limit by user's max withdrawable from contract (in USDS terms)
-  const curvePoolMaxWithdraw = providerSelection.curveProvider?.state?.maxWithdraw;
+  // For Curve: use user's max based on their stUSDS balance converted at Curve's rate
+  // For Native: use user's max withdrawable from contract (in USDS terms)
+  // Note: We don't limit by Curve pool liquidity because the pool's bonding curve
+  // naturally handles large withdrawals through price impact - bad rates will
+  // discourage oversized withdrawals, and maxPriceImpactBps check provides protection
   const nativeMaxWithdraw = stUsdsData?.userMaxWithdrawBuffered ?? 0n;
-
-  // For Curve withdrawals, use the user's max based on their stUSDS balance and Curve's rate
-  // This is more accurate than using the vault rate (userSuppliedUsds) because:
-  // - Vault rate: stUsdsBalance * vaultExchangeRate = userSuppliedUsds
-  // - Curve rate: stUsdsBalance → get_dy → curveUserMaxWithdraw
-  // These rates can differ, and using vault rate can result in trying to swap more stUSDS than owned
-  const maxWithdrawAmount = isCurveSelected
-    ? curveUserMaxWithdraw !== undefined && curvePoolMaxWithdraw !== undefined
-      ? // Use the minimum of: user's max via Curve rate, and pool liquidity
-        curveUserMaxWithdraw < curvePoolMaxWithdraw
-        ? curveUserMaxWithdraw
-        : curvePoolMaxWithdraw
-      : (curveUserMaxWithdraw ?? curvePoolMaxWithdraw ?? nativeMaxWithdraw)
-    : nativeMaxWithdraw;
+  const maxWithdrawAmount = isCurveSelected ? (curveUserMaxWithdraw ?? nativeMaxWithdraw) : nativeMaxWithdraw;
 
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
@@ -241,11 +230,17 @@ const StUSDSWidgetWrapped = ({
       ? true
       : false;
 
+  // For withdraw balance check:
+  // - When Curve is selected, use curveUserMaxWithdraw (Curve rate) as the balance limit
+  // - When native is selected, use userSuppliedUsds (vault rate) as the balance limit
+  // This ensures the balance check uses the same rate as the max withdraw amount
+  const withdrawBalanceLimit = isCurveSelected ? curveUserMaxWithdraw : stUsdsData?.userSuppliedUsds;
+
   const isWithdrawBalanceError =
     txStatus === TxStatus.IDLE &&
     address &&
     amount !== 0n && //don't wait for debouncing on default state
-    ((stUsdsData?.userSuppliedUsds !== undefined && debouncedAmount > stUsdsData.userSuppliedUsds) ||
+    ((withdrawBalanceLimit !== undefined && debouncedAmount > withdrawBalanceLimit) ||
       (providerSelection.allProvidersBlocked && debouncedAmount > 0n) ||
       (maxWithdrawAmount !== undefined && debouncedAmount > maxWithdrawAmount))
       ? true
@@ -566,7 +561,7 @@ const StUSDSWidgetWrapped = ({
             <StUSDSSupplyWithdraw
               address={address}
               nstBalance={stUsdsData?.userUsdsBalance}
-              userUsdsBalance={stUsdsData?.userSuppliedUsds}
+              userUsdsBalance={withdrawBalanceLimit}
               userStUsdsBalance={stUsdsData?.userStUsdsBalance}
               withdrawableBalance={maxWithdrawAmount}
               totalAssets={stUsdsData?.totalAssets}
