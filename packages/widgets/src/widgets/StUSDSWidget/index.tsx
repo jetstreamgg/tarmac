@@ -7,7 +7,8 @@ import {
   useIsBatchSupported,
   useStUsdsProviderSelection,
   StUsdsProviderType,
-  useCurveAllowance
+  useCurveAllowance,
+  useCurveMaxWithdraw
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -99,6 +100,14 @@ const StUSDSWidgetWrapped = ({
   const { hasAllowance: hasCurveStUsdsAllowance, mutate: mutateCurveStUsdsAllowance } = useCurveAllowance({
     token: 'stUSDS',
     amount: providerSelection?.selectedQuote?.stUsdsAmount ?? 0n
+  });
+
+  // Calculate max USDS withdrawal via Curve based on user's actual stUSDS balance
+  // This prevents the issue where vault rate differs from Curve rate, causing
+  // the required stUSDS to exceed user's balance
+  const { maxUsdsOutput: curveUserMaxWithdraw } = useCurveMaxWithdraw({
+    userStUsdsBalance: stUsdsData?.userStUsdsBalance ?? 0n,
+    enabled: tabIndex === 1 // Only calculate for withdraw tab
   });
 
   const isCurveSelected = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
@@ -205,18 +214,21 @@ const StUSDSWidgetWrapped = ({
 
   // For Curve: limit by pool's max withdraw capacity (in USDS terms)
   // For Native: limit by user's max withdrawable from contract (in USDS terms)
-  const curveMaxWithdraw = providerSelection.curveProvider?.state?.maxWithdraw;
+  const curvePoolMaxWithdraw = providerSelection.curveProvider?.state?.maxWithdraw;
   const nativeMaxWithdraw = stUsdsData?.userMaxWithdrawBuffered ?? 0n;
-  // User's stUSDS value in USDS terms (what they could get if they withdrew everything)
-  const userSuppliedUsds = stUsdsData?.userSuppliedUsds ?? 0n;
 
+  // For Curve withdrawals, use the user's max based on their stUSDS balance and Curve's rate
+  // This is more accurate than using the vault rate (userSuppliedUsds) because:
+  // - Vault rate: stUsdsBalance * vaultExchangeRate = userSuppliedUsds
+  // - Curve rate: stUsdsBalance → get_dy → curveUserMaxWithdraw
+  // These rates can differ, and using vault rate can result in trying to swap more stUSDS than owned
   const maxWithdrawAmount = isCurveSelected
-    ? curveMaxWithdraw !== undefined
-      ? // When Curve is selected, max is the minimum of user's USDS value and pool capacity
-        curveMaxWithdraw < userSuppliedUsds
-        ? curveMaxWithdraw
-        : userSuppliedUsds
-      : nativeMaxWithdraw
+    ? curveUserMaxWithdraw !== undefined && curvePoolMaxWithdraw !== undefined
+      ? // Use the minimum of: user's max via Curve rate, and pool liquidity
+        curveUserMaxWithdraw < curvePoolMaxWithdraw
+        ? curveUserMaxWithdraw
+        : curvePoolMaxWithdraw
+      : (curveUserMaxWithdraw ?? curvePoolMaxWithdraw ?? nativeMaxWithdraw)
     : nativeMaxWithdraw;
 
   const isSupplyBalanceError =

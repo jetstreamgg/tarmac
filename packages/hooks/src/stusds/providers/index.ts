@@ -10,6 +10,7 @@ export * from './rateComparison';
 // Curve pool hooks
 export * from './useCurvePoolData';
 export * from './useCurveQuote';
+export * from './useCurveMaxWithdraw';
 export * from './useCurveAllowance';
 export * from './useCurveApprove';
 export * from './useCurveSwap';
