@@ -48,16 +48,16 @@ export const useStUsdsTransactionCallbacks = ({
         handleOnStart({
           hash,
           recentTransactionDescription: isCurve
-            ? t`Swapping ${formatBigInt(amount)} USDS via Curve`
+            ? t`Supplying ${formatBigInt(amount)} USDS via Curve`
             : t`Supplying ${formatBigInt(amount)} USDS`
         });
       },
       onSuccess: hash => {
         handleOnSuccess({
           hash,
-          notificationTitle: isCurve ? t`Swap successful` : t`Supply successful`,
+          notificationTitle: t`Supply successful`,
           notificationDescription: isCurve
-            ? t`You swapped ${formatBigInt(amount)} USDS for stUSDS via Curve`
+            ? t`You supplied ${formatBigInt(amount)} USDS for stUSDS via Curve`
             : t`You supplied ${formatBigInt(amount)} USDS`
         });
         mutateNativeSupplyAllowance();
@@ -70,7 +70,7 @@ export const useStUsdsTransactionCallbacks = ({
         handleOnError({
           error,
           hash,
-          notificationTitle: isCurve ? t`Swap failed` : t`Supply failed`,
+          notificationTitle: t`Supply failed`,
           notificationDescription: t`Something went wrong with your transaction. Please try again.`
         });
         mutateNativeSupplyAllowance();
@@ -105,16 +105,16 @@ export const useStUsdsTransactionCallbacks = ({
         handleOnStart({
           hash,
           recentTransactionDescription: isCurve
-            ? t`Swapping stUSDS via Curve`
+            ? t`Withdrawing ${formatBigInt(amount)} USDS via Curve`
             : t`Withdrawing ${formatBigInt(amount)} USDS`
         });
       },
       onSuccess: hash => {
         handleOnSuccess({
           hash,
-          notificationTitle: isCurve ? t`Swap successful` : t`Withdraw successful`,
+          notificationTitle: t`Withdraw successful`,
           notificationDescription: isCurve
-            ? t`You swapped stUSDS for ${formatBigInt(amount)} USDS via Curve`
+            ? t`You withdrew ${formatBigInt(amount)} USDS from stUSDS via Curve`
             : t`You withdrew ${formatBigInt(amount)} USDS`
         });
         mutateStUsds();
@@ -126,7 +126,7 @@ export const useStUsdsTransactionCallbacks = ({
         handleOnError({
           error,
           hash,
-          notificationTitle: isCurve ? t`Swap failed` : t`Withdraw failed`,
+          notificationTitle: t`Withdraw failed`,
           notificationDescription: t`Something went wrong with your transaction. Please try again.`
         });
         mutateNativeSupplyAllowance();

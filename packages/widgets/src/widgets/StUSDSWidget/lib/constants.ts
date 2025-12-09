@@ -62,13 +62,13 @@ export function getStUSDSSupplyReviewSubtitle({
 }): MessageDescriptor {
   if (isCurve) {
     if (!needsAllowance) {
-      return msg`You will swap your ${symbol} for stUSDS via the Curve pool.`;
+      return msg`You will supply your ${symbol} to the Curve pool for stUSDS.`;
     }
     switch (batchStatus) {
       case BatchStatus.ENABLED:
-        return msg`You're allowing this app to access your ${symbol} and swap it for stUSDS via Curve pool in one bundled transaction.`;
+        return msg`You're allowing this app to access your ${symbol} and supply it to the Curve pool for stUSDS in one bundled transaction.`;
       case BatchStatus.DISABLED:
-        return msg`You're allowing this app to access your ${symbol} and swap it for stUSDS via Curve pool in multiple transactions.`;
+        return msg`You're allowing this app to access your ${symbol} and supply it to the Curve pool for stUSDS in multiple transactions.`;
       default:
         return msg``;
     }
@@ -100,13 +100,13 @@ export function getStUSDSWithdrawReviewSubtitle({
 }): MessageDescriptor {
   if (isCurve) {
     if (!needsAllowance) {
-      return msg`You will swap your stUSDS for ${symbol} via the Curve pool.`;
+      return msg`You will withdraw your stUSDS for ${symbol} via the Curve pool.`;
     }
     switch (batchStatus) {
       case BatchStatus.ENABLED:
-        return msg`You're allowing this app to access your stUSDS and swap it for ${symbol} via Curve pool in one bundled transaction.`;
+        return msg`You're allowing this app to access your stUSDS and withdraw ${symbol} via the Curve pool in one bundled transaction.`;
       case BatchStatus.DISABLED:
-        return msg`You're allowing this app to access your stUSDS and swap it for ${symbol} via Curve pool in multiple transactions.`;
+        return msg`You're allowing this app to access your stUSDS and withdraw ${symbol} via the Curve pool in multiple transactions.`;
       default:
         return msg``;
     }
@@ -143,16 +143,16 @@ export function stusdsSupplySubtitle({
     switch (txStatus) {
       case TxStatus.INITIALIZED:
         return needsAllowance
-          ? msg`Please allow this app to access your ${symbol} and swap it via Curve pool.`
+          ? msg`Please allow this app to access your ${symbol} and supply it to the Curve pool.`
           : msg`Almost done!`;
       case TxStatus.LOADING:
         return needsAllowance
-          ? msg`Your token approval and swap are being processed on the blockchain. Please wait.`
-          : msg`Your swap via Curve is being processed on the blockchain. Please wait.`;
+          ? msg`Your token approval and supply are being processed on the blockchain. Please wait.`
+          : msg`Your supply to the Curve pool is being processed on the blockchain. Please wait.`;
       case TxStatus.SUCCESS:
-        return msg`You've swapped ${amount} ${symbol} for stUSDS via Curve pool`;
+        return msg`You've supplied ${amount} ${symbol} to the Curve pool for stUSDS`;
       case TxStatus.ERROR:
-        return msg`An error occurred during the Curve swap.`;
+        return msg`An error occurred during the Curve pool supply.`;
       default:
         return msg``;
     }
@@ -192,16 +192,16 @@ export function stusdsWithdrawSubtitle({
     switch (txStatus) {
       case TxStatus.INITIALIZED:
         return needsAllowance
-          ? msg`Please allow this app to access your stUSDS and swap it via Curve pool.`
+          ? msg`Please allow this app to access your stUSDS and withdraw it from the Curve pool.`
           : msg`Almost done!`;
       case TxStatus.LOADING:
         return needsAllowance
-          ? msg`Your token approval and swap are being processed on the blockchain. Please wait.`
-          : msg`Your swap via Curve is being processed on the blockchain. Please wait.`;
+          ? msg`Your token approval and withdrawal are being processed on the blockchain. Please wait.`
+          : msg`Your withdrawal via Curve is being processed on the blockchain. Please wait.`;
       case TxStatus.SUCCESS:
-        return msg`You've swapped your stUSDS for ${amount} ${symbol} via Curve pool.`;
+        return msg`You've withdrawn ${amount} ${symbol} from the Curve pool.`;
       case TxStatus.ERROR:
-        return msg`An error occurred during the Curve swap.`;
+        return msg`An error occurred during the Curve withdrawal.`;
       default:
         return msg``;
     }

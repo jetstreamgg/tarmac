@@ -3,7 +3,7 @@ import { formatBigInt, useFormatDates } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
-import { SavingsSupply, CurveSavingsSupply, ArrowDown } from '@/modules/icons';
+import { SavingsSupply, CurveSavingsSupply, CurveSavingsWithdraw, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useStUsdsHistory } from '@jetstreamgg/sky-hooks';
@@ -26,9 +26,9 @@ export function StUSDSHistory() {
     // Determine the type label
     let typeLabel: string;
     if (isSupply) {
-      typeLabel = isCurve ? t`Swap (Curve)` : t`Supply`;
+      typeLabel = isCurve ? t`Supply (Curve)` : t`Supply`;
     } else {
-      typeLabel = isCurve ? t`Swap (Curve)` : t`Withdrawal`;
+      typeLabel = isCurve ? t`Withdrawal (Curve)` : t`Withdrawal`;
     }
 
     // Determine the icon
@@ -40,7 +40,11 @@ export function StUSDSHistory() {
         <SavingsSupply width={14} height={13} className="mr-1" />
       );
     } else {
-      iconLeft = <ArrowDown width={10} height={14} className="mr-1 fill-white" />;
+      iconLeft = isCurve ? (
+        <CurveSavingsWithdraw width={31} height={26} className="mr-1" />
+      ) : (
+        <ArrowDown width={10} height={14} className="mr-1 fill-white" />
+      );
     }
 
     return {

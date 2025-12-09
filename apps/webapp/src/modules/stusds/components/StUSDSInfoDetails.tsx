@@ -6,6 +6,8 @@ import { TotalDebtCard } from './TotalDebtCard';
 import { StUSDSCapCard } from './StUSDSCapCard';
 import { StUSDSRemainingCapacityCard } from './StUSDSRemainingCapacityCard';
 import { StUSDSSuppliersCard } from './StUSDSSuppliersCard';
+import { StUSDSNativeExchangeRateCard } from './StUSDSNativeExchangeRateCard';
+import { StUSDSCurveExchangeRateCard } from './StUSDSCurveExchangeRateCard';
 
 export function StUSDSInfoDetails() {
   return (
@@ -33,6 +35,14 @@ export function StUSDSInfoDetails() {
       </div>
       <div className="min-w-[250px] flex-1">
         <StUSDSSuppliersCard />
+      </div>
+      <div className="flex min-w-[500px] flex-1 gap-3">
+        <div className="min-w-[250px] flex-1">
+          <StUSDSNativeExchangeRateCard />
+        </div>
+        <div className="min-w-[250px] flex-1">
+          <StUSDSCurveExchangeRateCard />
+        </div>
       </div>
     </div>
   );
