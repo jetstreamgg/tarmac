@@ -70,7 +70,7 @@ catalog:
   husky: ^9.0.11
   knip: ^5.66.4
   lint-staged: ^15.5.1
-  lucide-react: ^0.555.0
+  lucide-react: ^0.561.0
   openapi-fetch: ^0.15.0
   porto: ~0.2.35
   prettier: ^3.6.1
