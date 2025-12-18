@@ -28,13 +28,15 @@ export const StUSDSTransactionStatus = ({
   originAmount,
   onExternalLinkClicked,
   isBatchTransaction,
-  needsAllowance
+  needsAllowance,
+  isCurve = false
 }: {
   originAmount: bigint;
   originToken: Token;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
   needsAllowance: boolean;
+  isCurve?: boolean;
 }) => {
   const [flowNeedsAllowance] = useState(needsAllowance);
 
@@ -69,7 +71,7 @@ export const StUSDSTransactionStatus = ({
     const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
 
     if (flow === StUSDSFlow.SUPPLY) {
-      setStepTwoTitle(t`Supply`);
+      setStepTwoTitle(isCurve ? t`Swap` : t`Supply`);
 
       if (screen === StUSDSScreen.TRANSACTION) {
         setTxTitle(i18n._(stusdsSupplyTitle[flowTxStatus as keyof TxCardCopyText]));
@@ -79,7 +81,8 @@ export const StUSDSTransactionStatus = ({
               txStatus: flowTxStatus,
               amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
               symbol: originToken.symbol,
-              needsAllowance: flowNeedsAllowance
+              needsAllowance: flowNeedsAllowance,
+              isCurve
             })
           )
         );
@@ -110,7 +113,7 @@ export const StUSDSTransactionStatus = ({
         }
       }
     } else if (flow === StUSDSFlow.WITHDRAW) {
-      setStepTwoTitle(t`Withdraw`);
+      setStepTwoTitle(isCurve ? t`Swap` : t`Withdraw`);
 
       if (screen === StUSDSScreen.TRANSACTION) {
         setTxTitle(i18n._(stusdsWithdrawTitle[flowTxStatus as keyof TxCardCopyText]));
@@ -120,7 +123,8 @@ export const StUSDSTransactionStatus = ({
               txStatus: flowTxStatus,
               amount: formatBigInt(originAmount, { unit: getTokenDecimals(originToken, chainId) }),
               symbol: 'USDS',
-              needsAllowance: flowNeedsAllowance
+              needsAllowance: flowNeedsAllowance,
+              isCurve
             })
           )
         );
@@ -144,10 +148,26 @@ export const StUSDSTransactionStatus = ({
           )
         );
 
-        setStep(2);
+        if (isBatchTransaction) setStep(2);
+        else if (flowTxStatus !== TxStatus.SUCCESS) {
+          if (needsAllowance) setStep(1);
+          else setStep(2);
+        }
       }
     }
-  }, [txStatus, flow, action, screen, i18n.locale]);
+  }, [
+    txStatus,
+    flow,
+    action,
+    screen,
+    i18n.locale,
+    needsAllowance,
+    isCurve,
+    originAmount,
+    originToken,
+    chainId,
+    isBatchTransaction
+  ]);
   return (
     <BatchTransactionStatus
       onExternalLinkClicked={onExternalLinkClicked}

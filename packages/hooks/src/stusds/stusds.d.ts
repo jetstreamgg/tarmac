@@ -1,11 +1,17 @@
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { Token } from '../tokens/types';
+import { StUsdsProviderType } from './providers/types';
+
 export interface StUsdsHistoryItem {
   type: TransactionTypeEnum;
   assets: bigint;
-  shares: bigint;
   blockTimestamp: Date;
   transactionHash: string;
-  timestamp: number;
-  referral?: number;
+  module: ModuleEnum;
+  chainId: number;
+  token: Token;
+  /** Provider that executed this transaction (native or curve) */
+  provider: StUsdsProviderType;
 }
 
 export interface StUsdsVaultMetrics {

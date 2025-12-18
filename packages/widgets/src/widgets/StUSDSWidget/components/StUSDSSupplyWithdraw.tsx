@@ -3,8 +3,8 @@ import { Trans } from '@lingui/react/macro';
 import {
   getTokenDecimals,
   TOKENS,
-  useStUsdsPreviewDeposit,
-  useStUsdsPreviewWithdraw
+  StUsdsProviderType,
+  StUsdsProviderSelectionResult
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt, formatStrAsApy } from '@jetstreamgg/sky-utils';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
@@ -15,6 +15,7 @@ import { useContext, useMemo, useId } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StUSDSFlow } from '../lib/constants';
 import { StUSDSStatsCard } from './StUSDSStatsCard';
+import { ProviderIndicator } from './ProviderIndicator';
 import { useConnection, useChainId } from 'wagmi';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -27,7 +28,7 @@ import { cn } from '@widgets/lib/utils';
 type StUSDSSupplyWithdrawProps = {
   address?: string;
   nstBalance?: bigint;
-  userUsdsBalance?: bigint;
+  userUsdsBalance?: bigint; // User's USDS balance, or max amount they can withdraw based on stUSDS balance if using Curve
   userStUsdsBalance?: bigint;
   withdrawableBalance?: bigint; // User's withdrawable USDS balance (for withdraw functionality)
   totalAssets?: bigint;
@@ -45,6 +46,8 @@ type StUSDSSupplyWithdrawProps = {
   remainingCapacityBuffered?: bigint;
   disclaimerChecked?: boolean;
   onDisclaimerChange?: (checked: boolean) => void;
+  // Provider selection data
+  providerSelection?: StUsdsProviderSelectionResult;
 };
 
 export const StUSDSSupplyWithdraw = ({
@@ -67,10 +70,23 @@ export const StUSDSSupplyWithdraw = ({
   onExternalLinkClicked,
   remainingCapacityBuffered,
   disclaimerChecked = false,
-  onDisclaimerChange
+  onDisclaimerChange,
+  providerSelection
 }: StUSDSSupplyWithdrawProps) => {
   const inputToken = TOKENS.usds;
   const chainId = useChainId();
+
+  // Provider selection helpers
+  const isCurveSelected = providerSelection?.selectedProvider === StUsdsProviderType.CURVE;
+  const allProvidersBlocked = providerSelection?.allProvidersBlocked ?? false;
+  // Use isSelectionLoading (stable) instead of isLoading to prevent flicker during typing
+  const isProviderLoading = providerSelection?.isSelectionLoading ?? false;
+
+  // Determine if inputs should be disabled based on provider availability
+  // Only disable if BOTH native and Curve are blocked
+  const isSupplyDisabled = allProvidersBlocked && !isStUsdsDataLoading && !isProviderLoading;
+  const isWithdrawDisabled = allProvidersBlocked && !isStUsdsDataLoading && !isProviderLoading;
+
   // Determine specific error message for supply
   const getSupplyErrorMessage = () => {
     if (!error || !amount) return undefined;
@@ -83,8 +99,8 @@ export const StUSDSSupplyWithdraw = ({
       })} ${inputToken?.symbol}.`;
     }
 
-    // Check if exceeds remaining capacity
-    if (remainingCapacityBuffered !== undefined && amount > remainingCapacityBuffered) {
+    // Check if exceeds remaining capacity (only for native provider)
+    if (!isCurveSelected && remainingCapacityBuffered !== undefined && amount > remainingCapacityBuffered) {
       return t`Exceeds remaining capacity.`;
     }
 
@@ -103,8 +119,8 @@ export const StUSDSSupplyWithdraw = ({
       })} ${inputToken?.symbol}.`;
     }
 
-    // Check if exceeds max withdrawable (which is min of user balance and module liquidity)
-    if (withdrawableBalance !== undefined && amount > withdrawableBalance) {
+    // Check if exceeds max withdrawable - only show liquidity message for native provider
+    if (!isCurveSelected && withdrawableBalance !== undefined && amount > withdrawableBalance) {
       // If withdrawableBalance < userUsdsBalance, it means module liquidity is the constraint
       if (userUsdsBalance !== undefined && withdrawableBalance < userUsdsBalance) {
         return t`Insufficient liquidity in module`;
@@ -139,12 +155,8 @@ export const StUSDSSupplyWithdraw = ({
       ? (userUsdsBalance || 0n) + amount
       : (userUsdsBalance || 0n) - amount;
 
-  const { data: stUsdsDepositAmount } = useStUsdsPreviewDeposit(amount);
-
-  const { data: stUsdsWithdrawAmount } = useStUsdsPreviewWithdraw(amount);
-
   const stUsdsAmount = {
-    value: tabIndex === 0 ? stUsdsDepositAmount || 0n : stUsdsWithdrawAmount || 0n
+    value: providerSelection?.selectedQuote?.stUsdsAmount || 0n
   };
 
   return (
@@ -197,13 +209,18 @@ export const StUSDSSupplyWithdraw = ({
               token={inputToken}
               tokenList={[inputToken]}
               balance={
-                address && nstBalance !== undefined && remainingCapacityBuffered !== undefined
-                  ? nstBalance < remainingCapacityBuffered
-                    ? nstBalance
-                    : remainingCapacityBuffered
+                address && nstBalance !== undefined
+                  ? isCurveSelected
+                    ? nstBalance // When using Curve, show full balance
+                    : remainingCapacityBuffered !== undefined
+                      ? nstBalance < remainingCapacityBuffered
+                        ? nstBalance
+                        : remainingCapacityBuffered
+                      : nstBalance
                   : undefined
               }
               limitText={
+                !isCurveSelected &&
                 address &&
                 nstBalance !== undefined &&
                 remainingCapacityBuffered !== undefined &&
@@ -221,26 +238,39 @@ export const StUSDSSupplyWithdraw = ({
               error={getSupplyErrorMessage()}
               showPercentageButtons={isConnectedAndEnabled}
               enabled={isConnectedAndEnabled}
-              disabled={!isStUsdsDataLoading && remainingCapacityBuffered === 0n}
+              disabled={isSupplyDisabled}
               showGauge={true}
             />
-            {!isStUsdsDataLoading && remainingCapacityBuffered === 0n ? (
+            {/* Provider indicator - show when Curve is selected or when native is blocked */}
+            {providerSelection && isCurveSelected && (
+              <div className="mt-2 px-1">
+                <ProviderIndicator
+                  selectedProvider={providerSelection.selectedProvider}
+                  selectionReason={providerSelection.selectionReason}
+                  rateDifferencePercent={providerSelection.rateDifferencePercent}
+                  flow={StUSDSFlow.SUPPLY}
+                  isLoading={isProviderLoading}
+                  nativeBlockedReason={providerSelection.nativeProvider?.state?.blockedReason}
+                />
+              </div>
+            )}
+            {isSupplyDisabled ? (
               <div className="mt-2 ml-3 flex items-start text-amber-400">
                 <PopoverRateInfo type="remainingCapacity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="mb-1 ml-2 flex gap-2">
-                  Supply capacity reached. Deposits are temporarily unavailable.
+                  Both native and Curve routes are unavailable. Deposits are temporarily unavailable.
                 </Text>
               </div>
-            ) : !isStUsdsDataLoading && userBalanceExceedsCapacity ? (
+            ) : !isStUsdsDataLoading && !isCurveSelected && userBalanceExceedsCapacity ? (
               <div className="mt-2 ml-3 flex items-start text-white">
                 <PopoverRateInfo type="remainingCapacity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="mb-1 ml-2 flex gap-2">
                   You cannot supply your full balance due to current capacity limits.
                 </Text>
               </div>
-            ) : (
+            ) : !isCurveSelected ? (
               <div className="mb-4" />
-            )}
+            ) : null}
             {tabIndex === 0 && onDisclaimerChange && nstBalance !== undefined && nstBalance > 0n && (
               <div className="flex items-center px-3 pt-1">
                 <Checkbox
@@ -275,6 +305,7 @@ export const StUSDSSupplyWithdraw = ({
               tokenList={[inputToken]}
               balance={address ? withdrawableBalance : undefined}
               limitText={
+                !isCurveSelected &&
                 address &&
                 userUsdsBalance !== undefined &&
                 availableLiquidityBuffered !== undefined &&
@@ -293,26 +324,39 @@ export const StUSDSSupplyWithdraw = ({
               dataTestId="withdraw-input-stusds"
               showPercentageButtons={isConnectedAndEnabled}
               enabled={isConnectedAndEnabled}
-              disabled={!isStUsdsDataLoading && availableLiquidityBuffered === 0n}
+              disabled={isWithdrawDisabled}
               showGauge={true}
             />
-            {!isStUsdsDataLoading && availableLiquidityBuffered === 0n ? (
+            {/* Provider indicator - show when Curve is selected or when native is blocked */}
+            {providerSelection && isCurveSelected && (
+              <div className="mt-2 px-1">
+                <ProviderIndicator
+                  selectedProvider={providerSelection.selectedProvider}
+                  selectionReason={providerSelection.selectionReason}
+                  rateDifferencePercent={providerSelection.rateDifferencePercent}
+                  flow={StUSDSFlow.WITHDRAW}
+                  isLoading={isProviderLoading}
+                  nativeBlockedReason={providerSelection.nativeProvider?.state?.blockedReason}
+                />
+              </div>
+            )}
+            {isWithdrawDisabled ? (
               <div className="mt-2 ml-3 flex items-start text-amber-400">
                 <PopoverRateInfo type="stusdsLiquidity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">
-                  Available liquidity exhausted. Withdrawals are temporarily unavailable.
+                  Both native and Curve routes are unavailable. Withdrawals are temporarily unavailable.
                 </Text>
               </div>
-            ) : !isStUsdsDataLoading && userSuppliedExceedsLiquidity ? (
+            ) : !isStUsdsDataLoading && !isCurveSelected && userSuppliedExceedsLiquidity ? (
               <div className="mt-2 ml-3 flex items-start text-white">
                 <PopoverRateInfo type="stusdsLiquidity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">
                   You cannot withdraw your full balance due to current liquidity limits.
                 </Text>
               </div>
-            ) : (
+            ) : !isCurveSelected ? (
               <div className="mb-4" />
-            )}
+            ) : null}
           </motion.div>
         </TabsContent>
       </Tabs>

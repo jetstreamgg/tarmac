@@ -1,6 +1,7 @@
 import { StUSDSHistory } from './StUSDSHistory';
 import { StUSDSBalanceDetails } from './StUSDSBalanceDetails';
 import { StUSDSInfoDetails } from './StUSDSInfoDetails';
+import { StUSDSExchangeRatesDetails } from './StUSDSExchangeRatesDetails';
 import { StUSDSFaq } from './StUSDSFaq';
 import { t } from '@lingui/core/macro';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
@@ -35,6 +36,11 @@ export function StUSDSDetails(): React.ReactElement {
       <DetailSection title={t`stUSDS module info`}>
         <DetailSectionRow>
           <StUSDSInfoDetails />
+        </DetailSectionRow>
+      </DetailSection>
+      <DetailSection title={t`Exchange Rates`}>
+        <DetailSectionRow>
+          <StUSDSExchangeRatesDetails />
         </DetailSectionRow>
       </DetailSection>
       {isConnectedAndAcceptedTerms &&

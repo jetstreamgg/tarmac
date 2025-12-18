@@ -336,6 +336,1060 @@ export const cleRewardAddress = {
 export const cleRewardConfig = { address: cleRewardAddress, abi: cleRewardAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// clipper
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const clipperAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: 'vat_', internalType: 'address', type: 'address' },
+      { name: 'spotter_', internalType: 'address', type: 'address' },
+      { name: 'dog_', internalType: 'address', type: 'address' },
+      { name: 'engine_', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Deny'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'data', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'File'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'data', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'File'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: 'top', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'tab', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'lot', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'usr', internalType: 'address', type: 'address', indexed: true },
+      { name: 'kpr', internalType: 'address', type: 'address', indexed: true },
+      { name: 'coin', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Kick'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: 'top', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'tab', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'lot', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'usr', internalType: 'address', type: 'address', indexed: true },
+      { name: 'kpr', internalType: 'address', type: 'address', indexed: true },
+      { name: 'coin', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Redo'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Rely'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256', indexed: true },
+      { name: 'max', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'price', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'owe', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'tab', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'lot', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'usr', internalType: 'address', type: 'address', indexed: true }
+    ],
+    name: 'Take'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'id', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'Yank'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'Due',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'active',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'buf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'calc',
+    outputs: [{ name: '', internalType: 'contract AbacusLike', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'chip',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'chost',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'count',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'cusp',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'cuttee',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'deny',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'dog',
+    outputs: [{ name: '', internalType: 'contract DogLike', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'engine',
+    outputs: [{ name: '', internalType: 'contract LockstakeEngineLike', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'data', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'file',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'what', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'data', internalType: 'address', type: 'address' }
+    ],
+    name: 'file',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'uint256', type: 'uint256' }],
+    name: 'getStatus',
+    outputs: [
+      { name: 'needsRedo', internalType: 'bool', type: 'bool' },
+      { name: 'price', internalType: 'uint256', type: 'uint256' },
+      { name: 'lot', internalType: 'uint256', type: 'uint256' },
+      { name: 'tab', internalType: 'uint256', type: 'uint256' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'ilk',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tab', internalType: 'uint256', type: 'uint256' },
+      { name: 'lot', internalType: 'uint256', type: 'uint256' },
+      { name: 'usr', internalType: 'address', type: 'address' },
+      { name: 'kpr', internalType: 'address', type: 'address' }
+    ],
+    name: 'kick',
+    outputs: [{ name: 'id', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'kicks',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'list',
+    outputs: [{ name: '', internalType: 'uint256[]', type: 'uint256[]' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256' },
+      { name: 'kpr', internalType: 'address', type: 'address' }
+    ],
+    name: 'redo',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'usr', internalType: 'address', type: 'address' }],
+    name: 'rely',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'sales',
+    outputs: [
+      { name: 'pos', internalType: 'uint256', type: 'uint256' },
+      { name: 'tab', internalType: 'uint256', type: 'uint256' },
+      { name: 'due', internalType: 'uint256', type: 'uint256' },
+      { name: 'lot', internalType: 'uint256', type: 'uint256' },
+      { name: 'tot', internalType: 'uint256', type: 'uint256' },
+      { name: 'usr', internalType: 'address', type: 'address' },
+      { name: 'tic', internalType: 'uint96', type: 'uint96' },
+      { name: 'top', internalType: 'uint256', type: 'uint256' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'spotter',
+    outputs: [{ name: '', internalType: 'contract SpotterLike', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'stopped',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'tail',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'id', internalType: 'uint256', type: 'uint256' },
+      { name: 'amt', internalType: 'uint256', type: 'uint256' },
+      { name: 'max', internalType: 'uint256', type: 'uint256' },
+      { name: 'who', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'take',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'tip',
+    outputs: [{ name: '', internalType: 'uint192', type: 'uint192' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'upchost', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'vat',
+    outputs: [{ name: '', internalType: 'contract VatLike', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'vow',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'wards',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'uint256', type: 'uint256' }],
+    name: 'yank',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const clipperAddress = {
+  1: '0x836F56750517b1528B5078Cba4Ac4B94fBE4A399',
+  314310: '0x836F56750517b1528B5078Cba4Ac4B94fBE4A399'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const clipperConfig = { address: clipperAddress, abi: clipperAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// curveStUsdsUsdsPool
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const curveStUsdsUsdsPoolAbi = [
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', type: 'address', indexed: true },
+      { name: 'receiver', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ],
+    name: 'Transfer'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', type: 'address', indexed: true },
+      { name: 'spender', type: 'address', indexed: true },
+      { name: 'value', type: 'uint256', indexed: false }
+    ],
+    name: 'Approval'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'buyer', type: 'address', indexed: true },
+      { name: 'sold_id', type: 'int128', indexed: false },
+      { name: 'tokens_sold', type: 'uint256', indexed: false },
+      { name: 'bought_id', type: 'int128', indexed: false },
+      { name: 'tokens_bought', type: 'uint256', indexed: false }
+    ],
+    name: 'TokenExchange'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'buyer', type: 'address', indexed: true },
+      { name: 'sold_id', type: 'int128', indexed: false },
+      { name: 'tokens_sold', type: 'uint256', indexed: false },
+      { name: 'bought_id', type: 'int128', indexed: false },
+      { name: 'tokens_bought', type: 'uint256', indexed: false }
+    ],
+    name: 'TokenExchangeUnderlying'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'provider', type: 'address', indexed: true },
+      { name: 'token_amounts', type: 'uint256[]', indexed: false },
+      { name: 'fees', type: 'uint256[]', indexed: false },
+      { name: 'invariant', type: 'uint256', indexed: false },
+      { name: 'token_supply', type: 'uint256', indexed: false }
+    ],
+    name: 'AddLiquidity'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'provider', type: 'address', indexed: true },
+      { name: 'token_amounts', type: 'uint256[]', indexed: false },
+      { name: 'fees', type: 'uint256[]', indexed: false },
+      { name: 'token_supply', type: 'uint256', indexed: false }
+    ],
+    name: 'RemoveLiquidity'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'provider', type: 'address', indexed: true },
+      { name: 'token_id', type: 'int128', indexed: false },
+      { name: 'token_amount', type: 'uint256', indexed: false },
+      { name: 'coin_amount', type: 'uint256', indexed: false },
+      { name: 'token_supply', type: 'uint256', indexed: false }
+    ],
+    name: 'RemoveLiquidityOne'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'provider', type: 'address', indexed: true },
+      { name: 'token_amounts', type: 'uint256[]', indexed: false },
+      { name: 'fees', type: 'uint256[]', indexed: false },
+      { name: 'invariant', type: 'uint256', indexed: false },
+      { name: 'token_supply', type: 'uint256', indexed: false }
+    ],
+    name: 'RemoveLiquidityImbalance'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'old_A', type: 'uint256', indexed: false },
+      { name: 'new_A', type: 'uint256', indexed: false },
+      { name: 'initial_time', type: 'uint256', indexed: false },
+      { name: 'future_time', type: 'uint256', indexed: false }
+    ],
+    name: 'RampA'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'A', type: 'uint256', indexed: false },
+      { name: 't', type: 'uint256', indexed: false }
+    ],
+    name: 'StopRampA'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'fee', type: 'uint256', indexed: false },
+      { name: 'offpeg_fee_multiplier', type: 'uint256', indexed: false }
+    ],
+    name: 'ApplyNewFee'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'ma_exp_time', type: 'uint256', indexed: false },
+      { name: 'D_ma_time', type: 'uint256', indexed: false }
+    ],
+    name: 'SetNewMATime'
+  },
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_name', type: 'string' },
+      { name: '_symbol', type: 'string' },
+      { name: '_A', type: 'uint256' },
+      { name: '_fee', type: 'uint256' },
+      { name: '_offpeg_fee_multiplier', type: 'uint256' },
+      { name: '_ma_exp_time', type: 'uint256' },
+      { name: '_coins', type: 'address[]' },
+      { name: '_rate_multipliers', type: 'uint256[]' },
+      { name: '_asset_types', type: 'uint8[]' },
+      { name: '_method_ids', type: 'bytes4[]' },
+      { name: '_oracles', type: 'address[]' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' },
+      { name: '_dx', type: 'uint256' },
+      { name: '_min_dy', type: 'uint256' }
+    ],
+    name: 'exchange',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' },
+      { name: '_dx', type: 'uint256' },
+      { name: '_min_dy', type: 'uint256' },
+      { name: '_receiver', type: 'address' }
+    ],
+    name: 'exchange',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' },
+      { name: '_dx', type: 'uint256' },
+      { name: '_min_dy', type: 'uint256' }
+    ],
+    name: 'exchange_received',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' },
+      { name: '_dx', type: 'uint256' },
+      { name: '_min_dy', type: 'uint256' },
+      { name: '_receiver', type: 'address' }
+    ],
+    name: 'exchange_received',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_amounts', type: 'uint256[]' },
+      { name: '_min_mint_amount', type: 'uint256' }
+    ],
+    name: 'add_liquidity',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_amounts', type: 'uint256[]' },
+      { name: '_min_mint_amount', type: 'uint256' },
+      { name: '_receiver', type: 'address' }
+    ],
+    name: 'add_liquidity',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_burn_amount', type: 'uint256' },
+      { name: 'i', type: 'int128' },
+      { name: '_min_received', type: 'uint256' }
+    ],
+    name: 'remove_liquidity_one_coin',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_burn_amount', type: 'uint256' },
+      { name: 'i', type: 'int128' },
+      { name: '_min_received', type: 'uint256' },
+      { name: '_receiver', type: 'address' }
+    ],
+    name: 'remove_liquidity_one_coin',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_amounts', type: 'uint256[]' },
+      { name: '_max_burn_amount', type: 'uint256' }
+    ],
+    name: 'remove_liquidity_imbalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_amounts', type: 'uint256[]' },
+      { name: '_max_burn_amount', type: 'uint256' },
+      { name: '_receiver', type: 'address' }
+    ],
+    name: 'remove_liquidity_imbalance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_burn_amount', type: 'uint256' },
+      { name: '_min_amounts', type: 'uint256[]' }
+    ],
+    name: 'remove_liquidity',
+    outputs: [{ name: '', type: 'uint256[]' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_burn_amount', type: 'uint256' },
+      { name: '_min_amounts', type: 'uint256[]' },
+      { name: '_receiver', type: 'address' }
+    ],
+    name: 'remove_liquidity',
+    outputs: [{ name: '', type: 'uint256[]' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_burn_amount', type: 'uint256' },
+      { name: '_min_amounts', type: 'uint256[]' },
+      { name: '_receiver', type: 'address' },
+      { name: '_claim_admin_fees', type: 'bool' }
+    ],
+    name: 'remove_liquidity',
+    outputs: [{ name: '', type: 'uint256[]' }],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'function', inputs: [], name: 'withdraw_admin_fees', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [{ name: 'i', type: 'uint256' }],
+    name: 'last_price',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'i', type: 'uint256' }],
+    name: 'ema_price',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'i', type: 'uint256' }],
+    name: 'get_p',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'i', type: 'uint256' }],
+    name: 'price_oracle',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'D_oracle',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_from', type: 'address' },
+      { name: '_to', type: 'address' },
+      { name: '_value', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_spender', type: 'address' },
+      { name: '_value', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_owner', type: 'address' },
+      { name: '_spender', type: 'address' },
+      { name: '_value', type: 'uint256' },
+      { name: '_deadline', type: 'uint256' },
+      { name: '_v', type: 'uint8' },
+      { name: '_r', type: 'bytes32' },
+      { name: '_s', type: 'bytes32' }
+    ],
+    name: 'permit',
+    outputs: [{ name: '', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' },
+      { name: 'dy', type: 'uint256' }
+    ],
+    name: 'get_dx',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' },
+      { name: 'dx', type: 'uint256' }
+    ],
+    name: 'get_dy',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_burn_amount', type: 'uint256' },
+      { name: 'i', type: 'int128' }
+    ],
+    name: 'calc_withdraw_one_coin',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'get_virtual_price',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_amounts', type: 'uint256[]' },
+      { name: '_is_deposit', type: 'bool' }
+    ],
+    name: 'calc_token_amount',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'A',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'A_precise',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'i', type: 'uint256' }],
+    name: 'balances',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'get_balances',
+    outputs: [{ name: '', type: 'uint256[]' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'stored_rates',
+    outputs: [{ name: '', type: 'uint256[]' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'i', type: 'int128' },
+      { name: 'j', type: 'int128' }
+    ],
+    name: 'dynamic_fee',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_future_A', type: 'uint256' },
+      { name: '_future_time', type: 'uint256' }
+    ],
+    name: 'ramp_A',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'function', inputs: [], name: 'stop_ramp_A', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_new_fee', type: 'uint256' },
+      { name: '_new_offpeg_fee_multiplier', type: 'uint256' }
+    ],
+    name: 'set_new_fee',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_ma_exp_time', type: 'uint256' },
+      { name: '_D_ma_time', type: 'uint256' }
+    ],
+    name: 'set_ma_exp_time',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'N_COINS',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'arg0', type: 'uint256' }],
+    name: 'coins',
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'fee',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'offpeg_fee_multiplier',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'admin_fee',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'initial_A',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'future_A',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'initial_A_time',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'future_A_time',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'arg0', type: 'uint256' }],
+    name: 'admin_balances',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'ma_exp_time',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'D_ma_time',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'ma_last_time',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', type: 'uint8' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'version',
+    outputs: [{ name: '', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'arg0', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'arg0', type: 'address' },
+      { name: 'arg1', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'arg0', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'salt',
+    outputs: [{ name: '', type: 'bytes32' }],
+    stateMutability: 'view'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const curveStUsdsUsdsPoolAddress = {
+  1: '0x2C7C98A3b1582D83c43987202aEFf638312478aE',
+  314310: '0x2C7C98A3b1582D83c43987202aEFf638312478aE'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const curveStUsdsUsdsPoolConfig = {
+  address: curveStUsdsUsdsPoolAddress,
+  abi: curveStUsdsUsdsPoolAbi
+} as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // daiUsds
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -11020,6 +12074,1485 @@ export const useWatchCleRewardWithdrawn = /*#__PURE__*/ createUseWatchContractEv
   abi: cleRewardAbi,
   address: cleRewardAddress,
   eventName: 'Withdrawn'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipper = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"Due"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperDue = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'Due'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"active"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperActive = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'active'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"buf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperBuf = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'buf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"calc"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperCalc = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'calc'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"chip"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperChip = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'chip'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"chost"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperChost = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'chost'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"count"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperCount = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'count'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"cusp"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperCusp = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'cusp'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"cuttee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperCuttee = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'cuttee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"dog"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperDog = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'dog'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"engine"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperEngine = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'engine'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"getStatus"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperGetStatus = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'getStatus'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"ilk"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperIlk = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'ilk'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"kicks"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperKicks = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'kicks'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"list"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperList = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'list'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"sales"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperSales = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'sales'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"spotter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperSpotter = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'spotter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"stopped"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperStopped = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'stopped'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"tail"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperTail = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'tail'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"tip"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperTip = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'tip'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"vat"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperVat = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'vat'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"vow"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperVow = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'vow'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"wards"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useReadClipperWards = /*#__PURE__*/ createUseReadContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'wards'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipper = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperDeny = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperFile = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"kick"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperKick = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'kick'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"redo"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperRedo = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'redo'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperRely = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"take"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperTake = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'take'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"upchost"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperUpchost = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'upchost'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"yank"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWriteClipperYank = /*#__PURE__*/ createUseWriteContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'yank'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipper = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperDeny = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'deny'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"file"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperFile = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'file'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"kick"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperKick = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'kick'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"redo"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperRedo = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'redo'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperRely = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'rely'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"take"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperTake = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'take'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"upchost"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperUpchost = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'upchost'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"yank"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useSimulateClipperYank = /*#__PURE__*/ createUseSimulateContract({
+  abi: clipperAbi,
+  address: clipperAddress,
+  functionName: 'yank'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipper = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"Deny"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperDeny = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'Deny'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"File"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperFile = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'File'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"Kick"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperKick = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'Kick'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"Redo"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperRedo = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'Redo'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"Rely"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperRely = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'Rely'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"Take"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperTake = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'Take'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__ and `eventName` set to `"Yank"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
+ */
+export const useWatchClipperYank = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: clipperAbi,
+  address: clipperAddress,
+  eventName: 'Yank'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPool = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"last_price"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolLastPrice = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'last_price'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"ema_price"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolEmaPrice = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'ema_price'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"get_p"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolGetP = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'get_p'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"price_oracle"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolPriceOracle = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'price_oracle'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"D_oracle"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolDOracle = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'D_oracle'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolDomainSeparator = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'DOMAIN_SEPARATOR'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"get_dx"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolGetDx = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'get_dx'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"get_dy"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolGetDy = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'get_dy'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"calc_withdraw_one_coin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolCalcWithdrawOneCoin = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'calc_withdraw_one_coin'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"get_virtual_price"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolGetVirtualPrice = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'get_virtual_price'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"calc_token_amount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolCalcTokenAmount = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'calc_token_amount'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolA = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'A'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"A_precise"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolAPrecise = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'A_precise'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"balances"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolBalances = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'balances'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"get_balances"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolGetBalances = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'get_balances'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"stored_rates"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolStoredRates = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'stored_rates'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"dynamic_fee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolDynamicFee = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'dynamic_fee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"N_COINS"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolNCoins = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'N_COINS'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"coins"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolCoins = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'coins'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"fee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolFee = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'fee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"offpeg_fee_multiplier"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolOffpegFeeMultiplier = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'offpeg_fee_multiplier'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"admin_fee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolAdminFee = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'admin_fee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"initial_A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolInitialA = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'initial_A'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"future_A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolFutureA = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'future_A'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"initial_A_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolInitialATime = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'initial_A_time'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"future_A_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolFutureATime = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'future_A_time'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"admin_balances"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolAdminBalances = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'admin_balances'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"ma_exp_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolMaExpTime = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'ma_exp_time'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"D_ma_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolDMaTime = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'D_ma_time'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"ma_last_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolMaLastTime = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'ma_last_time'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"name"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolName = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'name'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"symbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolSymbol = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'symbol'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"decimals"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolDecimals = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'decimals'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"version"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolVersion = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'version'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"allowance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolAllowance = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'allowance'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"nonces"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolNonces = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'nonces'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"salt"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useReadCurveStUsdsUsdsPoolSalt = /*#__PURE__*/ createUseReadContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'salt'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPool = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"exchange"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolExchange = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'exchange'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"exchange_received"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolExchangeReceived = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'exchange_received'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"add_liquidity"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolAddLiquidity = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'add_liquidity'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"remove_liquidity_one_coin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolRemoveLiquidityOneCoin = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'remove_liquidity_one_coin'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"remove_liquidity_imbalance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolRemoveLiquidityImbalance = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'remove_liquidity_imbalance'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"remove_liquidity"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolRemoveLiquidity = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'remove_liquidity'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"withdraw_admin_fees"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolWithdrawAdminFees = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'withdraw_admin_fees'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolTransferFrom = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolApprove = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"ramp_A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolRampA = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'ramp_A'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"stop_ramp_A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolStopRampA = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'stop_ramp_A'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"set_new_fee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolSetNewFee = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'set_new_fee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"set_ma_exp_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWriteCurveStUsdsUsdsPoolSetMaExpTime = /*#__PURE__*/ createUseWriteContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'set_ma_exp_time'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPool = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"exchange"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolExchange = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'exchange'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"exchange_received"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolExchangeReceived = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'exchange_received'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"add_liquidity"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolAddLiquidity = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'add_liquidity'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"remove_liquidity_one_coin"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolRemoveLiquidityOneCoin = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'remove_liquidity_one_coin'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"remove_liquidity_imbalance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolRemoveLiquidityImbalance = /*#__PURE__*/ createUseSimulateContract(
+  {
+    abi: curveStUsdsUsdsPoolAbi,
+    address: curveStUsdsUsdsPoolAddress,
+    functionName: 'remove_liquidity_imbalance'
+  }
+);
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"remove_liquidity"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolRemoveLiquidity = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'remove_liquidity'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"withdraw_admin_fees"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolWithdrawAdminFees = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'withdraw_admin_fees'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolTransfer = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolTransferFrom = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolApprove = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolPermit = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"ramp_A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolRampA = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'ramp_A'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"stop_ramp_A"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolStopRampA = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'stop_ramp_A'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"set_new_fee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolSetNewFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'set_new_fee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `functionName` set to `"set_ma_exp_time"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useSimulateCurveStUsdsUsdsPoolSetMaExpTime = /*#__PURE__*/ createUseSimulateContract({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  functionName: 'set_ma_exp_time'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPool = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"Transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolTransfer = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'Transfer'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"Approval"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolApproval = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'Approval'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"TokenExchange"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolTokenExchange = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'TokenExchange'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"TokenExchangeUnderlying"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolTokenExchangeUnderlying = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'TokenExchangeUnderlying'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"AddLiquidity"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolAddLiquidity = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'AddLiquidity'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"RemoveLiquidity"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolRemoveLiquidity = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'RemoveLiquidity'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"RemoveLiquidityOne"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolRemoveLiquidityOne = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'RemoveLiquidityOne'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"RemoveLiquidityImbalance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolRemoveLiquidityImbalance = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'RemoveLiquidityImbalance'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"RampA"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolRampA = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'RampA'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"StopRampA"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolStopRampA = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'StopRampA'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"ApplyNewFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolApplyNewFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'ApplyNewFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link curveStUsdsUsdsPoolAbi}__ and `eventName` set to `"SetNewMATime"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2C7C98A3b1582D83c43987202aEFf638312478aE)
+ */
+export const useWatchCurveStUsdsUsdsPoolSetNewMaTime = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: curveStUsdsUsdsPoolAbi,
+  address: curveStUsdsUsdsPoolAddress,
+  eventName: 'SetNewMATime'
 });
 
 /**
@@ -27097,411 +29630,4 @@ export const useWatchWethWithdrawal = /*#__PURE__*/ createUseWatchContractEvent(
   abi: wethAbi,
   address: wethAddress,
   eventName: 'Withdrawal'
-});
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// clipper
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
- */
-export const clipperAbi = [
-  {
-    inputs: [
-      { internalType: 'address', name: 'vat_', type: 'address' },
-      { internalType: 'address', name: 'spotter_', type: 'address' },
-      { internalType: 'address', name: 'dog_', type: 'address' },
-      { internalType: 'address', name: 'engine_', type: 'address' }
-    ],
-    stateMutability: 'nonpayable',
-    type: 'constructor'
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: true, internalType: 'address', name: 'usr', type: 'address' }],
-    name: 'Deny',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'what', type: 'bytes32' },
-      { indexed: false, internalType: 'uint256', name: 'data', type: 'uint256' }
-    ],
-    name: 'File',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'bytes32', name: 'what', type: 'bytes32' },
-      { indexed: false, internalType: 'address', name: 'data', type: 'address' }
-    ],
-    name: 'File',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'uint256', name: 'id', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'top', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'tab', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'lot', type: 'uint256' },
-      { indexed: true, internalType: 'address', name: 'usr', type: 'address' },
-      { indexed: true, internalType: 'address', name: 'kpr', type: 'address' },
-      { indexed: false, internalType: 'uint256', name: 'coin', type: 'uint256' }
-    ],
-    name: 'Kick',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'uint256', name: 'id', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'top', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'tab', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'lot', type: 'uint256' },
-      { indexed: true, internalType: 'address', name: 'usr', type: 'address' },
-      { indexed: true, internalType: 'address', name: 'kpr', type: 'address' },
-      { indexed: false, internalType: 'uint256', name: 'coin', type: 'uint256' }
-    ],
-    name: 'Redo',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: true, internalType: 'address', name: 'usr', type: 'address' }],
-    name: 'Rely',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: 'uint256', name: 'id', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'max', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'price', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'owe', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'tab', type: 'uint256' },
-      { indexed: false, internalType: 'uint256', name: 'lot', type: 'uint256' },
-      { indexed: true, internalType: 'address', name: 'usr', type: 'address' }
-    ],
-    name: 'Take',
-    type: 'event'
-  },
-  {
-    anonymous: false,
-    inputs: [{ indexed: false, internalType: 'uint256', name: 'id', type: 'uint256' }],
-    name: 'Yank',
-    type: 'event'
-  },
-  {
-    inputs: [],
-    name: 'Due',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    name: 'active',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'buf',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'calc',
-    outputs: [{ internalType: 'contract AbacusLike', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'chip',
-    outputs: [{ internalType: 'uint64', name: '', type: 'uint64' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'chost',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'count',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'cusp',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'cuttee',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'usr', type: 'address' }],
-    name: 'deny',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'dog',
-    outputs: [{ internalType: 'contract DogLike', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'engine',
-    outputs: [{ internalType: 'contract LockstakeEngineLike', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { internalType: 'bytes32', name: 'what', type: 'bytes32' },
-      { internalType: 'uint256', name: 'data', type: 'uint256' }
-    ],
-    name: 'file',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { internalType: 'bytes32', name: 'what', type: 'bytes32' },
-      { internalType: 'address', name: 'data', type: 'address' }
-    ],
-    name: 'file',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: 'id', type: 'uint256' }],
-    name: 'getStatus',
-    outputs: [
-      { internalType: 'bool', name: 'needsRedo', type: 'bool' },
-      { internalType: 'uint256', name: 'price', type: 'uint256' },
-      { internalType: 'uint256', name: 'lot', type: 'uint256' },
-      { internalType: 'uint256', name: 'tab', type: 'uint256' }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'ilk',
-    outputs: [{ internalType: 'bytes32', name: '', type: 'bytes32' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { internalType: 'uint256', name: 'tab', type: 'uint256' },
-      { internalType: 'uint256', name: 'lot', type: 'uint256' },
-      { internalType: 'address', name: 'usr', type: 'address' },
-      { internalType: 'address', name: 'kpr', type: 'address' }
-    ],
-    name: 'kick',
-    outputs: [{ internalType: 'uint256', name: 'id', type: 'uint256' }],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'kicks',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'list',
-    outputs: [{ internalType: 'uint256[]', name: '', type: 'uint256[]' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { internalType: 'uint256', name: 'id', type: 'uint256' },
-      { internalType: 'address', name: 'kpr', type: 'address' }
-    ],
-    name: 'redo',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'address', name: 'usr', type: 'address' }],
-    name: 'rely',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    name: 'sales',
-    outputs: [
-      { internalType: 'uint256', name: 'pos', type: 'uint256' },
-      { internalType: 'uint256', name: 'tab', type: 'uint256' },
-      { internalType: 'uint256', name: 'due', type: 'uint256' },
-      { internalType: 'uint256', name: 'lot', type: 'uint256' },
-      { internalType: 'uint256', name: 'tot', type: 'uint256' },
-      { internalType: 'address', name: 'usr', type: 'address' },
-      { internalType: 'uint96', name: 'tic', type: 'uint96' },
-      { internalType: 'uint256', name: 'top', type: 'uint256' }
-    ],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'spotter',
-    outputs: [{ internalType: 'contract SpotterLike', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'stopped',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'tail',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [
-      { internalType: 'uint256', name: 'id', type: 'uint256' },
-      { internalType: 'uint256', name: 'amt', type: 'uint256' },
-      { internalType: 'uint256', name: 'max', type: 'uint256' },
-      { internalType: 'address', name: 'who', type: 'address' },
-      { internalType: 'bytes', name: 'data', type: 'bytes' }
-    ],
-    name: 'take',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'tip',
-    outputs: [{ internalType: 'uint192', name: '', type: 'uint192' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'upchost',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'vat',
-    outputs: [{ internalType: 'contract VatLike', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'vow',
-    outputs: [{ internalType: 'address', name: '', type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'address', name: '', type: 'address' }],
-    name: 'wards',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'uint256', name: 'id', type: 'uint256' }],
-    name: 'yank',
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function'
-  }
-] as const;
-
-/**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x836F56750517b1528B5078Cba4Ac4B94fBE4A399)
- */
-export const clipperAddress = {
-  1: '0x836F56750517b1528B5078Cba4Ac4B94fBE4A399',
-  314310: '0x836F56750517b1528B5078Cba4Ac4B94fBE4A399'
-} as const;
-
-export const clipperConfig = { address: clipperAddress, abi: clipperAbi } as const;
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__
- */
-export const useReadClipper = /*#__PURE__*/ createUseReadContract({
-  abi: clipperAbi,
-  address: clipperAddress
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link clipperAbi}__ and `functionName` set to `"Due"`
- */
-export const useReadClipperDue = /*#__PURE__*/ createUseReadContract({
-  abi: clipperAbi,
-  address: clipperAddress,
-  functionName: 'Due'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link clipperAbi}__
- */
-export const useWriteClipper = /*#__PURE__*/ createUseWriteContract({
-  abi: clipperAbi,
-  address: clipperAddress
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link clipperAbi}__
- */
-export const useSimulateClipper = /*#__PURE__*/ createUseSimulateContract({
-  abi: clipperAbi,
-  address: clipperAddress
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link clipperAbi}__
- */
-export const useWatchClipper = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: clipperAbi,
-  address: clipperAddress
 });
