@@ -63,12 +63,14 @@ export function BatchTransactionStatus({
   explorerName: paramExplorerName,
   onExternalLinkClicked,
   transactionDetail,
-  isBatchTransaction
+  isBatchTransaction,
+  customSteps
 }: {
   explorerName?: ExplorerName;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   transactionDetail?: React.ReactElement;
   isBatchTransaction?: boolean;
+  customSteps?: React.ReactElement;
 }): React.ReactElement {
   const { txStatus, txTitle, txSubtitle, externalLink, step, stepTwoTitle, showStepIndicator } =
     useContext(WidgetContext);
@@ -112,26 +114,27 @@ export function BatchTransactionStatus({
                 </PositionAnimationWithExitWrapper>
               </AnimatePresence>
             </motion.div>
-            {showStepIndicator && (
-              <motion.div variants={positionAnimations} className="flex w-full flex-col pt-4">
-                <StepIndicator
-                  stepNumber={1}
-                  currentStep={isBatchTransaction || step === 1}
-                  txStatus={isBatchTransaction ? txStatus : step === 2 ? TxStatus.SUCCESS : txStatus}
-                  text={t`Approve`}
-                  className="flex-1"
-                  circleIndicator
-                />
-                <StepIndicator
-                  stepNumber={2}
-                  currentStep={isBatchTransaction || step === 2}
-                  txStatus={isBatchTransaction ? txStatus : step === 1 ? TxStatus.IDLE : txStatus}
-                  text={stepTwoTitle}
-                  className="flex-1"
-                  circleIndicator
-                />
-              </motion.div>
-            )}
+            {showStepIndicator &&
+              (customSteps || (
+                <motion.div variants={positionAnimations} className="flex w-full flex-col pt-4">
+                  <StepIndicator
+                    stepNumber={1}
+                    currentStep={isBatchTransaction || step === 1}
+                    txStatus={isBatchTransaction ? txStatus : step === 2 ? TxStatus.SUCCESS : txStatus}
+                    text={t`Approve`}
+                    className="flex-1"
+                    circleIndicator
+                  />
+                  <StepIndicator
+                    stepNumber={2}
+                    currentStep={isBatchTransaction || step === 2}
+                    txStatus={isBatchTransaction ? txStatus : step === 1 ? TxStatus.IDLE : txStatus}
+                    text={stepTwoTitle}
+                    className="flex-1"
+                    circleIndicator
+                  />
+                </motion.div>
+              ))}
             {transactionDetail ?? <TransactionDetail />}
           </CardContent>
           <motion.div variants={positionAnimations}>
