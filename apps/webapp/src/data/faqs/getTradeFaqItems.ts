@@ -36,7 +36,7 @@ const generalFaqItems = [
 
 Eligible Sky.money web app users can trade tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.fi/#/1/swap/WETH). The exact trade route is determined by CoW Swap and is not influenced by Sky.money or the Sky Protocol. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
-Note that price slippage—a change in price between the time of the trade order and its execution on the blockchain—can occur due to market volatility. When you trade via the Sky.money web app, you can set your slippage tolerance level.`,
+Note that price slippage—a change in price between the time of the trade order and its execution on the blockchain—can occur due to market dynamics. When you trade via the Sky.money web app, you can set your slippage tolerance level.`,
     index: 0
   },
   {

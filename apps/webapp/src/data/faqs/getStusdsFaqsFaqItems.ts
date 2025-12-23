@@ -14,7 +14,7 @@ As liquidity deepens and the system matures, stUSDS is expected to operate as a 
     {
       question: 'Is there anything like stUSDS currently on the market?',
       answer:
-        'Not directly. There are other yield-bearing stablecoin products in DeFi, but stUSDS introduces a unique structure that integrates directly with Sky’s capital formation framework. It combines elements of lending market mechanics, tranching, and decentralized governance. In that sense, stUSDS represents a new category of structured DeFi yield.',
+        'Not directly. There are other yield-bearing stablecoins in DeFi, but stUSDS introduces a unique structure that integrates directly with Sky’s capital formation framework. It combines elements of lending market mechanics, tranching, and decentralized governance. In that sense, stUSDS represents a new category of structured DeFi yield.',
       index: 1
     },
     {
@@ -85,7 +85,7 @@ Rate/fee changes: Sky Ecosystem Governance can update parameters (rates, caps) a
     {
       question: 'Why are the risks and the rewards associated with stUSDS different to that of sUSDS?',
       answer:
-        'stUSDS holders earn yield but also take on the risk of funding SKY‑backed borrowing. If a borrower’s staked SKY collateral is liquidated and the proceeds don’t fully cover the debt, the stUSDS vault absorbs the shortfall via a proportional haircut to the vault’s exchange rate (i.e., each stUSDS redeems for fewer USDS). This design ring‑fences losses to the stUSDS module, so the broader Sky Protocol is insulated from deficits arising in the SKY‑backed borrowing facility. So, sUSDS carries protocol-level risk but not borrower-shortfall risk, whereas stUSDS does bear that shortfall risk.',
+        'stUSDS holders access yield but also take on the risk of funding SKY‑backed borrowing. If a borrower’s staked SKY collateral is liquidated and the proceeds don’t fully cover the debt, the stUSDS vault absorbs the shortfall via a proportional haircut to the vault’s exchange rate (i.e., each stUSDS redeems for fewer USDS). This design ring‑fences losses to the stUSDS module, so the broader Sky Protocol is insulated from deficits arising in the SKY‑backed borrowing facility. So, sUSDS carries protocol-level risk but not borrower-shortfall risk, whereas stUSDS does bear that shortfall risk.',
       index: 11
     },
     {

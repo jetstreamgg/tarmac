@@ -44,7 +44,7 @@ The exit fee is a risk parameter managed and determined (regardless of position 
     {
       question: 'Where can I learn about Sky Ecosystem Governance?',
       answer:
-        'For a deep dive into the facets and checks and balances of Sky Ecosystem Governance, please refer to the [Sky Forum](https://forum.sky.money/), the [Sky Voting Portal](https://vote.sky.money/) and the [Sky Atlas](https://sky-atlas.powerhouse.io/)—the source of truth behind the Sky project, superseding and overriding all other competing rules or decisions.',
+        'For a deep dive into the facets and checks and balances of Sky Ecosystem Governance, please refer to the [Sky Forum](https://forum.sky.money/), the [Sky Voting Portal](https://vote.sky.money/) and the [Sky Atlas](https://sky-atlas.io/)—the source of truth behind the Sky project, superseding and overriding all other competing rules or decisions.',
       index: 6
     }
   ];

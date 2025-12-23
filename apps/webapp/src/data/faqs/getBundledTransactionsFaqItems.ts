@@ -6,7 +6,7 @@ export const getBundledTransactionsFaqItems = () => {
 
 Wallets implement EIP-7702 via delegate contracts that handle bundling, validation, gas estimation, and signature flow on behalf of dApps. Please note, however, that all security checks, user confirmations, and error handling are managed by your chosen wallet's delegate contract.
 
-As outlined in our [Terms of Use](https://docs.sky.money/legal-terms), your use of a non-custodial digital wallet—including wallets supporting EIP-7702 and smart account functionality—is governed by the terms of service of your third-party wallet provider. We do not control or take responsibility for the security, functionality, or behavior of third-party wallets, including their handling of bundled transactions or delegate contracts. To ensure a secure and transparent experience, please ensure you are using a trusted and up-to-date wallet before proceeding.
+As outlined in the [Terms of Use](https://docs.sky.money/legal-terms), your use of a non-custodial digital wallet—including wallets supporting EIP-7702 and smart account functionality—is governed by the terms of service of your third-party wallet provider. We do not control or take responsibility for the security, functionality, or behavior of third-party wallets, including their handling of bundled transactions or delegate contracts. To help ensure a secure and transparent experience, please be certain you are using a trusted and up-to-date wallet before proceeding.
 
 By adopting EIP-7702, Sky.money delivers a one-click, gas-optimized experience that aligns with the best practices of the broader Ethereum ecosystem, while avoiding any additional risks associated with low-level transaction assembly or bundler contract implementation.`,
       index: 0

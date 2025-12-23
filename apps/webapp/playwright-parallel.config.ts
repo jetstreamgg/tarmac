@@ -62,7 +62,8 @@ export default defineConfig({
         '**/expert-stusds.spec.ts',
         '**/upgrade.spec.ts',
         '**/unstake-repay.spec.ts',
-        '**/chatbot.spec.ts'
+        '**/chatbot.spec.ts',
+        '**/pane-visibility.spec.ts'
         // Add more test patterns as we convert them
       ]
     }
