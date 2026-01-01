@@ -44,8 +44,8 @@ catalog:
   '@testing-library/react': ^16.3.1
   '@types/react': ^19.2.7
   '@types/react-dom': ^19.2.3
-  '@typescript-eslint/eslint-plugin': ^8.50.0
-  '@typescript-eslint/parser': ^8.50.0
+  '@typescript-eslint/eslint-plugin': ^8.51.0
+  '@typescript-eslint/parser': ^8.51.0
   '@vitejs/plugin-react-swc': ^3.11.0
   '@vitest/coverage-v8': ^3.2.4
   '@wagmi/cli': ^2.8.0
@@ -60,7 +60,7 @@ catalog:
   embla-carousel-react: ^8.6.0
   eslint: ^9.39.2
   eslint-plugin-react: ^7.37.5
-  eslint-plugin-testing-library: ^7.15.1
+  eslint-plugin-testing-library: ^7.15.4
   ethers: ^6.15.0
   framer-motion: ^11.18.2
   globals: ^15.15.0
