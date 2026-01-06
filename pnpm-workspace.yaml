@@ -60,7 +60,7 @@ catalog:
   embla-carousel-react: ^8.6.0
   eslint: ^9.39.2
   eslint-plugin-react: ^7.37.5
-  eslint-plugin-testing-library: ^7.15.1
+  eslint-plugin-testing-library: ^7.15.4
   ethers: ^6.16.0
   framer-motion: ^11.18.2
   globals: ^15.15.0
