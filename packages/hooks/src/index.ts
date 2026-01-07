@@ -17,7 +17,6 @@ export { useSsrSharesToAssets } from './savings/useSsrSharesToAssets';
 export { useSsrAssetsToShares } from './savings/useSsrAssetsToShares';
 export { useMultiChainSavingsBalances } from './savings/useMultiChainSavingsBalances';
 export { useBatchSavingsSupply } from './savings/useBatchSavingsSupply';
-export { useBatchUpgradeAndSavingsSupply } from './savings/useBatchUpgradeAndSavingsSupply';
 
 // stUSDS
 export {
