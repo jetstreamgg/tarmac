@@ -72,8 +72,7 @@ const createMockProviderData = (
             outputAmount,
             effectiveRate: inputAmount > 0n ? (outputAmount * WAD) / inputAmount : 0n,
             feeAmount: 0n,
-            estimatedSlippageBps: 0,
-            priceImpactBps: 0
+            estimatedSlippageBps: 0
           },
           isValid: true
         }

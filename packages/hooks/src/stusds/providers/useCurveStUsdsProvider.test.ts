@@ -294,30 +294,6 @@ describe('useCurveStUsdsProvider', () => {
       expect(result.current.data?.quote?.isValid).toBe(false);
       expect(result.current.data?.quote?.invalidReason).toBe('Curve pool deposits unavailable');
     });
-
-    it('should mark quote invalid when price impact too high', () => {
-      (useCurveQuote as ReturnType<typeof vi.fn>).mockReturnValue({
-        data: {
-          stUsdsAmount: 900n * WAD,
-          usdsAmount: 1000n * WAD,
-          priceImpactBps: STUSDS_PROVIDER_CONFIG.maxPriceImpactBps + 100, // Exceeds threshold
-          effectiveRate: (900n * WAD * WAD) / (1000n * WAD)
-        },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn()
-      });
-
-      const { result } = renderHook(() =>
-        useCurveStUsdsProvider({
-          amount: 1000n * WAD,
-          direction: StUsdsDirection.SUPPLY
-        })
-      );
-
-      expect(result.current.data?.quote?.isValid).toBe(false);
-      expect(result.current.data?.quote?.invalidReason).toBe('Price impact too high');
-    });
   });
 
   describe('rate info', () => {
@@ -332,31 +308,6 @@ describe('useCurveStUsdsProvider', () => {
       expect(result.current.data?.quote?.rateInfo.estimatedSlippageBps).toBe(
         STUSDS_PROVIDER_CONFIG.maxSlippageBps
       );
-    });
-
-    it('should include price impact from quote', () => {
-      const priceImpactBps = 25;
-
-      (useCurveQuote as ReturnType<typeof vi.fn>).mockReturnValue({
-        data: {
-          stUsdsAmount: 950n * WAD,
-          usdsAmount: 1000n * WAD,
-          priceImpactBps,
-          effectiveRate: (950n * WAD * WAD) / (1000n * WAD)
-        },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn()
-      });
-
-      const { result } = renderHook(() =>
-        useCurveStUsdsProvider({
-          amount: 1000n * WAD,
-          direction: StUsdsDirection.SUPPLY
-        })
-      );
-
-      expect(result.current.data?.quote?.rateInfo.priceImpactBps).toBe(priceImpactBps);
     });
 
     it('should have zero fee amount (included in quote)', () => {

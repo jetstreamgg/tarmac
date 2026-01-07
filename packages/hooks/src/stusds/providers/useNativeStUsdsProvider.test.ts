@@ -279,7 +279,6 @@ describe('useNativeStUsdsProvider', () => {
 
       expect(result.current.data?.quote?.rateInfo.feeAmount).toBe(0n);
       expect(result.current.data?.quote?.rateInfo.estimatedSlippageBps).toBe(0);
-      expect(result.current.data?.quote?.rateInfo.priceImpactBps).toBe(0);
     });
   });
 

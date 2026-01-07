@@ -23,8 +23,7 @@ const createMockQuote = (
     outputAmount,
     effectiveRate: inputAmount > 0n ? (outputAmount * RATE_PRECISION.WAD) / inputAmount : 0n,
     feeAmount: 0n,
-    estimatedSlippageBps: 0,
-    priceImpactBps: 0
+    estimatedSlippageBps: 0
   },
   isValid,
   invalidReason: isValid ? undefined : 'Test invalid reason'
