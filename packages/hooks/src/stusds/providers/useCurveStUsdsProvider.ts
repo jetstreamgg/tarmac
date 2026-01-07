@@ -115,8 +115,7 @@ export function useCurveStUsdsProvider(
           outputAmount: 0n,
           effectiveRate: 0n,
           feeAmount: 0n,
-          estimatedSlippageBps: 0,
-          priceImpactBps: 0
+          estimatedSlippageBps: 0
         },
         isValid: false,
         invalidReason: 'Unable to get Curve quote'
@@ -145,15 +144,6 @@ export function useCurveStUsdsProvider(
       }
     }
 
-    // Check for excessive price impact
-    // Note: Price impact threshold is separate from slippage tolerance.
-    // Price impact measures how the trade affects pool price (size-dependent),
-    // while slippage is the acceptable deviation during execution (time-dependent).
-    if (quoteData.priceImpactBps > STUSDS_PROVIDER_CONFIG.maxPriceImpactBps) {
-      isValid = false;
-      invalidReason = 'Price impact too high';
-    }
-
     // Determine input/output amounts based on direction
     // For deposits: input = USDS, output = stUSDS
     // For withdrawals: input = stUSDS, output = USDS
@@ -165,8 +155,7 @@ export function useCurveStUsdsProvider(
       outputAmount,
       effectiveRate: quoteData.effectiveRate,
       feeAmount: 0n, // Fees included in quote
-      estimatedSlippageBps: STUSDS_PROVIDER_CONFIG.maxSlippageBps,
-      priceImpactBps: quoteData.priceImpactBps
+      estimatedSlippageBps: STUSDS_PROVIDER_CONFIG.maxSlippageBps
     };
 
     return {

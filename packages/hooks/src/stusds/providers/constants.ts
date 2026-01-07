@@ -12,16 +12,7 @@ export const STUSDS_PROVIDER_CONFIG: StUsdsRateComparisonConfig = {
    * Slippage represents the acceptable deviation from the quoted price during execution
    * due to price movement between quote and transaction confirmation.
    */
-  maxSlippageBps: 50, // 0.5%
-
-  /**
-   * Maximum acceptable price impact for Curve swaps (basis points).
-   * Price impact represents how much the trade size affects the pool price.
-   * This is higher than slippage tolerance because larger trades naturally have
-   * more price impact, especially in smaller pools. A 1-2% price impact may be
-   * acceptable for large trades while 0.5% slippage tolerance is standard.
-   */
-  maxPriceImpactBps: 200 // 2%
+  maxSlippageBps: 50 // 0.5%
 } as const;
 
 /**

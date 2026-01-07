@@ -36,8 +36,6 @@ export type CurveQuoteData = {
   stUsdsAmount: bigint;
   /** USDS amount (input for deposits, output for withdrawals) */
   usdsAmount: bigint;
-  /** Price impact in basis points (approximate) */
-  priceImpactBps: number;
   /** Effective rate scaled by 1e18 */
   effectiveRate: bigint;
 };
@@ -63,7 +61,7 @@ export type CurveQuoteHookResult = {
  *   - Max case: Uses get_dy with user's full stUSDS balance to get USDS output.
  *
  * @param params - Quote parameters
- * @returns Quote data including amounts and price impact
+ * @returns Quote data including amounts and effective rate
  */
 export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
   const { direction, amount, enabled = true, userStUsdsBalance, isMax = false } = params;
@@ -136,21 +134,9 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
       // Rate: stUSDS per USDS (how much stUSDS you get per USDS)
       const effectiveRate = (stUsdsAmount * RATE_PRECISION.WAD) / usdsAmount;
 
-      // Calculate price impact using oracle
-      let priceImpactBps = 0;
-      if (poolData?.priceOracle && poolData.priceOracle > 0n) {
-        // Expected rate = WAD / priceOracle (stUSDS per USDS)
-        const expectedRate = (RATE_PRECISION.WAD * RATE_PRECISION.WAD) / poolData.priceOracle;
-        if (effectiveRate < expectedRate) {
-          const impact = ((expectedRate - effectiveRate) * RATE_PRECISION.BPS_DIVISOR) / expectedRate;
-          priceImpactBps = Number(impact);
-        }
-      }
-
       return {
         stUsdsAmount,
         usdsAmount,
-        priceImpactBps,
         effectiveRate
       };
     } else {
@@ -166,20 +152,9 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
         // Rate: USDS per stUSDS (how much USDS you get per stUSDS burned)
         const effectiveRate = (usdsAmount * RATE_PRECISION.WAD) / stUsdsAmount;
 
-        // Calculate price impact using oracle
-        let priceImpactBps = 0;
-        if (poolData?.priceOracle && poolData.priceOracle > 0n) {
-          const expectedRate = poolData.priceOracle;
-          if (effectiveRate < expectedRate) {
-            const impact = ((expectedRate - effectiveRate) * RATE_PRECISION.BPS_DIVISOR) / expectedRate;
-            priceImpactBps = Number(impact);
-          }
-        }
-
         return {
           stUsdsAmount,
           usdsAmount,
-          priceImpactBps,
           effectiveRate
         };
       } else {
@@ -192,34 +167,14 @@ export function useCurveQuote(params: CurveQuoteParams): CurveQuoteHookResult {
         // Rate: USDS per stUSDS (how much USDS you get per stUSDS burned)
         const effectiveRate = (usdsAmount * RATE_PRECISION.WAD) / stUsdsAmount;
 
-        // Calculate price impact using oracle
-        let priceImpactBps = 0;
-        if (poolData?.priceOracle && poolData.priceOracle > 0n) {
-          const expectedRate = poolData.priceOracle;
-          if (effectiveRate < expectedRate) {
-            const impact = ((expectedRate - effectiveRate) * RATE_PRECISION.BPS_DIVISOR) / expectedRate;
-            priceImpactBps = Number(impact);
-          }
-        }
-
         return {
           stUsdsAmount,
           usdsAmount,
-          priceImpactBps,
           effectiveRate
         };
       }
     }
-  }, [
-    direction,
-    amount,
-    depositOutput,
-    withdrawInput,
-    maxWithdrawOutput,
-    userStUsdsBalance,
-    isMax,
-    poolData?.priceOracle
-  ]);
+  }, [direction, amount, depositOutput, withdrawInput, maxWithdrawOutput, userStUsdsBalance, isMax]);
 
   const isLoading =
     isPoolLoading ||

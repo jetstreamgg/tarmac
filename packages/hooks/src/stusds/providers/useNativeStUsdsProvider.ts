@@ -124,8 +124,7 @@ export function useNativeStUsdsProvider(params: StUsdsQuoteParams): StUsdsProvid
           outputAmount: 0n,
           effectiveRate: 0n,
           feeAmount: 0n,
-          estimatedSlippageBps: 0,
-          priceImpactBps: 0
+          estimatedSlippageBps: 0
         },
         isValid: false,
         invalidReason: 'Unable to get quote'
@@ -161,8 +160,7 @@ export function useNativeStUsdsProvider(params: StUsdsQuoteParams): StUsdsProvid
       outputAmount,
       effectiveRate,
       feeAmount: 0n, // Native contract has no explicit fees
-      estimatedSlippageBps: 0, // Native contract has no slippage
-      priceImpactBps: 0 // Native contract has no price impact
+      estimatedSlippageBps: 0 // Native contract has no slippage
     };
 
     const stUsdsAmount = direction === StUsdsDirection.SUPPLY ? outputAmount : inputAmount;
