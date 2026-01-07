@@ -82,7 +82,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.SUPPLY,
           amount: usdsAmount,
@@ -148,7 +148,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.WITHDRAW,
           amount: desiredUsdsOutput,
@@ -204,7 +204,7 @@ describe('useCurveQuote', () => {
 
   describe('edge cases', () => {
     it('should return undefined when amount is 0', () => {
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.SUPPLY,
           amount: 0n,
@@ -223,7 +223,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.SUPPLY,
           amount: 1000n * WAD,
@@ -242,7 +242,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.WITHDRAW,
           amount: 1000n * WAD,
@@ -339,7 +339,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.SUPPLY,
           amount: 1000n * WAD,
@@ -358,7 +358,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.SUPPLY,
           amount: 1000n * WAD,
@@ -377,7 +377,7 @@ describe('useCurveQuote', () => {
         refetch: vi.fn()
       });
 
-      renderHook(() =>
+      const { result } = renderHook(() =>
         useCurveQuote({
           direction: StUsdsDirection.WITHDRAW,
           amount: 1000n * WAD,
