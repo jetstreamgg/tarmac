@@ -136,7 +136,7 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
       onWidgetStateChange={onSavingsWidgetStateChange}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
-        token: linkedActionConfig?.sourceToken,
+        token: isL2 ? linkedActionConfig?.sourceToken : undefined,
         flow
       }}
       batchEnabled={batchEnabled}

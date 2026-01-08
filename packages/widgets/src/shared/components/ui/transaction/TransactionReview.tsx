@@ -20,14 +20,12 @@ export function TransactionReview({
   batchEnabled,
   setBatchEnabled,
   transactionDetail,
-  customSteps,
   legalBatchTxUrl,
   isBatchFlowSupported = true
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   transactionDetail?: React.ReactElement;
-  customSteps?: React.ReactElement;
   legalBatchTxUrl?: string;
   isBatchFlowSupported?: boolean;
 }) {
@@ -48,27 +46,26 @@ export function TransactionReview({
           <motion.div variants={positionAnimations} className="min-h-12">
             <Text className="mt-2">{txSubtitle}</Text>
           </motion.div>
-          {showStepIndicator &&
-            (customSteps || (
-              <motion.div variants={positionAnimations} className="flex w-full flex-col pt-4">
-                <StepIndicator
-                  stepNumber={1}
-                  currentStep={false}
-                  txStatus={TxStatus.IDLE}
-                  text={t`Approve`}
-                  className="flex-1"
-                  circleIndicator
-                />
-                <StepIndicator
-                  stepNumber={2}
-                  currentStep={false}
-                  txStatus={TxStatus.IDLE}
-                  text={stepTwoTitle}
-                  className="flex-1"
-                  circleIndicator
-                />
-              </motion.div>
-            ))}
+          {showStepIndicator && (
+            <motion.div variants={positionAnimations} className="flex w-full flex-col pt-4">
+              <StepIndicator
+                stepNumber={1}
+                currentStep={false}
+                txStatus={TxStatus.IDLE}
+                text={t`Approve`}
+                className="flex-1"
+                circleIndicator
+              />
+              <StepIndicator
+                stepNumber={2}
+                currentStep={false}
+                txStatus={TxStatus.IDLE}
+                text={stepTwoTitle}
+                className="flex-1"
+                circleIndicator
+              />
+            </motion.div>
+          )}
           {transactionDetail ?? <TransactionDetail />}
         </CardContent>
         {batchEnabled !== undefined && !!setBatchEnabled && !!batchSupported && showStepIndicator && (
