@@ -55,8 +55,6 @@ Depending on your location and other criteria, you can use the Sky.money web app
     question: 'Is trading using Sky.money free?',
     answer: `Accessing the Sky.money web app is free. Trading, however, may involve a fee imposed by the third-party decentralized exchange (i.e., [CoW Swap](https://swap.cow.fi/#/1/swap/WETH)) integrated with the non-custodial Sky Protocol that is used to make the trade. In addition, you will likely pay a blockchain network transaction fee called a [gas fee](#tooltip-gas-fee), which is neither controlled, imposed nor received by Sky.money or the Sky Protocol. This fee is calculated based on current Ethereum network demand and the amount of gas required to process your transaction.
 
-If you have shied away from the Ethereum blockchain due to the high price of gas, the Sky Protocol's SkyLink system enables users to move their Ethereum Mainnet-based Sky assets between supported L2 networks, including Base and Arbitrum, with reduced fees and faster transaction speeds.
-
 Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.`,
     index: 2
   },
@@ -67,9 +65,9 @@ Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more infor
     index: 3
   },
   {
-    question: 'What is SkyLink, and how does it work?',
+    question: 'What is SkyLink?',
     answer:
-      "SkyLink is the Sky system that provides the rails for Sky Ecosystem projects, such as [Spark](https://spark.fi/), to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. This enables end users on L2s, such as Base and Arbitrum for example, to tap into Sky Protocol features via Sky Ecosystem projects' rails.",
+      'SkyLink is Sky Ecosystem’s multichain solution connecting USDS, SKY and other Sky Ecosystem tokens from the Ethereum Mainnet to other chains and L2 protocols.',
     index: 4
   },
   {
@@ -110,7 +108,7 @@ Using the Sky.money web app, you can interact with the Peg Stability Module (PSM
 
 On some supported L2s, you can also access the [Sky Savings Rate](#tooltip-sky-savings-rate).
 
-SkyLink is the Sky system that provides the rails for Sky Ecosystem projects to link assets between the Sky Protocol on Ethereum Mainnet and supported L2 networks. If you have shied away from the Ethereum blockchain due to the high price of gas, SkyLink introduces reduced fees and faster transaction speeds.
+SkyLink is Sky Ecosystem’s multichain solution connecting USDS, SKY and other Sky Ecosystem tokens from the Ethereum Mainnet to other chains and L2 protocols.
 
 Available tokens may evolve over time as new trading pairs are added. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for Sky.money web app access eligibility.`,
     index: 0
