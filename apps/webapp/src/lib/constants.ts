@@ -213,6 +213,7 @@ export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat'
 export const USER_SETTINGS_KEY = 'user-settings';
 export const CHAT_NOTIFICATION_KEY = 'chat-notification-suggested';
 export const GOVERNANCE_MIGRATION_NOTIFICATION_KEY = 'governance-migration-notice-shown';
+export const CHAT_WALLET_ASSOCIATION_KEY = 'chat-wallet-associations';
 
 export const WALLET_ICONS = {
   metaMaskSDK: '/wallets/metamask.svg',
