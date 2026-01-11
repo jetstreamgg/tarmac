@@ -8,7 +8,8 @@ import {
   ModuleEnum,
   TransactionTypeEnum,
   CombinedHistoryItem,
-  useRewardContractTokens
+  useRewardContractTokens,
+  StUsdsProviderType
 } from '@jetstreamgg/sky-hooks';
 import { getHistoryIconSource } from '../lib/getHistoryIconSource';
 import { getTitle } from '../lib/getTitle';
@@ -59,8 +60,11 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
 
   const explorerName = getExplorerName(chainId || 1, false);
   const positive = getPositive({ type });
+  const provider = 'provider' in item ? (item.provider as StUsdsProviderType | undefined) : undefined;
+  const isCurveProvider = provider === StUsdsProviderType.CURVE;
   const iconSrc = getHistoryIconSource({ type, module });
   const chainImageSrc = useChainImage(chainId || 1);
+  const curveBadgeSrc = 'history-icons/curve-badge.svg';
 
   return (
     <ExternalLink
@@ -83,8 +87,13 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
                 <AvatarImage src={iconSrc} alt={getTitle({ type, module })} className="h-4 w-4" />
               </div>
               {chainImageSrc && (
-                <Avatar className="absolute bottom-0.5 right-0 h-[40%] w-[40%]">
+                <Avatar className="absolute right-0 bottom-0.5 h-[40%] w-[40%]">
                   <AvatarImage src={chainImageSrc} alt="chain-icon" className="h-full w-full" />
+                </Avatar>
+              )}
+              {isCurveProvider && (
+                <Avatar className="absolute top-0 right-0 h-[40%] w-[40%]">
+                  <AvatarImage src={curveBadgeSrc} alt="curve-badge" className="h-full w-full" />
                 </Avatar>
               )}
             </Avatar>

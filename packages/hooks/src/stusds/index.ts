@@ -33,3 +33,6 @@ export { useStUsdsChartInfo } from './useStUsdsChartInfo';
 
 // Types
 export type { StUsdsHistoryItem, StUsdsVaultMetrics, StUsdsUserMetrics } from './stusds.d';
+
+// Provider Abstraction Layer (Curve pool integration)
+export * from './providers';

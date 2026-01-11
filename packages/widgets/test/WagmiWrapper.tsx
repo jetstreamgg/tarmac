@@ -33,7 +33,7 @@ const config = createConfig({
 
 const queryClient = new QueryClient();
 
-export function WagmiWrapper({ children }: { children?: React.ReactElement }) {
+export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

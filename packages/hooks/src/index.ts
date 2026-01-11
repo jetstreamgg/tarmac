@@ -33,7 +33,24 @@ export {
   useStUsdsRateData,
   useStUsdsCapacityData,
   useStUsdsHistory,
-  useStUsdsChartInfo
+  useStUsdsChartInfo,
+  // Provider abstraction layer
+  useNativeStUsdsProvider,
+  useCurveStUsdsProvider,
+  useStUsdsProviderSelection,
+  useCurvePoolData,
+  useCurveQuote,
+  useCurveAllowance,
+  useCurveApprove,
+  useCurveSwap,
+  useBatchCurveSwap,
+  useCurveRate,
+  StUsdsProviderType,
+  StUsdsProviderStatus,
+  StUsdsSelectionReason,
+  StUsdsBlockedReason,
+  StUsdsDirection,
+  calculateRateDifferencePercent
 } from './stusds';
 
 export type {
@@ -51,7 +68,15 @@ export type {
   StUsdsHistoryHook,
   StUsdsHistoryItem,
   StUsdsVaultMetrics,
-  StUsdsUserMetrics
+  StUsdsUserMetrics,
+  // Provider abstraction types
+  StUsdsRateInfo,
+  StUsdsProviderState,
+  StUsdsQuoteParams,
+  StUsdsQuote,
+  StUsdsProviderData,
+  StUsdsProviderHookResult,
+  StUsdsProviderSelectionResult
 } from './stusds';
 
 // Authentication
