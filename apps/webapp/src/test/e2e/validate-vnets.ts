@@ -251,10 +251,29 @@ async function validateVnet(
         })
       });
 
+      // Check HTTP-level errors (e.g., 400 Bad Request when VNet is deleted)
+      if (!response.ok) {
+        const text = await response.text();
+        console.log(`  ❌ HTTP error: ${response.status} ${response.statusText}`);
+        console.log(`     Response: ${text.slice(0, 200)}`);
+        // Check for specific VNet not found error
+        if (text.includes('virtual testnet not found') || text.includes('-32006')) {
+          errors.push(`VNet not found (deleted/expired): ${response.statusText}`);
+        } else {
+          errors.push(`HTTP error: ${response.status} ${response.statusText} - ${text.slice(0, 100)}`);
+        }
+        return { network, healthy: false, errors };
+      }
+
       const result = await response.json();
       if (result.error) {
         console.log(`  ❌ RPC error: ${result.error.message}`);
-        errors.push(`RPC error: ${result.error.message}`);
+        // Check for VNet not found in JSON-RPC error
+        if (result.error.code === -32006 || result.error.message?.includes('virtual testnet not found')) {
+          errors.push(`VNet not found (deleted/expired): ${result.error.message}`);
+        } else {
+          errors.push(`RPC error: ${result.error.message}`);
+        }
         return { network, healthy: false, errors };
       }
       console.log(`  ✓ RPC is accessible (block: ${parseInt(result.result, 16)})`);

@@ -31,26 +31,26 @@ echo "🚀 Running E2E tests in parallel..."
 
 pnpm playwright test --config=playwright-parallel.config.ts ${SHARD_ARGS}
 
-PARALLEL_EXIT_CODE=$?
+# PARALLEL_EXIT_CODE=$?
 
-if [ $PARALLEL_EXIT_CODE -ne 0 ]; then
-  echo ""
-  echo "⚠️ Some tests failed. Re-running failed tests serially..."
-  echo ""
+# if [ $PARALLEL_EXIT_CODE -ne 0 ]; then
+#   echo ""
+#   echo "⚠️ Some tests failed. Re-running failed tests serially..."
+#   echo ""
 
-  # Re-run only the failed tests with a single worker
-  # globalSetup will revert snapshots automatically
-  pnpm playwright test --last-failed --workers=1 --config=playwright-parallel.config.ts ${SHARD_ARGS}
+#   # Re-run only the failed tests with a single worker
+#   # globalSetup will revert snapshots automatically
+#   pnpm playwright test --last-failed --workers=1 --config=playwright-parallel.config.ts ${SHARD_ARGS}
 
-  RETRY_EXIT_CODE=$?
+#   RETRY_EXIT_CODE=$?
 
-  if [ $RETRY_EXIT_CODE -eq 0 ]; then
-    echo "✅ All tests passed after retry!"
-    exit 0
-  else
-    echo "❌ Some tests still failing after retry"
-    exit 1
-  fi
-else
-    echo "✅ All parallel tests passed"
-fi
+#   if [ $RETRY_EXIT_CODE -eq 0 ]; then
+#     echo "✅ All tests passed after retry!"
+#     exit 0
+#   else
+#     echo "❌ Some tests still failing after retry"
+#     exit 1
+#   fi
+# else
+#     echo "✅ All parallel tests passed"
+# fi

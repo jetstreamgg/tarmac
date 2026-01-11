@@ -64,6 +64,7 @@ export default defineConfig({
         '**/unstake-repay.spec.ts',
         '**/chatbot.spec.ts',
         '**/pane-visibility.spec.ts'
+        // '**/stusds-provider-switching.spec.ts'
         // Add more test patterns as we convert them
       ]
     }
