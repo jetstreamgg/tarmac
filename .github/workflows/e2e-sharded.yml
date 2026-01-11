@@ -2,6 +2,7 @@ name: Sharded E2E Tests
 
 permissions:
   contents: read
+  actions: write  # Required for deleting stale caches
 
 on:
   pull_request:
@@ -122,6 +123,19 @@ jobs:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
         continue-on-error: true
 
+      - name: Delete stale cache if validation failed
+        if: steps.cache-vnets.outputs.cache-hit == 'true' && steps.validate-vnets.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🗑️  Deleting stale VNet cache (validation failed)..."
+          # Delete all caches matching our prefix for this branch
+          gh cache list --json key --jq '.[] | select(.key | startswith("persistent-vnets-sharded-${{ github.head_ref || github.ref_name }}-v3-")) | .key' | while read -r cache_key; do
+            echo "   Deleting cache: $cache_key"
+            gh cache delete "$cache_key" || true
+          done
+          echo "✅ Stale cache deleted"
+
       - name: Create or recreate VNets if needed
         id: ensure-vnets
         if: steps.check-files.outputs.have_vnet_json != 'true' || steps.validate-vnets.outcome == 'failure'
@@ -132,6 +146,12 @@ jobs:
           if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
             echo "🗑️  Removing old snapshot file (will be recreated after funding)"
             rm apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+          fi
+
+          # Also remove old VNet data file to ensure clean state
+          if [ -f "tenderlyTestnetData.json" ]; then
+            echo "🗑️  Removing old VNet data file"
+            rm tenderlyTestnetData.json
           fi
 
           pnpm run vnet:fork:ci
@@ -258,7 +278,7 @@ jobs:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
       - name: Upload test results (if failed)
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: shard-${{ matrix.shard }}-test-results-${{ github.run_id }}
@@ -269,7 +289,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test traces (if failed)
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
           name: shard-${{ matrix.shard }}-test-traces-${{ github.run_id }}

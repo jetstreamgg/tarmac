@@ -12,7 +12,7 @@ import { NetworkName } from './utils/constants';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function revertToSnapshot(network: NetworkName, snapshotId: string): Promise<void> {
+export async function revertToSnapshot(network: NetworkName, snapshotId: string): Promise<void> {
   const rpcUrl = await getRpcUrlFromFile(network);
 
   const response = await fetch(rpcUrl, {
@@ -31,7 +31,7 @@ async function revertToSnapshot(network: NetworkName, snapshotId: string): Promi
     throw new Error(`Failed to revert snapshot for ${network}: ${result.error.message}`);
   }
 
-  console.log(`  ⏮️  Reverted ${network} to snapshot: ${snapshotId}`);
+  console.log(`  ⬅️  Reverted ${network} to snapshot: ${snapshotId}`);
 }
 
 async function main() {
