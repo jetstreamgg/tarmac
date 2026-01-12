@@ -21,14 +21,6 @@ on:
         required: false
         default: '2'
         type: string
-      skip_funding:
-        description: 'Skip funding accounts (for retry runs)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
       networks:
         description: 'Networks to fund (comma-separated)'
         required: false
@@ -40,7 +32,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Job to ensure VNets are set up before shards run
+  # Job to create VNets and snapshots before shards run
   setup-vnets:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -56,7 +48,6 @@ jobs:
       VITE_SKIP_AUTH_CHECK: 'true'
       VITE_SKIP_CHAT_AUTH_CHECK: 'true'
       VITE_CHATBOT_ENABLED: 'true'
-      SKIP_FUNDING: ${{ github.event.inputs.skip_funding || 'false' }}
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
     steps:
@@ -82,90 +73,18 @@ jobs:
         env:
           NODE_OPTIONS: "--max-old-space-size=4096"
 
-      - name: Restore VNets from cache
-        id: cache-vnets
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            tenderlyTestnetData.json
-            apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
-          key: persistent-vnets-sharded-${{ github.head_ref || github.ref_name }}-v3-
-          restore-keys: |
-            persistent-vnets-sharded-${{ github.head_ref || github.ref_name }}-v3-
-
-      - name: Check VNet files
-        id: check-files
+      - name: Create VNets
         run: |
-          echo "🔍 Checking VNet cache files..."
-          if [ -f "tenderlyTestnetData.json" ]; then
-            echo "have_vnet_json=true" >> $GITHUB_OUTPUT
-            echo "  ✅ tenderlyTestnetData.json exists"
-          else
-            echo "have_vnet_json=false" >> $GITHUB_OUTPUT
-            echo "  ❌ tenderlyTestnetData.json NOT FOUND"
-          fi
-
-          if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
-            echo "have_snapshots=true" >> $GITHUB_OUTPUT
-            echo "  ✅ persistent-vnet-snapshots.json exists"
-          else
-            echo "have_snapshots=false" >> $GITHUB_OUTPUT
-            echo "  ❌ persistent-vnet-snapshots.json NOT FOUND"
-          fi
-
-      - name: Validate VNets (if files present)
-        id: validate-vnets
-        if: steps.check-files.outputs.have_vnet_json == 'true'
-        run: |
-          echo "🔍 Validating cached VNets and snapshots..."
-          cd apps/webapp && npx tsx src/test/e2e/validate-vnets.ts
-        env:
-          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
-        continue-on-error: true
-
-      - name: Delete stale cache if validation failed
-        if: steps.cache-vnets.outputs.cache-hit == 'true' && steps.validate-vnets.outcome == 'failure'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🗑️  Deleting stale VNet cache (validation failed)..."
-          # Delete all caches matching our prefix for this branch
-          gh cache list --json key --jq '.[] | select(.key | startswith("persistent-vnets-sharded-${{ github.head_ref || github.ref_name }}-v3-")) | .key' | while read -r cache_key; do
-            echo "   Deleting cache: $cache_key"
-            gh cache delete "$cache_key" || true
-          done
-          echo "✅ Stale cache deleted"
-
-      - name: Create or recreate VNets if needed
-        id: ensure-vnets
-        if: steps.check-files.outputs.have_vnet_json != 'true' || steps.validate-vnets.outcome == 'failure'
-        run: |
-          echo "🔧 CREATING/RECREATING VNETS"
-
-          # Remove old snapshot file if it exists (stale snapshot IDs won't work with new VNets)
-          if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
-            echo "🗑️  Removing old snapshot file (will be recreated after funding)"
-            rm apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
-          fi
-
-          # Also remove old VNet data file to ensure clean state
-          if [ -f "tenderlyTestnetData.json" ]; then
-            echo "🗑️  Removing old VNet data file"
-            rm tenderlyTestnetData.json
-          fi
-
+          echo "🔧 Creating fresh VNets..."
           pnpm run vnet:fork:ci
-          echo "created=true" >> $GITHUB_OUTPUT
           echo "✅ VNet creation complete"
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
       - name: Fund accounts and create snapshots
-        if: steps.ensure-vnets.outputs.created == 'true'
         run: |
           echo "💰 Funding all 100 test accounts on all networks..."
           cd apps/webapp
-          # Use dedicated funding script (no test execution needed)
           pnpm e2e:fund
 
           # Verify snapshots were created
@@ -211,7 +130,6 @@ jobs:
         shard: [1, 2, 3, 4]
 
     env:
-      # Base environment variables
       VITE_ENV_NAME: development
       VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
       VITE_BATCH_TX_ENABLED: 'true'
@@ -219,11 +137,9 @@ jobs:
       VITE_SKIP_AUTH_CHECK: 'true'
       VITE_SKIP_CHAT_AUTH_CHECK: 'true'
       VITE_CHATBOT_ENABLED: 'true'
-      # Shard configuration
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
       PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '4' }}
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '2' }}
-      SKIP_FUNDING: 'true'  # Skip funding in shards - already done in setup
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
     steps:
@@ -331,7 +247,7 @@ jobs:
             echo "- Shard 4 test results" >> $GITHUB_STEP_SUMMARY
           fi
 
-  # Cleanup
+  # Cleanup VNets after every run
   cleanup:
     needs: [test-shards, aggregate-results]
     if: always()
@@ -361,22 +277,9 @@ jobs:
           name: vnet-data
         continue-on-error: true
 
-      # Save VNets to cache for next run (feature branches only)
-      - name: Save VNets to cache
-        if: github.ref != 'refs/heads/main'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            tenderlyTestnetData.json
-            apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
-          key: persistent-vnets-sharded-${{ github.head_ref || github.ref_name }}-v3-${{ hashFiles('tenderlyTestnetData.json', 'apps/webapp/src/test/e2e/persistent-vnet-snapshots.json') }}
-        continue-on-error: true
-
-      # Cleanup VNets on main branch only
       - name: Cleanup Tenderly VNets
-        if: github.ref == 'refs/heads/main'
         run: |
-          echo "Cleaning up Tenderly VNets (main branch only)..."
+          echo "🧹 Cleaning up Tenderly VNets..."
           pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}

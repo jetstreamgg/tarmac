@@ -13,6 +13,7 @@ import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
 import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
+import { useWalletTermsAssociation } from '@/modules/chat/hooks/useWalletTermsAssociation';
 import { useChatNotification } from '../hooks/useChatNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
@@ -127,6 +128,9 @@ export function MainApp() {
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
+
+  // Associate wallet address with chatbot terms acceptance (if CHATBOT_ENABLED)
+  useWalletTermsAssociation();
 
   // Run validation on search params whenever search params change
   useEffect(() => {

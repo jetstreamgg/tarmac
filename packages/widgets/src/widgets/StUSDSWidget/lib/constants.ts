@@ -70,7 +70,7 @@ export function getProviderMessage(
           }
           const maxAmountText = formatBigInt(nativeMaxAmount!, { compact: true });
           return i18n._(
-            msg`Routing through Curve with a ${rateText}% premium. Avoid the premium by supplying ${maxAmountText} USDS or less.`
+            msg`Routing through Curve with a ${rateText}% premium. Avoid the premium by supplying ${maxAmountText} USDS (the remaining native capacity)  or less.`
           );
         }
 
@@ -96,7 +96,7 @@ export function getProviderMessage(
           }
           const maxAmountText = formatBigInt(nativeMaxAmount!, { compact: true });
           return i18n._(
-            msg`Routing through Curve with a ${rateText}% premium. Avoid the premium by withdrawing ${maxAmountText} USDS or less.`
+            msg`Routing through Curve with a ${rateText}% premium. Avoid the premium by withdrawing ${maxAmountText} USDS (the available native liquidity)  or less.`
           );
         }
 
