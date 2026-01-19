@@ -307,6 +307,14 @@ export const contracts: {
       [arbitrum.id]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
       [TENDERLY_CHAIN_ID]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC'
     }
+  },
+  // Morpho vaults
+  {
+    name: 'steakhousePrimeInstantVault',
+    address: {
+      [mainnet.id]: '0xbeef088055857739C12CD3765F20b7679Def0f51',
+      [TENDERLY_CHAIN_ID]: '0xbeef088055857739C12CD3765F20b7679Def0f51'
+    }
   }
 ];
 
