@@ -81,6 +81,23 @@ export type {
   StUsdsProviderSelectionResult
 } from './stusds';
 
+// Morpho Vaults
+export {
+  useBatchMorphoVaultDeposit,
+  useMorphoVaultWithdraw,
+  useMorphoVaultRedeem,
+  useMorphoVaultData,
+  useMorphoVaultRate,
+  useMorphoVaultAllocations
+} from './morpho';
+export type {
+  MorphoVaultRateData,
+  MorphoVaultRateHook,
+  MorphoMarketAllocation,
+  MorphoVaultAllocationsData,
+  MorphoVaultAllocationsHook
+} from './morpho';
+
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';
