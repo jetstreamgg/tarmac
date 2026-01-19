@@ -88,8 +88,7 @@ const MorphoVaultWidgetWrapped = ({
 
   // Vault rate hook - fetches Rate from Morpho API
   const { data: vaultRateData } = useMorphoVaultRate({
-    vaultAddress,
-    chainId
+    vaultAddress
   });
 
   // User's underlying asset balance (e.g., USDC balance)

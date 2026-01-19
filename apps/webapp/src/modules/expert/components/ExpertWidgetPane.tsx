@@ -6,10 +6,13 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence } from 'framer-motion';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
+import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWidgetPane';
 import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
+import { MorphoVaultStatsCard } from './MorphoVaultStatsCard';
+import { steakhousePrimeInstantVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
   const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
@@ -23,11 +26,29 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
     setSelectedExpertOption(expertIntent);
   };
 
+  const renderSelectedWidget = () => {
+    switch (selectedExpertOption) {
+      case ExpertIntent.STUSDS_INTENT:
+        return <StUSDSWidgetPane {...sharedProps} />;
+      case ExpertIntent.MORPHO_VAULT_INTENT:
+        return (
+          <MorphoVaultWidgetPane
+            {...sharedProps}
+            vaultAddress={steakhousePrimeInstantVaultAddress}
+            assetToken={TOKENS.usdc}
+            vaultName="Steakhouse Prime Instant"
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <AnimatePresence mode="popLayout" initial={false}>
       <CardAnimationWrapper key={selectedExpertOption} className="h-full">
-        {selectedExpertOption === ExpertIntent.STUSDS_INTENT ? (
-          <StUSDSWidgetPane {...sharedProps} />
+        {selectedExpertOption ? (
+          renderSelectedWidget()
         ) : (
           <WidgetContainer
             header={
@@ -54,7 +75,17 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
                         disabled={!expertRiskDisclaimerShown}
                       />
                     );
-                  // Add more cases here for future contracts
+                  case ExpertIntent.MORPHO_VAULT_INTENT:
+                    return (
+                      <MorphoVaultStatsCard
+                        key={widget.id}
+                        vaultAddress={steakhousePrimeInstantVaultAddress}
+                        vaultName="Steakhouse Prime Instant"
+                        assetToken={TOKENS.usdc}
+                        onClick={() => handleSelectExpertOption(widget.id)}
+                        disabled={!expertRiskDisclaimerShown}
+                      />
+                    );
                   default:
                     return null;
                 }

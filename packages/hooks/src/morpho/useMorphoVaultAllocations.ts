@@ -3,6 +3,8 @@ import { useChainId } from 'wagmi';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL } from './constants';
+import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { mainnet } from 'viem/chains';
 
 type MorphoVaultAllocationsApiResponse = {
   data: {
@@ -184,7 +186,8 @@ export function useMorphoVaultAllocations({
 }: {
   vaultAddress: `0x${string}`;
 }): MorphoVaultAllocationsHook {
-  const chainId = useChainId();
+  const connectedChainId = useChainId();
+  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
 
   const {
     data,

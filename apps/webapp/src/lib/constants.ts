@@ -109,6 +109,10 @@ export const EXPERT_WIDGET_OPTIONS: {
   {
     id: ExpertIntent.STUSDS_INTENT,
     name: 'stUSDS'
+  },
+  {
+    id: ExpertIntent.MORPHO_VAULT_INTENT,
+    name: 'Morpho Vault'
   }
 ];
 

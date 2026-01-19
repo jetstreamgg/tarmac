@@ -4,6 +4,9 @@ import { TradeDetails } from '@/modules/trade/components/TradeDetails';
 import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
+import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
+import { steakhousePrimeInstantVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
+import { useChainId } from 'wagmi';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -42,10 +45,11 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
   const { selectedExpertOption } = useConfigContext();
+  const chainId = useChainId();
 
   useEffect(() => {
     setIntentState(prevIntentState => {
@@ -113,6 +117,20 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   return (
                     <MotionDetailsWrapper key={keys[5]}>
                       <StUSDSDetails />
+                    </MotionDetailsWrapper>
+                  );
+                case ExpertIntent.MORPHO_VAULT_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[9]}>
+                      <MorphoVaultDetails
+                        vaultAddress={
+                          steakhousePrimeInstantVaultAddress[
+                            chainId as keyof typeof steakhousePrimeInstantVaultAddress
+                          ]
+                        }
+                        assetToken={TOKENS.usdc}
+                        vaultName="Steakhouse Prime Instant"
+                      />
                     </MotionDetailsWrapper>
                   );
                 default:

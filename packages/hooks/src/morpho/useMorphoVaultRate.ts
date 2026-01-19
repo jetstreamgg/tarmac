@@ -2,16 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL } from './constants';
+import { useChainId } from 'wagmi';
+import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { mainnet } from 'viem/chains';
 
 type MorphoVaultApiResponse = {
   data: {
-    vaultByAddress: {
+    vaultV2ByAddress: {
       address: string;
-      state: {
-        apy: number;
-        netApy: number;
-        fee: number;
-      };
+      avgApy: number;
+      avgNetApy: number;
+      performanceFee: number;
+      managementFee: number;
     } | null;
   };
 };
@@ -21,8 +23,10 @@ export type MorphoVaultRateData = {
   rate: number;
   /** Net APY (after performance fee, including rewards) as a decimal */
   netRate: number;
+  /** Management fee as a decimal */
+  managementFee: number;
   /** Performance fee as a decimal */
-  fee: number;
+  performanceFee: number;
   /** Formatted APY string for display (e.g., "5.00%") */
   formattedRate: string;
   /** Formatted Net APY string for display */
@@ -35,13 +39,12 @@ export type MorphoVaultRateHook = ReadHook & {
 
 const VAULT_RATE_QUERY = `
   query VaultRate($address: String!, $chainId: Int!) {
-    vaultByAddress(address: $address, chainId: $chainId) {
+    vaultV2ByAddress(address: $address, chainId: $chainId) {
       address
-      state {
-        apy
-        netApy
-        fee
-      }
+      avgApy
+      avgNetApy
+      performanceFee
+      managementFee
     }
   }
 `;
@@ -70,28 +73,26 @@ async function fetchMorphoVaultRate(
 
   const result: MorphoVaultApiResponse = await response.json();
 
-  if (!result.data.vaultByAddress) {
+  if (!result.data.vaultV2ByAddress) {
     return undefined;
   }
 
-  const { apy, netApy, fee } = result.data.vaultByAddress.state;
+  const { avgApy, avgNetApy, managementFee, performanceFee } = result.data.vaultV2ByAddress;
 
   return {
-    rate: apy,
-    netRate: netApy,
-    fee,
-    formattedRate: `${(apy * 100).toFixed(2)}%`,
-    formattedNetRate: `${(netApy * 100).toFixed(2)}%`
+    rate: avgApy,
+    netRate: avgNetApy,
+    managementFee,
+    performanceFee,
+    formattedRate: `${(avgApy * 100).toFixed(2)}%`,
+    formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`
   };
 }
 
-export function useMorphoVaultRate({
-  vaultAddress,
-  chainId = 1
-}: {
-  vaultAddress: `0x${string}`;
-  chainId?: number;
-}): MorphoVaultRateHook {
+export function useMorphoVaultRate({ vaultAddress }: { vaultAddress: `0x${string}` }): MorphoVaultRateHook {
+  const connectedChainId = useChainId();
+  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+
   const {
     data,
     error,
