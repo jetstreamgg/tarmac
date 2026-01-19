@@ -55,7 +55,8 @@ export const IntentMapping = {
 };
 
 export const ExpertIntentMapping: Record<ExpertIntent, string> = {
-  [ExpertIntent.STUSDS_INTENT]: 'stusds'
+  [ExpertIntent.STUSDS_INTENT]: 'stusds',
+  [ExpertIntent.MORPHO_VAULT_INTENT]: 'morpho'
 };
 
 export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {

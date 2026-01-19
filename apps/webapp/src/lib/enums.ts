@@ -10,5 +10,6 @@ export enum Intent {
 }
 
 export enum ExpertIntent {
-  STUSDS_INTENT = 'STUSDS_INTENT'
+  STUSDS_INTENT = 'STUSDS_INTENT',
+  MORPHO_VAULT_INTENT = 'MORPHO_VAULT_INTENT'
 }

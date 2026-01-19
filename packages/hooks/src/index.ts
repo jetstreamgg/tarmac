@@ -357,6 +357,7 @@ export {
   lsSkyUsdsRewardAddress,
   lsSkySpkRewardAddress,
   lsSkySkyRewardAddress,
+  steakhousePrimeInstantVaultAddress,
   useReadClipperDue
 } from './generated';
 export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';
