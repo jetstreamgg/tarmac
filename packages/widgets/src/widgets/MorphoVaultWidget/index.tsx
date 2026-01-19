@@ -456,7 +456,6 @@ const MorphoVaultWidgetWrapped = ({
               assetToken={assetToken}
               amount={debouncedAmount}
               needsAllowance={needsAllowance}
-              shouldUseBatch={shouldUseBatch}
               legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
