@@ -482,6 +482,7 @@ const MorphoVaultWidgetWrapped = ({
               address={address}
               assetBalance={assetBalance?.value}
               vaultBalance={vaultData?.userAssets}
+              userShares={vaultData?.userShares}
               isVaultDataLoading={isVaultDataLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
@@ -505,8 +506,10 @@ const MorphoVaultWidgetWrapped = ({
               enabled={enabled}
               onExternalLinkClicked={onExternalLinkClicked}
               vaultAddress={vaultAddress}
+              vaultName={vaultName}
               vaultTvl={vaultData?.totalAssets}
               vaultRate={vaultRateData?.formattedRate}
+              shareDecimals={vaultData?.decimals ?? 18}
             />
           </CardAnimationWrapper>
         )}

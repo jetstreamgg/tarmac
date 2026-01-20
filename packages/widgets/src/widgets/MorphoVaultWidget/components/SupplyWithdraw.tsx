@@ -22,6 +22,8 @@ type SupplyWithdrawProps = {
   assetBalance?: bigint;
   /** User's vault balance in underlying assets */
   vaultBalance?: bigint;
+  /** User's vault share balance */
+  userShares?: bigint;
   /** The underlying asset token */
   assetToken: Token;
   /** Whether vault data is loading */
@@ -44,16 +46,21 @@ type SupplyWithdrawProps = {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /** Vault contract address for etherscan link */
   vaultAddress?: `0x${string}`;
+  /** Display name for the vault */
+  vaultName: string;
   /** Vault TVL (total assets) */
   vaultTvl?: bigint;
   /** Vault APY (if available from external source) */
   vaultRate?: string;
+  /** Share decimals for formatting vault shares (typically 18) */
+  shareDecimals: number;
 };
 
 export const SupplyWithdraw = ({
   address,
   assetBalance,
   vaultBalance,
+  userShares,
   assetToken,
   isVaultDataLoading,
   onChange,
@@ -65,8 +72,10 @@ export const SupplyWithdraw = ({
   enabled = true,
   onExternalLinkClicked,
   vaultAddress,
+  vaultName,
   vaultTvl,
-  vaultRate
+  vaultRate,
+  shareDecimals
 }: SupplyWithdrawProps) => {
   const chainId = useChainId();
   const tokenDecimals = getTokenDecimals(assetToken, chainId);
@@ -103,10 +112,14 @@ export const SupplyWithdraw = ({
         <MorphoVaultStatsCard
           isLoading={isVaultDataLoading}
           vaultAddress={vaultAddress}
+          vaultName={vaultName}
           vaultBalance={vaultBalance}
+          userShares={userShares}
           vaultTvl={vaultTvl}
           vaultRate={vaultRate}
           assetSymbol={assetToken.symbol}
+          assetDecimals={tokenDecimals}
+          shareDecimals={shareDecimals}
           isConnectedAndEnabled={isConnectedAndEnabled}
           onExternalLinkClicked={onExternalLinkClicked}
         />

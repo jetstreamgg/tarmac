@@ -7,22 +7,29 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard';
 import { positionAnimations } from '@widgets/shared/animation/presets';
-import { motion } from 'framer-motion';
-import { Card, CardContent } from '@widgets/components/ui/card';
+import { MorphoVaultStatsCardCore } from './MorphoVaultStatsCardCore';
 
 type MorphoVaultStatsCardProps = {
   /** Whether data is loading */
   isLoading: boolean;
   /** Vault contract address */
   vaultAddress?: `0x${string}`;
+  /** Display name for the vault */
+  vaultName: string;
   /** User's vault balance in underlying assets */
   vaultBalance?: bigint;
+  /** User's vault share balance */
+  userShares?: bigint;
   /** Vault TVL (total assets) */
   vaultTvl?: bigint;
-  /** Vault APY */
+  /** Vault rate formatted string (e.g., "3.44%") */
   vaultRate?: string;
   /** Underlying asset symbol */
   assetSymbol: string;
+  /** Asset decimals for formatting */
+  assetDecimals: number;
+  /** Share decimals for formatting vault shares (typically 18) */
+  shareDecimals: number;
   /** Whether user is connected and widget is enabled */
   isConnectedAndEnabled: boolean;
   /** Callback for external link clicks */
@@ -32,10 +39,14 @@ type MorphoVaultStatsCardProps = {
 export const MorphoVaultStatsCard = ({
   isLoading,
   vaultAddress,
+  vaultName,
   vaultBalance,
+  userShares,
   vaultTvl,
   vaultRate,
   assetSymbol,
+  assetDecimals,
+  shareDecimals,
   isConnectedAndEnabled,
   onExternalLinkClicked
 }: MorphoVaultStatsCardProps) => {
@@ -49,32 +60,25 @@ export const MorphoVaultStatsCard = ({
         variants={positionAnimations}
         data-testid="vault-balance-container"
       >
-        <Text className="text-textSecondary text-sm leading-4">{t`Your balance`}</Text>
+        <Text className="text-textSecondary text-sm leading-4">{t`Supplied balance`}</Text>
         {isLoading && isConnectedAndEnabled ? (
-          <Skeleton className="bg-textSecondary h-6 w-10" />
+          <Skeleton className="bg-textSecondary h-6 w-20" />
         ) : isConnectedAndEnabled && vaultBalance !== undefined ? (
-          <Text dataTestId="vault-balance">
-            {formatBigInt(vaultBalance, { compact: true })} {assetSymbol}
+          <Text dataTestId="vault-balance" className="whitespace-nowrap">
+            {formatBigInt(vaultBalance, { unit: assetDecimals, compact: true })} {assetSymbol}
+            {userShares !== undefined && (
+              <span className="text-textSecondary ml-1 text-sm">
+                ({formatBigInt(userShares, { unit: shareDecimals, compact: true, maxDecimals: 2 })} shares)
+              </span>
+            )}
           </Text>
         ) : (
           <Text>--</Text>
         )}
       </MotionVStack>
 
-      {vaultRate && (
-        <MotionVStack
-          className="items-center justify-between"
-          gap={2}
-          variants={positionAnimations}
-          data-testid="vault-rate-container"
-        >
-          <Text className="text-textSecondary text-sm leading-4">{t`Rate`}</Text>
-          <Text dataTestId="vault-rate">{vaultRate}</Text>
-        </MotionVStack>
-      )}
-
       <MotionVStack
-        className="items-stretch justify-between text-right"
+        className="min-w-0 flex-1 items-end justify-between text-right"
         gap={2}
         variants={positionAnimations}
         data-testid="vault-tvl-container"
@@ -82,11 +86,11 @@ export const MorphoVaultStatsCard = ({
         <Text className="text-textSecondary text-sm leading-4">{t`TVL`}</Text>
         {isLoading ? (
           <div className="flex justify-end">
-            <Skeleton className="bg-textSecondary h-6 w-10" />
+            <Skeleton className="bg-textSecondary h-6 w-20" />
           </div>
         ) : vaultTvl !== undefined ? (
           <Text dataTestId="vault-tvl">
-            {formatBigInt(vaultTvl, { compact: true })} {assetSymbol}
+            {formatBigInt(vaultTvl, { unit: assetDecimals, compact: true })} {assetSymbol}
           </Text>
         ) : (
           <Text>--</Text>
@@ -96,18 +100,20 @@ export const MorphoVaultStatsCard = ({
   );
 
   return (
-    <motion.div variants={positionAnimations} className="mt-3">
-      <Card variant="stats">
-        <CardContent className="p-4">
-          <StatsAccordionCard
-            chainId={chainId}
-            address={vaultAddress}
-            accordionTitle="Vault info"
-            accordionContent={accordionContent}
-            onExternalLinkClicked={onExternalLinkClicked}
-          />
-        </CardContent>
-      </Card>
-    </motion.div>
+    <MorphoVaultStatsCardCore
+      vaultName={vaultName}
+      assetSymbol={assetSymbol}
+      vaultRate={vaultRate}
+      isLoading={isLoading}
+      content={
+        <StatsAccordionCard
+          chainId={chainId}
+          address={vaultAddress}
+          accordionTitle="Vault info"
+          accordionContent={accordionContent}
+          onExternalLinkClicked={onExternalLinkClicked}
+        />
+      }
+    />
   );
 };
