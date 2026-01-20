@@ -5,8 +5,10 @@ import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
-import { steakhousePrimeInstantVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
+import { MORPHO_VAULTS } from '@/modules/morpho/constants';
+import { QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
+import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -50,6 +52,15 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const { bpi } = useBreakpointIndex();
   const { selectedExpertOption } = useConfigContext();
   const chainId = useChainId();
+  const [searchParams] = useSearchParams();
+
+  // Get the selected vault address from URL params (for multi-vault support)
+  const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
+
+  // Find the selected vault config, default to first vault if not specified
+  const selectedVault =
+    MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
+    MORPHO_VAULTS[0];
 
   useEffect(() => {
     setIntentState(prevIntentState => {
@@ -123,13 +134,9 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   return (
                     <MotionDetailsWrapper key={keys[9]}>
                       <MorphoVaultDetails
-                        vaultAddress={
-                          steakhousePrimeInstantVaultAddress[
-                            chainId as keyof typeof steakhousePrimeInstantVaultAddress
-                          ]
-                        }
-                        assetToken={TOKENS.usdc}
-                        vaultName="Steakhouse Prime Instant"
+                        vaultAddress={selectedVault.vaultAddress[chainId]}
+                        assetToken={selectedVault.assetToken}
+                        vaultName={selectedVault.name}
                       />
                     </MotionDetailsWrapper>
                   );

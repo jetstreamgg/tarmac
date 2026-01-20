@@ -22,7 +22,8 @@ export enum QueryParams {
   Flow = 'flow',
   StakeTab = 'stake_tab',
   SealTab = 'seal_tab',
-  ExpertModule = 'expert_module'
+  ExpertModule = 'expert_module',
+  Vault = 'vault'
 }
 
 export enum Environment {

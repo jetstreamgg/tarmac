@@ -12,11 +12,21 @@ import { useSearchParams } from 'react-router-dom';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 import { MorphoVaultStatsCard } from './MorphoVaultStatsCard';
-import { steakhousePrimeInstantVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
+import { MORPHO_VAULTS } from '@/modules/morpho/constants';
+import { useChainId } from 'wagmi';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
   const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const chainId = useChainId();
+
+  // Get the selected vault address from URL params (for multi-vault support)
+  const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
+
+  // Find the selected vault config, default to first vault if not specified
+  const selectedVault =
+    MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
+    MORPHO_VAULTS[0];
 
   const handleSelectExpertOption = (expertIntent: ExpertIntent) => {
     setSearchParams(params => {
@@ -24,6 +34,15 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
       return params;
     });
     setSelectedExpertOption(expertIntent);
+  };
+
+  const handleSelectMorphoVault = (vaultAddress: `0x${string}`) => {
+    setSearchParams(params => {
+      params.set(QueryParams.ExpertModule, ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT]);
+      params.set(QueryParams.Vault, vaultAddress);
+      return params;
+    });
+    setSelectedExpertOption(ExpertIntent.MORPHO_VAULT_INTENT);
   };
 
   const renderSelectedWidget = () => {
@@ -34,9 +53,9 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
         return (
           <MorphoVaultWidgetPane
             {...sharedProps}
-            vaultAddress={steakhousePrimeInstantVaultAddress}
-            assetToken={TOKENS.usdc}
-            vaultName="Steakhouse Prime Instant"
+            vaultAddress={selectedVault.vaultAddress}
+            assetToken={selectedVault.assetToken}
+            vaultName={selectedVault.name}
           />
         );
       default:
@@ -76,16 +95,21 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
                       />
                     );
                   case ExpertIntent.MORPHO_VAULT_INTENT:
-                    return (
-                      <MorphoVaultStatsCard
-                        key={widget.id}
-                        vaultAddress={steakhousePrimeInstantVaultAddress}
-                        vaultName="Steakhouse Prime Instant"
-                        assetToken={TOKENS.usdc}
-                        onClick={() => handleSelectExpertOption(widget.id)}
-                        disabled={!expertRiskDisclaimerShown}
-                      />
-                    );
+                    // Render a card for each Morpho vault
+                    return MORPHO_VAULTS.map(vault => {
+                      const vaultAddressForChain = vault.vaultAddress[chainId];
+                      if (!vaultAddressForChain) return null;
+                      return (
+                        <MorphoVaultStatsCard
+                          key={vaultAddressForChain}
+                          vaultAddress={vault.vaultAddress}
+                          vaultName={vault.name}
+                          assetToken={vault.assetToken}
+                          onClick={() => handleSelectMorphoVault(vaultAddressForChain)}
+                          disabled={!expertRiskDisclaimerShown}
+                        />
+                      );
+                    });
                   default:
                     return null;
                 }
