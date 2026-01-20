@@ -31,17 +31,19 @@ export enum Environment {
   Development = 'development'
 }
 
-const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
+import { getBlockedIntents } from './restricted-modules';
 
-export const RESTRICTED_INTENTS: Intent[] = (() => {
-  if (isRestrictedMiCa) {
-    return [Intent.TRADE_INTENT];
-  } else if (isRestrictedBuild) {
-    return [Intent.SAVINGS_INTENT, Intent.REWARDS_INTENT, Intent.EXPERT_INTENT];
-  }
-  return [];
-})();
+/**
+ * Get the list of restricted intents at runtime.
+ * This is determined by WAF blocking (403 responses) detected during preload
+ * or when lazy-loaded chunks fail to load.
+ *
+ * @deprecated Use `useModuleAvailability().isModuleAvailable(intent)` instead
+ * for reactive updates when modules become blocked.
+ */
+export function getRestrictedIntents(): Intent[] {
+  return getBlockedIntents();
+}
 
 export const IntentMapping = {
   [Intent.BALANCES_INTENT]: 'balances',
@@ -117,24 +119,31 @@ export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.EXPERT_INTENT]
 ];
 
-const AvailableIntentMapping = Object.entries(IntentMapping).reduce(
-  (acc, [key, value]) => {
-    const isRestricted = isRestrictedBuild || isRestrictedMiCa;
-    if (!isRestricted || !RESTRICTED_INTENTS.includes(key as Intent)) {
-      acc[key as Intent] = value;
-    }
-    return acc;
-  },
-  {} as typeof IntentMapping
-);
+/**
+ * Get available intent mapping at runtime (filters out blocked intents)
+ */
+function getAvailableIntentMapping(): typeof IntentMapping {
+  const blockedIntents = getBlockedIntents();
+  return Object.entries(IntentMapping).reduce(
+    (acc, [key, value]) => {
+      if (!blockedIntents.includes(key as Intent)) {
+        acc[key as Intent] = value;
+      }
+      return acc;
+    },
+    {} as typeof IntentMapping
+  );
+}
 
 export function mapIntentToQueryParam(intent: Intent): string {
-  return AvailableIntentMapping[intent] || '';
+  // Always return the mapping, even for blocked intents (for URL handling)
+  return IntentMapping[intent] || '';
 }
 
 export function mapQueryParamToIntent(queryParam?: string | null): Intent {
-  const intent = Object.keys(AvailableIntentMapping).find(
-    key => AvailableIntentMapping[key as keyof typeof AvailableIntentMapping] === queryParam
+  const availableMapping = getAvailableIntentMapping();
+  const intent = Object.keys(availableMapping).find(
+    key => availableMapping[key as keyof typeof availableMapping] === queryParam
   );
   return (intent as Intent) || Intent.BALANCES_INTENT;
 }

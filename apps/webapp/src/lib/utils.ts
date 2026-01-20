@@ -8,7 +8,7 @@ import {
   IntentMapping,
   mapIntentToQueryParam,
   QueryParams,
-  RESTRICTED_INTENTS
+  getRestrictedIntents
 } from './constants';
 import { ExpertIntent, Intent } from './enums';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
@@ -93,12 +93,9 @@ export function sanitizeUrl(url: string | undefined) {
 }
 
 export function isIntentAllowed(intent: Intent, chainId: number) {
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
-  const isRestricted = isRestrictedBuild || isRestrictedMiCa;
-
-  // First check if restricted build
-  if (isRestricted && RESTRICTED_INTENTS.includes(intent)) {
+  // First check if module is restricted (blocked by WAF)
+  const restrictedIntents = getRestrictedIntents();
+  if (restrictedIntents.includes(intent)) {
     return false;
   }
   // Then check if widget is supported on current chain

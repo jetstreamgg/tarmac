@@ -2,17 +2,14 @@ import { Balances, Upgrade, Trade, RewardsModule, Savings, Stake, Expert } from 
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
-import { BATCH_TX_LEGAL_NOTICE_URL, COMING_SOON_MAP, QueryParams, RESTRICTED_INTENTS } from '@/lib/constants';
+import { BATCH_TX_LEGAL_NOTICE_URL, COMING_SOON_MAP, QueryParams } from '@/lib/constants';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
 import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPane';
-import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
-import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
-import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import React, { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useNotification } from '../hooks/useNotification';
 import { useActionForToken } from '../hooks/useActionForToken';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -23,10 +20,19 @@ import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
-import { WidgetContent, WidgetItem } from '../types/Widgets';
+import { SharedProps, WidgetContent, WidgetItem } from '../types/Widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
-import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
+import { useModuleAvailability } from '@/modules/app/context/ModuleAvailabilityContext';
+import { BLOCKED_MODULE_BEHAVIOR } from '@/lib/restricted-modules';
+import { ChunkErrorBoundary } from '@/modules/layout/components/ChunkErrorBoundary';
+import { LoadingSpinner } from '@/modules/ui/components/LoadingSpinner';
+import {
+  LazyRewardsWidgetPane,
+  LazySavingsWidgetPane,
+  LazyExpertWidgetPane,
+  LazyTradeWidgetPane
+} from '@/lib/restricted-lazy-components';
 
 type WidgetPaneProps = {
   intent: Intent;
@@ -37,6 +43,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { i18n } = useLingui();
   const chainId = useChainId();
   const onConnect = useCustomConnectModal();
+  const { isModuleAvailable, markModuleBlocked, isLoading: isPreloading } = useModuleAvailability();
 
   // No-op: ConnectedModal now uses subgraph data instead of localStorage
   const addRecentTransaction = () => {};
@@ -47,7 +54,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
   const locale = i18n.locale;
 
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  // Check if any modules are blocked (for hiding module balances in BalancesWidget)
+  const hasBlockedModules =
+    !isModuleAvailable(Intent.SAVINGS_INTENT) ||
+    !isModuleAvailable(Intent.REWARDS_INTENT) ||
+    !isModuleAvailable(Intent.EXPERT_INTENT);
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
@@ -71,6 +82,18 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl } = useModuleUrls();
 
+  // Helper to wrap lazy components with Suspense and ChunkErrorBoundary
+  const wrapRestrictedWidget = (
+    intentType: Intent,
+    LazyComponent: React.LazyExoticComponent<React.ComponentType<SharedProps>>
+  ) => (
+    <ChunkErrorBoundary intent={intentType} onBlocked={markModuleBlocked}>
+      <Suspense fallback={<LoadingSpinner />}>
+        <LazyComponent {...sharedProps} />
+      </Suspense>
+    </ChunkErrorBoundary>
+  );
+
   const widgetItems: WidgetItem[] = [
     [
       Intent.BALANCES_INTENT,
@@ -79,7 +102,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(
         <BalancesWidgetPane
           {...sharedProps}
-          hideModuleBalances={isRestrictedBuild}
+          hideModuleBalances={hasBlockedModules}
           actionForToken={actionForToken}
           rewardsCardUrl={rewardsUrl}
           savingsCardUrlMap={savingsUrlMap}
@@ -102,7 +125,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.REWARDS_INTENT,
       'Rewards',
       RewardsModule,
-      withErrorBoundary(<RewardsWidgetPane {...sharedProps} />),
+      withErrorBoundary(wrapRestrictedWidget(Intent.REWARDS_INTENT, LazyRewardsWidgetPane)),
       false,
       undefined,
       'Use USDS to access Sky Token Rewards'
@@ -111,7 +134,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.SAVINGS_INTENT,
       'Savings',
       Savings,
-      withErrorBoundary(<SavingsWidgetPane {...sharedProps} />),
+      withErrorBoundary(wrapRestrictedWidget(Intent.SAVINGS_INTENT, LazySavingsWidgetPane)),
       false,
       undefined,
       isL2ChainId(chainId)
@@ -131,7 +154,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.TRADE_INTENT,
       'Trade',
       Trade,
-      withErrorBoundary(<TradeWidgetPane {...sharedProps} />),
+      withErrorBoundary(wrapRestrictedWidget(Intent.TRADE_INTENT, LazyTradeWidgetPane)),
       false,
       undefined,
       'Trade popular tokens for Sky Ecosystem tokens'
@@ -149,22 +172,27 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.EXPERT_INTENT,
       'Expert',
       Expert,
-      withErrorBoundary(<ExpertWidgetPane {...sharedProps} />),
+      withErrorBoundary(wrapRestrictedWidget(Intent.EXPERT_INTENT, LazyExpertWidgetPane)),
       false,
       undefined,
       'Higher-risk options for more experienced users'
     ]
   ]
-    .filter(([intent]) => !RESTRICTED_INTENTS.includes(intent as Intent))
-    .map(([intent, label, icon, component, , , description]) => {
-      const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
+    // Filter out modules that are blocked by WAF (403) - only when behavior is 'hide'
+    .filter(
+      ([intentType]) => BLOCKED_MODULE_BEHAVIOR === 'disable' || isModuleAvailable(intentType as Intent)
+    )
+    .map(([intentType, label, icon, component, , , description]) => {
+      const comingSoon = COMING_SOON_MAP[chainId]?.includes(intentType as Intent);
+      const isBlocked = !isModuleAvailable(intentType as Intent);
+      const isDisabled = comingSoon || isBlocked;
       return [
-        intent as Intent,
+        intentType as Intent,
         label as string,
         icon as (props: IconProps) => React.ReactNode,
-        comingSoon ? null : (component as React.ReactNode),
+        isDisabled ? null : (component as React.ReactNode),
         comingSoon,
-        comingSoon ? { disabled: true } : undefined,
+        isDisabled ? { disabled: true } : undefined,
         description as string
       ];
     }) as WidgetItem[];
@@ -212,6 +240,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // Show all widget items regardless of network for better discoverability
   // Auto-switching will be handled in WidgetNavigation
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
+
+  // While preloading restricted modules, show a loading state
+  // This ensures the menu doesn't flash items that will be removed
+  if (isPreloading) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent} currentChainId={chainId}>

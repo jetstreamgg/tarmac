@@ -110,7 +110,29 @@ export default ({ mode }: { mode: modeEnum }) => {
     envDir: '../',
     build: {
       outDir: '../dist',
-      emptyOutDir: true
+      emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          chunkFileNames(chunkInfo) {
+            // Route geo-restricted module chunks to the restricted/ directory
+            // These chunks are created automatically by React.lazy() dynamic imports
+            const restrictedModules = [
+              'SavingsWidgetPane',
+              'RewardsWidgetPane',
+              'ExpertWidgetPane',
+              'TradeWidgetPane'
+            ];
+
+            for (const moduleName of restrictedModules) {
+              if (chunkInfo.name?.includes(moduleName) || chunkInfo.facadeModuleId?.includes(moduleName)) {
+                const shortName = moduleName.replace('WidgetPane', '').toLowerCase();
+                return `assets/restricted/${shortName}-[hash].js`;
+              }
+            }
+            return 'assets/[name]-[hash].js';
+          }
+        }
+      }
     },
     test: {
       exclude: [...configDefaults.exclude],
