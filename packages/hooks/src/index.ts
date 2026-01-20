@@ -93,7 +93,8 @@ export {
 export type {
   MorphoVaultRateData,
   MorphoVaultRateHook,
-  MorphoMarketAllocation,
+  MorphoV1VaultAllocation,
+  MorphoIdleLiquidityAllocation,
   MorphoVaultAllocationsData,
   MorphoVaultAllocationsHook
 } from './morpho';

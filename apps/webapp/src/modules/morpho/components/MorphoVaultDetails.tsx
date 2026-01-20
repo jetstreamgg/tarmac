@@ -50,7 +50,7 @@ export function MorphoVaultDetails({
           <MorphoVaultInfoDetails vaultAddress={vaultAddress} assetToken={assetToken} />
         </DetailSectionRow>
       </DetailSection>
-      <DetailSection title={t`Market Allocations`}>
+      <DetailSection title={t`Exposure`}>
         <DetailSectionRow>
           <MorphoVaultAllocationsDetails vaultAddress={vaultAddress} />
         </DetailSectionRow>
