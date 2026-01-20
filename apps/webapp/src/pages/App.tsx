@@ -17,6 +17,7 @@ import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
 import { ChatProvider } from '@/modules/chat/context/ChatContext';
+import { ModuleAvailabilityProvider } from '@/modules/app/context/ModuleAvailabilityContext';
 import { CORPUS_VERSION, CORPUS_BRANCH } from '@/data/version';
 
 // Expose corpus version to browser console for debugging
@@ -39,22 +40,24 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   return (
     <ConnectedProvider>
-      <ChatProvider>
-        <TermsModalProvider>
-          <BalanceFiltersProvider>
-            <TooltipProvider delayDuration={300}>
-              <ChainModalProvider>
-                <NetworkSwitchProvider>
-                  <ExternalLinkModal />
-                  <Toaster />
-                  <ToastCloseAll />
-                  <RouterProvider router={router} />
-                </NetworkSwitchProvider>
-              </ChainModalProvider>
-            </TooltipProvider>
-          </BalanceFiltersProvider>
-        </TermsModalProvider>
-      </ChatProvider>
+      <ModuleAvailabilityProvider>
+        <ChatProvider>
+          <TermsModalProvider>
+            <BalanceFiltersProvider>
+              <TooltipProvider delayDuration={300}>
+                <ChainModalProvider>
+                  <NetworkSwitchProvider>
+                    <ExternalLinkModal />
+                    <Toaster />
+                    <ToastCloseAll />
+                    <RouterProvider router={router} />
+                  </NetworkSwitchProvider>
+                </ChainModalProvider>
+              </TooltipProvider>
+            </BalanceFiltersProvider>
+          </TermsModalProvider>
+        </ChatProvider>
+      </ModuleAvailabilityProvider>
     </ConnectedProvider>
   );
 };
