@@ -70,22 +70,10 @@ export type MorphoV1VaultAllocation = {
   vaultAddress: `0x${string}`;
   /** V1 vault name (e.g., "Steakhouse USDC") */
   vaultName: string;
-  /** V1 vault symbol */
-  vaultSymbol: string;
-  /** Assets allocated to this V1 vault (raw string) */
-  assets: string;
-  /** Assets allocated in USD */
-  assetsUsd: number;
   /** Formatted assets allocation (e.g., "5.93M") */
   formattedAssets: string;
   /** Formatted assets in USD (e.g., "$5.93M") */
   formattedAssetsUsd: string;
-  /** Percentage of total vault assets allocated */
-  allocationPercentage: number;
-  /** Formatted allocation percentage (e.g., "100.00%") */
-  formattedAllocationPercentage: string;
-  /** V1 vault net APY (after fees) */
-  netApy: number;
   /** Formatted net APY (e.g., "3.68%") */
   formattedNetApy: string;
 };
@@ -94,18 +82,10 @@ export type MorphoV1VaultAllocation = {
 export type MorphoIdleLiquidityAllocation = {
   /** Asset symbol (e.g., "USDC") */
   assetSymbol: string;
-  /** Assets in idle liquidity (raw string) */
-  assets: string;
-  /** Assets in USD */
-  assetsUsd: number;
   /** Formatted assets allocation (e.g., "0") */
   formattedAssets: string;
   /** Formatted assets in USD (e.g., "$0") */
   formattedAssetsUsd: string;
-  /** Percentage of total vault assets */
-  allocationPercentage: number;
-  /** Formatted allocation percentage */
-  formattedAllocationPercentage: string;
 };
 
 export type MorphoVaultAllocationsData = {
@@ -113,14 +93,8 @@ export type MorphoVaultAllocationsData = {
   v1Vaults: MorphoV1VaultAllocation[];
   /** Idle liquidity allocations */
   idleLiquidity: MorphoIdleLiquidityAllocation[];
-  /** Total assets in the vault (raw string) */
-  totalAssets: string;
-  /** Total assets in USD */
-  totalAssetsUsd: number;
   /** Asset symbol (e.g., "USDC") */
   assetSymbol: string;
-  /** Asset decimals for formatting */
-  assetDecimals: number;
 };
 
 export type MorphoVaultAllocationsHook = ReadHook & {
@@ -269,8 +243,6 @@ async function fetchMorphoVaultAllocations(
   // Build idle liquidity allocation (always show it, even if 0)
   // Note: idleAssetsUsd from the API is the source of truth for idle liquidity
   // We estimate the raw asset amount from USD value if needed
-  const idlePercentage = totalAssetsUsd > 0 ? (idleAssetsUsd / totalAssetsUsd) * 100 : 0;
-  // Estimate idle assets from USD (rough approximation when idleAssetsUsd is 0, show 0)
   const idleAssets =
     idleAssetsUsd > 0 && totalAssetsUsd > 0
       ? (BigInt(totalAssets) * BigInt(Math.round(idleAssetsUsd * 1e6))) /
@@ -279,12 +251,8 @@ async function fetchMorphoVaultAllocations(
   const idleLiquidity: MorphoIdleLiquidityAllocation[] = [
     {
       assetSymbol,
-      assets: idleAssets.toString(),
-      assetsUsd: idleAssetsUsd,
       formattedAssets: formatBigInt(idleAssets, { unit: assetDecimals, compact: true }),
-      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`,
-      allocationPercentage: idlePercentage,
-      formattedAllocationPercentage: `${idlePercentage.toFixed(2)}%`
+      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`
     }
   ];
 
@@ -292,10 +260,7 @@ async function fetchMorphoVaultAllocations(
     return {
       v1Vaults: [],
       idleLiquidity,
-      totalAssets,
-      totalAssetsUsd,
-      assetSymbol,
-      assetDecimals
+      assetSymbol
     };
   }
 
@@ -321,10 +286,7 @@ async function fetchMorphoVaultAllocations(
     return {
       v1Vaults: [],
       idleLiquidity,
-      totalAssets,
-      totalAssetsUsd,
-      assetSymbol,
-      assetDecimals
+      assetSymbol
     };
   }
 
@@ -344,34 +306,28 @@ async function fetchMorphoVaultAllocations(
 
     if (!adapterData) continue;
 
-    const allocationPercentage = totalAssetsUsd > 0 ? (adapterData.assetsUsd / totalAssetsUsd) * 100 : 0;
     const assetsBigInt = BigInt(adapterData.assets);
 
     v1Vaults.push({
       vaultAddress: v1VaultAddress,
       vaultName: v1Vault.name,
-      vaultSymbol: v1Vault.symbol,
-      assets: adapterData.assets,
-      assetsUsd: adapterData.assetsUsd,
       formattedAssets: formatBigInt(assetsBigInt, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(adapterData.assetsUsd, { compact: true })}`,
-      allocationPercentage,
-      formattedAllocationPercentage: `${allocationPercentage.toFixed(2)}%`,
-      netApy: v1Vault.state.netApy,
       formattedNetApy: `${(v1Vault.state.netApy * 100).toFixed(2)}%`
     });
   }
 
-  // Sort V1 vaults by allocation percentage (highest first)
-  v1Vaults.sort((a, b) => b.allocationPercentage - a.allocationPercentage);
+  // Sort V1 vaults by assets USD (highest first)
+  v1Vaults.sort((a, b) => {
+    const aUsd = adapterDataMap.get(a.vaultAddress.toLowerCase())?.assetsUsd ?? 0;
+    const bUsd = adapterDataMap.get(b.vaultAddress.toLowerCase())?.assetsUsd ?? 0;
+    return bUsd - aUsd;
+  });
 
   return {
     v1Vaults,
     idleLiquidity,
-    totalAssets,
-    totalAssetsUsd,
-    assetSymbol,
-    assetDecimals
+    assetSymbol
   };
 }
 
