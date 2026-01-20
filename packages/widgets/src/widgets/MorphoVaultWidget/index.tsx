@@ -22,6 +22,9 @@ import { useLingui } from '@lingui/react';
 import { useConnection, useChainId } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@widgets/components/ui/button';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { getValidatedState } from '@widgets/lib/utils';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { AnimatePresence } from 'framer-motion';
@@ -46,6 +49,8 @@ export type MorphoVaultWidgetProps = WidgetProps & {
   batchEnabled?: boolean;
   /** Callback to set batch enabled state */
   setBatchEnabled?: (enabled: boolean) => void;
+  /** Callback to navigate back to expert view */
+  onBackToExpert?: () => void;
 };
 
 const MorphoVaultWidgetWrapped = ({
@@ -64,7 +69,8 @@ const MorphoVaultWidgetWrapped = ({
   enabled = true,
   legalBatchTxUrl,
   batchEnabled,
-  setBatchEnabled
+  setBatchEnabled,
+  onBackToExpert
 }: MorphoVaultWidgetProps) => {
   const validatedExternalState = getValidatedState(externalWidgetState, [assetToken.symbol]);
 
@@ -415,9 +421,21 @@ const MorphoVaultWidgetWrapped = ({
   return (
     <WidgetContainer
       header={
-        <Heading variant="x-large">
-          <Trans>{vaultName}</Trans>
-        </Heading>
+        <div>
+          {onBackToExpert && (
+            <Button variant="link" onClick={onBackToExpert} className="mb-2 p-0">
+              <HStack className="space-x-2">
+                <ArrowLeft className="self-center" />
+                <Heading tag="h3" variant="small" className="text-textSecondary">
+                  Back to Expert
+                </Heading>
+              </HStack>
+            </Button>
+          )}
+          <Heading variant="x-large">
+            <Trans>{vaultName}</Trans>
+          </Heading>
+        </div>
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">
