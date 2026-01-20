@@ -17,12 +17,8 @@ export type MorphoVaultData = {
   assetPerShare: bigint;
   /** User's vault share balance */
   userShares: bigint;
-  /** User's underlying asset value (equivalent to maxWithdraw) */
+  /** User's underlying asset value (calculated via convertToAssets) */
   userAssets: bigint;
-  /** Maximum amount the user can withdraw */
-  userMaxWithdraw: bigint;
-  /** Maximum shares the user can redeem */
-  userMaxRedeem: bigint;
   /** The underlying asset address */
   asset: `0x${string}`;
   /** Vault share token decimals */
@@ -37,9 +33,11 @@ export type MorphoVaultDataHook = ReadHook & {
  * Hook for fetching Morpho vault data (ERC-4626 compliant).
  *
  * Fetches vault-level data (totalAssets, totalSupply, exchange rate) and
- * user-specific data (shares balance, underlying value, max withdraw/redeem).
+ * user-specific data (shares balance, underlying value).
  *
- * All contract reads are batched into a single multicall for efficiency.
+ * Contract reads are split into two batches:
+ * 1. General vault data (always fetched)
+ * 2. User-specific data (fetched when user is connected)
  *
  * @param vaultAddress - The Morpho vault contract address (required)
  */
@@ -53,40 +51,51 @@ export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string
     chainId
   } as const;
 
-  // Batch all contract reads into a single multicall
-  const { data, isLoading, error, refetch } = useReadContracts({
+  // Batch 1: General vault data
+  const {
+    data: vaultData,
+    isLoading: isVaultLoading,
+    error: vaultError,
+    refetch: refetchVault
+  } = useReadContracts({
     contracts: [
-      // Vault-level data (indices 0-4)
       { ...vaultContract, functionName: 'totalAssets' },
       { ...vaultContract, functionName: 'totalSupply' },
       { ...vaultContract, functionName: 'asset' },
       { ...vaultContract, functionName: 'decimals' },
       // Query with 10^18, will normalize based on actual decimals
-      { ...vaultContract, functionName: 'convertToAssets', args: [10n ** 18n] },
-      // User-specific data (indices 5-7)
-      { ...vaultContract, functionName: 'balanceOf', args: [userAddress || ZERO_ADDRESS] },
-      { ...vaultContract, functionName: 'maxWithdraw', args: [userAddress || ZERO_ADDRESS] },
-      { ...vaultContract, functionName: 'maxRedeem', args: [userAddress || ZERO_ADDRESS] }
+      { ...vaultContract, functionName: 'convertToAssets', args: [10n ** 18n] }
     ],
     query: {
       enabled: !!vaultAddress
     }
   });
 
+  // Batch 2: User-specific data (only when user is connected)
+  const {
+    data: userData,
+    isLoading: isUserLoading,
+    error: userError,
+    refetch: refetchUser
+  } = useReadContracts({
+    contracts: [{ ...vaultContract, functionName: 'balanceOf', args: [userAddress || ZERO_ADDRESS] }],
+    query: {
+      enabled: !!vaultAddress && !!userAddress
+    }
+  });
+
+  const isLoading = isVaultLoading || isUserLoading;
+  const error = vaultError || userError;
+  const refetch = async () => {
+    await Promise.all([refetchVault(), refetchUser()]);
+  };
+
   // Parse the batched results
   const parsedData = useMemo<MorphoVaultData | undefined>(() => {
-    if (!data) return undefined;
+    if (!vaultData) return undefined;
 
-    const [
-      totalAssetsResult,
-      totalSupplyResult,
-      assetResult,
-      decimalsResult,
-      assetPerShareResult,
-      userSharesResult,
-      maxWithdrawResult,
-      maxRedeemResult
-    ] = data;
+    const [totalAssetsResult, totalSupplyResult, assetResult, decimalsResult, assetPerShareResult] =
+      vaultData;
 
     // Check that all vault-level data succeeded
     if (
@@ -106,23 +115,22 @@ export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string
     const assetPerShare = assetPerShareResult.result;
 
     // User data defaults to 0 if not connected or call failed
-    const userShares = userSharesResult.status === 'success' ? userSharesResult.result : 0n;
-    const userMaxWithdraw = maxWithdrawResult.status === 'success' ? maxWithdrawResult.result : 0n;
-    const userMaxRedeem = maxRedeemResult.status === 'success' ? maxRedeemResult.result : 0n;
+    const userShares = userData?.[0]?.status === 'success' ? userData[0].result : 0n;
+
+    // Calculate userAssets using convertToAssets formula: shares * assetPerShare / 10^decimals
+    // assetPerShare is the result of convertToAssets(10^18), so we need to adjust for decimals
+    const userAssets = userShares > 0n ? (userShares * assetPerShare) / 10n ** BigInt(decimals) : 0n;
 
     return {
       totalAssets,
       totalSupply,
       assetPerShare,
       userShares,
-      // userAssets is equivalent to maxWithdraw for the user's full position
-      userAssets: userMaxWithdraw,
-      userMaxWithdraw,
-      userMaxRedeem,
+      userAssets,
       asset,
       decimals
     };
-  }, [data]);
+  }, [vaultData, userData]);
 
   // Data sources for transparency
   const dataSources: DataSource[] = vaultAddress
@@ -139,7 +147,7 @@ export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string
   return {
     isLoading,
     data: parsedData,
-    error,
+    error: error || null,
     mutate: refetch,
     dataSources
   };

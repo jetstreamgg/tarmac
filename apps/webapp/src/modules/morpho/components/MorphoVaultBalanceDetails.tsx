@@ -2,7 +2,7 @@ import { useMorphoVaultData, useTokenBalance, Token } from '@jetstreamgg/sky-hoo
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
-import { useChainId } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 
 type MorphoVaultBalanceDetailsProps = {
   vaultAddress: `0x${string}`;
@@ -11,6 +11,7 @@ type MorphoVaultBalanceDetailsProps = {
 
 export function MorphoVaultBalanceDetails({ vaultAddress, assetToken }: MorphoVaultBalanceDetailsProps) {
   const chainId = useChainId();
+  const { address } = useConnection();
   const {
     data: vaultData,
     isLoading: isVaultLoading,
@@ -24,7 +25,8 @@ export function MorphoVaultBalanceDetails({ vaultAddress, assetToken }: MorphoVa
     error: balanceError
   } = useTokenBalance({
     chainId,
-    token: assetAddress
+    token: assetAddress,
+    address
   });
 
   const SuppliedVaultBalanceCard = () => {
