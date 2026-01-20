@@ -40,7 +40,7 @@ export const MorphoVaultStatsCard = ({
   });
 
   // Data handling
-  const formattedRate = rateData?.formattedRate || '0.00%';
+  const formattedRate = rateData?.formattedNetRate || '0.00%';
   const totalAssets = vaultData?.totalAssets || 0n;
 
   if (!currentVaultAddress) {

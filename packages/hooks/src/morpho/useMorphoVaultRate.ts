@@ -14,8 +14,27 @@ type MorphoVaultApiResponse = {
       avgNetApy: number;
       performanceFee: number;
       managementFee: number;
+      rewards: {
+        supplyApr: number;
+        asset: {
+          symbol: string;
+          logoURI: string | null;
+        };
+      }[];
     } | null;
   };
+};
+
+/** Reward data for displaying incentives */
+export type MorphoRewardData = {
+  /** Reward APY as a decimal */
+  apy: number;
+  /** Formatted reward APY (e.g., "+0.26%") */
+  formattedApy: string;
+  /** Reward token symbol (e.g., "MORPHO") */
+  symbol: string;
+  /** Reward token logo URI */
+  logoUri: string | null;
 };
 
 export type MorphoVaultRateData = {
@@ -31,6 +50,12 @@ export type MorphoVaultRateData = {
   formattedRate: string;
   /** Formatted Net APY string for display */
   formattedNetRate: string;
+  /** Formatted management fee for display (e.g., "0%") */
+  formattedManagementFee: string;
+  /** Formatted performance fee for display (e.g., "0%") */
+  formattedPerformanceFee: string;
+  /** Rewards/incentives data */
+  rewards: MorphoRewardData[];
 };
 
 export type MorphoVaultRateHook = ReadHook & {
@@ -45,6 +70,13 @@ const VAULT_RATE_QUERY = `
       avgNetApy
       performanceFee
       managementFee
+      rewards {
+        supplyApr
+        asset {
+          symbol
+          logoURI
+        }
+      }
     }
   }
 `;
@@ -77,7 +109,31 @@ async function fetchMorphoVaultRate(
     return undefined;
   }
 
-  const { avgApy, avgNetApy, managementFee, performanceFee } = result.data.vaultV2ByAddress;
+  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = result.data.vaultV2ByAddress;
+
+  // Transform rewards data (supplyApr is already a decimal, e.g., 0.0026 for 0.26%)
+  // Aggregate rewards by symbol and filter out 0% APY rewards
+  const rewardsMap = new Map<string, { apy: number; logoUri: string | null }>();
+  for (const reward of rewards || []) {
+    if (reward.supplyApr > 0) {
+      const existing = rewardsMap.get(reward.asset.symbol);
+      if (existing) {
+        existing.apy += reward.supplyApr;
+      } else {
+        rewardsMap.set(reward.asset.symbol, {
+          apy: reward.supplyApr,
+          logoUri: reward.asset.logoURI
+        });
+      }
+    }
+  }
+
+  const rewardsData: MorphoRewardData[] = Array.from(rewardsMap.entries()).map(([symbol, data]) => ({
+    apy: data.apy,
+    formattedApy: `+${(data.apy * 100).toFixed(2)}%`,
+    symbol,
+    logoUri: data.logoUri
+  }));
 
   return {
     rate: avgApy,
@@ -85,7 +141,10 @@ async function fetchMorphoVaultRate(
     managementFee,
     performanceFee,
     formattedRate: `${(avgApy * 100).toFixed(2)}%`,
-    formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`
+    formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`,
+    formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
+    formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
+    rewards: rewardsData
   };
 }
 

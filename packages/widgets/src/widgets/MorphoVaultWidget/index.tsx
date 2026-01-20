@@ -508,7 +508,7 @@ const MorphoVaultWidgetWrapped = ({
               vaultAddress={vaultAddress}
               vaultName={vaultName}
               vaultTvl={vaultData?.totalAssets}
-              vaultRate={vaultRateData?.formattedRate}
+              vaultRate={vaultRateData?.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
             />
           </CardAnimationWrapper>

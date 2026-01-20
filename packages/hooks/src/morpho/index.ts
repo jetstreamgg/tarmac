@@ -2,7 +2,12 @@ export { useBatchMorphoVaultDeposit } from './useBatchMorphoVaultDeposit';
 export { useMorphoVaultWithdraw } from './useMorphoVaultWithdraw';
 export { useMorphoVaultRedeem } from './useMorphoVaultRedeem';
 export { useMorphoVaultData } from './useMorphoVaultData';
-export { useMorphoVaultRate, type MorphoVaultRateData, type MorphoVaultRateHook } from './useMorphoVaultRate';
+export {
+  useMorphoVaultRate,
+  type MorphoVaultRateData,
+  type MorphoVaultRateHook,
+  type MorphoRewardData
+} from './useMorphoVaultRate';
 export {
   useMorphoVaultAllocations,
   type MorphoV1VaultAllocation,
