@@ -315,6 +315,20 @@ export const contracts: {
       [mainnet.id]: '0xbeef088055857739C12CD3765F20b7679Def0f51',
       [TENDERLY_CHAIN_ID]: '0xbeef088055857739C12CD3765F20b7679Def0f51'
     }
+  },
+  {
+    name: 'MorphoMerklDistributor',
+    address: {
+      [mainnet.id]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+      [TENDERLY_CHAIN_ID]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
+    }
+  },
+  {
+    name: 'MorphoMerklDistributorImplementation',
+    address: {
+      [mainnet.id]: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0',
+      [TENDERLY_CHAIN_ID]: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0'
+    }
   }
 ];
 

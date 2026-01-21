@@ -5,9 +5,10 @@ import {
   useIsBatchSupported,
   Token,
   useMorphoVaultData,
-  useMorphoVaultRate
+  useMorphoVaultRate,
+  useMorphoVaultRewards
 } from '@jetstreamgg/sky-hooks';
-import { useDebounce } from '@jetstreamgg/sky-utils';
+import { useDebounce, formatBigInt } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './lib/constants';
@@ -97,6 +98,25 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
 
+  // Vault rewards hook - fetches claimable rewards from Merkl API
+  const {
+    data: rewardsData,
+    isLoading: isRewardsLoading,
+    mutate: mutateRewards
+  } = useMorphoVaultRewards({
+    vaultAddress
+  });
+
+  // Build the claim amount text for display in transaction status
+  const claimAmountText = useMemo(() => {
+    return (
+      rewardsData?.rewards
+        .filter(r => r.pending > 0n)
+        .map(r => `${formatBigInt(r.pending, { unit: r.tokenDecimals, maxDecimals: 2 })} ${r.tokenSymbol}`)
+        .join(' + ') || ''
+    );
+  }, [rewardsData?.rewards]);
+
   // User's underlying asset balance (e.g., USDC balance)
   const { data: assetBalance, refetch: mutateAssetBalance } = useTokenBalance({
     chainId,
@@ -160,22 +180,26 @@ const MorphoVaultWidgetWrapped = ({
     !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === MorphoVaultFlow.SUPPLY;
 
   // Transaction hooks
-  const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem } = useMorphoVaultTransactions({
-    amount: debouncedAmount,
-    shares: vaultData?.userShares ?? 0n,
-    max,
-    vaultAddress,
-    assetAddress,
-    assetDecimals,
-    assetSymbol: assetToken.symbol,
-    shouldUseBatch,
-    mutateAllowance,
-    mutateVaultData,
-    mutateAssetBalance,
-    addRecentTransaction,
-    onWidgetStateChange,
-    onNotification
-  });
+  const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem, morphoVaultClaimRewards } =
+    useMorphoVaultTransactions({
+      amount: debouncedAmount,
+      shares: vaultData?.userShares ?? 0n,
+      max,
+      vaultAddress,
+      assetAddress,
+      assetDecimals,
+      assetSymbol: assetToken.symbol,
+      shouldUseBatch,
+      rewards: rewardsData?.rewards,
+      hasClaimableRewards: rewardsData?.hasClaimableRewards,
+      mutateAllowance,
+      mutateVaultData,
+      mutateAssetBalance,
+      mutateRewards,
+      addRecentTransaction,
+      onWidgetStateChange,
+      onNotification
+    });
 
   // Initialize widget state based on connection and tab
   useEffect(() => {
@@ -202,9 +226,11 @@ const MorphoVaultWidgetWrapped = ({
     }
   }, [tabIndex, isConnectedAndEnabled]);
 
-  // Show step indicator for supply flows that need allowance
+  // Show step indicator for supply flows that need allowance (hide for claim flow)
   useEffect(() => {
-    if (txStatus === TxStatus.IDLE) {
+    if (widgetState.flow === MorphoVaultFlow.CLAIM) {
+      setShowStepIndicator(false);
+    } else if (txStatus === TxStatus.IDLE) {
       setShowStepIndicator(widgetState.flow === MorphoVaultFlow.SUPPLY && needsAllowance);
     }
   }, [txStatus, widgetState.flow, needsAllowance, setShowStepIndicator]);
@@ -462,6 +488,7 @@ const MorphoVaultWidgetWrapped = ({
               onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
               needsAllowance={needsAllowance}
+              claimAmountText={claimAmountText}
             />
           </CardAnimationWrapper>
         ) : widgetState.screen === MorphoVaultScreen.REVIEW ? (
@@ -510,6 +537,9 @@ const MorphoVaultWidgetWrapped = ({
               vaultTvl={vaultData?.totalAssets}
               vaultRate={vaultRateData?.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
+              claimRewards={morphoVaultClaimRewards}
+              isRewardsLoading={isRewardsLoading}
+              hasClaimableRewards={rewardsData?.hasClaimableRewards}
             />
           </CardAnimationWrapper>
         )}

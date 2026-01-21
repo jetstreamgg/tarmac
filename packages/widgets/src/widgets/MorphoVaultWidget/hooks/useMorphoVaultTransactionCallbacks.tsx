@@ -1,9 +1,11 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
+import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useTransactionCallbacks } from '@widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@widgets/shared/types/transactionCallbacks';
-import { WidgetProps } from '@widgets/shared/types/widgetState';
-import { useMemo } from 'react';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { useContext, useMemo } from 'react';
+import { MorphoVaultAction, MorphoVaultFlow, MorphoVaultScreen } from '../lib/constants';
 
 interface UseMorphoVaultTransactionCallbacksParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
@@ -15,6 +17,7 @@ interface UseMorphoVaultTransactionCallbacksParameters
   mutateAllowance: () => void;
   mutateVaultData: () => void;
   mutateAssetBalance: () => void;
+  mutateRewards?: () => void;
 }
 
 export const useMorphoVaultTransactionCallbacks = ({
@@ -24,10 +27,12 @@ export const useMorphoVaultTransactionCallbacks = ({
   mutateAllowance,
   mutateVaultData,
   mutateAssetBalance,
+  mutateRewards,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
 }: UseMorphoVaultTransactionCallbacksParameters) => {
+  const { setWidgetState } = useContext(WidgetContext);
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
@@ -124,5 +129,43 @@ export const useMorphoVaultTransactionCallbacks = ({
     ]
   );
 
-  return { supplyTransactionCallbacks, withdrawTransactionCallbacks };
+  // Claim rewards transaction callbacks
+  const claimRewardsTransactionCallbacks = useMemo<TransactionCallbacks>(
+    () => ({
+      onMutate: () => {
+        handleOnMutate();
+        setWidgetState((prev: WidgetState) => ({
+          ...prev,
+          flow: MorphoVaultFlow.CLAIM,
+          action: MorphoVaultAction.CLAIM,
+          screen: MorphoVaultScreen.TRANSACTION
+        }));
+      },
+      onStart: hash => {
+        handleOnStart({
+          hash,
+          recentTransactionDescription: t`Claiming rewards`
+        });
+      },
+      onSuccess: hash => {
+        handleOnSuccess({
+          hash,
+          notificationTitle: t`Claim successful`,
+          notificationDescription: t`You claimed your rewards`
+        });
+        mutateRewards?.();
+      },
+      onError: (error, hash) => {
+        handleOnError({
+          error,
+          hash,
+          notificationTitle: t`Claim failed`,
+          notificationDescription: t`Something went wrong with claiming your rewards. Please try again.`
+        });
+      }
+    }),
+    [handleOnError, handleOnMutate, handleOnStart, handleOnSuccess, mutateRewards, setWidgetState]
+  );
+
+  return { supplyTransactionCallbacks, withdrawTransactionCallbacks, claimRewardsTransactionCallbacks };
 };

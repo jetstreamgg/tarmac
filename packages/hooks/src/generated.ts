@@ -1,9 +1,457 @@
 import {
+  createUseWatchContractEvent,
   createUseReadContract,
   createUseWriteContract,
-  createUseSimulateContract,
-  createUseWatchContractEvent
+  createUseSimulateContract
 } from 'wagmi/codegen';
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MorphoMerklDistributor
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const morphoMerklDistributorAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_logic', internalType: 'address', type: 'address' },
+      { name: '_data', internalType: 'bytes', type: 'bytes' }
+    ],
+    stateMutability: 'payable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'previousAdmin', internalType: 'address', type: 'address', indexed: false },
+      { name: 'newAdmin', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'AdminChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'beacon', internalType: 'address', type: 'address', indexed: true }],
+    name: 'BeaconUpgraded'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Upgraded'
+  },
+  { type: 'fallback', stateMutability: 'payable' },
+  { type: 'receive', stateMutability: 'payable' }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const morphoMerklDistributorAddress = {
+  1: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+  314310: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const morphoMerklDistributorConfig = {
+  address: morphoMerklDistributorAddress,
+  abi: morphoMerklDistributorAbi
+} as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MorphoMerklDistributorImplementation
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const morphoMerklDistributorImplementationAbi = [
+  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
+  { type: 'error', inputs: [], name: 'InvalidDispute' },
+  { type: 'error', inputs: [], name: 'InvalidLengths' },
+  { type: 'error', inputs: [], name: 'InvalidProof' },
+  { type: 'error', inputs: [], name: 'InvalidUninitializedRoot' },
+  { type: 'error', inputs: [], name: 'NoDispute' },
+  { type: 'error', inputs: [], name: 'NotGovernor' },
+  { type: 'error', inputs: [], name: 'NotTrusted' },
+  { type: 'error', inputs: [], name: 'NotWhitelisted' },
+  { type: 'error', inputs: [], name: 'UnresolvedDispute' },
+  { type: 'error', inputs: [], name: 'ZeroAddress' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'previousAdmin', internalType: 'address', type: 'address', indexed: false },
+      { name: 'newAdmin', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'AdminChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'beacon', internalType: 'address', type: 'address', indexed: true }],
+    name: 'BeaconUpgraded'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'token', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Claimed'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: '_disputeAmount', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'DisputeAmountUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: '_disputePeriod', internalType: 'uint48', type: 'uint48', indexed: false }],
+    name: 'DisputePeriodUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'valid', internalType: 'bool', type: 'bool', indexed: false }],
+    name: 'DisputeResolved'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: '_disputeToken', internalType: 'address', type: 'address', indexed: true }],
+    name: 'DisputeTokenUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'reason', internalType: 'string', type: 'string', indexed: false }],
+    name: 'Disputed'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'version', internalType: 'uint8', type: 'uint8', indexed: false }],
+    name: 'Initialized'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'isEnabled', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'OperatorClaimingToggled'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address', indexed: true },
+      { name: 'operator', internalType: 'address', type: 'address', indexed: true },
+      { name: 'isWhitelisted', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'OperatorToggled'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'token', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: true },
+      { name: 'amount', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Recovered'
+  },
+  { type: 'event', anonymous: false, inputs: [], name: 'Revoked' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32', indexed: false },
+      { name: 'ipfsHash', internalType: 'bytes32', type: 'bytes32', indexed: false },
+      { name: 'endOfDisputePeriod', internalType: 'uint48', type: 'uint48', indexed: false }
+    ],
+    name: 'TreeUpdated'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'eoa', internalType: 'address', type: 'address', indexed: true },
+      { name: 'trust', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'TrustedToggled'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: true }],
+    name: 'Upgraded'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'canUpdateMerkleRoot',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'users', internalType: 'address[]', type: 'address[]' },
+      { name: 'tokens', internalType: 'address[]', type: 'address[]' },
+      { name: 'amounts', internalType: 'uint256[]', type: 'uint256[]' },
+      { name: 'proofs', internalType: 'bytes32[][]', type: 'bytes32[][]' }
+    ],
+    name: 'claim',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' }
+    ],
+    name: 'claimed',
+    outputs: [
+      { name: 'amount', internalType: 'uint208', type: 'uint208' },
+      { name: 'timestamp', internalType: 'uint48', type: 'uint48' },
+      { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'core',
+    outputs: [{ name: '', internalType: 'contract ICore', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'disputeAmount',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'disputePeriod',
+    outputs: [{ name: '', internalType: 'uint48', type: 'uint48' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'disputeToken',
+    outputs: [{ name: '', internalType: 'contract IERC20', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'reason', internalType: 'string', type: 'string' }],
+    name: 'disputeTree',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'disputer',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'endOfDisputePeriod',
+    outputs: [{ name: '', internalType: 'uint48', type: 'uint48' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'getMerkleRoot',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_core', internalType: 'contract ICore', type: 'address' }],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastTree',
+    outputs: [
+      { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'ipfsHash', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'onlyOperatorCanClaim',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '', internalType: 'address', type: 'address' },
+      { name: '', internalType: 'address', type: 'address' }
+    ],
+    name: 'operators',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'proxiableUUID',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'tokenAddress', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'amountToRecover', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'recoverERC20',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'valid', internalType: 'bool', type: 'bool' }],
+    name: 'resolveDispute',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'function', inputs: [], name: 'revokeTree', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [{ name: '_disputeAmount', internalType: 'uint256', type: 'uint256' }],
+    name: 'setDisputeAmount',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_disputePeriod', internalType: 'uint48', type: 'uint48' }],
+    name: 'setDisputePeriod',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '_disputeToken', internalType: 'contract IERC20', type: 'address' }],
+    name: 'setDisputeToken',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'user', internalType: 'address', type: 'address' }],
+    name: 'toggleOnlyOperatorCanClaim',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'user', internalType: 'address', type: 'address' },
+      { name: 'operator', internalType: 'address', type: 'address' }
+    ],
+    name: 'toggleOperator',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'eoa', internalType: 'address', type: 'address' }],
+    name: 'toggleTrusted',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'tree',
+    outputs: [
+      { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'ipfsHash', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      {
+        name: '_tree',
+        internalType: 'struct MerkleTree',
+        type: 'tuple',
+        components: [
+          { name: 'merkleRoot', internalType: 'bytes32', type: 'bytes32' },
+          { name: 'ipfsHash', internalType: 'bytes32', type: 'bytes32' }
+        ]
+      }
+    ],
+    name: 'updateTree',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newImplementation', internalType: 'address', type: 'address' }],
+    name: 'upgradeTo',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'upgradeToAndCall',
+    outputs: [],
+    stateMutability: 'payable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const morphoMerklDistributorImplementationAddress = {
+  1: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0',
+  314310: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const morphoMerklDistributorImplementationConfig = {
+  address: morphoMerklDistributorImplementationAddress,
+  abi: morphoMerklDistributorImplementationAbi
+} as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // cleReward
@@ -12627,6 +13075,791 @@ export const wethConfig = { address: wethAddress, abi: wethAbi } as const;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // React
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const useWatchMorphoMerklDistributor = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorAbi,
+  address: morphoMerklDistributorAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorAbi}__ and `eventName` set to `"AdminChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const useWatchMorphoMerklDistributorAdminChanged = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorAbi,
+  address: morphoMerklDistributorAddress,
+  eventName: 'AdminChanged'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorAbi}__ and `eventName` set to `"BeaconUpgraded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const useWatchMorphoMerklDistributorBeaconUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorAbi,
+  address: morphoMerklDistributorAddress,
+  eventName: 'BeaconUpgraded'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorAbi}__ and `eventName` set to `"Upgraded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae)
+ */
+export const useWatchMorphoMerklDistributorUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorAbi,
+  address: morphoMerklDistributorAddress,
+  eventName: 'Upgraded'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementation = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"canUpdateMerkleRoot"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationCanUpdateMerkleRoot =
+  /*#__PURE__*/ createUseReadContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'canUpdateMerkleRoot'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"claimed"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationClaimed = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'claimed'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"core"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationCore = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'core'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"disputeAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationDisputeAmount = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'disputeAmount'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"disputePeriod"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationDisputePeriod = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'disputePeriod'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"disputeToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationDisputeToken = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'disputeToken'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"disputer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationDisputer = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'disputer'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"endOfDisputePeriod"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationEndOfDisputePeriod =
+  /*#__PURE__*/ createUseReadContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'endOfDisputePeriod'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"getMerkleRoot"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationGetMerkleRoot = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'getMerkleRoot'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"lastTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationLastTree = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'lastTree'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"onlyOperatorCanClaim"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationOnlyOperatorCanClaim =
+  /*#__PURE__*/ createUseReadContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'onlyOperatorCanClaim'
+  });
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"operators"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationOperators = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'operators'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"proxiableUUID"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationProxiableUuid = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'proxiableUUID'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"tree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useReadMorphoMerklDistributorImplementationTree = /*#__PURE__*/ createUseReadContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'tree'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementation = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"claim"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationClaim = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'claim'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"disputeTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationDisputeTree = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'disputeTree'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationInitialize = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'initialize'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationRecoverErc20 = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'recoverERC20'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"resolveDispute"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationResolveDispute =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'resolveDispute'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"revokeTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationRevokeTree = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'revokeTree'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"setDisputeAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationSetDisputeAmount =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'setDisputeAmount'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"setDisputePeriod"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationSetDisputePeriod =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'setDisputePeriod'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"setDisputeToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationSetDisputeToken =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'setDisputeToken'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"toggleOnlyOperatorCanClaim"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationToggleOnlyOperatorCanClaim =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'toggleOnlyOperatorCanClaim'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"toggleOperator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationToggleOperator =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'toggleOperator'
+  });
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"toggleTrusted"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationToggleTrusted = /*#__PURE__*/ createUseWriteContract(
+  {
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'toggleTrusted'
+  }
+);
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"updateTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationUpdateTree = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'updateTree'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"upgradeTo"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationUpgradeTo = /*#__PURE__*/ createUseWriteContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'upgradeTo'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"upgradeToAndCall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWriteMorphoMerklDistributorImplementationUpgradeToAndCall =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'upgradeToAndCall'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementation = /*#__PURE__*/ createUseSimulateContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"claim"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationClaim = /*#__PURE__*/ createUseSimulateContract({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  functionName: 'claim'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"disputeTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationDisputeTree =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'disputeTree'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"initialize"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationInitialize =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'initialize'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"recoverERC20"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationRecoverErc20 =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'recoverERC20'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"resolveDispute"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationResolveDispute =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'resolveDispute'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"revokeTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationRevokeTree =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'revokeTree'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"setDisputeAmount"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationSetDisputeAmount =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'setDisputeAmount'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"setDisputePeriod"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationSetDisputePeriod =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'setDisputePeriod'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"setDisputeToken"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationSetDisputeToken =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'setDisputeToken'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"toggleOnlyOperatorCanClaim"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationToggleOnlyOperatorCanClaim =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'toggleOnlyOperatorCanClaim'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"toggleOperator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationToggleOperator =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'toggleOperator'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"toggleTrusted"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationToggleTrusted =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'toggleTrusted'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"updateTree"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationUpdateTree =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'updateTree'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"upgradeTo"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationUpgradeTo =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'upgradeTo'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `functionName` set to `"upgradeToAndCall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useSimulateMorphoMerklDistributorImplementationUpgradeToAndCall =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    functionName: 'upgradeToAndCall'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementation = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"AdminChanged"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationAdminChanged =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'AdminChanged'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"BeaconUpgraded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationBeaconUpgraded =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'BeaconUpgraded'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"Claimed"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationClaimed = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  eventName: 'Claimed'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"DisputeAmountUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationDisputeAmountUpdated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'DisputeAmountUpdated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"DisputePeriodUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationDisputePeriodUpdated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'DisputePeriodUpdated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"DisputeResolved"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationDisputeResolved =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'DisputeResolved'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"DisputeTokenUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationDisputeTokenUpdated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'DisputeTokenUpdated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"Disputed"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationDisputed = /*#__PURE__*/ createUseWatchContractEvent(
+  {
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'Disputed'
+  }
+);
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"Initialized"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationInitialized =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'Initialized'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"OperatorClaimingToggled"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationOperatorClaimingToggled =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'OperatorClaimingToggled'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"OperatorToggled"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationOperatorToggled =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'OperatorToggled'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"Recovered"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationRecovered =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'Recovered'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"Revoked"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationRevoked = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: morphoMerklDistributorImplementationAbi,
+  address: morphoMerklDistributorImplementationAddress,
+  eventName: 'Revoked'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"TreeUpdated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationTreeUpdated =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'TreeUpdated'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"TrustedToggled"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationTrustedToggled =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'TrustedToggled'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link morphoMerklDistributorImplementationAbi}__ and `eventName` set to `"Upgraded"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0)
+ */
+export const useWatchMorphoMerklDistributorImplementationUpgraded = /*#__PURE__*/ createUseWatchContractEvent(
+  {
+    abi: morphoMerklDistributorImplementationAbi,
+    address: morphoMerklDistributorImplementationAddress,
+    eventName: 'Upgraded'
+  }
+);
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link cleRewardAbi}__

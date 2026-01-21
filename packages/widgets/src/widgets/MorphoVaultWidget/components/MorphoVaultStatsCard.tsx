@@ -1,5 +1,6 @@
 import { useChainId } from 'wagmi';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { WriteHook } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -8,6 +9,7 @@ import { Skeleton } from '@widgets/components/ui/skeleton';
 import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MorphoVaultStatsCardCore } from './MorphoVaultStatsCardCore';
+import { MorphoVaultRewardsCard } from './MorphoVaultRewardsCard';
 
 type MorphoVaultStatsCardProps = {
   /** Whether data is loading */
@@ -34,6 +36,12 @@ type MorphoVaultStatsCardProps = {
   isConnectedAndEnabled: boolean;
   /** Callback for external link clicks */
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  /** Claim rewards hook */
+  claimRewards?: WriteHook;
+  /** Whether rewards are loading */
+  isRewardsLoading?: boolean;
+  /** Whether there are claimable rewards */
+  hasClaimableRewards?: boolean;
 };
 
 export const MorphoVaultStatsCard = ({
@@ -48,7 +56,10 @@ export const MorphoVaultStatsCard = ({
   assetDecimals,
   shareDecimals,
   isConnectedAndEnabled,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  claimRewards,
+  isRewardsLoading,
+  hasClaimableRewards
 }: MorphoVaultStatsCardProps) => {
   const chainId = useChainId();
 
@@ -106,13 +117,24 @@ export const MorphoVaultStatsCard = ({
       vaultRate={vaultRate}
       isLoading={isLoading}
       content={
-        <StatsAccordionCard
-          chainId={chainId}
-          address={vaultAddress}
-          accordionTitle="Vault info"
-          accordionContent={accordionContent}
-          onExternalLinkClicked={onExternalLinkClicked}
-        />
+        <>
+          <StatsAccordionCard
+            chainId={chainId}
+            address={vaultAddress}
+            accordionTitle="Vault info"
+            accordionContent={accordionContent}
+            onExternalLinkClicked={onExternalLinkClicked}
+          />
+          {vaultAddress && (
+            <MorphoVaultRewardsCard
+              vaultAddress={vaultAddress}
+              isConnectedAndEnabled={isConnectedAndEnabled}
+              claimRewards={claimRewards}
+              isRewardsLoading={isRewardsLoading}
+              hasClaimableRewards={hasClaimableRewards}
+            />
+          )}
+        </>
       }
     />
   );

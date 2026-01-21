@@ -88,15 +88,21 @@ export {
   useMorphoVaultRedeem,
   useMorphoVaultData,
   useMorphoVaultRate,
-  useMorphoVaultAllocations
+  useMorphoVaultAllocations,
+  useMorphoVaultRewards,
+  useMorphoVaultClaimRewards
 } from './morpho';
 export type {
   MorphoVaultRateData,
   MorphoVaultRateHook,
+  MorphoRewardData,
   MorphoV1VaultAllocation,
   MorphoIdleLiquidityAllocation,
   MorphoVaultAllocationsData,
-  MorphoVaultAllocationsHook
+  MorphoVaultAllocationsHook,
+  MorphoVaultReward,
+  MorphoVaultRewardsData,
+  MorphoVaultRewardsHook
 } from './morpho';
 
 // Authentication

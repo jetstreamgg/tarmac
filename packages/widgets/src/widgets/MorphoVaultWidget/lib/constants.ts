@@ -5,13 +5,15 @@ import { MessageDescriptor } from '@lingui/core';
 
 export enum MorphoVaultFlow {
   SUPPLY = 'supply',
-  WITHDRAW = 'withdraw'
+  WITHDRAW = 'withdraw',
+  CLAIM = 'claim'
 }
 
 export enum MorphoVaultAction {
   APPROVE = 'approve',
   SUPPLY = 'supply',
-  WITHDRAW = 'withdraw'
+  WITHDRAW = 'withdraw',
+  CLAIM = 'claim'
 }
 
 export enum MorphoVaultScreen {
@@ -30,6 +32,13 @@ export const morphoVaultSupplyTitle: TxCardCopyText = {
 
 export const morphoVaultWithdrawTitle: TxCardCopyText = {
   [TxStatus.INITIALIZED]: msg`Begin the withdraw process`,
+  [TxStatus.LOADING]: msg`In progress`,
+  [TxStatus.SUCCESS]: msg`Success!`,
+  [TxStatus.ERROR]: msg`Error`
+};
+
+export const morphoVaultClaimTitle: TxCardCopyText = {
+  [TxStatus.INITIALIZED]: msg`Confirm your claim`,
   [TxStatus.LOADING]: msg`In progress`,
   [TxStatus.SUCCESS]: msg`Success!`,
   [TxStatus.ERROR]: msg`Error`
@@ -183,5 +192,53 @@ export function withdrawLoadingButtonText({
       return msg`Withdrawing ${amount} ${symbol}`;
     default:
       return msg``;
+  }
+}
+
+// Claim rewards
+export function claimSubtitle({
+  txStatus,
+  claimAmountText
+}: {
+  txStatus: TxStatus;
+  claimAmountText: string;
+}): MessageDescriptor {
+  switch (txStatus) {
+    case TxStatus.INITIALIZED:
+      return msg`Please confirm that you want to claim your rewards directly to your wallet.`;
+    case TxStatus.LOADING:
+      return msg`Your claim is being processed on the blockchain. Please wait.`;
+    case TxStatus.SUCCESS:
+      return msg`You've claimed ${claimAmountText} rewards`;
+    case TxStatus.ERROR:
+      return msg`An error occurred while claiming your rewards.`;
+    default:
+      return msg``;
+  }
+}
+
+export function claimLoadingButtonText({
+  txStatus,
+  claimAmountText
+}: {
+  txStatus: TxStatus;
+  claimAmountText: string;
+}): MessageDescriptor {
+  switch (txStatus) {
+    case TxStatus.INITIALIZED:
+      return msg`Waiting for confirmation`;
+    case TxStatus.LOADING:
+      return msg`Claiming ${claimAmountText}`;
+    default:
+      return msg``;
+  }
+}
+
+export function claimActionDescription({ txStatus }: { txStatus: TxStatus }): MessageDescriptor {
+  switch (txStatus) {
+    case TxStatus.SUCCESS:
+      return msg`Claimed from the Morpho Vault rewards`;
+    default:
+      return msg`Claiming from the Morpho Vault rewards`;
   }
 }

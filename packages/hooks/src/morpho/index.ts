@@ -15,3 +15,10 @@ export {
   type MorphoVaultAllocationsData,
   type MorphoVaultAllocationsHook
 } from './useMorphoVaultAllocations';
+export {
+  useMorphoVaultRewards,
+  type MorphoVaultReward,
+  type MorphoVaultRewardsData,
+  type MorphoVaultRewardsHook
+} from './useMorphoVaultRewards';
+export { useMorphoVaultClaimRewards } from './useMorphoVaultClaimRewards';

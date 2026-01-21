@@ -3,6 +3,7 @@ import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
 import { useChainId, useConnection } from 'wagmi';
+import { MorphoVaultRewardsDetails } from './MorphoVaultRewardsDetails';
 
 type MorphoVaultBalanceDetailsProps = {
   vaultAddress: `0x${string}`;
@@ -63,6 +64,7 @@ export function MorphoVaultBalanceDetails({ vaultAddress, assetToken }: MorphoVa
     <div className="flex w-full flex-col justify-between gap-3 xl:flex-row">
       <SuppliedVaultBalanceCard />
       <AssetBalanceCard />
+      <MorphoVaultRewardsDetails vaultAddress={vaultAddress} />
     </div>
   );
 }

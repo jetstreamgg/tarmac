@@ -5,11 +5,15 @@ import {
   MorphoVaultScreen,
   supplySubtitle,
   withdrawSubtitle,
+  claimSubtitle,
   morphoVaultActionDescription,
+  claimActionDescription,
   supplyLoadingButtonText,
   withdrawLoadingButtonText,
+  claimLoadingButtonText,
   morphoVaultSupplyTitle,
-  morphoVaultWithdrawTitle
+  morphoVaultWithdrawTitle,
+  morphoVaultClaimTitle
 } from '../lib/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -26,13 +30,15 @@ export const MorphoVaultTransactionStatus = ({
   amount,
   onExternalLinkClicked,
   isBatchTransaction,
-  needsAllowance
+  needsAllowance,
+  claimAmountText
 }: {
   amount: bigint;
   assetToken: Token;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
   needsAllowance: boolean;
+  claimAmountText?: string;
 }) => {
   // Capture needsAllowance at mount to avoid state changes during transaction
   const [flowNeedsAllowance] = useState(needsAllowance);
@@ -147,6 +153,27 @@ export const MorphoVaultTransactionStatus = ({
 
         setStep(2);
       }
+    } else if (flow === MorphoVaultFlow.CLAIM) {
+      if (screen === MorphoVaultScreen.TRANSACTION) {
+        setTxTitle(i18n._(morphoVaultClaimTitle[txStatus as keyof TxCardCopyText]));
+        setTxSubtitle(
+          i18n._(
+            claimSubtitle({
+              txStatus,
+              claimAmountText: claimAmountText || ''
+            })
+          )
+        );
+        setTxDescription(i18n._(claimActionDescription({ txStatus })));
+        setLoadingText(
+          i18n._(
+            claimLoadingButtonText({
+              txStatus,
+              claimAmountText: claimAmountText || ''
+            })
+          )
+        );
+      }
     }
   }, [
     txStatus,
@@ -159,6 +186,7 @@ export const MorphoVaultTransactionStatus = ({
     amount,
     assetToken,
     chainId,
+    claimAmountText,
     i18n,
     setTxTitle,
     setTxSubtitle,
