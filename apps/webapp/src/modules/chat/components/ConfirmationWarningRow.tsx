@@ -11,7 +11,8 @@ import { Warning } from '@/modules/icons/Warning';
 import { getConfirmationWarningMetadata } from '../lib/confirmationWarningMetadata';
 import { ChatMarkdownRenderer } from '@/modules/ui/components/markdown/ChatMarkdownRenderer';
 import { useChatbotPrefillNotification } from '@/modules/app/hooks/useChatbotPrefillNotification';
-import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
+import { hasPreFillParameters } from '../lib/intentUtils';
+import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 
 export const ConfirmationWarningRow = () => {
   const {
@@ -27,6 +28,7 @@ export const ConfirmationWarningRow = () => {
   const navigate = useNavigate();
   const { showPrefillNotification } = useChatbotPrefillNotification();
   const { bpi } = useBreakpointIndex();
+  const isMobile = bpi < BP.md;
 
   const onIntentSelected = useCallback(
     (intent: ChatIntent) => setChatHistory(prev => [...prev, intentSelectedMessage(intent)]),
@@ -41,12 +43,12 @@ export const ConfirmationWarningRow = () => {
     [setConfirmationWarningOpened, setSelectedIntent]
   );
 
-  // On desktop (xl+) where chat floats, retain chat param to keep it open
-  // On mobile (< xl) where chat is fullscreen, don't retain to allow it to close
-  const retainedParams =
-    bpi >= BP.md
-      ? [QueryParams.Locale, QueryParams.Details, QueryParams.Chat]
-      : [QueryParams.Locale, QueryParams.Details];
+  // On mobile, don't retain chat param (chat closes after action)
+  // On desktop, retain chat param to keep chat open after clicking Continue
+  const retainedParams = isMobile
+    ? [QueryParams.Locale, QueryParams.Details]
+    : [QueryParams.Locale, QueryParams.Details, QueryParams.Chat];
+
   const selectedIntentUrl = useRetainedQueryParams(selectedIntent?.url || '', retainedParams);
 
   const handleConfirm = useCallback(() => {
@@ -56,8 +58,10 @@ export const ConfirmationWarningRow = () => {
     }
     if (selectedIntentUrl) {
       navigate(selectedIntentUrl);
-      // Show notification that inputs have been prefilled
-      showPrefillNotification();
+      // Show notification only if the intent has pre-fill parameters
+      if (selectedIntent && hasPreFillParameters(selectedIntent)) {
+        showPrefillNotification();
+      }
     }
     if (selectedIntent) onIntentSelected(selectedIntent);
   }, [
@@ -74,22 +78,22 @@ export const ConfirmationWarningRow = () => {
   const disclaimerMetadata = getConfirmationWarningMetadata(selectedIntent);
 
   return (
-    <div className="text-text @max-sm/chat:mt-3 @max-sm/chat:p-3 mt-5 rounded-xl bg-[#0b0b0c]/60 p-5">
-      <div className="bg-white/6 @sm/chat:flex-row @max-sm/chat:gap-1.5 @max-sm/chat:p-3 flex flex-col items-center gap-2 rounded-lg p-4">
+    <div className="text-text mt-5 rounded-xl bg-[#0b0b0c]/60 p-5 @max-sm/chat:mt-3 @max-sm/chat:p-3">
+      <div className="flex flex-col items-center gap-2 rounded-lg bg-white/6 p-4 @max-sm/chat:gap-1.5 @max-sm/chat:p-3 @sm/chat:flex-row">
         <Warning
           boxSize={20}
           viewBox="0 0 16 16"
           fill="#fdc134"
-          className="@max-sm/chat:h-4 @max-sm/chat:w-4 flex-shrink-0"
+          className="flex-shrink-0 @max-sm/chat:h-4 @max-sm/chat:w-4"
         />
-        <Text variant="medium" className="@sm/chat:text-left @max-sm/chat:text-sm text-center">
+        <Text variant="medium" className="text-center @max-sm/chat:text-sm @sm/chat:text-left">
           {disclaimerMetadata?.description}
         </Text>
       </div>
-      <div className="@max-sm/chat:ml-3 @max-sm/chat:mt-2 ml-4 mt-4 text-[13px]">
+      <div className="mt-4 ml-4 text-[13px] @max-sm/chat:mt-2 @max-sm/chat:ml-3">
         <ChatMarkdownRenderer markdown={disclaimerMetadata?.disclaimer} />
       </div>
-      <div className="@max-sm/chat:mt-2 @max-sm/chat:gap-3 mt-3 flex gap-5">
+      <div className="mt-3 flex gap-5 @max-sm/chat:mt-2 @max-sm/chat:gap-3">
         <Button
           variant="pill"
           size="xs"

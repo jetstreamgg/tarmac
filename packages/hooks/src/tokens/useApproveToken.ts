@@ -1,7 +1,7 @@
 import { useChainId } from 'wagmi';
 import { erc20Abi } from 'viem';
 import { WriteHook, WriteHookParams } from '../hooks';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { usdtAbi, usdtAddress } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
@@ -23,7 +23,7 @@ export function useApproveToken({
   enabled: paramEnabled = true
 }: ApproveHookParams): WriteHook {
   const chainId = useChainId();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
   const isUsdt = contractAddress === usdtAddress[chainId as keyof typeof usdtAddress];
 
   const enabled = isConnected && !!spender && !!amount && paramEnabled;

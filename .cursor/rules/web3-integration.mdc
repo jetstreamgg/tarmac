@@ -13,7 +13,7 @@ filters:
   - type: file_extension
     pattern: "\\.(ts|tsx)$"
   - type: content
-    pattern: "(?s)(wagmi|viem|rainbowkit|useContract|useAccount)"
+    pattern: "(?s)(wagmi|viem|rainbowkit|useContract|useConnection)"
 
 actions:
   - type: suggest

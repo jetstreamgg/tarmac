@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { Header } from './Header';
 import { ConfigContext } from '../../config/context/ConfigContext';
 import { ErrorBoundary } from './ErrorBoundary';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { AuthWrapper } from './AuthWrapper';
 import { VStack } from './VStack';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
@@ -11,6 +11,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { FooterLinks } from './FooterLinks';
 import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
+import { Banner } from '@/components/extensible';
 
 export function Layout({
   children,
@@ -20,7 +21,7 @@ export function Layout({
   metaDescription?: string;
 }): React.ReactElement {
   const { siteConfig } = useContext(ConfigContext);
-  const { chain } = useAccount();
+  const { chain } = useConnection();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
 
@@ -53,6 +54,7 @@ export function Layout({
         </ErrorBoundary>
         {bpi > BP.sm && <FooterLinks />}
       </VStack>
+      <Banner />
       {showEnvInfo && (
         <div className="absolute bottom-0 left-2">
           <Text className="text-xs text-white">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>

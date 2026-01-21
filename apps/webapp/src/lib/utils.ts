@@ -1,8 +1,19 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
-import { ALLOWED_EXTERNAL_DOMAINS, CHAIN_WIDGET_MAP, IntentMapping, RESTRICTED_INTENTS } from './constants';
-import { Intent } from './enums';
+import {
+  ALLOWED_EXTERNAL_DOMAINS,
+  CHAIN_WIDGET_MAP,
+  ExpertIntentMapping,
+  IntentMapping,
+  mapIntentToQueryParam,
+  QueryParams,
+  RESTRICTED_INTENTS
+} from './constants';
+import { ExpertIntent, Intent } from './enums';
+import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
+import { getMainnetChainName } from '@/data/wagmi/config/config.default';
+import { Chain } from 'viem';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -95,3 +106,40 @@ export function isIntentAllowed(intent: Intent, chainId: number) {
 
   return supportedIntents.includes(intent);
 }
+
+export const getQueryParams = (url: string, searchParams: URLSearchParams) => {
+  const { Locale, Details } = QueryParams;
+  const retainedParams = [Locale, Details];
+
+  return getRetainedQueryParams(url, retainedParams, searchParams);
+};
+
+export const getRewardsUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.REWARDS_INTENT)}`,
+    searchParams
+  );
+
+export const getSavingsUrl = (
+  searchParams: URLSearchParams,
+  chainId: number,
+  chains: readonly [Chain, ...Chain[]]
+) =>
+  getQueryParams(
+    `/?network=${chains.find(c => c.id === chainId)?.name}&widget=${mapIntentToQueryParam(Intent.SAVINGS_INTENT)}`,
+    searchParams
+  );
+
+export const getSealUrl = (searchParams: URLSearchParams, chainId: number) =>
+  `/seal-engine${getQueryParams(`/?network=${getMainnetChainName(chainId)}`, searchParams)}`;
+
+export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`,
+    searchParams
+  );
+export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`,
+    searchParams
+  );

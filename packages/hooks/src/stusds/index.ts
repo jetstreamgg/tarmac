@@ -23,6 +23,7 @@ export { useStUsdsPreviewWithdraw } from './useStUsdsPreviewWithdraw';
 export type { StUsdsPreviewWithdrawHookResponse } from './useStUsdsPreviewWithdraw';
 
 // Utility Hooks
+export { useStUsdsWithdrawBalances } from './useStUsdsWithdrawBalances';
 export { useStUsdsRateData } from './useStUsdsRateData';
 export type { StUsdsRateData, StUsdsRateDataHook } from './useStUsdsRateData';
 export { useStUsdsCapacityData } from './useStUsdsCapacityData';
@@ -33,3 +34,6 @@ export { useStUsdsChartInfo } from './useStUsdsChartInfo';
 
 // Types
 export type { StUsdsHistoryItem, StUsdsVaultMetrics, StUsdsUserMetrics } from './stusds.d';
+
+// Provider Abstraction Layer (Curve pool integration)
+export * from './providers';

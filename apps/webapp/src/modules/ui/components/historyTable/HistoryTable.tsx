@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { Table, TableBody } from '@/components/ui/table';
 import { CustomPagination } from '../CustomPagination';
@@ -24,7 +24,7 @@ function HistoryTableUiComponents({
   statusColumn = false,
   dataTestId
 }: HistoryTableProps) {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const [sortDirection, setSortDirection] = useState<SortDirection>(SortDirection.desc);
   const [startIndex, setStartIndex] = useState(0);

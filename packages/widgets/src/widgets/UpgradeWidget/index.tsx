@@ -17,7 +17,7 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useDebounce, math, useIsMetaMaskWallet } from '@jetstreamgg/sky-utils';
 import { TxStatus } from '@widgets/shared/constants';
@@ -80,7 +80,7 @@ export function UpgradeWidgetWrapped({
   }, [onStateValidated, validatedExternalState]);
 
   const chainId = useChainId();
-  const { address, isConnected, isConnecting } = useAccount();
+  const { address, isConnected, isConnecting } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === UpgradeFlow.REVERT ? 1 : 0;

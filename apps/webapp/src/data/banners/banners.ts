@@ -11,7 +11,7 @@ export const banners: Banner[] = [
     id: 'about-expert-modules',
     title: 'About Expert modules',
     module: 'expert-modules-banners',
-    description: 'Expert Modules unlock high-level functionality tailored to experienced users.',
+    description: 'Expert modules unlock high-level functionality tailored to experienced users.',
     display: ['disconnected']
   },
   {
@@ -43,7 +43,7 @@ export const banners: Banner[] = [
     title: 'stUSDS',
     module: 'stusds-module-banners',
     description:
-      'stUSDS is a risk token that offers higher risk/higher reward to fund and support liquidity for SKY stakers. Offering additional reward options for SKY stakers encourages more people to participate in governance of the Sky Ecosystem, which increases the stability and security of the protocol and ecosystem.',
+      'stUSDS is a risk token that offers higher risk/higher reward to fund and support liquidity for SKY stakers. Offering additional reward options for SKY stakers encourages more people to participate in governance of Sky Ecosystem, which increases the stability and security of the protocol and ecosystem.',
     display: ['connected', 'disconnected']
   },
   {
@@ -83,7 +83,7 @@ export const banners: Banner[] = [
     title: 'Trade',
     module: 'integrated-networks-banner-copy',
     description:
-      'On Layer 2 (L2) scaling solutions for the Ethereum blockchain via Sky.money, you can convert between USDS, sUSDS and USDC through a Peg Stability Module [(PSM)](#tooltip-psm) deployed to the L2. The PSM handles conversions programmatically, driven at your direction, between these pairs directly.',
+      'On Layer 2 (L2) scaling solutions for the Ethereum blockchain via Sky.money, you can convert between USDS, sUSDS and USDC through a Peg Stability Module [(PSM)](#tooltip-psm) deployed to the L2. The PSM handles conversions programmatically, executed at your direction, between these pairs directly.',
     display: ['disconnected']
   },
   {
@@ -115,7 +115,7 @@ export const banners: Banner[] = [
     title: 'Sky Star Tokens',
     module: 'staking-engine-banners',
     description:
-      'Sky Stars are autonomous and independent decentralized projects within the Sky Ecosystem. A Star might opt to have its own governance token, as defined by the rules enforced by the Sky Atlas. When you supply SKY to the Staking Engine of the Sky Protocol, you can opt to receive Sky Star tokens as rewards over time.',
+      'Sky Stars are autonomous and independent decentralized projects within Sky Ecosystem. A Star might opt to have its own governance token, as defined by the rules enforced by the Sky Atlas. When you supply SKY to the Staking Engine of the Sky Protocol, you can opt to receive Sky Star tokens as rewards over time.',
     display: ['connected', 'disconnected']
   },
   {
@@ -123,7 +123,7 @@ export const banners: Banner[] = [
     title: 'About the Seal Engine',
     module: 'seal-engine-banners',
     description:
-      'The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem governance. With Sky, you always remain in control of your funds.',
+      'The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky Ecosystem Governance. With Sky, you always remain in control of your funds.',
     display: ['disconnected']
   },
   {
@@ -131,7 +131,7 @@ export const banners: Banner[] = [
     title: 'Seal Rewards',
     module: 'seal-engine-banners',
     description:
-      'Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engine of the decentralised, non-custodial Sky Protocol. Currently, all Seal Rewards take the form of USDS. Eventually, subject to Sky ecosystem governance approval, Seal Rewards may also be available in the form of Sky Star tokens.',
+      'Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engine of the decentralised, non-custodial Sky Protocol. Currently, all Seal Rewards take the form of USDS. Eventually, subject to Sky Ecosystem Governance approval, Seal Rewards may also be available in the form of Sky Star tokens.',
     display: ['disconnected']
   },
   {
@@ -155,7 +155,7 @@ export const banners: Banner[] = [
     title: 'USDS',
     module: 'upgrade-banners',
     description:
-      'USDS is the stablecoin of the decentralised Sky Protocol. It can be used in several ways, including to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) and get Sky Token Rewards without giving up control. It is the upgraded version of DAI.',
+      'USDS is the stablecoin of the decentralized Sky Protocol. It can be used in several ways, including to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) and get Sky Token Rewards without giving up control. It is the upgraded version of DAI.',
     display: ['connected', 'disconnected']
   },
   {
@@ -163,7 +163,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'upgrade-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, and use SKY to access Staking Rewards and participate in Sky ecosystem governance.',
+      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
     display: ['connected', 'disconnected']
   },
   {
@@ -211,7 +211,7 @@ export const banners: Banner[] = [
     title: 'About Sky Token Rewards',
     module: 'rewards-banners',
     description:
-      'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
+      'When you supply USDS to the Sky Token Rewards module of the Sky Protocol, you receive Sky Token Rewards over time. The USDS tokens, as well as the rewards received, are supplied to a non-custodial smart contract that represents the USDS pool of assets. That means no intermediary has custody of your supplied assets.',
     display: ['disconnected']
   },
   {
@@ -219,7 +219,7 @@ export const banners: Banner[] = [
     title: 'USDS',
     module: 'rewards-banners',
     description:
-      'USDS is the stablecoin of the decentralised Sky Protocol. It can be used in several ways, including to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) and get Sky Token Rewards without giving up control. It is the upgraded version of DAI.',
+      'USDS is the stablecoin of the decentralized Sky Protocol. It can be used in several ways, including to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) and get Sky Token Rewards without giving up control. It is the upgraded version of DAI.',
     display: ['connected', 'disconnected']
   },
   {
@@ -227,7 +227,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'rewards-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, and use SKY to access Staking Rewards and participate in Sky ecosystem governance.',
+      'Sky is a native governance token of the decentralized Sky Ecosystem and the upgraded version of MKR. Depending also on your location and other criteria, you can trade USDS for SKY using the Sky.money app, and then use your SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
     display: ['connected', 'disconnected']
   },
   {

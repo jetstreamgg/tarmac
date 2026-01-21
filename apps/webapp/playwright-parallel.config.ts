@@ -7,7 +7,7 @@ export default defineConfig({
   fullyParallel: true,
 
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 2,
+  retries: process.env.CI ? 1 : 0,
 
   // Set number of parallel workers (configurable, default 6)
   workers: process.env.TEST_WORKERS ? parseInt(process.env.TEST_WORKERS) : 6,
@@ -59,7 +59,11 @@ export default defineConfig({
         '**/la-u-s.spec.ts',
         '**/stake.spec.ts',
         '**/landing.spec.ts',
-        '**/expert-stusds.spec.ts'
+        '**/expert-stusds.spec.ts',
+        '**/upgrade.spec.ts',
+        '**/unstake-repay.spec.ts',
+        '**/chatbot.spec.ts',
+        '**/pane-visibility.spec.ts'
         // Add more test patterns as we convert them
       ]
     }

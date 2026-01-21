@@ -12,7 +12,8 @@ export function ExternalLink({
   showIcon = true,
   skipConfirm,
   iconClassName,
-  iconColor
+  iconColor,
+  contentClassName
 }: {
   href?: string;
   children?: React.ReactNode;
@@ -22,6 +23,7 @@ export function ExternalLink({
   iconClassName?: string;
   skipConfirm?: boolean;
   iconColor?: string;
+  contentClassName?: string;
 }): React.ReactElement {
   const { onExternalLinkClicked } = useConfigContext();
 
@@ -42,7 +44,7 @@ export function ExternalLink({
       {['string', 'number'].includes(typeof children) || children === undefined ? (
         content
       ) : (
-        <HStack>{content}</HStack>
+        <HStack className={contentClassName}>{content}</HStack>
       )}
     </a>
   );

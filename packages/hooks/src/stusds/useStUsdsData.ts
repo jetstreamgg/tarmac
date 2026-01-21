@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAccount, useChainId, useReadContracts, useReadContract } from 'wagmi';
+import { useConnection, useChainId, useReadContracts, useReadContract } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { usdsAddress, stUsdsAddress, stUsdsImplementationAbi, useReadClipperDue } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
@@ -34,7 +34,7 @@ export type StUsdsHook = ReadHook & {
 export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
   const connectedChainId = useChainId();
   const chainId = isTestnetId(connectedChainId) ? 314310 : 1; //StUsds is only on mainnet / mainnet testnet
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress;
 
   const stUsdsContractAddress = stUsdsAddress[chainId as keyof typeof stUsdsAddress];

@@ -99,7 +99,7 @@ export const PopoverRateInfo = ({
         <Heading variant="small" className="text-[16px] leading-6">
           {content[type].title}
         </Heading>
-        <PopoverClose onClick={e => e.stopPropagation()} className="absolute right-4 top-4 z-10">
+        <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
           <Close className="h-5 w-5 cursor-pointer text-white" />
         </PopoverClose>
         <div

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useCurrentUrnIndex } from './useCurrentUrnIndex';
 import { StakeWriteHookReturnType } from './stakeModule';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
@@ -15,7 +15,7 @@ export function useOpenUrn({
   onSuccess = () => null
 }: WriteHookParams): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
 
   const { data: urnIndexData, isLoading: isLoadingCurrentUrn, error: errorCurrentUrn } = useCurrentUrnIndex();
   const enabled = isConnected && activeTabEnabled && urnIndexData !== undefined && !isLoadingCurrentUrn;

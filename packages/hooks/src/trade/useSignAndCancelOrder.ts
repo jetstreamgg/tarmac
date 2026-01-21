@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId, useSignTypedData } from 'wagmi';
+import { useConnection, useChainId, useSignTypedData } from 'wagmi';
 import { cowApiClient } from './constants';
 import { WriteHookParams } from '../hooks';
 import { fetchOrderStatus } from './fetchOrderStatus';
@@ -46,7 +46,7 @@ export const useSignAndCancelOrder = ({
   onSuccess: (data: any, orderUids: `0x${string}`[]) => void;
 }) => {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
 

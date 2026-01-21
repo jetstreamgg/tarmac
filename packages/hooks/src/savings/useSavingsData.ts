@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { mcdPotAddress, usdsAddress, usdsL2Address } from '../generated';
 import { useReadMcdPot } from '../generated';
@@ -27,7 +27,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
   // If the connected chain is base, use mainnet instead (except for getting the sUSDS and NST balance)
   const ethereumChainId = !isL2ChainId(connectedChainId) ? connectedChainId : 1;
 
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress;
 
   const {

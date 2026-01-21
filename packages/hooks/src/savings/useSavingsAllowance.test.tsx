@@ -4,7 +4,7 @@ import { GAS, WagmiWrapper } from '../../test';
 import { useSavingsAllowance } from './useSavingsAllowance';
 
 // import { vi } from 'vitest';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { useApproveToken } from '../tokens/useApproveToken';
 import { usdsAddress } from '../generated';
 import { parseEther } from 'viem';
@@ -44,7 +44,7 @@ describe('useSavingsAllowance', async () => {
     const { result } = renderHook(
       () => {
         return {
-          account: useAccount(),
+          account: useConnection(),
           //connect: useConnect({ connector : connector as any }),
           savings: useSavingsAllowance()
         };
@@ -58,7 +58,7 @@ describe('useSavingsAllowance', async () => {
     //  await act(async () => result.current.connect.connect())
     // See more https://github.com/wagmi-dev/wagmi/blob/cabba6a6fd68a25bdfcaf47a19b4b34ffb4d83bb/packages/react/src/hooks/accounts/useConnect.test.ts
     await waitFor(() => expect(result.current.account.isConnected).toBeTruthy());
-    // TODO: the address returned by useAccount and useConnect combo does not correspond with the one on useSavingsAllowance
+    // TODO: the address returned by useConnection and useConnect combo does not correspond with the one on useSavingsAllowance
     // I think the connection logic should be on top
 
     await waitFor(

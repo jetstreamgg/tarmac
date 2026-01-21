@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { SaWriteHookParams, SaWriteHookReturnType } from './sealModule';
 import { sealModuleAbi, sealModuleAddress } from '../generated';
 import { ZERO_ADDRESS } from '../constants';
@@ -21,7 +21,7 @@ export function useClaimRewards({
   to: `0x${string}` | undefined;
 }): SaWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
 
   const enabled =
     isConnected &&

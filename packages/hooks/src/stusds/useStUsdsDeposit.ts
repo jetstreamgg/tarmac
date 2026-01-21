@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { stUsdsAddress, stUsdsImplementationAbi } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
@@ -17,7 +17,7 @@ export function useStUsdsDeposit({
   amount: bigint;
   referral?: number;
 }): WriteHook {
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
 
   // Only enabled if basic conditions are met (allowance check handled by widget)

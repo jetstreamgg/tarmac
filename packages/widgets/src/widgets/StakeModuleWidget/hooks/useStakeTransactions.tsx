@@ -8,7 +8,7 @@ import {
 import { useContext } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeAction } from '../lib/constants';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 interface UseStakeTransactionsParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
@@ -18,9 +18,11 @@ interface UseStakeTransactionsParameters
   allStepsComplete: boolean;
   indexToClaim: bigint | undefined;
   setIndexToClaim: React.Dispatch<React.SetStateAction<bigint | undefined>>;
-  rewardContractToClaim: `0x${string}` | undefined;
+  rewardContractsToClaim: `0x${string}`[] | undefined;
   shouldUseBatch: boolean;
-  setRewardContractToClaim: React.Dispatch<React.SetStateAction<`0x${string}` | undefined>>;
+  setRewardContractsToClaim: React.Dispatch<React.SetStateAction<`0x${string}`[] | undefined>>;
+  setRestakeSkyRewards: React.Dispatch<React.SetStateAction<boolean>>;
+  setRestakeSkyAmount: React.Dispatch<React.SetStateAction<bigint>>;
   mutateStakeSkyAllowance: () => void;
   mutateStakeUsdsAllowance: () => void;
 }
@@ -32,21 +34,25 @@ export const useStakeTransactions = ({
   allStepsComplete,
   indexToClaim,
   setIndexToClaim,
-  rewardContractToClaim,
+  rewardContractsToClaim,
   shouldUseBatch,
-  setRewardContractToClaim,
+  setRewardContractsToClaim,
+  setRestakeSkyRewards,
+  setRestakeSkyAmount,
   mutateStakeSkyAllowance,
   mutateStakeUsdsAllowance,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
 }: UseStakeTransactionsParameters) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const { widgetState } = useContext(WidgetContext);
   const { multicallTransactionCallbacks, claimTransactionCallbacks } = useStakeTransactionCallbacks({
     lockAmount,
     setIndexToClaim,
-    setRewardContractToClaim,
+    setRewardContractsToClaim,
+    setRestakeSkyRewards,
+    setRestakeSkyAmount,
     mutateStakeSkyAllowance,
     mutateStakeUsdsAllowance,
     addRecentTransaction,
@@ -67,9 +73,13 @@ export const useStakeTransactions = ({
 
   const claimRewards = useStakeClaimRewards({
     index: indexToClaim,
-    rewardContract: rewardContractToClaim,
+    rewardContract: rewardContractsToClaim?.[0],
     to: address,
-    enabled: indexToClaim !== undefined && !!rewardContractToClaim && !!address,
+    enabled:
+      indexToClaim !== undefined &&
+      !!rewardContractsToClaim &&
+      rewardContractsToClaim.length === 1 &&
+      !!address,
     ...claimTransactionCallbacks
   });
 
@@ -77,7 +87,7 @@ export const useStakeTransactions = ({
     index: indexToClaim,
     // Always use batch transactions for this flow
     shouldUseBatch: true,
-    enabled: indexToClaim !== undefined && !rewardContractToClaim,
+    enabled: indexToClaim !== undefined && !!rewardContractsToClaim && rewardContractsToClaim.length > 1,
     ...claimTransactionCallbacks
   });
 

@@ -10,7 +10,7 @@ import {
   SavingsWithdrawalResponse
 } from './savings';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { chainId as chainIdMap } from '@jetstreamgg/sky-utils';
@@ -68,7 +68,7 @@ export function useEthereumSavingsHistory({
   subgraphUrl?: string;
   enabled?: boolean;
 } = {}): ReadHook & { data?: SavingsHistory } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;

@@ -15,6 +15,8 @@ import {
 } from '@widgets/widgets/SavingsWidget/lib/constants';
 import { useContext, useEffect } from 'react';
 import { useChainId } from 'wagmi';
+import { UpgradeAndSupplySteps } from './UpgradeAndSupplySteps';
+import { BundledTransactionWarning } from '@widgets/shared/components/ui/BundledTransactionWarning';
 
 export const SavingsTransactionReview = ({
   batchEnabled,
@@ -23,6 +25,8 @@ export const SavingsTransactionReview = ({
   originToken,
   originAmount,
   needsAllowance,
+  isUpgradeSupplyFlow,
+  shouldUseBatch,
   legalBatchTxUrl
 }: {
   batchEnabled?: boolean;
@@ -31,6 +35,8 @@ export const SavingsTransactionReview = ({
   originToken: Token;
   originAmount: bigint;
   needsAllowance: boolean;
+  isUpgradeSupplyFlow?: boolean;
+  shouldUseBatch?: boolean;
   legalBatchTxUrl?: string;
 }) => {
   const { i18n } = useLingui();
@@ -86,10 +92,16 @@ export const SavingsTransactionReview = ({
   }, [flow, action, screen, i18n.locale, isBatchTransaction, batchSupported, batchEnabled]);
 
   return (
-    <TransactionReview
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
-    />
+    <>
+      <TransactionReview
+        batchEnabled={batchEnabled}
+        setBatchEnabled={setBatchEnabled}
+        customSteps={isUpgradeSupplyFlow ? <UpgradeAndSupplySteps /> : undefined}
+        legalBatchTxUrl={legalBatchTxUrl}
+      />
+      {isUpgradeSupplyFlow && !shouldUseBatch && (
+        <BundledTransactionWarning flowTitle="Supplying DAI to the Sky Savings Rate" />
+      )}
+    </>
   );
 };

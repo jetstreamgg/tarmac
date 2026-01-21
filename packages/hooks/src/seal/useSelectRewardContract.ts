@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { sealModuleAbi, sealModuleAddress } from '../generated';
 import { WriteHookParams } from '../hooks';
 import { SaWriteHookReturnType } from './sealModule';
@@ -21,7 +21,7 @@ export function useSelectRewardContract({
   ref?: number;
 }): SaWriteHookReturnType {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const enabled = !!address && activeTabEnabled && !!rewardContract;
 

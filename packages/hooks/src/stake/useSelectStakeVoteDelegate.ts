@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { StakeWriteHookReturnType } from './stakeModule';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
 import { WriteHookParams } from '../hooks';
@@ -19,7 +19,7 @@ export function useSelectStakeVoteDelegate({
   voteDelegate: `0x${string}`;
 }): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const enabled = !!address && activeTabEnabled && !!voteDelegate;
 

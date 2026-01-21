@@ -1,32 +1,20 @@
 import { Button } from '@widgets/components/ui/button';
-import { WidgetContext } from '@widgets/context/WidgetContext';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { useContext, useEffect } from 'react';
 import { useChainId } from 'wagmi';
-import { TxStatus } from '@widgets/shared/constants';
-import { WidgetState } from '@widgets/shared/types/widgetState';
-import { StakeAction, StakeScreen } from '../lib/constants';
-import { StakeModuleWidgetContext } from '../context/context';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
+import { Rewards } from '@widgets/shared/components/icons/Rewards';
 
 export function ClaimRewardsButton({
   rewardContract,
   urnAddress,
-  index,
-  claimPrepared,
-  claimExecute
+  handleSelectOption
 }: {
   rewardContract: `0x${string}`;
   urnAddress: `0x${string}`;
-  index: bigint;
-  claimPrepared: boolean;
-  claimExecute: () => void;
+  handleSelectOption: (params: { contracts: `0x${string}`[]; restakeSky?: boolean }) => void;
 }) {
-  const { setTxStatus, setExternalLink, setShowStepIndicator, setWidgetState } = useContext(WidgetContext);
-  const { indexToClaim, setIndexToClaim, rewardContractToClaim, setRewardContractToClaim } =
-    useContext(StakeModuleWidgetContext);
-
   const chainId = useChainId();
 
   const { data: rewardsBalance } = useRewardsRewardsBalance({
@@ -37,38 +25,29 @@ export function ClaimRewardsButton({
 
   const { data: rewardContractTokens } = useRewardContractTokens(rewardContract);
 
-  const handleClick = () => {
-    setIndexToClaim(index);
-    setRewardContractToClaim(rewardContract);
-  };
-
-  useEffect(() => {
-    if (indexToClaim === index && rewardContractToClaim === rewardContract && claimPrepared) {
-      setShowStepIndicator(false);
-      setWidgetState((prev: WidgetState) => ({
-        ...prev,
-        action: StakeAction.CLAIM,
-        screen: StakeScreen.TRANSACTION
-      }));
-      setTxStatus(TxStatus.INITIALIZED);
-      setExternalLink(undefined);
-      claimExecute();
-    }
-  }, [indexToClaim, index, rewardContractToClaim, rewardContract, claimPrepared]);
-
   if (!rewardsBalance || !rewardContractTokens) return null;
 
   return (
-    <Button
-      variant="secondary"
-      onClick={handleClick}
-      disabled={!!rewardContractToClaim && indexToClaim !== undefined}
-    >
-      <Text>
-        {indexToClaim === index && rewardContractToClaim === rewardContract
-          ? 'Preparing your claim transaction...'
-          : `Claim ${formatBigInt(rewardsBalance)} ${rewardContractTokens.rewardsToken.symbol}`}
-      </Text>
-    </Button>
+    <div className="flex h-14 items-center justify-between rounded-2xl bg-linear-to-r from-[#403570] to-[#4B337B] px-5 py-4">
+      <div className="flex items-center gap-2">
+        <TokenIcon token={{ symbol: rewardContractTokens.rewardsToken.symbol }} className="h-7 w-7" />
+        <Text variant="medium">
+          {formatBigInt(rewardsBalance)} {rewardContractTokens.rewardsToken.symbol}{' '}
+          <span className="text-[#f2dcfc]">Rewards</span>
+        </Text>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="chip"
+          onClick={() => handleSelectOption({ contracts: [rewardContract] })}
+          className="h-fit px-2 py-1.5"
+        >
+          <Text variant="medium" className="leading-4">
+            Claim
+          </Text>
+        </Button>
+        <Rewards className="h-9 w-9" />
+      </div>
+    </div>
   );
 }

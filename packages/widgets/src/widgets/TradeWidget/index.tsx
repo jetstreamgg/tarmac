@@ -40,7 +40,7 @@ import {
   getCowExplorerLink,
   isL2ChainId
 } from '@jetstreamgg/sky-utils';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { TxStatus, notificationTypeMaping } from '@widgets/shared/constants';
 import { TradeTransactionStatus } from './components/TradeTransactionStatus';
@@ -61,6 +61,8 @@ import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
+import { useTokenBalances } from '@jetstreamgg/sky-hooks';
+import { usePrices } from '@jetstreamgg/sky-hooks';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -115,7 +117,7 @@ function TradeWidgetWrapped({
 
   const chainId = useChainId();
   const isChainL2 = isL2ChainId(chainId);
-  const { address, isConnecting, isConnected } = useAccount();
+  const { address, isConnecting, isConnected } = useConnection();
   const isSafeWallet = useIsSafeWallet();
   const isSmartContractWallet = useIsSmartContractWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
@@ -140,12 +142,63 @@ function TradeWidgetWrapped({
     return uniqueTokens;
   }, [customTokenList, chainId, defaultConfig.tradeTokenList]);
 
+  const { data: tokenBalances } = useTokenBalances({
+    address,
+    tokens: tokenList.map(token => ({
+      address: token.address as `0x${string}` | undefined,
+      isNative: token.isNative,
+      symbol: token.symbol
+    })),
+    chainId,
+    enabled: isConnectedAndEnabled
+  });
+
+  const { data: pricesData } = usePrices();
+
+  const tokenUsdValues = useMemo(() => {
+    const values = new Map<string, number>();
+
+    if (tokenBalances && pricesData) {
+      tokenBalances.forEach(balance => {
+        const price = pricesData[balance.symbol]?.price || '0';
+        const balanceNum = parseFloat(balance.formatted);
+        const priceNum = parseFloat(price);
+
+        if (!isNaN(balanceNum) && !isNaN(priceNum)) {
+          const usdValue = balanceNum * priceNum;
+          values.set(balance.symbol, usdValue);
+        }
+      });
+    }
+
+    return values;
+  }, [tokenBalances, pricesData]);
+
+  const sortByUsdValue = useCallback(
+    (tokens: TokenForChain[]) => {
+      if (!isConnectedAndEnabled || tokenUsdValues.size === 0) {
+        return tokens;
+      }
+
+      return [...tokens].sort((a, b) => {
+        const aValue = tokenUsdValues.get(a.symbol) || 0;
+        const bValue = tokenUsdValues.get(b.symbol) || 0;
+        return bValue - aValue;
+      });
+    },
+    [isConnectedAndEnabled, tokenUsdValues]
+  );
+
+  const sortedTokenList = useMemo(() => {
+    return sortByUsdValue(tokenList);
+  }, [tokenList, sortByUsdValue]);
+
   const originTokenList = useMemo(() => {
     // We don't include the token if it has no pairs
-    return tokenList.filter(
+    return sortedTokenList.filter(
       token => getAllowedTargetTokens(token.symbol, tokenList, disallowedPairs).length > 0
     );
-  }, [tokenList, disallowedPairs]);
+  }, [sortedTokenList, tokenList, disallowedPairs]);
 
   const initialOriginTokenIndex = 0;
   const initialOriginToken =
@@ -155,8 +208,9 @@ function TradeWidgetWrapped({
   const [originToken, setOriginToken] = useState<TokenForChain | undefined>(initialOriginToken);
 
   const targetTokenList = useMemo(() => {
-    return getAllowedTargetTokens(originToken?.symbol || '', tokenList, disallowedPairs);
-  }, [originToken?.symbol, tokenList, disallowedPairs]);
+    const allowedTokens = getAllowedTargetTokens(originToken?.symbol || '', tokenList, disallowedPairs);
+    return sortByUsdValue(allowedTokens);
+  }, [originToken?.symbol, tokenList, disallowedPairs, sortByUsdValue]);
 
   const initialTargetToken = targetTokenList.find(
     token =>

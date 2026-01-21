@@ -5,14 +5,14 @@ import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } 
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { BATCH_TX_LEGAL_NOTICE_URL, BATCH_TX_SUPPORTED_WALLETS_URL } from '@/lib/constants';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 
 export function BatchTransactionsToggle() {
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
   const { data: batchSupported } = useIsBatchSupported();
 
   const batchNotSupported = isConnected && !batchSupported;

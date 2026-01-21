@@ -4,7 +4,6 @@ import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
-import { useAddRecentTransaction } from '@rainbow-me/rainbowkit';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
@@ -23,7 +22,7 @@ import {
 } from '@jetstreamgg/sky-widgets';
 import { useSealCurrentIndex } from '@jetstreamgg/sky-hooks';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
-import { useAccount, useChainId, useSwitchChain } from 'wagmi';
+import { useConnection, useChainId, useSwitchChain } from 'wagmi';
 
 import { IntentMapping } from '@/lib/constants';
 import { QueryParams } from '@/lib/constants';
@@ -39,7 +38,8 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const { i18n } = useLingui();
   const onConnect = useCustomConnectModal();
   const { data: currentUrnIndex } = useSealCurrentIndex();
-  const addRecentTransaction = useAddRecentTransaction();
+  // Transaction tracking removed - was using RainbowKit
+  const addRecentTransaction = () => {}; // No-op for now
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const onNotification = useNotification();
   const { onExternalLinkClicked, setSelectedSealUrnIndex } = useConfigContext();
@@ -49,7 +49,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const isL2 = isL2ChainId(chainId);
   const [searchParams, setSearchParams] = useSearchParams();
   const { switchChain } = useSwitchChain();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   const rightHeaderComponent = <DetailsSwitcher />;
@@ -153,7 +153,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
                   Staking Engine.
                 </Trans>
               </Text>
-              <Text className="text-text mb-8 mt-8">
+              <Text className="text-text mt-8 mb-8">
                 <Trans>
                   Please connect your wallet to Ethereum Mainnet to start the migration of your positions.
                 </Trans>

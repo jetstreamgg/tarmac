@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "description": "Tarmac is a web3 application framework for building decentralized applications",
   "engines": {
-    "pnpm": ">=8",
-    "node": ">=18.0.0"
+    "pnpm": ">=9",
+    "node": ">=20.19.0"
   },
   "scripts": {
     "preinstall": "pnpm dlx only-allow pnpm",
@@ -37,6 +37,7 @@
     "vnet:delete:all:ci": "node ./scripts/deleteAllVnets.js 'ci-tests-testnet'",
     "vnet:delete:all:ci:local": "node --env-file=.env ./scripts/deleteAllVnets.js 'ci-tests-testnet'",
     "vnet:delete:ci": "node ./scripts/deleteVnet.ts",
+    "vnet:fund:single": "cd apps/webapp && npx tsx --tsconfig tsconfig.json src/test/e2e/fund-single-account.ts",
     "prepare": "husky",
     "typecheck": "pnpm --filter './packages/**' --filter './apps/**' typecheck",
     "messages:extract": "lingui extract --clean",
@@ -48,8 +49,8 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "pnpm prettier",
-      "pnpm lint"
+      "prettier --write --cache",
+      "eslint --cache --fix"
     ]
   },
   "main": "index.js",

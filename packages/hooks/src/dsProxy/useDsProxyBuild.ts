@@ -1,4 +1,4 @@
-import { useAccount, useWaitForTransactionReceipt } from 'wagmi';
+import { useConnection, useWaitForTransactionReceipt } from 'wagmi';
 import { useSimulateProxyRegistry, useWriteProxyRegistry } from '../generated';
 import { WriteHookParams, WriteHook } from '../hooks';
 import { useDsProxyData } from './useDsProxyData';
@@ -12,7 +12,7 @@ export function useDsProxyBuild({
   onStart = () => null,
   gas
 }: WriteHookParams): WriteHook {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = connectedAddress || ZERO_ADDRESS;
   const { data: dsProxy, isLoading: loadingProxy, error: dsProxyError } = useDsProxyData(acct);
 

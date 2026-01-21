@@ -1,7 +1,7 @@
 import { Icon, IconProps } from './Icon';
 
 export const ConnectWallet = (props: IconProps) => (
-  <Icon {...props} width="55" height="65" viewBox="0 0 111 133" fill="none">
+  <Icon width="55" height="65" {...props} viewBox="0 0 111 133" fill="none">
     <defs>
       <filter
         id="filter0_b_1630_111867"

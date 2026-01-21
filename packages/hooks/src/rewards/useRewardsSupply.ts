@@ -1,5 +1,5 @@
 import { usdsSkyRewardAbi } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { ZERO_ADDRESS } from '../constants';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
@@ -26,7 +26,7 @@ export function useRewardsSupply({
 }): WriteHook {
   const chainId = useChainId();
 
-  const { address } = useAccount();
+  const { address } = useConnection();
   const { data: allowance } = useTokenAllowance({
     chainId,
     contractAddress: supplyTokenAddress,

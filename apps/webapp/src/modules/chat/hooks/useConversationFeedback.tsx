@@ -2,8 +2,6 @@ import { useEffect } from 'react';
 import { UserType, MessageType } from '@/modules/chat/constants';
 import type { ChatHistory } from '@/modules/chat/types/Chat';
 
-const CONVERSATION_RATING_PREFIX = '/feedback conversation-rating-';
-
 interface UseConversationFeedbackParams {
   chatHistory: ChatHistory[];
   setShowConversationFeedback: (show: boolean) => void;
@@ -13,10 +11,13 @@ interface UseConversationFeedbackParams {
  * Custom hook to manage conversation feedback prompt visibility based on chat history.
  *
  * Shows feedback prompt when:
- * - Conversation has at least 7 messages
- * - Last message is from the bot (not loading)
- * - Total bot message content exceeds 1000 characters
- * - No recent conversation feedback has been given (checks last 10 messages)
+ * - Conversation has at least 3 messages (greeting, first user message, first bot response)
+ * - Last message is from the bot and is a valid response (text or internal)
+ * - Excluded message types: loading, error, canceled, authError
+ * - Once shown, keeps it visible to allow multiple feedback submissions throughout the conversation
+ *
+ * Note: Feedback is now submitted via the /feedback API endpoint with toast notifications,
+ * not as chat messages, so we don't check for feedback message prefixes anymore.
  */
 export const useConversationFeedback = ({
   chatHistory,
@@ -24,36 +25,23 @@ export const useConversationFeedback = ({
 }: UseConversationFeedbackParams): void => {
   useEffect(() => {
     const lastMessage = chatHistory[chatHistory.length - 1];
+
     const isLastMessageBot = lastMessage?.user === UserType.bot;
-    const isLoadingMessage = lastMessage?.type === MessageType.loading;
-    const isNotInitialMessage = chatHistory.length > 1;
-    const isLongEnoughConversation = chatHistory.length >= 7;
+    // Valid responses: text, internal
+    // Excluded: loading, error, canceled, authError
+    const isValidAnswer =
+      lastMessage?.type !== MessageType.loading &&
+      lastMessage?.type !== MessageType.error &&
+      lastMessage?.type !== MessageType.canceled &&
+      lastMessage?.type !== MessageType.authError;
+    const hasEnoughMessages = chatHistory.length >= 3; // greeting message, first user message, last bot message
 
-    // Check if total bot message content exceeds 1000 characters
-    const totalBotMessageLength = chatHistory
-      .filter(msg => msg.user === UserType.bot)
-      .reduce((total, msg) => total + msg.message.length, 0);
-    const hasSufficientBotContent = totalBotMessageLength > 1000;
+    const shouldShowFeedback = hasEnoughMessages && isLastMessageBot && isValidAnswer;
 
-    const shouldShowFeedback =
-      isNotInitialMessage &&
-      isLastMessageBot &&
-      !isLoadingMessage &&
-      isLongEnoughConversation &&
-      hasSufficientBotContent;
-
-    // Check only the last 10 messages for recent conversation feedback
-    const recentMessages = chatHistory.slice(-10);
-    const hasRecentConversationFeedback = recentMessages.some(
-      msg => msg.user === UserType.user && msg.message.startsWith(CONVERSATION_RATING_PREFIX)
-    );
-
-    // Show feedback when last message is internal bot message and no recent conversation feedback was given
-    if (shouldShowFeedback && !hasRecentConversationFeedback) {
+    // Show feedback when conditions are met
+    // Once shown, it stays visible (no logic to hide it)
+    if (shouldShowFeedback) {
       setShowConversationFeedback(true);
-    } else if (hasRecentConversationFeedback) {
-      // Hide feedback prompt if conversation feedback was just submitted
-      setShowConversationFeedback(false);
     }
   }, [chatHistory, setShowConversationFeedback]);
 };

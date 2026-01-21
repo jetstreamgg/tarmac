@@ -37,7 +37,7 @@ const createTokenValidationRule = (allowedTokens?: string[]) =>
         return (allowedTokens ?? tokenSymbols).map(t => t.toLowerCase()).includes(value.toLowerCase());
       },
       {
-        message: 'token must be in the list of valid tokens'
+        error: 'token must be in the list of valid tokens'
       }
     );
 
@@ -52,12 +52,12 @@ const amountValidationRule = z
       return !isNaN(Number(value)) && Number(value) >= 0;
     },
     {
-      message: 'amount must be a number-like string greater than 0'
+      error: 'amount must be a number-like string greater than 0'
     }
   );
 
 const TokenSchema = z.object({
-  address: z.record(z.string()),
+  address: z.record(z.string(), z.string()),
   abi: z.any().optional(),
   name: z.string(),
   color: z.string(),
@@ -125,7 +125,7 @@ const createExternalWidgetStateSchema = (allowedTokens?: string[]) =>
         return true;
       },
       {
-        message: 'token and targetToken cannot be tradeped'
+        error: 'token and targetToken cannot be tradeped'
       }
     )
     .refine(
@@ -136,7 +136,7 @@ const createExternalWidgetStateSchema = (allowedTokens?: string[]) =>
         return true;
       },
       {
-        message: 'Cannot have both an amount and a targetAmount'
+        error: 'Cannot have both an amount and a targetAmount'
       }
     );
 

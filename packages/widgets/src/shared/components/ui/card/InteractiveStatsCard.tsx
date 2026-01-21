@@ -1,5 +1,4 @@
 import { Card, CardContent, CardFooter } from '@widgets/components/ui/card';
-import { ArrowRight } from 'lucide-react';
 import { Text } from '../Typography';
 import { TokenIcon } from '../token/TokenIcon';
 import { Link } from 'react-router-dom';
@@ -35,16 +34,8 @@ export const InteractiveStatsCard = ({
             {headerRightContent}
           </CardContent>
           <CardFooter>
-            <div className="flex w-full justify-between">
-              <div className="flex grow items-center gap-2">
-                {footer}
-                <div className="h-4 w-4">
-                  <ArrowRight
-                    size={16}
-                    className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
-                  />
-                </div>
-              </div>
+            <div className="flex w-full items-start justify-between">
+              <div className="flex-1">{footer}</div>
               {footerRightContent}
             </div>
           </CardFooter>

@@ -6,7 +6,7 @@ import {
   useRewardsWithUserBalance
 } from '@jetstreamgg/sky-hooks';
 import { useContext, useMemo } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { RewardsAction } from '@widgets/widgets/RewardsWidget/lib/constants';
 import { RewardsStatsCard } from './RewardsStatsCard';
 import { motion } from 'framer-motion';
@@ -33,7 +33,7 @@ export const RewardsOverview = ({
   isConnectedAndEnabled = true
 }: RewardsOverviewProps) => {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const { widgetState, setWidgetState } = useContext(WidgetContext);
 
@@ -64,7 +64,7 @@ export const RewardsOverview = ({
 
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses: userRewards.map(({ contractAddress }) => contractAddress as `0x${string}`) || [],
-    userAddress: address,
+    addresses: address,
     chainId,
     enabled: !!userRewards.length && !!address
   });

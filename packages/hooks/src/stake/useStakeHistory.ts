@@ -15,7 +15,7 @@ import {
   StakeHistoryKick
 } from './stakeModule';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchStakeHistory(
@@ -222,7 +222,7 @@ export function useStakeHistory({
   subgraphUrl?: string;
   index?: number;
 } = {}): ReadHook & { data?: StakeHistory } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;

@@ -1,7 +1,13 @@
-import { useBatchSavingsSupply, useSavingsWithdraw } from '@jetstreamgg/sky-hooks';
+import {
+  Token,
+  TOKENS,
+  useBatchSavingsSupply,
+  useBatchUpgradeAndSavingsSupply,
+  useSavingsWithdraw
+} from '@jetstreamgg/sky-hooks';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useContext } from 'react';
-import { SavingsAction } from '../lib/constants';
+import { SavingsAction, SavingsFlow } from '../lib/constants';
 import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
@@ -10,18 +16,22 @@ interface UseSavingsTransactionsParameters
   amount: bigint;
   max: boolean;
   referralCode: number | undefined;
+  originToken: Token;
   shouldUseBatch: boolean;
   mutateAllowance: () => void;
   mutateSavings: () => void;
+  mutateOriginBalance: () => void;
 }
 
 export const useSavingsTransactions = ({
   amount,
   max,
   referralCode,
+  originToken,
   shouldUseBatch,
   mutateAllowance,
   mutateSavings,
+  mutateOriginBalance,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification
@@ -31,6 +41,7 @@ export const useSavingsTransactions = ({
     amount,
     mutateAllowance,
     mutateSavings,
+    mutateOriginBalance,
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
@@ -44,6 +55,15 @@ export const useSavingsTransactions = ({
     ...supplyTransactionCallbacks
   });
 
+  const batchUpgradeAndSupply = useBatchUpgradeAndSavingsSupply({
+    amount,
+    ref: referralCode,
+    // Always use batch transactions for this flow
+    shouldUseBatch: true,
+    enabled: widgetState.flow === SavingsFlow.SUPPLY && originToken.symbol === TOKENS.dai.symbol,
+    ...supplyTransactionCallbacks
+  });
+
   const savingsWithdraw = useSavingsWithdraw({
     amount,
     max,
@@ -51,5 +71,5 @@ export const useSavingsTransactions = ({
     ...withdrawTransactionCallbacks
   });
 
-  return { batchSavingsSupply, savingsWithdraw };
+  return { batchSavingsSupply, batchUpgradeAndSupply, savingsWithdraw };
 };

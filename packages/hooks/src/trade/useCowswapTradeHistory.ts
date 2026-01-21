@@ -2,7 +2,7 @@ import { ReadHook } from '../hooks';
 import { ModuleEnum, TRUST_LEVELS, TransactionTypeEnum, TrustLevelEnum } from '../constants';
 import { useQuery } from '@tanstack/react-query';
 import { TradeHistory } from './trade';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { cowApiClient, OrderStatus } from './constants';
 import { TokenForChain } from '../tokens/types';
 import { ETH_ADDRESS, getTokensForChain } from '../tokens/tokens.constants';
@@ -92,7 +92,7 @@ export function useCowswapTradeHistory({
   enabled?: boolean;
   chainId?: number;
 } = {}): ReadHook & { data?: TradeHistory } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
 
   const chainId = providedChainId ?? currentChainId;

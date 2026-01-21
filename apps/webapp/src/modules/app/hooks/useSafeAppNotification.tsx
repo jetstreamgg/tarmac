@@ -5,12 +5,12 @@ import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 
 const WALLET_CONNECT_CONNECTOR_ID = 'walletConnect';
 
 export const useSafeAppNotification = () => {
-  const { connector } = useAccount();
+  const { connector } = useConnection();
   const isSafeWallet = useIsSafeWallet();
 
   useEffect(() => {

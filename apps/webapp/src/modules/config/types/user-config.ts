@@ -6,5 +6,5 @@ export type UserConfig = {
   stakeToken?: StakeToken;
   batchEnabled: boolean;
   expertRiskDisclaimerShown?: boolean;
-  stakingRewardsDisclaimerShown?: boolean;
+  expertRiskDisclaimerDismissed?: boolean;
 };

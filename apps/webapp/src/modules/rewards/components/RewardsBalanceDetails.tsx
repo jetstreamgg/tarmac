@@ -14,10 +14,10 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 
 export function RewardsBalanceDetails({ rewardContract }: { rewardContract: RewardContract }) {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
 
   // Balance of the token to be supplied

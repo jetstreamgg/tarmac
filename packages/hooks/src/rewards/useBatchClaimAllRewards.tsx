@@ -1,7 +1,7 @@
 import { Call } from 'viem';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
 import { useRewardContractsToClaim } from './useRewardContractsToClaim';
 import { usdsSkyRewardAbi } from '../generated';
@@ -16,13 +16,13 @@ export function useBatchClaimAllRewards({
   shouldUseBatch = true
 }: BatchWriteHookParams): BatchWriteHook {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses:
       rewardContracts?.map(({ contractAddress }) => contractAddress as `0x${string}`) || [],
-    userAddress: address,
+    addresses: address,
     chainId,
     enabled: !!rewardContracts?.length && !!address
   });

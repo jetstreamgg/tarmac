@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { validateLinkedActionSearchParams, validateSearchParams } from '@/modules/utils/validateSearchParams';
-import { useAccount, useAccountEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
+import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { SealMigrationWidgetPane } from './SealMigrationWidgetPane';
@@ -17,8 +17,8 @@ export function SealMigrationApp() {
   const chainId = useChainId();
   const chains = useChains();
 
-  const { connector } = useAccount();
-  useAccountEffect({
+  const { connector } = useConnection();
+  useConnectionEffect({
     // Once the user connects their wallet, check if the network param is set and switch chains if necessary
     onConnect() {
       const parsedChainId = chains.find(chain => chain.name?.toLowerCase() === network?.toLowerCase())?.id;

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
+import { Chat } from '@/modules/icons';
 
 export const FloatingChatButton = () => {
   const [, setSearchParams] = useSearchParams();
@@ -24,7 +25,7 @@ export const FloatingChatButton = () => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-6 right-6 z-50"
+          className="fixed right-6 bottom-6 z-50"
         >
           <Button
             onClick={handleClick}
@@ -50,8 +51,7 @@ export const FloatingChatButton = () => {
                   exit={{ opacity: 0, rotate: 90 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {/* <Chat width={24} height={24} /> */}
-                  <img src="/images/chatbot_logo.svg" alt="Chat" width={28} height={28} />
+                  <Chat width={24} height={24} />
                 </motion.div>
               )}
             </AnimatePresence>

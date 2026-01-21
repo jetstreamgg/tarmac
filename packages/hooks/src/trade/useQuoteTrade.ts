@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { ETH_FLOW_QUOTE_PARAMS, OrderQuoteSideKind, cowApiClient, SKY_MONEY_APP_CODE } from './constants';
@@ -121,7 +121,7 @@ export const useQuoteTrade = ({
 }): ReadHook & { data: OrderQuoteResponse | undefined | null } => {
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const enabled = paramEnabled && !!sellToken && !!buyToken && !!amount;
   const { slippage, ttl } = verifySlippageAndDeadline({

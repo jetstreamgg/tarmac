@@ -41,6 +41,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_RESTRICTED_BUILD_MICA`: Boolean flag to enable certain restrictions for MiCa compliance
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
+- `VITE_SKIP_CHAT_AUTH_CHECK`: Boolean flag to bypass chatbot terms acceptance check during testing (only works in non-production environments)
 - `TENDERLY_API_KEY`: API key for Tenderly (used for forking and managing virtual networks for testing)
 - `VITE_USE_MOCK_WALLET`: Boolean flag to enable the use of a mock wallet for testing purposes
 - `VITE_TERMS_ENDPOINT`: URL endpoint for submitting and checking terms acceptance
@@ -68,6 +69,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_CHATBOT_CHECKBOX_LABEL`: (Optional) Additional instructional text displayed above the terms acceptance checkboxes in the chatbot terms modal.
 - `VITE_CHATBOT_CHECKBOX_TERMS_LABEL`: (Optional) Custom label for the terms checkbox in the chatbot terms modal. Supports markdown formatting.
 - `VITE_CHATBOT_CHECKBOX_PRIVACY_LABEL`: (Optional) Custom label for the privacy checkbox in the chatbot terms modal. Supports markdown formatting.
+- `VITE_CHATBOT_PREFILL_FILTERING_ENABLED`: Controls whether chatbot intents with pre-filled amounts/tokens are filtered. Filtering is enabled by default unless explicitly set to `'false'`.
 
 ## Running the App
 

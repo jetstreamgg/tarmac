@@ -386,10 +386,73 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
   }
 }
 
+/**
+ * Detect if we're running in shard mode
+ */
+function detectShardMode(): { isSharded: boolean; shardIndex: number; totalShards: number } {
+  const totalShards = process.env.PLAYWRIGHT_SHARD_TOTAL ? parseInt(process.env.PLAYWRIGHT_SHARD_TOTAL) : 1;
+  const shardIndex = process.env.PLAYWRIGHT_SHARD_INDEX
+    ? parseInt(process.env.PLAYWRIGHT_SHARD_INDEX) - 1 // Convert to 0-based
+    : 0;
+
+  const isSharded = totalShards > 1;
+
+  return { isSharded, shardIndex, totalShards };
+}
+
+/**
+ * Standard setup for non-sharded execution (current behavior)
+ */
+async function standardSetup(): Promise<void> {
+  console.log('\n2. Initializing account pool with all addresses...');
+  await accountPool.initialize(TEST_WALLET_COUNT);
+  console.log(`Account pool initialized with ${TEST_WALLET_COUNT} addresses`);
+}
+
+/**
+ * Sharded setup with coordination between shards
+ */
+async function shardedSetup(addresses: string[], shardIndex: number, totalShards: number): Promise<void> {
+  console.log(`\n2. Running in SHARD MODE (Shard ${shardIndex + 1}/${totalShards})`);
+
+  // Calculate account partition for this shard
+  const totalAccounts = TEST_WALLET_COUNT;
+  const basePerShard = Math.floor(totalAccounts / totalShards);
+  const remainder = totalAccounts % totalShards;
+  const extra = shardIndex < remainder ? 1 : 0;
+  const startIndex = shardIndex * basePerShard + Math.min(shardIndex, remainder);
+  const partitionSize = basePerShard + extra;
+
+  if (partitionSize === 0) {
+    throw new Error(
+      `Shard ${shardIndex + 1}/${totalShards} has no account allocation. Increase TEST_WALLET_COUNT or reduce total shards.`
+    );
+  }
+
+  const endIndex = Math.min(startIndex + partitionSize, totalAccounts);
+
+  console.log(
+    `   This shard will use accounts ${startIndex}-${endIndex - 1} (${endIndex - startIndex} accounts)`
+  );
+
+  // Initialize account pool with only this shard's partition
+  await accountPool.initializePartition(startIndex, endIndex);
+  console.log(`   Account pool initialized with partition [${startIndex}:${endIndex})`);
+}
+
 export default async function globalSetup() {
   console.log('=== Global Setup for Parallel Tests ===');
 
   try {
+    // Detect shard mode
+    const { isSharded, shardIndex, totalShards } = detectShardMode();
+
+    if (isSharded) {
+      console.log(`🔀 SHARD MODE DETECTED: Running as shard ${shardIndex + 1} of ${totalShards}`);
+    } else {
+      console.log('📦 WORKER MODE: Running with standard worker-based parallelism');
+    }
+
     // Step 1: Generate all test addresses (100 addresses for the pool)
     console.log('\n1. Generating test addresses...');
     const addresses = getTestAddresses(TEST_WALLET_COUNT);
@@ -400,10 +463,12 @@ export default async function globalSetup() {
     });
     console.log(`  ... (${addresses.length - 3} more addresses)`);
 
-    // Step 2: Initialize the account pool with all addresses
-    console.log('\n2. Initializing account pool with all addresses...');
-    await accountPool.initialize(TEST_WALLET_COUNT);
-    console.log(`Account pool initialized with ${TEST_WALLET_COUNT} addresses`);
+    // Step 2: Initialize account pool based on mode
+    if (isSharded) {
+      await shardedSetup(addresses, shardIndex, totalShards);
+    } else {
+      await standardSetup();
+    }
 
     // Step 3: Check for existing snapshots and validate them
     const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
@@ -498,8 +563,9 @@ export default async function globalSetup() {
     // If snapshots exist, revert to them instead of funding
     if (existingSnapshots) {
       console.log('\n5. Reverting VNets to snapshots (restoring funded state)...');
+      const snapshots = existingSnapshots; // Store in const for TypeScript
       const revertPromises = networks.map(network => {
-        const snapshotId = existingSnapshots[network];
+        const snapshotId = snapshots[network];
         if (snapshotId) {
           return revertToSnapshot(network, snapshotId);
         }
@@ -509,23 +575,73 @@ export default async function globalSetup() {
       console.log('✅ All VNets reverted to funded state - ready for tests!');
     } else {
       // No snapshots - need to fund and create snapshots
-      console.log('\n5. Pre-funding accounts on vnets...');
-      const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
-      await Promise.all(fundingPromises);
+      // In shard mode, only shard 1 should fund; others should wait
+      if (isSharded && shardIndex > 0) {
+        console.log(`\n⏳ Shard ${shardIndex + 1} waiting for shard 1 to fund accounts...`);
+        console.log('   💡 TIP: In CI, the setup job should fund accounts before shards run.');
+        console.log('   💡 For local testing, run shard 1 first to fund accounts.');
 
-      // Create snapshots after funding (for next run)
-      console.log('\n6. Creating VNet snapshots after funding...');
-      const snapshotPromises = networks.map(async network => {
-        const snapshotId = await createSnapshot(network);
-        return { network, snapshotId };
-      });
-      const snapshots = await Promise.all(snapshotPromises);
+        // Wait for snapshots to be created by shard 1
+        const maxWaitTime = 600000; // 10 minutes
+        const checkInterval = 5000; // 5 seconds
+        const startTime = Date.now();
 
-      // Save snapshots to file for next run
-      const snapshotData = Object.fromEntries(snapshots.map(s => [s.network, s.snapshotId]));
-      await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
-      console.log(`✅ Snapshots saved to ${snapshotFile}`);
-      console.log('💡 These snapshots will be used for all future test runs (instant setup!)');
+        while (Date.now() - startTime < maxWaitTime) {
+          try {
+            const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
+            const snapshots = JSON.parse(snapshotData);
+            if (snapshots && Object.keys(snapshots).length > 0) {
+              console.log('   ✅ Snapshots created by shard 1! Reverting to them...');
+              existingSnapshots = snapshots;
+
+              const revertPromises = networks.map(network => {
+                const snapshotId = existingSnapshots![network];
+                if (snapshotId) {
+                  return revertToSnapshot(network, snapshotId);
+                }
+                return Promise.resolve();
+              });
+              await Promise.all(revertPromises);
+              break;
+            }
+          } catch {
+            // Snapshot file doesn't exist yet, keep waiting
+          }
+
+          await new Promise(resolve => setTimeout(resolve, checkInterval));
+          process.stdout.write('.');
+        }
+
+        if (!existingSnapshots) {
+          throw new Error(
+            'Timeout waiting for shard 1 to fund accounts. Please run shard 1 first or use the CI workflow.'
+          );
+        }
+      } else {
+        // Worker mode OR shard 1: do the funding
+        if (isSharded) {
+          console.log(`\n💰 Shard 1 funding all ${addresses.length} accounts (other shards will wait)...`);
+        } else {
+          console.log('\n5. Pre-funding accounts on vnets...');
+        }
+
+        const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
+        await Promise.all(fundingPromises);
+
+        // Create snapshots after funding (for next run)
+        console.log('\n6. Creating VNet snapshots after funding...');
+        const snapshotPromises = networks.map(async network => {
+          const snapshotId = await createSnapshot(network);
+          return { network, snapshotId };
+        });
+        const snapshots = await Promise.all(snapshotPromises);
+
+        // Save snapshots to file for next run
+        const snapshotData = Object.fromEntries(snapshots.map(s => [s.network, s.snapshotId]));
+        await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
+        console.log(`✅ Snapshots saved to ${snapshotFile}`);
+        console.log('💡 These snapshots will be used for all future test runs (instant setup!)');
+      }
     }
 
     // Step 7: Display pool status

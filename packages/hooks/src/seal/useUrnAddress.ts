@@ -1,4 +1,4 @@
-import { useAccount, useChainId, useReadContract } from 'wagmi';
+import { useConnection, useChainId, useReadContract } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { sealModuleAbi, sealModuleAddress } from '../generated';
 import { lseDataSource } from './datasources';
@@ -9,7 +9,7 @@ type UseUrnAddressResponse = ReadHook & {
 
 export function useUrnAddress(urnIndex: bigint): UseUrnAddressResponse {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const dataSource = lseDataSource(chainId, 'getUrn');
 

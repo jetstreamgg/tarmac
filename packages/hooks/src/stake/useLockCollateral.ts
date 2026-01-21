@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { StakeWriteHookReturnType } from './stakeModule';
 import { WriteHookParams } from '../hooks';
 import { useStakeSkyAllowance } from './useStakeAllowance';
@@ -22,7 +22,7 @@ export function useLockCollateral({
   ref?: number;
 }): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
   const { data: allowance } = useStakeSkyAllowance();
 
   const enabled =

@@ -1,5 +1,5 @@
 import { usdsSkyRewardAbi } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { ZERO_ADDRESS } from '../constants';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
@@ -18,7 +18,7 @@ export function useRewardsWithdraw({
   amount: bigint;
 }): WriteHook {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const enabled = !!paramEnabled && !!address && address !== ZERO_ADDRESS && amount !== 0n;
 

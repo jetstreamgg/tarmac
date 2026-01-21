@@ -2,7 +2,6 @@ import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text } from '@/modules/layout/components/Typography';
 import { HStack } from '@/modules/layout/components/HStack';
-import { VStack } from '@/modules/layout/components/VStack';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
@@ -64,25 +63,21 @@ export const useChatNotification = (isAuthorized: boolean) => {
           toastWithClose(
             () => (
               <div>
-                <HStack>
-                  <img
+                {/* <HStack > */}
+                {/* <img
                     src="/images/chatbot_logo.svg"
                     alt={`${CHATBOT_NAME} avatar`}
-                    className="@2xl/chat:h-8 @2xl/chat:w-8 h-5 w-5"
-                  />
-                  <Text variant="medium" className="text-selectActive ml-1">
-                    {CHATBOT_NAME}
-                  </Text>
-                </HStack>
+                    className="h-5 w-5 @2xl/chat:h-8 @2xl/chat:w-8"
+                  /> */}
+                {/* We replace the image with a Heading */}
+                <Text variant="medium" className="text-selectActive ml-1">
+                  {CHATBOT_NAME}
+                </Text>
+                {/* </HStack> */}
                 <HStack className="ml-1 w-full justify-between">
-                  <VStack className="mt-4">
-                    <Text variant="medium">
-                      <Trans>Hi, {CHATBOT_NAME} here!</Trans>
-                    </Text>
-                    <Text variant="medium">
-                      <Trans>How can I help you today?</Trans>
-                    </Text>
-                  </VStack>
+                  <Text variant="medium">
+                    <Trans>Hi, I&apos;m your AI-powered chatbot assistant. How can I help you?</Trans>
+                  </Text>
                   <Button
                     className="place-self-end"
                     variant="pill"

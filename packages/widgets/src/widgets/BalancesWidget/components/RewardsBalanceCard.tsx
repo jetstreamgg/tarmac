@@ -3,28 +3,40 @@ import {
   useRewardsChartInfo,
   TOKENS,
   usePrices,
-  useHighestRateFromChartData
+  useHighestRateFromChartData,
+  useRewardContractsToClaim
 } from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
+import {
+  formatBigInt,
+  formatDecimalPercentage,
+  formatNumber,
+  isMainnetId,
+  chainId
+} from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
-import { CardProps } from './ModulesBalances';
-import { useChainId } from 'wagmi';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { CardProps, ModuleCardVariant } from './ModulesBalances';
+import { useChainId, useAccount } from 'wagmi';
+import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
+import { UnclaimedRewards } from '@widgets/shared/components/ui/UnclaimedRewards';
+import { calculateUnclaimedRewards } from '@widgets/shared/utils/calculateUnclaimedRewards';
+import { InteractiveStatsCardAlt } from '@widgets/shared/components/ui/card/InteractiveStatsCardAlt';
 
 export const RewardsBalanceCard = ({
   url,
   onExternalLinkClicked,
   loading,
-  totalUserRewardsSupplied
+  totalUserRewardsSupplied,
+  variant = ModuleCardVariant.default
 }: CardProps) => {
+  const { address } = useAccount();
   const currentChainId = useChainId();
-  const chainId = isTestnetId(currentChainId) ? 314310 : 1; //TODO: update once we add non-mainnet rewards
-  const rewardContracts = useAvailableTokenRewardContracts(chainId);
+  // Use current chain if it's mainnet or tenderly, otherwise default to mainnet
+  const rewardChainId = isMainnetId(currentChainId) ? currentChainId : chainId.mainnet;
+  const rewardContracts = useAvailableTokenRewardContracts(rewardChainId);
 
   const usdsSkyRewardContract = rewardContracts.find(
     f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.sky.symbol
@@ -50,10 +62,27 @@ export const RewardsBalanceCard = ({
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
+  const rewardContractAddresses = rewardContracts
+    .filter(c => c.supplyToken.symbol === TOKENS.usds.symbol)
+    .map(c => c.contractAddress) as `0x${string}`[];
+
+  const { data: unclaimedRewardsData, isLoading: unclaimedRewardsLoading } = useRewardContractsToClaim({
+    rewardContractAddresses,
+    addresses: address,
+    chainId: rewardChainId,
+    enabled: !!address
+  });
+
+  const { totalUnclaimedRewardsValue, uniqueRewardTokens } = calculateUnclaimedRewards(
+    unclaimedRewardsData,
+    pricesData,
+    rewardChainId
+  );
+
   const chartDataLoading = usdsSkyChartDataLoading || usdsSpkChartDataLoading;
   const mostRecentRateNumber = highestRateData ? parseFloat(highestRateData.rate) : null;
 
-  return (
+  return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
       title={t`USDS supplied to Rewards`}
       tokenSymbol="USDS"
@@ -67,39 +96,62 @@ export const RewardsBalanceCard = ({
         )
       }
       footer={
-        chartDataLoading ? (
-          <Skeleton className="h-4 w-20" />
-        ) : mostRecentRateNumber && mostRecentRateNumber > 0 ? (
-          <div className="flex w-fit items-center gap-1.5">
-            <Text variant="small" className="text-bullish leading-4">
-              {`Rates up to: ${mostRecentRateNumber ? formatDecimalPercentage(mostRecentRateNumber) : '0%'}`}
-            </Text>
-            <PopoverRateInfo
-              type="str"
+        <div className="flex flex-col gap-1">
+          {chartDataLoading ? (
+            <Skeleton className="h-4 w-20" />
+          ) : mostRecentRateNumber && mostRecentRateNumber > 0 ? (
+            <RateLineWithArrow
+              rateText={`Rates up to: ${mostRecentRateNumber ? formatDecimalPercentage(mostRecentRateNumber) : '0%'}`}
+              popoverType="str"
               onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="h-[13px] w-[13px]"
             />
-          </div>
-        ) : (
-          <></>
-        )
+          ) : (
+            <></>
+          )}
+          {uniqueRewardTokens.length > 0 && <UnclaimedRewards uniqueRewardTokens={uniqueRewardTokens} />}
+        </div>
       }
       footerRightContent={
-        loading || pricesLoading ? (
+        loading || pricesLoading || unclaimedRewardsLoading ? (
           <Skeleton className="h-[13px] w-20" />
-        ) : totalUserRewardsSupplied !== undefined && !!pricesData?.USDS ? (
-          <Text variant="small" className="text-textSecondary">
-            $
-            {formatNumber(
-              parseFloat(formatUnits(totalUserRewardsSupplied, 18)) * parseFloat(pricesData.USDS.price),
-              {
-                maxDecimals: 2
-              }
+        ) : (
+          <div className="flex flex-col items-end gap-1">
+            {totalUserRewardsSupplied !== undefined && !!pricesData?.USDS && (
+              <Text variant="small" className="text-textSecondary leading-4">
+                $
+                {formatNumber(
+                  parseFloat(formatUnits(totalUserRewardsSupplied, 18)) * parseFloat(pricesData.USDS.price),
+                  {
+                    maxDecimals: 2
+                  }
+                )}
+              </Text>
             )}
-          </Text>
-        ) : undefined
+            {totalUnclaimedRewardsValue > 0 && (
+              <Text variant="small" className="text-textPrimary leading-4">
+                ${formatNumber(totalUnclaimedRewardsValue, { maxDecimals: 2 })}
+              </Text>
+            )}
+          </div>
+        )
       }
       url={url}
+    />
+  ) : (
+    <InteractiveStatsCardAlt
+      title={t`USDS supplied to Rewards`}
+      tokenSymbol="USDS"
+      url={url}
+      logoName="rewards"
+      content={
+        loading ? (
+          <Skeleton className="w-32" />
+        ) : (
+          <Text>
+            {`${totalUserRewardsSupplied !== undefined ? formatBigInt(totalUserRewardsSupplied) : '0'}`} USDS
+          </Text>
+        )
+      }
     />
   );
 };

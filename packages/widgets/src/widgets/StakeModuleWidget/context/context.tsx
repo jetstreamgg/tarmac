@@ -8,10 +8,13 @@ import {
   getStakeSelectRewardContractCalldata,
   getStakeWipeAllCalldata,
   getStakeWipeCalldata,
+  useRewardContractsToClaim,
+  useStakeRewardContracts,
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   ZERO_ADDRESS
 } from '@jetstreamgg/sky-hooks';
+import { TxStatus } from '@widgets/shared/constants';
 import {
   Dispatch,
   ReactElement,
@@ -20,8 +23,11 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useMemo,
   useState
 } from 'react';
+import { useChainId } from 'wagmi';
 import { StakeFlow, StakeStep } from '../lib/constants';
 import { OnStakeUrnChange } from '..';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -81,11 +87,34 @@ export interface StakeModuleWidgetContextProps {
   indexToClaim: bigint | undefined;
   setIndexToClaim: Dispatch<SetStateAction<bigint | undefined>>;
 
-  rewardContractToClaim: `0x${string}` | undefined;
-  setRewardContractToClaim: Dispatch<SetStateAction<`0x${string}` | undefined>>;
+  rewardContractsToClaim: `0x${string}`[] | undefined;
+  setRewardContractsToClaim: Dispatch<SetStateAction<`0x${string}`[] | undefined>>;
+
+  rewardClaimAmounts: Array<{
+    contractAddress: `0x${string}`;
+    claimBalance: bigint;
+    rewardSymbol: string;
+  }>;
+  setRewardClaimAmounts: Dispatch<
+    SetStateAction<
+      Array<{
+        contractAddress: `0x${string}`;
+        claimBalance: bigint;
+        rewardSymbol: string;
+      }>
+    >
+  >;
 
   wantsToDelegate: boolean | undefined;
   setWantsToDelegate: Dispatch<SetStateAction<boolean | undefined>>;
+
+  restakeSkyRewards: boolean;
+  setRestakeSkyRewards: Dispatch<SetStateAction<boolean>>;
+
+  restakeSkyAmount: bigint;
+  setRestakeSkyAmount: Dispatch<SetStateAction<bigint>>;
+
+  isSkyRewardPosition: boolean;
 }
 
 export const StakeModuleWidgetContext = createContext<StakeModuleWidgetContextProps>({
@@ -136,14 +165,26 @@ export const StakeModuleWidgetContext = createContext<StakeModuleWidgetContextPr
   indexToClaim: undefined,
   setIndexToClaim: () => undefined,
 
-  rewardContractToClaim: undefined,
-  setRewardContractToClaim: () => undefined,
+  rewardContractsToClaim: undefined,
+  setRewardContractsToClaim: () => undefined,
+
+  rewardClaimAmounts: [],
+  setRewardClaimAmounts: () => null,
 
   wantsToDelegate: undefined,
-  setWantsToDelegate: () => null
+  setWantsToDelegate: () => null,
+
+  restakeSkyRewards: false,
+  setRestakeSkyRewards: () => null,
+
+  restakeSkyAmount: 0n,
+  setRestakeSkyAmount: () => null,
+
+  isSkyRewardPosition: false
 });
 
 export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode }): ReactElement => {
+  const chainId = useChainId();
   const [isLockCompleted, setIsLockCompleted] = useState<boolean>(false);
   const [isSelectRewardContractCompleted, setIsSelectRewardContractCompleted] = useState<boolean>(false);
   const [isSelectDelegateCompleted, setIsSelectDelegateCompleted] = useState<boolean>(false);
@@ -161,18 +202,30 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
     { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
   >();
   const [indexToClaim, setIndexToClaim] = useState<bigint | undefined>();
-  const [rewardContractToClaim, setRewardContractToClaim] = useState<`0x${string}` | undefined>();
+  const [rewardContractsToClaim, setRewardContractsToClaim] = useState<`0x${string}`[] | undefined>();
+  const [rewardClaimAmounts, setRewardClaimAmounts] = useState<
+    Array<{
+      contractAddress: `0x${string}`;
+      claimBalance: bigint;
+      rewardSymbol: string;
+    }>
+  >([]);
   const [wantsToDelegate, setWantsToDelegate] = useState<boolean | undefined>(undefined);
+  const [restakeSkyRewards, setRestakeSkyRewards] = useState<boolean>(false);
+  const [restakeSkyAmount, setRestakeSkyAmount] = useState<bigint>(0n);
 
-  const { widgetState } = useContext(WidgetContext);
+  const { widgetState, txStatus } = useContext(WidgetContext);
 
-  const setActiveUrn = (
-    urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined,
-    onStakeUrnChange: OnStakeUrnChange
-  ) => {
-    setActiveUrnState(urn);
-    onStakeUrnChange?.(urn);
-  };
+  const setActiveUrn = useCallback(
+    (
+      urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined,
+      onStakeUrnChange: OnStakeUrnChange
+    ) => {
+      setActiveUrnState(urn);
+      onStakeUrnChange?.(urn);
+    },
+    []
+  );
 
   const { data: urnSelectedRewardContract } = useStakeUrnSelectedRewardContract({
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
@@ -181,16 +234,82 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
   });
 
+  const { data: stakeRewardContracts } = useStakeRewardContracts();
+
+  const rewardContractsForActiveUrn = useMemo<`0x${string}`[]>(
+    () => stakeRewardContracts?.map(({ contractAddress }) => contractAddress) || [],
+    [stakeRewardContracts]
+  );
+
+  const { data: activeUrnRewardClaims, isLoading: activeUrnRewardClaimsLoading } = useRewardContractsToClaim({
+    rewardContractAddresses: rewardContractsForActiveUrn,
+    addresses: activeUrn?.urnAddress,
+    chainId,
+    enabled:
+      rewardContractsForActiveUrn.length > 0 &&
+      !!activeUrn?.urnAddress &&
+      activeUrn?.urnAddress !== ZERO_ADDRESS &&
+      !!chainId
+  });
+
+  const activeSkyReward = useMemo(
+    () =>
+      activeUrnRewardClaims?.find(
+        ({ rewardSymbol }) => typeof rewardSymbol === 'string' && rewardSymbol.toUpperCase() === 'SKY'
+      ),
+    [activeUrnRewardClaims]
+  );
+
+  const isSkyRewardPosition = !!activeSkyReward;
+
+  useEffect(() => {
+    const nextAmount = activeSkyReward?.claimBalance ?? 0n;
+    setRestakeSkyAmount(nextAmount);
+
+    if (nextAmount === 0n && restakeSkyRewards && !activeUrnRewardClaimsLoading) {
+      setRestakeSkyRewards(false);
+    }
+  }, [
+    activeSkyReward,
+    restakeSkyRewards,
+    setRestakeSkyAmount,
+    setRestakeSkyRewards,
+    activeUrnRewardClaimsLoading
+  ]);
+
+  //Set reward claim amounts while tx is idle
+  useEffect(() => {
+    if (txStatus !== TxStatus.IDLE) return;
+
+    if (rewardContractsToClaim && activeUrnRewardClaims) {
+      const selectedRewardAmounts = activeUrnRewardClaims.filter(reward =>
+        rewardContractsToClaim.some(
+          contractAddress => contractAddress.toLowerCase() === reward.contractAddress.toLowerCase()
+        )
+      );
+      setRewardClaimAmounts(selectedRewardAmounts);
+    } else {
+      setRewardClaimAmounts([]);
+    }
+  }, [rewardContractsToClaim, activeUrnRewardClaims, txStatus]);
+
   const generateAllCalldata = useCallback(
     (ownerAddress: `0x${string}`, urnIndex: bigint, referralCode: number = 0) => {
       // --- CALLDATA GENERATION ---
       // If we have an activeUrn address, we're not opening a new one, we're managing an existing one
       const openCalldata = !activeUrn?.urnAddress ? getStakeOpenCalldata({ urnIndex }) : undefined;
 
+      const totalSkyLockAmount = skyToLock + (restakeSkyRewards ? restakeSkyAmount : 0n);
+
       // SKY to lock
       const lockSkyCalldata =
-        skyToLock && skyToLock > 0n
-          ? getStakeLockCalldata({ ownerAddress, urnIndex, amount: skyToLock, refCode: referralCode })
+        totalSkyLockAmount > 0n
+          ? getStakeLockCalldata({
+              ownerAddress,
+              urnIndex,
+              amount: totalSkyLockAmount,
+              refCode: referralCode
+            })
           : undefined;
 
       // USDS to wipe
@@ -247,13 +366,15 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
         : undefined;
 
       // Claim rewards
-      const claimRewardsCalldata = rewardContractToClaim
-        ? getStakeGetRewardCalldata({
-            ownerAddress,
-            urnIndex,
-            rewardContractAddress: rewardContractToClaim,
-            toAddress: ownerAddress
-          })
+      const claimRewardsCalldatas = rewardContractsToClaim
+        ? rewardContractsToClaim.map(rewardContractToClaim =>
+            getStakeGetRewardCalldata({
+              ownerAddress,
+              urnIndex,
+              rewardContractAddress: rewardContractToClaim,
+              toAddress: ownerAddress
+            })
+          )
         : undefined;
 
       // Order calldata based on the flow
@@ -274,11 +395,11 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
               repayCalldata,
               repayAllCalldata,
               freeSkyCalldata,
+              ...(claimRewardsCalldatas || []),
               selectRewardContractCalldata,
               selectDelegateCalldata,
               lockSkyCalldata,
-              borrowUsdsCalldata,
-              claimRewardsCalldata
+              borrowUsdsCalldata
             ];
 
       // Filter out undefined calldata
@@ -295,9 +416,13 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
       selectedDelegate,
       urnSelectedRewardContract,
       urnSelectedVoteDelegate,
-      rewardContractToClaim,
+      rewardContractsToClaim,
       activeUrn,
-      widgetState.flow
+      widgetState.flow,
+      restakeSkyRewards,
+      restakeSkyAmount,
+      isSkyRewardPosition,
+      urnSelectedRewardContract
     ]
   );
 
@@ -335,10 +460,17 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
         setActiveUrn,
         indexToClaim,
         setIndexToClaim,
-        rewardContractToClaim,
-        setRewardContractToClaim,
+        rewardContractsToClaim,
+        setRewardContractsToClaim,
+        rewardClaimAmounts,
+        setRewardClaimAmounts,
         wantsToDelegate,
-        setWantsToDelegate
+        setWantsToDelegate,
+        restakeSkyRewards,
+        setRestakeSkyRewards,
+        restakeSkyAmount,
+        setRestakeSkyAmount,
+        isSkyRewardPosition
       }}
     >
       {children}

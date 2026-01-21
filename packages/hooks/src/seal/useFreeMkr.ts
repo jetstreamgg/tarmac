@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { SaWriteHookReturnType } from './sealModule';
 import { WriteHookParams } from '../hooks';
 import { sealModuleAbi, sealModuleAddress } from '../generated';
@@ -19,7 +19,7 @@ export function useFreeMkr({
   amount: bigint | undefined;
 }): SaWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address: connectedAddress } = useAccount();
+  const { isConnected, address: connectedAddress } = useConnection();
 
   const enabled = isConnected && !!connectedAddress && activeTabEnabled && !!amount && amount !== 0n;
 

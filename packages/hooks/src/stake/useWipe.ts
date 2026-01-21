@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { StakeWriteHookParams, StakeWriteHookReturnType } from './stakeModule';
 import { encodeFunctionData } from 'viem';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
@@ -18,7 +18,7 @@ export function useWipe({
   index: bigint;
 }): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
 
   const enabled = !!address && isConnected && activeTabEnabled && !!amount && amount > 0n;
 

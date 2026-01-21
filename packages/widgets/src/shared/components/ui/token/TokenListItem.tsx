@@ -10,7 +10,7 @@ import { TOKENS, Token, getTokenDecimals, usePrices, useTokenBalance } from '@je
 import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
-import { useAccount, useBalance, useChainId } from 'wagmi';
+import { useConnection, useBalance, useChainId } from 'wagmi';
 import { formatUnits } from 'viem';
 
 interface TokenListItemProps {
@@ -26,7 +26,7 @@ export function TokenListItem({
 }: TokenListItemProps): React.ReactElement {
   const chainId = useChainId();
   const tokenAddress = typeof token.address === 'string' ? token.address : token.address?.[chainId];
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const { data: nativeBalance, isLoading: isLoadingNativeBalance } = useBalance({
@@ -81,8 +81,8 @@ export function TokenListItem({
                 <TokenIcon className="h-8 w-8" token={token} />
               </div>
               <VStack className="h-9 items-start justify-between" gap={1}>
-                <Text className="text-text text-[13px] font-normal leading-none">{token.name}</Text>
-                <Text className="text-selectActive text-xs font-normal leading-none">{token.symbol}</Text>
+                <Text className="text-text text-[13px] leading-none font-normal">{token.name}</Text>
+                <Text className="text-selectActive text-xs leading-none font-normal">{token.symbol}</Text>
               </VStack>
             </HStack>
             <VStack className="h-9 items-end justify-between p-0">
@@ -93,10 +93,10 @@ export function TokenListItem({
                 </>
               ) : (
                 <>
-                  <Text className="text-text h-full text-right text-[13px] font-normal leading-none">
+                  <Text className="text-text h-full text-right text-[13px] leading-none font-normal">
                     {formattedBalance}
                   </Text>
-                  <Text className="text-selectActive text-right text-xs font-normal leading-none">
+                  <Text className="text-selectActive text-right text-xs leading-none font-normal">
                     {formattedUsdBalance && `$${formattedUsdBalance}`}
                   </Text>
                 </>

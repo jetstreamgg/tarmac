@@ -10,7 +10,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { RewardsStatsCardCore } from './RewardsStatsCardCore';
 import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAccordionCard'; // Import StatsAccordionCard
 import { Warning } from '@widgets/shared/components/icons/Warning';
@@ -33,7 +33,7 @@ export const SelectedRewardsCard = ({
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const { data, isLoading, error } = useRewardContractInfo({
     chainId: rewardContract.chainId,

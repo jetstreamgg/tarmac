@@ -44,16 +44,16 @@ type StakeModuleTransactionProps = {
   needsAllowance: boolean;
 };
 
-function TransactionDetail() {
+function TransactionDetail({ totalSkyAmount }: { totalSkyAmount: bigint }) {
   const {
-    skyToLock,
     skyToFree,
     usdsToBorrow,
     usdsToWipe,
     wipeAll,
     selectedRewardContract,
     selectedDelegate,
-    activeUrn
+    activeUrn,
+    rewardClaimAmounts
   } = useContext(StakeModuleWidgetContext);
   const { data: rewardContractTokens } = useRewardContractTokens(selectedRewardContract);
 
@@ -67,7 +67,7 @@ function TransactionDetail() {
     urn: activeUrn?.urnAddress || ZERO_ADDRESS
   });
 
-  const showSealing = !!skyToLock && skyToLock > 0n;
+  const showSealing = totalSkyAmount > 0n;
   const showUnsealing = !!skyToFree && skyToFree > 0n;
   const showBorrowing = !!usdsToBorrow && usdsToBorrow > 0n;
   const showRepaying = (!!usdsToWipe && usdsToWipe > 0n) || wipeAll;
@@ -78,6 +78,7 @@ function TransactionDetail() {
     needsDelegateUpdate(activeUrn?.urnAddress, selectedDelegate, urnSelectedVoteDelegate) &&
     selectedDelegateOwner &&
     selectedDelegateName;
+  const showRewardClaim = rewardClaimAmounts.length > 0;
 
   const transactionComponents = [
     {
@@ -87,7 +88,7 @@ function TransactionDetail() {
           <Text variant="medium" className="text-textSecondary leading-4">
             Staking
           </Text>
-          <TokenIconWithBalance token={TOKENS.sky} balance={formatBigInt(skyToLock)} textLarge />
+          <TokenIconWithBalance token={TOKENS.sky} balance={formatBigInt(totalSkyAmount)} textLarge />
         </VStack>
       )
     },
@@ -151,7 +152,22 @@ function TransactionDetail() {
           </HStack>
         </VStack>
       )
-    }
+    },
+    ...rewardClaimAmounts.map(reward => ({
+      show: showRewardClaim,
+      component: (
+        <VStack gap={3} className="mt-2" key={reward.contractAddress}>
+          <Text variant="medium" className="text-textSecondary leading-4">
+            Claiming
+          </Text>
+          <TokenIconWithBalance
+            token={{ symbol: reward.rewardSymbol, name: reward.rewardSymbol }}
+            balance={formatBigInt(reward.claimBalance)}
+            textLarge
+          />
+        </VStack>
+      )
+    }))
   ];
 
   const transactionComponentsToShow = transactionComponents.filter(item => item.show);
@@ -184,21 +200,24 @@ export const StakeModuleTransactionStatus = ({
     setOriginAmount
   } = useContext(WidgetContext);
   const [flowNeedsAllowance] = useState(needsAllowance);
-  const { skyToLock, usdsToBorrow, skyToFree, usdsToWipe } = useContext(StakeModuleWidgetContext);
+  const { skyToLock, usdsToBorrow, skyToFree, usdsToWipe, restakeSkyRewards, restakeSkyAmount } =
+    useContext(StakeModuleWidgetContext);
 
   const { flow, action, screen } = widgetState;
 
   const txStatus = txStatus_ as keyof TxCardCopyText;
 
+  const totalSkyAmount = skyToLock + (restakeSkyRewards ? restakeSkyAmount : 0n);
+
   // This sets the correct token and amount in the transaction screens
   useEffect(() => {
     setOriginToken(
-      skyToLock && skyToLock > 0n ? TOKENS.sky : usdsToWipe && usdsToWipe > 0n ? TOKENS.usds : undefined
+      totalSkyAmount > 0n ? TOKENS.sky : usdsToWipe && usdsToWipe > 0n ? TOKENS.usds : undefined
     );
     setOriginAmount(
-      skyToLock && skyToLock > 0n ? skyToLock : usdsToWipe && usdsToWipe > 0n ? usdsToWipe : undefined
+      totalSkyAmount > 0n ? totalSkyAmount : usdsToWipe && usdsToWipe > 0n ? usdsToWipe : undefined
     );
-  }, [skyToLock]);
+  }, [totalSkyAmount, usdsToWipe]);
 
   // Sets the title and subtitle of the card
   useEffect(() => {
@@ -229,12 +248,12 @@ export const StakeModuleTransactionStatus = ({
             txStatus: flowTxStatus,
             action,
             amount:
-              skyToLock && skyToLock > 0n
-                ? formatBigInt(skyToLock)
+              totalSkyAmount > 0n
+                ? formatBigInt(totalSkyAmount)
                 : usdsToWipe && usdsToWipe > 0n
                   ? formatBigInt(usdsToWipe)
                   : undefined,
-            symbol: skyToLock && skyToLock > 0n ? 'SKY' : usdsToWipe && usdsToWipe > 0n ? 'USDS' : undefined
+            symbol: totalSkyAmount > 0n ? 'SKY' : usdsToWipe && usdsToWipe > 0n ? 'USDS' : undefined
           })
         )
       );
@@ -245,7 +264,7 @@ export const StakeModuleTransactionStatus = ({
           getStakeSubtitle({
             flow,
             txStatus: flowTxStatus,
-            collateralToLock: !!skyToLock && skyToLock > 0n ? formatBigInt(skyToLock) : undefined,
+            collateralToLock: totalSkyAmount > 0n ? formatBigInt(totalSkyAmount) : undefined,
             borrowAmount: usdsToBorrow && usdsToBorrow > 0n ? formatBigInt(usdsToBorrow) : undefined,
             collateralToFree: skyToFree && skyToFree > 0n ? formatBigInt(skyToFree) : undefined,
             borrowToRepay: usdsToWipe && usdsToWipe > 0n ? formatBigInt(usdsToWipe) : undefined,
@@ -265,7 +284,9 @@ export const StakeModuleTransactionStatus = ({
     <BatchTransactionStatus
       onExternalLinkClicked={onExternalLinkClicked}
       isBatchTransaction={isBatchTransaction}
-      transactionDetail={action === StakeAction.MULTICALL ? <TransactionDetail /> : undefined}
+      transactionDetail={
+        action === StakeAction.MULTICALL ? <TransactionDetail totalSkyAmount={totalSkyAmount} /> : undefined
+      }
     />
   );
 };

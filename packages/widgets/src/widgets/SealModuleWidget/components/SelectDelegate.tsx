@@ -4,7 +4,7 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { ZERO_ADDRESS, useSaUserDelegates, useUrnSelectedVoteDelegate } from '@jetstreamgg/sky-hooks';
 import { useDebounce } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useState } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { DelegateCard } from './DelegateCard';
 import { SealModuleWidgetContext } from '../context/context';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
@@ -27,7 +27,7 @@ export const SelectDelegate = ({
 }: {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const { widgetState } = useContext(WidgetContext);
   const {
@@ -114,7 +114,7 @@ export const SelectDelegate = ({
           <FetchingSpinner message="" className="" spinnerClassName="w-10" />
         </div>
       ) : delegates?.length === 0 ? (
-        <VStack gap={3} className="items-center pb-3 pt-6">
+        <VStack gap={3} className="items-center pt-6 pb-3">
           <NoResults />
           <Text className="text-textSecondary text-center">
             <Trans>No delegates found</Trans>

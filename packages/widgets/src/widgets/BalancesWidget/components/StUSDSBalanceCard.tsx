@@ -4,18 +4,24 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
-import { CardProps } from './ModulesBalances';
+import { CardProps, ModuleCardVariant } from './ModulesBalances';
+import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
+import { InteractiveStatsCardAlt } from '@widgets/shared/components/ui/card/InteractiveStatsCardAlt';
 
-export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardProps) => {
+export const StUSDSBalanceCard = ({
+  url,
+  onExternalLinkClicked,
+  loading,
+  variant = ModuleCardVariant.default
+}: CardProps) => {
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
   const userSuppliedUsds = stUsdsData?.userSuppliedUsds || 0n;
   const moduleRate = stUsdsData?.moduleRate || 0n;
 
-  return (
+  return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
       title={t`USDS supplied to stUSDS`}
       tokenSymbol="stUSDS"
@@ -30,16 +36,11 @@ export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardP
         stUsdsLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : moduleRate > 0n ? (
-          <div className="flex w-fit items-center gap-1.5">
-            <Text variant="small" className="text-bullish leading-4">
-              {`Rate: ${formatStrAsApy(moduleRate)}`}
-            </Text>
-            <PopoverRateInfo
-              type="stusds"
-              onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="h-[13px] w-[13px]"
-            />
-          </div>
+          <RateLineWithArrow
+            rateText={`Rate: ${formatStrAsApy(moduleRate)}`}
+            popoverType="stusds"
+            onExternalLinkClicked={onExternalLinkClicked}
+          />
         ) : (
           <></>
         )
@@ -57,6 +58,20 @@ export const StUSDSBalanceCard = ({ url, onExternalLinkClicked, loading }: CardP
         ) : undefined
       }
       url={url}
+    />
+  ) : (
+    <InteractiveStatsCardAlt
+      title={t`USDS supplied to stUSDS`}
+      tokenSymbol="stUSDS"
+      url={url}
+      logoName="expert"
+      content={
+        loading || stUsdsLoading ? (
+          <Skeleton className="w-32" />
+        ) : (
+          <Text>{formatBigInt(userSuppliedUsds)} USDS</Text>
+        )
+      }
     />
   );
 };

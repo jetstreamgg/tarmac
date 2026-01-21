@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { SaWriteHookReturnType } from './sealModule';
 import { WriteHookParams } from '../hooks';
 import { useSaMkrAllowance } from './useSaAllowance';
@@ -22,7 +22,7 @@ export function useLockMkr({
   ref?: number;
 }): SaWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
   const { data: allowance } = useSaMkrAllowance();
 
   const enabled =

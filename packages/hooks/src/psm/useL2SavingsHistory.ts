@@ -3,7 +3,7 @@ import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getL2SubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
 import { useTokenAddressMap } from '../tokens/useTokenAddressMap';
 import { SavingsHistory, SavingsHistoryItem } from '../savings/savings';
@@ -130,7 +130,7 @@ export function useL2SavingsHistory({
   enabled?: boolean;
   chainId?: number;
 } = {}): ReadHook & { data?: SavingsHistory } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId ?? currentChainId;
   const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainIdToUse) || '';

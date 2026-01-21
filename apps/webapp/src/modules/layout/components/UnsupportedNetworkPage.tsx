@@ -2,14 +2,15 @@ import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { UnsupportedNetwork } from '@/modules/icons/UnsupportedNetwork';
-import { useSwitchChain } from 'wagmi';
+import { useChains, useSwitchChain } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
 export const UnsupportedNetworkPage = ({ children }: { children: React.ReactNode }) => {
-  const { chains, switchChain } = useSwitchChain();
+  const chains = useChains();
+  const { switchChain } = useSwitchChain();
   const [, setSearchParams] = useSearchParams();
 
   const handleSwitchChain = (chainId: number, name: string) => {

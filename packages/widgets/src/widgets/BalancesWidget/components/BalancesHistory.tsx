@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useCombinedHistory, useAllNetworksCombinedHistory } from '@jetstreamgg/sky-hooks';
 import { useFormatDates } from '@jetstreamgg/sky-utils';
 import { useLingui } from '@lingui/react';
@@ -11,13 +11,20 @@ import { Trans } from '@lingui/react/macro';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { NoResults } from '@widgets/shared/components/icons/NoResults';
+import { cn } from '@widgets/lib/utils';
 
 export const BalancesHistory = ({
   onExternalLinkClicked,
-  showAllNetworks
+  showAllNetworks,
+  className,
+  itemsPerPage = 5,
+  useInfiniteScroll = false
 }: {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   showAllNetworks?: boolean;
+  className?: string;
+  itemsPerPage?: number;
+  useInfiniteScroll?: boolean;
 }) => {
   const {
     data: singleNetworkData,
@@ -34,12 +41,13 @@ export const BalancesHistory = ({
   const isLoading = showAllNetworks ? allNetworksLoading : singleNetworkLoading;
   const error = showAllNetworks ? allNetworksError : singleNetworkError;
 
-  const itemsPerPage = 5;
   const { i18n } = useLingui();
   const memoizedDates = useMemo(() => data?.map(s => s.blockTimestamp), [data]);
   const formattedDates = useFormatDates(memoizedDates, i18n.locale, 'MMM d, h:mm a');
   const [itemsToDisplay, setItemsToDisplay] = useState(data ? data.slice(0, itemsPerPage) : []);
   const [startIndex, setStartIndex] = useState(0);
+  const [visibleCount, setVisibleCount] = useState(itemsPerPage);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const onPageChange = (page: number) => {
     const newStartIndex = (page - 1) * itemsPerPage;
@@ -48,23 +56,61 @@ export const BalancesHistory = ({
     setItemsToDisplay(data.slice(newStartIndex, endIndex));
   };
 
+  const loadMore = useCallback(() => {
+    setVisibleCount(prev => Math.min(prev + itemsPerPage, data.length));
+  }, [data.length, itemsPerPage]);
+
   useEffect(() => {
-    setItemsToDisplay(data.slice(0, itemsPerPage));
-  }, [data, itemsPerPage]);
+    if (useInfiniteScroll) {
+      setVisibleCount(itemsPerPage);
+    } else {
+      setItemsToDisplay(data.slice(0, itemsPerPage));
+    }
+  }, [data, itemsPerPage, useInfiniteScroll]);
+
+  useEffect(() => {
+    if (!useInfiniteScroll) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && visibleCount < data.length) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [useInfiniteScroll, visibleCount, data.length, loadMore]);
+
+  const infiniteScrollItems = useMemo(() => data.slice(0, visibleCount), [data, visibleCount]);
+  const hasMore = visibleCount < data.length;
 
   const loadingCards = (
-    <VStack gap={2} className="mt-6">
+    <VStack gap={2} className={cn('mt-6', className)}>
       {Array.from({ length: itemsPerPage }, (_, i) => (
-        <Skeleton key={i} className="h-[84px] w-full" />
+        <Skeleton key={i} className="h-[84px] w-full rounded-[20px]" />
       ))}
     </VStack>
   );
 
+  const displayItems = useInfiniteScroll ? infiniteScrollItems : itemsToDisplay;
+  const getGlobalIndex = (index: number) => (useInfiniteScroll ? index : startIndex + index);
+
   return data.length > 0 ? (
     <>
-      <VStack gap={2} className="mt-6">
-        {itemsToDisplay.map((item, index: number) => {
-          const globalIndex = startIndex + index;
+      <VStack gap={2} className={cn('mt-6', className)}>
+        {displayItems.map((item, index: number) => {
+          const globalIndex = getGlobalIndex(index);
           const formattedDate = formattedDates.length > globalIndex ? formattedDates[globalIndex] : '';
           return (
             <motion.div variants={positionAnimations} key={item.transactionHash + item.type}>
@@ -90,7 +136,11 @@ export const BalancesHistory = ({
           );
         })}
       </VStack>
-      <CustomPagination dataLength={data.length} onPageChange={onPageChange} itemsPerPage={itemsPerPage} />
+      {useInfiniteScroll ? (
+        hasMore && <div ref={observerTarget} className="h-1" />
+      ) : (
+        <CustomPagination dataLength={data.length} onPageChange={onPageChange} itemsPerPage={itemsPerPage} />
+      )}
     </>
   ) : isLoading ? (
     <>{loadingCards}</>
@@ -101,7 +151,7 @@ export const BalancesHistory = ({
       </Text>
     </div>
   ) : (
-    <VStack gap={3} className="items-center pb-3 pt-9">
+    <VStack gap={3} className="items-center pt-9 pb-3">
       <NoResults />
       <Text className="text-textSecondary text-center">
         <Trans>No history found</Trans>

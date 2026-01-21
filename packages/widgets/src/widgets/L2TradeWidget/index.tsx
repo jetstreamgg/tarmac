@@ -14,7 +14,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { formatBigInt, formatNumber, math, useDebounce } from '@jetstreamgg/sky-utils';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { TxStatus, EPOCH_LENGTH } from '@widgets/shared/constants';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
@@ -84,7 +84,7 @@ function TradeWidgetWrapped({
   const [lastUpdated, setLastUpdated] = useState<TradeSide>(TradeSide.IN);
 
   const chainId = useChainId();
-  const { address, isConnecting, isConnected } = useAccount();
+  const { address, isConnecting, isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
 

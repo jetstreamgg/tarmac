@@ -4,7 +4,7 @@ import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { Bark, SealPosition } from './sealModule';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 
 type SealPositionResponse = {
   sealUrns: {
@@ -69,7 +69,7 @@ export function useSealPosition({
   subgraphUrl?: string;
   urnIndex: number;
 }): ReadHook & { data?: SealPosition } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
 

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
@@ -20,7 +20,7 @@ export function useBatchSavingsSupply({
   amount: bigint;
   ref?: number;
 }): BatchWriteHook {
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
   const { data: allowance, error: allowanceError } = useSavingsAllowance();
 

@@ -2,7 +2,7 @@ import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { TOKENS, useVault, useSimulatedVault, getIlkName } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useContext, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { SealModuleWidgetContext } from '../context/context';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SealFlow } from '../lib/constants';
@@ -16,7 +16,7 @@ export const Free = ({
   sealedAmount?: bigint;
   onChange?: (val: bigint, userTriggered?: boolean) => void;
 }) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const ilkName = getIlkName(1);
 
   const { setMkrToFree, mkrToFree, usdsToWipe, acceptedExitFee, setIsLockCompleted, activeUrn } =

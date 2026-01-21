@@ -195,16 +195,34 @@ export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_EN
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
+// Feature flag to enable chatbot pre-fill filtering
+// Enabled by default unless explicitly set to 'false'
+export const CHATBOT_PREFILL_FILTERING_ENABLED =
+  import.meta.env.VITE_CHATBOT_PREFILL_FILTERING_ENABLED !== 'false';
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
+
+// Skip chatbot auth check for testing (only works in non-production environments)
+export const SKIP_CHAT_AUTH_CHECK =
+  !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_CHAT_AUTH_CHECK === 'true';
 export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // LocalStorage keys
 export const USER_SETTINGS_KEY = 'user-settings';
-export const BATCH_TX_NOTIFICATION_KEY = 'batch-tx-notification-shown';
 export const CHAT_NOTIFICATION_KEY = 'chat-notification-suggested';
 export const GOVERNANCE_MIGRATION_NOTIFICATION_KEY = 'governance-migration-notice-shown';
+export const CHAT_WALLET_ASSOCIATION_KEY = 'chat-wallet-associations';
 
+export const WALLET_ICONS = {
+  metaMaskSDK: '/wallets/metamask.svg',
+  baseAccount: '/wallets/baseAccount.svg',
+  coinbaseWalletSDK: '/wallets/coinbaseWallet.svg',
+  walletConnect: '/wallets/walletConnect.svg',
+  safe: '/wallets/safe.svg',
+  // Binance uses different IDs: 'wallet.binance.com' (our connector) vs 'com.binance.wallet' (EIP-6963 injected)
+  'wallet.binance.com': '/wallets/binance.svg',
+  'com.binance.wallet': '/wallets/binance.svg'
+};
 export const CHAT_NOTIFICATION_TOAST_ID = 'chat-notification-toast';

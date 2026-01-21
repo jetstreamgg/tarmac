@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
 import { WidgetProps, WidgetStateChangeParams } from '@widgets/shared/types/widgetState';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { BalancesHeader } from './components/BalancesHeader';
 import { BalancesContent } from './components/BalancesContent';
 import { getValidatedState } from '@widgets/lib/utils';
@@ -114,7 +114,7 @@ const BalancesWidgetWrapped = ({
   setShowAllNetworks,
   setHideZeroBalances
 }: BalancesWidgetProps) => {
-  const { isConnected, isConnecting } = useAccount();
+  const { isConnected, isConnecting } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const validatedExternalState = getValidatedState(externalWidgetState);
   const { txStatus, widgetState, setWidgetState } = useContext(WidgetContext);

@@ -171,7 +171,9 @@ export function getStakeSubtitle({
                     : msg`You just updated your position`;
     case TxStatus.ERROR:
     default:
-      return msg`Error`;
+      return flow === StakeFlow.OPEN
+        ? msg`An error occurred while opening your position`
+        : msg`An error occurred while changing your position`;
   }
 }
 

@@ -2,13 +2,15 @@ import { describe, expect, it, afterAll } from 'vitest';
 import { renderHook, waitFor, cleanup } from '@testing-library/react';
 import { WagmiWrapper, TEST_WALLET_ADDRESS, GAS } from '../../test';
 
-import { parseEther } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { mkrAddress, skyAddress } from '../generated';
 import { useMkrSkyApprove } from './useMkrSkyApprove';
 import { useMkrToSky } from './useMkrToSky';
 import { TENDERLY_CHAIN_ID } from '../constants';
 import { waitForPreparedExecuteAndMine } from '../../test/helpers';
+import { useMkrSkyFee } from './useMkrSkyFee';
+import { math } from '@jetstreamgg/sky-utils';
 
 describe('Upgrade MKR SKY', async () => {
   it(
@@ -106,11 +108,23 @@ describe('Upgrade MKR SKY', async () => {
           wrapper
         }
       );
+      // Get the delayed upgrade penalty
+      const { result: resultMkrSkyFee } = renderHook(() => useMkrSkyFee(), { wrapper });
+
+      await waitFor(() => expect(resultMkrSkyFee.current.data).toBeDefined(), { timeout: 5000 });
+
+      const expectedSkyBalance = math.calculateConversion(
+        { symbol: 'MKR' },
+        parseEther('10'),
+        resultMkrSkyFee.current.data || 0n
+      );
 
       // The user should have more SKY after upgrade
       await waitFor(
         () => {
-          expect(resultBalanceNgtAfterUpgrade.current.data?.formatted).toEqual('240000');
+          expect(resultBalanceNgtAfterUpgrade.current.data?.formatted).toEqual(
+            formatEther(expectedSkyBalance)
+          );
           return;
         },
         { timeout: 5000 }

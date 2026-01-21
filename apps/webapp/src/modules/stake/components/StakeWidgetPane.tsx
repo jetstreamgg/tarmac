@@ -12,12 +12,11 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@jetstreamgg/sky-hooks';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
-import { StakingRewardsDisclaimer } from './StakingRewardsDisclaimer';
 
 export function StakeWidgetPane(sharedProps: SharedProps) {
   const {
@@ -31,38 +30,47 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { setShouldDisableActionButtons } = useChatContext();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
-  const isReset = searchParams.get(QueryParams.Reset) === 'true';
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  const onStakeUrnChange = (urn?: {
-    urnAddress: `0x${string}` | undefined;
-    urnIndex: bigint | undefined;
-  }) => {
-    // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.STAKE_INTENT]) {
-      return;
-    }
+  // Use ref to always access the latest searchParams without causing re-renders
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
 
-    // Don't run while resetting
-    if (isReset) {
-      return;
-    }
+  const onStakeUrnChange = useCallback(
+    (urn?: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined }) => {
+      // Use ref to access current searchParams without stale closure
+      const currentWidget = searchParamsRef.current.get(QueryParams.Widget);
+      const currentIsReset = searchParamsRef.current.get(QueryParams.Reset) === 'true';
 
-    setSearchParams(
-      params => {
-        if (urn?.urnAddress && urn?.urnIndex !== undefined) {
-          params.set(QueryParams.Widget, IntentMapping[Intent.STAKE_INTENT]);
-          params.set(QueryParams.UrnIndex, urn.urnIndex.toString());
-        } else {
-          params.delete(QueryParams.UrnIndex);
-        }
-        return params;
-      },
-      { replace: true }
-    );
-    setSelectedStakeUrnIndex(urn?.urnIndex !== undefined ? Number(urn.urnIndex) : undefined);
-  };
+      // Prevent race conditions
+      if (currentWidget !== IntentMapping[Intent.STAKE_INTENT]) {
+        return;
+      }
+
+      // Don't run while resetting
+      if (currentIsReset) {
+        return;
+      }
+
+      setSearchParams(
+        params => {
+          if (urn?.urnAddress && urn?.urnIndex !== undefined) {
+            params.set(QueryParams.Widget, IntentMapping[Intent.STAKE_INTENT]);
+            params.set(QueryParams.UrnIndex, urn.urnIndex.toString());
+          } else {
+            params.delete(QueryParams.UrnIndex);
+          }
+          return params;
+        },
+        { replace: true }
+      );
+      setSelectedStakeUrnIndex(urn?.urnIndex !== undefined ? Number(urn.urnIndex) : undefined);
+    },
+    [setSearchParams, setSelectedStakeUrnIndex]
+  );
 
   // Reset detail pane urn index when widget is mounted
   useEffect(() => {
@@ -181,7 +189,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     <>
       <StakeModuleWidget
         {...sharedProps}
-        disclaimer={<StakingRewardsDisclaimer />}
         onStakeUrnChange={onStakeUrnChange}
         onWidgetStateChange={onStakeWidgetStateChange}
         onShowHelpModal={() => {

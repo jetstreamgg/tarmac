@@ -3,7 +3,7 @@ import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 
 async function fetchTotalUserStaked(urlSubgraph: string, address: string): Promise<bigint> {
   // TODO: Update this query once the subgraph is updated
@@ -31,7 +31,7 @@ export function useTotalUserStaked({
 }: {
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: bigint } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
 

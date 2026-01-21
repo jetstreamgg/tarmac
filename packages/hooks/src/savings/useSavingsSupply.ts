@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useSavingsAllowance } from './useSavingsAllowance';
 import { sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
@@ -17,7 +17,7 @@ export function useSavingsSupply({
   amount: bigint;
   ref?: number;
 }): WriteHook {
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
   const { data: allowance } = useSavingsAllowance();
 

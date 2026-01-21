@@ -4,10 +4,11 @@ permissions:
   contents: read
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  # Temporarily disabled to test sharded workflow
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       skip_funding:
@@ -45,6 +46,8 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
       # Parallel test configuration
       TEST_WORKERS: ${{ github.event.inputs.workers || '3' }}
       SKIP_FUNDING: ${{ github.event.inputs.skip_funding || 'false' }}

@@ -17,7 +17,7 @@ import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { RewardsStatsCardCore } from './RewardsStatsCardCore';
 import { Warning } from '@widgets/shared/components/icons/Warning';
 import { positionAnimations } from '@widgets/shared/animation/presets';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 
 export const RewardsStatsCard = ({
@@ -31,7 +31,7 @@ export const RewardsStatsCard = ({
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
 
   const { data, isLoading, error } = useRewardContractInfo({
@@ -93,7 +93,7 @@ export const RewardsStatsCard = ({
       rewardContract={rewardContract}
       onClick={onClick}
       isConnectedAndEnabled={isConnectedAndEnabled}
-      className="bg-radial-(--gradient-position) from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 active:from-primary-start/100 active:to-primary-end/100 transition-[background-color,background-image,opacity]"
+      className="from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 active:from-primary-start/100 active:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image,opacity]"
       content={
         <HStack className="mt-5 justify-between" gap={2}>
           <MotionVStack className="justify-between" gap={2} variants={positionAnimations}>

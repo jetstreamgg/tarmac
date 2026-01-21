@@ -5,7 +5,7 @@ import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchAllRewardsUserHistory(
@@ -93,7 +93,7 @@ export function useAllRewardsUserHistory({
 }: {
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: RewardUserHistoryItem[] } {
-  const { address: userAddress } = useAccount();
+  const { address: userAddress } = useConnection();
   const currentChainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
   //this hook is only used for mainnet, update this if this ever changes

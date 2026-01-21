@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { StakeWriteHookReturnType } from './stakeModule';
 import { WriteHookParams } from '../hooks';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
@@ -19,7 +19,7 @@ export function useFreeCollateral({
   amount: bigint | undefined;
 }): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address: connectedAddress } = useAccount();
+  const { isConnected, address: connectedAddress } = useConnection();
 
   const enabled = isConnected && !!connectedAddress && activeTabEnabled && !!amount && amount !== 0n;
 

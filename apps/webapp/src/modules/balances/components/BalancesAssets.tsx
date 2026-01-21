@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import { usePrices, useTokenBalances } from '@jetstreamgg/sky-hooks';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { LoadingErrorWrapper } from '@/modules/ui/components/LoadingErrorWrapper';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
@@ -21,7 +21,7 @@ type BalancesAssetsProps = {
 export const INITIAL_TOKEN_COUNT = 5;
 
 export function BalancesAssets({ chainIds }: BalancesAssetsProps) {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
   const chainsToQuery = chainIds ?? [currentChainId];
   const { data: pricesData, isLoading: pricesIsLoading, error: pricesError } = usePrices();

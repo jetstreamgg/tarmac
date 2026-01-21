@@ -3,14 +3,26 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { ModuleDisclaimer } from '@/modules/ui/components/ModuleDisclaimer';
 
-const DISCLAIMER_DISMISSED_KEY = 'expert-risk-disclaimer-dismissed';
-
 export function ExpertRiskDisclaimer() {
-  const { setExpertRiskDisclaimerShown, expertRiskDisclaimerShown } = useConfigContext();
+  const {
+    setExpertRiskDisclaimerShown,
+    expertRiskDisclaimerShown,
+    expertRiskDisclaimerDismissed,
+    updateUserConfig,
+    userConfig
+  } = useConfigContext();
+
+  const handleDismiss = () => {
+    // Update both dismissed and shown flags in a single update to avoid race conditions
+    updateUserConfig({
+      ...userConfig,
+      expertRiskDisclaimerDismissed: true,
+      expertRiskDisclaimerShown: true
+    });
+  };
 
   return (
     <ModuleDisclaimer
-      moduleKey={DISCLAIMER_DISMISSED_KEY}
       isShown={expertRiskDisclaimerShown}
       dataTestId="expert-risk-disclaimer"
       dismissButtonTestId="expert-risk-dismiss"
@@ -30,7 +42,9 @@ export function ExpertRiskDisclaimer() {
           .
         </Text>
       }
-      setIsShown={setExpertRiskDisclaimerShown}
+      onShow={() => setExpertRiskDisclaimerShown(true)}
+      isDismissed={expertRiskDisclaimerDismissed}
+      onDismiss={handleDismiss}
     />
   );
 }

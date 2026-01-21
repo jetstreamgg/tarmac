@@ -15,7 +15,7 @@ import {
   SealHistoryKick
 } from './sealModule';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchSealHistory(
@@ -257,7 +257,7 @@ export function useSealHistory({
   subgraphUrl?: string;
   index?: number;
 } = {}): ReadHook & { data?: SealHistory } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHookParams } from '../hooks';
 import { gPv2SettlementAbi, gPv2SettlementAddress } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
@@ -14,7 +14,7 @@ export const useOnChainCancelOrder = ({
 }: WriteHookParams & {
   orderUid: `0x${string}` | undefined;
 }) => {
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
 
   // Only enabled if there is an order UID

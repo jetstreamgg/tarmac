@@ -1,6 +1,6 @@
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS } from '../constants';
-import { useAccount, useChainId, useReadContracts } from 'wagmi';
+import { useConnection, useChainId, useReadContracts } from 'wagmi';
 import { useCurrentUrnIndex } from './useCurrentUrnIndex';
 import {
   mcdSpotAddress,
@@ -19,7 +19,7 @@ import { getIlkName } from '../vaults/helpers';
 import { usePrices } from '../prices/usePrices';
 
 export function usePositionsAtRisk(): ReadHook & { data?: number[] } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
 
   // Fetch market price for accurate liquidation risk calculations

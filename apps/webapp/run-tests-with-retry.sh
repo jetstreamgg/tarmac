@@ -12,15 +12,24 @@
 #   echo "Continuing with other tests..."
 # fi
 
+# Detect shard mode
+SHARD_INDEX=${PLAYWRIGHT_SHARD_INDEX:-}
+SHARD_TOTAL=${PLAYWRIGHT_SHARD_TOTAL:-}
+SHARD_ARGS=""
+
+if [ -n "$SHARD_INDEX" ] && [ -n "$SHARD_TOTAL" ]; then
+  echo "🔀 Running in SHARD MODE: Shard ${SHARD_INDEX}/${SHARD_TOTAL}"
+  SHARD_ARGS="--shard=${SHARD_INDEX}/${SHARD_TOTAL}"
+else
+  echo "📦 Running in WORKER MODE: Standard parallel execution"
+fi
+
 # Now run all OTHER tests in parallel (excluding stake.spec.ts)
-# Global setup already ran, so tests will use existing funded state
+# Global setup will handle snapshot revert automatically
 echo ""
 echo "🚀 Running E2E tests in parallel..."
-# Revert VNets to snapshots before retry (clean state with funded accounts)
-echo "🔄 Reverting VNets to snapshots for clean retry..."
-npx tsx src/test/e2e/revert-vnets.ts || echo "No snapshots to revert (first run)"
 
-pnpm playwright test --config=playwright-parallel.config.ts
+pnpm playwright test --config=playwright-parallel.config.ts ${SHARD_ARGS}
 
 PARALLEL_EXIT_CODE=$?
 
@@ -29,13 +38,9 @@ if [ $PARALLEL_EXIT_CODE -ne 0 ]; then
   echo "⚠️ Some tests failed. Re-running failed tests serially..."
   echo ""
 
-  # Revert VNets to snapshots before retry (clean state with funded accounts)
-  echo "🔄 Reverting VNets to snapshots for clean retry..."
-  npx tsx src/test/e2e/revert-vnets.ts || echo "No snapshots to revert (first run)"
-
   # Re-run only the failed tests with a single worker
-  # VNets are now in clean snapshot state with funded accounts
-  pnpm playwright test --last-failed --workers=1 --config=playwright-parallel.config.ts
+  # globalSetup will revert snapshots automatically
+  pnpm playwright test --last-failed --workers=1 --config=playwright-parallel.config.ts ${SHARD_ARGS}
 
   RETRY_EXIT_CODE=$?
 

@@ -22,7 +22,7 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal();
   return {
     ...(actual as any),
-    useAccount: vi.fn(() => ({
+    useConnection: vi.fn(() => ({
       address: '0x1234567890123456789012345678901234567890',
       isConnected: true,
       isConnecting: false

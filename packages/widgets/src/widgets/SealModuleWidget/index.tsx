@@ -13,7 +13,7 @@ import { TxStatus } from '@widgets/shared/constants';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { getStepTitle, SealAction, SealFlow, SealScreen, SealStep } from './lib/constants';
 import { getNextStep, getPreviousStep, getStepIndex, getTotalSteps } from './lib/utils';
 import { StepperBar } from './components/StepperBar';
@@ -126,7 +126,7 @@ function SealModuleWidgetWrapped({
 
   const { i18n } = useLingui();
   const chainId = useChainId();
-  const { isConnected, isConnecting, address } = useAccount();
+  const { isConnected, isConnecting, address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const {

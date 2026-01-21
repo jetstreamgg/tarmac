@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { chainId } from '../chainId';
 import { useQuery } from '@tanstack/react-query';
 
@@ -19,7 +19,7 @@ const isSafeWalletFound = async (url: URL) => {
 };
 
 export const useIsSafeWallet = () => {
-  const { address, connector } = useAccount();
+  const { address, connector } = useConnection();
   const chainId = useChainId();
 
   const baseUrl = SAFE_TRANSACTION_SERVICE_URL[chainId];

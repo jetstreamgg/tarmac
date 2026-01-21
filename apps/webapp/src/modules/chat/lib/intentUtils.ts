@@ -67,7 +67,8 @@ export const intents = {
   savings: Intent.SAVINGS_INTENT,
   upgrade: Intent.UPGRADE_INTENT,
   trade: Intent.TRADE_INTENT,
-  stake: Intent.STAKE_INTENT
+  stake: Intent.STAKE_INTENT,
+  expert: Intent.EXPERT_INTENT
 } as const;
 
 export type NetworkName = keyof typeof networkMapping;
@@ -125,6 +126,32 @@ export const intentModifiesState = (intent?: ChatIntent): boolean => {
       intent.url.includes(QueryParams.SourceToken) ||
       intent.url.includes(QueryParams.TargetToken))
   );
+};
+
+/**
+ * Checks if an intent contains pre-fill parameters that would automatically
+ * populate form fields. Used to filter intents.
+ *
+ * @param intent - The chat intent to check
+ * @returns true if the intent has pre-fill parameters, false otherwise
+ */
+export const hasPreFillParameters = (intent?: ChatIntent): boolean => {
+  if (!intent?.url) return false;
+
+  try {
+    const urlObj = new URL(
+      intent.url,
+      typeof window !== 'undefined' ? window.location.origin : 'http://temp'
+    );
+    return (
+      urlObj.searchParams.has(QueryParams.InputAmount) ||
+      urlObj.searchParams.has(QueryParams.SourceToken) ||
+      urlObj.searchParams.has(QueryParams.TargetToken)
+    );
+  } catch {
+    // If URL parsing fails, assume it HAS pre-fill parameters
+    return true;
+  }
 };
 
 export const processNetworkNameInUrl = (url: string): string => {

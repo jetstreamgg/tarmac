@@ -1,11 +1,11 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { UseTokenAllowanceResponse, useTokenAllowance } from '../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../constants';
 import { mkrAddress, skyAddress, usdsAddress } from '../generated';
 import { sealModuleAddress } from '../generated';
 
 export function useSaMkrAllowance(address?: `0x${string}` | undefined): UseTokenAllowanceResponse {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress || ZERO_ADDRESS;
   const chainId = useChainId();
 
@@ -25,7 +25,7 @@ export function useSaMkrAllowance(address?: `0x${string}` | undefined): UseToken
 }
 
 export function useSaNgtAllowance(address?: `0x${string}` | undefined): UseTokenAllowanceResponse {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress || ZERO_ADDRESS;
   const chainId = useChainId();
 
@@ -45,7 +45,7 @@ export function useSaNgtAllowance(address?: `0x${string}` | undefined): UseToken
 }
 
 export function useSaNstAllowance(address?: `0x${string}` | undefined): UseTokenAllowanceResponse {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress || ZERO_ADDRESS;
   const chainId = useChainId();
 

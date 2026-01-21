@@ -1,5 +1,5 @@
 import { usdsAddress } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../constants';
@@ -10,7 +10,7 @@ export type DSRAllowanceHookResponse = ReadHook & {
 };
 
 export function useSavingsAllowance(address?: `0x${string}`): DSRAllowanceHookResponse {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress || ZERO_ADDRESS;
   const chainId = useChainId();
 

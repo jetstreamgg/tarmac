@@ -26,7 +26,7 @@ import { getIlkName } from '../vaults/helpers';
 // TODO: Update this test once the staking engine contract is deployed
 describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', async () => {
   const wrapper = WagmiWrapper;
-  const SKY_AMOUNT = '720000';
+  const SKY_AMOUNT = '1200000';
   const URN_INDEX = 0n;
   const ILK_NAME = getIlkName(2);
 

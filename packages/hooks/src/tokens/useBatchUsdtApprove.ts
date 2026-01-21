@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { Call } from 'viem';
@@ -20,7 +20,7 @@ export function useBatchUsdtApprove({
   spender?: `0x${string}`;
   amount?: bigint;
 }): BatchWriteHook {
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
   const chainId = useChainId();
 
   // Build calls for USDT reset + approve batch transaction

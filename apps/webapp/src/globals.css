@@ -16,7 +16,7 @@
 @import 'tailwindcss';
 
 /* This forces tailwind to scan imported components for classes  */
-@source "../node_modules/@jetstreamgg/sky-widgets";
+@source '../node_modules/@jetstreamgg/sky-widgets';
 
 @plugin 'tailwindcss-animate';
 
@@ -114,6 +114,9 @@
 
   --transition-duration-250: 250ms;
   --transition-duration-350: 350ms;
+
+  /* Styles for the WalletConnect modal */
+  --w3m-z-index: 100;
 
   @keyframes accordion-down {
     from {

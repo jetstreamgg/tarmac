@@ -21,6 +21,7 @@ import { formatBigInt, isL2ChainId } from '@jetstreamgg/sky-utils';
 import { getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 import { TxStatus } from '@widgets/shared/constants';
+import { UpgradeAndSupplySteps } from './UpgradeAndSupplySteps';
 
 // TX Status wrapper to update copy
 export const SavingsTransactionStatus = ({
@@ -28,13 +29,15 @@ export const SavingsTransactionStatus = ({
   originAmount,
   onExternalLinkClicked,
   isBatchTransaction,
-  needsAllowance
+  needsAllowance,
+  isUpgradeSupplyFlow
 }: {
   originAmount: bigint;
   originToken: Token;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
   needsAllowance: boolean;
+  isUpgradeSupplyFlow?: boolean;
 }) => {
   const [flowNeedsAllowance] = useState(needsAllowance);
 
@@ -158,6 +161,7 @@ export const SavingsTransactionStatus = ({
     <BatchTransactionStatus
       onExternalLinkClicked={onExternalLinkClicked}
       isBatchTransaction={isBatchTransaction}
+      customSteps={isUpgradeSupplyFlow ? <UpgradeAndSupplySteps /> : undefined}
     />
   );
 };

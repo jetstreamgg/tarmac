@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useConnection } from 'wagmi';
 import { ChatPane } from '@/modules/app/components/ChatPane';
 import { ChatbotTermsModal } from './ChatbotTermsModal';
 import { useChatContext } from '../context/ChatContext';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useTermsAcceptance } from '../hooks/useTermsAcceptance';
+import { triggerWalletAssociation } from '../services/walletTermsAssociation';
 import { generateUUID } from '../lib/generateUUID';
 import { MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '../constants';
 import { getTermsContent, TermsType } from '@/modules/ui/components/terms-loader';
@@ -44,6 +46,7 @@ interface ChatWithTermsProps {
 
 export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage, scrollBehavior }) => {
   const { i18n } = useLingui();
+  const { address } = useConnection();
 
   const termsMarkdown = getTermsContent(TermsType.Chatbot);
   const parsedTerms = parseTerms(termsMarkdown);
@@ -123,6 +126,9 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage, scrol
     setIsAccepting(true);
     try {
       await acceptTerms(termsVersion);
+      if (address) {
+        triggerWalletAssociation(address);
+      }
     } catch {
       // Error is handled by the hook
     } finally {

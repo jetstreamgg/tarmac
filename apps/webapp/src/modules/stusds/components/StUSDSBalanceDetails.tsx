@@ -1,22 +1,22 @@
-import { useSavingsData, useStUsdsData } from '@jetstreamgg/sky-hooks';
+import { useSavingsData, useStUsdsWithdrawBalances } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
 
 export function StUSDSBalanceDetails() {
-  const { data, isLoading, error } = useStUsdsData();
+  const { effectiveBalance, userStUsdsBalance, isLoading, error } = useStUsdsWithdrawBalances();
   const { data: savingsData, isLoading: savingsIsLoading, error: savingsError } = useSavingsData();
 
   const usdsToken = { name: 'USDS', symbol: 'USDS' };
 
   const SuppliedStUSDSBalanceCard = () => {
-    const stUsdsBalance = data?.userStUsdsBalance
-      ? `(${formatBigInt(data.userStUsdsBalance, { unit: 18, compact: true, maxDecimals: 2 })} stUSDS)`
+    const stUsdsBalance = userStUsdsBalance
+      ? `(${formatBigInt(userStUsdsBalance, { unit: 18, compact: true, maxDecimals: 2 })} stUSDS)`
       : undefined;
 
     return (
       <SuppliedBalanceCard
-        balance={data?.userSuppliedUsds || 0n}
+        balance={effectiveBalance || 0n}
         isLoading={isLoading}
         token={usdsToken}
         error={error}

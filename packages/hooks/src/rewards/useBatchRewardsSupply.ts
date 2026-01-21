@@ -1,5 +1,5 @@
 import { usdsSkyRewardAbi } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { ZERO_ADDRESS } from '../constants';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
@@ -28,7 +28,7 @@ export function useBatchRewardsSupply({
 }): BatchWriteHook {
   const chainId = useChainId();
 
-  const { address } = useAccount();
+  const { address } = useConnection();
   const { data: allowance, error: allowanceError } = useTokenAllowance({
     chainId,
     contractAddress: supplyTokenAddress,

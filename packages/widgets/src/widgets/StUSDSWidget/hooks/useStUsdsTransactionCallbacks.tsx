@@ -1,4 +1,5 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { StUsdsProviderType } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { useTransactionCallbacks } from '@widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@widgets/shared/types/transactionCallbacks';
@@ -8,8 +9,11 @@ import { useMemo } from 'react';
 interface UseStUsdsTransactionCallbacksParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
   amount: bigint;
-  mutateAllowance: () => void;
+  mutateNativeSupplyAllowance: () => void;
   mutateStUsds: () => void;
+  mutateCurveUsdsAllowance?: () => void;
+  mutateCurveStUsdsAllowance?: () => void;
+  selectedProvider?: StUsdsProviderType;
 }
 
 export const useStUsdsTransactionCallbacks = ({
@@ -17,8 +21,11 @@ export const useStUsdsTransactionCallbacks = ({
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
-  mutateAllowance,
-  mutateStUsds
+  mutateNativeSupplyAllowance,
+  mutateStUsds,
+  mutateCurveUsdsAllowance,
+  mutateCurveStUsdsAllowance,
+  selectedProvider = StUsdsProviderType.NATIVE
 }: UseStUsdsTransactionCallbacksParameters) => {
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
@@ -26,26 +33,38 @@ export const useStUsdsTransactionCallbacks = ({
     onNotification
   });
 
+  const isCurve = selectedProvider === StUsdsProviderType.CURVE;
+
   const supplyTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
       onMutate: () => {
-        mutateAllowance();
+        mutateNativeSupplyAllowance();
+        if (isCurve) {
+          mutateCurveUsdsAllowance?.();
+        }
         handleOnMutate();
       },
       onStart: hash => {
         handleOnStart({
           hash,
-          recentTransactionDescription: t`Supplying ${formatBigInt(amount)} USDS`
+          recentTransactionDescription: isCurve
+            ? t`Supplying ${formatBigInt(amount)} USDS via Curve`
+            : t`Supplying ${formatBigInt(amount)} USDS`
         });
       },
       onSuccess: hash => {
         handleOnSuccess({
           hash,
           notificationTitle: t`Supply successful`,
-          notificationDescription: t`You supplied ${formatBigInt(amount)} USDS`
+          notificationDescription: isCurve
+            ? t`You supplied ${formatBigInt(amount)} USDS for stUSDS via Curve`
+            : t`You supplied ${formatBigInt(amount)} USDS`
         });
-        mutateAllowance();
+        mutateNativeSupplyAllowance();
         mutateStUsds();
+        if (isCurve) {
+          mutateCurveUsdsAllowance?.();
+        }
       },
       onError: (error, hash) => {
         handleOnError({
@@ -54,42 +73,78 @@ export const useStUsdsTransactionCallbacks = ({
           notificationTitle: t`Supply failed`,
           notificationDescription: t`Something went wrong with your transaction. Please try again.`
         });
-        mutateAllowance();
+        mutateNativeSupplyAllowance();
         mutateStUsds();
+        if (isCurve) {
+          mutateCurveUsdsAllowance?.();
+        }
       }
     }),
-    [amount, handleOnMutate, handleOnError, handleOnStart, handleOnSuccess, mutateAllowance, mutateStUsds]
+    [
+      amount,
+      isCurve,
+      handleOnMutate,
+      handleOnError,
+      handleOnStart,
+      handleOnSuccess,
+      mutateNativeSupplyAllowance,
+      mutateStUsds,
+      mutateCurveUsdsAllowance
+    ]
   );
 
   const withdrawTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
-      onMutate: handleOnMutate,
+      onMutate: () => {
+        if (isCurve) {
+          mutateCurveStUsdsAllowance?.();
+        }
+        handleOnMutate();
+      },
       onStart: hash => {
         handleOnStart({
           hash,
-          recentTransactionDescription: t`Withdrawing ${formatBigInt(amount)} USDS`
+          recentTransactionDescription: isCurve
+            ? t`Withdrawing ${formatBigInt(amount)} USDS via Curve`
+            : t`Withdrawing ${formatBigInt(amount)} USDS`
         });
       },
       onSuccess: hash => {
         handleOnSuccess({
           hash,
           notificationTitle: t`Withdraw successful`,
-          notificationDescription: t`You withdrew ${formatBigInt(amount)} USDS`
+          notificationDescription: isCurve
+            ? t`You withdrew ${formatBigInt(amount)} USDS from stUSDS via Curve`
+            : t`You withdrew ${formatBigInt(amount)} USDS`
         });
         mutateStUsds();
+        if (isCurve) {
+          mutateCurveStUsdsAllowance?.();
+        }
       },
       onError: (error, hash) => {
         handleOnError({
           error,
           hash,
           notificationTitle: t`Withdraw failed`,
-          notificationDescription: t`Something went wrong with your withdraw. Please try again.`
+          notificationDescription: t`Something went wrong with your transaction. Please try again.`
         });
-        mutateAllowance();
         mutateStUsds();
+        if (isCurve) {
+          mutateCurveStUsdsAllowance?.();
+        }
       }
     }),
-    [amount, handleOnMutate, handleOnError, handleOnStart, handleOnSuccess, mutateAllowance, mutateStUsds]
+    [
+      amount,
+      isCurve,
+      handleOnMutate,
+      handleOnError,
+      handleOnStart,
+      handleOnSuccess,
+      mutateStUsds,
+      mutateCurveStUsdsAllowance
+    ]
   );
 
   return { supplyTransactionCallbacks, withdrawTransactionCallbacks };

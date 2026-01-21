@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 import { ChatHistory, ChatIntent } from '../types/Chat';
 import { generateUUID } from '../lib/generateUUID';
 import { t } from '@lingui/core/macro';
-import { CHATBOT_NAME, MessageType, UserType } from '../constants';
+import { MessageType, UserType } from '../constants';
 import { intentModifiesState } from '../lib/intentUtils';
 
 interface ChatContextType {
@@ -21,6 +21,7 @@ interface ChatContextType {
   scrollTrigger: number;
   conversationFeedbackGiven: boolean;
   showConversationFeedback: boolean;
+  isRestricted: boolean;
   setTermsError: React.Dispatch<React.SetStateAction<string | null>>;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatHistory[]>>;
   setConfirmationWarningOpened: React.Dispatch<React.SetStateAction<boolean>>;
@@ -34,6 +35,7 @@ interface ChatContextType {
   triggerScroll: () => void;
   setConversationFeedbackGiven: React.Dispatch<React.SetStateAction<boolean>>;
   setShowConversationFeedback: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsRestricted: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -64,7 +66,9 @@ const ChatContext = createContext<ChatContextType>({
   conversationFeedbackGiven: false,
   setConversationFeedbackGiven: () => {},
   showConversationFeedback: false,
-  setShowConversationFeedback: () => {}
+  setShowConversationFeedback: () => {},
+  isRestricted: false,
+  setIsRestricted: () => {}
 });
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -73,7 +77,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     {
       id: generateUUID(),
       user: UserType.bot,
-      message: t`Hi, ${CHATBOT_NAME} here! How can I help you today?`
+      message: t`Hi, I'm your AI-powered chatbot assistant. How can I help you?`
     }
   ];
 
@@ -95,6 +99,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Conversation feedback state
   const [conversationFeedbackGiven, setConversationFeedbackGiven] = useState(false);
   const [showConversationFeedback, setShowConversationFeedback] = useState(false);
+
+  // Jurisdiction restriction state
+  const [isRestricted, setIsRestricted] = useState(false);
 
   const triggerScroll = useCallback(() => {
     setScrollTrigger(prev => prev + 1);
@@ -143,7 +150,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         conversationFeedbackGiven,
         setConversationFeedbackGiven,
         showConversationFeedback,
-        setShowConversationFeedback
+        setShowConversationFeedback,
+        isRestricted,
+        setIsRestricted
       }}
     >
       {children}

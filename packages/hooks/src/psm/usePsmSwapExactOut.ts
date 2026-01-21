@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { psm3L2Abi, psm3L2Address } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
@@ -24,7 +24,7 @@ export function usePsmSwapExactOut({
   referralCode?: bigint;
 }): WriteHook {
   const chainId = useChainId();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useConnection();
 
   // Get the allowance of the input asset to be used by the PSM contract
   const { data: allowance, error: allowanceError } = useTokenAllowance({

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
@@ -15,7 +15,7 @@ export function useStakeMulticall({
   calldata
 }: WriteHookParams & { calldata: `0x${string}`[] | undefined }): WriteHook {
   const chainId = useChainId();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
 
   const enabled = isConnected && paramEnabled && !!calldata?.length;
 

@@ -36,7 +36,7 @@ export function ChatSwitcher(): JSX.Element {
         <div>
           <Toggle
             variant="singleSwitcher"
-            className="h-10 w-10 rounded-xl pb-2 pl-4 pr-[14px] pt-[9px] md:rounded-l-none"
+            className="h-10 w-10 rounded-xl pt-[9px] pr-[14px] pb-2 pl-4 md:rounded-l-none"
             pressed={isChatOpen}
             onPressedChange={handleSwitch}
             aria-label="Toggle chat"

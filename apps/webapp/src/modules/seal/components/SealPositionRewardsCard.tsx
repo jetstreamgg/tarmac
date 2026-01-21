@@ -1,10 +1,10 @@
 import { RewardsBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { useRewardContractTokens, useRewardsRewardsBalance } from '@jetstreamgg/sky-hooks';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 
 export function SealPositionRewardsCard({ rewardContractAddress }: { rewardContractAddress: `0x${string}` }) {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const {
     data: rewardContractTokens,

@@ -1,5 +1,5 @@
 import { usdsSkyRewardAbi } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
@@ -14,7 +14,7 @@ export function useRewardsClaim({
   contractAddress: `0x${string}`;
 }): WriteHook {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   return useWriteContractFlow({
     address: contractAddress,

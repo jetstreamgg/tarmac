@@ -12,11 +12,6 @@ export const ManagePosition = ({
   currentAction,
   onClickTrigger,
   tabSide,
-  claimPrepared,
-  claimExecute,
-  claimAllPrepared,
-  claimAllExecute,
-  batchEnabledAndSupported,
   onStakeUrnChange,
   onWidgetStateChange,
   needsAllowance,
@@ -25,7 +20,8 @@ export const ManagePosition = ({
   setBatchEnabled,
   isBatchTransaction,
   legalBatchTxUrl,
-  disclaimer
+  disclaimer,
+  onNoChangesDetected
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -33,11 +29,6 @@ export const ManagePosition = ({
   currentAction: StakeAction;
   onClickTrigger: any;
   tabSide: 'left' | 'right';
-  claimPrepared: boolean;
-  claimExecute: () => void;
-  claimAllPrepared: boolean;
-  claimAllExecute: () => void;
-  batchEnabledAndSupported: boolean;
   onStakeUrnChange?: OnStakeUrnChange;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   needsAllowance: boolean;
@@ -47,14 +38,10 @@ export const ManagePosition = ({
   isBatchTransaction: boolean;
   legalBatchTxUrl?: string;
   disclaimer?: React.ReactNode;
+  onNoChangesDetected?: (hasNoChanges: boolean) => void;
 }) => {
   return currentAction === StakeAction.OVERVIEW ? (
     <UrnsList
-      claimPrepared={claimPrepared}
-      claimExecute={claimExecute}
-      claimAllPrepared={claimAllPrepared}
-      claimAllExecute={claimAllExecute}
-      batchEnabledAndSupported={batchEnabledAndSupported}
       onStakeUrnChange={onStakeUrnChange}
       onExternalLinkClicked={onExternalLinkClicked}
       disclaimer={disclaimer}
@@ -73,6 +60,7 @@ export const ManagePosition = ({
       setBatchEnabled={setBatchEnabled}
       isBatchTransaction={isBatchTransaction}
       legalBatchTxUrl={legalBatchTxUrl}
+      onNoChangesDetected={onNoChangesDetected}
     />
   );
 };

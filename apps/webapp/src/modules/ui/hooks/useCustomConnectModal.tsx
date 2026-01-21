@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useAccount } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useConnection } from 'wagmi';
+import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useTermsModal } from '@/modules/ui/context/TermsModalContext';
 import { useConnectedContext } from '../context/ConnectedContext';
 
@@ -8,7 +8,7 @@ export function useCustomConnectModal() {
   const { openConnectModal } = useConnectModal();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { openModal } = useTermsModal();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
 
   const action = useMemo(() => {
     if (!isConnectedAndAcceptedTerms) {

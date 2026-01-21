@@ -121,7 +121,11 @@ export function useTokenBalance({
   return {
     data:
       isNative && nativeResultData && chainId
-        ? { ...nativeResultData, chainId }
+        ? {
+            ...nativeResultData,
+            chainId,
+            formatted: formatUnits(nativeResultData.value, nativeResultData.decimals)
+          }
         : tokenResultData && chainId
           ? {
               value: tokenResultData[0],

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { sanitizeUrl } from '@/lib/utils';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
@@ -36,7 +36,7 @@ const ConnectedContext = createContext<ConnectedContextType>({
 });
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [enabled, setEnabled] = useState(false);

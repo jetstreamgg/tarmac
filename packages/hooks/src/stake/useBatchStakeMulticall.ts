@@ -1,9 +1,9 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { skyAddress, stakeModuleAbi, stakeModuleAddress, usdsAddress } from '../generated';
 import { useStakeSkyAllowance, useStakeUsdsAllowance } from './useStakeAllowance';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
-import { Call, erc20Abi } from 'viem';
+import { Call, ContractFunctionArgs, ContractFunctionName, decodeFunctionData, erc20Abi } from 'viem';
 import { useTransactionFlow } from '../shared/useTransactionFlow';
 
 export function useBatchStakeMulticall({
@@ -22,7 +22,7 @@ export function useBatchStakeMulticall({
   usdsAmount: bigint;
 }): BatchWriteHook {
   const chainId = useChainId();
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
 
   const { data: skyAllowance, error: skyAllowanceError } = useStakeSkyAllowance();
   const { data: usdsAllowance, error: usdsAllowanceError } = useStakeUsdsAllowance();
@@ -63,9 +63,30 @@ export function useBatchStakeMulticall({
 
     if (!hasSkyAllowance) calls.push(approveSkyCall);
     if (!hasUsdsAllowance) calls.push(approveUsdsCall);
-    // If the user wallet supports it and user has batch tx enabled, send the calls individually
-    // in a batch tx for optimized gas consumption and improved transaction readability
-    if (shouldUseBatch) {
+
+    // If the calldata array only has 1 element, decode that call and send it individually
+    if (calldata.length === 1) {
+      const decodedSingleCalldata = decodeFunctionData({
+        abi: stakeModuleAbi,
+        data: calldata[0]
+      });
+      const singleCall = getWriteContractCall({
+        to: stakeModuleAddress[chainId as keyof typeof stakeModuleAddress],
+        abi: stakeModuleAbi,
+        functionName: decodedSingleCalldata.functionName as ContractFunctionName<
+          typeof stakeModuleAbi,
+          'nonpayable' | 'payable'
+        >,
+        args: decodedSingleCalldata.args as ContractFunctionArgs<
+          typeof stakeModuleAbi,
+          'nonpayable' | 'payable',
+          ContractFunctionName<typeof stakeModuleAbi, 'nonpayable' | 'payable'>
+        >
+      });
+      calls.push(singleCall);
+      // If the user wallet supports it and user has batch tx enabled, send the calls individually
+      // in a batch tx for optimized gas consumption and improved transaction readability
+    } else if (shouldUseBatch) {
       calls.push(...individualCalls);
     } else calls.push(multicallCall);
   }

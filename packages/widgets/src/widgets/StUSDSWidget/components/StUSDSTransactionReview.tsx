@@ -17,17 +17,17 @@ import { useContext, useEffect } from 'react';
 export const StUSDSTransactionReview = ({
   batchEnabled,
   setBatchEnabled,
-  isBatchTransaction,
   originToken,
   originAmount,
-  needsAllowance
+  needsAllowance,
+  isCurve = false
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
-  isBatchTransaction: boolean;
   originToken: Token;
   originAmount: bigint;
   needsAllowance: boolean;
+  isCurve?: boolean;
 }) => {
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
@@ -41,7 +41,7 @@ export const StUSDSTransactionReview = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const { flow, action } = widgetState;
 
   useEffect(() => {
     setOriginToken(originToken);
@@ -51,32 +51,44 @@ export const StUSDSTransactionReview = ({
   // Sets the title and subtitle of the card
   useEffect(() => {
     if (flow === StUSDSFlow.SUPPLY) {
-      setStepTwoTitle(t`Supply`);
+      setStepTwoTitle(isCurve ? t`Swap` : t`Supply`);
       setTxTitle(i18n._(stusdsSupplyReviewTitle));
       setTxSubtitle(
         i18n._(
           getStUSDSSupplyReviewSubtitle({
             batchStatus: !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED,
             symbol: originToken.symbol,
-            needsAllowance
+            needsAllowance,
+            isCurve
           })
         )
       );
     } else if (flow === StUSDSFlow.WITHDRAW) {
-      setStepTwoTitle(t`Withdraw`);
+      setStepTwoTitle(isCurve ? t`Swap` : t`Withdraw`);
       setTxTitle(i18n._(stusdsWithdrawReviewTitle));
       setTxSubtitle(
         i18n._(
           getStUSDSWithdrawReviewSubtitle({
             batchStatus: !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED,
             symbol: 'USDS',
-            needsAllowance
+            needsAllowance,
+            isCurve
           })
         )
       );
     }
     setTxDescription(i18n._(stusdsActionDescription({ flow, action, txStatus, needsAllowance })));
-  }, [flow, action, screen, i18n.locale, isBatchTransaction, batchSupported, batchEnabled]);
+  }, [
+    flow,
+    action,
+    txStatus,
+    i18n.locale,
+    batchSupported,
+    batchEnabled,
+    needsAllowance,
+    originToken,
+    isCurve
+  ]);
 
   return <TransactionReview batchEnabled={batchEnabled} setBatchEnabled={setBatchEnabled} />;
 };

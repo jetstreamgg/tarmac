@@ -4,7 +4,7 @@ import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '.
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchUpgradeHistory(
@@ -119,7 +119,7 @@ export function useUpgradeHistory({
 }: {
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: UpgradeHistory } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const currentChainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;

@@ -127,7 +127,7 @@ export const ChatIntentsRow = ({ intents }: ChatIntentsRowProps) => {
   return (
     <div>
       <HStack>
-        <Text className="mr-2 text-xs italic text-gray-500">
+        <Text className="mr-2 text-xs text-gray-500 italic">
           <Trans>Explore actions</Trans>
         </Text>
         <InfoTooltip
@@ -136,8 +136,8 @@ export const ChatIntentsRow = ({ intents }: ChatIntentsRowProps) => {
           content={
             <Text variant="small">
               <Trans>
-                Selecting a suggested action will prefill transaction details, but execution still requires
-                user review and confirmation.
+                Selecting a suggested action navigates you to the appropriate action flow. Transaction details
+                are not prefilled and require manual entry and confirmation.
               </Trans>
             </Text>
           }
@@ -156,7 +156,7 @@ export const ChatIntentsRow = ({ intents }: ChatIntentsRowProps) => {
         <Button
           variant="link"
           onClick={handleToggleExpand}
-          className="mt-3 flex h-auto items-center gap-1 py-1 pl-1 pr-0 text-sm font-normal"
+          className="mt-3 flex h-auto items-center gap-1 py-1 pr-0 pl-1 text-sm font-normal"
         >
           {isExpanded ? (
             <Trans>Collapse</Trans>
@@ -423,12 +423,14 @@ const IntentRow = ({
   const chainId = useChainId();
   const { bpi } = useBreakpointIndex();
   const executeIntent = useIntentExecution();
-  // On desktop (xl+) where chat floats, retain chat param to keep it open
-  // On mobile (< xl) where chat is fullscreen, don't retain to allow it to close
-  const retainedParams =
-    bpi >= BP.md
-      ? [QueryParams.Locale, QueryParams.Details, QueryParams.Chat]
-      : [QueryParams.Locale, QueryParams.Details];
+  const isMobile = bpi < BP.md;
+
+  // On mobile, don't retain chat param (it will be set to false by prepareUrlParams)
+  // On desktop, retain chat param to keep chat open after clicking an intent
+  const retainedParams = isMobile
+    ? [QueryParams.Locale, QueryParams.Details]
+    : [QueryParams.Locale, QueryParams.Details, QueryParams.Chat];
+
   const intentUrl = useRetainedQueryParams(intent?.url || '', retainedParams);
 
   const network =
@@ -451,13 +453,13 @@ const IntentRow = ({
       disabled={shouldDisableActionButtons}
       onClick={() => executeIntent(intent, intentUrl)}
       className={cn(
-        '@sm/chat:whitespace-nowrap @sm/chat:h-auto @sm/chat:text-sm h-auto min-h-9 max-w-full justify-start whitespace-normal text-left text-[13px]',
+        'h-auto min-h-9 max-w-full justify-start text-left text-[13px] whitespace-normal @sm/chat:h-auto @sm/chat:text-sm @sm/chat:whitespace-nowrap',
         className
       )}
     >
       <span className="overflow-hidden break-words">{intent.title}</span>
       {!hideIcon && (
-        <IconComponent className="@sm/chat:h-4.5 @sm/chat:w-4.5 @sm/chat:ml-2 ml-2 h-4 w-4 flex-shrink-0" />
+        <IconComponent className="ml-2 h-4 w-4 flex-shrink-0 @sm/chat:ml-2 @sm/chat:h-4.5 @sm/chat:w-4.5" />
       )}
     </Button>
   );

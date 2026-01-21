@@ -20,7 +20,7 @@ const buttonVariants = cva(
           'bg-radial-(--gradient-position) text-text border border-[rgb(127,92,246)] from-primary-bright-start/100 to-primary-bright-end/100 hover:from-primary-bright-start/60 hover:to-primary-bright-end/60 hover:border-[rgb(101,70,222)] focus:from-primary-bright-start/40 focus:to-primary-bright-end/40 focus:border-[rgb(92,62,209)]',
         secondary:
           'bg-secondary text-text hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
-        pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:bg-primaryHover active:bg-primaryActive focus:bg-primaryFocus',
+        pill: 'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-text rounded-full hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 bg-blend-overlay hover:bg-white/10 focus:border-transparent focus:bg-white/15 active:bg-white/15',
         chip: 'bg-secondary text-text rounded-full hover:bg-secondaryHover active:bg-secondaryActive, focus:bg-secondaryFocus',
         link: 'text-textSecondary no-underline hover:text-white active:text-[rgba(198,194,255,0.5)]',
         pagination:

@@ -279,6 +279,16 @@ export const contracts: {
     }
   },
 
+  // Curve USDS/stUSDS Pool
+  // Reference: https://docs.curve.finance/cryptoswap-exchange/cryptoswap/pools/crypto-pool/
+  {
+    name: 'curveStUsdsUsdsPool',
+    address: {
+      [mainnet.id]: '0x2C7C98A3b1582D83c43987202aEFf638312478aE',
+      [TENDERLY_CHAIN_ID]: '0x2C7C98A3b1582D83c43987202aEFf638312478aE'
+    }
+  },
+
   // CoW Protocol
   {
     name: 'gPv2Settlement',

@@ -11,7 +11,7 @@ import {
   useTokenAllowance
 } from '@jetstreamgg/sky-hooks';
 import { Call, erc20Abi } from 'viem';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 
 export function useBatchUpgraderManager({
   token,
@@ -24,7 +24,7 @@ export function useBatchUpgraderManager({
   amount: bigint;
 }) {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
   const upgraderConfig = [TOKENS.dai.symbol, TOKENS.usds.symbol].includes(token.symbol)
     ? { address: daiUsdsAddress[chainId as keyof typeof daiUsdsAddress], abi: daiUsdsAbi }
     : { address: mkrSkyAddress[chainId as keyof typeof mkrSkyAddress], abi: mkrSkyAbi };

@@ -57,6 +57,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://safe-transaction-arbitrum.safe.global
       https://safe-transaction-optimism.safe.global
       https://safe-transaction-unichain.safe.global
+      https://api.safe.global
       https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
       https://vote.sky.money
@@ -78,6 +79,9 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://enhanced-provider.rainbow.me
       https://mainnet.unichain.org/
       https://mainnet.optimism.io/
+      https://metamask-sdk.api.cx.metamask.io/evt
+      wss://metamask-sdk.api.cx.metamask.io
+      wss://nbstream.binance.com/wallet-connector
       cloudflareinsights.com;
     frame-src 'self'
       https://verify.walletconnect.com
@@ -125,12 +129,16 @@ export default ({ mode }: { mode: modeEnum }) => {
               '@widgets': path.resolve(__dirname, '../../packages/widgets/src')
             }
           : {})
-      }
+      },
+      // Dedupe wagmi/viem to prevent multiple instances causing WagmiProviderNotFoundError
+      dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
     },
     optimizeDeps: {
       // Optimize safe-apps-provider dependency to get rid of the Safe connector issue
       // and be able to connect Safe apps
-      include: ['wagmi > @safe-global/safe-apps-provider']
+      include: ['wagmi > @safe-global/safe-apps-provider'],
+      // Exclude utils package from dependency pre-bundling to avoid issues with dynamic imports in i18n
+      exclude: ['@jetstreamgg/sky-utils']
     },
     plugins: [
       simpleHtmlPlugin({

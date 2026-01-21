@@ -19,6 +19,12 @@ interface PoolFileState {
   available: number[];
   inUse: { [key: string]: string };
   lastUpdated: number;
+  shardInfo?: {
+    index: number;
+    total: number;
+    startIndex: number;
+    endIndex: number;
+  };
 }
 
 export class AccountPoolManager {
@@ -28,7 +34,13 @@ export class AccountPoolManager {
   private readonly retryDelay = 100; // ms
 
   constructor(lockFilePath?: string) {
-    this.lockFilePath = lockFilePath || path.join(process.cwd(), 'tmp', 'test-account-pool.json');
+    // Detect shard mode and use shard-specific pool file
+    const shardIndex = process.env.PLAYWRIGHT_SHARD_INDEX;
+    const totalShards = process.env.PLAYWRIGHT_SHARD_TOTAL;
+    const isSharded = totalShards && parseInt(totalShards) > 1;
+
+    const suffix = isSharded ? `-shard-${shardIndex}` : '';
+    this.lockFilePath = lockFilePath || path.join(process.cwd(), 'tmp', `test-account-pool${suffix}.json`);
   }
 
   /**
@@ -52,54 +64,107 @@ export class AccountPoolManager {
   }
 
   /**
+   * Initialize the account pool with a partition of accounts (for sharding)
+   */
+  async initializePartition(startIndex: number, endIndex: number): Promise<void> {
+    const dir = path.dirname(this.lockFilePath);
+
+    // Ensure directory exists
+    await fs.mkdir(dir, { recursive: true });
+
+    // Get shard info from environment
+    const shardIndex = process.env.PLAYWRIGHT_SHARD_INDEX
+      ? parseInt(process.env.PLAYWRIGHT_SHARD_INDEX) - 1
+      : 0;
+    const totalShards = process.env.PLAYWRIGHT_SHARD_TOTAL ? parseInt(process.env.PLAYWRIGHT_SHARD_TOTAL) : 1;
+
+    // Create initial state with only this shard's account partition
+    const accountIndices = Array.from({ length: endIndex - startIndex }, (_, i) => startIndex + i);
+
+    const initialState: PoolFileState = {
+      available: accountIndices,
+      inUse: {},
+      lastUpdated: Date.now(),
+      shardInfo: {
+        index: shardIndex,
+        total: totalShards,
+        startIndex,
+        endIndex
+      }
+    };
+
+    await this.writeState(initialState);
+    console.log(
+      `Account pool initialized with partition [${startIndex}:${endIndex}) - ${accountIndices.length} accounts for shard ${shardIndex + 1}/${totalShards}`
+    );
+  }
+
+  /**
    * Atomically claim the next available account from the pool
    */
   async claimAccount(holderId: string): Promise<number> {
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      let lockAcquired = false;
+
       try {
         // Acquire lock before reading and writing
         await this.acquireLock();
+        lockAcquired = true;
 
-        try {
-          const state = await this.readState();
+        const state = await this.readState();
 
-          // DISABLED: Don't clean up timed-out accounts to ensure no account reuse
-          // this.cleanupTimedOutAccounts(state);
+        // DISABLED: Don't clean up timed-out accounts to ensure no account reuse
+        // this.cleanupTimedOutAccounts(state);
 
-          if (state.available.length === 0) {
-            // No accounts available
-            await this.releaseLock();
-            await this.delay(this.retryDelay * 2);
-            continue;
-          }
-
-          // Check if account is already in use (safety check)
-          const accountIndex = state.available.shift()!;
-          if (state.inUse[accountIndex.toString()]) {
-            throw new Error(
-              `CRITICAL: Account ${accountIndex} already in use by ${state.inUse[accountIndex.toString()]} but was in available array!`
-            );
-          }
-
-          state.inUse[accountIndex.toString()] = `${holderId}-${Date.now()}`;
-          state.lastUpdated = Date.now();
-
-          console.log(`🔒 About to claim account ${accountIndex} for ${holderId}`);
-          console.log(
-            `📊 Pool state: ${state.available.length} available, ${Object.keys(state.inUse).length} in use`
-          );
-
-          // Write the updated state (lock is already held)
-          const tmpPath = `${this.lockFilePath}.tmp.${holderId}.${Date.now()}.${Math.random()}`;
-          await fs.writeFile(tmpPath, JSON.stringify(state, null, 2));
-          await fs.rename(tmpPath, this.lockFilePath);
-
-          console.log(`✅ Account ${accountIndex} claimed by ${holderId}`);
-          return accountIndex;
-        } finally {
+        if (state.available.length === 0) {
+          // No accounts available - release lock and retry
           await this.releaseLock();
+          lockAcquired = false;
+
+          console.log(
+            `⏳ No accounts available for ${holderId}, retrying... (attempt ${attempt + 1}/${this.maxRetries})`
+          );
+          await this.delay(this.retryDelay * 2);
+          continue;
         }
+
+        // Check if account is already in use (safety check)
+        const accountIndex = state.available.shift()!;
+        if (state.inUse[accountIndex.toString()]) {
+          throw new Error(
+            `CRITICAL: Account ${accountIndex} already in use by ${state.inUse[accountIndex.toString()]} but was in available array!`
+          );
+        }
+
+        state.inUse[accountIndex.toString()] = `${holderId}-${Date.now()}`;
+        state.lastUpdated = Date.now();
+
+        console.log(`🔒 About to claim account ${accountIndex} for ${holderId}`);
+        console.log(
+          `📊 Pool state: ${state.available.length} available, ${Object.keys(state.inUse).length} in use`
+        );
+
+        // Write the updated state (lock is already held)
+        const tmpPath = `${this.lockFilePath}.tmp.${holderId}.${Date.now()}.${Math.random()}`;
+        await fs.writeFile(tmpPath, JSON.stringify(state, null, 2));
+        await fs.rename(tmpPath, this.lockFilePath);
+
+        // Release lock before returning
+        await this.releaseLock();
+        lockAcquired = false;
+
+        console.log(`✅ Account ${accountIndex} claimed by ${holderId}`);
+        return accountIndex;
       } catch (error) {
+        // Release lock if we still hold it
+        if (lockAcquired) {
+          try {
+            await this.releaseLock();
+          } catch (releaseError) {
+            console.log(`⚠️ Error releasing lock during error handling: ${releaseError}`);
+          }
+        }
+
         // Retry on any error
         if (attempt === this.maxRetries - 1) {
           throw new Error(`Failed to claim account after ${this.maxRetries} attempts: ${error}`);

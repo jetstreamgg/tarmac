@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { SaWriteHookParams, SaWriteHookReturnType } from './sealModule';
 import { encodeFunctionData } from 'viem';
 import { sealModuleAbi, sealModuleAddress } from '../generated';
@@ -18,7 +18,7 @@ export function useWipe({
   index: bigint;
 }): SaWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
 
   const enabled = !!address && isConnected && activeTabEnabled && !!amount && amount > 0n;
 

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { proxyRegistryAddress, useReadProxyRegistry } from '../generated';
 import { ReadHook } from '../hooks';
 import { getEtherscanLink } from '@jetstreamgg/sky-utils';
@@ -15,7 +15,7 @@ export type DsProxyHookResponse = ReadHook & {
 
 export function useDsProxyData(owner?: `0x${string}`): DsProxyHookResponse {
   const chainId = useChainId();
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
 
   // Use either a provided owner address, or the connected address if none provided
   const acct = owner || connectedAddress || ZERO_ADDRESS;

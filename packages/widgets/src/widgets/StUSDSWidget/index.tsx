@@ -4,12 +4,22 @@ import {
   useStUsdsAllowance,
   useStUsdsData,
   useStUsdsCapacityData,
-  useIsBatchSupported
+  useIsBatchSupported,
+  useStUsdsProviderSelection,
+  StUsdsProviderType,
+  StUsdsDirection,
+  useCurveAllowance,
+  useStUsdsWithdrawBalances
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
-import { StUSDSFlow, StUSDSAction, StUSDSScreen } from './lib/constants';
+import {
+  StUSDSFlow,
+  StUSDSAction,
+  StUSDSScreen,
+  MAX_PRICE_IMPACT_BPS_WITHOUT_WARNING
+} from './lib/constants';
 import { StUSDSTransactionStatus } from './components/StUSDSTransactionStatus';
 import { StUSDSSupplyWithdraw } from './components/StUSDSSupplyWithdraw';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -18,7 +28,7 @@ import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ArrowLeft } from 'lucide-react';
@@ -63,12 +73,12 @@ const StUSDSWidgetWrapped = ({
   }, [onStateValidated, validatedExternalState]);
 
   const chainId = useChainId();
-  const { address, isConnecting, isConnected } = useAccount();
+  const { address, isConnecting, isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const { mutate: mutateStUsds, data: stUsdsData, isLoading: isStUsdsDataLoading } = useStUsdsData();
   const { data: capacityData } = useStUsdsCapacityData();
-  const { data: allowance, mutate: mutateAllowance } = useStUsdsAllowance();
+  const { data: nativeSupplyAllowance, mutate: mutateNativeSupplyAllowance } = useStUsdsAllowance();
   const initialAmount =
     validatedExternalState?.amount && validatedExternalState.amount !== '0'
       ? parseUnits(validatedExternalState.amount, 18)
@@ -78,10 +88,43 @@ const StUSDSWidgetWrapped = ({
   const initialTabIndex = validatedExternalState?.flow === StUSDSFlow.WITHDRAW ? 1 : 0;
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const [max, setMax] = useState<boolean>(false);
-  const [disclaimerChecked, setDisclaimerChecked] = useState<boolean>(false);
+  const [swapAnyway, setSwapAnyway] = useState<boolean>(false);
   const linguiCtx = useLingui();
   const usds = TOKENS.usds;
   const { data: batchSupported } = useIsBatchSupported();
+
+  // Reference amount for rate comparison when actual amount is 0
+  // This allows pre-selecting the provider before user input to prevent UI flicker
+  const referenceAmount = parseUnits('1', 18); // 1 USDS
+
+  // Provider selection for automatic routing between native and Curve
+  const providerSelection = useStUsdsProviderSelection({
+    amount: debouncedAmount,
+    referenceAmount,
+    direction: tabIndex === 0 ? StUsdsDirection.SUPPLY : StUsdsDirection.WITHDRAW,
+    userStUsdsBalance: stUsdsData?.userStUsdsBalance,
+    isMax: max
+  });
+
+  const { hasAllowance: hasCurveUsdsAllowance, mutate: mutateCurveUsdsAllowance } = useCurveAllowance({
+    token: 'USDS',
+    amount: debouncedAmount
+  });
+  const { hasAllowance: hasCurveStUsdsAllowance, mutate: mutateCurveStUsdsAllowance } = useCurveAllowance({
+    token: 'stUSDS',
+    amount: providerSelection?.selectedQuote?.stUsdsAmount ?? 0n
+  });
+
+  const {
+    effectiveBalance: withdrawBalanceLimit,
+    curveMaxWithdraw,
+    selectedProvider: withdrawSelectedProvider
+  } = useStUsdsWithdrawBalances();
+
+  const isCurveSelected = providerSelection.selectedProvider === StUsdsProviderType.CURVE;
+
+  // If Curve is available, don't enforce native capacity limits on supply input
+  const isCurveAvailableForSupply = providerSelection.curveProvider?.state?.canDeposit ?? false;
 
   useEffect(() => {
     setAmount(initialAmount);
@@ -90,6 +133,11 @@ const StUSDSWidgetWrapped = ({
   useEffect(() => {
     setTabIndex(initialTabIndex);
   }, [initialTabIndex]);
+
+  // Reset swapAnyway when amount or tab changes
+  useEffect(() => {
+    setSwapAnyway(false);
+  }, [debouncedAmount, tabIndex]);
 
   const {
     setButtonText,
@@ -105,20 +153,41 @@ const StUSDSWidgetWrapped = ({
 
   useNotifyWidgetState({ widgetState, txStatus, onWidgetStateChange });
 
-  const needsAllowance = !!(!allowance || allowance < debouncedAmount);
-  const shouldUseBatch =
-    !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === StUSDSFlow.SUPPLY;
+  const needsAllowance = useMemo(() => {
+    if (widgetState.flow === StUSDSFlow.SUPPLY) {
+      return isCurveSelected
+        ? !hasCurveUsdsAllowance
+        : !!(!nativeSupplyAllowance || nativeSupplyAllowance < debouncedAmount);
+    } else {
+      return isCurveSelected ? !hasCurveStUsdsAllowance : false;
+    }
+  }, [
+    widgetState.flow,
+    isCurveSelected,
+    hasCurveUsdsAllowance,
+    hasCurveStUsdsAllowance,
+    nativeSupplyAllowance,
+    debouncedAmount
+  ]);
+
+  const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
   const { batchStUsdsDeposit, stUsdsWithdraw } = useStUsdsTransactions({
     amount,
     referralCode,
     max,
     shouldUseBatch,
-    mutateAllowance,
+    mutateNativeSupplyAllowance,
     mutateStUsds,
+    mutateCurveUsdsAllowance,
+    mutateCurveStUsdsAllowance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    selectedProvider: providerSelection.selectedProvider,
+    expectedOutput: providerSelection.selectedQuote?.outputAmount ?? 0n,
+    // For Curve withdrawals: stUsdsAmount is the calculated stUSDS input needed
+    stUsdsAmount: providerSelection.selectedQuote?.stUsdsAmount
   });
 
   useEffect(() => {
@@ -150,18 +219,48 @@ const StUSDSWidgetWrapped = ({
 
   useEffect(() => {
     if (txStatus === TxStatus.IDLE) {
-      setShowStepIndicator(widgetState.flow === StUSDSFlow.SUPPLY && needsAllowance);
+      setShowStepIndicator(needsAllowance);
     }
-  }, [txStatus, widgetState.flow, needsAllowance, setShowStepIndicator]);
+  }, [txStatus, needsAllowance, setShowStepIndicator]);
 
   const remainingCapacityBuffered = capacityData?.remainingCapacityBuffered || 0n;
+
+  // Use provider-aware max amounts based on Curve availability
+  // When Curve is available, there's no protocol limit; when only native is available, use module capacity limit
+  const moduleMaxSupplyAmount = isCurveAvailableForSupply
+    ? undefined
+    : (providerSelection.nativeProvider?.state?.maxDeposit ?? remainingCapacityBuffered);
+
+  // For Curve: use user's max based on their stUSDS balance converted at Curve's rate (unbuffered)
+  // For Native: use user's max withdrawable from contract (buffered to prevent liquidity issues)
+  const nativeMaxWithdraw = stUsdsData?.userMaxWithdrawBuffered ?? 0n;
+  // Max withdraw uses rate comparison
+  const maxWithdrawAmount =
+    withdrawSelectedProvider === StUsdsProviderType.CURVE
+      ? (curveMaxWithdraw ?? nativeMaxWithdraw)
+      : nativeMaxWithdraw;
+
+  // Update amount when max is true and maxWithdrawAmount changes
+  // This keeps the input synced with the latest max value when user has clicked 100%
+  useEffect(() => {
+    if (
+      max &&
+      widgetState.flow === StUSDSFlow.WITHDRAW &&
+      maxWithdrawAmount > 0n &&
+      txStatus === TxStatus.IDLE
+    ) {
+      setAmount(maxWithdrawAmount);
+    }
+  }, [max, maxWithdrawAmount, widgetState.flow, txStatus]);
 
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
     address &&
     amount !== 0n && //don't wait for debouncing on default state
+    !providerSelection.isLoading &&
     ((stUsdsData?.userUsdsBalance !== undefined && debouncedAmount > stUsdsData.userUsdsBalance) ||
-      (remainingCapacityBuffered !== undefined && debouncedAmount > remainingCapacityBuffered))
+      (providerSelection.allProvidersBlocked && debouncedAmount > 0n) ||
+      (moduleMaxSupplyAmount !== undefined && debouncedAmount > moduleMaxSupplyAmount))
       ? true
       : false;
 
@@ -169,8 +268,10 @@ const StUSDSWidgetWrapped = ({
     txStatus === TxStatus.IDLE &&
     address &&
     amount !== 0n && //don't wait for debouncing on default state
-    stUsdsData?.userMaxWithdrawBuffered !== undefined &&
-    debouncedAmount > stUsdsData.userMaxWithdrawBuffered
+    !providerSelection.isLoading &&
+    ((withdrawBalanceLimit !== undefined && debouncedAmount > withdrawBalanceLimit) ||
+      (providerSelection.allProvidersBlocked && debouncedAmount > 0n) ||
+      (maxWithdrawAmount !== undefined && debouncedAmount > maxWithdrawAmount))
       ? true
       : false;
 
@@ -180,16 +281,16 @@ const StUSDSWidgetWrapped = ({
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isWithdrawBalanceError ||
     (txStatus === TxStatus.IDLE && !stUsdsWithdraw.prepared) ||
-    isAmountWaitingForDebounce;
+    isAmountWaitingForDebounce ||
+    debouncedAmount === 0n;
 
   const batchSupplyDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isSupplyBalanceError ||
     !batchStUsdsDeposit.prepared ||
     batchStUsdsDeposit.isLoading ||
-    isAmountWaitingForDebounce;
-
-  const hasUsdsWalletBalance = stUsdsData?.userUsdsBalance !== undefined && stUsdsData.userUsdsBalance > 0n;
+    isAmountWaitingForDebounce ||
+    debouncedAmount === 0n;
 
   // Handle external state changes
   useEffect(() => {
@@ -215,6 +316,7 @@ const StUSDSWidgetWrapped = ({
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
     setAmount(0n);
+    setMax(false);
 
     setWidgetState((prev: WidgetState) => ({
       ...prev,
@@ -270,18 +372,30 @@ const StUSDSWidgetWrapped = ({
 
   const showSecondaryButton = txStatus === TxStatus.ERROR || widgetState.screen === StUSDSScreen.REVIEW;
 
+  // Handle prepare errors for native and Curve hooks
+  const withdrawPrepareError = 'prepareError' in stUsdsWithdraw ? stUsdsWithdraw.prepareError : null;
+  const supplyError = batchStUsdsDeposit.error;
+  const withdrawError = stUsdsWithdraw.error;
+
   useEffect(() => {
-    if (stUsdsWithdraw.prepareError) {
-      console.log(stUsdsWithdraw.prepareError);
-
-      // Check for specific error types
-      const errorMessage = stUsdsWithdraw.prepareError.message;
+    const error = withdrawPrepareError || withdrawError;
+    if (error && widgetState.flow === StUSDSFlow.WITHDRAW) {
+      const errorMessage = (error as Error).message || '';
       let title = t`Error preparing transaction`;
-      let description = stUsdsWithdraw.prepareError.message;
+      let description = (error as Error).message;
 
+      // Native stUSDS errors
       if (errorMessage.includes('YUsds/insufficient-unused-funds')) {
         title = t`Insufficient liquidity`;
         description = t`The vault does not have enough available USDS for withdrawal. Please try a smaller amount or wait for liquidity to become available.`;
+      }
+      // Curve-specific errors
+      else if (errorMessage.includes('Exchange resulted in fewer coins')) {
+        title = t`Slippage exceeded`;
+        description = t`The swap would result in less output than the minimum acceptable amount. Try reducing the amount or waiting for better rates.`;
+      } else if (errorMessage.includes('Insufficient balance')) {
+        title = t`Insufficient pool liquidity`;
+        description = t`The Curve pool does not have enough liquidity for this swap. Please try a smaller amount.`;
       }
 
       onNotification?.({
@@ -290,7 +404,30 @@ const StUSDSWidgetWrapped = ({
         status: TxStatus.ERROR
       });
     }
-  }, [stUsdsWithdraw.prepareError]);
+  }, [withdrawPrepareError, withdrawError, widgetState.flow]);
+
+  useEffect(() => {
+    if (supplyError && widgetState.flow === StUSDSFlow.SUPPLY) {
+      const errorMessage = (supplyError as Error).message || '';
+      let title = t`Error preparing transaction`;
+      let description = (supplyError as Error).message;
+
+      // Curve-specific errors
+      if (errorMessage.includes('Exchange resulted in fewer coins')) {
+        title = t`Slippage exceeded`;
+        description = t`The swap would result in less output than the minimum acceptable amount. Try reducing the amount or waiting for better rates.`;
+      } else if (errorMessage.includes('Insufficient balance')) {
+        title = t`Insufficient pool liquidity`;
+        description = t`The Curve pool does not have enough liquidity for this swap. Please try a smaller amount.`;
+      }
+
+      onNotification?.({
+        title,
+        description,
+        status: TxStatus.ERROR
+      });
+    }
+  }, [supplyError, widgetState.flow]);
 
   // Update button state according to action and tx
   // Ref: https://lingui.dev/tutorials/react-patterns#memoization-pitfall
@@ -326,24 +463,26 @@ const StUSDSWidgetWrapped = ({
       (widgetState.action === StUSDSAction.SUPPLY && batchSupplyDisabled) ||
       (widgetState.action === StUSDSAction.WITHDRAW && withdrawDisabled);
 
-    const shouldEnforceDisclaimer =
-      widgetState.action === StUSDSAction.SUPPLY &&
+    // Disable if Curve is selected with high price impact and user hasn't acknowledged
+    const priceImpactBps = providerSelection.selectedQuote?.rateInfo.priceImpactBps ?? 0;
+    const isDisabledForPriceImpact =
+      isCurveSelected &&
       widgetState.screen === StUSDSScreen.ACTION &&
-      (isStUsdsDataLoading || hasUsdsWalletBalance);
+      priceImpactBps >= MAX_PRICE_IMPACT_BPS_WITHOUT_WARNING &&
+      !swapAnyway &&
+      txStatus === TxStatus.IDLE;
 
-    const isDisabledForDisclaimer = shouldEnforceDisclaimer && (isStUsdsDataLoading || !disclaimerChecked);
-
-    setIsDisabled(isConnectedAndEnabled && (isDisabledForAction || isDisabledForDisclaimer));
+    setIsDisabled(isConnectedAndEnabled && (isDisabledForAction || isDisabledForPriceImpact));
   }, [
     widgetState.action,
     widgetState.screen,
     withdrawDisabled,
     isConnectedAndEnabled,
     batchSupplyDisabled,
-    disclaimerChecked,
-    amount,
-    hasUsdsWalletBalance,
-    isStUsdsDataLoading
+    isCurveSelected,
+    providerSelection.selectedQuote?.rateInfo.priceImpactBps,
+    swapAnyway,
+    txStatus
   ]);
 
   // Set isLoading to be consumed by WidgetButton
@@ -388,7 +527,7 @@ const StUSDSWidgetWrapped = ({
 
     // Refresh data
     mutateStUsds();
-    mutateAllowance();
+    mutateNativeSupplyAllowance();
   }, [chainId]);
 
   return (
@@ -435,6 +574,7 @@ const StUSDSWidgetWrapped = ({
               onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={shouldUseBatch}
               needsAllowance={needsAllowance}
+              isCurve={providerSelection.selectedProvider === StUsdsProviderType.CURVE}
             />
           </CardAnimationWrapper>
         ) : widgetState.screen === StUSDSScreen.REVIEW ? (
@@ -442,10 +582,10 @@ const StUSDSWidgetWrapped = ({
             <StUSDSTransactionReview
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
-              isBatchTransaction={shouldUseBatch}
               originToken={usds}
               originAmount={debouncedAmount}
               needsAllowance={needsAllowance}
+              isCurve={providerSelection.selectedProvider === StUsdsProviderType.CURVE}
             />
           </CardAnimationWrapper>
         ) : (
@@ -453,14 +593,15 @@ const StUSDSWidgetWrapped = ({
             <StUSDSSupplyWithdraw
               address={address}
               nstBalance={stUsdsData?.userUsdsBalance}
-              userUsdsBalance={stUsdsData?.userSuppliedUsds}
+              userUsdsBalance={withdrawBalanceLimit}
               userStUsdsBalance={stUsdsData?.userStUsdsBalance}
-              withdrawableBalance={stUsdsData?.userMaxWithdrawBuffered}
+              withdrawableBalance={maxWithdrawAmount}
               totalAssets={stUsdsData?.totalAssets}
               availableLiquidityBuffered={stUsdsData?.availableLiquidityBuffered}
               moduleRate={stUsdsData?.moduleRate}
               isStUsdsDataLoading={isStUsdsDataLoading}
               remainingCapacityBuffered={remainingCapacityBuffered}
+              providerSelection={providerSelection}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
@@ -481,8 +622,8 @@ const StUSDSWidgetWrapped = ({
               tabIndex={tabIndex}
               enabled={enabled}
               onExternalLinkClicked={onExternalLinkClicked}
-              disclaimerChecked={disclaimerChecked}
-              onDisclaimerChange={setDisclaimerChecked}
+              swapAnyway={swapAnyway}
+              onSwapAnywayChange={setSwapAnyway}
             />
           </CardAnimationWrapper>
         )}

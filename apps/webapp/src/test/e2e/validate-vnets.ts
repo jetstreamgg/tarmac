@@ -225,7 +225,11 @@ async function validateAccountBalances(
 /**
  * Validate a single VNet
  */
-async function validateVnet(network: NetworkName, snapshotId?: string): Promise<ValidationResult> {
+async function validateVnet(
+  network: NetworkName,
+  snapshotId?: string,
+  skipBalanceCheck = false
+): Promise<ValidationResult> {
   const errors: string[] = [];
 
   try {
@@ -273,14 +277,18 @@ async function validateVnet(network: NetworkName, snapshotId?: string): Promise<
     }
 
     // 3. Validate account balances (check first test account)
-    console.log(`  💰 Validating account balances for ${network}...`);
-    const testAddresses = getTestAddresses(1);
-    console.log(`     Test account: ${testAddresses[0]}`);
-    const balanceValidation = await validateAccountBalances(network, rpcUrl, testAddresses[0]);
+    if (skipBalanceCheck) {
+      console.log('  ⏭️  Skipping balance validation (will be funded)');
+    } else {
+      console.log(`  💰 Validating account balances for ${network}...`);
+      const testAddresses = getTestAddresses(1);
+      console.log(`     Test account: ${testAddresses[0]}`);
+      const balanceValidation = await validateAccountBalances(network, rpcUrl, testAddresses[0]);
 
-    if (!balanceValidation.valid) {
-      errors.push(...balanceValidation.errors);
-      return { network, healthy: false, errors };
+      if (!balanceValidation.valid) {
+        errors.push(...balanceValidation.errors);
+        return { network, healthy: false, errors };
+      }
     }
 
     return { network, healthy: true, errors: [] };
@@ -292,8 +300,9 @@ async function validateVnet(network: NetworkName, snapshotId?: string): Promise<
 
 /**
  * Main validation function
+ * @param skipBalanceCheck - If true, skip checking account balances (useful when VNets are fresh/unfunded)
  */
-export async function validateVnets(): Promise<{
+export async function validateVnets(skipBalanceCheck = false): Promise<{
   healthy: boolean;
   results: ValidationResult[];
 }> {
@@ -376,7 +385,7 @@ export async function validateVnets(): Promise<{
   const results: ValidationResult[] = [];
   for (const network of networks) {
     console.log(`Validating ${network}...`);
-    const result = await validateVnet(network, snapshots[network]);
+    const result = await validateVnet(network, snapshots[network], skipBalanceCheck);
 
     if (result.healthy) {
       console.log(`  ✅ ${network} is healthy`);

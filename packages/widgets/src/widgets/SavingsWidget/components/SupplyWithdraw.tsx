@@ -3,6 +3,7 @@ import { Trans } from '@lingui/react/macro';
 import {
   getTokenDecimals,
   sUsdsAddress,
+  Token,
   TOKENS,
   useOverallSkyData,
   useReadSavingsUsds
@@ -16,44 +17,55 @@ import { useContext, useMemo } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SavingsFlow } from '../lib/constants';
 import { SavingsStatsCard } from './SavingsStatsCard';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { formatUnits } from 'viem';
+import { BundledTransactionWarning } from '@widgets/shared/components/ui/BundledTransactionWarning';
 
 type SupplyWithdrawProps = {
   address?: string;
-  nstBalance?: bigint;
+  originBalance?: bigint;
   savingsBalance?: bigint;
   savingsTvl?: bigint;
+  originToken: Token;
   isSavingsDataLoading: boolean;
   onChange: (val: bigint, userTriggered?: boolean) => void;
   amount: bigint;
   error: boolean;
+  onMenuItemChange?: (token: Token) => void;
   onToggle: (number: 0 | 1) => void;
   onSetMax?: (val: boolean) => void;
   tabIndex: 0 | 1;
   enabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  isUpgradeSupplyFlow: boolean;
+  shouldUseBatch: boolean;
 };
 
 export const SupplyWithdraw = ({
   address,
-  nstBalance,
+  originBalance,
   savingsBalance,
   savingsTvl,
+  originToken,
   isSavingsDataLoading,
   onChange,
   amount,
   error,
+  onMenuItemChange,
   onToggle,
   onSetMax,
   tabIndex,
   enabled = true,
-  onExternalLinkClicked
+  onExternalLinkClicked,
+  isUpgradeSupplyFlow,
+  shouldUseBatch
 }: SupplyWithdrawProps) => {
-  const inputToken = TOKENS.usds;
+  const dai = TOKENS.dai;
+  const usds = TOKENS.usds;
+  const supplyTokenList = [usds, dai];
   const chainId = useChainId();
   const contractAddress = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
 
@@ -68,11 +80,11 @@ export const SupplyWithdraw = ({
   };
 
   const { widgetState } = useContext(WidgetContext);
-  const { isConnected } = useAccount();
+  const { isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const finalBalance =
-    widgetState.flow === SavingsFlow.SUPPLY ? (nstBalance || 0n) - amount : (nstBalance || 0n) + amount;
+    widgetState.flow === SavingsFlow.SUPPLY ? (originBalance || 0n) - amount : (originBalance || 0n) + amount;
   const finalSavingsBalance =
     widgetState.flow === SavingsFlow.SUPPLY
       ? (savingsBalance || 0n) + amount
@@ -126,11 +138,14 @@ export const SupplyWithdraw = ({
           <motion.div className="flex w-full flex-col" variants={positionAnimations}>
             <TokenInput
               className="w-full"
-              label={t`How much USDS would you like to supply?`}
+              label={t`How much ${originToken.symbol} would you like to supply?`}
               placeholder={t`Enter amount`}
-              token={inputToken}
-              tokenList={[inputToken]}
-              balance={address ? nstBalance : undefined}
+              token={originToken}
+              onTokenSelected={token => {
+                onMenuItemChange?.(token as Token);
+              }}
+              tokenList={supplyTokenList}
+              balance={address ? originBalance : undefined}
               onChange={(newValue, event) => {
                 onChange(BigInt(newValue), !!event);
               }}
@@ -148,8 +163,8 @@ export const SupplyWithdraw = ({
               className="w-full"
               label={t`How much USDS would you like to withdraw?`}
               placeholder={t`Enter amount`}
-              token={inputToken}
-              tokenList={[inputToken]}
+              token={usds}
+              tokenList={[usds]}
               balance={address ? savingsBalance : undefined}
               onChange={(newValue, event) => {
                 onChange(BigInt(newValue), !!event);
@@ -159,8 +174,8 @@ export const SupplyWithdraw = ({
                 error
                   ? t`Insufficient funds. Your balance is ${formatUnits(
                       savingsBalance || 0n,
-                      getTokenDecimals(inputToken, chainId)
-                    )} ${inputToken?.symbol}.`
+                      usds ? getTokenDecimals(usds, chainId) : 18
+                    )} ${usds?.symbol}.`
                   : undefined
               }
               onSetMax={onSetMax}
@@ -171,6 +186,9 @@ export const SupplyWithdraw = ({
           </motion.div>
         </TabsContent>
       </Tabs>
+      {isUpgradeSupplyFlow && !shouldUseBatch && (
+        <BundledTransactionWarning flowTitle="Supplying DAI to the Sky Savings Rate" />
+      )}
       {!!amount && !error && (
         <TransactionOverview
           title={t`Transaction overview`}
@@ -184,7 +202,7 @@ export const SupplyWithdraw = ({
               value: `${formatBigInt(amount, {
                 maxDecimals: 2,
                 compact: true
-              })} ${inputToken?.symbol}`
+              })} ${usds?.symbol}`
             },
             ...(tabIndex === 0
               ? [
@@ -225,11 +243,11 @@ export const SupplyWithdraw = ({
             ...(address
               ? [
                   {
-                    label: t`Your wallet ${inputToken?.symbol} balance`,
+                    label: t`Your wallet ${originToken?.symbol} balance`,
                     value:
-                      nstBalance !== undefined
+                      originBalance !== undefined
                         ? [
-                            formatBigInt(nstBalance, { maxDecimals: 2, compact: true }),
+                            formatBigInt(originBalance, { maxDecimals: 2, compact: true }),
                             formatBigInt(finalBalance, { maxDecimals: 2, compact: true })
                           ]
                         : '--'

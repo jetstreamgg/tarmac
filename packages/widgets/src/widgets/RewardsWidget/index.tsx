@@ -18,7 +18,7 @@ import { WidgetProps, WidgetState } from '../../shared/types/widgetState';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { RewardsTransactionStatus } from './components/RewardsTransactionStatus';
 import { ManagePosition } from './components/ManagePosition';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
@@ -65,7 +65,7 @@ const RewardsWidgetWrapped = ({
 }: RewardsWidgetProps) => {
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
-  const { address, isConnecting, isConnected } = useAccount();
+  const { address, isConnecting, isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [amount, setAmount] = useState(parseUnits(validatedExternalState?.amount || '0', 18));

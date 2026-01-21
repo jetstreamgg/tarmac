@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { stUsdsAddress, stUsdsImplementationAbi, usdsAddress } from '../generated';
 import { Abi, Call, erc20Abi } from 'viem';
@@ -19,7 +19,7 @@ export function useBatchStUsdsDeposit({
   amount: bigint;
   referral?: number;
 }): BatchWriteHook {
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
   const { data: allowance, error: allowanceError } = useStUsdsAllowance();
 

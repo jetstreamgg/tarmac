@@ -149,7 +149,7 @@ filters:
   - type: file_extension
     pattern: "\\.(ts|tsx)$"
   - type: content
-    pattern: "(?s)(useContract|useAccount|wagmi)"
+    pattern: "(?s)(useContract|useConnection|wagmi)"
 
 actions:
   - type: suggest

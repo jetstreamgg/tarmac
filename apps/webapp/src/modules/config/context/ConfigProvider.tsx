@@ -44,7 +44,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
           // If the feature flag is enabled, but the local storage item is not set, default to enabled
           import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
         expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
-        stakingRewardsDisclaimerShown: parsed.stakingRewardsDisclaimerShown ?? false
+        expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false
       });
     } catch (e) {
       console.log('Error parsing user settings', e);
@@ -56,10 +56,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   const updateUserConfig = (config: UserConfig) => {
     setUserConfig(config);
     window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(config));
-
-    // We needed to reload because changing the wagmi client messed with the rainbowkit buttons.
-    // https://github.com/rainbow-me/rainbowkit/issues/953
-    // TODO: Reenable if problem persist window.location.reload();
   };
 
   const updateLinkedActionConfig = useCallback(
@@ -106,10 +102,10 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     });
   };
 
-  const setStakingRewardsDisclaimerShown = (shown: boolean) => {
+  const setExpertRiskDisclaimerDismissed = (dismissed: boolean) => {
     updateUserConfig({
       ...userConfig,
-      stakingRewardsDisclaimerShown: shown
+      expertRiskDisclaimerDismissed: dismissed
     });
   };
 
@@ -139,8 +135,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         setSelectedExpertOption,
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
         setExpertRiskDisclaimerShown,
-        stakingRewardsDisclaimerShown: userConfig.stakingRewardsDisclaimerShown ?? false,
-        setStakingRewardsDisclaimerShown
+        expertRiskDisclaimerDismissed: userConfig.expertRiskDisclaimerDismissed ?? false,
+        setExpertRiskDisclaimerDismissed
       }}
     >
       {children}

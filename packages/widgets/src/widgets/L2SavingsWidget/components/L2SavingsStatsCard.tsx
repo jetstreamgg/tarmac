@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -35,7 +35,7 @@ export const L2SavingsStatsCard = ({
   originToken
 }: L2SavingsStatsCardProps) => {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
   const { data: overallSkyData } = useOverallSkyData();
   const { data: sUsdsBalance } = useTokenBalance({
     address,

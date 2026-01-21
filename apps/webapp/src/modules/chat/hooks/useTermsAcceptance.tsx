@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { checkChatbotTerms, signChatbotTerms } from '../services/termsApi';
 import { useChatContext } from '../context/ChatContext';
+import { SKIP_CHAT_AUTH_CHECK } from '@/lib/constants';
+import { isChatbotRestrictedError } from '../lib/ChatbotRestrictedError';
 
 interface UseTermsAcceptanceReturn {
   termsAccepted: boolean;
@@ -20,7 +22,9 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
     setShowTermsModal,
     isCheckingTerms,
     termsError,
-    setTermsError
+    setTermsError,
+    setIsRestricted,
+    setChatHistory
   } = useChatContext();
 
   const [isCheckingTermsLocal, setIsCheckingTermsLocal] = useState(false);
@@ -34,6 +38,13 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
   }, [showTermsModal]);
 
   const checkTermsStatus = useCallback(async () => {
+    // Skip auth check for testing purposes
+    if (SKIP_CHAT_AUTH_CHECK) {
+      setTermsAccepted(true);
+      setHasCheckedOnce(true);
+      return;
+    }
+
     // Only check if we haven't checked yet
     if (hasCheckedOnce && termsAccepted) {
       return;
@@ -51,6 +62,11 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
         setShowTermsModal(true);
       }
     } catch (err) {
+      if (isChatbotRestrictedError(err)) {
+        setIsRestricted(true);
+        setChatHistory([]);
+        return;
+      }
       console.error('Failed to check terms status:', err);
       setTermsAccepted(false);
       setShowTermsModal(true);
@@ -58,7 +74,7 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
     } finally {
       setIsCheckingTermsLocal(false);
     }
-  }, [hasCheckedOnce, termsAccepted, setTermsAccepted, setShowTermsModal]);
+  }, [hasCheckedOnce, termsAccepted, setTermsAccepted, setShowTermsModal, setIsRestricted, setChatHistory]);
 
   const acceptTerms = useCallback(
     async (termsVersion: string) => {
@@ -69,12 +85,18 @@ export const useTermsAcceptance = (): UseTermsAcceptanceReturn => {
         setTermsAccepted(true);
         setShowTermsModal(false);
       } catch (err) {
+        if (isChatbotRestrictedError(err)) {
+          setShowTermsModal(false);
+          setIsRestricted(true);
+          setChatHistory([]);
+          return;
+        }
         console.error('Failed to accept terms:', err);
         setTermsError('Failed to accept terms. Please try again.');
         throw err;
       }
     },
-    [setTermsAccepted, setShowTermsModal]
+    [setTermsAccepted, setShowTermsModal, setIsRestricted, setChatHistory, setTermsError]
   );
 
   return {

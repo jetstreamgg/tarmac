@@ -1,11 +1,9 @@
 import { useMemo } from 'react';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useTokenBalance, TOKENS } from '@jetstreamgg/sky-hooks';
 import { parseEther } from 'viem';
 import {
-  BATCH_TX_ENABLED,
   CHATBOT_ENABLED,
-  BATCH_TX_NOTIFICATION_KEY,
   CHAT_NOTIFICATION_KEY,
   GOVERNANCE_MIGRATION_NOTIFICATION_KEY
 } from '@/lib/constants';
@@ -16,12 +14,11 @@ import { NotificationConfig } from './useNotificationQueue';
  * These notifications appear once per page load based on priority and conditions.
  *
  * Current priority order:
- * 1. EIP7702 Batch Transaction
- * 2. Governance Migration (requires MKR balance)
- * 3. Chat Notification
+ * 1. Governance Migration (requires MKR balance)
+ * 2. Chat Notification
  */
 export const usePageLoadNotifications = (): NotificationConfig[] => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useConnection();
   const chainId = useChainId();
 
   // Check if MKR exists on current chain
@@ -47,26 +44,20 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
   const notificationConfigs: NotificationConfig[] = useMemo(
     () => [
       {
-        id: 'batch-tx',
-        priority: 1,
-        checkConditions: () => BATCH_TX_ENABLED,
-        hasBeenShown: () => localStorage.getItem(BATCH_TX_NOTIFICATION_KEY) === 'true'
-      },
-      {
         id: 'governance-migration',
-        priority: 2,
+        priority: 1,
         isReady: () => mkrBalanceLoaded, // Wait for MKR balance to load
         checkConditions: () => isConnected && mkrExistsOnChain && hasEnoughMkr,
         hasBeenShown: () => localStorage.getItem(GOVERNANCE_MIGRATION_NOTIFICATION_KEY) === 'true'
       },
       {
         id: 'chat',
-        priority: 3,
+        priority: 2,
         checkConditions: () => CHATBOT_ENABLED,
         hasBeenShown: () => localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true'
       }
     ],
-    [isConnected, mkrBalanceLoaded, mkrExistsOnChain, hasEnoughMkr, BATCH_TX_ENABLED, CHATBOT_ENABLED]
+    [isConnected, mkrBalanceLoaded, mkrExistsOnChain, hasEnoughMkr, CHATBOT_ENABLED]
   );
 
   return notificationConfigs;

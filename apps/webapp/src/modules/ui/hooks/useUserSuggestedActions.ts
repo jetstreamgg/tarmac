@@ -16,7 +16,7 @@ import {
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
-import { useAccount, useChainId, useChains } from 'wagmi';
+import { useConnection, useChainId, useChains } from 'wagmi';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { mainnet } from 'wagmi/chains';
 import { tenderly } from '@/data/wagmi/config/config.default';
@@ -514,7 +514,7 @@ const fetchUserSuggestedActions = (
 };
 
 export const useUserSuggestedActions = (currentRewardContract?: RewardContract) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const chains = useChains();
   const tokens = useTokens(chainId);

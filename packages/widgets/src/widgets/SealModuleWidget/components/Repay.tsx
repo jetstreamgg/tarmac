@@ -24,7 +24,7 @@ import {
 import { formatUnits } from 'viem';
 import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor } from '../lib/utils';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useSealExitFee } from '@jetstreamgg/sky-hooks';
 import { useRiskSlider } from '../hooks/useRiskSlider';
 import { getTooltipById } from '../../../data/tooltips';
@@ -268,7 +268,7 @@ const PositionManagerOverviewContainer = ({
 };
 
 export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolean }) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const ilkName = getIlkName(1);
 

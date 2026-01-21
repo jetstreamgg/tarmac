@@ -24,8 +24,13 @@ updates:
           - "viem"
           - "wagmi"
           - "@wagmi/*"
-          - "@rainbow-me/rainbowkit"
           - "ethers"
+          - "@base-org/account"
+          - "@coinbase/wallet-sdk"
+          - "@metamask/sdk"
+          - "@safe-global/safe-apps-provider"
+          - "@safe-global/safe-apps-sdk"
+          - "@walletconnect/ethereum-provider"
         update-types:
           - "minor"
           - "patch"
@@ -94,3 +99,16 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Wallet connector dependencies - only allow patch updates (within current range)
+      - dependency-name: "@base-org/account"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@coinbase/wallet-sdk"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@metamask/sdk"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@safe-global/safe-apps-provider"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@safe-global/safe-apps-sdk"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@walletconnect/ethereum-provider"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

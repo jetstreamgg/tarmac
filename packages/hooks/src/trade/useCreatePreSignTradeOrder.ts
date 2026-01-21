@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { cowApiClient } from './constants';
 import { OrderQuoteResponse } from './trade';
 import { WriteHookParams } from '../hooks';
@@ -58,7 +58,7 @@ export const useCreatePreSignTradeOrder = ({
   onTransactionError: (error: Error) => void;
 }) => {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
   const [shouldSendTransaction, setShouldSendTransaction] = useState(false);

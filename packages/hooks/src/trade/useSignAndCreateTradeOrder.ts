@@ -1,4 +1,4 @@
-import { useAccount, useChainId, useSignTypedData } from 'wagmi';
+import { useConnection, useChainId, useSignTypedData } from 'wagmi';
 import { ORDER_TYPE_FIELDS, cowApiClient } from './constants';
 import { OrderQuoteResponse } from './trade';
 import { WriteHookParams } from '../hooks';
@@ -54,7 +54,7 @@ export const useSignAndCreateTradeOrder = ({
   onSuccess: (executedSellAmount: bigint, executedBuyAmount: bigint) => void;
 }) => {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
 

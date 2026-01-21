@@ -4,7 +4,7 @@ import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { Bark, StakePosition } from './stakeModule';
 import { useQuery } from '@tanstack/react-query';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 
 type StakePositionResponse = {
   // TODO: Update this to stakeUrns once the subgraph is updated
@@ -71,7 +71,7 @@ export function useStakePosition({
   subgraphUrl?: string;
   urnIndex: number;
 }): ReadHook & { data?: StakePosition } {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
 

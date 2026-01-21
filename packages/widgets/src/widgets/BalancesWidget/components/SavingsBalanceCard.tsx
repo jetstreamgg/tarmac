@@ -4,24 +4,28 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCardWithAccordion } from '@widgets/shared/components/ui/card/InteractiveStatsCardWithAccordion';
 import { Skeleton } from '@widgets/components/ui/skeleton';
-import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { formatUnits } from 'viem';
-import { CardProps } from './ModulesBalances';
+import { CardProps, ModuleCardVariant } from './ModulesBalances';
+import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
+import { InteractiveStatsCardAlt } from '@widgets/shared/components/ui/card/InteractiveStatsCardAlt';
+import { useChainId } from 'wagmi';
 
 export const SavingsBalanceCard = ({
   urlMap,
   onExternalLinkClicked,
   savingsBalances,
-  loading
+  loading,
+  variant = ModuleCardVariant.default
 }: CardProps & { urlMap: Record<number, string> }) => {
   const { data: overallSkyData, isLoading: overallSkyDataLoading } = useOverallSkyData();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
+  const chainId = useChainId();
 
   const totalSavingsBalance = savingsBalances?.reduce((acc, { balance }) => acc + balance, 0n);
 
   const skySavingsRate = parseFloat(overallSkyData?.skySavingsRatecRate ?? '0');
 
-  return (
+  return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCardWithAccordion
       title={t`USDS supplied to Savings`}
       tokenSymbol="sUSDS"
@@ -36,16 +40,11 @@ export const SavingsBalanceCard = ({
         overallSkyDataLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : skySavingsRate > 0 ? (
-          <div className="flex w-fit items-center gap-1.5">
-            <Text variant="small" className="text-bullish leading-4">
-              {`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
-            </Text>
-            <PopoverRateInfo
-              type="ssr"
-              onExternalLinkClicked={onExternalLinkClicked}
-              iconClassName="h-[13px] w-[13px]"
-            />
-          </div>
+          <RateLineWithArrow
+            rateText={`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
+            popoverType="ssr"
+            onExternalLinkClicked={onExternalLinkClicked}
+          />
         ) : (
           <></>
         )
@@ -68,6 +67,21 @@ export const SavingsBalanceCard = ({
       balancesByChain={savingsBalances ?? []}
       urlMap={urlMap}
       pricesData={pricesData ?? {}}
+    />
+  ) : (
+    <InteractiveStatsCardAlt
+      title={t`USDS supplied to Savings`}
+      tokenSymbol="sUSDS"
+      url={urlMap[chainId]}
+      logoName="savings"
+      noChain={true}
+      content={
+        loading ? (
+          <Skeleton className="w-32" />
+        ) : (
+          <Text>{`${totalSavingsBalance !== undefined ? formatBigInt(totalSavingsBalance) : '0'}`} USDS</Text>
+        )
+      }
     />
   );
 };

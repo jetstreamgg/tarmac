@@ -32,11 +32,11 @@ Sky.money does not control the issuance, determination, or distribution of these
     },
     {
       question: 'How are Sky Token Rewards funded?',
-      answer: `Users can supply USDS to the Sky Token Rewards module of the Sky Protocol to receive rewards in the form of SKY tokens, Sky Star tokens, and Chronicle points. Sky Protocol reward mechanisms are designed to balance incentives for users while maintaining sustainability and minimizing unnecessary inflation. Rewards are funded as follows:
+      answer: `Users can supply USDS to the Sky Token Rewards module of the Sky Protocol to receive rewards in the form of SKY tokens, Sky Star Agent tokens, and Chronicle points. Sky Protocol reward mechanisms are designed to balance incentives for users while maintaining sustainability and minimizing unnecessary inflation. Rewards are funded as follows:
 
-• **SKY as rewards:** The protocol calculates the market value of SKY to be rewarded, adjusts the quantity accordingly and buys it from the market using protocol revenues (USDS), and then distributes that SKY as rewards from the treasury. The budget, rate, and mechanics are set (and can be changed) by Sky Ecosystem Governance and the governance-configured rewards contracts.
+• **SKY as Staking Rewards:** SKY rewards distributed to SKY stakers are funded by the Sky Protocol's treasury and originate from buybacks executed by the Smart Burn Engine. The specific sources, routing, and distribution of rewards are determined by Sky Ecosystem Governance and may change over time.
 
-• **Star tokens as rewards:** Currently, Star Token Rewards are distributed to USDS suppliers using the returns from Sky investments in those Stars. This is not inflationary for the Sky Protocol, as these are external tokens acquired through investment.
+• **Star Agen tokens as rewards:** Currently, Star Agent token rewards distributed to SKY stakers are funded using distributions to Sky from the investments in those Stars. This is not inflationary for the Sky Protocol, as these are external tokens acquired through investment.
 
 • **Chronicle Points as rewards:** USDS suppliers can opt to receive Chronicle Points, which might ultimately become claimable for Chronicle tokens (CLE) at a rate of 10 points for every 1 CLE token. The total supply of CLE tokens is anticipated to be 10 billion. Chronicle Points are emitted at a rate of 3.75 billion per year. Any future opportunities to convert Chronicle Points into CLE tokens would be managed independently by Chronicle's own applications.`,
       index: 4
@@ -44,7 +44,7 @@ Sky.money does not control the issuance, determination, or distribution of these
     {
       question: 'How much does it cost to participate in Sky Token Rewards?',
       answer:
-        'There is no fee to participate in the Sky Token Rewards feature of the Sky Protocol; however, with each transaction, you will likely pay a transaction, or gas, fee for using the Ethereum blockchain network. That fee is neither controlled, imposed nor received by Sky.money or the Sky Protocol.',
+        'There is no fee to participate in the Sky Token Rewards feature of the Sky Protocol; however, with each transaction, you will likely pay a transaction (gas) fee for using the Ethereum blockchain network. That fee is neither controlled, imposed nor received by Sky.money or the Sky Protocol.',
       index: 5
     },
     {

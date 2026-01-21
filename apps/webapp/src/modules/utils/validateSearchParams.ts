@@ -123,13 +123,15 @@ export const validateSearchParams = (
 
     // validate source token
     if (key === QueryParams.SourceToken) {
-      // source token is only valid for upgrade and trade in Mainnet, and for savings and trade on L2 chains, remove if widget value is not correct
+      // source token is only valid for upgrade, savings and trade in Mainnet, and for savings and trade on L2 chains, remove if widget value is not correct
       const widgetParam = searchParams.get(QueryParams.Widget);
       if (
         !widgetParam ||
-        (![IntentMapping[Intent.UPGRADE_INTENT], IntentMapping[Intent.TRADE_INTENT]].includes(
-          widgetParam.toLowerCase()
-        ) &&
+        (![
+          IntentMapping[Intent.UPGRADE_INTENT],
+          IntentMapping[Intent.SAVINGS_INTENT],
+          IntentMapping[Intent.TRADE_INTENT]
+        ].includes(widgetParam.toLowerCase()) &&
           !isL2Chain) ||
         (![IntentMapping[Intent.SAVINGS_INTENT], IntentMapping[Intent.TRADE_INTENT]].includes(
           widgetParam.toLowerCase()

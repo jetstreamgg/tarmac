@@ -1,4 +1,4 @@
-import { useAccount, useChainId, useTransactionReceipt } from 'wagmi';
+import { useConnection, useChainId, useTransactionReceipt } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 import { ethFlowAbi, ethFlowAddress } from '../generated';
@@ -27,7 +27,7 @@ export const useCreateEthTradeOrder = ({
   const [transactionHash, setTransactionHash] = useState<`0x${string}` | undefined>(undefined);
   const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
 
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
 
   const enabled = isConnected && ethFlowEnabled && !!order && !!connectedAddress;

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { StakeWriteHookParams, StakeWriteHookReturnType } from './stakeModule';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
 import { getStakeWipeAllCalldata } from './calldata';
@@ -16,7 +16,7 @@ export function useWipeAll({
   index: bigint;
 }): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { isConnected, address } = useAccount();
+  const { isConnected, address } = useConnection();
 
   const enabled = !!address && isConnected && activeTabEnabled;
 

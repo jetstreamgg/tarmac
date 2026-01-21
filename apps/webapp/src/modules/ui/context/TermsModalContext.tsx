@@ -1,6 +1,6 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { useAccountEffect } from 'wagmi';
-import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useConnectionEffect } from 'wagmi';
+import { useConnectModal } from '../context/ConnectModalContext';
 import { useConnectedContext } from './ConnectedContext';
 const TermsModalContext = React.createContext({
   isModalOpen: false,
@@ -13,7 +13,7 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { openConnectModal } = useConnectModal();
 
-  useAccountEffect({
+  useConnectionEffect({
     onConnect: () => {
       if (!isModalOpen && !isConnectedAndAcceptedTerms) {
         setIsModalOpen(true);

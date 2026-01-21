@@ -8,15 +8,15 @@ import { CHATBOT_ENABLED, QueryParams, mapQueryParamToIntent } from '@/lib/const
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateLinkedActionSearchParams, validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
-import { useAccount, useAccountEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
+import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
 import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
+import { useWalletTermsAssociation } from '@/modules/chat/hooks/useWalletTermsAssociation';
 import { useChatNotification } from '../hooks/useChatNotification';
 import { FloatingChatPane } from './FloatingChatPane';
 import { FloatingChatButton } from './FloatingChatButton';
-import { useBatchTxNotification } from '../hooks/useBatchTxNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
 import { useNotificationQueue } from '../hooks/useNotificationQueue';
@@ -45,8 +45,8 @@ export function MainApp() {
   const chainId = useChainId();
   const chains = useChains();
 
-  const { connector } = useAccount();
-  useAccountEffect({
+  const { connector } = useConnection();
+  useConnectionEffect({
     // Once the user connects their wallet, check if the network param is set and switch chains if necessary
     onConnect() {
       const parsedChainId = chains.find(
@@ -126,17 +126,18 @@ export function MainApp() {
   const { shouldShowNotification } = useNotificationQueue(notificationConfigs);
 
   // Notification Priority System (only one notification per page load):
-  // 1. EIP7702 Batch Transaction (highest priority)
-  // 2. Governance Migration (for connected wallets with MKR ≥ 0.05)
-  // 3. Chat Notification (lowest priority)
+  // 1. Governance Migration (for connected wallets with MKR ≥ 0.05)
+  // 2. Chat Notification (lowest priority)
 
   // Display notifications based on queue priority
-  useBatchTxNotification(isAuthorized && shouldShowNotification('batch-tx'));
   useGovernanceMigrationToast(isAuthorized && shouldShowNotification('governance-migration'));
   useChatNotification(isAuthorized && shouldShowNotification('chat'));
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
+
+  // Associate wallet address with chatbot terms acceptance (if CHATBOT_ENABLED)
+  useWalletTermsAssociation();
 
   // Run validation on search params whenever search params change
   useEffect(() => {

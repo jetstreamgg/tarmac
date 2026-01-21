@@ -96,7 +96,7 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
         <StatsCard
           title={
             <HStack gap={1} className="items-center">
-              <Heading tag="h3" className="text-textSecondary text-sm font-normal leading-tight">
+              <Heading tag="h3" className="text-textSecondary text-sm leading-tight font-normal">
                 <Trans>Rate</Trans>
               </Heading>
               <PopoverInfo type="srr" />

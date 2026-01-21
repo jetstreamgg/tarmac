@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { useRewardContractsToClaim } from '../rewards/useRewardContractsToClaim';
 import { useStakeRewardContracts } from './useStakeRewardContracts';
@@ -18,13 +18,13 @@ export function useBatchStakeClaimAllRewards({
   index: bigint | undefined;
 }): BatchWriteHook {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const { data: urnAddress } = useStakeUrnAddress(index || 0n);
   const { data: stakeRewardContracts } = useStakeRewardContracts();
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses: stakeRewardContracts?.map(({ contractAddress }) => contractAddress) || [],
-    userAddress: urnAddress,
+    addresses: urnAddress,
     chainId,
     enabled: !!stakeRewardContracts && !!urnAddress
   });

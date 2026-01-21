@@ -1,0 +1,284 @@
+name: Sharded E2E Tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: 'Number of shards'
+        required: false
+        default: '4'
+        type: string
+      workers_per_shard:
+        description: 'Workers per shard'
+        required: false
+        default: '2'
+        type: string
+      networks:
+        description: 'Networks to fund (comma-separated)'
+        required: false
+        default: 'mainnet,base,arbitrum,optimism,unichain'
+        type: string
+
+concurrency:
+  group: vnets-sharded-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Job to create VNets and snapshots before shards run
+  setup-vnets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    outputs:
+      vnets-ready: ${{ steps.check-ready.outputs.ready }}
+
+    env:
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
+      FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Create VNets
+        run: |
+          echo "🔧 Creating fresh VNets..."
+          pnpm run vnet:fork:ci
+          echo "✅ VNet creation complete"
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Fund accounts and create snapshots
+        run: |
+          echo "💰 Funding all 100 test accounts on all networks..."
+          cd apps/webapp
+          pnpm e2e:fund
+
+          # Verify snapshots were created
+          if [ ! -f "src/test/e2e/persistent-vnet-snapshots.json" ]; then
+            echo "❌ Snapshots were not created!"
+            exit 1
+          fi
+          echo "✅ Snapshots created and verified"
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Upload VNet data for shards
+        uses: actions/upload-artifact@v4
+        with:
+          name: vnet-data
+          path: |
+            tenderlyTestnetData.json
+            apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+          retention-days: 1
+
+      - name: Check setup is ready
+        id: check-ready
+        run: |
+          if [ -f "tenderlyTestnetData.json" ] && [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
+            echo "ready=true" >> $GITHUB_OUTPUT
+            echo "✅ VNets are ready for sharded tests"
+          else
+            echo "ready=false" >> $GITHUB_OUTPUT
+            echo "❌ VNets are not ready"
+            exit 1
+          fi
+
+  # Run tests in shards
+  test-shards:
+    needs: setup-vnets
+    if: needs.setup-vnets.outputs.vnets-ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+
+    env:
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
+      PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
+      PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '4' }}
+      TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '2' }}
+      FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Install Playwright browsers
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Download VNet data
+        uses: actions/download-artifact@v4
+        with:
+          name: vnet-data
+
+      - name: Verify VNet files
+        run: |
+          echo "🔍 Verifying VNet files for shard ${{ matrix.shard }}..."
+          echo "Checking tenderlyTestnetData.json:"
+          ls -lh tenderlyTestnetData.json
+          echo "Checking persistent-vnet-snapshots.json:"
+          ls -lh apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+          echo "✅ VNet files ready"
+
+      - name: Run E2E tests (Shard ${{ matrix.shard }}/${{ github.event.inputs.shards || '4' }})
+        run: |
+          echo "🔀 Running shard ${{ matrix.shard }} of ${{ github.event.inputs.shards || '4' }}"
+          echo "Workers per shard: $TEST_WORKERS"
+
+          # Run the parallel tests with retry script
+          chmod +x ./apps/webapp/run-tests-with-retry.sh
+          cd apps/webapp && ./run-tests-with-retry.sh
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Upload test results (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}-test-results-${{ github.run_id }}
+          path: |
+            apps/webapp/playwright-report/
+            apps/webapp/test-results/
+            apps/webapp/test-results.json
+          retention-days: 7
+
+      - name: Upload test traces (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.shard }}-test-traces-${{ github.run_id }}
+          path: apps/webapp/test-results/
+          retention-days: 3
+
+  # Aggregate results from all shards
+  aggregate-results:
+    needs: test-shards
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all shard results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*-test-results-${{ github.run_id }}
+          path: all-results
+        continue-on-error: true
+
+      - name: Test Summary
+        run: |
+          echo "## Sharded E2E Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Shards**: ${{ github.event.inputs.shards || '4' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '2' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Networks**: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test-shards.result }}" == "success" ]; then
+            echo "### ✅ All shards passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Some shards failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check individual shard artifacts for details:" >> $GITHUB_STEP_SUMMARY
+            echo "- Shard 1 test results" >> $GITHUB_STEP_SUMMARY
+            echo "- Shard 2 test results" >> $GITHUB_STEP_SUMMARY
+            echo "- Shard 3 test results" >> $GITHUB_STEP_SUMMARY
+            echo "- Shard 4 test results" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Cleanup VNets after every run
+  cleanup:
+    needs: [test-shards, aggregate-results]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download VNet data
+        uses: actions/download-artifact@v4
+        with:
+          name: vnet-data
+        continue-on-error: true
+
+      - name: Cleanup Tenderly VNets
+        run: |
+          echo "🧹 Cleaning up Tenderly VNets..."
+          pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
 import { psm3L2Abi, psm3L2Address } from '../generated';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
@@ -26,7 +26,7 @@ export function useBatchPsmSwapExactOut({
   referralCode?: bigint;
 }): BatchWriteHook {
   const chainId = useChainId();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useConnection();
   const psmAddress = psm3L2Address[chainId as keyof typeof psm3L2Address];
 
   // Get the allowance of the input asset to be used by the PSM contract

@@ -172,7 +172,7 @@ export function WidgetNavigation({
       {/* Mobile and tablet hamburger menu */}
       {showDrawerMenu && !hideTabs && (
         <div
-          className="flex items-center justify-between p-4 pb-2 md:pl-1.5 md:pr-2.5 md:pt-1 lg:hidden"
+          className="flex items-center justify-between p-4 pb-2 md:pt-1 md:pr-2.5 md:pl-1.5 lg:hidden"
           ref={menuRef}
         >
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -222,7 +222,7 @@ export function WidgetNavigation({
                         {comingSoon && (
                           <Text
                             variant="small"
-                            className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-textSecondary rounded-full px-1.5 py-0.5 text-[10px]"
+                            className="from-primary-start/100 to-primary-end/100 text-textSecondary rounded-full bg-radial-(--gradient-position) px-1.5 py-0.5 text-[10px]"
                           >
                             <Trans>Soon</Trans>
                           </Text>
@@ -258,7 +258,7 @@ export function WidgetNavigation({
                 <TabsList
                   ref={tabsListRef}
                   className={cn(
-                    `scrollbar-hidden flex h-fit max-h-[calc(100vh-120px)] flex-col justify-start gap-2 py-1 pl-1 pr-[10px] ${isOverflowing ? 'overflow-y-scroll' : 'overflow-y-clip'}`
+                    `scrollbar-hidden flex h-fit max-h-[calc(100vh-120px)] flex-col justify-start gap-2 py-1 pr-[10px] pl-1 ${isOverflowing ? 'overflow-y-scroll' : 'overflow-y-clip'}`
                   )}
                   data-testid="widget-navigation"
                 >
@@ -303,7 +303,7 @@ export function WidgetNavigation({
                               {comingSoon && (
                                 <Text
                                   variant="small"
-                                  className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 text-textSecondary absolute left-1/2 top-0 -mt-2 rounded-full px-1.5 py-0 lg:static lg:px-1.5 lg:py-0.5 lg:text-[10px]"
+                                  className="from-primary-start/100 to-primary-end/100 text-textSecondary absolute top-0 left-1/2 -mt-2 rounded-full bg-radial-(--gradient-position) px-1.5 py-0 lg:static lg:px-1.5 lg:py-0.5 lg:text-[10px]"
                                 >
                                   <Trans>Soon</Trans>
                                 </Text>
@@ -313,7 +313,7 @@ export function WidgetNavigation({
                         </div>
                       ))}
                       {groupIndex < widgetContent.length - 1 && !showDrawerMenu && (
-                        <div className="lg:border-b-1 hidden lg:my-2 lg:block lg:h-px lg:w-full" />
+                        <div className="hidden lg:my-2 lg:block lg:h-px lg:w-full lg:border-b-1" />
                       )}
                     </React.Fragment>
                   ))}
@@ -339,7 +339,7 @@ export function WidgetNavigation({
               )}
             </AnimatePresence>
           </div>
-          <div className="md:min-w-[352px] md:max-w-[440px] lg:flex lg:min-w-[416px] lg:max-w-[416px] lg:flex-1 lg:flex-col lg:overflow-hidden">
+          <div className="md:max-w-[440px] md:min-w-[352px] lg:flex lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:flex-col lg:overflow-hidden">
             <LinkedActionWrapper />
             <AnimatePresence initial={false} mode="popLayout">
               {widgetContent.map(group =>

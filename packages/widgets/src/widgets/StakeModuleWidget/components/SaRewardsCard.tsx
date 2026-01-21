@@ -61,7 +61,7 @@ export const SaRewardsCard = ({
     <Card
       variant="pool"
       onClick={handleSelectRewardContract}
-      className={`hover-in-before bg-radial-(--gradient-position) overflow-hidden transition-colors ${
+      className={`hover-in-before overflow-hidden bg-radial-(--gradient-position) transition-colors ${
         selectedRewardContract && getAddress(selectedRewardContract) === getAddress(contractAddress)
           ? 'from-primary-start/100 to-primary-end/100'
           : 'from-card to-card hover:from-primary-start/40 hover:to-primary-end/40'

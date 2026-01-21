@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { SaWriteHookReturnType } from './sealModule';
 import { sealModuleAbi, sealModuleAddress } from '../generated';
 import { WriteHookParams } from '../hooks';
@@ -19,7 +19,7 @@ export function useSelectVoteDelegate({
   voteDelegate: `0x${string}`;
 }): SaWriteHookReturnType {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const enabled = !!address && activeTabEnabled && !!voteDelegate;
 

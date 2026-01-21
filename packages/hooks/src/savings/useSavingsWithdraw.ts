@@ -1,4 +1,4 @@
-import { useAccount, useBlockNumber, useChainId } from 'wagmi';
+import { useConnection, useBlockNumber, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useSavingsData } from './useSavingsData';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,7 +19,7 @@ export function useSavingsWithdraw({
   amount: bigint;
   max?: boolean;
 }): WriteHook {
-  const { address: connectedAddress, isConnected } = useAccount();
+  const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
   const { data: savingsData } = useSavingsData();
 

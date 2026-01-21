@@ -26,6 +26,8 @@ export async function dynamicActivate(i18n: I18n, locale: string) {
  * @param locale
  */
 async function loadLocale(locale?: string) {
+  if (!locale) return null;
+
   try {
     const { messages } = await import(`./locales/${locale}.ts`);
     console.log(`Locale file for ${locale} loaded.`);

@@ -1,4 +1,4 @@
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { stakeModuleAbi, stakeModuleAddress } from '../generated';
 import { WriteHookParams } from '../hooks';
 import { StakeWriteHookReturnType } from './stakeModule';
@@ -21,7 +21,7 @@ export function useSelectStakeRewardContract({
   ref?: number;
 }): StakeWriteHookReturnType {
   const chainId = useChainId();
-  const { address } = useAccount();
+  const { address } = useConnection();
 
   const enabled = !!address && activeTabEnabled && !!rewardContract;
 

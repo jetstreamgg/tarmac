@@ -1,5 +1,5 @@
 import { daiUsdsAbi, daiUsdsAddress, usdsAddress } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
@@ -17,7 +17,7 @@ export function useUsdsToDai({
   amount: bigint;
 }): WriteHook {
   const chainId = useChainId();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useConnection();
 
   // Get the allowance of USDS to be used by the upgrader contract
   const { data: allowance, error: allowanceError } = useTokenAllowance({

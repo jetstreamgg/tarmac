@@ -9,6 +9,7 @@ interface TypographyProps {
   tag?: TypographyElement;
   className?: string;
   dataTestId?: string;
+  id?: string;
 }
 
 const ELEMENTS: Record<TypographyElement, string> = {
@@ -40,6 +41,7 @@ interface HeadingProps {
   variant?: HeadingVariant;
   className?: string;
   dataTestId?: string;
+  id?: string;
 }
 
 const HEADING_VARIANTS: Record<HeadingVariant, string> = {
@@ -64,6 +66,7 @@ interface TextProps {
   variant?: TextVariant;
   className?: string;
   dataTestId?: string;
+  id?: string;
 }
 
 const TEXT_VARIANTS: Record<TextVariant, string> = {

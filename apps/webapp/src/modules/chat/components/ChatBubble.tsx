@@ -1,8 +1,8 @@
 import { HStack } from '@/modules/layout/components/HStack';
 import { VStack } from '@/modules/layout/components/VStack';
-import { CHATBOT_NAME, MessageType, UserType } from '../constants';
+import { MessageType, UserType } from '../constants';
 import { Text } from '@/modules/layout/components/Typography';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { useSearchParams } from 'react-router-dom';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
@@ -85,7 +85,7 @@ export const ChatBubble = ({
   isLastMessage,
   isOnlyMessage
 }: ChatBubbleProps) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const [searchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
   const { setShowTermsModal, termsAccepted } = useChatContext();
@@ -145,17 +145,18 @@ export const ChatBubble = ({
   return (
     <div
       // The `@2xl/chat` class is used to style elements based on the width of the `@container/chat` container
-      className={`@2xl/chat:items-start flex flex-col gap-3 xl:gap-2 ${user === UserType.user ? '@2xl/chat:flex-row-reverse' : 'xl:@2xl/chat:gap-0'}`}
+      className={`flex flex-col gap-3 xl:gap-2 @2xl/chat:items-start ${user === UserType.user ? '@2xl/chat:flex-row-reverse' : 'xl:@2xl/chat:gap-0'}`}
     >
       <HStack
-        className={`items-center gap-x-2 space-x-0 ${user === UserType.user ? 'xl:@2xl/chat:self-start xl:self-end' : '@2xl/chat:items-start'}`}
+        className={`items-center gap-x-2 space-x-0 ${user === UserType.user ? 'xl:self-end xl:@2xl/chat:self-start' : '@2xl/chat:items-start'}`}
       >
         {user === UserType.bot ? (
-          <img
-            src="/images/chatbot_logo.svg"
-            alt={`${CHATBOT_NAME} avatar`}
-            className="@2xl/chat:h-8 @2xl/chat:w-8 h-5 w-5"
-          />
+          // <img
+          //   src="/images/chatbot_logo.svg"
+          //   alt={`${CHATBOT_NAME} avatar`}
+          //   className="@2xl/chat:h-8 @2xl/chat:w-8 h-5 w-5"
+          // />
+          <></>
         ) : (
           <CustomAvatar address={address || 'address-not-connected'} size={shouldUseLargeAvatar ? 32 : 20} />
         )}
@@ -167,7 +168,7 @@ export const ChatBubble = ({
         </Text>
       </HStack>
       <VStack
-        className={`gap-2 ${user === UserType.user ? 'xl:bg-radial-(--gradient-position) xl:from-primary-start/100 xl:to-primary-end/100 xl:w-fit xl:self-end xl:rounded-2xl xl:rounded-tr-[2px] xl:py-3 xl:pb-0 xl:pl-5 xl:pr-7' : '@2xl/chat:ml-10'}`}
+        className={`gap-2 ${user === UserType.user ? 'xl:from-primary-start/100 xl:to-primary-end/100 xl:w-fit xl:max-w-full xl:min-w-0 xl:self-end xl:rounded-2xl xl:rounded-tr-[2px] xl:bg-radial-(--gradient-position) xl:py-3 xl:pr-7 xl:pb-0 xl:pl-5' : '@2xl/chat:ml-10'}`}
       >
         <Text
           variant="medium"
@@ -186,7 +187,7 @@ export const ChatBubble = ({
               {(isError || (isAuthError && !termsAccepted)) && (
                 <ChatError className="mb-3 h-4 w-4 shrink-0" />
               )}
-              <div className="min-w-0 text-white/75">
+              <div className="min-w-0 break-words text-white/75">
                 {isFeedback && user === UserType.user ? (
                   <Accordion type="single" collapsible className="w-full overflow-hidden">
                     <AccordionItem value="feedback" className="border-none p-0">
@@ -195,7 +196,7 @@ export const ChatBubble = ({
                           <Trans>Feedback sent</Trans>
                         </Text>
                       </AccordionTrigger>
-                      <AccordionContent className="overflow-hidden pb-2 pt-2 text-white">
+                      <AccordionContent className="overflow-hidden pt-2 pb-2 text-white">
                         {(() => {
                           const feedbackContent = getFeedbackContent();
                           if (!feedbackContent) {
@@ -284,7 +285,7 @@ export const ChatBubble = ({
                           variant="outline"
                           size="sm"
                           onClick={() => handleQuestionClick(question)}
-                          className="h-auto whitespace-normal px-3 py-2 text-left"
+                          className="h-auto px-3 py-2 text-left whitespace-normal"
                         >
                           {question}
                         </Button>

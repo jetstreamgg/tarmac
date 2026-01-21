@@ -1,6 +1,6 @@
 import {
   UseSimulateContractParameters,
-  useAccount,
+  useConnection,
   useSimulateContract,
   useWaitForTransactionReceipt,
   useWriteContract
@@ -94,7 +94,7 @@ export function useSequentialTransactionFlow(
   });
 
   // Workaround to get `txHash` from Safe connector
-  const { connector } = useAccount();
+  const { connector } = useConnection();
   const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID;
 
   const eventHash = useWaitForSafeTxHash({

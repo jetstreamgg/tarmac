@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAccount } from 'wagmi';
+import { useConnection } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
@@ -32,7 +32,7 @@ export function useMultiChainSavingsBalances({
   const optimismChainId = chainIds?.find(chainId => isOptimismChainId(chainId));
   const unichainChainId = chainIds?.find(chainId => isUnichainChainId(chainId));
 
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress;
 
   // ETHEREUM - get balance via maxWithdraw

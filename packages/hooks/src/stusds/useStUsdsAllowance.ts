@@ -1,5 +1,5 @@
 import { usdsAddress, stUsdsAddress } from '../generated';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import { ZERO_ADDRESS } from '../constants';
@@ -9,7 +9,7 @@ export type StUsdsAllowanceHookResponse = ReadHook & {
 };
 
 export function useStUsdsAllowance(address?: `0x${string}`): StUsdsAllowanceHookResponse {
-  const { address: connectedAddress } = useAccount();
+  const { address: connectedAddress } = useConnection();
   const acct = address || connectedAddress || ZERO_ADDRESS;
   const chainId = useChainId();
 

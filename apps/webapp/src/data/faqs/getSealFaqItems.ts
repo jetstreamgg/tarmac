@@ -10,7 +10,7 @@ If you still have positions open, please exit them now.`,
     {
       question: 'How are Seal Reward Rates determined?',
       answer:
-        'Seal reward rates are determined by Sky ecosystem governance through a process of decentralised onchain voting.',
+        'Seal reward rates are determined by Sky Ecosystem Governance through a process of decentralized onchain voting.',
       index: 1
     },
     {
@@ -23,7 +23,7 @@ If you still have positions open, please exit them now.`,
     {
       question: 'How is the borrow rate determined?',
       answer:
-        'The debt ceiling and borrow rate are parameters determined by Sky ecosystem governance through a process of decentralised onchain voting. Borrow rate fees accumulate automatically per block and get added to the total debt.',
+        'The debt ceiling and borrow rate are parameters determined by Sky Ecosystem Governance through a process of decentralized onchain voting. Borrow rate fees accumulate automatically per block and get added to the total debt.',
       index: 3
     },
     {
@@ -38,13 +38,13 @@ If you still have positions open, please exit them now.`,
 
 Unsealing requires the payment of an exit fee, which is a percentage of the total amount of tokens that you have sealed in that position. The fee is automatically subtracted from that total amount, and then burnt, removing the tokens from circulation. Your accumulated rewards are not affected.
 
-The exit fee is a risk parameter managed and determined (regardless of position duration) by Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that it is determined the moment you unseal your MKR.`,
+The exit fee is a risk parameter managed and determined (regardless of position duration) by Sky Ecosystem Governance. The exit fee applies at unsealing, not at sealing, which means that it is determined the moment you unseal your MKR.`,
       index: 5
     },
     {
       question: 'Where can I learn about Sky Ecosystem Governance?',
       answer:
-        'For a deep dive into the facets and checks and balances of Sky ecosystem governance, please refer to the [Sky Forum](https://forum.sky.money/), the [Sky Voting Portal](https://vote.sky.money/) and the [Sky Atlas](https://sky-atlas.powerhouse.io/)—the source of truth behind the Sky project, superseding and overriding all other competing rules or decisions.',
+        'For a deep dive into the facets and checks and balances of Sky Ecosystem Governance, please refer to the [Sky Forum](https://forum.sky.money/), the [Sky Voting Portal](https://vote.sky.money/) and the [Sky Atlas](https://sky-atlas.io/)—the source of truth behind the Sky project, superseding and overriding all other competing rules or decisions.',
       index: 6
     }
   ];

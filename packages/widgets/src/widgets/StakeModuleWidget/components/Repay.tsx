@@ -28,9 +28,10 @@ import {
 import { formatUnits } from 'viem';
 import { RiskSlider } from '@widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor } from '../lib/utils';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { useRiskSlider } from '../hooks/useRiskSlider';
 import { getTooltipById } from '../../../data/tooltips';
+import { DelegateCheckbox } from './DelegateCheckbox';
 
 const { usds } = TOKENS;
 
@@ -276,7 +277,7 @@ const PositionManagerOverviewContainer = ({
 };
 
 export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolean }) => {
-  const { address } = useAccount();
+  const { address } = useConnection();
   const chainId = useChainId();
   const ilkName = getIlkName(2);
 
@@ -385,7 +386,10 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
 
   const isShowingDustRange = dustDelta > 0n && (usdsBalance?.value || 0n) >= (existingVault?.debtValue || 0n);
 
-  const shouldShowGauge = maxRepayableAmount < (usdsBalance?.value || 0n) && !isShowingDustRange;
+  const shouldShowGauge =
+    (existingVault?.debtValue || 0n) > 0n &&
+    maxRepayableAmount < (usdsBalance?.value || 0n) &&
+    !isShowingDustRange;
 
   const getLimitText = () => {
     if ((existingVault?.debtValue || 0n) <= 0n) {
@@ -426,7 +430,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
         balance={maxRepayableAmount}
         limitText={getLimitText()}
         showGauge={shouldShowGauge}
-        hideIcon={isShowingDustRange}
+        hideIcon={isShowingDustRange || (existingVault?.debtValue || 0n) <= 0n}
         value={debouncedUsdsToWipe}
         onChange={val => {
           setWipeAll(false);
@@ -442,7 +446,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
       />
 
       {shouldShowGauge ? (
-        <div className="ml-3 mt-2 flex items-start text-white">
+        <div className="mt-2 ml-3 flex items-start text-white">
           <Info height={15} width={16} className="mt-1 shrink-0" />
           <Text variant="small" className="ml-2">
             {t`You cannot repay your full USDS balance of ${formatBigInt(usdsBalance?.value || 0n, {
@@ -461,6 +465,8 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
         existingVault={existingVault}
         vaultNoBorrow={simulatedVaultNoBorrow}
       />
+
+      <DelegateCheckbox isVisible={!!simulatedVault} />
 
       <PositionManagerOverviewContainer
         simulatedVault={simulatedVault}

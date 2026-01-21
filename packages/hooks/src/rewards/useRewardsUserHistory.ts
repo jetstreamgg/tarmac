@@ -4,7 +4,7 @@ import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '.
 import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, RewardUserHistoryResponse } from './rewards';
-import { useAccount, useChainId } from 'wagmi';
+import { useConnection, useChainId } from 'wagmi';
 import { isTestnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
 
 async function fetchRewardsUserHistory(
@@ -83,7 +83,7 @@ export function useRewardsUserHistory({
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardUserHistoryItem[] } {
   const currentChainId = useChainId();
-  const { address: userAddress } = useAccount();
+  const { address: userAddress } = useConnection();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
   //this hook is only used for mainnet, update this if this ever changes
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;

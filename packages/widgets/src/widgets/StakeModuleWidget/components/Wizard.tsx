@@ -22,7 +22,8 @@ export const Wizard = ({
   batchEnabled,
   setBatchEnabled,
   isBatchTransaction,
-  legalBatchTxUrl
+  legalBatchTxUrl,
+  onNoChangesDetected
 }: {
   isConnectedAndEnabled: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -36,6 +37,7 @@ export const Wizard = ({
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
   legalBatchTxUrl?: string;
+  onNoChangesDetected?: (hasNoChanges: boolean) => void;
 }) => {
   const chainId = useChainId();
   const { widgetState, txStatus } = useContext(WidgetContext);
@@ -72,6 +74,7 @@ export const Wizard = ({
           setBatchEnabled={setBatchEnabled}
           isBatchTransaction={isBatchTransaction}
           legalBatchTxUrl={legalBatchTxUrl}
+          onNoChangesDetected={onNoChangesDetected}
         />
       )}
     </div>

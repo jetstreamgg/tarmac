@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { TermsMarkdownRenderer } from '@/modules/ui/components/markdown/TermsMarkdownRenderer';
-import { useSignMessage, useAccount, useDisconnect } from 'wagmi';
+import { useSignMessage, useConnection, useDisconnect } from 'wagmi';
 import { useConnectedContext } from '../context/ConnectedContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
@@ -19,7 +19,7 @@ export function TermsModal() {
   const [isChecked, setIsChecked] = useState(false);
   const [signStatus, setSignStatus] = useState<'idle' | 'loading' | 'signing' | 'error'>('idle');
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
-  const { address, chainId } = useAccount();
+  const { address, chainId } = useConnection();
   const { disconnect } = useDisconnect();
   const [termsMarkdown] = useState<string>(getTermsContent());
 
