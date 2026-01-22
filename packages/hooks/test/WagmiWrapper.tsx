@@ -26,6 +26,12 @@ function extendedMock(params: MockParameters) {
           get(target, prop) {
             if (prop === 'request') {
               return async (args: EIP1193Parameters<WalletRpcSchema>) => {
+                // Handle eth_accounts to return our test wallet address
+                // This ensures simulations use the correct sender address
+                if (args.method === 'eth_accounts') {
+                  return params.accounts;
+                }
+
                 // Handle wallet_getCapabilities method
                 if (args.method === 'wallet_getCapabilities') {
                   return {

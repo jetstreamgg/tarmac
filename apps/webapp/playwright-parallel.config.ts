@@ -7,7 +7,7 @@ export default defineConfig({
   fullyParallel: true,
 
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  retries: process.env.CI ? 0 : 0,
 
   // Set number of parallel workers (configurable, default 6)
   workers: process.env.TEST_WORKERS ? parseInt(process.env.TEST_WORKERS) : 6,
@@ -42,7 +42,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 }
       },
-      // Test match patterns - include only converted parallel tests
+      // All E2E tests - unified VNet fork (has Curve pool configured)
       testMatch: [
         '**/mainnet-savings.spec.ts',
         '**/base-trade.spec.ts',
@@ -59,18 +59,28 @@ export default defineConfig({
         '**/la-u-s.spec.ts',
         '**/stake.spec.ts',
         '**/landing.spec.ts',
-        '**/expert-stusds.spec.ts',
         '**/upgrade.spec.ts',
         '**/unstake-repay.spec.ts',
         '**/chatbot.spec.ts',
-        '**/pane-visibility.spec.ts'
-        // Add more test patterns as we convert them
+        '**/pane-visibility.spec.ts',
+        '**/expert-stusds.spec.ts',
+        '**/stusds-provider-switching.spec.ts'
       ]
+    },
+    {
+      name: 'chromium-alternate',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 }
+      },
+      // Alternate VNet tests - for tests requiring a different fork state
+      // Add test patterns here when you need tests to run on alternate VNet
+      testMatch: ['**/alternate-sample.spec.ts']
     }
   ],
 
   webServer: {
-    command: 'VITE_PARALLEL_TEST=true pnpm dev:mock',
+    command: `VITE_PARALLEL_TEST=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,
