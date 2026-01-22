@@ -12,7 +12,7 @@ import { NetworkName } from './utils/constants';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function revertToSnapshot(network: NetworkName, snapshotId: string): Promise<void> {
+export async function revertToSnapshot(network: NetworkName, snapshotId: string): Promise<void> {
   const rpcUrl = await getRpcUrlFromFile(network);
 
   const response = await fetch(rpcUrl, {
@@ -31,13 +31,24 @@ async function revertToSnapshot(network: NetworkName, snapshotId: string): Promi
     throw new Error(`Failed to revert snapshot for ${network}: ${result.error.message}`);
   }
 
-  console.log(`  ⏮️  Reverted ${network} to snapshot: ${snapshotId}`);
+  console.log(`  ⬅️  Reverted ${network} to snapshot: ${snapshotId}`);
 }
 
 async function main() {
   console.log('🔄 Reverting VNets to snapshots...');
 
-  const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
+  // Detect if we're running alternate tests based on command or project filter
+  const projectArg = process.argv.find(arg => arg.includes('--project'));
+  const isAlternateProject =
+    projectArg?.includes('chromium-alternate') || process.env.USE_ALTERNATE_VNET === 'true';
+
+  const snapshotFileName = isAlternateProject
+    ? 'persistent-vnet-snapshots-alternate.json'
+    : 'persistent-vnet-snapshots.json';
+  const snapshotFile = path.join(__dirname, snapshotFileName);
+
+  console.log(`Using snapshot file: ${snapshotFileName}`);
+  console.log(isAlternateProject ? '🔵 Alternate mode detected' : '🔵 Standard mode detected');
 
   try {
     const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
