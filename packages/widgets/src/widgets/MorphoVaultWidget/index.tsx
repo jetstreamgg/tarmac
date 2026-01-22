@@ -368,11 +368,12 @@ const MorphoVaultWidgetWrapped = ({
   // Set widget button disabled state
   useEffect(() => {
     setIsDisabled(
-      isConnectedAndEnabled &&
+      txStatus === TxStatus.IDLE &&
+        isConnectedAndEnabled &&
         ((widgetState.action === MorphoVaultAction.SUPPLY && supplyDisabled) ||
           (widgetState.action === MorphoVaultAction.WITHDRAW && withdrawDisabled))
     );
-  }, [widgetState.action, withdrawDisabled, isConnectedAndEnabled, supplyDisabled]);
+  }, [widgetState.action, withdrawDisabled, isConnectedAndEnabled, supplyDisabled, txStatus]);
 
   // Set loading state
   useEffect(() => {
