@@ -111,10 +111,12 @@ export const MorphoVaultTransactionStatus = ({
           )
         );
 
-        if (isBatchTransaction) setStep(2);
-        else if (flowTxStatus !== TxStatus.SUCCESS) {
-          if (flowNeedsAllowance) setStep(1);
-          else setStep(2);
+        if (isBatchTransaction || flowTxStatus === TxStatus.SUCCESS) {
+          setStep(2);
+        } else if (flowNeedsAllowance) {
+          setStep(1);
+        } else {
+          setStep(2);
         }
       }
     } else if (flow === MorphoVaultFlow.WITHDRAW) {
