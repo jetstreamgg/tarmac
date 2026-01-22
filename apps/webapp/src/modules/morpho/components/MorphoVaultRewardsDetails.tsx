@@ -1,4 +1,4 @@
-import { useMorphoVaultRewards, Token } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultRewards } from '@jetstreamgg/sky-hooks';
 import { RewardsBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
 
@@ -18,11 +18,10 @@ export function MorphoVaultRewardsDetails({ vaultAddress }: MorphoVaultRewardsDe
   const rewardCards = rewardsData?.rewards
     .filter(r => r.pending > 0n)
     .map(reward => {
-      const token: Token = {
+      const token = {
         symbol: reward.tokenSymbol,
         name: reward.tokenSymbol,
-        decimals: reward.tokenDecimals,
-        address: { 1: reward.tokenAddress }
+        decimals: reward.tokenDecimals
       };
 
       return (
@@ -39,11 +38,10 @@ export function MorphoVaultRewardsDetails({ vaultAddress }: MorphoVaultRewardsDe
 
   // Show loading state
   if (isLoading) {
-    const loadingToken: Token = {
+    const loadingToken = {
       symbol: '',
       name: '',
-      decimals: 18,
-      address: {}
+      decimals: 18
     };
 
     return (

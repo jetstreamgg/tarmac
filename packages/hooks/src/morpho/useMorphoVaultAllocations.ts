@@ -1,206 +1,43 @@
 import { useQuery } from '@tanstack/react-query';
 import { useChainId, usePublicClient } from 'wagmi';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { ReadHook } from '../hooks';
-import { MORPHO_API_URL } from './constants';
+import {
+  MORPHO_API_URL,
+  MORPHO_MARKET_V1_ADAPTER_ABI,
+  MORPHO_VAULT_V1_ADAPTER_ABI,
+  MorphoAdapterType,
+  VAULT_V2_ADAPTERS_QUERY
+} from './constants';
 import { isTestnetId, formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
 import { PublicClient } from 'viem';
+import type {
+  MorphoIdleLiquidityAllocation,
+  MorphoMarketAllocation,
+  MorphoV1VaultAllocation,
+  MorphoVaultAllocationsData,
+  MorphoVaultAllocationsHook,
+  MorphoVaultV2AdaptersApiResponse
+} from './morpho';
+import {
+  fetchMarketData,
+  fetchV1VaultBasicData,
+  readMarketIdsFromAdapter,
+  readV1VaultFromAdapter
+} from './helpers';
 
 /**
- * Minimal ABI for MorphoVaultV1Adapter to read the underlying V1 vault address.
- */
-const MORPHO_VAULT_V1_ADAPTER_ABI = [
-  {
-    inputs: [],
-    name: 'morphoVaultV1',
-    outputs: [{ type: 'address' }],
-    stateMutability: 'view',
-    type: 'function'
-  }
-] as const;
-
-/**
- * API response type for Morpho V2 vault adapters query.
- */
-type MorphoVaultV2AdaptersApiResponse = {
-  data: {
-    vaultV2ByAddress: {
-      address: string;
-      symbol: string;
-      asset: {
-        symbol: string;
-        decimals: number;
-      };
-      totalAssets: string;
-      totalAssetsUsd: number;
-      /** Idle (undeployed) assets in USD */
-      idleAssetsUsd: number;
-      adapters: {
-        items: Array<{
-          address: string;
-          assets: string;
-          assetsUsd: number;
-          type: string;
-        }>;
-      };
-    } | null;
-  };
-};
-
-/**
- * API response type for Morpho V1 vault basic data query (name only, no allocations).
- */
-type MorphoVaultV1BasicDataApiResponse = {
-  data: {
-    vaultByAddress: {
-      address: string;
-      name: string;
-      symbol: string;
-      state: {
-        netApy: number;
-      };
-    } | null;
-  };
-};
-
-/** V1 vault allocation from the V2 vault */
-export type MorphoV1VaultAllocation = {
-  /** V1 vault contract address */
-  vaultAddress: `0x${string}`;
-  /** V1 vault name (e.g., "Steakhouse USDC") */
-  vaultName: string;
-  /** Formatted assets allocation (e.g., "5.93M") */
-  formattedAssets: string;
-  /** Formatted assets in USD (e.g., "$5.93M") */
-  formattedAssetsUsd: string;
-  /** Formatted net APY (e.g., "3.68%") */
-  formattedNetApy: string;
-};
-
-/** Idle liquidity allocation (direct market exposure without collateral) */
-export type MorphoIdleLiquidityAllocation = {
-  /** Asset symbol (e.g., "USDC") */
-  assetSymbol: string;
-  /** Formatted assets allocation (e.g., "0") */
-  formattedAssets: string;
-  /** Formatted assets in USD (e.g., "$0") */
-  formattedAssetsUsd: string;
-};
-
-export type MorphoVaultAllocationsData = {
-  /** List of V1 vault allocations */
-  v1Vaults: MorphoV1VaultAllocation[];
-  /** Idle liquidity allocations */
-  idleLiquidity: MorphoIdleLiquidityAllocation[];
-  /** Asset symbol (e.g., "USDC") */
-  assetSymbol: string;
-};
-
-export type MorphoVaultAllocationsHook = ReadHook & {
-  data?: MorphoVaultAllocationsData;
-};
-
-/**
- * GraphQL query for Morpho V2 vault adapters.
- * V2 vaults allocate to V1 vaults through adapters.
- */
-const VAULT_V2_ADAPTERS_QUERY = `
-  query VaultV2Adapters($address: String!, $chainId: Int!) {
-    vaultV2ByAddress(address: $address, chainId: $chainId) {
-      address
-      symbol
-      asset {
-        symbol
-        decimals
-      }
-      totalAssets
-      totalAssetsUsd
-      idleAssetsUsd
-      adapters {
-        items {
-          address
-          assets
-          assetsUsd
-          type
-        }
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL query for Morpho V1 vault basic data (name, symbol, net APY).
- */
-const VAULT_V1_BASIC_DATA_QUERY = `
-  query VaultV1BasicData($address: String!, $chainId: Int!) {
-    vaultByAddress(address: $address, chainId: $chainId) {
-      address
-      name
-      symbol
-      state {
-        netApy
-      }
-    }
-  }
-`;
-
-/**
- * Read the underlying V1 vault address from a MorphoVaultV1Adapter contract.
- */
-async function readV1VaultFromAdapter(
-  publicClient: PublicClient,
-  adapterAddress: `0x${string}`
-): Promise<`0x${string}` | null> {
-  try {
-    const v1VaultAddress = await publicClient.readContract({
-      address: adapterAddress,
-      abi: MORPHO_VAULT_V1_ADAPTER_ABI,
-      functionName: 'morphoVaultV1'
-    });
-    return v1VaultAddress as `0x${string}`;
-  } catch (error) {
-    console.error(`Failed to read V1 vault from adapter ${adapterAddress}:`, error);
-    return null;
-  }
-}
-
-/**
- * Fetch V1 vault basic data (name, symbol, APY).
- */
-async function fetchV1VaultBasicData(
-  vaultAddress: string,
-  chainId: number
-): Promise<MorphoVaultV1BasicDataApiResponse['data']['vaultByAddress']> {
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: VAULT_V1_BASIC_DATA_QUERY,
-      variables: {
-        address: vaultAddress.toLowerCase(),
-        chainId
-      }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: MorphoVaultV1BasicDataApiResponse = await response.json();
-  return result.data.vaultByAddress;
-}
-
-/**
- * Fetch V2 vault direct allocations (V1 vaults and idle liquidity).
+ * Fetch V2 vault direct allocations (V1 vaults, direct markets, and idle liquidity).
  *
- * V2 vaults allocate to V1 vaults via adapters. This function:
+ * V2 vaults can allocate to:
+ * - V1 vaults via MetaMorpho adapters
+ * - Direct Morpho markets via MorphoMarketV1 adapters
+ * - Idle liquidity (undeployed assets)
+ *
+ * This function:
  * 1. Queries the V2 vault to get its adapters
- * 2. For MetaMorpho adapters: reads the adapter contract to get V1 vault address
- * 3. Queries each V1 vault's basic data (name, symbol, APY) via API
+ * 2. For MetaMorpho adapters: reads the adapter contract to get V1 vault address and fetches vault data
+ * 3. For MorphoMarketV1 adapters: reads the adapter contract to get market ID and fetches market data
  * 4. Returns direct allocations without drilling into V1 vault market exposures
  */
 async function fetchMorphoVaultAllocations(
@@ -238,7 +75,10 @@ async function fetchMorphoVaultAllocations(
   const assetSymbol = asset.symbol;
 
   // Filter adapters by type
-  const metaMorphoAdapters = adapters.items.filter(adapter => adapter.type === 'MetaMorpho');
+  const metaMorphoAdapters = adapters.items.filter(adapter => adapter.type === MorphoAdapterType.MetaMorpho);
+  const morphoMarketAdapters = adapters.items.filter(
+    adapter => adapter.type === MorphoAdapterType.MorphoMarketV1
+  );
 
   // Build idle liquidity allocation (always show it, even if 0)
   // Note: idleAssetsUsd from the API is the source of truth for idle liquidity
@@ -256,89 +96,213 @@ async function fetchMorphoVaultAllocations(
     }
   ];
 
-  if (metaMorphoAdapters.length === 0) {
+  if (metaMorphoAdapters.length === 0 && morphoMarketAdapters.length === 0) {
     return {
       v1Vaults: [],
+      markets: [],
       idleLiquidity,
       assetSymbol
     };
   }
 
-  // Step 2: Read each adapter contract to get the underlying V1 vault address
-  const v1VaultAddressPromises = metaMorphoAdapters.map(adapter =>
-    readV1VaultFromAdapter(publicClient, adapter.address as `0x${string}`)
-  );
-  const v1VaultAddresses = await Promise.all(v1VaultAddressPromises);
+  // Calculate asset price per unit using total vault data (used for V1 vaults and markets)
+  const assetPriceUsd = totalAssetsUsd > 0 ? totalAssetsUsd / Number(totalAssets) : 0;
 
-  // Create a map of adapter address to adapter data for later lookup
-  const adapterDataMap = new Map<string, (typeof metaMorphoAdapters)[0]>();
-  metaMorphoAdapters.forEach((adapter, index) => {
-    const v1Address = v1VaultAddresses[index];
-    if (v1Address) {
-      adapterDataMap.set(v1Address.toLowerCase(), adapter);
-    }
-  });
-
-  // Filter out any null addresses (failed reads)
-  const validV1Vaults = v1VaultAddresses.filter((addr): addr is `0x${string}` => addr !== null);
-
-  if (validV1Vaults.length === 0) {
-    return {
-      v1Vaults: [],
-      idleLiquidity,
-      assetSymbol
-    };
-  }
-
-  // Step 3: Query each V1 vault for its basic data (name, symbol, APY) via API
-  const v1VaultPromises = validV1Vaults.map(v1Address => fetchV1VaultBasicData(v1Address, chainId));
-  const v1VaultResults = await Promise.all(v1VaultPromises);
-
-  // Step 4: Build V1 vault allocations
+  // Step 2: Process MetaMorpho adapters (V1 vaults)
   const v1Vaults: MorphoV1VaultAllocation[] = [];
 
-  for (let i = 0; i < v1VaultResults.length; i++) {
-    const v1Vault = v1VaultResults[i];
-    if (!v1Vault) continue;
+  if (metaMorphoAdapters.length > 0) {
+    // Read each adapter contract to get the underlying V1 vault address and real assets
+    const v1VaultAddressPromises = metaMorphoAdapters.map(adapter =>
+      readV1VaultFromAdapter(publicClient, adapter.address as `0x${string}`)
+    );
+    const v1VaultAddresses = await Promise.all(v1VaultAddressPromises);
 
-    const v1VaultAddress = validV1Vaults[i];
-    const adapterData = adapterDataMap.get(v1VaultAddress.toLowerCase());
-
-    if (!adapterData) continue;
-
-    const assetsBigInt = BigInt(adapterData.assets);
-
-    v1Vaults.push({
-      vaultAddress: v1VaultAddress,
-      vaultName: v1Vault.name,
-      formattedAssets: formatBigInt(assetsBigInt, { unit: assetDecimals, compact: true }),
-      formattedAssetsUsd: `$${formatNumber(adapterData.assetsUsd, { compact: true })}`,
-      formattedNetApy: `${(v1Vault.state.netApy * 100).toFixed(2)}%`
+    // Read real assets from each adapter in parallel
+    const realAssetsResults = await publicClient.multicall({
+      contracts: metaMorphoAdapters.map(adapter => ({
+        address: adapter.address as `0x${string}`,
+        abi: MORPHO_VAULT_V1_ADAPTER_ABI,
+        functionName: 'realAssets' as const
+      }))
     });
+
+    // Create a map of V1 vault address to (real assets, real assets USD)
+    type V1VaultInfo = {
+      realAssets: bigint;
+      realAssetsUsd: number;
+    };
+    const v1VaultInfoMap = new Map<string, V1VaultInfo>();
+    metaMorphoAdapters.forEach((adapter, index) => {
+      const v1Address = v1VaultAddresses[index];
+      const realAssetsResult = realAssetsResults[index];
+      if (v1Address && realAssetsResult.status === 'success') {
+        const realAssets = realAssetsResult.result as bigint;
+        const realAssetsUsd = Number(realAssets) * assetPriceUsd;
+        v1VaultInfoMap.set(v1Address.toLowerCase(), {
+          realAssets,
+          realAssetsUsd
+        });
+      }
+    });
+
+    // Filter out any null addresses (failed reads)
+    const validV1Vaults = v1VaultAddresses.filter((addr): addr is `0x${string}` => addr !== null);
+
+    if (validV1Vaults.length > 0) {
+      // Query each V1 vault for its basic data (name, symbol, APY) via API
+      const v1VaultPromises = validV1Vaults.map(v1Address => fetchV1VaultBasicData(v1Address, chainId));
+      const v1VaultResults = await Promise.all(v1VaultPromises);
+
+      // Build V1 vault allocations
+      for (let i = 0; i < v1VaultResults.length; i++) {
+        const v1Vault = v1VaultResults[i];
+        if (!v1Vault) continue;
+
+        const v1VaultAddress = validV1Vaults[i];
+        const vaultInfo = v1VaultInfoMap.get(v1VaultAddress.toLowerCase());
+
+        if (!vaultInfo) continue;
+
+        v1Vaults.push({
+          vaultAddress: v1VaultAddress,
+          vaultName: v1Vault.name,
+          formattedAssets: formatBigInt(vaultInfo.realAssets, { unit: assetDecimals, compact: true }),
+          formattedAssetsUsd: `$${formatNumber(vaultInfo.realAssetsUsd, { compact: true })}`,
+          formattedNetApy: `${(v1Vault.state.netApy * 100).toFixed(2)}%`
+        });
+      }
+
+      // Sort V1 vaults by real assets (highest first)
+      v1Vaults.sort((a, b) => {
+        const aAssets = v1VaultInfoMap.get(a.vaultAddress.toLowerCase())?.realAssets ?? 0n;
+        const bAssets = v1VaultInfoMap.get(b.vaultAddress.toLowerCase())?.realAssets ?? 0n;
+        return Number(bAssets - aAssets);
+      });
+    }
   }
 
-  // Sort V1 vaults by assets USD (highest first)
-  v1Vaults.sort((a, b) => {
-    const aUsd = adapterDataMap.get(a.vaultAddress.toLowerCase())?.assetsUsd ?? 0;
-    const bUsd = adapterDataMap.get(b.vaultAddress.toLowerCase())?.assetsUsd ?? 0;
-    return bUsd - aUsd;
-  });
+  // Step 3: Process MorphoMarketV1 adapters (direct markets)
+  const markets: MorphoMarketAllocation[] = [];
+
+  if (morphoMarketAdapters.length > 0) {
+    // Read all market IDs from each adapter (each adapter can have multiple markets)
+    const allMarketIdsPromises = morphoMarketAdapters.map(adapter =>
+      readMarketIdsFromAdapter(publicClient, adapter.address as `0x${string}`)
+    );
+    const allMarketIdsArrays = await Promise.all(allMarketIdsPromises);
+
+    // Read real assets from each adapter in parallel
+    const realAssetsResults = await publicClient.multicall({
+      contracts: morphoMarketAdapters.map(adapter => ({
+        address: adapter.address as `0x${string}`,
+        abi: MORPHO_MARKET_V1_ADAPTER_ABI,
+        functionName: 'realAssets' as const
+      }))
+    });
+
+    // Create a map of adapter address to (real assets, real assets USD)
+    type AdapterRealAssets = {
+      realAssets: bigint;
+      realAssetsUsd: number;
+    };
+    const adapterRealAssetsMap = new Map<string, AdapterRealAssets>();
+    morphoMarketAdapters.forEach((adapter, index) => {
+      const realAssetsResult = realAssetsResults[index];
+      if (realAssetsResult.status === 'success') {
+        const realAssets = realAssetsResult.result as bigint;
+        const realAssetsUsd = Number(realAssets) * assetPriceUsd;
+        adapterRealAssetsMap.set(adapter.address.toLowerCase(), { realAssets, realAssetsUsd });
+      }
+    });
+
+    // Build a list of (marketId, realAssets, realAssetsUsd) tuples
+    type MarketAdapterPair = {
+      marketId: string;
+      realAssets: bigint;
+      realAssetsUsd: number;
+    };
+    const marketAdapterPairs: MarketAdapterPair[] = [];
+
+    morphoMarketAdapters.forEach((adapter, index) => {
+      const marketIds = allMarketIdsArrays[index];
+      const adapterAssets = adapterRealAssetsMap.get(adapter.address.toLowerCase());
+      if (adapterAssets) {
+        marketIds.forEach(marketId => {
+          marketAdapterPairs.push({
+            marketId,
+            realAssets: adapterAssets.realAssets,
+            realAssetsUsd: adapterAssets.realAssetsUsd
+          });
+        });
+      }
+    });
+
+    if (marketAdapterPairs.length > 0) {
+      // Get unique market IDs for fetching data
+      const uniqueMarketIds = Array.from(new Set(marketAdapterPairs.map(pair => pair.marketId)));
+
+      // Fetch market data for each unique market ID
+      const marketDataPromises = uniqueMarketIds.map(marketId => fetchMarketData(marketId, chainId));
+      const marketDataResults = await Promise.all(marketDataPromises);
+
+      // Create a map of market ID to market data
+      const marketDataMap = new Map<string, NonNullable<Awaited<ReturnType<typeof fetchMarketData>>>>();
+      uniqueMarketIds.forEach((marketId, index) => {
+        const marketData = marketDataResults[index];
+        if (marketData) {
+          marketDataMap.set(marketId, marketData);
+        }
+      });
+
+      // Build market allocations
+      for (const { marketId, realAssets, realAssetsUsd } of marketAdapterPairs) {
+        const marketData = marketDataMap.get(marketId);
+        if (!marketData) continue;
+
+        markets.push({
+          marketId,
+          marketUniqueKey: marketData.uniqueKey,
+          loanAsset: marketData.loanAsset.symbol,
+          collateralAsset: marketData.collateralAsset.symbol,
+          formattedAssets: formatBigInt(realAssets, { unit: assetDecimals, compact: true }),
+          formattedAssetsUsd: `$${formatNumber(realAssetsUsd, { compact: true })}`,
+          formattedNetApy: `${(marketData.state.avgNetSupplyApy * 100).toFixed(2)}%`
+        });
+      }
+
+      // Sort markets by real assets (highest first)
+      markets.sort((a, b) => {
+        const aPair = marketAdapterPairs.find(p => p.marketId === a.marketId);
+        const bPair = marketAdapterPairs.find(p => p.marketId === b.marketId);
+        const aAssets = aPair?.realAssets ?? 0n;
+        const bAssets = bPair?.realAssets ?? 0n;
+        return Number(bAssets - aAssets);
+      });
+    }
+  }
 
   return {
     v1Vaults,
+    markets,
     idleLiquidity,
     assetSymbol
   };
 }
 
 /**
- * Hook for fetching Morpho V2 vault direct allocations (V1 vaults and idle liquidity).
+ * Hook for fetching Morpho V2 vault direct allocations (V1 vaults, direct markets, and idle liquidity).
  *
- * V2 vaults allocate to V1 vaults via MetaMorpho adapters. This hook:
+ * V2 vaults can allocate to:
+ * - V1 vaults via MetaMorpho adapters
+ * - Direct Morpho markets via MorphoMarketV1 adapters
+ * - Idle liquidity (undeployed assets)
+ *
+ * This hook:
  * 1. Queries the Morpho API to get adapter addresses
- * 2. Reads each adapter contract to get the underlying V1 vault address
- * 3. Queries each V1 vault's data (name, symbol, market allocations) via API
- * 4. Returns hierarchical data: V1 vaults with their market exposures
+ * 2. For MetaMorpho adapters: reads the adapter contract and fetches V1 vault data
+ * 3. For MorphoMarketV1 adapters: reads the adapter contract and fetches market data
+ * 4. Returns direct allocations without drilling into V1 vault market exposures
  *
  * @param vaultAddress - The Morpho V2 vault contract address (required)
  */
