@@ -12,7 +12,7 @@ export const WIDGET_NETWORK_REQUIREMENTS: Record<Intent, 'mainnet' | 'multichain
   [Intent.UPGRADE_INTENT]: 'mainnet',
   [Intent.TRADE_INTENT]: 'multichain',
   [Intent.STAKE_INTENT]: 'mainnet',
-  [Intent.EXPERT_INTENT]: 'mainnet',
+  [Intent.EXPERT_INTENT]: 'multichain',
   [Intent.SEAL_INTENT]: 'mainnet'
 };
 
