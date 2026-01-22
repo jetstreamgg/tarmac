@@ -4,6 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
 import { ExternalLink } from 'lucide-react';
 import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
@@ -37,7 +38,9 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
 
   if (
     !allocationsData ||
-    (allocationsData.v1Vaults.length === 0 && allocationsData.idleLiquidity.length === 0)
+    (allocationsData.v1Vaults.length === 0 &&
+      allocationsData.markets.length === 0 &&
+      allocationsData.idleLiquidity.length === 0)
   ) {
     return (
       <Text className="text-textSecondary">
@@ -98,6 +101,48 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                 </Tooltip>
               </div>
               <Text className="text-bullish text-right text-sm">{v1Vault.formattedNetApy}</Text>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Markets Section */}
+      {allocationsData.markets.length > 0 && (
+        <div className="flex flex-col">
+          {/* Section Header */}
+          <div className="py-2">
+            <Text className="text-textSecondary text-xs">
+              <Trans>Markets</Trans>
+            </Text>
+          </div>
+
+          {/* Market Rows */}
+          {allocationsData.markets.map(market => (
+            <div
+              key={market.marketId}
+              className="border-cardSecondary grid grid-cols-3 items-center gap-2 border-b py-2 pl-2"
+            >
+              <div className="flex items-center gap-1.5">
+                <PairTokenIcons
+                  leftToken={market.collateralAsset}
+                  rightToken={market.loanAsset}
+                  chainId={chainId}
+                />
+                <Text className="text-text text-sm">
+                  {market.collateralAsset} / {market.loanAsset}
+                </Text>
+              </div>
+              <div className="flex justify-center">
+                <Tooltip>
+                  <TooltipTrigger className="cursor-default">
+                    <Text className="text-text text-sm">{market.formattedAssets}</Text>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <Text className="text-sm">{market.formattedAssetsUsd}</Text>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <Text className="text-bullish text-right text-sm">{market.formattedNetApy}</Text>
             </div>
           ))}
         </div>

@@ -1,0 +1,102 @@
+import { ReadHook } from '../hooks';
+
+/**
+ * API response type for Morpho V2 vault adapters query.
+ */
+export type MorphoVaultV2AdaptersApiResponse = {
+  data: {
+    vaultV2ByAddress: {
+      address: string;
+      symbol: string;
+      asset: {
+        symbol: string;
+        decimals: number;
+      };
+      totalAssets: string;
+      totalAssetsUsd: number;
+      /** Idle (undeployed) assets in USD */
+      idleAssetsUsd: number;
+      adapters: {
+        items: Array<{
+          address: string;
+          assets: string;
+          assetsUsd: number;
+          type: string;
+        }>;
+      };
+    } | null;
+  };
+};
+
+/**
+ * API response type for Morpho V1 vault basic data query (name only, no allocations).
+ */
+export type MorphoVaultV1BasicDataApiResponse = {
+  data: {
+    vaultByAddress: {
+      address: string;
+      name: string;
+      symbol: string;
+      state: {
+        netApy: number;
+      };
+    } | null;
+  };
+};
+
+/** V1 vault allocation from the V2 vault */
+export type MorphoV1VaultAllocation = {
+  /** V1 vault contract address */
+  vaultAddress: `0x${string}`;
+  /** V1 vault name (e.g., "Steakhouse USDC") */
+  vaultName: string;
+  /** Formatted assets allocation (e.g., "5.93M") */
+  formattedAssets: string;
+  /** Formatted assets in USD (e.g., "$5.93M") */
+  formattedAssetsUsd: string;
+  /** Formatted net APY (e.g., "3.68%") */
+  formattedNetApy: string;
+};
+
+/** Idle liquidity allocation (direct market exposure without collateral) */
+export type MorphoIdleLiquidityAllocation = {
+  /** Asset symbol (e.g., "USDC") */
+  assetSymbol: string;
+  /** Formatted assets allocation (e.g., "0") */
+  formattedAssets: string;
+  /** Formatted assets in USD (e.g., "$0") */
+  formattedAssetsUsd: string;
+};
+
+/** Direct Morpho market allocation */
+export type MorphoMarketAllocation = {
+  /** Market ID (32-byte hash) */
+  marketId: string;
+  /** Market unique key (for display) */
+  marketUniqueKey: string;
+  /** Loan asset symbol */
+  loanAsset: string;
+  /** Collateral asset symbol */
+  collateralAsset: string;
+  /** Formatted assets allocation (e.g., "5.93M") */
+  formattedAssets: string;
+  /** Formatted assets in USD (e.g., "$5.93M") */
+  formattedAssetsUsd: string;
+  /** Formatted net APY (e.g., "3.68%") */
+  formattedNetApy: string;
+};
+
+export type MorphoVaultAllocationsData = {
+  /** List of V1 vault allocations */
+  v1Vaults: MorphoV1VaultAllocation[];
+  /** List of direct market allocations */
+  markets: MorphoMarketAllocation[];
+  /** Idle liquidity allocations */
+  idleLiquidity: MorphoIdleLiquidityAllocation[];
+  /** Asset symbol (e.g., "USDC") */
+  assetSymbol: string;
+};
+
+export type MorphoVaultAllocationsHook = ReadHook & {
+  data?: MorphoVaultAllocationsData;
+};
