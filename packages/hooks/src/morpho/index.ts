@@ -8,13 +8,13 @@ export {
   type MorphoVaultRateHook,
   type MorphoRewardData
 } from './useMorphoVaultRate';
+export { useMorphoVaultAllocations } from './useMorphoVaultAllocations';
 export {
-  useMorphoVaultAllocations,
   type MorphoV1VaultAllocation,
   type MorphoIdleLiquidityAllocation,
   type MorphoVaultAllocationsData,
   type MorphoVaultAllocationsHook
-} from './useMorphoVaultAllocations';
+} from './morpho';
 export {
   useMorphoVaultRewards,
   type MorphoVaultReward,
