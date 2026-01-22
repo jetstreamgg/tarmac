@@ -1,6 +1,6 @@
 import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
-import { steakhousePrimeInstantVaultAbi } from '../generated';
+import { usdsRiskCapitalVaultAbi } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
 /**
@@ -46,7 +46,7 @@ export function useMorphoVaultRedeem({
 
   return useWriteContractFlow({
     address: vaultAddress,
-    abi: steakhousePrimeInstantVaultAbi,
+    abi: usdsRiskCapitalVaultAbi,
     functionName: 'redeem',
     // ERC-4626 redeem signature: redeem(uint256 shares, address receiver, address owner)
     // shares: the amount of vault shares to burn

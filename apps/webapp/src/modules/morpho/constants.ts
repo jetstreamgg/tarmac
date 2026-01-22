@@ -1,4 +1,4 @@
-import { Token, steakhousePrimeInstantVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
+import { Token, usdsRiskCapitalVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
 
 /**
  * Configuration for a Morpho vault
@@ -18,9 +18,9 @@ export type MorphoVaultConfig = {
  */
 export const MORPHO_VAULTS: MorphoVaultConfig[] = [
   {
-    name: 'Steakhouse Prime Instant',
-    vaultAddress: steakhousePrimeInstantVaultAddress,
-    assetToken: TOKENS.usdc
+    name: 'USDS Risk Capital',
+    vaultAddress: usdsRiskCapitalVaultAddress,
+    assetToken: TOKENS.usds
   }
   // Add more vaults here as needed:
   // {

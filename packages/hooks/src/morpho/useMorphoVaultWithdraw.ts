@@ -1,6 +1,6 @@
 import { useConnection, useChainId } from 'wagmi';
 import { WriteHook, WriteHookParams } from '../hooks';
-import { steakhousePrimeInstantVaultAbi } from '../generated';
+import { usdsRiskCapitalVaultAbi } from '../generated';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
 /**
@@ -42,7 +42,7 @@ export function useMorphoVaultWithdraw({
 
   return useWriteContractFlow({
     address: vaultAddress,
-    abi: steakhousePrimeInstantVaultAbi,
+    abi: usdsRiskCapitalVaultAbi,
     functionName: 'withdraw',
     // ERC-4626 withdraw signature: withdraw(uint256 assets, address receiver, address owner)
     // receiver: who receives the underlying assets (the user)

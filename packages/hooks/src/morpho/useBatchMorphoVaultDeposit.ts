@@ -1,6 +1,6 @@
 import { useConnection, useChainId } from 'wagmi';
 import { BatchWriteHook, BatchWriteHookParams } from '../hooks';
-import { steakhousePrimeInstantVaultAbi } from '../generated';
+import { usdsRiskCapitalVaultAbi } from '../generated';
 import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useTransactionFlow } from '../shared/useTransactionFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
@@ -66,7 +66,7 @@ export function useBatchMorphoVaultDeposit({
   // receiver is the connected address - they receive the vault shares
   const depositCall = getWriteContractCall({
     to: vaultAddress,
-    abi: steakhousePrimeInstantVaultAbi,
+    abi: usdsRiskCapitalVaultAbi,
     functionName: 'deposit',
     args: [amount, connectedAddress!]
   });
