@@ -51,7 +51,8 @@ export const morphoMerklDistributorAbi = [
  */
 export const morphoMerklDistributorAddress = {
   1: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
-  314310: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
+  314310: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+  8453: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
 } as const;
 
 /**
@@ -11512,6 +11513,32 @@ export const steakhousePrimeInstantVaultAddress = {
 export const steakhousePrimeInstantVaultConfig = {
   address: steakhousePrimeInstantVaultAddress,
   abi: steakhousePrimeInstantVaultAbi
+} as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// gauntletUsdcPrimeVault
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Base Basescan__](https://basescan.org/address/0x050cE30b927Da55177A4914EC73480238BAD56f0)
+ */
+export const gauntletUsdcPrimeVaultAddress = {
+  8453: '0x050cE30b927Da55177A4914EC73480238BAD56f0'
+} as const;
+
+/**
+ * [__View Contract on Base Basescan__](https://basescan.org/address/0x050cE30b927Da55177A4914EC73480238BAD56f0)
+ *
+ * Uses the same ABI as steakhousePrimeInstantVault (MetaMorpho ERC-4626 interface)
+ */
+export const gauntletUsdcPrimeVaultAbi = steakhousePrimeInstantVaultAbi;
+
+/**
+ * [__View Contract on Base Basescan__](https://basescan.org/address/0x050cE30b927Da55177A4914EC73480238BAD56f0)
+ */
+export const gauntletUsdcPrimeVaultConfig = {
+  address: gauntletUsdcPrimeVaultAddress,
+  abi: gauntletUsdcPrimeVaultAbi
 } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

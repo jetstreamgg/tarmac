@@ -1,4 +1,9 @@
-import { Token, steakhousePrimeInstantVaultAddress, TOKENS } from '@jetstreamgg/sky-hooks';
+import {
+  Token,
+  steakhousePrimeInstantVaultAddress,
+  gauntletUsdcPrimeVaultAddress,
+  TOKENS
+} from '@jetstreamgg/sky-hooks';
 
 /**
  * Configuration for a Morpho vault
@@ -21,13 +26,12 @@ export const MORPHO_VAULTS: MorphoVaultConfig[] = [
     name: 'Steakhouse Prime Instant',
     vaultAddress: steakhousePrimeInstantVaultAddress,
     assetToken: TOKENS.usdc
+  },
+  {
+    name: 'Gauntlet USDC Prime',
+    vaultAddress: gauntletUsdcPrimeVaultAddress,
+    assetToken: TOKENS.usdc
   }
-  // Add more vaults here as needed:
-  // {
-  //   name: 'Another Vault Name',
-  //   vaultAddress: anotherVaultAddress,
-  //   assetToken: TOKENS.usds
-  // }
 ];
 
 /**

@@ -320,7 +320,8 @@ export const contracts: {
     name: 'MorphoMerklDistributor',
     address: {
       [mainnet.id]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
-      [TENDERLY_CHAIN_ID]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
+      [TENDERLY_CHAIN_ID]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+      [base.id]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
     }
   },
   {
@@ -343,7 +344,7 @@ export const tenderlyContracts: { name: string; address: Record<typeof TENDERLY_
     // }
   ];
 
-export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string}`> }[] = [
+export const l2Contracts: { name: string; address: Partial<Record<L2ChainId, `0x${string}`>> }[] = [
   {
     name: 'usdcL2',
     address: {
@@ -387,6 +388,13 @@ export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string
       [arbitrum.id]: '0xEE2816c1E1eed14d444552654Ed3027abC033A36',
       [optimism.id]: '0x6E53585449142A5E6D5fC918AE6BEa341dC81C68',
       [unichain.id]: '0x1566BFA55D95686a823751298533D42651183988'
+    }
+  },
+  // Morpho vaults on L2
+  {
+    name: 'gauntletUsdcPrimeVault',
+    address: {
+      [base.id]: '0x050cE30b927Da55177A4914EC73480238BAD56f0'
     }
   }
 ];
