@@ -251,10 +251,29 @@ async function validateVnet(
         })
       });
 
+      // Check HTTP-level errors (e.g., 400 Bad Request when VNet is deleted)
+      if (!response.ok) {
+        const text = await response.text();
+        console.log(`  ❌ HTTP error: ${response.status} ${response.statusText}`);
+        console.log(`     Response: ${text.slice(0, 200)}`);
+        // Check for specific VNet not found error
+        if (text.includes('virtual testnet not found') || text.includes('-32006')) {
+          errors.push(`VNet not found (deleted/expired): ${response.statusText}`);
+        } else {
+          errors.push(`HTTP error: ${response.status} ${response.statusText} - ${text.slice(0, 100)}`);
+        }
+        return { network, healthy: false, errors };
+      }
+
       const result = await response.json();
       if (result.error) {
         console.log(`  ❌ RPC error: ${result.error.message}`);
-        errors.push(`RPC error: ${result.error.message}`);
+        // Check for VNet not found in JSON-RPC error
+        if (result.error.code === -32006 || result.error.message?.includes('virtual testnet not found')) {
+          errors.push(`VNet not found (deleted/expired): ${result.error.message}`);
+        } else {
+          errors.push(`RPC error: ${result.error.message}`);
+        }
         return { network, healthy: false, errors };
       }
       console.log(`  ✓ RPC is accessible (block: ${parseInt(result.result, 16)})`);
@@ -308,8 +327,14 @@ export async function validateVnets(skipBalanceCheck = false): Promise<{
 }> {
   console.log('🔍 Validating cached VNets and snapshots...\n');
 
-  // Check if VNet data file exists (at project root: apps/webapp/src/test/e2e -> project root)
-  const vnetDataFile = path.join(__dirname, '..', '..', '..', '..', '..', 'tenderlyTestnetData.json');
+  // Determine which VNet data file to use based on environment
+  const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
+  const vnetFileName = useAlternateVnet ? 'tenderlyTestnetData-alternate.json' : 'tenderlyTestnetData.json';
+  const vnetDataFile = path.join(__dirname, '..', '..', '..', '..', '..', vnetFileName);
+
+  if (useAlternateVnet) {
+    console.log('🔵 Using alternate VNet configuration');
+  }
   console.log(`📂 Looking for VNet data file at: ${vnetDataFile}`);
 
   try {
@@ -320,21 +345,25 @@ export async function validateVnets(skipBalanceCheck = false): Promise<{
     console.log('❌ VNet data file not found');
     console.log(`   Searched at: ${vnetDataFile}`);
     console.log('   Current working directory: ' + process.cwd());
-    console.log('   Run: pnpm vnet:fork:ci');
+    const createCommand = useAlternateVnet ? 'pnpm vnet:alternate:fork:ci' : 'pnpm vnet:fork:ci';
+    console.log(`   Run: ${createCommand}`);
     return {
       healthy: false,
       results: [
         {
           network: 'all' as NetworkName,
           healthy: false,
-          errors: ['VNet data file (tenderlyTestnetData.json) not found - run: pnpm vnet:fork:ci']
+          errors: [`VNet data file (${vnetFileName}) not found - run: ${createCommand}`]
         }
       ]
     };
   }
 
   // Load snapshot IDs if they exist
-  const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
+  const snapshotFileName = useAlternateVnet
+    ? 'persistent-vnet-snapshots-alternate.json'
+    : 'persistent-vnet-snapshots.json';
+  const snapshotFile = path.join(__dirname, snapshotFileName);
   console.log(`📂 Looking for snapshot file at: ${snapshotFile}`);
 
   let snapshots: Record<string, string> = {};

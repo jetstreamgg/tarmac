@@ -79,18 +79,12 @@ export type MorphoVaultReward = {
   amount: bigint;
   /** Amount already claimed (raw bigint) */
   claimed: bigint;
-  /** Amount pending/claimable (raw bigint) */
-  pending: bigint;
   /** Formatted total amount (e.g., "2.65") */
   formattedAmount: string;
   /** Formatted claimed amount */
   formattedClaimed: string;
-  /** Formatted pending amount */
-  formattedPending: string;
   /** Total amount value in USD */
   amountUsd: number;
-  /** Pending amount value in USD */
-  pendingUsd: number;
   /** Merkle proofs for claiming */
   proofs: string[];
   /** Merkle root for the distribution */
@@ -102,10 +96,6 @@ export type MorphoVaultReward = {
 export type MorphoVaultRewardsData = {
   /** List of rewards by token */
   rewards: MorphoVaultReward[];
-  /** Total pending rewards value in USD */
-  totalPendingUsd: number;
-  /** Formatted total pending USD (e.g., "$2.95") */
-  formattedTotalPendingUsd: string;
   /** Whether the user has any claimable rewards */
   hasClaimableRewards: boolean;
 };
@@ -115,14 +105,10 @@ export type MorphoVaultRewardsHook = ReadHook & {
 };
 
 /**
- * Filter rewards to only include those related to a given Morpho vaults.
- * Morpho vault rewards have a reason string containing "MorphoVault" or "MorphoVaultV2".
+ * Filter rewards to only include those related to a given Morpho vault.
  */
 function isMorphoVaultReward(breakdown: MerklRewardBreakdown, vaultAddress: `0x${string}`): boolean {
-  return (
-    breakdown.reason.includes('MorphoVault') &&
-    breakdown.reason.toLowerCase().includes(vaultAddress.toLowerCase())
-  );
+  return breakdown.reason.toLowerCase().includes(vaultAddress.toLowerCase());
 }
 
 /**
@@ -154,8 +140,6 @@ async function fetchMorphoVaultRewards(
   if (!chainRewards || chainRewards.rewards.length === 0) {
     return {
       rewards: [],
-      totalPendingUsd: 0,
-      formattedTotalPendingUsd: '$0.00',
       hasClaimableRewards: false
     };
   }
@@ -176,14 +160,11 @@ async function fetchMorphoVaultRewards(
     // Calculate the portion of rewards from Morpho vaults
     const morphoAmount = morphoBreakdowns.reduce((sum, b) => sum + BigInt(b.amount), 0n);
     const morphoClaimed = morphoBreakdowns.reduce((sum, b) => sum + BigInt(b.claimed), 0n);
-    const morphoPending = morphoBreakdowns.reduce((sum, b) => sum + BigInt(b.pending), 0n);
 
     const { token, proofs, root, distributionChainId } = reward;
 
     // Calculate USD values
-    const pendingDecimal = Number(morphoPending) / Math.pow(10, token.decimals);
     const amountDecimal = Number(morphoAmount) / Math.pow(10, token.decimals);
-    const pendingUsd = pendingDecimal * token.price;
     const amountUsd = amountDecimal * token.price;
 
     morphoRewards.push({
@@ -193,26 +174,19 @@ async function fetchMorphoVaultRewards(
       tokenPrice: token.price,
       amount: morphoAmount,
       claimed: morphoClaimed,
-      pending: morphoPending,
       formattedAmount: formatBigInt(morphoAmount, { unit: token.decimals, compact: false, maxDecimals: 2 }),
       formattedClaimed: formatBigInt(morphoClaimed, { unit: token.decimals, compact: false, maxDecimals: 2 }),
-      formattedPending: formatBigInt(morphoPending, { unit: token.decimals, compact: false, maxDecimals: 2 }),
       amountUsd,
-      pendingUsd,
       proofs,
       root,
       distributionChainId
     });
   }
 
-  // Calculate totals
-  const totalPendingUsd = morphoRewards.reduce((sum, r) => sum + r.pendingUsd, 0);
-  const hasClaimableRewards = morphoRewards.some(r => r.pending > 0n);
+  const hasClaimableRewards = morphoRewards.some(r => r.amount > 0n);
 
   return {
     rewards: morphoRewards,
-    totalPendingUsd,
-    formattedTotalPendingUsd: `$${totalPendingUsd.toFixed(2)}`,
     hasClaimableRewards
   };
 }

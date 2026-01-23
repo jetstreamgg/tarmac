@@ -5,7 +5,7 @@ import { WagmiWrapper } from './WagmiWrapper';
 import { BatchWriteHook } from '../src/hooks';
 
 export const waitForPreparedExecuteAndMine = async (
-  result: { current: WriteHook | BatchWriteHook },
+  result: { current: WriteHook | BatchWriteHook; rerender?: () => void },
   loadingTimeout: number = 5000
 ) => {
   await waitFor(
@@ -14,6 +14,7 @@ export const waitForPreparedExecuteAndMine = async (
     },
     {
       timeout: 15000,
+      interval: 100,
       onTimeout: error => {
         console.log({ writeHookResponse: result.current });
         return error;
