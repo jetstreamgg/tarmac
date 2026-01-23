@@ -9,6 +9,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChainId } from 'wagmi';
+import { MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
 
 type MorphoVaultStatsCardProps = {
   vaultAddress: Record<number, `0x${string}`>;
@@ -58,6 +59,7 @@ export const MorphoVaultStatsCard = ({
         <HStack className="items-center" gap={2}>
           <TokenIcon className="h-6 w-6" token={{ symbol: assetToken.symbol }} />
           <Text>{vaultName}</Text>
+          <MorphoVaultBadge />
         </HStack>
 
         {/* Right side - Rate */}
