@@ -1,4 +1,4 @@
-// import { MorphoVaultHistory } from './MorphoVaultHistory';
+import { MorphoVaultHistory } from './MorphoVaultHistory';
 import { MorphoVaultBalanceDetails } from './MorphoVaultBalanceDetails';
 import { MorphoVaultInfoDetails } from './MorphoVaultInfoDetails';
 import { MorphoVaultAllocationsDetails } from './MorphoVaultAllocationsDetails';
@@ -64,13 +64,13 @@ export function MorphoVaultDetails({
             </DetailSectionRow>
           </DetailSection>
         )} */}
-      {/* {isConnectedAndAcceptedTerms && (
-        <DetailSection title={t`Your ${vaultName} transaction history`}>
+      {isConnectedAndAcceptedTerms && (
+        <DetailSection title={t`Your ${vaultName} vault transaction history`}>
           <DetailSectionRow>
             <MorphoVaultHistory vaultAddress={vaultAddress} />
           </DetailSectionRow>
         </DetailSection>
-      )} */}
+      )}
       {/* <DetailSection title={t`Metrics`}>
         <DetailSectionRow>
           <MorphoVaultChart vaultAddress={vaultAddress} />

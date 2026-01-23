@@ -168,7 +168,7 @@ export const VAULT_V2_TRANSACTIONS_QUERY = `
       orderBy: Time
       orderDirection: Desc
       where: {
-        chainId_in: $chainId
+        chainId_in: [$chainId]
         userAddress_in: [$userAddress]
         vaultAddress_in: $vaultAddresses
         type_in: [Deposit, Withdraw]

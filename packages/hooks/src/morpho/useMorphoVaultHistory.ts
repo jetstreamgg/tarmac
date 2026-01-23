@@ -72,7 +72,7 @@ export function useMorphoVaultHistory({
 }: {
   vaultAddress?: `0x${string}`;
   enabled?: boolean;
-}): MorphoVaultHistoryHook {
+} = {}): MorphoVaultHistoryHook {
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
