@@ -63,6 +63,46 @@ export const morphoMerklDistributorConfig = {
 } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// MorphoBlue
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
+ */
+export const morphoBlueAbi = [
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'Id', type: 'bytes32' }],
+    name: 'market',
+    outputs: [
+      { name: 'totalSupplyAssets', internalType: 'uint128', type: 'uint128' },
+      { name: 'totalSupplyShares', internalType: 'uint128', type: 'uint128' },
+      { name: 'totalBorrowAssets', internalType: 'uint128', type: 'uint128' },
+      { name: 'totalBorrowShares', internalType: 'uint128', type: 'uint128' },
+      { name: 'lastUpdate', internalType: 'uint128', type: 'uint128' },
+      { name: 'fee', internalType: 'uint128', type: 'uint128' }
+    ],
+    stateMutability: 'view'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
+ */
+export const morphoBlueAddress = {
+  1: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
+  314310: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
+ */
+export const morphoBlueConfig = {
+  address: morphoBlueAddress,
+  abi: morphoBlueAbi
+} as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // MorphoMerklDistributorImplementation
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -13117,6 +13157,27 @@ export const useWatchMorphoMerklDistributorUpgraded = /*#__PURE__*/ createUseWat
   abi: morphoMerklDistributorAbi,
   address: morphoMerklDistributorAddress,
   eventName: 'Upgraded'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoBlueAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
+ */
+export const useReadMorphoBlue = /*#__PURE__*/ createUseReadContract({
+  abi: morphoBlueAbi,
+  address: morphoBlueAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link morphoBlueAbi}__ and `functionName` set to `"market"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb)
+ */
+export const useReadMorphoBlueMarket = /*#__PURE__*/ createUseReadContract({
+  abi: morphoBlueAbi,
+  address: morphoBlueAddress,
+  functionName: 'market'
 });
 
 /**
