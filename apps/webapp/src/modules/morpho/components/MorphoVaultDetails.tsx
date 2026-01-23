@@ -8,13 +8,7 @@ import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapp
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { MorphoVaultChart } from './MorphoVaultChart';
-// import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-// import { ExpertIntentMapping } from '@/lib/constants';
-// import { ExpertIntent } from '@/lib/enums';
-// import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-// import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
-// import { filterActionsByIntent } from '@/lib/utils';
 import { Token } from '@jetstreamgg/sky-hooks';
 
 type MorphoVaultDetailsProps = {
@@ -32,9 +26,6 @@ export function MorphoVaultDetails({
   vaultName
 }: MorphoVaultDetailsProps): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  // const { linkedActionConfig } = useConfigContext();
-  // const { data: actionData } = useUserSuggestedActions();
-  // const widget = ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT];
 
   return (
     <DetailSectionWrapper>
@@ -55,15 +46,6 @@ export function MorphoVaultDetails({
           <MorphoVaultAllocationsDetails vaultAddress={vaultAddress} />
         </DetailSectionRow>
       </DetailSection>
-      {/* {isConnectedAndAcceptedTerms &&
-        !linkedActionConfig?.showLinkedAction &&
-        (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
-          <DetailSection title={t`Combined actions`}>
-            <DetailSectionRow>
-              <ActionsShowcase widget={widget} />
-            </DetailSectionRow>
-          </DetailSection>
-        )} */}
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your ${vaultName} vault transaction history`}>
           <DetailSectionRow>
