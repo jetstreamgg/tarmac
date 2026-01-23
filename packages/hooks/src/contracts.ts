@@ -310,10 +310,10 @@ export const contracts: {
   },
   // Morpho vaults
   {
-    name: 'steakhousePrimeInstantVault',
+    name: 'usdsRiskCapitalVault',
     address: {
-      [mainnet.id]: '0xbeef088055857739C12CD3765F20b7679Def0f51',
-      [TENDERLY_CHAIN_ID]: '0xbeef088055857739C12CD3765F20b7679Def0f51'
+      [mainnet.id]: '0xf42bca228D9bd3e2F8EE65Fec3d21De1063882d4',
+      [TENDERLY_CHAIN_ID]: '0xf42bca228D9bd3e2F8EE65Fec3d21De1063882d4'
     }
   },
   {

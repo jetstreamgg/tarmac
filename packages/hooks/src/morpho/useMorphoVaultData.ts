@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useReadContracts, useConnection, useChainId } from 'wagmi';
-import { steakhousePrimeInstantVaultAbi } from '../generated';
+import { usdsRiskCapitalVaultAbi } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
 import { getEtherscanLink } from '@jetstreamgg/sky-utils';
@@ -47,7 +47,7 @@ export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string
 
   const vaultContract = {
     address: vaultAddress,
-    abi: steakhousePrimeInstantVaultAbi,
+    abi: usdsRiskCapitalVaultAbi,
     chainId
   } as const;
 
