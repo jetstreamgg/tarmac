@@ -115,14 +115,10 @@ export type MorphoVaultRewardsHook = ReadHook & {
 };
 
 /**
- * Filter rewards to only include those related to a given Morpho vaults.
- * Morpho vault rewards have a reason string containing "MorphoVault" or "MorphoVaultV2".
+ * Filter rewards to only include those related to a given Morpho vault.
  */
 function isMorphoVaultReward(breakdown: MerklRewardBreakdown, vaultAddress: `0x${string}`): boolean {
-  return (
-    breakdown.reason.includes('MorphoVault') &&
-    breakdown.reason.toLowerCase().includes(vaultAddress.toLowerCase())
-  );
+  return breakdown.reason.toLowerCase().includes(vaultAddress.toLowerCase());
 }
 
 /**
