@@ -2,7 +2,6 @@ import { Trans } from '@lingui/react/macro';
 import { useMorphoVaultRewards, WriteHook } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { Button } from '@widgets/components/ui/button';
-import { Skeleton } from '@widgets/components/ui/skeleton';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { motion } from 'framer-motion';
 
@@ -38,25 +37,25 @@ export const MorphoVaultRewardsCard = ({
 
   // Build the claim button text showing all rewards
   const claimButtonText = rewardsData?.rewards
-    .filter(r => r.pending > 0n)
-    .map(r => `${formatBigInt(r.pending, { unit: r.tokenDecimals, maxDecimals: 2 })} ${r.tokenSymbol}`)
+    .filter(r => r.amount > 0n)
+    .map(r => `${formatBigInt(r.amount, { unit: r.tokenDecimals, maxDecimals: 2 })} ${r.tokenSymbol}`)
     .join(' + ');
 
-  const canClaim = hasClaimableRewards && claimRewards?.prepared && !claimRewards?.isLoading;
-
-  if (isRewardsLoading) {
-    return (
-      <motion.div variants={positionAnimations} className="mt-5">
-        <Skeleton className="h-12 w-full rounded-xl" />
-      </motion.div>
-    );
-  }
-
   return (
-    <motion.div variants={positionAnimations} className="mt-5">
-      <Button variant="secondary" onClick={claimRewards?.execute} disabled={!canClaim} className="w-full">
-        {claimRewards?.isLoading ? <Trans>Claiming...</Trans> : <Trans>Claim {claimButtonText}</Trans>}
-      </Button>
+    <motion.div
+      variants={positionAnimations}
+      className={`flex w-full justify-center ${!!claimButtonText && !!claimRewards ? 'mt-3' : ''}`}
+    >
+      {isConnectedAndEnabled && !!claimButtonText && !!claimRewards ? (
+        <Button
+          disabled={!claimRewards.prepared}
+          onClick={claimRewards.execute}
+          variant="secondary"
+          className="w-full"
+        >
+          <Trans>Claim {claimButtonText}</Trans>
+        </Button>
+      ) : undefined}
     </motion.div>
   );
 };

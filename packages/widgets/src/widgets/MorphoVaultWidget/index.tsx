@@ -111,8 +111,8 @@ const MorphoVaultWidgetWrapped = ({
   const claimAmountText = useMemo(() => {
     return (
       rewardsData?.rewards
-        .filter(r => r.pending > 0n)
-        .map(r => `${formatBigInt(r.pending, { unit: r.tokenDecimals, maxDecimals: 2 })} ${r.tokenSymbol}`)
+        .filter(r => r.amount > 0n)
+        .map(r => `${formatBigInt(r.amount, { unit: r.tokenDecimals, maxDecimals: 2 })} ${r.tokenSymbol}`)
         .join(' + ') || ''
     );
   }, [rewardsData?.rewards]);
