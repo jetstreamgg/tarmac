@@ -105,7 +105,8 @@ export type {
   MorphoVaultAllocationsHook,
   MorphoVaultReward,
   MorphoVaultRewardsData,
-  MorphoVaultRewardsHook
+  MorphoVaultRewardsHook,
+  MorphoVaultChartDataPoint
 } from './morpho';
 
 // Authentication

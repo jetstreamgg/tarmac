@@ -16,7 +16,7 @@ export function MorphoVaultRewardsDetails({ vaultAddress }: MorphoVaultRewardsDe
 
   // Build reward cards for each token
   const rewardCards = rewardsData?.rewards
-    .filter(r => r.pending > 0n)
+    .filter(r => r.amount > 0n)
     .map(reward => {
       const token = {
         symbol: reward.tokenSymbol,
@@ -27,7 +27,7 @@ export function MorphoVaultRewardsDetails({ vaultAddress }: MorphoVaultRewardsDe
       return (
         <RewardsBalanceCard
           key={reward.tokenAddress}
-          balance={reward.formattedPending}
+          balance={reward.formattedAmount}
           isLoading={isLoading}
           token={token}
           label={t`Accumulated Rewards`}
