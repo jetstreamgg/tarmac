@@ -197,3 +197,20 @@ export const VAULT_V2_TRANSACTIONS_QUERY = `
     }
   }
 `;
+
+export const VAULT_V2_HISTORICAL_QUERY = `
+  query VaultV2History($address: String!, $chainId: Int!, $endTimestamp: Int!) {
+    vaultV2ByAddress(address: $address, chainId: $chainId) {
+      historicalState {
+        totalAssets(options: { startTimestamp: 0, endTimestamp: $endTimestamp, interval: DAY }) {
+          x
+          y
+        }
+        avgNetApy(options:{ startTimestamp: 0, endTimestamp: $endTimestamp, interval: DAY }) {
+          x
+          y
+        }
+      }
+    }
+  }
+`;

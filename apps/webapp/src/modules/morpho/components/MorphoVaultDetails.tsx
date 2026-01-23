@@ -7,7 +7,7 @@ import { t } from '@lingui/core/macro';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
-// import { MorphoVaultChart } from './MorphoVaultChart';
+import { MorphoVaultChart } from './MorphoVaultChart';
 // import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 // import { ExpertIntentMapping } from '@/lib/constants';
@@ -71,11 +71,11 @@ export function MorphoVaultDetails({
           </DetailSectionRow>
         </DetailSection>
       )}
-      {/* <DetailSection title={t`Metrics`}>
+      <DetailSection title={t`Metrics`}>
         <DetailSectionRow>
-          <MorphoVaultChart vaultAddress={vaultAddress} />
+          <MorphoVaultChart vaultAddress={vaultAddress} assetToken={assetToken} />
         </DetailSectionRow>
-      </DetailSection> */}
+      </DetailSection>
       {/* <DetailSection title={t`FAQs`}>
         <DetailSectionRow>
           <MorphoVaultFaq />

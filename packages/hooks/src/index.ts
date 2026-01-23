@@ -92,6 +92,7 @@ export {
   useMorphoVaultRewards,
   useMorphoVaultClaimRewards,
   useMorphoVaultHistory,
+  useMorphoVaultChartInfo,
   MORPHO_VAULTS
 } from './morpho';
 export type {

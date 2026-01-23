@@ -23,4 +23,9 @@ export {
 } from './useMorphoVaultRewards';
 export { useMorphoVaultClaimRewards } from './useMorphoVaultClaimRewards';
 export { useMorphoVaultHistory } from './useMorphoVaultHistory';
+export {
+  useMorphoVaultChartInfo,
+  type MorphoVaultChartDataPoint,
+  type MorphoVaultChartInfoHook
+} from './useMorphoVaultChartInfo';
 export { MORPHO_VAULTS } from './constants';
