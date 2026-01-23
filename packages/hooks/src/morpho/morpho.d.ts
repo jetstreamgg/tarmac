@@ -1,4 +1,19 @@
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { ReadHook } from '../hooks';
+import { Token } from '../tokens/types';
+import { MorphoTransactionType } from './constants';
+
+/**
+ * Configuration for a Morpho vault
+ */
+export type MorphoVaultConfig = {
+  /** Display name for the vault */
+  name: string;
+  /** The vault contract address mapping by chain ID (also serves as the unique identifier) */
+  vaultAddress: Record<number, `0x${string}`>;
+  /** The underlying asset token */
+  assetToken: Token;
+};
 
 /**
  * API response type for Morpho V2 vault adapters query.
@@ -100,3 +115,40 @@ export type MorphoVaultAllocationsData = {
 export type MorphoVaultAllocationsHook = ReadHook & {
   data?: MorphoVaultAllocationsData;
 };
+
+export type MorphoVaultV2Transaction = {
+  vault: {
+    address: string;
+    asset: {
+      symbol: string;
+      decimals: number;
+    };
+  };
+  type: MorphoTransactionType;
+  timestamp: number;
+  txHash: string;
+  data: {
+    assets: string;
+  };
+};
+
+/**
+ * API response type for Morpho V2 vault transactions query.
+ */
+export type MorphoVaultV2TransactionsApiResponse = {
+  data: {
+    vaultV2transactions: {
+      items: Array<MorphoVaultV2Transaction>;
+    };
+  };
+};
+
+export interface MorphoVaultHistoryItem {
+  type: TransactionTypeEnum;
+  assets: bigint;
+  blockTimestamp: Date;
+  transactionHash: string;
+  module: ModuleEnum;
+  chainId: number;
+  token: Token;
+}

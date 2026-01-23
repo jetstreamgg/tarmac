@@ -22,3 +22,4 @@ export {
   type MorphoVaultRewardsHook
 } from './useMorphoVaultRewards';
 export { useMorphoVaultClaimRewards } from './useMorphoVaultClaimRewards';
+export { MORPHO_VAULTS } from './constants';

@@ -5,7 +5,7 @@ import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
-import { MORPHO_VAULTS } from '@/modules/morpho/constants';
+import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
 import { useSearchParams } from 'react-router-dom';

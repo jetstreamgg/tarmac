@@ -90,7 +90,8 @@ export {
   useMorphoVaultRate,
   useMorphoVaultAllocations,
   useMorphoVaultRewards,
-  useMorphoVaultClaimRewards
+  useMorphoVaultClaimRewards,
+  MORPHO_VAULTS
 } from './morpho';
 export type {
   MorphoVaultRateData,
