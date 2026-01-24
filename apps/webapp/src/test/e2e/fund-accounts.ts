@@ -372,6 +372,14 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
 async function main() {
   console.log('=== Funding Test Accounts ===\n');
 
+  // Detect if we're using alternate VNet
+  const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
+  if (useAlternateVnet) {
+    console.log('🔵 Funding alternate VNets\n');
+  } else {
+    console.log('🔵 Funding standard VNets\n');
+  }
+
   try {
     // Step 1: Validate VNets (skip balance check since we're about to fund them)
     console.log('1. Validating VNets (checking connectivity, not balances)...');
@@ -457,7 +465,11 @@ async function main() {
     const snapshots = await Promise.all(snapshotPromises);
 
     // Step 6: Save snapshots to file
-    const snapshotFile = path.join(__dirname, 'persistent-vnet-snapshots.json');
+    const useAlternateVnetSnapshot = process.env.USE_ALTERNATE_VNET === 'true';
+    const snapshotFileName = useAlternateVnetSnapshot
+      ? 'persistent-vnet-snapshots-alternate.json'
+      : 'persistent-vnet-snapshots.json';
+    const snapshotFile = path.join(__dirname, snapshotFileName);
     const snapshotData = Object.fromEntries(snapshots.map(s => [s.network, s.snapshotId]));
     await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
     console.log(`\n✅ Snapshots saved to ${snapshotFile}`);

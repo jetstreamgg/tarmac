@@ -22,6 +22,8 @@
     "e2e": "playwright test --trace on",
     "e2e:ui": "playwright test --ui",
     "e2e:parallel": "playwright test --config playwright-parallel.config.ts",
+    "e2e:parallel:alternate:fork": "FUND_NETWORKS=mainnet USE_ALTERNATE_VNET=true playwright test --config playwright-parallel.config.ts --project=chromium-alternate",
+    "e2e:parallel:standard": "playwright test --config playwright-parallel.config.ts --project=chromium",
     "e2e:parallel:retry-failed": "SKIP_FUNDING=true playwright test --last-failed --config playwright-parallel.config.ts",
     "e2e:parallel:retry-serial": "SKIP_FUNDING=true playwright test --last-failed --workers=1 --config playwright-parallel.config.ts",
     "e2e:parallel:debug": "DEBUG=pw:api playwright test --config playwright-parallel.config.ts",

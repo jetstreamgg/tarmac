@@ -1,9 +1,46 @@
+import { usdsRiskCapitalVaultAddress } from '../generated';
+import { TOKENS } from '../tokens/tokens.constants';
+import { MorphoVaultConfig } from './morpho';
+
 export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
 export const MERKL_API_URL = 'https://api.merkl.xyz/v4';
 
 export enum MorphoAdapterType {
   MetaMorpho = 'MetaMorpho',
   MorphoMarketV1 = 'MorphoMarketV1'
+}
+
+export enum MorphoTransactionType {
+  Deposit = 'Deposit',
+  Withdraw = 'Withdraw'
+}
+
+/**
+ * List of all supported Morpho vaults
+ * To add a new vault, simply add a new entry to this array
+ */
+export const MORPHO_VAULTS: MorphoVaultConfig[] = [
+  {
+    name: 'USDS Risk Capital',
+    vaultAddress: usdsRiskCapitalVaultAddress,
+    assetToken: TOKENS.usds
+  }
+  // Add more vaults here as needed:
+  // {
+  //   name: 'Another Vault Name',
+  //   vaultAddress: anotherVaultAddress,
+  //   assetToken: TOKENS.usds
+  // }
+];
+
+/**
+ * Get a Morpho vault config by its address for a specific chain
+ */
+export function getMorphoVaultByAddress(
+  address: `0x${string}`,
+  chainId: number
+): MorphoVaultConfig | undefined {
+  return MORPHO_VAULTS.find(vault => vault.vaultAddress[chainId]?.toLowerCase() === address.toLowerCase());
 }
 
 /**
@@ -113,6 +150,66 @@ export const MARKET_DATA_QUERY = `
       }
       state {
         avgNetSupplyApy
+      }
+    }
+  }
+`;
+
+/**
+ * GraphQL query for Morpho V2 vault transactions (deposits and withdrawals).
+ */
+export const VAULT_V2_TRANSACTIONS_QUERY = `
+  query VaultV2Transactions(
+    $chainId: Int!
+    $userAddress: String!
+    $vaultAddresses: [String!]!
+  ) {
+    vaultV2transactions(
+      orderBy: Time
+      orderDirection: Desc
+      where: {
+        chainId_in: [$chainId]
+        userAddress_in: [$userAddress]
+        vaultAddress_in: $vaultAddresses
+        type_in: [Deposit, Withdraw]
+      }
+    ) {
+      items {
+        vault {
+          address
+          asset {
+            symbol
+            decimals
+          }
+        }
+        type
+        timestamp
+        txHash
+        data {
+          ... on VaultV2DepositData {
+            assets
+          }
+          ... on VaultV2WithdrawData {
+            assets
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const VAULT_V2_HISTORICAL_QUERY = `
+  query VaultV2History($address: String!, $chainId: Int!, $endTimestamp: Int!) {
+    vaultV2ByAddress(address: $address, chainId: $chainId) {
+      historicalState {
+        totalAssets(options: { startTimestamp: 0, endTimestamp: $endTimestamp, interval: DAY }) {
+          x
+          y
+        }
+        avgNetApy(options:{ startTimestamp: 0, endTimestamp: $endTimestamp, interval: DAY }) {
+          x
+          y
+        }
       }
     }
   }

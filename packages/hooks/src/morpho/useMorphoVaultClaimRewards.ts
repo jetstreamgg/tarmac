@@ -35,7 +35,7 @@ export function useMorphoVaultClaimRewards({
   const chainId = useChainId();
   const { address: connectedAddress } = useConnection();
 
-  const claimableRewards = rewards.filter(r => r.pending > 0n && r.proofs.length > 0);
+  const claimableRewards = rewards.filter(r => r.amount > 0n && r.proofs.length > 0);
 
   // Build the arrays required by the claim function
   // Each reward needs: user address, token address, cumulative amount, and proofs

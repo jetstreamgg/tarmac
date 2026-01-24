@@ -12,7 +12,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 import { MorphoVaultStatsCard } from './MorphoVaultStatsCard';
-import { MORPHO_VAULTS } from '@/modules/morpho/constants';
+import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
