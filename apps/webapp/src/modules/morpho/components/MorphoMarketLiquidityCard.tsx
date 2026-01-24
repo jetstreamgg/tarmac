@@ -9,7 +9,7 @@ import { useChainId } from 'wagmi';
 type MorphoMarketLiquidityCardProps = {
   market?: MorphoMarketAllocation;
   isLoading: boolean;
-  error?: Error;
+  error?: Error | null;
   assetToken: Token;
 };
 

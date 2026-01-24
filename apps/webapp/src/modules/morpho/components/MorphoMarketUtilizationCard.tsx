@@ -8,7 +8,7 @@ import { MorphoMarketAllocation } from '@jetstreamgg/sky-hooks';
 type MorphoMarketUtilizationCardProps = {
   market?: MorphoMarketAllocation;
   isLoading: boolean;
-  error?: Error;
+  error?: Error | null;
 };
 
 export function MorphoMarketUtilizationCard({ market, isLoading, error }: MorphoMarketUtilizationCardProps) {
