@@ -9,10 +9,16 @@ import { useChainId } from 'wagmi';
 type MorphoMarketLiquidityCardProps = {
   market?: MorphoMarketAllocation;
   isLoading: boolean;
+  error?: Error;
   assetToken: Token;
 };
 
-export function MorphoMarketLiquidityCard({ market, isLoading, assetToken }: MorphoMarketLiquidityCardProps) {
+export function MorphoMarketLiquidityCard({
+  market,
+  isLoading,
+  error,
+  assetToken
+}: MorphoMarketLiquidityCardProps) {
   const { i18n } = useLingui();
   const chainId = useChainId();
 
@@ -27,6 +33,7 @@ export function MorphoMarketLiquidityCard({ market, isLoading, assetToken }: Mor
     <StatsCard
       className="h-full"
       isLoading={isLoading}
+      error={error}
       title={i18n._(msg`Available Liquidity`)}
       content={
         <TokenIconWithBalance

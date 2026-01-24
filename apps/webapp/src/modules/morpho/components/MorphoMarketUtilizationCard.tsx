@@ -8,9 +8,10 @@ import { MorphoMarketAllocation } from '@jetstreamgg/sky-hooks';
 type MorphoMarketUtilizationCardProps = {
   market?: MorphoMarketAllocation;
   isLoading: boolean;
+  error?: Error;
 };
 
-export function MorphoMarketUtilizationCard({ market, isLoading }: MorphoMarketUtilizationCardProps) {
+export function MorphoMarketUtilizationCard({ market, isLoading, error }: MorphoMarketUtilizationCardProps) {
   const { i18n } = useLingui();
 
   // Convert from 0-1 decimal to 0-100 percentage
@@ -20,6 +21,7 @@ export function MorphoMarketUtilizationCard({ market, isLoading }: MorphoMarketU
     <StatsCard
       className="h-full"
       isLoading={isLoading}
+      error={error}
       title={i18n._(msg`Utilization`)}
       content={
         <div className="mt-2 flex items-center gap-2">

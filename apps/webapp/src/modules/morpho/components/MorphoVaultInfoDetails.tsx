@@ -2,8 +2,6 @@ import { MorphoVaultRateCard } from './MorphoVaultRateCard';
 import { MorphoVaultTvlCard } from './MorphoVaultTvlCard';
 import { MorphoMarketLiquidityCard } from './MorphoMarketLiquidityCard';
 import { MorphoMarketUtilizationCard } from './MorphoMarketUtilizationCard';
-import { MorphoMarketSupplyCard } from './MorphoMarketSupplyCard';
-import { MorphoMarketBorrowCard } from './MorphoMarketBorrowCard';
 import { Token, useMorphoVaultAllocations } from '@jetstreamgg/sky-hooks';
 
 type MorphoVaultInfoDetailsProps = {
@@ -12,7 +10,7 @@ type MorphoVaultInfoDetailsProps = {
 };
 
 export function MorphoVaultInfoDetails({ vaultAddress, assetToken }: MorphoVaultInfoDetailsProps) {
-  const { data: allocations, isLoading } = useMorphoVaultAllocations({ vaultAddress });
+  const { data: allocations, isLoading, error } = useMorphoVaultAllocations({ vaultAddress });
   const market = allocations?.markets[0];
 
   return (
@@ -21,19 +19,18 @@ export function MorphoVaultInfoDetails({ vaultAddress, assetToken }: MorphoVault
         <MorphoVaultRateCard vaultAddress={vaultAddress} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketUtilizationCard market={market} isLoading={isLoading} />
-      </div>
-      <div className="min-w-[250px] flex-1">
         <MorphoVaultTvlCard vaultAddress={vaultAddress} assetToken={assetToken} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketLiquidityCard market={market} isLoading={isLoading} assetToken={assetToken} />
+        <MorphoMarketUtilizationCard market={market} isLoading={isLoading} error={error} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketSupplyCard market={market} isLoading={isLoading} assetToken={assetToken} />
-      </div>
-      <div className="min-w-[250px] flex-1">
-        <MorphoMarketBorrowCard market={market} isLoading={isLoading} assetToken={assetToken} />
+        <MorphoMarketLiquidityCard
+          market={market}
+          isLoading={isLoading}
+          error={error}
+          assetToken={assetToken}
+        />
       </div>
     </div>
   );
