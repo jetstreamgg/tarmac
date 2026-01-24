@@ -9,8 +9,8 @@ export {
   type MorphoRewardData
 } from './useMorphoVaultRate';
 export { useMorphoVaultAllocations } from './useMorphoVaultAllocations';
-export { useMorphoMarketData, type MorphoMarketData, type MorphoMarketDataHook } from './useMorphoMarketData';
 export {
+  type MorphoMarketAllocation,
   type MorphoV1VaultAllocation,
   type MorphoIdleLiquidityAllocation,
   type MorphoVaultAllocationsData,

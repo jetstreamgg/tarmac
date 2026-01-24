@@ -2,22 +2,21 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { Token, MorphoMarketAllocation } from '@jetstreamgg/sky-hooks';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { useChainId } from 'wagmi';
-import { useMorphoVaultMarketData } from '../hooks/useMorphoVaultMarketData';
 
 type MorphoMarketLiquidityCardProps = {
-  vaultAddress: `0x${string}`;
+  market?: MorphoMarketAllocation;
+  isLoading: boolean;
   assetToken: Token;
 };
 
-export function MorphoMarketLiquidityCard({ vaultAddress, assetToken }: MorphoMarketLiquidityCardProps) {
+export function MorphoMarketLiquidityCard({ market, isLoading, assetToken }: MorphoMarketLiquidityCardProps) {
   const { i18n } = useLingui();
   const chainId = useChainId();
-  const { data: marketData, isLoading } = useMorphoVaultMarketData({ vaultAddress });
 
-  const liquidity = marketData?.liquidity ?? 0n;
+  const liquidity = market?.liquidity ?? 0n;
 
   const assetDecimals =
     typeof assetToken.decimals === 'number'

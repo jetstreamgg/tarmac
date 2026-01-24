@@ -308,14 +308,6 @@ export const contracts: {
       [TENDERLY_CHAIN_ID]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC'
     }
   },
-  // Morpho Blue core contract (singleton that stores all market state)
-  {
-    name: 'morphoBlue',
-    address: {
-      [mainnet.id]: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb',
-      [TENDERLY_CHAIN_ID]: '0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb'
-    }
-  },
   // Morpho vaults
   {
     name: 'usdsRiskCapitalVault',

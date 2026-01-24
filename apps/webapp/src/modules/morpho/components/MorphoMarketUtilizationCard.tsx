@@ -3,18 +3,18 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { UtilizationBar } from '@jetstreamgg/sky-widgets';
 import { Text } from '@/modules/layout/components/Typography';
-import { useMorphoVaultMarketData } from '../hooks/useMorphoVaultMarketData';
+import { MorphoMarketAllocation } from '@jetstreamgg/sky-hooks';
 
 type MorphoMarketUtilizationCardProps = {
-  vaultAddress: `0x${string}`;
+  market?: MorphoMarketAllocation;
+  isLoading: boolean;
 };
 
-export function MorphoMarketUtilizationCard({ vaultAddress }: MorphoMarketUtilizationCardProps) {
+export function MorphoMarketUtilizationCard({ market, isLoading }: MorphoMarketUtilizationCardProps) {
   const { i18n } = useLingui();
-  const { data: marketData, isLoading } = useMorphoVaultMarketData({ vaultAddress });
 
   // Convert from 0-1 decimal to 0-100 percentage
-  const utilizationRate = (marketData?.utilization ?? 0) * 100;
+  const utilizationRate = (market?.utilization ?? 0) * 100;
 
   return (
     <StatsCard

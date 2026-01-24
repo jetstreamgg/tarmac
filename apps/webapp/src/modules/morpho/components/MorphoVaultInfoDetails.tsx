@@ -4,7 +4,7 @@ import { MorphoMarketLiquidityCard } from './MorphoMarketLiquidityCard';
 import { MorphoMarketUtilizationCard } from './MorphoMarketUtilizationCard';
 import { MorphoMarketSupplyCard } from './MorphoMarketSupplyCard';
 import { MorphoMarketBorrowCard } from './MorphoMarketBorrowCard';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { Token, useMorphoVaultAllocations } from '@jetstreamgg/sky-hooks';
 
 type MorphoVaultInfoDetailsProps = {
   vaultAddress: `0x${string}`;
@@ -12,25 +12,28 @@ type MorphoVaultInfoDetailsProps = {
 };
 
 export function MorphoVaultInfoDetails({ vaultAddress, assetToken }: MorphoVaultInfoDetailsProps) {
+  const { data: allocations, isLoading } = useMorphoVaultAllocations({ vaultAddress });
+  const market = allocations?.markets[0];
+
   return (
     <div className="flex w-full flex-wrap gap-3">
       <div className="min-w-[250px] flex-1">
         <MorphoVaultRateCard vaultAddress={vaultAddress} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketUtilizationCard vaultAddress={vaultAddress} />
+        <MorphoMarketUtilizationCard market={market} isLoading={isLoading} />
       </div>
       <div className="min-w-[250px] flex-1">
         <MorphoVaultTvlCard vaultAddress={vaultAddress} assetToken={assetToken} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketLiquidityCard vaultAddress={vaultAddress} assetToken={assetToken} />
+        <MorphoMarketLiquidityCard market={market} isLoading={isLoading} assetToken={assetToken} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketSupplyCard vaultAddress={vaultAddress} assetToken={assetToken} />
+        <MorphoMarketSupplyCard market={market} isLoading={isLoading} assetToken={assetToken} />
       </div>
       <div className="min-w-[250px] flex-1">
-        <MorphoMarketBorrowCard vaultAddress={vaultAddress} assetToken={assetToken} />
+        <MorphoMarketBorrowCard market={market} isLoading={isLoading} assetToken={assetToken} />
       </div>
     </div>
   );

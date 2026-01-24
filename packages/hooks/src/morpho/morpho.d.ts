@@ -99,6 +99,14 @@ export type MorphoMarketAllocation = {
   formattedAssetsUsd: string;
   /** Formatted net APY (e.g., "3.68%") */
   formattedNetApy: string;
+  /** Total assets supplied to the market */
+  totalSupplyAssets: bigint;
+  /** Total assets borrowed from the market */
+  totalBorrowAssets: bigint;
+  /** Available liquidity (totalSupplyAssets - totalBorrowAssets) */
+  liquidity: bigint;
+  /** Utilization rate as a decimal (0-1), e.g., 0.85 = 85% */
+  utilization: number;
 };
 
 export type MorphoVaultAllocationsData = {

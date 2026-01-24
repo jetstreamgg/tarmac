@@ -260,6 +260,10 @@ async function fetchMorphoVaultAllocations(
         const marketData = marketDataMap.get(marketId);
         if (!marketData) continue;
 
+        const totalSupplyAssets = BigInt(marketData.state.supplyAssets);
+        const totalBorrowAssets = BigInt(marketData.state.borrowAssets);
+        const liquidity = totalSupplyAssets - totalBorrowAssets;
+
         markets.push({
           marketId,
           marketUniqueKey: marketData.uniqueKey,
@@ -267,7 +271,11 @@ async function fetchMorphoVaultAllocations(
           collateralAsset: marketData.collateralAsset.symbol,
           formattedAssets: formatBigInt(realAssets, { unit: assetDecimals, compact: true }),
           formattedAssetsUsd: `$${formatNumber(realAssetsUsd, { compact: true })}`,
-          formattedNetApy: `${(marketData.state.avgNetSupplyApy * 100).toFixed(2)}%`
+          formattedNetApy: `${(marketData.state.avgNetSupplyApy * 100).toFixed(2)}%`,
+          totalSupplyAssets,
+          totalBorrowAssets,
+          liquidity,
+          utilization: marketData.state.utilization
         });
       }
 
