@@ -72,10 +72,10 @@ export const performAction = async (page: Page, action: Action, options?: approv
   await actionButton.click();
   // regex for success or success!, can be any capital case
   await page
-    .getByText(/success|success!|Successfully withdrawn|error/i)
+    .getByText(/success|success!|Success|Successfully withdrawn|error/i)
     .first()
     .waitFor({ state: 'visible', timeout: 10000 });
-  await page.waitForTimeout(1000);
+  // await page.waitForTimeout(1000);
 
   const stepIndicator = page.getByTestId('step-indicator').last();
   const isStepIndicatorVisible = await stepIndicator.isVisible();

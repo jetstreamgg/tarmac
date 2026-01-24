@@ -44,7 +44,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
           // If the feature flag is enabled, but the local storage item is not set, default to enabled
           import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
         expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
-        expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false
+        expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false,
+        spkEmissionsDisclaimerDismissed: parsed.spkEmissionsDisclaimerDismissed ?? false
       });
     } catch (e) {
       console.log('Error parsing user settings', e);
@@ -109,6 +110,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     });
   };
 
+  const setSpkEmissionsDisclaimerDismissed = (dismissed: boolean) => {
+    updateUserConfig({
+      ...userConfig,
+      spkEmissionsDisclaimerDismissed: dismissed
+    });
+  };
+
   return (
     <ConfigContext.Provider
       value={{
@@ -136,7 +144,9 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
         setExpertRiskDisclaimerShown,
         expertRiskDisclaimerDismissed: userConfig.expertRiskDisclaimerDismissed ?? false,
-        setExpertRiskDisclaimerDismissed
+        setExpertRiskDisclaimerDismissed,
+        spkEmissionsDisclaimerDismissed: userConfig.spkEmissionsDisclaimerDismissed ?? false,
+        setSpkEmissionsDisclaimerDismissed
       }}
     >
       {children}
