@@ -5,9 +5,11 @@ import { parseEther } from 'viem';
 import {
   CHATBOT_ENABLED,
   CHAT_NOTIFICATION_KEY,
-  GOVERNANCE_MIGRATION_NOTIFICATION_KEY
+  GOVERNANCE_MIGRATION_NOTIFICATION_KEY,
+  SPK_STAKING_NOTIFICATION_KEY
 } from '@/lib/constants';
 import { NotificationConfig } from './useNotificationQueue';
+import { useHasSpkStakingPositions } from './useHasSpkStakingPositions';
 
 /**
  * Hook to manage page load notifications configuration.
@@ -15,7 +17,8 @@ import { NotificationConfig } from './useNotificationQueue';
  *
  * Current priority order:
  * 1. Governance Migration (requires MKR balance)
- * 2. Chat Notification
+ * 2. SPK Staking Rewards (requires staking positions with SPK reward)
+ * 3. Chat Notification
  */
 export const usePageLoadNotifications = (): NotificationConfig[] => {
   const { address, isConnected } = useConnection();
@@ -40,6 +43,9 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
     : true;
   const hasEnoughMkr = !!(mkrExistsOnChain && mkrBalance && mkrBalance.value >= minimumMkrBalance);
 
+  // Check if user has SPK staking positions
+  const { hasSpkPositions, isReady: spkPositionsReady } = useHasSpkStakingPositions();
+
   // Define notification configurations with priority order
   const notificationConfigs: NotificationConfig[] = useMemo(
     () => [
@@ -51,13 +57,20 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
         hasBeenShown: () => localStorage.getItem(GOVERNANCE_MIGRATION_NOTIFICATION_KEY) === 'true'
       },
       {
-        id: 'chat',
+        id: 'spk-staking-rewards',
         priority: 2,
+        isReady: () => spkPositionsReady, // Wait for stake history to load
+        checkConditions: () => isConnected && hasSpkPositions,
+        hasBeenShown: () => localStorage.getItem(SPK_STAKING_NOTIFICATION_KEY) === 'true'
+      },
+      {
+        id: 'chat',
+        priority: 3,
         checkConditions: () => CHATBOT_ENABLED,
         hasBeenShown: () => localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true'
       }
     ],
-    [isConnected, mkrBalanceLoaded, mkrExistsOnChain, hasEnoughMkr, CHATBOT_ENABLED]
+    [isConnected, mkrBalanceLoaded, mkrExistsOnChain, hasEnoughMkr, spkPositionsReady, hasSpkPositions]
   );
 
   return notificationConfigs;
