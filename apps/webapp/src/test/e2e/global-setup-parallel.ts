@@ -403,10 +403,10 @@ function detectShardMode(): { isSharded: boolean; shardIndex: number; totalShard
 /**
  * Standard setup for non-sharded execution (current behavior)
  */
-async function standardSetup(): Promise<void> {
+async function standardSetup(accountCount: number): Promise<void> {
   console.log('\n2. Initializing account pool with all addresses...');
-  await accountPool.initialize(TEST_WALLET_COUNT);
-  console.log(`Account pool initialized with ${TEST_WALLET_COUNT} addresses`);
+  await accountPool.initialize(accountCount);
+  console.log(`Account pool initialized with ${accountCount} addresses`);
 }
 
 /**
@@ -465,9 +465,15 @@ export default async function globalSetup() {
       console.log('📦 WORKER MODE: Running with standard worker-based parallelism');
     }
 
+    // Allow overriding account count for local testing (fewer accounts = faster setup)
+    const accountCount = process.env.ACCOUNT_COUNT ? parseInt(process.env.ACCOUNT_COUNT) : TEST_WALLET_COUNT;
+    if (accountCount !== TEST_WALLET_COUNT) {
+      console.log(`🔧 Using custom account count: ${accountCount} (default: ${TEST_WALLET_COUNT})`);
+    }
+
     // Step 1: Generate all test addresses (100 addresses for the pool)
     console.log('\n1. Generating test addresses...');
-    const addresses = getTestAddresses(TEST_WALLET_COUNT);
+    const addresses = getTestAddresses(accountCount);
     console.log(`Generated ${addresses.length} test addresses for the pool`);
     console.log('Sample addresses:');
     addresses.slice(0, 3).forEach((addr, i) => {
@@ -479,7 +485,7 @@ export default async function globalSetup() {
     if (isSharded) {
       await shardedSetup(addresses, shardIndex, totalShards);
     } else {
-      await standardSetup();
+      await standardSetup(accountCount);
     }
 
     // Step 3: Check for existing snapshots and validate them
