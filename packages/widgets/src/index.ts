@@ -17,6 +17,7 @@ export { StakeModuleWidget } from './widgets/StakeModuleWidget/index';
 export { MorphoVaultWidget } from './widgets/MorphoVaultWidget';
 export type { MorphoVaultWidgetProps } from './widgets/MorphoVaultWidget';
 export { MorphoVaultBadge } from './widgets/MorphoVaultWidget/components/MorphoVaultBadge';
+export { MorphoRateBreakdownPopover } from './widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';
 export { TxStatus, NotificationType } from './shared/constants';
 export type {

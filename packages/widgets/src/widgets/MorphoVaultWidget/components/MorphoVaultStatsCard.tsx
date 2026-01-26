@@ -24,8 +24,6 @@ type MorphoVaultStatsCardProps = {
   userShares?: bigint;
   /** Vault TVL (total assets) */
   vaultTvl?: bigint;
-  /** Vault rate formatted string (e.g., "3.44%") */
-  vaultRate?: string;
   /** Underlying asset symbol */
   assetSymbol: string;
   /** Asset decimals for formatting */
@@ -51,7 +49,6 @@ export const MorphoVaultStatsCard = ({
   vaultBalance,
   userShares,
   vaultTvl,
-  vaultRate,
   assetSymbol,
   assetDecimals,
   shareDecimals,
@@ -114,8 +111,7 @@ export const MorphoVaultStatsCard = ({
     <MorphoVaultStatsCardCore
       vaultName={vaultName}
       assetSymbol={assetSymbol}
-      vaultRate={vaultRate}
-      isLoading={isLoading}
+      vaultAddress={vaultAddress}
       content={
         <>
           <StatsAccordionCard

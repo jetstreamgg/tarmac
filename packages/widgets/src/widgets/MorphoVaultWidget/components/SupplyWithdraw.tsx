@@ -125,7 +125,6 @@ export const SupplyWithdraw = ({
           vaultBalance={vaultBalance}
           userShares={userShares}
           vaultTvl={vaultTvl}
-          vaultRate={vaultRate}
           assetSymbol={assetToken.symbol}
           assetDecimals={tokenDecimals}
           shareDecimals={shareDecimals}

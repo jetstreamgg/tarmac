@@ -1,7 +1,7 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useMorphoVaultData, useMorphoVaultRate, Token, getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultData, Token, getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -9,7 +9,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChainId } from 'wagmi';
-import { MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
+import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
 
 type MorphoVaultStatsCardProps = {
   vaultAddress: Record<number, `0x${string}`>;
@@ -36,12 +36,8 @@ export const MorphoVaultStatsCard = ({
   const { data: vaultData, isLoading: vaultLoading } = useMorphoVaultData({
     vaultAddress: currentVaultAddress
   });
-  const { data: rateData, isLoading: rateLoading } = useMorphoVaultRate({
-    vaultAddress: currentVaultAddress
-  });
 
   // Data handling
-  const formattedRate = rateData?.formattedNetRate || '0.00%';
   const totalAssets = vaultData?.totalAssets || 0n;
 
   if (!currentVaultAddress) {
@@ -63,17 +59,7 @@ export const MorphoVaultStatsCard = ({
         </HStack>
 
         {/* Right side - Rate */}
-        <HStack className="items-center" gap={2}>
-          {rateLoading ? (
-            <Skeleton className="bg-textSecondary h-5 w-16" />
-          ) : (
-            <Text className="text-primary">
-              <Text tag="span" className="text-bullish ml-1">
-                {formattedRate}
-              </Text>
-            </Text>
-          )}
-        </HStack>
+        <MorphoRateBreakdownPopover vaultAddress={currentVaultAddress} tooltipIconClassName="w-3 h-3" />
       </CardHeader>
 
       <CardContent className="mt-5 p-0">
