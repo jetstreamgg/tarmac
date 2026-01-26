@@ -1,7 +1,10 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { msg } from '@lingui/core/macro';
-import { useLingui } from '@lingui/react';
-import { useMorphoVaultData, Token, getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import {
+  useMorphoVaultData,
+  Token,
+  getTokenDecimals,
+  useMorphoVaultAllocations
+} from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -10,6 +13,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChainId } from 'wagmi';
 import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
+import { Trans } from '@lingui/react/macro';
 
 type MorphoVaultStatsCardProps = {
   vaultAddress: Record<number, `0x${string}`>;
@@ -26,7 +30,6 @@ export const MorphoVaultStatsCard = ({
   onClick,
   disabled = false
 }: MorphoVaultStatsCardProps) => {
-  const { i18n } = useLingui();
   const chainId = useChainId();
   const assetDecimals = getTokenDecimals(assetToken, chainId);
 
@@ -37,8 +40,13 @@ export const MorphoVaultStatsCard = ({
     vaultAddress: currentVaultAddress
   });
 
+  const { data: allocations, isLoading: allocationsLoading } = useMorphoVaultAllocations({
+    vaultAddress: currentVaultAddress
+  });
+
   // Data handling
   const totalAssets = vaultData?.totalAssets || 0n;
+  const liquidity = allocations?.markets[0]?.liquidity ?? 0n;
 
   if (!currentVaultAddress) {
     return null;
@@ -63,10 +71,27 @@ export const MorphoVaultStatsCard = ({
       </CardHeader>
 
       <CardContent className="mt-5 p-0">
-        <HStack className="justify-end" gap={2}>
+        <HStack className="justify-between" gap={2}>
+          {/* Liquidity */}
+          <VStack className="items-stretch justify-between" gap={2} data-testid="liquidity-container">
+            <Text className="text-textSecondary text-sm leading-4">
+              <Trans>Liquidity</Trans>
+            </Text>
+            {allocationsLoading ? (
+              <div className="flex justify-end">
+                <Skeleton className="bg-textSecondary h-6 w-10" />
+              </div>
+            ) : (
+              <Text dataTestId="morpho-vault-tvl">
+                {formatBigInt(liquidity, { unit: assetDecimals, compact: true })} {assetToken.symbol}
+              </Text>
+            )}
+          </VStack>
           {/* TVL */}
           <VStack className="items-stretch justify-between text-right" gap={2} data-testid="tvl-container">
-            <Text className="text-textSecondary text-sm leading-4">{i18n._(msg`TVL`)}</Text>
+            <Text className="text-textSecondary text-sm leading-4">
+              <Trans>TVL</Trans>
+            </Text>
             {vaultLoading ? (
               <div className="flex justify-end">
                 <Skeleton className="bg-textSecondary h-6 w-10" />
