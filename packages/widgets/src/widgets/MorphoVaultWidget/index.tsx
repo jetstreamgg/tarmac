@@ -34,6 +34,7 @@ import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState
 import { MorphoVaultTransactionReview } from './components/MorphoVaultTransactionReview';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
+import { VaultPoweredBy } from './components/VaultPoweredBy';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -480,6 +481,9 @@ const MorphoVaultWidgetWrapped = ({
         />
       }
     >
+      <div className="mt-[-16px] space-y-0">
+        <VaultPoweredBy onExternalLinkClicked={onExternalLinkClicked} />
+      </div>
       <AnimatePresence mode="popLayout" initial={false}>
         {txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="widget-transaction-status">
