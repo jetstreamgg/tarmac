@@ -149,6 +149,9 @@ export const MARKET_DATA_QUERY = `
         symbol
       }
       state {
+        supplyAssets
+        borrowAssets
+        utilization
         avgNetSupplyApy
       }
     }

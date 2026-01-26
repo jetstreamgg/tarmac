@@ -80,6 +80,9 @@ type MorphoMarketDataApiResponse = {
         symbol: string;
       };
       state: {
+        supplyAssets: string;
+        borrowAssets: string;
+        utilization: number;
         avgNetSupplyApy: number;
       };
     } | null;

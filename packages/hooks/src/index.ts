@@ -99,6 +99,7 @@ export type {
   MorphoVaultRateData,
   MorphoVaultRateHook,
   MorphoRewardData,
+  MorphoMarketAllocation,
   MorphoV1VaultAllocation,
   MorphoIdleLiquidityAllocation,
   MorphoVaultAllocationsData,
