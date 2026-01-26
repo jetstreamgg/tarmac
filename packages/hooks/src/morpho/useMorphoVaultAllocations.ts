@@ -8,7 +8,7 @@ import {
   MorphoAdapterType,
   VAULT_V2_ADAPTERS_QUERY
 } from './constants';
-import { isTestnetId, formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
+import { isTestnetId, formatBigInt, formatNumber, formatPercent } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
 import { PublicClient } from 'viem';
 import type {
@@ -275,7 +275,12 @@ async function fetchMorphoVaultAllocations(
           totalSupplyAssets,
           totalBorrowAssets,
           liquidity,
-          utilization: marketData.state.utilization
+          utilization: marketData.state.utilization,
+          lltv: BigInt(marketData.lltv),
+          formattedLltv: formatPercent(BigInt(marketData.lltv), {
+            maxDecimals: 0,
+            showPercentageDecimals: false
+          })
         });
       }
 

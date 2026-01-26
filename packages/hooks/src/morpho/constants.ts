@@ -142,6 +142,7 @@ export const MARKET_DATA_QUERY = `
   query MarketData($marketId: String!, $chainId: Int!) {
     marketByUniqueKey(uniqueKey: $marketId, chainId: $chainId) {
       uniqueKey
+      lltv
       loanAsset {
         symbol
       }

@@ -73,6 +73,7 @@ type MorphoMarketDataApiResponse = {
   data: {
     marketByUniqueKey: {
       uniqueKey: string;
+      lltv: string;
       loanAsset: {
         symbol: string;
       };

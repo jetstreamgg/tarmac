@@ -107,6 +107,10 @@ export type MorphoMarketAllocation = {
   liquidity: bigint;
   /** Utilization rate as a decimal (0-1), e.g., 0.85 = 85% */
   utilization: number;
+  /** Liquidation Loan-To-Value (WAD, 18 decimals) */
+  lltv: bigint;
+  /** Formatted LLTV as a percentage (e.g., "86%") */
+  formattedLltv: string;
 };
 
 export type MorphoVaultAllocationsData = {
