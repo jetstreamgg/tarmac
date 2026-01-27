@@ -6,7 +6,8 @@ import {
   Token,
   useMorphoVaultData,
   useMorphoVaultRate,
-  useMorphoVaultRewards
+  useMorphoVaultRewards,
+  useMorphoVaultAllocations
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce, formatBigInt } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -107,6 +108,19 @@ const MorphoVaultWidgetWrapped = ({
   } = useMorphoVaultRewards({
     vaultAddress
   });
+
+  // Compute max withdrawal and liquidity constraint status
+  const { data: allocationsData, isLoading: isAllocationsLoading } = useMorphoVaultAllocations({
+    vaultAddress
+  });
+  const userAssets = vaultData?.userAssets ?? 0n;
+  const availableLiquidity = allocationsData?.markets[0]?.liquidity ?? 0n;
+  const maxWithdraw = isAllocationsLoading
+    ? userAssets
+    : userAssets < availableLiquidity
+      ? userAssets
+      : availableLiquidity;
+  const isLiquidityConstrained = !isAllocationsLoading && userAssets > 0n && availableLiquidity < userAssets;
 
   // Build the claim amount text for display in transaction status
   const claimAmountText = useMemo(() => {
@@ -247,8 +261,8 @@ const MorphoVaultWidgetWrapped = ({
   const isWithdrawBalanceError =
     txStatus === TxStatus.IDLE &&
     !!address &&
-    (vaultData?.userAssets === 0n || !!vaultData?.userAssets) &&
-    debouncedAmount > vaultData.userAssets &&
+    maxWithdraw !== undefined &&
+    debouncedAmount > maxWithdraw &&
     amount !== 0n;
 
   const isAmountWaitingForDebounce = debouncedAmount !== amount;
@@ -514,6 +528,8 @@ const MorphoVaultWidgetWrapped = ({
               address={address}
               assetBalance={assetBalance?.value}
               vaultBalance={vaultData?.userAssets}
+              maxWithdraw={maxWithdraw}
+              isLiquidityConstrained={isLiquidityConstrained}
               userShares={vaultData?.userShares}
               isVaultDataLoading={isVaultDataLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {

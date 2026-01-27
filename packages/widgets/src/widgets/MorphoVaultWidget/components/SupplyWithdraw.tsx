@@ -14,6 +14,8 @@ import { motion } from 'framer-motion';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { formatUnits } from 'viem';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 
 type SupplyWithdrawProps = {
   /** User's wallet address */
@@ -22,6 +24,10 @@ type SupplyWithdrawProps = {
   assetBalance?: bigint;
   /** User's vault balance in underlying assets */
   vaultBalance?: bigint;
+  /** Maximum amount user can withdraw - may be less than vaultBalance due to liquidity */
+  maxWithdraw?: bigint;
+  /** Whether user's withdrawal is constrained by vault liquidity */
+  isLiquidityConstrained?: boolean;
   /** User's vault share balance */
   userShares?: bigint;
   /** The underlying asset token */
@@ -66,6 +72,8 @@ export const SupplyWithdraw = ({
   address,
   assetBalance,
   vaultBalance,
+  maxWithdraw,
+  isLiquidityConstrained,
   userShares,
   assetToken,
   isVaultDataLoading,
@@ -164,21 +172,51 @@ export const SupplyWithdraw = ({
               placeholder={t`Enter amount`}
               token={assetToken}
               tokenList={[assetToken]}
-              balance={address ? vaultBalance : undefined}
+              balance={address ? maxWithdraw : undefined}
+              limitText={
+                isLiquidityConstrained && maxWithdraw !== undefined
+                  ? `${formatBigInt(maxWithdraw, {
+                      unit: tokenDecimals,
+                      maxDecimals: 4
+                    })} ${assetToken.symbol}`
+                  : undefined
+              }
               onChange={(newValue, event) => {
                 onChange(BigInt(newValue), !!event);
               }}
               value={amount}
               error={
                 error
-                  ? t`Insufficient funds. Your balance is ${formatUnits(vaultBalance || 0n, tokenDecimals)} ${assetToken.symbol}.`
+                  ? isLiquidityConstrained
+                    ? t`Insufficient liquidity. Maximum available is ${formatUnits(maxWithdraw || 0n, tokenDecimals)} ${assetToken.symbol}.`
+                    : t`Insufficient funds. Your balance is ${formatUnits(vaultBalance || 0n, tokenDecimals)} ${assetToken.symbol}.`
                   : undefined
               }
               onSetMax={onSetMax}
               dataTestId="withdraw-input-morpho"
               showPercentageButtons={isConnectedAndEnabled}
               enabled={isConnectedAndEnabled}
+              showGauge={true}
             />
+            {!isVaultDataLoading && isLiquidityConstrained && maxWithdraw === 0n && (
+              <div className="mt-2 ml-3 flex items-start text-amber-400">
+                <PopoverRateInfo type="morphoLiquidity" iconClassName="mt-1 shrink-0 text-amber-400" />
+                <Text variant="small" className="ml-2 flex gap-2">
+                  <Trans>Withdrawals are temporarily unavailable due to liquidity constraints.</Trans>
+                </Text>
+              </div>
+            )}
+            {!isVaultDataLoading &&
+              isLiquidityConstrained &&
+              maxWithdraw !== undefined &&
+              maxWithdraw > 0n && (
+                <div className="mt-2 ml-3 flex items-start text-white">
+                  <PopoverRateInfo type="morphoLiquidity" iconClassName="mt-1 shrink-0 text-white" />
+                  <Text variant="small" className="ml-2 flex gap-2">
+                    <Trans>You cannot withdraw your full balance due to current liquidity limits.</Trans>
+                  </Text>
+                </div>
+              )}
           </motion.div>
         </TabsContent>
       </Tabs>

@@ -65,6 +65,12 @@ The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers
     tooltip: 'The amount of stUSDS currently available for users to withdraw from the system.'
   },
   {
+    id: 'morpho-liquidity',
+    title: 'Available liquidity',
+    tooltip:
+      'The amount of USDS currently idle in the Morpho market and available for immediate withdrawal or new borrowing.'
+  },
+  {
     id: 'curve-exchange-rate',
     title: 'Curve Exchange Rate',
     tooltip:
