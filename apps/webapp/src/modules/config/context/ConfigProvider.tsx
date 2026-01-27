@@ -45,7 +45,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
           import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
         expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
         expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false,
-        spkEmissionsDisclaimerDismissed: parsed.spkEmissionsDisclaimerDismissed ?? false
+        stakingSpkDisclaimerDismissed: parsed.stakingSpkDisclaimerDismissed ?? false,
+        rewardsUsdsSkyDisclaimerDismissed: parsed.rewardsUsdsSkyDisclaimerDismissed ?? false
       });
     } catch (e) {
       console.log('Error parsing user settings', e);
@@ -110,10 +111,17 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     });
   };
 
-  const setSpkEmissionsDisclaimerDismissed = (dismissed: boolean) => {
+  const setStakingSpkDisclaimerDismissed = (dismissed: boolean) => {
     updateUserConfig({
       ...userConfig,
-      spkEmissionsDisclaimerDismissed: dismissed
+      stakingSpkDisclaimerDismissed: dismissed
+    });
+  };
+
+  const setRewardsUsdsSkyDisclaimerDismissed = (dismissed: boolean) => {
+    updateUserConfig({
+      ...userConfig,
+      rewardsUsdsSkyDisclaimerDismissed: dismissed
     });
   };
 
@@ -145,8 +153,10 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         setExpertRiskDisclaimerShown,
         expertRiskDisclaimerDismissed: userConfig.expertRiskDisclaimerDismissed ?? false,
         setExpertRiskDisclaimerDismissed,
-        spkEmissionsDisclaimerDismissed: userConfig.spkEmissionsDisclaimerDismissed ?? false,
-        setSpkEmissionsDisclaimerDismissed
+        stakingSpkDisclaimerDismissed: userConfig.stakingSpkDisclaimerDismissed ?? false,
+        setStakingSpkDisclaimerDismissed,
+        rewardsUsdsSkyDisclaimerDismissed: userConfig.rewardsUsdsSkyDisclaimerDismissed ?? false,
+        setRewardsUsdsSkyDisclaimerDismissed
       }}
     >
       {children}

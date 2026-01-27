@@ -16,6 +16,7 @@ import {
   WidgetStateChangeParams
 } from '@jetstreamgg/sky-widgets';
 import { useSearchParams } from 'react-router-dom';
+import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -140,6 +141,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
       onWidgetStateChange={onRewardsWidgetStateChange}
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
+      disclaimer={<RewardsUsdsSkyDisclaimer />}
     />
   );
 }

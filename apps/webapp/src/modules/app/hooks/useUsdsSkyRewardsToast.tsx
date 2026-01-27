@@ -6,20 +6,20 @@ import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { SPK_STAKING_NOTIFICATION_KEY } from '@/lib/constants';
+import { USDS_SKY_REWARDS_NOTIFICATION_KEY } from '@/lib/constants';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 
 const GOVERNANCE_PROPOSAL_URL =
   'https://vote.sky.money/executive/template-executive-vote-reduce-rewards-emissions-complete-guni-vault-offboardings-whitelist-keel-subproxy-to-send-cross-chain-messages-adjust-grove-dc-iam-parameters-delegate-compensation-star-agent-proxy-spells-january-15-2026';
 
-export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
+export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
   const navigate = useNavigate();
   const chainId = useChainId();
   const isTestnet = isTestnetId(chainId);
   const networkParam = isTestnet ? 'tenderly' : 'ethereum';
 
   const onClose = useCallback(() => {
-    localStorage.setItem(SPK_STAKING_NOTIFICATION_KEY, 'true');
+    localStorage.setItem(USDS_SKY_REWARDS_NOTIFICATION_KEY, 'true');
   }, []);
 
   useEffect(() => {
@@ -34,11 +34,11 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
         toastId => (
           <div>
             <Text variant="medium" className="text-selectActive">
-              SPK Staking Rewards Update
+              USDS-SKY Rewards Update
             </Text>
             <VStack className="mt-4 gap-4">
               <Text variant="medium">
-                SPK reward emissions have been reduced via the latest{' '}
+                SKY Rewards have been disabled via a{' '}
                 <ExternalLink
                   showIcon={false}
                   href={GOVERNANCE_PROPOSAL_URL}
@@ -46,25 +46,25 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
                 >
                   governance proposal
                 </ExternalLink>
-                . Consider switching to SKY rewards for your staking positions.
+                . Please withdraw your USDS and consider other reward options.
               </Text>
               <Button
                 className="place-self-start"
                 variant="pill"
                 size="xs"
                 onClick={() => {
-                  navigate(`/?widget=stake&network=${networkParam}`);
+                  navigate(`/?widget=rewards&network=${networkParam}`);
                   toast.dismiss(toastId);
                   onClose();
                 }}
               >
-                Go to Staking
+                Go to Rewards
               </Button>
             </VStack>
           </div>
         ),
         {
-          id: 'spk-staking-rewards-toast',
+          id: 'usds-sky-rewards-toast',
           duration: Infinity,
           dismissible: true,
           onDismiss: onClose

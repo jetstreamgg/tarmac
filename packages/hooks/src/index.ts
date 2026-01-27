@@ -118,6 +118,11 @@ export { useRewardsTotalSupplied } from './rewards/useRewardsTotalSupplied';
 export { useRewardsRate } from './rewards/useRewardsRate';
 export { useRewardsPeriodFinish } from './rewards/useRewardsPeriodFinish';
 export { useRewardContractsToClaim } from './rewards/useRewardContractsToClaim';
+export {
+  DEPRECATED_REWARD_CONTRACTS,
+  isDeprecatedRewardContract,
+  filterDeprecatedRewardContracts
+} from './rewards/deprecatedRewards';
 
 // Shared
 export { useCombinedHistory } from './shared/useCombinedHistory';
@@ -219,6 +224,11 @@ export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';
 export { useHighestRateFromChartData } from './stake/useHighestRateFromChartData';
 export { useBorrowCapacityData } from './stake/useBorrowCapacityData';
 export * from './stake/calldata';
+export {
+  DEPRECATED_STAKE_REWARDS,
+  isDeprecatedStakeReward,
+  filterDeprecatedRewards
+} from './stake/deprecatedRewards';
 
 //Vaults
 export { useVault } from './vaults/useVault';

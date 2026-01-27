@@ -403,10 +403,10 @@ function detectShardMode(): { isSharded: boolean; shardIndex: number; totalShard
 /**
  * Standard setup for non-sharded execution (current behavior)
  */
-async function standardSetup(): Promise<void> {
+async function standardSetup(accountCount: number): Promise<void> {
   console.log('\n2. Initializing account pool with all addresses...');
-  await accountPool.initialize(TEST_WALLET_COUNT);
-  console.log(`Account pool initialized with ${TEST_WALLET_COUNT} addresses`);
+  await accountPool.initialize(accountCount);
+  console.log(`Account pool initialized with ${accountCount} addresses`);
 }
 
 /**
@@ -465,9 +465,15 @@ export default async function globalSetup() {
       console.log('📦 WORKER MODE: Running with standard worker-based parallelism');
     }
 
+    // Allow overriding account count for local testing (fewer accounts = faster setup)
+    const accountCount = process.env.ACCOUNT_COUNT ? parseInt(process.env.ACCOUNT_COUNT) : TEST_WALLET_COUNT;
+    if (accountCount !== TEST_WALLET_COUNT) {
+      console.log(`🔧 Using custom account count: ${accountCount} (default: ${TEST_WALLET_COUNT})`);
+    }
+
     // Step 1: Generate all test addresses (100 addresses for the pool)
     console.log('\n1. Generating test addresses...');
-    const addresses = getTestAddresses(TEST_WALLET_COUNT);
+    const addresses = getTestAddresses(accountCount);
     console.log(`Generated ${addresses.length} test addresses for the pool`);
     console.log('Sample addresses:');
     addresses.slice(0, 3).forEach((addr, i) => {
@@ -479,7 +485,7 @@ export default async function globalSetup() {
     if (isSharded) {
       await shardedSetup(addresses, shardIndex, totalShards);
     } else {
-      await standardSetup();
+      await standardSetup(accountCount);
     }
 
     // Step 3: Check for existing snapshots and validate them
@@ -643,15 +649,17 @@ export default async function globalSetup() {
         const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
         await Promise.all(fundingPromises);
 
-        // Increase Seal debt ceiling on mainnet to allow staking tests to borrow
+        // Increase stake module debt ceiling on mainnet to allow staking tests to borrow
         if (networks.includes(NetworkName.mainnet)) {
-          console.log('\n5.5. Increasing Seal debt ceiling...');
+          console.log('\n5.5. Increasing stake module debt ceiling...');
           try {
-            const { updateSealDebtCeiling } = await import('./utils/updateSealDebtCeiling');
+            const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
             // Set to 1 billion USDS in RAD format:
             // 1 billion * 1e45 = 1e54 (RAD has 45 decimals, converts to 1e27 WAD = 1 billion * 1e18)
-            await updateSealDebtCeiling(BigInt('1000000000000000000000000000000000000000000000000000000'));
-            console.log('✅ Seal debt ceiling increased to 1B USDS');
+            await updateStakeModuleDebtCeiling(
+              BigInt('1000000000000000000000000000000000000000000000000000000')
+            );
+            console.log('✅ Stake module debt ceiling increased to 1B USDS');
           } catch (error) {
             console.warn('⚠️  Failed to increase debt ceiling:', (error as Error).message);
             console.warn('   Staking tests may fail due to insufficient borrow capacity');

@@ -53,7 +53,8 @@ export const defaultUserConfig: UserConfig = {
   batchEnabled: false, // Default to false to show activation prompt
   expertRiskDisclaimerShown: false,
   expertRiskDisclaimerDismissed: false,
-  spkEmissionsDisclaimerDismissed: false
+  stakingSpkDisclaimerDismissed: false,
+  rewardsUsdsSkyDisclaimerDismissed: false
 };
 
 export const defaultLinkedActionConfig = {
@@ -87,8 +88,10 @@ export interface ConfigContextProps {
   setExpertRiskDisclaimerShown: (shown: boolean) => void;
   expertRiskDisclaimerDismissed: boolean;
   setExpertRiskDisclaimerDismissed: (dismissed: boolean) => void;
-  spkEmissionsDisclaimerDismissed: boolean;
-  setSpkEmissionsDisclaimerDismissed: (dismissed: boolean) => void;
+  stakingSpkDisclaimerDismissed: boolean;
+  setStakingSpkDisclaimerDismissed: (dismissed: boolean) => void;
+  rewardsUsdsSkyDisclaimerDismissed: boolean;
+  setRewardsUsdsSkyDisclaimerDismissed: (dismissed: boolean) => void;
 }
 
 // Zod schema for validating user settings
@@ -125,6 +128,8 @@ export const ConfigContext = createContext<ConfigContextProps>({
   setExpertRiskDisclaimerShown: () => {},
   expertRiskDisclaimerDismissed: false,
   setExpertRiskDisclaimerDismissed: () => {},
-  spkEmissionsDisclaimerDismissed: false,
-  setSpkEmissionsDisclaimerDismissed: () => {}
+  stakingSpkDisclaimerDismissed: false,
+  setStakingSpkDisclaimerDismissed: () => {},
+  rewardsUsdsSkyDisclaimerDismissed: false,
+  setRewardsUsdsSkyDisclaimerDismissed: () => {}
 });

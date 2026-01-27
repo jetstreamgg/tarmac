@@ -146,9 +146,9 @@ export const useActionForToken = () => {
             [mainnet.id]: isRestrictedBuild
               ? undefined
               : {
-                  label: t`Get rewards with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Mainnet' : ''}`,
+                  label: t`View rewards options for your ${upperSymbol} ${isDifferentChain ? 'on Mainnet' : ''}`,
                   actionUrl: getQueryParams(
-                    `?${Network}=${networkName}&${Widget}=${REWARD}&${InputAmount}=${balance}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
+                    `?${Network}=${networkName}&${Widget}=${REWARD}`
                   ),
                   image
                 },

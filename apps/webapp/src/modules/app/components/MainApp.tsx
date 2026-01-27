@@ -18,6 +18,7 @@ import { useChatNotification } from '../hooks/useChatNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
 import { useSpkStakingRewardsToast } from '../hooks/useSpkStakingRewardsToast';
+import { useUsdsSkyRewardsToast } from '../hooks/useUsdsSkyRewardsToast';
 import { useNotificationQueue } from '../hooks/useNotificationQueue';
 import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
@@ -122,11 +123,13 @@ export function MainApp() {
   // Notification Priority System (only one notification per page load):
   // 1. Governance Migration (for connected wallets with MKR ≥ 0.05)
   // 2. SPK Staking Rewards (for users with staking positions using SPK rewards)
-  // 3. Chat Notification (lowest priority)
+  // 3. USDS-SKY Rewards (for users with position in deprecated USDS-SKY rewards)
+  // 4. Chat Notification (lowest priority)
 
   // Display notifications based on queue priority
   useGovernanceMigrationToast(isAuthorized && shouldShowNotification('governance-migration'));
   useSpkStakingRewardsToast(isAuthorized && shouldShowNotification('spk-staking-rewards'));
+  useUsdsSkyRewardsToast(isAuthorized && shouldShowNotification('usds-sky-rewards'));
   useChatNotification(isAuthorized && shouldShowNotification('chat'));
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App

@@ -12,7 +12,8 @@ import {
   useRewardsChartInfo,
   useStakeHistoricData,
   useStakeRewardContracts,
-  lsSkyUsdsRewardAddress
+  lsSkyUsdsRewardAddress,
+  lsSkySpkRewardAddress
 } from '@jetstreamgg/sky-hooks';
 import { formatAddress, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
@@ -140,12 +141,16 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
 export function StakeRewardsOverview() {
   const { data, isLoading, error } = useStakeRewardContracts();
 
-  // Temporary hide usds reward contract until farm deactivation is complete
+  // Hide deprecated reward contracts (USDS and SPK) from the overview
   // TODO: Remove this filter once subgraph returns proper farm activation status
   const chainId = useChainId();
   const inactiveAddressesLower = useMemo(() => {
     const usdsRewardAddress = lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress];
-    return usdsRewardAddress ? new Set([usdsRewardAddress.toLowerCase()]) : new Set<string>();
+    const spkRewardAddress = lsSkySpkRewardAddress[chainId as keyof typeof lsSkySpkRewardAddress];
+    const addresses = new Set<string>();
+    if (usdsRewardAddress) addresses.add(usdsRewardAddress.toLowerCase());
+    if (spkRewardAddress) addresses.add(spkRewardAddress.toLowerCase());
+    return addresses;
   }, [chainId]);
 
   const visibleRewardContracts = data?.filter(
