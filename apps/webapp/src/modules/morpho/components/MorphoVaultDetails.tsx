@@ -2,7 +2,7 @@ import { MorphoVaultHistory } from './MorphoVaultHistory';
 import { MorphoVaultBalanceDetails } from './MorphoVaultBalanceDetails';
 import { MorphoVaultInfoDetails } from './MorphoVaultInfoDetails';
 import { MorphoVaultAllocationsDetails } from './MorphoVaultAllocationsDetails';
-// import { MorphoVaultFaq } from './MorphoVaultFaq';
+import { MorphoVaultFaq } from './MorphoVaultFaq';
 import { t } from '@lingui/core/macro';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
@@ -68,11 +68,11 @@ export function MorphoVaultDetails({
           </div>
         </DetailSectionRow>
       </DetailSection>
-      {/* <DetailSection title={t`FAQs`}>
+      <DetailSection title={t`FAQs`}>
         <DetailSectionRow>
           <MorphoVaultFaq />
         </DetailSectionRow>
-      </DetailSection> */}
+      </DetailSection>
     </DetailSectionWrapper>
   );
 }
