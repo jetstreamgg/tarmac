@@ -16,6 +16,8 @@ import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack'
 import { formatUnits } from 'viem';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { Checkbox } from '@widgets/components/ui/checkbox';
+import { cn } from '@widgets/lib/utils';
 
 type SupplyWithdrawProps = {
   /** User's wallet address */
@@ -66,6 +68,12 @@ type SupplyWithdrawProps = {
   isRewardsLoading?: boolean;
   /** Whether there are claimable rewards */
   hasClaimableRewards?: boolean;
+  /** Available liquidity in the vault for withdrawals */
+  availableLiquidity?: bigint;
+  /** Whether the liquidity disclaimer checkbox is checked */
+  disclaimerChecked?: boolean;
+  /** Callback when disclaimer checkbox changes */
+  onDisclaimerChange?: (checked: boolean) => void;
 };
 
 export const SupplyWithdraw = ({
@@ -92,7 +100,10 @@ export const SupplyWithdraw = ({
   shareDecimals,
   claimRewards,
   isRewardsLoading,
-  hasClaimableRewards
+  hasClaimableRewards,
+  availableLiquidity,
+  disclaimerChecked = false,
+  onDisclaimerChange
 }: SupplyWithdrawProps) => {
   const chainId = useChainId();
   const tokenDecimals = getTokenDecimals(assetToken, chainId);
@@ -161,6 +172,36 @@ export const SupplyWithdraw = ({
               showPercentageButtons={isConnectedAndEnabled}
               enabled={isConnectedAndEnabled}
             />
+            {onDisclaimerChange && (
+              <label className="mt-2 -mb-1 ml-3 flex cursor-pointer items-start">
+                <Checkbox
+                  checked={disclaimerChecked}
+                  onCheckedChange={onDisclaimerChange}
+                  className="mt-0.5 shrink-0"
+                />
+                <Text
+                  variant="small"
+                  className={cn(
+                    'ml-2',
+                    !isVaultDataLoading && availableLiquidity === 0n ? 'text-amber-400' : 'text-textSecondary'
+                  )}
+                >
+                  {!isVaultDataLoading && availableLiquidity === 0n ? (
+                    <Trans>
+                      I understand that {assetToken.symbol} deposited into this vault is used to fund
+                      borrowing, and that I will not be able to withdraw as long as the available liquidity is
+                      0
+                    </Trans>
+                  ) : (
+                    <Trans>
+                      I understand that {assetToken.symbol} deposited into this vault is used to fund
+                      borrowing, and that I will not be able to withdraw if the available liquidity becomes
+                      exhausted
+                    </Trans>
+                  )}
+                </Text>
+              </label>
+            )}
           </motion.div>
         </TabsContent>
 
