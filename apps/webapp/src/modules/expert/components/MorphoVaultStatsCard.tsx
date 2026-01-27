@@ -78,9 +78,7 @@ export const MorphoVaultStatsCard = ({
               <Trans>Liquidity</Trans>
             </Text>
             {allocationsLoading ? (
-              <div className="flex justify-end">
-                <Skeleton className="bg-textSecondary h-6 w-10" />
-              </div>
+              <Skeleton className="bg-textSecondary h-6 w-21" />
             ) : (
               <Text dataTestId="morpho-vault-tvl">
                 {formatBigInt(liquidity, { unit: assetDecimals, compact: true })} {assetToken.symbol}
@@ -94,7 +92,7 @@ export const MorphoVaultStatsCard = ({
             </Text>
             {vaultLoading ? (
               <div className="flex justify-end">
-                <Skeleton className="bg-textSecondary h-6 w-10" />
+                <Skeleton className="bg-textSecondary h-6 w-30" />
               </div>
             ) : (
               <Text dataTestId="morpho-vault-tvl">

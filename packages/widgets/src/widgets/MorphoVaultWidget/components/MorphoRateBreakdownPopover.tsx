@@ -20,8 +20,8 @@ export function MorphoRateBreakdownPopover({
   const { data: rateData, isLoading } = useMorphoVaultRate({ vaultAddress });
   const formattedNetRate = rateData?.formattedNetRate || '0.00%';
 
+  if (isLoading) return <Skeleton className="bg-textSecondary h-6 w-20" />;
   if (!rateData) return null;
-  if (isLoading) return <Skeleton className="h-6 w-20" />;
 
   return (
     <div className="flex items-center gap-2">
