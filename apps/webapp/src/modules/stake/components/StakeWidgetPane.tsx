@@ -17,7 +17,7 @@ import { useStakeHistory } from '@jetstreamgg/sky-hooks';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
-import { SpkEmissionsDisclaimer } from './SpkEmissionsDisclaimer';
+import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
 
 export function StakeWidgetPane(sharedProps: SharedProps) {
   const {
@@ -190,7 +190,7 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     <>
       <StakeModuleWidget
         {...sharedProps}
-        disclaimer={<SpkEmissionsDisclaimer />}
+        disclaimer={<StakingSpkRewardsDisclaimer />}
         onStakeUrnChange={onStakeUrnChange}
         onWidgetStateChange={onStakeWidgetStateChange}
         onShowHelpModal={() => {

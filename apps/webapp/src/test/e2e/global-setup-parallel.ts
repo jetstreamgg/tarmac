@@ -649,15 +649,17 @@ export default async function globalSetup() {
         const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
         await Promise.all(fundingPromises);
 
-        // Increase Seal debt ceiling on mainnet to allow staking tests to borrow
+        // Increase stake module debt ceiling on mainnet to allow staking tests to borrow
         if (networks.includes(NetworkName.mainnet)) {
-          console.log('\n5.5. Increasing Seal debt ceiling...');
+          console.log('\n5.5. Increasing stake module debt ceiling...');
           try {
-            const { updateSealDebtCeiling } = await import('./utils/updateSealDebtCeiling');
+            const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
             // Set to 1 billion USDS in RAD format:
             // 1 billion * 1e45 = 1e54 (RAD has 45 decimals, converts to 1e27 WAD = 1 billion * 1e18)
-            await updateSealDebtCeiling(BigInt('1000000000000000000000000000000000000000000000000000000'));
-            console.log('✅ Seal debt ceiling increased to 1B USDS');
+            await updateStakeModuleDebtCeiling(
+              BigInt('1000000000000000000000000000000000000000000000000000000')
+            );
+            console.log('✅ Stake module debt ceiling increased to 1B USDS');
           } catch (error) {
             console.warn('⚠️  Failed to increase debt ceiling:', (error as Error).message);
             console.warn('   Staking tests may fail due to insufficient borrow capacity');

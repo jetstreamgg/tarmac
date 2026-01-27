@@ -9,7 +9,7 @@ import { encodeFunctionData, stringToHex } from 'viem';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
-export const updateSealDebtCeiling = async (newDebtCeiling: bigint) => {
+export const updateStakeModuleDebtCeiling = async (newDebtCeiling: bigint) => {
   const TENDERLY_MAINNET_RPC_URL = await getRpcUrlFromFile(NetworkName.mainnet);
 
   // The seal module contract is authorized to change the `line` parameter
@@ -71,5 +71,5 @@ export const updateSealDebtCeiling = async (newDebtCeiling: bigint) => {
     throw new Error(`Error mining block: ${blockMineResponse.statusText}`);
   }
 
-  console.log('Successfully increased debt ceiling');
+  console.log('Successfully increased stake module debt ceiling');
 };

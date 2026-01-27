@@ -44,6 +44,7 @@ export type RewardsWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
+  disclaimer?: React.ReactNode;
 };
 
 // HOC Widget
@@ -61,7 +62,8 @@ const RewardsWidgetWrapped = ({
   legalBatchTxUrl,
   referralCode,
   batchEnabled,
-  setBatchEnabled
+  setBatchEnabled,
+  disclaimer
 }: RewardsWidgetProps) => {
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
@@ -468,6 +470,7 @@ const RewardsWidgetWrapped = ({
               claimAllExecute={claimAll.execute}
               claimAllPrepared={claimAll.prepared}
               batchEnabledAndSupported={!!batchEnabled && !!batchSupported}
+              disclaimer={disclaimer}
             />
           </CardAnimationWrapper>
         ) : txStatus !== TxStatus.IDLE && selectedRewardContract ? (

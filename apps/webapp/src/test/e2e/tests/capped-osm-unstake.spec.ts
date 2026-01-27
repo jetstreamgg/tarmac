@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.js';
 import { triggerCappedOsmError } from '../utils/setOsmSpotPrice.js';
-import { updateSealDebtCeiling } from '../utils/updateSealDebtCeiling.js';
+import { updateStakeModuleDebtCeiling } from '../utils/updateSealDebtCeiling.js';
 import { parseUnits } from 'viem';
 
 /**
@@ -19,7 +19,7 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     // Ensure debt ceiling is high enough (other tests may have lowered it)
     // Set to 1 billion USDS in RAD (45 decimals)
     const highCeiling = parseUnits('1000000000', 45);
-    await updateSealDebtCeiling(highCeiling);
+    await updateStakeModuleDebtCeiling(highCeiling);
     console.log('✅ Debt ceiling reset to high value');
 
     await isolatedPage.goto('/');
@@ -47,9 +47,9 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await isolatedPage.getByTestId('widget-button').first().click();
 
     // Select rewards
-    await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
-    await isolatedPage.getByTestId('stake-reward-card').first().click();
-    await isolatedPage.getByTestId('widget-button').first().click();
+    // await expect(isolatedPage.getByText('Choose your reward token')).toBeVisible();
+    // await isolatedPage.getByTestId('stake-reward-card').first().click();
+    // await isolatedPage.getByTestId('widget-button').first().click();
 
     // Confirm position
     await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible();

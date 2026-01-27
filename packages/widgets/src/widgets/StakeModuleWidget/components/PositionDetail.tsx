@@ -7,7 +7,8 @@ import {
   TOKENS,
   useRewardContractTokens,
   useStakeRewardContracts,
-  lsSkyUsdsRewardAddress
+  lsSkyUsdsRewardAddress,
+  lsSkySpkRewardAddress
 } from '@jetstreamgg/sky-hooks';
 import { capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -70,6 +71,9 @@ export function PositionDetail({
   const isUsdsReward =
     selectedRewardContract?.toLowerCase() ===
     lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]?.toLowerCase();
+  const isSpkReward =
+    selectedRewardContract?.toLowerCase() ===
+    lsSkySpkRewardAddress[chainId as keyof typeof lsSkySpkRewardAddress]?.toLowerCase();
 
   return (
     <MotionVStack variants={positionAnimations} className="mt-4 justify-between space-y-6">
@@ -118,7 +122,7 @@ export function PositionDetail({
               <Text variant="medium" className="text-textSecondary leading-4">
                 Reward
               </Text>
-              <div className="ml-8 flex items-center justify-start gap-1">
+              <div className="flex items-center justify-start gap-1">
                 <UpdateRewardSelection
                   rewardToken={rewardContractTokens.rewardsToken}
                   urnAddress={urnAddress}
@@ -174,13 +178,14 @@ export function PositionDetail({
           </VStack>
         </VStack>
       </HStack>
-      {isUsdsReward && (
+      {(isUsdsReward || isSpkReward) && (
         <HStack gap={2} className="items-center">
           <YellowWarning boxSize={16} viewBox="0 0 16 16" className="mt-1 shrink-0 self-start" />
           <Text className="text-textSecondary text-sm">
-            Please <span className="font-bold text-white">choose another reward.</span> The USDS rewards are
-            disabled as a Staking Reward option, and the USDS rate set to zero. The pool of USDS will remain
-            forever so that you can claim your rewards anytime.
+            Please <span className="font-bold text-white">choose another reward.</span>{' '}
+            {isUsdsReward
+              ? 'The USDS rewards are disabled as a Staking Reward option, and the USDS rate set to zero. The pool of USDS will remain forever so that you can claim your rewards anytime.'
+              : 'The SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero. The pool of SPK will remain forever so that you can claim your rewards anytime.'}
           </Text>
         </HStack>
       )}

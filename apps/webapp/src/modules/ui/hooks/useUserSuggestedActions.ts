@@ -11,7 +11,9 @@ import {
   useTokenBalances,
   useAvailableTokenRewardContracts,
   RewardContract,
-  TOKENS
+  TOKENS,
+  filterDeprecatedRewardContracts,
+  isDeprecatedRewardContract
 } from '@jetstreamgg/sky-hooks';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
@@ -79,19 +81,25 @@ const fetchUserSuggestedActions = (
     EXPERT_INTENT: EXPERT
   } = IntentMapping;
   const { STUSDS_INTENT: STUSDS } = ExpertIntentMapping;
-  const skyRewardContract = rewardContracts?.find(
-    (rewardContract: RewardContract) => rewardContract.rewardToken === TOKENS.sky
-  );
-  const spkRewardContract = rewardContracts?.find(
+  // Filter out deprecated reward contracts
+  const activeRewardContracts = filterDeprecatedRewardContracts(rewardContracts || [], chainId);
+
+  const spkRewardContract = activeRewardContracts?.find(
     (rewardContract: RewardContract) => rewardContract.rewardToken === TOKENS.spk
   );
-  const cleRewardContract = rewardContracts?.find(
+  const cleRewardContract = activeRewardContracts?.find(
     (rewardContract: RewardContract) => rewardContract.rewardToken === TOKENS.cle
   );
   const l2ChainId = isL2ChainId(chainId);
 
   // Determine which reward contract to prioritize based on current context
-  const prioritizedRewardContract = currentRewardContract || skyRewardContract;
+  // Use SPK as default since USDS-SKY is deprecated
+  // Don't use deprecated contracts for suggestions even if it's the current context
+  const isCurrentContractDeprecated =
+    currentRewardContract && isDeprecatedRewardContract(currentRewardContract.contractAddress, chainId);
+  const prioritizedRewardContract = isCurrentContractDeprecated
+    ? spkRewardContract
+    : currentRewardContract || spkRewardContract;
 
   // Limit the Linked and Suggested actions to Mainnet and Tenderly mainnet for now
   if (!l2ChainId) {
@@ -138,11 +146,7 @@ const fetchUserSuggestedActions = (
           title: t`Upgrade and get rewards`,
           balance: daiBalance.formatted,
           stepOne: t`Upgrade DAI to USDS`,
-          stepTwo: isCleContext
-            ? t`Get Chronicle Points with USDS`
-            : isSpkContext
-              ? t`Get SPK rewards with USDS`
-              : t`Get SKY rewards with USDS`,
+          stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
           url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}&${SourceToken}=DAI`,
           intent: IntentMapping.UPGRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
@@ -153,13 +157,12 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward options when in specific context (show other options with lower weight)
       if (currentRewardContract) {
-        const availableAlternatives = [skyRewardContract, spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltSpk = alternativeContract.rewardToken === TOKENS.spk;
             const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
 
             linkedActions.push({
@@ -168,11 +171,7 @@ const fetchUserSuggestedActions = (
               title: t`Upgrade and get rewards`,
               balance: daiBalance.formatted,
               stepOne: t`Upgrade DAI to USDS`,
-              stepTwo: isAltCle
-                ? t`Get Chronicle Points with USDS`
-                : isAltSpk
-                  ? t`Get SPK rewards with USDS`
-                  : t`Get SKY rewards with USDS`,
+              stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
               url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}&${SourceToken}=DAI`,
               intent: IntentMapping.UPGRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
@@ -252,11 +251,7 @@ const fetchUserSuggestedActions = (
           balance: usdcBalance.formatted,
           title: t`Trade and get rewards`,
           stepOne: t`Trade USDC for USDS`,
-          stepTwo: isCleContext
-            ? t`Get Chronicle Points with USDS`
-            : isSpkContext
-              ? t`Get SPK rewards with USDS`
-              : t`Get SKY rewards with USDS`,
+          stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
           url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
           intent: IntentMapping.TRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
@@ -267,13 +262,12 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward options for USDC
       if (currentRewardContract) {
-        const availableAlternatives = [skyRewardContract, spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltSpk = alternativeContract.rewardToken === TOKENS.spk;
             const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
 
             linkedActions.push({
@@ -282,11 +276,7 @@ const fetchUserSuggestedActions = (
               balance: usdcBalance.formatted,
               title: t`Trade and get rewards`,
               stepOne: t`Trade USDC for USDS`,
-              stepTwo: isAltCle
-                ? t`Get Chronicle Points with USDS`
-                : isAltSpk
-                  ? t`Get SPK rewards with USDS`
-                  : t`Get SKY rewards with USDS`,
+              stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
               url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.TRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
@@ -349,11 +339,7 @@ const fetchUserSuggestedActions = (
           title: t`Trade and get rewards`,
           balance: usdtBalance.formatted,
           stepOne: t`Trade USDT for USDS`,
-          stepTwo: isCleContext
-            ? t`Get Chronicle Points with USDS`
-            : isSpkContext
-              ? t`Get SPK rewards with USDS`
-              : t`Get SKY rewards with USDS`,
+          stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
           url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
           intent: IntentMapping.TRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
@@ -364,13 +350,12 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward options for USDT
       if (currentRewardContract) {
-        const availableAlternatives = [skyRewardContract, spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltSpk = alternativeContract.rewardToken === TOKENS.spk;
             const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
 
             linkedActions.push({
@@ -379,11 +364,7 @@ const fetchUserSuggestedActions = (
               title: t`Trade and get rewards`,
               balance: usdtBalance.formatted,
               stepOne: t`Trade USDT for USDS`,
-              stepTwo: isAltCle
-                ? t`Get Chronicle Points with USDS`
-                : isAltSpk
-                  ? t`Get SPK rewards with USDS`
-                  : t`Get SKY rewards with USDS`,
+              stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
               url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.TRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
@@ -436,7 +417,7 @@ const fetchUserSuggestedActions = (
 
         suggestedActions.push({
           primaryToken: 'USDS',
-          secondaryToken: isCleContext ? 'CLE' : isSpkContext ? 'SPK' : 'SKY',
+          secondaryToken: isCleContext ? 'CLE' : 'SPK',
           title: isCleContext ? t`Start earning Chronicle Points` : t`Start getting rewards`,
           balance: usdsBalance.formatted,
           url: `/?${Widget}=${REWARDS}&${InputAmount}=${usdsBalance.formatted}&reward=${prioritizedRewardContract.contractAddress}`,
@@ -448,18 +429,17 @@ const fetchUserSuggestedActions = (
 
       // Add alternative reward suggestions when in specific context
       if (currentRewardContract) {
-        const availableAlternatives = [skyRewardContract, spkRewardContract, cleRewardContract].filter(
+        const availableAlternatives = [spkRewardContract, cleRewardContract].filter(
           contract => contract && contract.contractAddress !== currentRewardContract.contractAddress
         );
 
         availableAlternatives.forEach((alternativeContract, index) => {
           if (alternativeContract) {
-            const isAltSpk = alternativeContract.rewardToken === TOKENS.spk;
             const isAltCle = alternativeContract.rewardToken === TOKENS.cle;
 
             suggestedActions.push({
               primaryToken: 'USDS',
-              secondaryToken: isAltCle ? 'CLE' : isAltSpk ? 'SPK' : 'SKY',
+              secondaryToken: isAltCle ? 'CLE' : 'SPK',
               title: isAltCle ? t`Start earning Chronicle Points` : t`Start getting rewards`,
               balance: usdsBalance.formatted,
               url: `/?${Widget}=${REWARDS}&${InputAmount}=${usdsBalance.formatted}&reward=${alternativeContract.contractAddress}`,

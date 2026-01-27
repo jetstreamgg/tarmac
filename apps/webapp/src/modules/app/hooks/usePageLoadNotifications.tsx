@@ -6,10 +6,12 @@ import {
   CHATBOT_ENABLED,
   CHAT_NOTIFICATION_KEY,
   GOVERNANCE_MIGRATION_NOTIFICATION_KEY,
-  SPK_STAKING_NOTIFICATION_KEY
+  SPK_STAKING_NOTIFICATION_KEY,
+  USDS_SKY_REWARDS_NOTIFICATION_KEY
 } from '@/lib/constants';
 import { NotificationConfig } from './useNotificationQueue';
 import { useHasSpkStakingPositions } from './useHasSpkStakingPositions';
+import { useHasUsdsSkyRewardsPosition } from './useHasUsdsSkyRewardsPosition';
 
 /**
  * Hook to manage page load notifications configuration.
@@ -18,7 +20,8 @@ import { useHasSpkStakingPositions } from './useHasSpkStakingPositions';
  * Current priority order:
  * 1. Governance Migration (requires MKR balance)
  * 2. SPK Staking Rewards (requires staking positions with SPK reward)
- * 3. Chat Notification
+ * 3. USDS-SKY Rewards (requires position in deprecated USDS-SKY rewards)
+ * 4. Chat Notification
  */
 export const usePageLoadNotifications = (): NotificationConfig[] => {
   const { address, isConnected } = useConnection();
@@ -46,6 +49,9 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
   // Check if user has SPK staking positions
   const { hasSpkPositions, isReady: spkPositionsReady } = useHasSpkStakingPositions();
 
+  // Check if user has USDS-SKY rewards position
+  const { hasPosition: hasUsdsSkyPosition, isReady: usdsSkyPositionReady } = useHasUsdsSkyRewardsPosition();
+
   // Define notification configurations with priority order
   const notificationConfigs: NotificationConfig[] = useMemo(
     () => [
@@ -64,13 +70,29 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
         hasBeenShown: () => localStorage.getItem(SPK_STAKING_NOTIFICATION_KEY) === 'true'
       },
       {
-        id: 'chat',
+        id: 'usds-sky-rewards',
         priority: 3,
+        isReady: () => usdsSkyPositionReady, // Wait for rewards balance to load
+        checkConditions: () => isConnected && hasUsdsSkyPosition,
+        hasBeenShown: () => localStorage.getItem(USDS_SKY_REWARDS_NOTIFICATION_KEY) === 'true'
+      },
+      {
+        id: 'chat',
+        priority: 4,
         checkConditions: () => CHATBOT_ENABLED,
         hasBeenShown: () => localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true'
       }
     ],
-    [isConnected, mkrBalanceLoaded, mkrExistsOnChain, hasEnoughMkr, spkPositionsReady, hasSpkPositions]
+    [
+      isConnected,
+      mkrBalanceLoaded,
+      mkrExistsOnChain,
+      hasEnoughMkr,
+      spkPositionsReady,
+      hasSpkPositions,
+      usdsSkyPositionReady,
+      hasUsdsSkyPosition
+    ]
   );
 
   return notificationConfigs;

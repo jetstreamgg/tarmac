@@ -1,7 +1,6 @@
 import { Intent } from '@/lib/enums';
 import { ModuleCard } from '../ModuleCard';
 import { t } from '@lingui/core/macro';
-import { Trans } from '@lingui/react/macro';
 import { HStack } from '@/modules/layout/components/HStack';
 import { PairTokenIcons, PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 import { mainnet } from 'viem/chains';
@@ -37,21 +36,10 @@ export function StakingRewardsCard() {
       module={t`Staking`}
       title={t`Access Staking rewards (or Borrow) with SKY`}
       subHeading={
-        <div className="flex flex-wrap gap-2 lg:gap-4">
-          <HStack gap={2}>
-            <PairTokenIcons leftToken="SKY" rightToken="SKY" chainId={mainnet.id} />
-            <Text className="text-textSecondary">With: SKY Get: SKY</Text>
-          </HStack>
-          <div className="flex flex-wrap items-center gap-2 md:flex-col md:items-start lg:flex-row lg:items-center">
-            <HStack gap={2}>
-              <PairTokenIcons leftToken="SKY" rightToken="SPK" chainId={mainnet.id} />
-              <Text className="text-textSecondary">With: SKY Get: SPK</Text>
-            </HStack>
-            <Text variant="small" className="rounded-full bg-[#504DFF] px-2 py-1 text-white">
-              <Trans>SPK rewards ending soon</Trans>
-            </Text>
-          </div>
-        </div>
+        <HStack gap={2}>
+          <PairTokenIcons leftToken="SKY" rightToken="SKY" chainId={mainnet.id} />
+          <Text className="text-textSecondary">With: SKY Get: SKY</Text>
+        </HStack>
       }
       emphasisText={
         chartDataLoading ? (
