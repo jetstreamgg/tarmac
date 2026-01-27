@@ -114,13 +114,14 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
   const userAssets = vaultData?.userAssets ?? 0n;
-  const availableLiquidity = allocationsData?.markets[0]?.liquidity ?? 0n;
-  const maxWithdraw = isAllocationsLoading
-    ? userAssets
-    : userAssets < availableLiquidity
+  const availableLiquidity = allocationsData?.markets[0]?.liquidity;
+  const hasLiquidityData = !isAllocationsLoading && availableLiquidity !== undefined;
+  const maxWithdraw = hasLiquidityData
+    ? userAssets < availableLiquidity
       ? userAssets
-      : availableLiquidity;
-  const isLiquidityConstrained = !isAllocationsLoading && userAssets > 0n && availableLiquidity < userAssets;
+      : availableLiquidity
+    : userAssets;
+  const isLiquidityConstrained = hasLiquidityData && userAssets > 0n && availableLiquidity < userAssets;
 
   // Build the claim amount text for display in transaction status
   const claimAmountText = useMemo(() => {
@@ -166,6 +167,8 @@ const MorphoVaultWidgetWrapped = ({
 
   // Max withdrawal state - when true, use redeem instead of withdraw
   const [max, setMax] = useState<boolean>(false);
+
+  const [disclaimerChecked, setDisclaimerChecked] = useState<boolean>(false);
 
   useEffect(() => {
     setAmount(initialAmount);
@@ -406,15 +409,26 @@ const MorphoVaultWidgetWrapped = ({
     vaultName
   ]);
 
+  const shouldEnforceDisclaimer =
+    widgetState.action === MorphoVaultAction.SUPPLY && widgetState.screen === MorphoVaultScreen.ACTION;
+  const isDisabledForDisclaimer = shouldEnforceDisclaimer && !disclaimerChecked;
+
   // Set widget button disabled state
   useEffect(() => {
     setIsDisabled(
       txStatus === TxStatus.IDLE &&
         isConnectedAndEnabled &&
-        ((widgetState.action === MorphoVaultAction.SUPPLY && supplyDisabled) ||
+        ((widgetState.action === MorphoVaultAction.SUPPLY && (supplyDisabled || isDisabledForDisclaimer)) ||
           (widgetState.action === MorphoVaultAction.WITHDRAW && withdrawDisabled))
     );
-  }, [widgetState.action, withdrawDisabled, isConnectedAndEnabled, supplyDisabled, txStatus]);
+  }, [
+    widgetState.action,
+    withdrawDisabled,
+    isConnectedAndEnabled,
+    supplyDisabled,
+    txStatus,
+    isDisabledForDisclaimer
+  ]);
 
   // Set loading state
   useEffect(() => {
@@ -531,7 +545,7 @@ const MorphoVaultWidgetWrapped = ({
               maxWithdraw={maxWithdraw}
               isLiquidityConstrained={isLiquidityConstrained}
               userShares={vaultData?.userShares}
-              isVaultDataLoading={isVaultDataLoading}
+              isVaultDataLoading={isVaultDataLoading || isAllocationsLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
@@ -561,6 +575,9 @@ const MorphoVaultWidgetWrapped = ({
               claimRewards={morphoVaultClaimRewards}
               isRewardsLoading={isRewardsLoading}
               hasClaimableRewards={rewardsData?.hasClaimableRewards}
+              availableLiquidity={availableLiquidity}
+              disclaimerChecked={disclaimerChecked}
+              onDisclaimerChange={setDisclaimerChecked}
             />
           </CardAnimationWrapper>
         )}
