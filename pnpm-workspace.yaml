@@ -75,8 +75,8 @@ catalog:
   porto: ~0.2.37
   prettier: ^3.6.1
   prettier-plugin-tailwindcss: ^0.7.2
-  react: ^19.2.3
-  react-dom: ^19.2.3
+  react: ^19.2.4
+  react-dom: ^19.2.4
   react-intersection-observer: ^9.16.0
   react-jazzicon: ^1.0.4
   react-markdown: ^9.1.0
@@ -106,5 +106,11 @@ catalogMode: strict
 cleanupUnusedCatalogs: true
 
 minimumReleaseAge: 1440
+
+# Temporary exception for React 19.2.4 security patch (CVE-2025-55184, CVE-2025-55183)
+# Published 2026-01-26, can be removed after 2026-01-28
+minimumReleaseAgeExclude:
+  - 'react'
+  - 'react-dom'
 
 trustPolicy: no-downgrade
