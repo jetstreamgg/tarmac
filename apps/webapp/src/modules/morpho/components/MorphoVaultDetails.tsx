@@ -12,6 +12,12 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { Token } from '@jetstreamgg/sky-hooks';
 import { AboutStUsds } from '@/modules/ui/components/AboutStUsds';
 import { AboutUsds } from '@/modules/ui/components/AboutUsds';
+import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
+import { ExpertIntentMapping } from '@/lib/constants';
+import { ExpertIntent } from '@/lib/enums';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
+import { filterActionsByIntent } from '@/lib/utils';
 
 type MorphoVaultDetailsProps = {
   /** The Morpho vault contract address */
@@ -28,6 +34,9 @@ export function MorphoVaultDetails({
   vaultName
 }: MorphoVaultDetailsProps): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
+  const { linkedActionConfig } = useConfigContext();
+  const { data: actionData } = useUserSuggestedActions();
+  const widget = ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT];
 
   return (
     <DetailSectionWrapper>
@@ -48,6 +57,15 @@ export function MorphoVaultDetails({
           <MorphoVaultAllocationsDetails vaultAddress={vaultAddress} />
         </DetailSectionRow>
       </DetailSection>
+      {isConnectedAndAcceptedTerms &&
+        !linkedActionConfig?.showLinkedAction &&
+        (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
+          <DetailSection title={t`Combined actions`}>
+            <DetailSectionRow>
+              <ActionsShowcase widget={widget} />
+            </DetailSectionRow>
+          </DetailSection>
+        )}
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your ${vaultName} vault transaction history`}>
           <DetailSectionRow>

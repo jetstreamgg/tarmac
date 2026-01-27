@@ -23,6 +23,11 @@ const secondaryTagline: Record<string, string> = {
   [IntentMapping.EXPERT_INTENT]: 'to access Expert modules'
 };
 
+const expertModuleTagline: Record<string, string> = {
+  stusds: 'to access stUSDS',
+  morpho: 'to access Morpho vault'
+};
+
 export const LinkedActionCard = ({
   intent,
   primaryToken,
@@ -83,7 +88,9 @@ export const LinkedActionCard = ({
               <span className="text-textEmphasis">{`${formatNumber(parseInt(balance))} ${primaryToken} `}</span>
               {' to '}
               <span className="text-textEmphasis">{`${secondaryToken} `}</span>
-              {secondaryTagline[la]}
+              {expertModule && expertModuleTagline[expertModule]
+                ? expertModuleTagline[expertModule]
+                : secondaryTagline[la]}
             </Trans>
           </Heading>
           <VStack className="space-between gap-4">
@@ -97,7 +104,7 @@ export const LinkedActionCard = ({
             <Link to={urlWithRetainedParams} onClick={handleClick} className="w-fit">
               <Button
                 variant="light"
-                className="h-auto min-h-10 w-fit max-w-full whitespace-normal text-balance px-5"
+                className="h-auto min-h-10 w-fit max-w-full px-5 text-balance whitespace-normal"
               >
                 {buttonText}
               </Button>

@@ -10,6 +10,7 @@ import { useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
 import { formatDecimalPercentage, formatStrAsApy } from '@jetstreamgg/sky-utils';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultRate, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 
 // TODO export PairTokenIcons from widgets?
 // import { PairTokenIcons } from '@widgets/shared/components/ui/token/PairTokenIcon';
@@ -145,18 +146,30 @@ export function RewardsRate({
 
 export function AdvancedRate({ expertModule }: { expertModule?: string }) {
   const { linkedActionConfig } = useConfigContext();
+  const chainId = useChainId();
   const module = expertModule || linkedActionConfig?.expertModule;
   const { data: stUsdsData } = useStUsdsData();
-  const moduleRate = stUsdsData?.moduleRate || 0n;
-  const formattedRate = moduleRate > 0n ? formatStrAsApy(moduleRate) : '0.00%';
+  const defaultMorphoVault = MORPHO_VAULTS[0];
+  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[chainId];
+  const { data: morphoData } = useMorphoVaultRate({
+    vaultAddress: morphoVaultAddress || ('0x' as `0x${string}`)
+  });
 
   const moduleConfigs: Record<string, { inputToken: string; outputToken: string; rateType: string }> = {
-    stusds: { inputToken: 'USDS', outputToken: 'stUSDS', rateType: 'stusds' }
-    // Future modules can be added here:
-    // someModule: { inputToken: 'TOKEN1', outputToken: 'TOKEN2', rateType: 'type' }
+    stusds: { inputToken: 'USDS', outputToken: 'stUSDS', rateType: 'stusds' },
+    morpho: { inputToken: 'USDS', outputToken: 'USDS', rateType: 'morpho' }
   };
 
   const config = module ? moduleConfigs[module] : null;
+
+  // Get the appropriate rate based on module
+  let formattedRate = '0.00%';
+  if (module === 'stusds') {
+    const moduleRate = stUsdsData?.moduleRate || 0n;
+    formattedRate = moduleRate > 0n ? formatStrAsApy(moduleRate) : '0.00%';
+  } else if (module === 'morpho') {
+    formattedRate = morphoData?.formattedNetRate || '0.00%';
+  }
 
   if (config) {
     return (

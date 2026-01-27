@@ -37,16 +37,20 @@ export function getFooterLinks(): FooterLink[] {
 }
 
 export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
-  // For expert module intents (like 'stusds'), also include actions with la='expert'
-  const isExpertModuleIntent = ['stusds'].includes(intent);
+  // For expert module intents (like 'stusds', 'morpho'), also include actions with la='expert'
+  const isExpertModuleIntent = ['stusds', 'morpho'].includes(intent);
 
   return actions.filter(x => {
     // Direct match on intent or linked action
     if (x.intent === intent || (x as LinkedAction)?.la === intent) {
       return true;
     }
-    // For advanced module pages (stusds), show actions that lead to advanced modules
+    // For expert module pages, only show actions targeting that specific module
     if (isExpertModuleIntent && (x as LinkedAction)?.la === IntentMapping[Intent.EXPERT_INTENT]) {
+      // If action has an expertModule field, it must match the current intent
+      if ((x as LinkedAction)?.expertModule) {
+        return (x as LinkedAction).expertModule === intent;
+      }
       return true;
     }
     return false;
