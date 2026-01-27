@@ -28,7 +28,7 @@ export function MorphoRateBreakdownPopover({
       <Popover>
         <PopoverTrigger asChild className="cursor-pointer" onClick={e => e.stopPropagation()}>
           <div className="flex items-center gap-1">
-            <Sparkles className="text-bullish h-4 w-4" />
+            <Sparkles className="h-4 w-4" />
             <Text variant="large" className="text-bullish">
               {formattedNetRate}
             </Text>
@@ -99,7 +99,7 @@ export function MorphoRateBreakdownPopover({
             {/* Net Rate */}
             <div className="flex items-center justify-between gap-8">
               <div className="flex items-center gap-2">
-                <Sparkles className="text-bullish h-4 w-4" />
+                <Sparkles className="h-4 w-4" />
                 <Text className="text-bullish text-sm font-medium">
                   <Trans>Net Rate</Trans>
                 </Text>
