@@ -26,6 +26,12 @@ The rate is derived from the SKY Borrow Rate less the stUSDS Accessibility Rewar
 The SKY Borrow Rate is the current interest rate charged to SKY-backed borrowers and is dynamic and market-driven, based on the utilization of funds within the stUSDS contract.`
   },
   {
+    id: 'morpho-rate',
+    title: 'Morpho Vault Rate',
+    tooltip:
+      'The vault rate provided is variable and calculated over the last 6 hours. It includes native yield from the stUSDS/USDS market plus incentive rewards, minus fees. The rate is provided by a third party provider ([Morpho](https://morpho.org/)). This estimate is for informational purposes only and does not guarantee future results.'
+  },
+  {
     id: 'utilization',
     title: 'Utilization',
     tooltip:
