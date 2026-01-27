@@ -110,7 +110,7 @@ minimumReleaseAge: 1440
 # Temporary exception for React 19.2.4 security patch (CVE-2025-55184, CVE-2025-55183)
 # Published 2026-01-26, can be removed after 2026-01-28
 minimumReleaseAgeExclude:
-  - 'react@19.2.4'
-  - 'react-dom@19.2.4'
+  - 'react'
+  - 'react-dom'
 
 trustPolicy: no-downgrade
