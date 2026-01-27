@@ -10,6 +10,8 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { MorphoVaultChart } from './MorphoVaultChart';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { Token } from '@jetstreamgg/sky-hooks';
+import { AboutStUsds } from '@/modules/ui/components/AboutStUsds';
+import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 
 type MorphoVaultDetailsProps = {
   /** The Morpho vault contract address */
@@ -56,6 +58,14 @@ export function MorphoVaultDetails({
       <DetailSection title={t`Metrics`}>
         <DetailSectionRow>
           <MorphoVaultChart vaultAddress={vaultAddress} assetToken={assetToken} />
+        </DetailSectionRow>
+      </DetailSection>
+      <DetailSection title={t`About Native Sky Protocol Tokens`}>
+        <DetailSectionRow>
+          <div>
+            <AboutStUsds module="stusds-module-banners" />
+            <AboutUsds />
+          </div>
         </DetailSectionRow>
       </DetailSection>
       {/* <DetailSection title={t`FAQs`}>
