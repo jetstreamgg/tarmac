@@ -8,7 +8,7 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { useMorphoVaultRate } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
-import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 
 export function MorphoRateBreakdownPopover({
   vaultAddress,
