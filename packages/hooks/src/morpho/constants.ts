@@ -5,6 +5,12 @@ import { MorphoVaultConfig } from './morpho';
 export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
 export const MERKL_API_URL = 'https://api.merkl.xyz/v4';
 
+/**
+ * Market ID for the stUSDC/USDS market that the USDS Risk Capital vault allocates to
+ */
+export const USDS_RISK_CAPITAL_MARKET_ID =
+  '0x77e624dd9dd980810c2b804249e88f3598d9c7ec91f16aa5fbf6e3fdf6087f82' as const;
+
 export enum MorphoAdapterType {
   MetaMorpho = 'MetaMorpho',
   MorphoMarketV1 = 'MorphoMarketV1'
@@ -23,13 +29,15 @@ export const MORPHO_VAULTS: MorphoVaultConfig[] = [
   {
     name: 'USDS Risk Capital',
     vaultAddress: usdsRiskCapitalVaultAddress,
-    assetToken: TOKENS.usds
+    assetToken: TOKENS.usds,
+    marketId: USDS_RISK_CAPITAL_MARKET_ID
   }
   // Add more vaults here as needed:
   // {
   //   name: 'Another Vault Name',
   //   vaultAddress: anotherVaultAddress,
-  //   assetToken: TOKENS.usds
+  //   assetToken: TOKENS.usds,
+  //   marketId: '0x...'
   // }
 ];
 
@@ -214,6 +222,51 @@ export const VAULT_V2_HISTORICAL_QUERY = `
           x
           y
         }
+      }
+    }
+  }
+`;
+
+/**
+ * Combined GraphQL query for vault rate data and market allocation data.
+ * Fetches everything in a single request for optimized performance.
+ */
+export const VAULT_DATA_QUERY = `
+  query VaultData($vaultAddress: String!, $marketId: String!, $chainId: Int!) {
+    vaultV2ByAddress(address: $vaultAddress, chainId: $chainId) {
+      avgApy
+      avgNetApy
+      performanceFee
+      managementFee
+      rewards {
+        supplyApr
+        asset {
+          symbol
+          logoURI
+        }
+      }
+      totalAssets
+      totalAssetsUsd
+      idleAssetsUsd
+      asset {
+        decimals
+        symbol
+      }
+    }
+    marketByUniqueKey(uniqueKey: $marketId, chainId: $chainId) {
+      uniqueKey
+      lltv
+      loanAsset {
+        symbol
+      }
+      collateralAsset {
+        symbol
+      }
+      state {
+        supplyAssets
+        borrowAssets
+        utilization
+        netSupplyApy
       }
     }
   }

@@ -1,4 +1,4 @@
-import { useMorphoVaultAllocations } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultCombinedData } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +20,8 @@ type MorphoVaultAllocationsDetailsProps = {
 };
 
 export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAllocationsDetailsProps) {
-  const { data: allocationsData, isLoading } = useMorphoVaultAllocations({ vaultAddress });
+  const { data: combinedData, isLoading } = useMorphoVaultCombinedData({ vaultAddress });
+  const allocationsData = combinedData?.allocations;
   const chainId = useChainId();
 
   if (isLoading) {

@@ -5,7 +5,7 @@ import { TextPaper } from '@widgets/shared/components/icons/TextPaper';
 import { Sparkles } from '@widgets/shared/components/icons/Sparkles';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { useMorphoVaultRate } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultCombinedData } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
@@ -17,7 +17,8 @@ export function MorphoRateBreakdownPopover({
   vaultAddress: `0x${string}`;
   tooltipIconClassName?: string;
 }) {
-  const { data: rateData, isLoading } = useMorphoVaultRate({ vaultAddress });
+  const { data: combinedData, isLoading } = useMorphoVaultCombinedData({ vaultAddress });
+  const rateData = combinedData?.rate;
   const formattedNetRate = rateData?.formattedNetRate || '0.00%';
 
   if (isLoading) return <Skeleton className="bg-textSecondary h-6 w-20" />;

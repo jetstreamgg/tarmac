@@ -3,7 +3,7 @@ import {
   useMorphoVaultData,
   Token,
   getTokenDecimals,
-  useMorphoVaultAllocations
+  useMorphoVaultCombinedData
 } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -40,13 +40,13 @@ export const MorphoVaultStatsCard = ({
     vaultAddress: currentVaultAddress
   });
 
-  const { data: allocations, isLoading: allocationsLoading } = useMorphoVaultAllocations({
+  const { data: combinedData, isLoading: combinedDataLoading } = useMorphoVaultCombinedData({
     vaultAddress: currentVaultAddress
   });
 
   // Data handling
   const totalAssets = vaultData?.totalAssets || 0n;
-  const liquidity = allocations?.markets[0]?.liquidity ?? 0n;
+  const liquidity = combinedData?.allocations.markets[0]?.liquidity ?? 0n;
 
   if (!currentVaultAddress) {
     return null;
@@ -77,7 +77,7 @@ export const MorphoVaultStatsCard = ({
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>Liquidity</Trans>
             </Text>
-            {allocationsLoading ? (
+            {combinedDataLoading ? (
               <Skeleton className="bg-textSecondary h-6 w-21" />
             ) : (
               <Text dataTestId="morpho-vault-tvl">

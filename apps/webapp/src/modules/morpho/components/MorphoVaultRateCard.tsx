@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useMorphoVaultRate } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultCombinedData } from '@jetstreamgg/sky-hooks';
 import { MorphoRateBreakdownPopover } from '@jetstreamgg/sky-widgets';
 
 type MorphoVaultRateCardProps = {
@@ -10,7 +10,7 @@ type MorphoVaultRateCardProps = {
 
 export function MorphoVaultRateCard({ vaultAddress }: MorphoVaultRateCardProps) {
   const { i18n } = useLingui();
-  const { isLoading } = useMorphoVaultRate({ vaultAddress });
+  const { isLoading } = useMorphoVaultCombinedData({ vaultAddress });
 
   return (
     <StatsCard

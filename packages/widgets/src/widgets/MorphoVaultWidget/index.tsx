@@ -5,9 +5,8 @@ import {
   useIsBatchSupported,
   Token,
   useMorphoVaultData,
-  useMorphoVaultRate,
-  useMorphoVaultRewards,
-  useMorphoVaultAllocations
+  useMorphoVaultCombinedData,
+  useMorphoVaultRewards
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce, formatBigInt } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -95,8 +94,8 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
 
-  // Vault rate hook - fetches Rate from Morpho API
-  const { data: vaultRateData } = useMorphoVaultRate({
+  // Combined vault data hook - fetches rate and allocations from Morpho API in a single call
+  const { data: combinedData, isLoading: isCombinedDataLoading } = useMorphoVaultCombinedData({
     vaultAddress
   });
 
@@ -108,14 +107,9 @@ const MorphoVaultWidgetWrapped = ({
   } = useMorphoVaultRewards({
     vaultAddress
   });
-
-  // Compute max withdrawal and liquidity constraint status
-  const { data: allocationsData, isLoading: isAllocationsLoading } = useMorphoVaultAllocations({
-    vaultAddress
-  });
   const userAssets = vaultData?.userAssets ?? 0n;
-  const availableLiquidity = allocationsData?.markets[0]?.liquidity;
-  const hasLiquidityData = !isAllocationsLoading && availableLiquidity !== undefined;
+  const availableLiquidity = combinedData?.allocations.markets[0]?.liquidity;
+  const hasLiquidityData = !isCombinedDataLoading && availableLiquidity !== undefined;
   const maxWithdraw = hasLiquidityData
     ? userAssets < availableLiquidity
       ? userAssets
@@ -546,7 +540,7 @@ const MorphoVaultWidgetWrapped = ({
               maxWithdraw={maxWithdraw}
               isLiquidityConstrained={isLiquidityConstrained}
               userShares={vaultData?.userShares}
-              isVaultDataLoading={isVaultDataLoading || isAllocationsLoading}
+              isVaultDataLoading={isVaultDataLoading || isCombinedDataLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
@@ -571,7 +565,7 @@ const MorphoVaultWidgetWrapped = ({
               vaultAddress={vaultAddress}
               vaultName={vaultName}
               vaultTvl={vaultData?.totalAssets}
-              vaultRate={vaultRateData?.formattedNetRate}
+              vaultRate={combinedData?.rate.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
               claimRewards={morphoVaultClaimRewards}
               isRewardsLoading={isRewardsLoading}

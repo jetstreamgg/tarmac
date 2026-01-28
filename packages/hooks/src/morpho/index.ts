@@ -10,6 +10,11 @@ export {
 } from './useMorphoVaultRate';
 export { useMorphoVaultAllocations } from './useMorphoVaultAllocations';
 export {
+  useMorphoVaultCombinedData,
+  type MorphoVaultCombinedData,
+  type MorphoVaultCombinedDataHook
+} from './useMorphoVaultCombinedData';
+export {
   type MorphoMarketAllocation,
   type MorphoV1VaultAllocation,
   type MorphoIdleLiquidityAllocation,

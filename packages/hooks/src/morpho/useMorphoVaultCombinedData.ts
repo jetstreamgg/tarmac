@@ -1,0 +1,262 @@
+import { useQuery } from '@tanstack/react-query';
+import { useChainId } from 'wagmi';
+import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { ReadHook } from '../hooks';
+import { MORPHO_API_URL, VAULT_DATA_QUERY, getMorphoVaultByAddress } from './constants';
+import { isTestnetId, formatBigInt, formatNumber, formatPercent } from '@jetstreamgg/sky-utils';
+import { mainnet } from 'viem/chains';
+import type {
+  MorphoIdleLiquidityAllocation,
+  MorphoMarketAllocation,
+  MorphoVaultAllocationsData
+} from './morpho';
+import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRate';
+
+/**
+ * API response type for the combined vault data query
+ */
+type MorphoVaultCombinedDataApiResponse = {
+  data: {
+    vaultV2ByAddress: {
+      avgApy: number;
+      avgNetApy: number;
+      performanceFee: number;
+      managementFee: number;
+      rewards: {
+        supplyApr: number;
+        asset: {
+          symbol: string;
+          logoURI: string | null;
+        };
+      }[];
+      totalAssets: string;
+      totalAssetsUsd: number;
+      idleAssetsUsd: number;
+      asset: {
+        decimals: number;
+        symbol: string;
+      };
+    } | null;
+    marketByUniqueKey: {
+      uniqueKey: string;
+      lltv: string;
+      loanAsset: {
+        symbol: string;
+      };
+      collateralAsset: {
+        symbol: string;
+      };
+      state: {
+        supplyAssets: string;
+        borrowAssets: string;
+        utilization: number;
+        netSupplyApy: number;
+      };
+    } | null;
+  };
+};
+
+/**
+ * Combined vault data including rate and allocation information
+ */
+export type MorphoVaultCombinedData = {
+  /** Rate data (APY, fees, rewards) */
+  rate: MorphoVaultRateData;
+  /** Allocation data (markets, idle liquidity) */
+  allocations: MorphoVaultAllocationsData;
+};
+
+export type MorphoVaultCombinedDataHook = ReadHook & {
+  data?: MorphoVaultCombinedData;
+};
+
+/**
+ * Fetch combined vault data (rate + allocations) in a single API call
+ */
+async function fetchMorphoVaultCombinedData(
+  vaultAddress: string,
+  marketId: string,
+  chainId: number
+): Promise<MorphoVaultCombinedData | undefined> {
+  const response = await fetch(MORPHO_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      query: VAULT_DATA_QUERY,
+      variables: {
+        vaultAddress: vaultAddress.toLowerCase(),
+        marketId,
+        chainId
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Morpho API error: ${response.status}`);
+  }
+
+  const result: MorphoVaultCombinedDataApiResponse = await response.json();
+
+  if (!result.data.vaultV2ByAddress) {
+    return undefined;
+  }
+
+  const vault = result.data.vaultV2ByAddress;
+  const market = result.data.marketByUniqueKey;
+
+  // Process rate data
+  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = vault;
+
+  // Aggregate rewards by symbol and filter out 0% APY rewards
+  const rewardsMap = new Map<string, { apy: number; logoUri: string | null }>();
+  for (const reward of rewards || []) {
+    if (reward.supplyApr > 0) {
+      const existing = rewardsMap.get(reward.asset.symbol);
+      if (existing) {
+        existing.apy += reward.supplyApr;
+      } else {
+        rewardsMap.set(reward.asset.symbol, {
+          apy: reward.supplyApr,
+          logoUri: reward.asset.logoURI
+        });
+      }
+    }
+  }
+
+  const rewardsData: MorphoRewardData[] = Array.from(rewardsMap.entries()).map(([symbol, data]) => ({
+    apy: data.apy,
+    formattedApy: `+${(data.apy * 100).toFixed(2)}%`,
+    symbol,
+    logoUri: data.logoUri
+  }));
+
+  const rateData: MorphoVaultRateData = {
+    rate: avgApy,
+    netRate: avgNetApy,
+    managementFee,
+    performanceFee,
+    formattedRate: `${(avgApy * 100).toFixed(2)}%`,
+    formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`,
+    formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
+    formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
+    rewards: rewardsData
+  };
+
+  // Process allocation data
+  const { totalAssets, totalAssetsUsd, idleAssetsUsd, asset } = vault;
+  const assetDecimals = asset.decimals;
+  const assetSymbol = asset.symbol;
+
+  // Calculate idle liquidity
+  const idleAssets =
+    idleAssetsUsd > 0 && totalAssetsUsd > 0
+      ? (BigInt(totalAssets) * BigInt(Math.round(idleAssetsUsd * 1e6))) /
+        BigInt(Math.round(totalAssetsUsd * 1e6))
+      : BigInt(0);
+
+  const idleLiquidity: MorphoIdleLiquidityAllocation[] = [
+    {
+      assetSymbol,
+      formattedAssets: formatBigInt(idleAssets, { unit: assetDecimals, compact: true }),
+      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`
+    }
+  ];
+
+  // Process market data
+  const markets: MorphoMarketAllocation[] = [];
+
+  if (market) {
+    const totalSupplyAssets = BigInt(market.state.supplyAssets);
+    const totalBorrowAssets = BigInt(market.state.borrowAssets);
+    const liquidity = totalSupplyAssets - totalBorrowAssets;
+
+    // The vault's totalAssets represents how much is allocated to this market
+    const vaultAssets = BigInt(totalAssets);
+    const vaultAssetsUsd = totalAssetsUsd - idleAssetsUsd; // Subtract idle from total
+
+    markets.push({
+      marketId: market.uniqueKey,
+      marketUniqueKey: market.uniqueKey,
+      loanAsset: market.loanAsset.symbol,
+      collateralAsset: market.collateralAsset.symbol,
+      formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
+      formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
+      formattedNetApy: `${(market.state.netSupplyApy * 100).toFixed(2)}%`,
+      totalSupplyAssets,
+      totalBorrowAssets,
+      liquidity,
+      utilization: market.state.utilization,
+      lltv: BigInt(market.lltv),
+      formattedLltv: formatPercent(BigInt(market.lltv), {
+        maxDecimals: 0,
+        showPercentageDecimals: false
+      })
+    });
+  }
+
+  const allocationsData: MorphoVaultAllocationsData = {
+    v1Vaults: [],
+    markets,
+    idleLiquidity,
+    assetSymbol
+  };
+
+  return {
+    rate: rateData,
+    allocations: allocationsData
+  };
+}
+
+/**
+ * Hook for fetching combined Morpho vault data (rate + allocations) in a single API call.
+ *
+ * This is an optimized hook that replaces the need to call both useMorphoVaultRate
+ * and useMorphoVaultAllocations separately. It uses a hardcoded market ID for the
+ * vault's primary allocation, eliminating the need for on-chain adapter discovery.
+ *
+ * @param vaultAddress - The Morpho V2 vault contract address (required)
+ */
+export function useMorphoVaultCombinedData({
+  vaultAddress
+}: {
+  vaultAddress: `0x${string}`;
+}): MorphoVaultCombinedDataHook {
+  const connectedChainId = useChainId();
+  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+  const vaultConfig = getMorphoVaultByAddress(vaultAddress, chainId);
+
+  const {
+    data,
+    error,
+    refetch: mutate,
+    isLoading
+  } = useQuery({
+    queryKey: ['morpho-vault-combined-data', vaultAddress, chainId],
+    queryFn: () => {
+      if (!vaultConfig?.marketId) {
+        throw new Error('Vault market ID not configured');
+      }
+      return fetchMorphoVaultCombinedData(vaultAddress, vaultConfig.marketId, chainId);
+    },
+    enabled: !!vaultConfig?.marketId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000 // 10 minutes
+  });
+
+  return {
+    data,
+    isLoading: !data && isLoading,
+    error: error as Error | null,
+    mutate,
+    dataSources: [
+      {
+        title: 'Morpho API',
+        href: MORPHO_API_URL,
+        onChain: false,
+        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+      }
+    ]
+  };
+}
