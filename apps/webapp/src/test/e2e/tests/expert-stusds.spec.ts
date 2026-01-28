@@ -223,13 +223,13 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
   });
 
-  test('Upgrade and access Expert rewards', async ({ isolatedPage }) => {
+  test('Upgrade and access stUSDS', async ({ isolatedPage }) => {
     await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
     // Navigate to Expert menu
     await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
 
     // Click on Upgrade button
-    await isolatedPage.getByText('Upgrade and access Expert rewards').first().click();
+    await isolatedPage.getByText('Upgrade and access stUSDS').first().click();
 
     await isolatedPage.getByTestId('upgrade-input-origin').click();
     await isolatedPage.getByTestId('upgrade-input-origin').fill('1');
