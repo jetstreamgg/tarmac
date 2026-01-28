@@ -40,13 +40,13 @@ export const MorphoVaultStatsCard = ({
     vaultAddress: currentVaultAddress
   });
 
-  const { data: combinedData, isLoading: combinedDataLoading } = useMorphoVaultSingleMarketApiData({
+  const { data: singleMarketData, isLoading: singleMarketDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress: currentVaultAddress
   });
 
   // Data handling
   const totalAssets = vaultData?.totalAssets || 0n;
-  const liquidity = combinedData?.market.markets[0]?.liquidity ?? 0n;
+  const liquidity = singleMarketData?.market.markets[0]?.liquidity ?? 0n;
 
   if (!currentVaultAddress) {
     return null;
@@ -77,7 +77,7 @@ export const MorphoVaultStatsCard = ({
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>Liquidity</Trans>
             </Text>
-            {combinedDataLoading ? (
+            {singleMarketDataLoading ? (
               <Skeleton className="bg-textSecondary h-6 w-21" />
             ) : (
               <Text dataTestId="morpho-vault-tvl">

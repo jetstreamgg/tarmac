@@ -39,9 +39,10 @@ export const ExpertBalanceCard = ({
   const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultOnChainData({
     vaultAddress: morphoVaultAddress
   });
-  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultSingleMarketApiData({
-    vaultAddress: morphoVaultAddress
-  });
+  const { data: morphoSingleMarketData, isLoading: morphoSingleMarketLoading } =
+    useMorphoVaultSingleMarketApiData({
+      vaultAddress: morphoVaultAddress
+    });
 
   // Combine stUSDS and Morpho supplied amounts
   const stUsdsSupplied = stUsdsData?.userSuppliedUsds || 0n;
@@ -50,12 +51,12 @@ export const ExpertBalanceCard = ({
 
   // Calculate the higher rate between stUSDS and Morpho
   const stUsdsRate = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-  const morphoRate = morphoCombinedData?.rate.netRate ? morphoCombinedData.rate.netRate * 100 : 0; // Convert decimal to percentage
+  const morphoRate = morphoSingleMarketData?.rate.netRate ? morphoSingleMarketData.rate.netRate * 100 : 0; // Convert decimal to percentage
   const maxRate = Math.max(stUsdsRate, morphoRate);
 
   // Separate loading states: balance data vs rate data
   const isBalanceLoading = stUsdsLoading || morphoDataLoading;
-  const isRateLoading = morphoRateLoading || stUsdsLoading;
+  const isRateLoading = morphoSingleMarketLoading || stUsdsLoading;
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard

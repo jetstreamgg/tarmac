@@ -11,8 +11,8 @@ export {
 export { useMorphoVaultAllocations } from './useMorphoVaultAllocations';
 export {
   useMorphoVaultSingleMarketApiData,
-  type MorphoVaultCombinedData,
-  type MorphoVaultCombinedDataHook
+  type MorphoVaultSingleMarketData,
+  type MorphoVaultSingleMarketDataHook
 } from './useMorphoVaultCombinedData';
 export {
   type MorphoMarketAllocation,

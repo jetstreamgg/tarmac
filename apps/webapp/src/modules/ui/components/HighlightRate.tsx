@@ -151,7 +151,7 @@ export function AdvancedRate({ expertModule }: { expertModule?: string }) {
   const { data: stUsdsData } = useStUsdsData();
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[chainId];
-  const { data: morphoData } = useMorphoVaultSingleMarketApiData({
+  const { data: morphoSingleMarketData } = useMorphoVaultSingleMarketApiData({
     vaultAddress: morphoVaultAddress
   });
 
@@ -168,7 +168,7 @@ export function AdvancedRate({ expertModule }: { expertModule?: string }) {
     const moduleRate = stUsdsData?.moduleRate || 0n;
     formattedRate = moduleRate > 0n ? formatStrAsApy(moduleRate) : '0.00%';
   } else if (module === 'morpho') {
-    formattedRate = morphoData?.rate.formattedNetRate || '0.00%';
+    formattedRate = morphoSingleMarketData?.rate.formattedNetRate || '0.00%';
   }
 
   if (config) {

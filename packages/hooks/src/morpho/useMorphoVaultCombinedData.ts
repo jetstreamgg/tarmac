@@ -12,9 +12,9 @@ import type {
 import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRate';
 
 /**
- * API response type for the combined vault data query
+ * API response type for the single market vault data query
  */
-type MorphoVaultCombinedDataApiResponse = {
+type MorphoVaultSingleMarketApiResponse = {
   data: {
     vaultV2ByAddress: {
       avgApy: number;
@@ -56,27 +56,27 @@ type MorphoVaultCombinedDataApiResponse = {
 };
 
 /**
- * Combined vault data including rate and market state information
+ * Single market vault data including rate and market state information
  */
-export type MorphoVaultCombinedData = {
+export type MorphoVaultSingleMarketData = {
   /** Rate data (APY, fees, rewards) */
   rate: MorphoVaultRateData;
   /** Market state data (liquidity, utilization, idle assets) */
   market: MorphoVaultAllocationsData;
 };
 
-export type MorphoVaultCombinedDataHook = ReadHook & {
-  data?: MorphoVaultCombinedData;
+export type MorphoVaultSingleMarketDataHook = ReadHook & {
+  data?: MorphoVaultSingleMarketData;
 };
 
 /**
- * Fetch combined vault data (rate + allocations) in a single API call
+ * Fetch single market vault data (rate + allocations) in a single API call
  */
-async function fetchMorphoVaultCombinedData(
+async function fetchMorphoVaultSingleMarketData(
   vaultAddress: string,
   marketId: string,
   chainId: number
-): Promise<MorphoVaultCombinedData | undefined> {
+): Promise<MorphoVaultSingleMarketData | undefined> {
   const response = await fetch(MORPHO_API_URL, {
     method: 'POST',
     headers: {
@@ -96,7 +96,7 @@ async function fetchMorphoVaultCombinedData(
     throw new Error(`Morpho API error: ${response.status}`);
   }
 
-  const result: MorphoVaultCombinedDataApiResponse = await response.json();
+  const result: MorphoVaultSingleMarketApiResponse = await response.json();
 
   if (!result.data.vaultV2ByAddress) {
     return undefined;
@@ -224,7 +224,7 @@ export function useMorphoVaultSingleMarketApiData({
   vaultAddress
 }: {
   vaultAddress?: `0x${string}`;
-}): MorphoVaultCombinedDataHook {
+}): MorphoVaultSingleMarketDataHook {
   // Always use mainnet chainId since the Morpho API only has mainnet data
   // This ensures the query is cached across network switches
   const chainId = mainnet.id;
@@ -236,12 +236,12 @@ export function useMorphoVaultSingleMarketApiData({
     refetch: mutate,
     isLoading
   } = useQuery({
-    queryKey: ['morpho-vault-combined-data', vaultAddress, chainId],
+    queryKey: ['morpho-vault-single-market-data', vaultAddress, chainId],
     queryFn: () => {
       if (!vaultAddress || !vaultConfig?.marketId) {
         throw new Error(`Vault ${vaultAddress} not found in MORPHO_VAULTS configuration or missing marketId`);
       }
-      return fetchMorphoVaultCombinedData(vaultAddress, vaultConfig.marketId, chainId);
+      return fetchMorphoVaultSingleMarketData(vaultAddress, vaultConfig.marketId, chainId);
     },
     enabled: !!vaultAddress && !!vaultConfig?.marketId,
     staleTime: 5 * 60 * 1000, // 5 minutes

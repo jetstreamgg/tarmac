@@ -17,8 +17,8 @@ export function MorphoRateBreakdownPopover({
   vaultAddress: `0x${string}`;
   tooltipIconClassName?: string;
 }) {
-  const { data: combinedData, isLoading } = useMorphoVaultSingleMarketApiData({ vaultAddress });
-  const rateData = combinedData?.rate;
+  const { data: singleMarketData, isLoading } = useMorphoVaultSingleMarketApiData({ vaultAddress });
+  const rateData = singleMarketData?.rate;
   const formattedNetRate = rateData?.formattedNetRate || '0.00%';
 
   if (isLoading) return <Skeleton className="bg-textSecondary h-6 w-20" />;

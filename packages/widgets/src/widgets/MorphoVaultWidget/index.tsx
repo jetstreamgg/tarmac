@@ -94,8 +94,8 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
 
-  // Combined vault data hook - fetches rate and allocations from Morpho API in a single call
-  const { data: combinedData, isLoading: isCombinedDataLoading } = useMorphoVaultSingleMarketApiData({
+  // Single market data hook - fetches rate and allocations from Morpho API in a single call
+  const { data: singleMarketData, isLoading: isSingleMarketDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress
   });
 
@@ -108,8 +108,8 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
   const userAssets = vaultData?.userAssets ?? 0n;
-  const availableLiquidity = combinedData?.market.markets[0]?.liquidity;
-  const hasLiquidityData = !isCombinedDataLoading && availableLiquidity !== undefined;
+  const availableLiquidity = singleMarketData?.market.markets[0]?.liquidity;
+  const hasLiquidityData = !isSingleMarketDataLoading && availableLiquidity !== undefined;
   const maxWithdraw = hasLiquidityData
     ? userAssets < availableLiquidity
       ? userAssets
@@ -540,7 +540,7 @@ const MorphoVaultWidgetWrapped = ({
               maxWithdraw={maxWithdraw}
               isLiquidityConstrained={isLiquidityConstrained}
               userShares={vaultData?.userShares}
-              isVaultDataLoading={isVaultDataLoading || isCombinedDataLoading}
+              isVaultDataLoading={isVaultDataLoading || isSingleMarketDataLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
@@ -565,7 +565,7 @@ const MorphoVaultWidgetWrapped = ({
               vaultAddress={vaultAddress}
               vaultName={vaultName}
               vaultTvl={vaultData?.totalAssets}
-              vaultRate={combinedData?.rate?.formattedNetRate}
+              vaultRate={singleMarketData?.rate?.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
               claimRewards={morphoVaultClaimRewards}
               isRewardsLoading={isRewardsLoading}

@@ -139,9 +139,10 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   const { data: morphoData, isLoading: morphoLoading } = useMorphoVaultOnChainData({
     vaultAddress: morphoVaultAddress
   });
-  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultSingleMarketApiData({
-    vaultAddress: morphoVaultAddress
-  });
+  const { data: morphoSingleMarketData, isLoading: morphoSingleMarketLoading } =
+    useMorphoVaultSingleMarketApiData({
+      vaultAddress: morphoVaultAddress
+    });
 
   // Combined Expert balance (stUSDS + Morpho)
   const morphoSupplied = morphoData?.userAssets ?? 0n;
@@ -149,7 +150,9 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
 
   // Calculate highest rate between stUSDS and Morpho
   const stUsdsRatePercent = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-  const morphoRatePercent = morphoCombinedData?.rate.netRate ? morphoCombinedData.rate.netRate * 100 : 0;
+  const morphoRatePercent = morphoSingleMarketData?.rate.netRate
+    ? morphoSingleMarketData.rate.netRate * 100
+    : 0;
   const maxExpertRate = Math.max(stUsdsRatePercent, morphoRatePercent);
 
   // Visibility logic
@@ -172,7 +175,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
     stakeRateLoading ||
     stUsdsLoading ||
     morphoLoading ||
-    morphoRateLoading ||
+    morphoSingleMarketLoading ||
     pricesLoading;
   const allHidden = hideRewards && hideSavings && hideStake && hideExpert;
 
@@ -242,7 +245,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
                   isRateUpTo: true,
                   chainId: mainnetChainId
                 }}
-                isLoading={stUsdsLoading || morphoLoading || morphoRateLoading}
+                isLoading={stUsdsLoading || morphoLoading || morphoSingleMarketLoading}
               />
             )}
 

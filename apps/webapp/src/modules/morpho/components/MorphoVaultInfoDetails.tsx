@@ -10,8 +10,8 @@ type MorphoVaultInfoDetailsProps = {
 };
 
 export function MorphoVaultInfoDetails({ vaultAddress, assetToken }: MorphoVaultInfoDetailsProps) {
-  const { data: combinedData, isLoading, error } = useMorphoVaultSingleMarketApiData({ vaultAddress });
-  const market = combinedData?.market.markets[0];
+  const { data: singleMarketData, isLoading, error } = useMorphoVaultSingleMarketApiData({ vaultAddress });
+  const market = singleMarketData?.market.markets[0];
 
   return (
     <div className="flex w-full flex-wrap gap-3">
