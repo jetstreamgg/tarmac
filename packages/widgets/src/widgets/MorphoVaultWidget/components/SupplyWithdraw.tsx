@@ -268,6 +268,7 @@ export const SupplyWithdraw = ({
           isFetching={false}
           fetchingMessage={t`Fetching transaction details`}
           onExternalLinkClicked={onExternalLinkClicked}
+          rateType="morpho"
           transactionData={[
             {
               label: tabIndex === 0 ? t`You will supply` : t`You will withdraw`,
