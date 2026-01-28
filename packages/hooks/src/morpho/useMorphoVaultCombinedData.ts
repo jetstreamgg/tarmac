@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useChainId } from 'wagmi';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL, VAULT_DATA_QUERY, getMorphoVaultByAddress } from './constants';
-import { isTestnetId, formatBigInt, formatNumber, formatPercent } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatNumber, formatPercent } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
 import type {
   MorphoIdleLiquidityAllocation,
@@ -223,8 +222,9 @@ export function useMorphoVaultCombinedData({
 }: {
   vaultAddress: `0x${string}`;
 }): MorphoVaultCombinedDataHook {
-  const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+  // Always use mainnet chainId since the Morpho API only has mainnet data
+  // This ensures the query is cached across network switches
+  const chainId = mainnet.id;
   const vaultConfig = getMorphoVaultByAddress(vaultAddress, chainId);
 
   const {
