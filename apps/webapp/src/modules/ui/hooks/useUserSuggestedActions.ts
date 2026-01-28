@@ -27,6 +27,7 @@ export type LinkedAction = SuggestedAction & {
   stepOne: string;
   stepTwo: string;
   la: string;
+  expertModule?: string;
 };
 
 type SuggestedAction = {
@@ -66,6 +67,7 @@ const fetchUserSuggestedActions = (
   tokenBalances?: TokenBalance[],
   rewardContracts?: RewardContract[],
   currentRewardContract?: RewardContract,
+  currentExpertModule?: string,
   chains?: readonly any[]
 ): {
   suggestedActions: SuggestedAction[];
@@ -80,7 +82,7 @@ const fetchUserSuggestedActions = (
     TRADE_INTENT: TRADE,
     EXPERT_INTENT: EXPERT
   } = IntentMapping;
-  const { STUSDS_INTENT: STUSDS } = ExpertIntentMapping;
+  const { STUSDS_INTENT: STUSDS, MORPHO_VAULT_INTENT: MORPHO } = ExpertIntentMapping;
   // Filter out deprecated reward contracts
   const activeRewardContracts = filterDeprecatedRewardContracts(rewardContracts || [], chainId);
 
@@ -125,14 +127,29 @@ const fetchUserSuggestedActions = (
       linkedActions.push({
         primaryToken: 'DAI',
         secondaryToken: 'USDS',
-        title: t`Upgrade and access Expert rewards`,
+        title: t`Upgrade and access stUSDS`,
         balance: daiBalance.formatted,
         stepOne: t`Upgrade DAI to USDS`,
         stepTwo: t`Access stUSDS rewards`,
         url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
         intent: IntentMapping.UPGRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
-        weight: 5,
+        expertModule: STUSDS,
+        weight: currentExpertModule === STUSDS ? 8 : currentExpertModule === MORPHO ? 4 : 5,
+        type: 'linked'
+      });
+      linkedActions.push({
+        primaryToken: 'DAI',
+        secondaryToken: 'USDS',
+        title: t`Upgrade and access Morpho vault`,
+        balance: daiBalance.formatted,
+        stepOne: t`Upgrade DAI to USDS`,
+        stepTwo: t`Access Morpho vault rewards`,
+        url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${EXPERT}&expert_module=${MORPHO}`,
+        intent: IntentMapping.UPGRADE_INTENT,
+        la: IntentMapping.EXPERT_INTENT,
+        expertModule: MORPHO,
+        weight: currentExpertModule === MORPHO ? 8 : currentExpertModule === STUSDS ? 4 : 5,
         type: 'linked'
       });
       // Create contextual reward action based on current page
@@ -226,18 +243,33 @@ const fetchUserSuggestedActions = (
         weight: 6,
         type: 'linked'
       });
-      // Add stUSDS linked action for USDC
+      // Add stUSDS linked action for USDC (context-aware weights like rewards)
       linkedActions.push({
         balance: usdcBalance.formatted,
         primaryToken: 'USDC',
         secondaryToken: 'USDS',
-        title: t`Trade and access Expert rewards`,
+        title: t`Trade and access stUSDS`,
         stepOne: t`Trade USDC for USDS`,
         stepTwo: t`Access stUSDS rewards`,
         url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
-        weight: 4,
+        expertModule: STUSDS,
+        weight: currentExpertModule === STUSDS ? 7 : currentExpertModule === MORPHO ? 3 : 4,
+        type: 'linked'
+      });
+      linkedActions.push({
+        balance: usdcBalance.formatted,
+        primaryToken: 'USDC',
+        secondaryToken: 'USDS',
+        title: t`Trade and access Morpho vault`,
+        stepOne: t`Trade USDC for USDS`,
+        stepTwo: t`Access Morpho vault rewards`,
+        url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${MORPHO}`,
+        intent: IntentMapping.TRADE_INTENT,
+        la: IntentMapping.EXPERT_INTENT,
+        expertModule: MORPHO,
+        weight: currentExpertModule === MORPHO ? 7 : currentExpertModule === STUSDS ? 3 : 4,
         type: 'linked'
       });
       // Create contextual reward action for USDC
@@ -314,18 +346,33 @@ const fetchUserSuggestedActions = (
         weight: 6,
         type: 'linked'
       });
-      // Add stUSDS linked action for USDT
+      // Add stUSDS linked action for USDT (context-aware weights like rewards)
       linkedActions.push({
         balance: usdtBalance.formatted,
         primaryToken: 'USDT',
         secondaryToken: 'USDS',
-        title: t`Trade and access Expert rewards`,
+        title: t`Trade and access stUSDS`,
         stepOne: t`Trade USDT for USDS`,
         stepTwo: t`Access stUSDS rewards`,
         url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
-        weight: 4,
+        expertModule: STUSDS,
+        weight: currentExpertModule === STUSDS ? 7 : currentExpertModule === MORPHO ? 3 : 4,
+        type: 'linked'
+      });
+      linkedActions.push({
+        balance: usdtBalance.formatted,
+        primaryToken: 'USDT',
+        secondaryToken: 'USDS',
+        title: t`Trade and access Morpho vault`,
+        stepOne: t`Trade USDT for USDS`,
+        stepTwo: t`Access Morpho vault rewards`,
+        url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${MORPHO}`,
+        intent: IntentMapping.TRADE_INTENT,
+        la: IntentMapping.EXPERT_INTENT,
+        expertModule: MORPHO,
+        weight: currentExpertModule === MORPHO ? 7 : currentExpertModule === STUSDS ? 3 : 4,
         type: 'linked'
       });
       // Create contextual reward action for USDT
@@ -406,6 +453,16 @@ const fetchUserSuggestedActions = (
         title: t`Access stUSDS rewards`,
         balance: usdsBalance.formatted,
         url: `/?${Widget}=${EXPERT}&expert_module=${STUSDS}&${InputAmount}=${usdsBalance.formatted}`,
+        intent: IntentMapping.EXPERT_INTENT,
+        weight: 4,
+        type: 'suggested'
+      });
+      suggestedActions.push({
+        primaryToken: 'USDS',
+        secondaryToken: 'USDS',
+        title: t`Access Morpho vault rewards`,
+        balance: usdsBalance.formatted,
+        url: `/?${Widget}=${EXPERT}&expert_module=${MORPHO}&${InputAmount}=${usdsBalance.formatted}`,
         intent: IntentMapping.EXPERT_INTENT,
         weight: 4,
         type: 'suggested'
@@ -493,7 +550,10 @@ const fetchUserSuggestedActions = (
   };
 };
 
-export const useUserSuggestedActions = (currentRewardContract?: RewardContract) => {
+export const useUserSuggestedActions = (
+  currentRewardContract?: RewardContract,
+  currentExpertModule?: string
+) => {
   const { address } = useConnection();
   const chainId = useChainId();
   const chains = useChains();
@@ -539,6 +599,7 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
             tokenBalances,
             rewardContracts,
             currentRewardContract,
+            currentExpertModule,
             chains
           );
           setData(result);
@@ -560,6 +621,7 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
     tokenBalancesIsLoading,
     tokenBalanceError,
     currentRewardContract,
+    currentExpertModule,
     chainId,
     chains
   ]);

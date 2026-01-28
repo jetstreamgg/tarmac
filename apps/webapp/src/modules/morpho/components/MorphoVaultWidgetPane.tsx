@@ -2,13 +2,16 @@ import {
   MorphoVaultWidget,
   TxStatus,
   WidgetStateChangeParams,
-  MorphoVaultFlow
+  MorphoVaultFlow,
+  MorphoVaultAction
 } from '@jetstreamgg/sky-widgets';
 import { Token } from '@jetstreamgg/sky-hooks';
 import { ExpertIntentMapping, QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
+import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
+import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { ExpertIntent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -30,7 +33,8 @@ export function MorphoVaultWidgetPane({
   ...sharedProps
 }: MorphoVaultWidgetPaneProps) {
   const chainId = useChainId();
-  const { setSelectedExpertOption } = useConfigContext();
+  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedExpertOption } =
+    useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setShouldDisableActionButtons } = useChatContext();
 
@@ -76,6 +80,24 @@ export function MorphoVaultWidgetPane({
         return prev;
       });
     }
+
+    // After a successful linked action SUPPLY, set the final step to "success"
+    if (
+      widgetState.action === MorphoVaultAction.SUPPLY &&
+      txStatus === TxStatus.SUCCESS &&
+      linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
+    ) {
+      updateLinkedActionConfig({ step: LinkedActionSteps.COMPLETED_SUCCESS });
+    }
+
+    // Reset the linked action state and URL params after clicking "finish"
+    if (txStatus === TxStatus.IDLE && linkedActionConfig.step === LinkedActionSteps.COMPLETED_SUCCESS) {
+      exitLinkedActionMode();
+      setSearchParams(prevParams => {
+        const params = deleteSearchParams(prevParams);
+        return params;
+      });
+    }
   };
 
   const handleBack = () => {
@@ -99,7 +121,7 @@ export function MorphoVaultWidgetPane({
       vaultName={vaultName}
       onWidgetStateChange={onMorphoVaultWidgetStateChange}
       externalWidgetState={{
-        amount: searchParams.get(QueryParams.InputAmount) || undefined,
+        amount: linkedActionConfig?.inputAmount,
         flow
       }}
       batchEnabled={batchEnabled}

@@ -8,13 +8,15 @@ import { RewardContract } from '@jetstreamgg/sky-hooks';
 
 export function ActionsShowcase({
   widget,
-  currentRewardContract
+  currentRewardContract,
+  currentExpertModule
 }: {
   widget: string;
   currentRewardContract?: RewardContract;
+  currentExpertModule?: string;
 }) {
   // TODO: update loading/error cards to reflect the new layout
-  const { data, isLoading, error } = useUserSuggestedActions(currentRewardContract);
+  const { data, isLoading, error } = useUserSuggestedActions(currentRewardContract, currentExpertModule);
 
   // we can create an algorithm to sort the actions by relevance
   // for now, just sorting by weight
