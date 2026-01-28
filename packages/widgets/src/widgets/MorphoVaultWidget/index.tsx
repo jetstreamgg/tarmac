@@ -495,7 +495,8 @@ const MorphoVaultWidgetWrapped = ({
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">
-          <Trans>Supply {assetToken.symbol} to earn yield</Trans>
+          {/* TODO make this dynamic for other vaults */}
+          <Trans>Access a variable rate on USDS by lending against stUSDS collateral</Trans>
         </Text>
       }
       rightHeader={rightHeaderComponent}
