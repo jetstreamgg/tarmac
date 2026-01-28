@@ -177,7 +177,6 @@ async function fetchMorphoVaultSingleMarketData(
 
     markets.push({
       marketId: market.uniqueKey,
-      marketUniqueKey: market.uniqueKey,
       loanAsset: market.loanAsset.symbol,
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
@@ -244,8 +243,8 @@ export function useMorphoVaultSingleMarketApiData({
       return fetchMorphoVaultSingleMarketData(vaultAddress, vaultConfig.marketId, chainId);
     },
     enabled: !!vaultAddress && !!vaultConfig?.marketId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30_000, // 30 seconds - liquidity data can change frequently
+    gcTime: 60_000 // 1 minute
   });
 
   // Surface a clear error when vault isn't configured (query won't run in this case)

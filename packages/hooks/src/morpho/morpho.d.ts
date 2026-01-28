@@ -89,8 +89,6 @@ export type MorphoIdleLiquidityAllocation = {
 export type MorphoMarketAllocation = {
   /** Market ID (32-byte hash) */
   marketId: string;
-  /** Market unique key (for display) */
-  marketUniqueKey: string;
   /** Loan asset symbol */
   loanAsset: string;
   /** Collateral asset symbol */

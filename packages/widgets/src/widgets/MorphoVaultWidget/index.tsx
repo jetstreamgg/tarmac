@@ -94,7 +94,7 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
 
-  // Single market data hook - fetches rate and allocations from Morpho API in a single call
+  // Single market data hook - fetches rate and market data from Morpho API in a single call
   const { data: singleMarketData, isLoading: isSingleMarketDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress
   });

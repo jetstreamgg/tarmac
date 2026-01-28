@@ -13,7 +13,7 @@ export {
   useMorphoVaultSingleMarketApiData,
   type MorphoVaultSingleMarketData,
   type MorphoVaultSingleMarketDataHook
-} from './useMorphoVaultCombinedData';
+} from './useMorphoVaultSingleMarketData';
 export {
   type MorphoMarketAllocation,
   type MorphoV1VaultAllocation,
