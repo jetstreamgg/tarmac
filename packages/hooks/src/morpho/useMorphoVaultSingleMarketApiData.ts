@@ -9,7 +9,7 @@ import type {
   MorphoMarketAllocation,
   MorphoVaultAllocationsData
 } from './morpho';
-import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRate';
+import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRateApiData';
 
 /**
  * API response type for the single market vault data query
@@ -177,6 +177,7 @@ async function fetchMorphoVaultSingleMarketData(
 
     markets.push({
       marketId: market.uniqueKey,
+      marketUniqueKey: market.uniqueKey,
       loanAsset: market.loanAsset.symbol,
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
