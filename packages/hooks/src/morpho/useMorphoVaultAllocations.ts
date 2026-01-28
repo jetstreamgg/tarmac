@@ -266,6 +266,7 @@ async function fetchMorphoVaultAllocations(
 
         markets.push({
           marketId,
+          marketUniqueKey: marketData.uniqueKey,
           loanAsset: marketData.loanAsset.symbol,
           collateralAsset: marketData.collateralAsset.symbol,
           formattedAssets: formatBigInt(realAssets, { unit: assetDecimals, compact: true }),
