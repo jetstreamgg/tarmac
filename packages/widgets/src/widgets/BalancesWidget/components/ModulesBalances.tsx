@@ -6,7 +6,7 @@ import {
   useStUsdsData,
   useTotalUserSealed,
   useTotalUserStaked,
-  useMorphoVaultData,
+  useMorphoVaultOnChainData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
 import { RewardsBalanceCard } from './RewardsBalanceCard';
@@ -134,7 +134,7 @@ export const ModulesBalances = ({
     data: morphoData,
     isLoading: morphoLoading,
     error: morphoError
-  } = useMorphoVaultData({
+  } = useMorphoVaultOnChainData({
     vaultAddress: morphoVaultAddress
   });
 

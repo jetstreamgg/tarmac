@@ -146,7 +146,11 @@ async function fetchMorphoVaultRate(
   };
 }
 
-export function useMorphoVaultRate({ vaultAddress }: { vaultAddress?: `0x${string}` }): MorphoVaultRateHook {
+export function useMorphoVaultRateApiData({
+  vaultAddress
+}: {
+  vaultAddress?: `0x${string}`;
+}): MorphoVaultRateHook {
   // Always use mainnet chainId since Morpho vaults are only on mainnet
   // This ensures the query is cached across network switches
   const chainId = mainnet.id;

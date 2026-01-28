@@ -11,7 +11,7 @@ import {
   chainId as chainIdConstants,
   isTestnetId
 } from '@jetstreamgg/sky-utils';
-import { useStUsdsData, useMorphoVaultRate, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData, useMorphoVaultSingleMarketApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
 
@@ -26,17 +26,20 @@ export function ExpertCard() {
   // Morpho vault data
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
-  const { data: morphoRateData, isLoading: morphoRateLoading } = useMorphoVaultRate({
-    vaultAddress: morphoVaultAddress
-  });
+  const { data: morphoSingleMarketData, isLoading: morphoSingleMarketLoading } =
+    useMorphoVaultSingleMarketApiData({
+      vaultAddress: morphoVaultAddress
+    });
 
   // Calculate highest rate between stUSDS and Morpho
   const stUsdsRatePercent = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-  const morphoRatePercent = morphoRateData?.netRate ? morphoRateData.netRate * 100 : 0;
+  const morphoRatePercent = morphoSingleMarketData?.rate.netRate
+    ? morphoSingleMarketData.rate.netRate * 100
+    : 0;
   const maxRate = Math.max(stUsdsRatePercent, morphoRatePercent);
   const formattedRate = maxRate > 0 ? `${maxRate.toFixed(2)}%` : '0.00%';
 
-  const isLoading = stUsdsDataLoading || morphoRateLoading;
+  const isLoading = stUsdsDataLoading || morphoSingleMarketLoading;
 
   return (
     <ModuleCard
@@ -59,7 +62,7 @@ export function ExpertCard() {
         </div>
       }
       emphasisText={
-        isLoading && !stUsdsData && !morphoRateData ? (
+        isLoading && !stUsdsData && !morphoSingleMarketData ? (
           <Skeleton className="h-12 w-48" />
         ) : (
           <Text className="text-2xl lg:text-[32px]">

@@ -1,14 +1,19 @@
 export { useBatchMorphoVaultDeposit } from './useBatchMorphoVaultDeposit';
 export { useMorphoVaultWithdraw } from './useMorphoVaultWithdraw';
 export { useMorphoVaultRedeem } from './useMorphoVaultRedeem';
-export { useMorphoVaultData } from './useMorphoVaultData';
+export { useMorphoVaultOnChainData } from './useMorphoVaultOnChainData';
 export {
-  useMorphoVaultRate,
+  useMorphoVaultRateApiData,
   type MorphoVaultRateData,
   type MorphoVaultRateHook,
   type MorphoRewardData
-} from './useMorphoVaultRate';
+} from './useMorphoVaultRateApiData';
 export { useMorphoVaultAllocations } from './useMorphoVaultAllocations';
+export {
+  useMorphoVaultSingleMarketApiData,
+  type MorphoVaultSingleMarketData,
+  type MorphoVaultSingleMarketDataHook
+} from './useMorphoVaultSingleMarketApiData';
 export {
   type MorphoMarketAllocation,
   type MorphoV1VaultAllocation,

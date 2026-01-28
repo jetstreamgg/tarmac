@@ -4,10 +4,9 @@ import {
   useTokenAllowance,
   useIsBatchSupported,
   Token,
-  useMorphoVaultData,
-  useMorphoVaultRate,
-  useMorphoVaultRewards,
-  useMorphoVaultAllocations
+  useMorphoVaultOnChainData,
+  useMorphoVaultSingleMarketApiData,
+  useMorphoVaultRewards
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce, formatBigInt } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -91,12 +90,12 @@ const MorphoVaultWidgetWrapped = ({
     data: vaultData,
     isLoading: isVaultDataLoading,
     mutate: mutateVaultData
-  } = useMorphoVaultData({
+  } = useMorphoVaultOnChainData({
     vaultAddress
   });
 
-  // Vault rate hook - fetches Rate from Morpho API
-  const { data: vaultRateData } = useMorphoVaultRate({
+  // Single market data hook - fetches rate and market data from Morpho API in a single call
+  const { data: singleMarketData, isLoading: isSingleMarketDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress
   });
 
@@ -108,14 +107,9 @@ const MorphoVaultWidgetWrapped = ({
   } = useMorphoVaultRewards({
     vaultAddress
   });
-
-  // Compute max withdrawal and liquidity constraint status
-  const { data: allocationsData, isLoading: isAllocationsLoading } = useMorphoVaultAllocations({
-    vaultAddress
-  });
   const userAssets = vaultData?.userAssets ?? 0n;
-  const availableLiquidity = allocationsData?.markets[0]?.liquidity;
-  const hasLiquidityData = !isAllocationsLoading && availableLiquidity !== undefined;
+  const availableLiquidity = singleMarketData?.market.markets[0]?.liquidity;
+  const hasLiquidityData = !isSingleMarketDataLoading && availableLiquidity !== undefined;
   const maxWithdraw = hasLiquidityData
     ? userAssets < availableLiquidity
       ? userAssets
@@ -546,7 +540,7 @@ const MorphoVaultWidgetWrapped = ({
               maxWithdraw={maxWithdraw}
               isLiquidityConstrained={isLiquidityConstrained}
               userShares={vaultData?.userShares}
-              isVaultDataLoading={isVaultDataLoading || isAllocationsLoading}
+              isVaultDataLoading={isVaultDataLoading || isSingleMarketDataLoading}
               onChange={(newValue: bigint, userTriggered?: boolean) => {
                 setAmount(newValue);
                 if (userTriggered) {
@@ -571,7 +565,7 @@ const MorphoVaultWidgetWrapped = ({
               vaultAddress={vaultAddress}
               vaultName={vaultName}
               vaultTvl={vaultData?.totalAssets}
-              vaultRate={vaultRateData?.formattedNetRate}
+              vaultRate={singleMarketData?.rate?.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
               claimRewards={morphoVaultClaimRewards}
               isRewardsLoading={isRewardsLoading}

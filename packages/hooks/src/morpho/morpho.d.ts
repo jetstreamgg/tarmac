@@ -13,6 +13,8 @@ export type MorphoVaultConfig = {
   vaultAddress: Record<number, `0x${string}`>;
   /** The underlying asset token */
   assetToken: Token;
+  /** The primary market ID the vault allocates to (required for useMorphoVaultSingleMarketApiData) */
+  marketId?: `0x${string}`;
 };
 
 /**
@@ -87,7 +89,7 @@ export type MorphoIdleLiquidityAllocation = {
 export type MorphoMarketAllocation = {
   /** Market ID (32-byte hash) */
   marketId: string;
-  /** Market unique key (for display) */
+  /** Market unique key */
   marketUniqueKey: string;
   /** Loan asset symbol */
   loanAsset: string;

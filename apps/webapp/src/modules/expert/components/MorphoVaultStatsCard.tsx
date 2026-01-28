@@ -1,9 +1,9 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import {
-  useMorphoVaultData,
+  useMorphoVaultOnChainData,
   Token,
   getTokenDecimals,
-  useMorphoVaultAllocations
+  useMorphoVaultSingleMarketApiData
 } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -36,17 +36,19 @@ export const MorphoVaultStatsCard = ({
   const currentVaultAddress = vaultAddress[chainId];
 
   // Hooks for Morpho vault data
-  const { data: vaultData, isLoading: vaultLoading } = useMorphoVaultData({
+  const { data: vaultData, isLoading: vaultLoading } = useMorphoVaultOnChainData({
     vaultAddress: currentVaultAddress
   });
 
-  const { data: allocations, isLoading: allocationsLoading } = useMorphoVaultAllocations({
+  const { data: singleMarketData, isLoading: singleMarketDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress: currentVaultAddress
   });
 
   // Data handling
   const totalAssets = vaultData?.totalAssets || 0n;
-  const liquidity = allocations?.markets[0]?.liquidity ?? 0n;
+  const liquidity = singleMarketData?.market.markets?.length
+    ? singleMarketData.market.markets[0].liquidity
+    : undefined;
 
   if (!currentVaultAddress) {
     return null;
@@ -77,12 +79,14 @@ export const MorphoVaultStatsCard = ({
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>Liquidity</Trans>
             </Text>
-            {allocationsLoading ? (
+            {singleMarketDataLoading ? (
               <Skeleton className="bg-textSecondary h-6 w-21" />
-            ) : (
+            ) : liquidity !== undefined ? (
               <Text dataTestId="morpho-vault-tvl">
                 {formatBigInt(liquidity, { unit: assetDecimals, compact: true })} {assetToken.symbol}
               </Text>
+            ) : (
+              <Text dataTestId="morpho-vault-tvl">—</Text>
             )}
           </VStack>
           {/* TVL */}
