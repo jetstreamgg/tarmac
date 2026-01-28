@@ -1,4 +1,3 @@
-import { Popover, PopoverContent, PopoverTrigger } from '@widgets/components/ui/popover';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { BarChart } from '@widgets/shared/components/icons/BarChart';
 import { ChartPaper } from '@widgets/shared/components/icons/ChartPaper';
@@ -9,6 +8,7 @@ import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { useMorphoVaultRate } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
 
 export function MorphoRateBreakdownPopover({
   vaultAddress,
@@ -25,16 +25,17 @@ export function MorphoRateBreakdownPopover({
 
   return (
     <div className="flex items-center gap-2">
-      <Popover>
-        <PopoverTrigger asChild className="cursor-pointer" onClick={e => e.stopPropagation()}>
+      <InfoTooltip
+        trigger={
           <div className="flex items-center gap-1">
             <Sparkles className="h-4 w-4" />
             <Text variant="large" className="text-bullish">
               {formattedNetRate}
             </Text>
           </div>
-        </PopoverTrigger>
-        <PopoverContent side="bottom" align="start" className="w-auto backdrop-blur-[50px]">
+        }
+        contentClassname="bg-container backdrop-blur-[50px]"
+        content={
           <div className="flex min-w-[220px] flex-col gap-2 p-1">
             {/* Native Rate */}
             <div className="flex items-center justify-between gap-8">
@@ -107,8 +108,8 @@ export function MorphoRateBreakdownPopover({
               <Text className="text-bullish text-sm font-medium">={rateData.formattedNetRate}</Text>
             </div>
           </div>
-        </PopoverContent>
-      </Popover>
+        }
+      />
       <PopoverRateInfo type="morpho" iconClassName={tooltipIconClassName} />
     </div>
   );
