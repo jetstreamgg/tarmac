@@ -137,7 +137,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
   const { data: morphoData, isLoading: morphoLoading } = useMorphoVaultData({
-    vaultAddress: morphoVaultAddress!
+    vaultAddress: morphoVaultAddress
   });
   const { data: morphoRateData, isLoading: morphoRateLoading } = useMorphoVaultRate({
     vaultAddress: morphoVaultAddress

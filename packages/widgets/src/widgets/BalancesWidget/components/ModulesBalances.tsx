@@ -135,7 +135,7 @@ export const ModulesBalances = ({
     isLoading: morphoLoading,
     error: morphoError
   } = useMorphoVaultData({
-    vaultAddress: morphoVaultAddress!
+    vaultAddress: morphoVaultAddress
   });
 
   // Combined expert savings balance (stUSDS + Morpho)

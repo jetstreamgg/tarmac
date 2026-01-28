@@ -37,7 +37,7 @@ export const ExpertBalanceCard = ({
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[vaultChainId];
   const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultData({
-    vaultAddress: morphoVaultAddress!
+    vaultAddress: morphoVaultAddress
   });
   const { data: morphoRateData, isLoading: morphoRateLoading } = useMorphoVaultRate({
     vaultAddress: morphoVaultAddress
@@ -55,7 +55,7 @@ export const ExpertBalanceCard = ({
 
   // Separate loading states: balance data vs rate data
   const isBalanceLoading = stUsdsLoading || morphoDataLoading;
-  const isRateLoading = morphoRateLoading;
+  const isRateLoading = morphoRateLoading || stUsdsLoading;
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard

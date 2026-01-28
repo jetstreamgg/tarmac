@@ -41,7 +41,7 @@ export type MorphoVaultDataHook = ReadHook & {
  *
  * @param vaultAddress - The Morpho vault contract address (required)
  */
-export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string}` }): MorphoVaultDataHook {
+export function useMorphoVaultData({ vaultAddress }: { vaultAddress?: `0x${string}` }): MorphoVaultDataHook {
   const { address: userAddress } = useConnection();
   const connectedChainId = useChainId();
   const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
