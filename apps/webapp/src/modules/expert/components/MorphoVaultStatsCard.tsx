@@ -46,7 +46,7 @@ export const MorphoVaultStatsCard = ({
 
   // Data handling
   const totalAssets = vaultData?.totalAssets || 0n;
-  const liquidity = combinedData?.allocations.markets[0]?.liquidity ?? 0n;
+  const liquidity = combinedData?.market.markets[0]?.liquidity ?? 0n;
 
   if (!currentVaultAddress) {
     return null;

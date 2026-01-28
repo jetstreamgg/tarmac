@@ -108,7 +108,7 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
   const userAssets = vaultData?.userAssets ?? 0n;
-  const availableLiquidity = combinedData?.allocations.markets[0]?.liquidity;
+  const availableLiquidity = combinedData?.market.markets[0]?.liquidity;
   const hasLiquidityData = !isCombinedDataLoading && availableLiquidity !== undefined;
   const maxWithdraw = hasLiquidityData
     ? userAssets < availableLiquidity
@@ -565,7 +565,7 @@ const MorphoVaultWidgetWrapped = ({
               vaultAddress={vaultAddress}
               vaultName={vaultName}
               vaultTvl={vaultData?.totalAssets}
-              vaultRate={combinedData?.rate.formattedNetRate}
+              vaultRate={combinedData?.rate?.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
               claimRewards={morphoVaultClaimRewards}
               isRewardsLoading={isRewardsLoading}

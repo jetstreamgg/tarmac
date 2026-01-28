@@ -57,13 +57,13 @@ type MorphoVaultCombinedDataApiResponse = {
 };
 
 /**
- * Combined vault data including rate and allocation information
+ * Combined vault data including rate and market state information
  */
 export type MorphoVaultCombinedData = {
   /** Rate data (APY, fees, rewards) */
   rate: MorphoVaultRateData;
-  /** Allocation data (markets, idle liquidity) */
-  allocations: MorphoVaultAllocationsData;
+  /** Market state data (liquidity, utilization, idle assets) */
+  market: MorphoVaultAllocationsData;
 };
 
 export type MorphoVaultCombinedDataHook = ReadHook & {
@@ -205,7 +205,7 @@ async function fetchMorphoVaultCombinedData(
 
   return {
     rate: rateData,
-    allocations: allocationsData
+    market: allocationsData
   };
 }
 
@@ -236,7 +236,7 @@ export function useMorphoVaultCombinedData({
     queryKey: ['morpho-vault-combined-data', vaultAddress, chainId],
     queryFn: () => {
       if (!vaultConfig?.marketId) {
-        throw new Error('Vault market ID not configured');
+        throw new Error(`Vault ${vaultAddress} not found in MORPHO_VAULTS configuration or missing marketId`);
       }
       return fetchMorphoVaultCombinedData(vaultAddress, vaultConfig.marketId, chainId);
     },
@@ -245,10 +245,16 @@ export function useMorphoVaultCombinedData({
     gcTime: 10 * 60 * 1000 // 10 minutes
   });
 
+  // Surface a clear error when vault isn't configured (query won't run in this case)
+  const configError =
+    !vaultConfig?.marketId && !isLoading
+      ? new Error(`Vault ${vaultAddress} not found in MORPHO_VAULTS configuration or missing marketId`)
+      : null;
+
   return {
     data,
     isLoading: !data && isLoading,
-    error: error as Error | null,
+    error: (error as Error | null) || configError,
     mutate,
     dataSources: [
       {

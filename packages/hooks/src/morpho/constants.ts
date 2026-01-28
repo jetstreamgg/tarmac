@@ -6,7 +6,7 @@ export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
 export const MERKL_API_URL = 'https://api.merkl.xyz/v4';
 
 /**
- * Market ID for the stUSDC/USDS market that the USDS Risk Capital vault allocates to
+ * Market ID for the stUSDS/USDS market that the USDS Risk Capital vault allocates to
  */
 export const USDS_RISK_CAPITAL_MARKET_ID =
   '0x77e624dd9dd980810c2b804249e88f3598d9c7ec91f16aa5fbf6e3fdf6087f82' as const;

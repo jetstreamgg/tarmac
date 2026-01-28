@@ -21,7 +21,7 @@ type MorphoVaultAllocationsDetailsProps = {
 
 export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAllocationsDetailsProps) {
   const { data: combinedData, isLoading } = useMorphoVaultCombinedData({ vaultAddress });
-  const allocationsData = combinedData?.allocations;
+  const allocationsData = combinedData?.market;
   const chainId = useChainId();
 
   if (isLoading) {
