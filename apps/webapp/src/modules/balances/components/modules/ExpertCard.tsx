@@ -11,7 +11,7 @@ import {
   chainId as chainIdConstants,
   isTestnetId
 } from '@jetstreamgg/sky-utils';
-import { useStUsdsData, useMorphoVaultCombinedData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData, useMorphoVaultSingleMarketApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
 
@@ -26,7 +26,7 @@ export function ExpertCard() {
   // Morpho vault data
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
-  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultCombinedData({
+  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress: morphoVaultAddress
   });
 

@@ -4,8 +4,8 @@ import {
   useTokenAllowance,
   useIsBatchSupported,
   Token,
-  useMorphoVaultData,
-  useMorphoVaultCombinedData,
+  useMorphoVaultOnChainData,
+  useMorphoVaultSingleMarketApiData,
   useMorphoVaultRewards
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce, formatBigInt } from '@jetstreamgg/sky-utils';
@@ -90,12 +90,12 @@ const MorphoVaultWidgetWrapped = ({
     data: vaultData,
     isLoading: isVaultDataLoading,
     mutate: mutateVaultData
-  } = useMorphoVaultData({
+  } = useMorphoVaultOnChainData({
     vaultAddress
   });
 
   // Combined vault data hook - fetches rate and allocations from Morpho API in a single call
-  const { data: combinedData, isLoading: isCombinedDataLoading } = useMorphoVaultCombinedData({
+  const { data: combinedData, isLoading: isCombinedDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress
   });
 

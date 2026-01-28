@@ -1,9 +1,9 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import {
-  useMorphoVaultData,
+  useMorphoVaultOnChainData,
   Token,
   getTokenDecimals,
-  useMorphoVaultCombinedData
+  useMorphoVaultSingleMarketApiData
 } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -36,11 +36,11 @@ export const MorphoVaultStatsCard = ({
   const currentVaultAddress = vaultAddress[chainId];
 
   // Hooks for Morpho vault data
-  const { data: vaultData, isLoading: vaultLoading } = useMorphoVaultData({
+  const { data: vaultData, isLoading: vaultLoading } = useMorphoVaultOnChainData({
     vaultAddress: currentVaultAddress
   });
 
-  const { data: combinedData, isLoading: combinedDataLoading } = useMorphoVaultCombinedData({
+  const { data: combinedData, isLoading: combinedDataLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress: currentVaultAddress
   });
 

@@ -10,7 +10,7 @@ import { useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
 import { formatDecimalPercentage, formatStrAsApy } from '@jetstreamgg/sky-utils';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
-import { useMorphoVaultCombinedData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultSingleMarketApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 
 // TODO export PairTokenIcons from widgets?
 // import { PairTokenIcons } from '@widgets/shared/components/ui/token/PairTokenIcon';
@@ -151,7 +151,7 @@ export function AdvancedRate({ expertModule }: { expertModule?: string }) {
   const { data: stUsdsData } = useStUsdsData();
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[chainId];
-  const { data: morphoData } = useMorphoVaultCombinedData({
+  const { data: morphoData } = useMorphoVaultSingleMarketApiData({
     vaultAddress: morphoVaultAddress
   });
 

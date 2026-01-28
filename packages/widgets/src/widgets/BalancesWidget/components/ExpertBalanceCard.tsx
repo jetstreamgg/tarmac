@@ -1,8 +1,8 @@
 import {
   useStUsdsData,
   usePrices,
-  useMorphoVaultData,
-  useMorphoVaultCombinedData,
+  useMorphoVaultOnChainData,
+  useMorphoVaultSingleMarketApiData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
 import {
@@ -36,10 +36,10 @@ export const ExpertBalanceCard = ({
   // Get Morpho vault data
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[vaultChainId];
-  const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultData({
+  const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultOnChainData({
     vaultAddress: morphoVaultAddress
   });
-  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultCombinedData({
+  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress: morphoVaultAddress
   });
 

@@ -19,8 +19,8 @@ import {
   useRewardsChartInfo,
   useStakeRewardContracts,
   useMultipleRewardsChartInfo,
-  useMorphoVaultData,
-  useMorphoVaultCombinedData,
+  useMorphoVaultOnChainData,
+  useMorphoVaultSingleMarketApiData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
 import {
@@ -136,10 +136,10 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   // Morpho vault data
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
-  const { data: morphoData, isLoading: morphoLoading } = useMorphoVaultData({
+  const { data: morphoData, isLoading: morphoLoading } = useMorphoVaultOnChainData({
     vaultAddress: morphoVaultAddress
   });
-  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultCombinedData({
+  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultSingleMarketApiData({
     vaultAddress: morphoVaultAddress
   });
 

@@ -2,7 +2,7 @@ import { MorphoVaultRateCard } from './MorphoVaultRateCard';
 import { MorphoVaultTvlCard } from './MorphoVaultTvlCard';
 import { MorphoMarketLiquidityCard } from './MorphoMarketLiquidityCard';
 import { MorphoMarketUtilizationCard } from './MorphoMarketUtilizationCard';
-import { Token, useMorphoVaultCombinedData } from '@jetstreamgg/sky-hooks';
+import { Token, useMorphoVaultSingleMarketApiData } from '@jetstreamgg/sky-hooks';
 
 type MorphoVaultInfoDetailsProps = {
   vaultAddress: `0x${string}`;
@@ -10,7 +10,7 @@ type MorphoVaultInfoDetailsProps = {
 };
 
 export function MorphoVaultInfoDetails({ vaultAddress, assetToken }: MorphoVaultInfoDetailsProps) {
-  const { data: combinedData, isLoading, error } = useMorphoVaultCombinedData({ vaultAddress });
+  const { data: combinedData, isLoading, error } = useMorphoVaultSingleMarketApiData({ vaultAddress });
   const market = combinedData?.market.markets[0];
 
   return (

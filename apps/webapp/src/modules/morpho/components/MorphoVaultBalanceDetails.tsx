@@ -1,4 +1,4 @@
-import { useMorphoVaultData, useTokenBalance, Token } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultOnChainData, useTokenBalance, Token } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
@@ -17,7 +17,7 @@ export function MorphoVaultBalanceDetails({ vaultAddress, assetToken }: MorphoVa
     data: vaultData,
     isLoading: isVaultLoading,
     error: vaultError
-  } = useMorphoVaultData({ vaultAddress });
+  } = useMorphoVaultOnChainData({ vaultAddress });
 
   const assetAddress = assetToken.address[chainId as keyof typeof assetToken.address];
   const {

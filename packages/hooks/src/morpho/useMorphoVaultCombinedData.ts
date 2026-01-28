@@ -209,15 +209,18 @@ async function fetchMorphoVaultCombinedData(
 }
 
 /**
- * Hook for fetching combined Morpho vault data (rate + allocations) in a single API call.
+ * Hook for fetching Morpho vault data (rate + single market) from the Morpho API.
  *
- * This is an optimized hook that replaces the need to call both useMorphoVaultRate
+ * This is an optimized hook that replaces the need to call both useMorphoVaultRateApiData
  * and useMorphoVaultAllocations separately. It uses a hardcoded market ID for the
  * vault's primary allocation, eliminating the need for on-chain adapter discovery.
  *
+ * Note: This hook only works for vaults with a single market allocation configured
+ * in MORPHO_VAULTS with a marketId.
+ *
  * @param vaultAddress - The Morpho V2 vault contract address (optional)
  */
-export function useMorphoVaultCombinedData({
+export function useMorphoVaultSingleMarketApiData({
   vaultAddress
 }: {
   vaultAddress?: `0x${string}`;
