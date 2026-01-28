@@ -5,14 +5,16 @@ import {
   useRewardsSuppliedBalance,
   useStUsdsData,
   useTotalUserSealed,
-  useTotalUserStaked
+  useTotalUserStaked,
+  useMorphoVaultData,
+  MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
 import { StakeBalanceCard } from './StakeBalanceCard';
-import { StUSDSBalanceCard } from './StUSDSBalanceCard';
-import { isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { ExpertBalanceCard } from './ExpertBalanceCard';
+import { chainId, isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { useChainId, useConnection } from 'wagmi';
 
 export enum ModuleCardVariant {
@@ -60,7 +62,7 @@ export const ModulesBalances = ({
 }: ModulesBalancesProps): React.ReactElement => {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const mainnetChainId = isTestnetId(currentChainId) ? 314310 : 1;
+  const mainnetChainId = isTestnetId(currentChainId) ? chainId.tenderly : chainId.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
 
   const usdsSkyRewardContract = rewardContracts.find(
@@ -125,6 +127,21 @@ export const ModulesBalances = ({
 
   const { data: stUsdsData, isLoading: stUsdsLoading, error: stUsdsError } = useStUsdsData();
 
+  // Get Morpho vault data for expert balance card
+  const defaultMorphoVault = MORPHO_VAULTS[0];
+  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
+  const {
+    data: morphoData,
+    isLoading: morphoLoading,
+    error: morphoError
+  } = useMorphoVaultData({
+    vaultAddress: morphoVaultAddress
+  });
+
+  // Combined expert savings balance (stUSDS + Morpho)
+  const totalExpertSavingsBalance = (stUsdsData?.userSuppliedUsds || 0n) + (morphoData?.userAssets || 0n);
+  const expertLoading = stUsdsLoading || morphoLoading;
+
   const {
     data: multichainSavingsBalances,
     isLoading: savingsLoading,
@@ -169,10 +186,10 @@ export const ModulesBalances = ({
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
-  const hideStUSDS = Boolean(
+  const hideExpert = Boolean(
     !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
-      stUsdsError ||
-      stUsdsData?.userSuppliedUsds === 0n || //always hide zero balances for expert modules
+      (stUsdsError && morphoError) ||
+      (totalExpertSavingsBalance === 0n && hideZeroBalances) ||
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
@@ -202,11 +219,11 @@ export const ModulesBalances = ({
           variant={variant}
         />
       )}
-      {!hideModuleBalances && !hideStUSDS && (
-        <StUSDSBalanceCard
+      {!hideModuleBalances && !hideExpert && (
+        <ExpertBalanceCard
           url={stusdsCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
-          loading={stUsdsLoading}
+          loading={expertLoading}
           variant={variant}
         />
       )}
