@@ -5,7 +5,13 @@ import {
   useMorphoVaultRate,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatNumber, calculateApyFromStr } from '@jetstreamgg/sky-utils';
+import {
+  chainId,
+  formatBigInt,
+  formatNumber,
+  calculateApyFromStr,
+  isTestnetId
+} from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -22,13 +28,14 @@ export const ExpertBalanceCard = ({
   loading,
   variant = ModuleCardVariant.default
 }: CardProps) => {
-  const chainId = useChainId();
+  const connectedChainId = useChainId();
+  const vaultChainId = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
   // Get Morpho vault data
   const defaultMorphoVault = MORPHO_VAULTS[0];
-  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[chainId];
+  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[vaultChainId];
   const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultData({
     vaultAddress: morphoVaultAddress!
   });
@@ -46,21 +53,23 @@ export const ExpertBalanceCard = ({
   const morphoRate = morphoRateData?.netRate ? morphoRateData.netRate * 100 : 0; // Convert decimal to percentage
   const maxRate = Math.max(stUsdsRate, morphoRate);
 
-  const isDataLoading = stUsdsLoading || morphoDataLoading || morphoRateLoading;
+  // Separate loading states: balance data vs rate data
+  const isBalanceLoading = stUsdsLoading || morphoDataLoading;
+  const isRateLoading = morphoRateLoading;
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
       title={t`USDS supplied to Expert`}
       tokenSymbol="USDS"
       headerRightContent={
-        loading || isDataLoading ? (
+        loading || isBalanceLoading ? (
           <Skeleton className="w-32" />
         ) : (
           <Text>{formatBigInt(totalSuppliedUsds)}</Text>
         )
       }
       footer={
-        isDataLoading ? (
+        isRateLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : maxRate > 0 ? (
           <RateLineWithArrow
@@ -73,7 +82,7 @@ export const ExpertBalanceCard = ({
         )
       }
       footerRightContent={
-        loading || pricesLoading || isDataLoading ? (
+        loading || pricesLoading || isBalanceLoading ? (
           <Skeleton className="h-[13px] w-20" />
         ) : totalSuppliedUsds > 0n && !!pricesData?.USDS ? (
           <Text variant="small" className="text-textSecondary">
@@ -96,7 +105,7 @@ export const ExpertBalanceCard = ({
       url={url}
       logoName="expert"
       content={
-        loading || isDataLoading ? (
+        loading || isBalanceLoading ? (
           <Skeleton className="w-32" />
         ) : (
           <Text>{formatBigInt(totalSuppliedUsds)} USDS</Text>

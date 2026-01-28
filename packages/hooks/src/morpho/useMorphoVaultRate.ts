@@ -2,8 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL } from './constants';
-import { useChainId } from 'wagmi';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
 
 type MorphoVaultApiResponse = {
@@ -149,8 +147,9 @@ async function fetchMorphoVaultRate(
 }
 
 export function useMorphoVaultRate({ vaultAddress }: { vaultAddress?: `0x${string}` }): MorphoVaultRateHook {
-  const connectedChainId = useChainId();
-  const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
+  // Always use mainnet chainId since Morpho vaults are only on mainnet
+  // This ensures the query is cached across network switches
+  const chainId = mainnet.id;
 
   const {
     data,

@@ -14,7 +14,7 @@ import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
 import { StakeBalanceCard } from './StakeBalanceCard';
 import { ExpertBalanceCard } from './ExpertBalanceCard';
-import { isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { chainId, isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { useChainId, useConnection } from 'wagmi';
 
 export enum ModuleCardVariant {
@@ -62,7 +62,7 @@ export const ModulesBalances = ({
 }: ModulesBalancesProps): React.ReactElement => {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const mainnetChainId = isTestnetId(currentChainId) ? 314310 : 1;
+  const mainnetChainId = isTestnetId(currentChainId) ? chainId.tenderly : chainId.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
 
   const usdsSkyRewardContract = rewardContracts.find(
@@ -129,7 +129,7 @@ export const ModulesBalances = ({
 
   // Get Morpho vault data for expert balance card
   const defaultMorphoVault = MORPHO_VAULTS[0];
-  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[currentChainId];
+  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
   const {
     data: morphoData,
     isLoading: morphoLoading,
@@ -189,7 +189,7 @@ export const ModulesBalances = ({
   const hideExpert = Boolean(
     !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
       (stUsdsError && morphoError) ||
-      totalExpertSavingsBalance === 0n || //always hide zero balances for expert modules
+      (totalExpertSavingsBalance === 0n && hideZeroBalances) ||
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
 

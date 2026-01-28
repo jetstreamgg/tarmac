@@ -3,7 +3,7 @@ import { useReadContracts, useConnection, useChainId } from 'wagmi';
 import { usdsRiskCapitalVaultAbi } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
-import { getEtherscanLink } from '@jetstreamgg/sky-utils';
+import { chainId, getEtherscanLink, isTestnetId } from '@jetstreamgg/sky-utils';
 
 /**
  * Data returned by the useMorphoVaultData hook
@@ -43,12 +43,13 @@ export type MorphoVaultDataHook = ReadHook & {
  */
 export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string}` }): MorphoVaultDataHook {
   const { address: userAddress } = useConnection();
-  const chainId = useChainId();
+  const connectedChainId = useChainId();
+  const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
 
   const vaultContract = {
     address: vaultAddress,
     abi: usdsRiskCapitalVaultAbi,
-    chainId
+    chainId: chainIdToUse
   } as const;
 
   // Batch 1: General vault data
@@ -138,7 +139,7 @@ export function useMorphoVaultData({ vaultAddress }: { vaultAddress: `0x${string
         {
           title: 'Morpho Vault Contract',
           onChain: true,
-          href: getEtherscanLink(chainId, vaultAddress, 'address'),
+          href: getEtherscanLink(chainIdToUse, vaultAddress, 'address'),
           trustLevel: TRUST_LEVELS[TrustLevelEnum.ZERO]
         }
       ]
