@@ -2,7 +2,7 @@ import {
   useStUsdsData,
   usePrices,
   useMorphoVaultData,
-  useMorphoVaultRate,
+  useMorphoVaultCombinedData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
 import {
@@ -39,7 +39,7 @@ export const ExpertBalanceCard = ({
   const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultData({
     vaultAddress: morphoVaultAddress
   });
-  const { data: morphoRateData, isLoading: morphoRateLoading } = useMorphoVaultRate({
+  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultCombinedData({
     vaultAddress: morphoVaultAddress
   });
 
@@ -50,7 +50,7 @@ export const ExpertBalanceCard = ({
 
   // Calculate the higher rate between stUSDS and Morpho
   const stUsdsRate = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-  const morphoRate = morphoRateData?.netRate ? morphoRateData.netRate * 100 : 0; // Convert decimal to percentage
+  const morphoRate = morphoCombinedData?.rate.netRate ? morphoCombinedData.rate.netRate * 100 : 0; // Convert decimal to percentage
   const maxRate = Math.max(stUsdsRate, morphoRate);
 
   // Separate loading states: balance data vs rate data

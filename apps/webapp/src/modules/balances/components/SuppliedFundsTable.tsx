@@ -20,7 +20,7 @@ import {
   useStakeRewardContracts,
   useMultipleRewardsChartInfo,
   useMorphoVaultData,
-  useMorphoVaultRate,
+  useMorphoVaultCombinedData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
 import {
@@ -139,7 +139,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   const { data: morphoData, isLoading: morphoLoading } = useMorphoVaultData({
     vaultAddress: morphoVaultAddress
   });
-  const { data: morphoRateData, isLoading: morphoRateLoading } = useMorphoVaultRate({
+  const { data: morphoCombinedData, isLoading: morphoRateLoading } = useMorphoVaultCombinedData({
     vaultAddress: morphoVaultAddress
   });
 
@@ -149,7 +149,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
 
   // Calculate highest rate between stUSDS and Morpho
   const stUsdsRatePercent = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-  const morphoRatePercent = morphoRateData?.netRate ? morphoRateData.netRate * 100 : 0;
+  const morphoRatePercent = morphoCombinedData?.rate.netRate ? morphoCombinedData.rate.netRate * 100 : 0;
   const maxExpertRate = Math.max(stUsdsRatePercent, morphoRatePercent);
 
   // Visibility logic
