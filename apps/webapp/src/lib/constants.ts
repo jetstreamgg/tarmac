@@ -22,7 +22,8 @@ export enum QueryParams {
   Flow = 'flow',
   StakeTab = 'stake_tab',
   SealTab = 'seal_tab',
-  ExpertModule = 'expert_module'
+  ExpertModule = 'expert_module',
+  Vault = 'vault'
 }
 
 export enum Environment {
@@ -55,7 +56,8 @@ export const IntentMapping = {
 };
 
 export const ExpertIntentMapping: Record<ExpertIntent, string> = {
-  [ExpertIntent.STUSDS_INTENT]: 'stusds'
+  [ExpertIntent.STUSDS_INTENT]: 'stusds',
+  [ExpertIntent.MORPHO_VAULT_INTENT]: 'morpho'
 };
 
 export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
@@ -108,6 +110,10 @@ export const EXPERT_WIDGET_OPTIONS: {
   {
     id: ExpertIntent.STUSDS_INTENT,
     name: 'stUSDS'
+  },
+  {
+    id: ExpertIntent.MORPHO_VAULT_INTENT,
+    name: 'Morpho Vault'
   }
 ];
 

@@ -36,16 +36,17 @@ export function getFooterLinks(): FooterLink[] {
   return footerLinks;
 }
 
-export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
-  // For expert module intents (like 'stusds'), also include actions with la='expert'
-  const isExpertModuleIntent = ['stusds'].includes(intent);
+const EXPERT_MODULE_INTENTS = Object.values(ExpertIntentMapping);
+
+export function filterActionsByIntent(actions: LinkedAction[], intent: string): LinkedAction[] {
+  // For expert module intents (like 'stusds', 'morpho'), also include actions with la='expert'
+  const isExpertModuleIntent = EXPERT_MODULE_INTENTS.includes(intent);
 
   return actions.filter(x => {
     // Direct match on intent or linked action
     if (x.intent === intent || (x as LinkedAction)?.la === intent) {
       return true;
     }
-    // For advanced module pages (stusds), show actions that lead to advanced modules
     if (isExpertModuleIntent && (x as LinkedAction)?.la === IntentMapping[Intent.EXPERT_INTENT]) {
       return true;
     }
@@ -141,5 +142,10 @@ export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
 export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`,
+    searchParams
+  );
+export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}`,
     searchParams
   );

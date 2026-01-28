@@ -18,9 +18,18 @@ import {
   useHighestRateFromChartData,
   useRewardsChartInfo,
   useStakeRewardContracts,
-  useMultipleRewardsChartInfo
+  useMultipleRewardsChartInfo,
+  useMorphoVaultData,
+  useMorphoVaultRate,
+  MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
-import { isTestnetId, isMainnetId, formatDecimalPercentage, formatStrAsApy } from '@jetstreamgg/sky-utils';
+import {
+  isTestnetId,
+  isMainnetId,
+  formatDecimalPercentage,
+  chainId as chainIdConstants,
+  calculateApyFromStr
+} from '@jetstreamgg/sky-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 
@@ -38,7 +47,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
   // Rewards data
-  const mainnetChainId = isTestnetId(currentChainId) ? 314310 : 1;
+  const mainnetChainId = isTestnetId(currentChainId) ? chainIdConstants.tenderly : chainIdConstants.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
 
   const usdsSkyRewardContract = rewardContracts.find(
@@ -123,7 +132,25 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   // stUSDS data
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const userSuppliedUsds = stUsdsData?.userSuppliedUsds ?? 0n;
-  const stUsdsRate = stUsdsData?.moduleRate ?? 0n;
+
+  // Morpho vault data
+  const defaultMorphoVault = MORPHO_VAULTS[0];
+  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
+  const { data: morphoData, isLoading: morphoLoading } = useMorphoVaultData({
+    vaultAddress: morphoVaultAddress
+  });
+  const { data: morphoRateData, isLoading: morphoRateLoading } = useMorphoVaultRate({
+    vaultAddress: morphoVaultAddress
+  });
+
+  // Combined Expert balance (stUSDS + Morpho)
+  const morphoSupplied = morphoData?.userAssets ?? 0n;
+  const totalExpertSupplied = userSuppliedUsds + morphoSupplied;
+
+  // Calculate highest rate between stUSDS and Morpho
+  const stUsdsRatePercent = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
+  const morphoRatePercent = morphoRateData?.netRate ? morphoRateData.netRate * 100 : 0;
+  const maxExpertRate = Math.max(stUsdsRatePercent, morphoRatePercent);
 
   // Visibility logic
   const hideRewards = Boolean(
@@ -134,13 +161,20 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
   const hideStake = Boolean(
     (totalUserStaked === 0n && hideZeroBalances) || (!showAllNetworks && !isMainnetId(currentChainId))
   );
-  const hideStUSDS = Boolean(
-    (!stUsdsLoading && userSuppliedUsds === 0n) || (!showAllNetworks && !isMainnetId(currentChainId))
+  const hideExpert = Boolean(
+    (totalExpertSupplied === 0n && hideZeroBalances) || (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const isLoading =
-    rewardsLoading || savingsLoading || stakeLoading || stakeRateLoading || stUsdsLoading || pricesLoading;
-  const allHidden = hideRewards && hideSavings && hideStake && hideStUSDS;
+    rewardsLoading ||
+    savingsLoading ||
+    stakeLoading ||
+    stakeRateLoading ||
+    stUsdsLoading ||
+    morphoLoading ||
+    morphoRateLoading ||
+    pricesLoading;
+  const allHidden = hideRewards && hideSavings && hideStake && hideExpert;
 
   if (allHidden && !isLoading) {
     return null;
@@ -193,22 +227,22 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
               />
             )}
 
-            {/* stUSDS Row */}
-            {!hideStUSDS && (
+            {/* Expert Row (stUSDS + Morpho) */}
+            {!hideExpert && (
               <SuppliedFundsTableRow
                 data={{
-                  tokenSymbol: 'stUSDS',
+                  tokenSymbol: 'USDS',
                   moduleIcon: <img src="/images/expert_icon_large.svg" alt="Expert" className="h-5 w-5" />,
-                  moduleName: 'Expert / stUSDS',
-                  amount: userSuppliedUsds,
+                  moduleName: 'Expert',
+                  amount: totalExpertSupplied,
                   decimals: 18,
                   usdPrice: pricesData?.USDS?.price,
-                  rateText: stUsdsRate > 0n ? formatStrAsApy(stUsdsRate) : '0%',
-                  ratePopoverType: 'stusds',
-                  isRateUpTo: false,
+                  rateText: maxExpertRate > 0 ? `${maxExpertRate.toFixed(2)}%` : '0%',
+                  ratePopoverType: 'expert',
+                  isRateUpTo: true,
                   chainId: mainnetChainId
                 }}
-                isLoading={stUsdsLoading}
+                isLoading={stUsdsLoading || morphoLoading || morphoRateLoading}
               />
             )}
 

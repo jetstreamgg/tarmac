@@ -14,6 +14,10 @@ export { BalancesWidget } from './widgets/BalancesWidget';
 export { SealModuleWidget } from './widgets/SealModuleWidget/index';
 export type { BalancesWidgetProps } from './widgets/BalancesWidget';
 export { StakeModuleWidget } from './widgets/StakeModuleWidget/index';
+export { MorphoVaultWidget } from './widgets/MorphoVaultWidget';
+export type { MorphoVaultWidgetProps } from './widgets/MorphoVaultWidget';
+export { MorphoVaultBadge } from './widgets/MorphoVaultWidget/components/MorphoVaultBadge';
+export { MorphoRateBreakdownPopover } from './widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';
 export { TxStatus, NotificationType } from './shared/constants';
 export type {
@@ -29,6 +33,11 @@ export * from './widgets/UpgradeWidget/lib/constants';
 export { RewardsFlow, RewardsScreen, RewardsAction } from './widgets/RewardsWidget/lib/constants';
 export * from './widgets/SealModuleWidget/lib/constants';
 export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './widgets/StakeModuleWidget/lib/constants';
+export {
+  MorphoVaultFlow,
+  MorphoVaultAction,
+  MorphoVaultScreen
+} from './widgets/MorphoVaultWidget/lib/constants';
 export { formatUrnIndex } from './widgets/SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';
@@ -51,6 +60,7 @@ export { CardAnimationWrapper } from './shared/animation/Wrappers';
 export type { WithWidgetProviderProps } from './shared/hocs/withWidgetProvider';
 export { ConnectWalletCopy } from './shared/components/ui/ConnectWalletCopy';
 export { ConnectWallet } from './shared/components/icons/ConnectWallet';
+export { Morpho } from './shared/components/icons/Morpho';
 export { WalletCard } from './widgets/BalancesWidget/components/WalletCard';
 export { ModuleCardVariant, ModulesBalances } from './widgets/BalancesWidget/components/ModulesBalances';
 export { TokenBalances } from './widgets/BalancesWidget/components/TokenBalances';

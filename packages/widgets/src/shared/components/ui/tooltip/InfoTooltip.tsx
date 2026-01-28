@@ -19,12 +19,14 @@ import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 export function InfoTooltip({
   content,
   contentClassname,
+  trigger,
   iconClassName,
   iconSize = 13,
   shouldShowCloseButton = false
 }: {
   content: string | React.ReactNode;
   contentClassname?: string;
+  trigger?: React.ReactNode;
   iconClassName?: string;
   iconSize?: number;
   shouldShowCloseButton?: boolean;
@@ -38,7 +40,7 @@ export function InfoTooltip({
         className="z-10"
         aria-label="Show additional information"
       >
-        <Info size={iconSize} className={iconClassName} />
+        {trigger || <Info size={iconSize} className={iconClassName} />}
       </PopoverTrigger>
       <PopoverContent
         align="center"
@@ -46,7 +48,7 @@ export function InfoTooltip({
         className={`bg-containerDark rounded-xl backdrop-blur-[50px] ${contentClassname}`}
       >
         {shouldShowCloseButton && (
-          <PopoverClose onClick={e => e.stopPropagation()} className="absolute right-4 top-4 z-10">
+          <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
             <X className="h-5 w-5 cursor-pointer text-white" />
           </PopoverClose>
         )}
@@ -63,7 +65,7 @@ export function InfoTooltip({
   ) : (
     <Tooltip>
       <TooltipTrigger aria-label="Show additional information">
-        <Info size={iconSize} className={iconClassName} />
+        {trigger || <Info size={iconSize} className={iconClassName} />}
       </TooltipTrigger>
       <TooltipPortal>
         <TooltipContent className={`max-w-[400px] ${contentClassname}`} arrowPadding={10}>
