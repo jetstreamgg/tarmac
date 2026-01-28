@@ -266,7 +266,7 @@ export const VAULT_DATA_QUERY = `
         supplyAssets
         borrowAssets
         utilization
-        netSupplyApy
+        avgNetSupplyApy
       }
     }
   }

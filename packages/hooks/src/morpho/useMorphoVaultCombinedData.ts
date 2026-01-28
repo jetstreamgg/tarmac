@@ -49,7 +49,7 @@ type MorphoVaultCombinedDataApiResponse = {
         supplyAssets: string;
         borrowAssets: string;
         utilization: number;
-        netSupplyApy: number;
+        avgNetSupplyApy: number;
       };
     } | null;
   };
@@ -182,7 +182,7 @@ async function fetchMorphoVaultCombinedData(
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
-      formattedNetApy: `${(market.state.netSupplyApy * 100).toFixed(2)}%`,
+      formattedNetApy: `${(market.state.avgNetSupplyApy * 100).toFixed(2)}%`,
       totalSupplyAssets,
       totalBorrowAssets,
       liquidity,
@@ -215,17 +215,17 @@ async function fetchMorphoVaultCombinedData(
  * and useMorphoVaultAllocations separately. It uses a hardcoded market ID for the
  * vault's primary allocation, eliminating the need for on-chain adapter discovery.
  *
- * @param vaultAddress - The Morpho V2 vault contract address (required)
+ * @param vaultAddress - The Morpho V2 vault contract address (optional)
  */
 export function useMorphoVaultCombinedData({
   vaultAddress
 }: {
-  vaultAddress: `0x${string}`;
+  vaultAddress?: `0x${string}`;
 }): MorphoVaultCombinedDataHook {
   // Always use mainnet chainId since the Morpho API only has mainnet data
   // This ensures the query is cached across network switches
   const chainId = mainnet.id;
-  const vaultConfig = getMorphoVaultByAddress(vaultAddress, chainId);
+  const vaultConfig = vaultAddress ? getMorphoVaultByAddress(vaultAddress, chainId) : undefined;
 
   const {
     data,
@@ -235,19 +235,19 @@ export function useMorphoVaultCombinedData({
   } = useQuery({
     queryKey: ['morpho-vault-combined-data', vaultAddress, chainId],
     queryFn: () => {
-      if (!vaultConfig?.marketId) {
+      if (!vaultAddress || !vaultConfig?.marketId) {
         throw new Error(`Vault ${vaultAddress} not found in MORPHO_VAULTS configuration or missing marketId`);
       }
       return fetchMorphoVaultCombinedData(vaultAddress, vaultConfig.marketId, chainId);
     },
-    enabled: !!vaultConfig?.marketId,
+    enabled: !!vaultAddress && !!vaultConfig?.marketId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes
   });
 
   // Surface a clear error when vault isn't configured (query won't run in this case)
   const configError =
-    !vaultConfig?.marketId && !isLoading
+    vaultAddress && !vaultConfig?.marketId && !isLoading
       ? new Error(`Vault ${vaultAddress} not found in MORPHO_VAULTS configuration or missing marketId`)
       : null;
 
