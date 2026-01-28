@@ -45,12 +45,7 @@ export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
     if (x.intent === intent || (x as LinkedAction)?.la === intent) {
       return true;
     }
-    // For expert module pages, only show actions targeting that specific module
     if (isExpertModuleIntent && (x as LinkedAction)?.la === IntentMapping[Intent.EXPERT_INTENT]) {
-      // If action has an expertModule field, it must match the current intent
-      if ((x as LinkedAction)?.expertModule) {
-        return (x as LinkedAction).expertModule === intent;
-      }
       return true;
     }
     return false;

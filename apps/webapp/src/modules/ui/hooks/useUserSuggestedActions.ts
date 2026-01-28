@@ -67,6 +67,7 @@ const fetchUserSuggestedActions = (
   tokenBalances?: TokenBalance[],
   rewardContracts?: RewardContract[],
   currentRewardContract?: RewardContract,
+  currentExpertModule?: string,
   chains?: readonly any[]
 ): {
   suggestedActions: SuggestedAction[];
@@ -134,7 +135,7 @@ const fetchUserSuggestedActions = (
         intent: IntentMapping.UPGRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
         expertModule: STUSDS,
-        weight: 5,
+        weight: currentExpertModule === STUSDS ? 8 : currentExpertModule === MORPHO ? 4 : 5,
         type: 'linked'
       });
       linkedActions.push({
@@ -148,7 +149,7 @@ const fetchUserSuggestedActions = (
         intent: IntentMapping.UPGRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
         expertModule: MORPHO,
-        weight: 5,
+        weight: currentExpertModule === MORPHO ? 8 : currentExpertModule === STUSDS ? 4 : 5,
         type: 'linked'
       });
       // Create contextual reward action based on current page
@@ -242,7 +243,7 @@ const fetchUserSuggestedActions = (
         weight: 6,
         type: 'linked'
       });
-      // Add stUSDS linked action for USDC
+      // Add stUSDS linked action for USDC (context-aware weights like rewards)
       linkedActions.push({
         balance: usdcBalance.formatted,
         primaryToken: 'USDC',
@@ -254,7 +255,7 @@ const fetchUserSuggestedActions = (
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
         expertModule: STUSDS,
-        weight: 4,
+        weight: currentExpertModule === STUSDS ? 7 : currentExpertModule === MORPHO ? 3 : 4,
         type: 'linked'
       });
       linkedActions.push({
@@ -268,7 +269,7 @@ const fetchUserSuggestedActions = (
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
         expertModule: MORPHO,
-        weight: 4,
+        weight: currentExpertModule === MORPHO ? 7 : currentExpertModule === STUSDS ? 3 : 4,
         type: 'linked'
       });
       // Create contextual reward action for USDC
@@ -345,7 +346,7 @@ const fetchUserSuggestedActions = (
         weight: 6,
         type: 'linked'
       });
-      // Add stUSDS linked action for USDT
+      // Add stUSDS linked action for USDT (context-aware weights like rewards)
       linkedActions.push({
         balance: usdtBalance.formatted,
         primaryToken: 'USDT',
@@ -357,7 +358,7 @@ const fetchUserSuggestedActions = (
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
         expertModule: STUSDS,
-        weight: 4,
+        weight: currentExpertModule === STUSDS ? 7 : currentExpertModule === MORPHO ? 3 : 4,
         type: 'linked'
       });
       linkedActions.push({
@@ -371,7 +372,7 @@ const fetchUserSuggestedActions = (
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
         expertModule: MORPHO,
-        weight: 4,
+        weight: currentExpertModule === MORPHO ? 7 : currentExpertModule === STUSDS ? 3 : 4,
         type: 'linked'
       });
       // Create contextual reward action for USDT
@@ -549,7 +550,10 @@ const fetchUserSuggestedActions = (
   };
 };
 
-export const useUserSuggestedActions = (currentRewardContract?: RewardContract) => {
+export const useUserSuggestedActions = (
+  currentRewardContract?: RewardContract,
+  currentExpertModule?: string
+) => {
   const { address } = useConnection();
   const chainId = useChainId();
   const chains = useChains();
@@ -595,6 +599,7 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
             tokenBalances,
             rewardContracts,
             currentRewardContract,
+            currentExpertModule,
             chains
           );
           setData(result);
@@ -616,6 +621,7 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
     tokenBalancesIsLoading,
     tokenBalanceError,
     currentRewardContract,
+    currentExpertModule,
     chainId,
     chains
   ]);
