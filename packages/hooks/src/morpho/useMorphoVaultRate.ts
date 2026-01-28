@@ -148,7 +148,7 @@ async function fetchMorphoVaultRate(
   };
 }
 
-export function useMorphoVaultRate({ vaultAddress }: { vaultAddress: `0x${string}` }): MorphoVaultRateHook {
+export function useMorphoVaultRate({ vaultAddress }: { vaultAddress?: `0x${string}` }): MorphoVaultRateHook {
   const connectedChainId = useChainId();
   const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
 
@@ -159,7 +159,8 @@ export function useMorphoVaultRate({ vaultAddress }: { vaultAddress: `0x${string
     isLoading
   } = useQuery({
     queryKey: ['morpho-vault-rate', vaultAddress, chainId],
-    queryFn: () => fetchMorphoVaultRate(vaultAddress, chainId),
+    queryFn: () => fetchMorphoVaultRate(vaultAddress!, chainId),
+    enabled: !!vaultAddress,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes
   });

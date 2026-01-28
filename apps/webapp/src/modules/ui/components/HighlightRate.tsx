@@ -152,7 +152,7 @@ export function AdvancedRate({ expertModule }: { expertModule?: string }) {
   const defaultMorphoVault = MORPHO_VAULTS[0];
   const morphoVaultAddress = defaultMorphoVault?.vaultAddress[chainId];
   const { data: morphoData } = useMorphoVaultRate({
-    vaultAddress: morphoVaultAddress || ('0x' as `0x${string}`)
+    vaultAddress: morphoVaultAddress
   });
 
   const moduleConfigs: Record<string, { inputToken: string; outputToken: string; rateType: string }> = {

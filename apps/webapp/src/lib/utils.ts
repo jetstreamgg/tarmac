@@ -36,9 +36,11 @@ export function getFooterLinks(): FooterLink[] {
   return footerLinks;
 }
 
-export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
+const EXPERT_MODULE_INTENTS = Object.values(ExpertIntentMapping);
+
+export function filterActionsByIntent(actions: LinkedAction[], intent: string): LinkedAction[] {
   // For expert module intents (like 'stusds', 'morpho'), also include actions with la='expert'
-  const isExpertModuleIntent = ['stusds', 'morpho'].includes(intent);
+  const isExpertModuleIntent = EXPERT_MODULE_INTENTS.includes(intent);
 
   return actions.filter(x => {
     // Direct match on intent or linked action
