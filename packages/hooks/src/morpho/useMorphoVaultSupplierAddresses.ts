@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_URL, MORPHO_VAULTS, VAULT_V2_POSITIONS_QUERY } from './constants';
+import { MORPHO_API_URL, VAULT_V2_POSITIONS_QUERY } from './constants';
 import { mainnet } from 'viem/chains';
 
 const PAGE_SIZE = 1000;
@@ -52,7 +52,7 @@ async function fetchMorphoVaultSupplierAddresses(vaultAddress: string, chainId: 
 
     // Filter for active suppliers (shares > 0) - API doesn't support server-side filtering
     items.forEach(item => {
-      if (item.shares !== '0') {
+      if (BigInt(item.shares) > 0n) {
         allAddresses.add(item.user.address.toLowerCase());
       }
     });
@@ -64,27 +64,6 @@ async function fetchMorphoVaultSupplierAddresses(vaultAddress: string, chainId: 
   return Array.from(allAddresses);
 }
 
-async function fetchAllMorphoVaultSupplierAddresses(chainId: number): Promise<string[]> {
-  const allAddresses = new Set<string>();
-
-  // Fetch positions from all configured Morpho vaults
-  await Promise.all(
-    MORPHO_VAULTS.map(async vault => {
-      const vaultAddress = vault.vaultAddress[chainId];
-      if (!vaultAddress) return;
-
-      try {
-        const addresses = await fetchMorphoVaultSupplierAddresses(vaultAddress, chainId);
-        addresses.forEach(addr => allAddresses.add(addr));
-      } catch (error) {
-        console.error(`Failed to fetch positions for vault ${vault.name}:`, error);
-      }
-    })
-  );
-
-  return Array.from(allAddresses);
-}
-
 export type MorphoVaultSupplierAddressesHook = ReadHook & {
   data?: string[];
 };
@@ -92,8 +71,8 @@ export type MorphoVaultSupplierAddressesHook = ReadHook & {
 export function useMorphoVaultSupplierAddresses({
   vaultAddress
 }: {
-  vaultAddress?: `0x${string}`;
-} = {}): MorphoVaultSupplierAddressesHook {
+  vaultAddress: `0x${string}`;
+}): MorphoVaultSupplierAddressesHook {
   // Always use mainnet chainId since Morpho vaults are only on mainnet
   const chainId = mainnet.id;
 
@@ -103,11 +82,8 @@ export function useMorphoVaultSupplierAddresses({
     refetch: mutate,
     isLoading
   } = useQuery({
-    queryKey: ['morpho-vault-supplier-addresses', vaultAddress || 'all', chainId],
-    queryFn: () =>
-      vaultAddress
-        ? fetchMorphoVaultSupplierAddresses(vaultAddress, chainId)
-        : fetchAllMorphoVaultSupplierAddresses(chainId),
+    queryKey: ['morpho-vault-supplier-addresses', vaultAddress, chainId],
+    queryFn: () => fetchMorphoVaultSupplierAddresses(vaultAddress, chainId),
     staleTime: 10 * 60 * 1000, // 10 minutes - supplier lists don't change rapidly
     gcTime: 15 * 60 * 1000 // 15 minutes
   });

@@ -9,7 +9,7 @@ import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { Trans } from '@lingui/react/macro';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useChainId } from 'wagmi';
+import { mainnet } from 'viem/chains';
 
 type TvlChartInfoParsed = {
   blockTimestamp: number;
@@ -44,14 +44,14 @@ function calculateCumulativeTotalSupply(chartData: TvlChartInfoParsed[]) {
 
 // Hook to fetch and aggregate expert modules chart data
 function useExpertModulesChartInfo() {
-  const chainId = useChainId();
   const { data: stUsdsChartData, isLoading: isLoadingStUsds, error: errorStUsds } = useStUsdsChartInfo();
   const {
     data: morphoChartData,
     isLoading: isLoadingMorpho,
     error: errorMorpho
   } = useMorphoVaultChartInfo({
-    vaultAddress: usdsRiskCapitalVaultAddress[chainId as keyof typeof usdsRiskCapitalVaultAddress]
+    // Morpho API is mainnet-only
+    vaultAddress: usdsRiskCapitalVaultAddress[mainnet.id]
   });
 
   // Normalize timestamps to day boundaries, combine, and aggregate

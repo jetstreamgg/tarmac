@@ -3,17 +3,17 @@ import { t } from '@lingui/core/macro';
 import { useStUsdsData, useMorphoVaultData, usdsRiskCapitalVaultAddress } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
-import { useChainId } from 'wagmi';
+import { mainnet } from 'viem/chains';
 
 export function ExpertTvlCard(): React.ReactElement {
-  const chainId = useChainId();
   const { data: stUsdsData, isLoading: isStUsdsLoading, error: stUsdsError } = useStUsdsData();
   const {
     data: morphoData,
     isLoading: isMorphoLoading,
     error: morphoError
   } = useMorphoVaultData({
-    vaultAddress: usdsRiskCapitalVaultAddress[chainId as keyof typeof usdsRiskCapitalVaultAddress]
+    // Morpho API is mainnet-only
+    vaultAddress: usdsRiskCapitalVaultAddress[mainnet.id]
   });
 
   const stUsdsTvl = stUsdsData?.totalAssets || 0n;
