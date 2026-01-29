@@ -3,7 +3,8 @@ require('dotenv').config();
 const { writeFile, readFile } = require('fs/promises');
 
 // Default fork container with Curve pool properly configured for stUSDS provider tests
-const DEFAULT_MAINNET_FORK_CONTAINER_ID = 'cec455a4-3a8a-4a93-ac66-fc98fa1a8103';
+// const DEFAULT_MAINNET_FORK_CONTAINER_ID = 'cec455a4-3a8a-4a93-ac66-fc98fa1a8103';
+const DEFAULT_MAINNET_FORK_CONTAINER_ID = '8c4079a1-61ab-4f95-be10-c7a7cb8017e5';
 
 // Allow override via environment variable for future alternate fork needs
 // Usage: ALTERNATE_FORK_CONTAINER_ID=<container-id> pnpm vnet:fork
