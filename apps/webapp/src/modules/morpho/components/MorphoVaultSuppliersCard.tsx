@@ -6,7 +6,7 @@ import { formatNumber } from '@jetstreamgg/sky-utils';
 
 type MorphoVaultSuppliersCardProps = {
   vaultAddress: `0x${string}`;
-  title?: React.ReactNode;
+  title?: React.ReactElement | string;
 };
 
 export function MorphoVaultSuppliersCard({

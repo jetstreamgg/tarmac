@@ -5,7 +5,7 @@ import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 import { formatNumber } from '@jetstreamgg/sky-utils';
 
 type StUSDSSuppliersCardProps = {
-  title?: React.ReactNode;
+  title?: React.ReactElement | string;
 };
 
 export function StUSDSSuppliersCard({ title }: StUSDSSuppliersCardProps = {}): React.ReactElement {
