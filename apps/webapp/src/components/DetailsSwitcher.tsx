@@ -13,11 +13,13 @@ import {
 import { t } from '@lingui/core/macro';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { JSX } from 'react';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 
 export function DetailsSwitcher(): JSX.Element {
   const isSealEngine = useMatch('/seal-engine');
   const { bpi } = useBreakpointIndex();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { supportsFloatingChat } = useFloatingChat();
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const handleSwitch = (pressed: boolean) => {
     const queryParam = pressed ? 'true' : 'false';
@@ -35,7 +37,7 @@ export function DetailsSwitcher(): JSX.Element {
         <div>
           <Toggle
             variant="singleSwitcher"
-            className={`hidden h-10 w-10 rounded-xl md:flex ${CHATBOT_ENABLED && !isSealEngine ? 'md:rounded-r-none' : ''} `}
+            className={`hidden h-10 w-10 rounded-xl md:flex ${CHATBOT_ENABLED && !supportsFloatingChat && !isSealEngine ? 'md:rounded-r-none' : ''} `}
             pressed={detailsParam}
             onPressedChange={handleSwitch}
             aria-label="Toggle details"

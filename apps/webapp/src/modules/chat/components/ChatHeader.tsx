@@ -3,12 +3,16 @@ import { QueryParams } from '@/lib/constants';
 import { ChevronLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Close } from '@/modules/icons';
+import { useFloatingChat } from '../hooks/useFloatingChat';
 
 export const ChatHeader = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { supportsFloatingChat } = useFloatingChat();
   const handleBack = () => {
     searchParams.set(QueryParams.Chat, 'false');
-    searchParams.set(QueryParams.Details, 'true');
+    if (!supportsFloatingChat) {
+      searchParams.set(QueryParams.Details, 'true');
+    }
     setSearchParams(searchParams);
   };
 

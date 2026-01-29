@@ -15,7 +15,13 @@ import { submitFeedback, FEEDBACK_TYPE } from '@/modules/chat/services/feedbackA
 import { useChatbotFeedbackNotification } from '@/modules/chat/hooks/useChatbotFeedbackNotification';
 import { isChatbotRestrictedError } from '@/modules/chat/lib/ChatbotRestrictedError';
 
-export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
+export const ChatPane = ({
+  sendMessage,
+  scrollBehavior = 'smooth'
+}: {
+  sendMessage: (message: string) => void;
+  scrollBehavior?: ScrollBehavior;
+}) => {
   const {
     chatHistory,
     shouldShowConfirmationWarning,
@@ -37,10 +43,10 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
         top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: scrollBehavior
       });
     }
-  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger]);
+  }, [chatHistory, shouldShowConfirmationWarning, scrollTrigger, scrollBehavior]);
 
   // Manage conversation feedback prompt visibility
   useConversationFeedback({ chatHistory, setShowConversationFeedback });
@@ -83,10 +89,10 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
         onSubmit={handleFeedbackSubmit}
         initialRating={selectedRating}
       />
-
-      {/* Chat Pane */}
+      {/* `chat-pane` class is used by the AppContainer component to make the container full width if the chat
+      pane is visible */}
       <motion.div
-        className="chat-pane md:bg-panel flex h-full w-full flex-col group-has-[.details-pane]:w-[324px] md:rounded-3xl"
+        className="chat-pane md:bg-panel flex h-full w-full flex-col md:rounded-3xl"
         layout
         key="chat-pane"
         initial={{ opacity: 0 }}

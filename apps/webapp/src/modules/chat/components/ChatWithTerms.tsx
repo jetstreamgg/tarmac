@@ -41,9 +41,10 @@ We cannot present the terms for acceptance at this time. Please contact support 
 };
 interface ChatWithTermsProps {
   sendMessage: (message: string) => void;
+  scrollBehavior?: ScrollBehavior;
 }
 
-export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => {
+export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage, scrollBehavior }) => {
   const { i18n } = useLingui();
   const { address } = useConnection();
 
@@ -160,7 +161,7 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
 
   return (
     <>
-      <ChatPane sendMessage={wrappedSendMessage} />
+      <ChatPane sendMessage={wrappedSendMessage} scrollBehavior={scrollBehavior} />
       <ChatbotTermsModal
         isOpen={showTermsModal}
         onAccept={handleAcceptTerms}

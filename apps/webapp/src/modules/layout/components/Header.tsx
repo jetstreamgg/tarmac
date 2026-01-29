@@ -8,6 +8,7 @@ import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
+import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 // import { erc20Abi, parseEther } from 'viem';
 // import {
 //   daiUsdsAbi,
@@ -27,6 +28,7 @@ const useMock = import.meta.env.VITE_USE_MOCK_WALLET === 'true';
 export function Header(): React.ReactElement {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
+  const homeLink = useRetainedQueryParams('/?widget=balances');
   // const { address: connectedAddress, isConnected } = useConnection();
 
   // const amount = parseEther('2');
@@ -75,7 +77,7 @@ export function Header(): React.ReactElement {
       className={`flex w-full items-center justify-center px-3 py-2 min-h-[${HEADER_HEIGHT}px] max-h-[${HEADER_HEIGHT}px] md:mb-2`}
     >
       <div className="flex w-full items-center justify-between pr-0 pl-3 sm:px-5">
-        <Link to="/?widget=balances" title="Home page">
+        <Link to={homeLink} title="Home page">
           <div className="min-w-[96px]">
             <img src={defaultConfig.logo} alt="logo" width={96} />
           </div>
