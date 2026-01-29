@@ -1,15 +1,26 @@
-import { useStUsdsChartInfo } from '@jetstreamgg/sky-hooks';
+import {
+  useStUsdsChartInfo,
+  useMorphoVaultChartInfo,
+  usdsRiskCapitalVaultAddress
+} from '@jetstreamgg/sky-hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { Trans } from '@lingui/react/macro';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useChainId } from 'wagmi';
 
 type TvlChartInfoParsed = {
   blockTimestamp: number;
   amount: bigint;
 };
+
+const normalizeToDay = (data: TvlChartInfoParsed[]): TvlChartInfoParsed[] =>
+  data.map(d => ({
+    ...d,
+    blockTimestamp: Math.floor(d.blockTimestamp / 86400) * 86400
+  }));
 
 function calculateCumulativeTotalSupply(chartData: TvlChartInfoParsed[]) {
   if (!chartData || chartData.length === 0) return [];
@@ -33,20 +44,26 @@ function calculateCumulativeTotalSupply(chartData: TvlChartInfoParsed[]) {
 
 // Hook to fetch and aggregate expert modules chart data
 function useExpertModulesChartInfo() {
-  // TODO: Loop through all expert modules when more are added
-  // Currently only handling stUSDS
+  const chainId = useChainId();
   const { data: stUsdsChartData, isLoading: isLoadingStUsds, error: errorStUsds } = useStUsdsChartInfo();
+  const {
+    data: morphoChartData,
+    isLoading: isLoadingMorpho,
+    error: errorMorpho
+  } = useMorphoVaultChartInfo({
+    vaultAddress: usdsRiskCapitalVaultAddress[chainId as keyof typeof usdsRiskCapitalVaultAddress]
+  });
 
-  // When more modules are added, fetch their data and combine like this:
-  const combinedChartData = stUsdsChartData ? [...stUsdsChartData] : [];
-
-  // Aggregate the data (currently just stUSDS, but ready for more modules)
-  const data = calculateCumulativeTotalSupply(combinedChartData);
+  // Normalize timestamps to day boundaries, combine, and aggregate
+  const data = useMemo(() => {
+    const combined = [...normalizeToDay(stUsdsChartData || []), ...normalizeToDay(morphoChartData || [])];
+    return calculateCumulativeTotalSupply(combined);
+  }, [stUsdsChartData, morphoChartData]);
 
   return {
     data,
-    isLoading: isLoadingStUsds,
-    error: errorStUsds
+    isLoading: isLoadingStUsds || isLoadingMorpho,
+    error: errorStUsds || errorMorpho
   };
 }
 
