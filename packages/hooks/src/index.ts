@@ -36,6 +36,7 @@ export {
   useStUsdsHistory,
   useStUsdsChartInfo,
   useStUsdsWithdrawBalances,
+  useStUsdsSupplierAddresses,
   // Provider abstraction layer
   useNativeStUsdsProvider,
   useCurveStUsdsProvider,
@@ -71,6 +72,7 @@ export type {
   StUsdsHistoryItem,
   StUsdsVaultMetrics,
   StUsdsUserMetrics,
+  StUsdsSupplierAddressesHook,
   // Provider abstraction types
   StUsdsRateInfo,
   StUsdsProviderState,
@@ -93,6 +95,7 @@ export {
   useMorphoVaultClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
+  useMorphoVaultSupplierAddresses,
   MORPHO_VAULTS
 } from './morpho';
 export type {
@@ -107,7 +110,8 @@ export type {
   MorphoVaultReward,
   MorphoVaultRewardsData,
   MorphoVaultRewardsHook,
-  MorphoVaultChartDataPoint
+  MorphoVaultChartDataPoint,
+  MorphoVaultSupplierAddressesHook
 } from './morpho';
 
 // Authentication
@@ -160,6 +164,13 @@ export { useL2CombinedHistory } from './shared/useL2CombinedHistory';
 export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory';
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
+
+// Expert
+export {
+  useUniqueExpertSuppliers,
+  type UniqueExpertSuppliersData,
+  type UniqueExpertSuppliersHook
+} from './expert';
 
 // Decentralized Storage
 export { useIpfsStorage } from './decentralizedStorage/useIpfsStorage';

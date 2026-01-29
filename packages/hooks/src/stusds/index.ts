@@ -31,6 +31,8 @@ export type { StUsdsCapacityData, StUsdsCapacityDataHook } from './useStUsdsCapa
 export { useStUsdsHistory } from './useStUsdsHistory';
 export type { StUsdsHistoryHook } from './useStUsdsHistory';
 export { useStUsdsChartInfo } from './useStUsdsChartInfo';
+export { useStUsdsSupplierAddresses } from './useStUsdsSupplierAddresses';
+export type { StUsdsSupplierAddressesHook } from './useStUsdsSupplierAddresses';
 
 // Types
 export type { StUsdsHistoryItem, StUsdsVaultMetrics, StUsdsUserMetrics } from './stusds.d';

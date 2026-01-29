@@ -218,3 +218,20 @@ export const VAULT_V2_HISTORICAL_QUERY = `
     }
   }
 `;
+
+/**
+ * GraphQL query for Morpho V2 vault positions (depositors) with pagination.
+ */
+export const VAULT_V2_POSITIONS_QUERY = `
+  query VaultV2Positions($address: String!, $chainId: Int!, $first: Int!, $skip: Int!) {
+    vaultV2ByAddress(address: $address, chainId: $chainId) {
+      positions(first: $first, skip: $skip) {
+        items {
+          user {
+            address
+          }
+        }
+      }
+    }
+  }
+`;
