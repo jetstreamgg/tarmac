@@ -14,6 +14,7 @@ type MorphoVaultPositionsApiResponse = {
           user: {
             address: string;
           };
+          shares: string;
         }>;
       };
     } | null;
@@ -49,8 +50,12 @@ async function fetchMorphoVaultSupplierAddresses(vaultAddress: string, chainId: 
     const result: MorphoVaultPositionsApiResponse = await response.json();
     const items = result.data.vaultV2ByAddress?.positions?.items || [];
 
-    // Add addresses (lowercase for consistency)
-    items.forEach(item => allAddresses.add(item.user.address.toLowerCase()));
+    // Filter for active suppliers (shares > 0) - API doesn't support server-side filtering
+    items.forEach(item => {
+      if (item.shares !== '0') {
+        allAddresses.add(item.user.address.toLowerCase());
+      }
+    });
 
     skip += PAGE_SIZE;
     hasMorePages = items.length === PAGE_SIZE;

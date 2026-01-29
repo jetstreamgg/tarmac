@@ -221,6 +221,7 @@ export const VAULT_V2_HISTORICAL_QUERY = `
 
 /**
  * GraphQL query for Morpho V2 vault positions (depositors) with pagination.
+ * Includes shares to filter for active suppliers client-side (API doesn't support where clause).
  */
 export const VAULT_V2_POSITIONS_QUERY = `
   query VaultV2Positions($address: String!, $chainId: Int!, $first: Int!, $skip: Int!) {
@@ -230,6 +231,7 @@ export const VAULT_V2_POSITIONS_QUERY = `
           user {
             address
           }
+          shares
         }
       }
     }
