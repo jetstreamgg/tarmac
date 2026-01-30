@@ -106,11 +106,11 @@ test.describe('Expert Module - stUSDS', () => {
     await isolatedPage.getByRole('tab', { name: 'Balance' }).click();
     await expect(isolatedPage.getByText('USDS supplied to Expert')).toBeVisible();
 
-    // Click using the href that contains the stusds expert module path
-    await isolatedPage.locator('a[href*="expert_module=stusds"]').first().click();
+    // Click using the href that contains the expert widget path
+    await isolatedPage.locator('a[href*="widget=expert"]').first().click();
 
-    // should land on the stusds balance page
-    expect(isolatedPage.getByText('stUSDS')).toBeTruthy();
+    // should land on the expert overview page which shows stUSDS
+    await expect(isolatedPage.getByTestId('stusds-stats-card')).toBeVisible();
   });
 
   test('Withdraw USDS from stUSDS module', async ({ isolatedPage }) => {
