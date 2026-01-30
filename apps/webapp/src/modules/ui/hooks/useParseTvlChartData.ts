@@ -42,6 +42,7 @@ function determineTimeframeBounds(
   tvl: TvlData[]
 ): { startTimestamp: number; endTimestamp: number } {
   const now = Date.now() / 1000; // Current timestamp in seconds
+  const firstDataTimestamp = tvl.length > 0 ? tvl[0].blockTimestamp : now;
   let startTimestamp: number;
   switch (timeFrame) {
     case 'w':
@@ -62,6 +63,8 @@ function determineTimeframeBounds(
       }
       break;
   }
+  // Never start before the first actual data point to avoid showing fabricated data
+  startTimestamp = Math.max(startTimestamp, firstDataTimestamp);
   const endTimestamp = now; // Up to current moment
   return { startTimestamp, endTimestamp };
 }
