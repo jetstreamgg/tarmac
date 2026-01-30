@@ -2,6 +2,7 @@ import { MorphoVaultRateCard } from './MorphoVaultRateCard';
 import { MorphoVaultTvlCard } from './MorphoVaultTvlCard';
 import { MorphoMarketLiquidityCard } from './MorphoMarketLiquidityCard';
 import { MorphoMarketUtilizationCard } from './MorphoMarketUtilizationCard';
+import { MorphoVaultSuppliersCard } from './MorphoVaultSuppliersCard';
 import { Token, useMorphoVaultAllocations } from '@jetstreamgg/sky-hooks';
 
 type MorphoVaultInfoDetailsProps = {
@@ -31,6 +32,9 @@ export function MorphoVaultInfoDetails({ vaultAddress, assetToken }: MorphoVault
           error={error}
           assetToken={assetToken}
         />
+      </div>
+      <div className="min-w-[250px] flex-1">
+        <MorphoVaultSuppliersCard vaultAddress={vaultAddress} />
       </div>
     </div>
   );

@@ -1,16 +1,20 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Trans } from '@lingui/react/macro';
 import { Text } from '@/modules/layout/components/Typography';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultSupplierAddresses } from '@jetstreamgg/sky-hooks';
 import { formatNumber } from '@jetstreamgg/sky-utils';
 
-type StUSDSSuppliersCardProps = {
+type MorphoVaultSuppliersCardProps = {
+  vaultAddress: `0x${string}`;
   title?: React.ReactElement | string;
 };
 
-export function StUSDSSuppliersCard({ title }: StUSDSSuppliersCardProps = {}): React.ReactElement {
-  const { data, isLoading, error } = useOverallSkyData();
-  const suppliersCount = data && formatNumber(data.stusdsSuppliers);
+export function MorphoVaultSuppliersCard({
+  vaultAddress,
+  title
+}: MorphoVaultSuppliersCardProps): React.ReactElement {
+  const { data, isLoading, error } = useMorphoVaultSupplierAddresses({ vaultAddress });
+  const suppliersCount = data && formatNumber(data.length);
 
   return (
     <StatsCard

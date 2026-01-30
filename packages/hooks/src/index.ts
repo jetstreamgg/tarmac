@@ -93,6 +93,7 @@ export {
   useMorphoVaultClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
+  useMorphoVaultSupplierAddresses,
   MORPHO_VAULTS
 } from './morpho';
 export type {
@@ -107,7 +108,8 @@ export type {
   MorphoVaultReward,
   MorphoVaultRewardsData,
   MorphoVaultRewardsHook,
-  MorphoVaultChartDataPoint
+  MorphoVaultChartDataPoint,
+  MorphoVaultSupplierAddressesHook
 } from './morpho';
 
 // Authentication

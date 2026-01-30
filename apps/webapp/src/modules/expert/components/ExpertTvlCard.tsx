@@ -1,14 +1,24 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import { useStUsdsData } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData, useMorphoVaultData, usdsRiskCapitalVaultAddress } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
+import { mainnet } from 'viem/chains';
 
 export function ExpertTvlCard(): React.ReactElement {
-  const { data, isLoading, error } = useStUsdsData();
+  const { data: stUsdsData, isLoading: isStUsdsLoading, error: stUsdsError } = useStUsdsData();
+  const {
+    data: morphoData,
+    isLoading: isMorphoLoading,
+    error: morphoError
+  } = useMorphoVaultData({
+    // Morpho API is mainnet-only
+    vaultAddress: usdsRiskCapitalVaultAddress[mainnet.id]
+  });
 
-  // Currently only stUSDS TVL, will aggregate all expert modules TVL in the future
-  const totalTvl = data?.totalAssets || 0n;
+  const stUsdsTvl = stUsdsData?.totalAssets || 0n;
+  const morphoTvl = morphoData?.totalAssets || 0n;
+  const totalTvl = stUsdsTvl + morphoTvl;
 
   return (
     <StatsCard
@@ -20,8 +30,8 @@ export function ExpertTvlCard(): React.ReactElement {
           balance={formatBigInt(totalTvl, { unit: 18 })}
         />
       }
-      isLoading={isLoading}
-      error={error}
+      isLoading={isStUsdsLoading || isMorphoLoading}
+      error={stUsdsError || morphoError}
     />
   );
 }
