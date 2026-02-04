@@ -199,6 +199,8 @@ export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_EN
 export const CHATBOT_MENU_ASK_ENABLED = CHATBOT_ENABLED && true;
 // FAQ accordion "Ask about this question" icon
 export const CHATBOT_FAQ_ASK_ENABLED = CHATBOT_ENABLED && true;
+// About card "Ask about this token" icon
+export const CHATBOT_ABOUT_CARD_ASK_ENABLED = CHATBOT_ENABLED && true;
 export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
