@@ -1,15 +1,21 @@
 import React from 'react';
 import { Intent } from '@/lib/enums';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPortal } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { getChainIcon } from '@jetstreamgg/sky-utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
+import { QueryParams, mapIntentToQueryParam, CHATBOT_ENABLED } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Chat } from '@/modules/icons';
+import { Text } from '@/modules/layout/components/Typography';
+import { t } from '@lingui/core/macro';
 
 interface WidgetMenuItemTooltipProps {
   description?: string;
@@ -40,6 +46,24 @@ export function WidgetMenuItemTooltip({
   const chains = useChains();
   const [, setSearchParams] = useSearchParams();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
+  const { sendMessage } = useSendMessage();
+  const { isLoading } = useChatContext();
+
+  const handleAskAboutModule = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Open chat pane via URL param
+    setSearchParams(prevParams => {
+      prevParams.set(QueryParams.Chat, 'true');
+      return prevParams;
+    });
+
+    // Send contextual message after small delay to ensure chat is open
+    setTimeout(() => {
+      sendMessage(t`Tell me about the ${label} module`);
+    }, 100);
+  };
 
   const handleNetworkSwitch = (chainId: number) => {
     // Navigate to widget on selected network
@@ -138,6 +162,21 @@ export function WidgetMenuItemTooltip({
               <>
                 <p className="mt-2 text-xs text-gray-400">Supported on:</p>
                 <div className="mt-1 flex gap-2">{renderNetworkIcons()}</div>
+              </>
+            )}
+            {CHATBOT_ENABLED && (
+              <>
+                <div className="my-2 h-px w-full bg-gray-600" />
+                <Button
+                  variant="link"
+                  onClick={handleAskAboutModule}
+                  disabled={isLoading}
+                  className="h-auto w-full justify-start gap-2 rounded-md p-1.5 text-gray-300 hover:bg-white/10 hover:text-gray-300 disabled:opacity-50"
+                  title={t`Ask about ${label}`}
+                >
+                  <Chat className="h-4 w-4" />
+                  <Text tag="span" variant="captionSm">{t`Ask me about ${label}`}</Text>
+                </Button>
               </>
             )}
           </TooltipContent>
