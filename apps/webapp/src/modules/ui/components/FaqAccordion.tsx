@@ -57,22 +57,15 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
                 {title}
               </Heading>
               {CHATBOT_FAQ_ASK_ENABLED && !isMobile && (
-                <span
-                  role="button"
-                  tabIndex={0}
+                <button
+                  type="button"
                   onClick={e => handleAskAboutQuestion(e, title)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      handleAskAboutQuestion(e as unknown as React.MouseEvent, title);
-                    }
-                  }}
-                  className={`mr-2 rounded-md p-1.5 opacity-0 transition-opacity group-hover/faq:opacity-100 ${
-                    isLoading ? 'cursor-not-allowed' : 'hover:bg-white/10'
-                  }`}
+                  disabled={isLoading}
+                  className="mr-2 rounded-md p-1.5 opacity-0 transition-opacity group-hover/faq:opacity-100 hover:bg-white/10 disabled:cursor-not-allowed"
                   title={t`Ask about this question`}
                 >
                   <Chat className="text-textSecondary h-4 w-4" />
-                </span>
+                </button>
               )}
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pt-4 pr-5 pb-0 leading-5">
