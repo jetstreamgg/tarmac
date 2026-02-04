@@ -8,7 +8,7 @@ import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { QueryParams, mapIntentToQueryParam, CHATBOT_ENABLED } from '@/lib/constants';
+import { QueryParams, mapIntentToQueryParam, CHATBOT_MENU_ASK_ENABLED } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
@@ -164,7 +164,7 @@ export function WidgetMenuItemTooltip({
                 <div className="mt-1 flex gap-2">{renderNetworkIcons()}</div>
               </>
             )}
-            {CHATBOT_ENABLED && (
+            {CHATBOT_MENU_ASK_ENABLED && (
               <>
                 <div className="my-2 h-px w-full bg-gray-600" />
                 <Button
