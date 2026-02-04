@@ -16,6 +16,7 @@ export const AboutStakeModule = () => {
   return (
     <AboutCard
       title={<Trans>About Staking Rewards</Trans>}
+      chatLabel="Staking Rewards"
       description={
         <Trans>
           Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized,

@@ -24,6 +24,8 @@ interface AboutCardProps {
   colorMiddle: string;
   height?: number | undefined;
   contentWidth?: 'w-2/3' | 'w-1/2';
+  /** Label used for the chat question (e.g., "Staking Rewards"). Falls back to tokenSymbol if not provided. */
+  chatLabel?: string;
 }
 
 export const AboutCard = ({
@@ -34,7 +36,8 @@ export const AboutCard = ({
   linkLabel = <Trans>View contract</Trans>,
   colorMiddle,
   height,
-  contentWidth = 'w-2/3'
+  contentWidth = 'w-2/3',
+  chatLabel
 }: AboutCardProps) => {
   const [, setSearchParams] = useSearchParams();
   const { sendMessage } = useSendMessage();
@@ -42,8 +45,8 @@ export const AboutCard = ({
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi === BP.sm;
 
-  // Get display name for the chat question (use title text if available, otherwise tokenSymbol)
-  const displayName = tokenSymbol || (typeof title === 'string' ? title : '');
+  // Get display name for the chat question (prefer chatLabel, then tokenSymbol)
+  const displayName = chatLabel || tokenSymbol || '';
 
   const handleAskAboutToken = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,22 +103,15 @@ export const AboutCard = ({
       >
         {/* Chat icon - top right corner, appears on hover */}
         {CHATBOT_ABOUT_CARD_ASK_ENABLED && !isMobile && displayName && (
-          <span
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
             onClick={handleAskAboutToken}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                handleAskAboutToken(e as unknown as React.MouseEvent);
-              }
-            }}
-            className={`absolute top-4 right-3 z-20 rounded-md p-1.5 opacity-0 transition-opacity group-hover/about:opacity-100 xl:right-6 ${
-              isLoading ? 'cursor-not-allowed' : 'hover:bg-white/10'
-            }`}
+            disabled={isLoading}
+            className="absolute top-4 right-3 z-20 rounded-md p-1.5 opacity-0 transition-opacity group-hover/about:opacity-100 hover:bg-white/10 disabled:cursor-not-allowed xl:right-6"
             title={t`Ask about ${displayName}`}
           >
             <Chat className="text-textSecondary h-4 w-4" />
-          </span>
+          </button>
         )}
         <div
           className={cn('w-[80%] space-y-2 self-start', contentWidth === 'w-1/2' ? 'xl:w-1/2' : 'xl:w-2/3')}
