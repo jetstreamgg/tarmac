@@ -3,7 +3,8 @@ import {
   RewardContract,
   useAvailableTokenRewardContracts,
   useRewardContractsToClaim,
-  useRewardsWithUserBalance
+  useRewardsWithUserBalance,
+  isDeprecatedRewardContract
 } from '@jetstreamgg/sky-hooks';
 import { useContext, useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
@@ -22,6 +23,7 @@ type RewardsOverviewProps = {
   claimAllExecute: () => void;
   claimAllPrepared: boolean;
   batchEnabledAndSupported: boolean;
+  disclaimer?: React.ReactNode;
 };
 
 export const RewardsOverview = ({
@@ -30,7 +32,8 @@ export const RewardsOverview = ({
   claimAllExecute,
   claimAllPrepared,
   batchEnabledAndSupported,
-  isConnectedAndEnabled = true
+  isConnectedAndEnabled = true,
+  disclaimer
 }: RewardsOverviewProps) => {
   const chainId = useChainId();
   const { address } = useConnection();
@@ -53,14 +56,24 @@ export const RewardsOverview = ({
       );
 
       if (!!rewardWithUserBalance && rewardWithUserBalance.userHasBalance) {
+        // Keep deprecated rewards in userRewards if user has a balance (existing position)
         userRewards.push(rewardContract);
       } else {
-        allRewards.push(rewardContract);
+        // Filter out deprecated rewards from allRewards (new users shouldn't see them)
+        const isDeprecated = isDeprecatedRewardContract(rewardContract.contractAddress, chainId);
+        if (!isDeprecated) {
+          allRewards.push(rewardContract);
+        }
       }
     });
 
     return [userRewards, allRewards];
-  }, [rewardContracts, rewardsWithUserBalance]);
+  }, [rewardContracts, rewardsWithUserBalance, chainId]);
+
+  // Check if user has any deprecated positions
+  const hasDeprecatedPosition = useMemo(() => {
+    return userRewards.some(contract => isDeprecatedRewardContract(contract.contractAddress, chainId));
+  }, [userRewards, chainId]);
 
   const { data: rewardContractsToClaim } = useRewardContractsToClaim({
     rewardContractAddresses: userRewards.map(({ contractAddress }) => contractAddress as `0x${string}`) || [],
@@ -79,6 +92,7 @@ export const RewardsOverview = ({
 
   return (
     <div className="space-y-4">
+      {hasDeprecatedPosition && disclaimer && <div className="mb-2">{disclaimer}</div>}
       {userRewards.length > 0 && (
         <motion.div className="space-y-3" variants={positionAnimations}>
           <Heading tag="h3" variant="medium">

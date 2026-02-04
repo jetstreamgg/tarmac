@@ -48,6 +48,7 @@
     "@vitest/coverage-v8": "catalog:",
     "@wagmi/cli": "catalog:",
     "openapi-fetch": "catalog:",
+    "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
     "viem": "catalog:",

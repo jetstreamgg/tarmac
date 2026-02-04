@@ -1,16 +1,7 @@
 #!/bin/bash
 
-# First, run stake.spec.ts in isolation with a single worker
-# Global setup will handle snapshot revert/funding automatically
-# echo "🎯 Running stake.spec.ts in isolation first..."
-# pnpm playwright test stake.spec.ts --config=playwright-parallel.config.ts --workers=1
-
-# STAKE_EXIT_CODE=$?
-
-# if [ $STAKE_EXIT_CODE -ne 0 ]; then
-#   echo "❌ stake.spec.ts failed"
-#   echo "Continuing with other tests..."
-# fi
+# Run tests with automatic retry for failures
+# Supports both standard and alternate VNet configurations
 
 # Detect shard mode
 SHARD_INDEX=${PLAYWRIGHT_SHARD_INDEX:-}
@@ -24,12 +15,25 @@ else
   echo "📦 Running in WORKER MODE: Standard parallel execution"
 fi
 
-# Now run all OTHER tests in parallel (excluding stake.spec.ts)
+# Determine which tests to run based on project argument
+PROJECT_ARG=""
+if [[ "$@" == *"--project=chromium-alternate"* ]] || [[ "$USE_ALTERNATE_VNET" == "true" ]]; then
+  echo "🔵 Running alternate VNet tests"
+  PROJECT_ARG="--project=chromium-alternate"
+  export USE_ALTERNATE_VNET=true
+elif [[ "$@" == *"--project=chromium"* ]]; then
+  echo "🔵 Running standard tests"
+  PROJECT_ARG="--project=chromium"
+else
+  echo "🔵 Running all tests (standard and alternate)"
+fi
+
+# Now run tests in parallel
 # Global setup will handle snapshot revert automatically
 echo ""
 echo "🚀 Running E2E tests in parallel..."
 
-pnpm playwright test --config=playwright-parallel.config.ts ${SHARD_ARGS}
+pnpm playwright test --config=playwright-parallel.config.ts ${PROJECT_ARG} ${SHARD_ARGS}
 
 PARALLEL_EXIT_CODE=$?
 

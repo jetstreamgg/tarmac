@@ -1,6 +1,7 @@
 import { Button } from '@widgets/components/ui/button';
 import {
-  lsSkyUsdsRewardAddress,
+  filterDeprecatedRewards,
+  isDeprecatedStakeReward,
   useStakeRewardContracts,
   useStakeUrnSelectedRewardContract,
   ZERO_ADDRESS
@@ -55,11 +56,26 @@ export const UpdateRewardSelection = ({
   });
 
   const { data: rewardContracts } = useStakeRewardContracts();
-  const filteredRewardContracts = rewardContracts?.filter(
-    ({ contractAddress }) =>
-      contractAddress.toLowerCase() !==
-      lsSkyUsdsRewardAddress[chainId as keyof typeof lsSkyUsdsRewardAddress]?.toLowerCase()
-  );
+  // Filter out deprecated rewards - don't use keepAddress here since
+  // users changing rewards shouldn't see deprecated options
+  const filteredRewardContracts = filterDeprecatedRewards(rewardContracts || [], chainId);
+
+  // Check if current reward is deprecated - if so, user needs dropdown to change
+  const currentRewardIsDeprecated =
+    urnSelectedRewardContract && isDeprecatedStakeReward(urnSelectedRewardContract, chainId);
+
+  // Show dropdown if: multiple options available OR current reward is deprecated (needs to change)
+  const showDropdown = filteredRewardContracts?.length > 1 || currentRewardIsDeprecated;
+
+  // If only one reward option AND current reward is not deprecated, show static display
+  if (!showDropdown) {
+    return (
+      <div className="flex items-center">
+        <TokenIcon token={rewardToken} width={24} className="h-6 w-6" />
+        <Text className="ml-2">{rewardToken.symbol}</Text>
+      </div>
+    );
+  }
 
   const handleSelectRewardContract = useCallback(
     (contractAddress: `0x${string}`) => {
@@ -87,8 +103,8 @@ export const UpdateRewardSelection = ({
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" className="h-6 w-6 p-0">
-          <div className="flex items-start">
+        <Button variant="ghost" className="h-auto w-auto p-0">
+          <div className="flex items-center">
             <TokenIcon token={rewardToken} width={24} className="h-6 w-6" />
             <Text className="ml-2">{rewardToken.symbol}</Text>
             <ChevronDown className={cn('transition-transform', isOpen && 'rotate-180')} />

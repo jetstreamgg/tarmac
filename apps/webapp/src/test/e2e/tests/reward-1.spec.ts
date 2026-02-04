@@ -44,7 +44,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 });
 
 test('Supply and withdraw with insufficient balance', async ({ isolatedPage }) => {

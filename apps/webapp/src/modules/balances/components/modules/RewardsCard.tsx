@@ -11,7 +11,8 @@ import {
   TOKENS,
   useAvailableTokenRewardContracts,
   useHighestRateFromChartData,
-  useRewardsChartInfo
+  useRewardsChartInfo,
+  filterDeprecatedRewardContracts
 } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
@@ -19,28 +20,32 @@ export function RewardsCard() {
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
 
-  const rewardContracts = useAvailableTokenRewardContracts(mainnet.id);
+  const allRewardContracts = useAvailableTokenRewardContracts(mainnet.id);
+  // Filter out deprecated reward contracts for display
+  const activeRewardContracts = filterDeprecatedRewardContracts(allRewardContracts, mainnet.id);
 
-  const usdsSkyRewardContract = rewardContracts.find(
-    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.sky.symbol
+  const usdsSpkRewardContract = activeRewardContracts.find(
+    contract =>
+      contract.supplyToken.symbol === TOKENS.usds.symbol && contract.rewardToken.symbol === TOKENS.spk.symbol
   );
 
-  const usdsSpkRewardContract = rewardContracts.find(
-    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.spk.symbol
+  const usdsCleRewardContract = activeRewardContracts.find(
+    contract =>
+      contract.supplyToken.symbol === TOKENS.usds.symbol && contract.rewardToken.symbol === TOKENS.cle.symbol
   );
 
-  // Fetch chart data for both reward contracts
-  const { data: usdsSkyChartData, isLoading: usdsSkyChartDataLoading } = useRewardsChartInfo({
-    rewardContractAddress: usdsSkyRewardContract?.contractAddress as string
-  });
-
+  // Fetch chart data for non-deprecated reward contracts
   const { data: usdsSpkChartData, isLoading: usdsSpkChartDataLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsSpkRewardContract?.contractAddress as string
   });
 
-  // Find the highest rate from both contracts
-  const highestRateData = useHighestRateFromChartData([usdsSkyChartData, usdsSpkChartData]);
-  const chartDataLoading = usdsSkyChartDataLoading || usdsSpkChartDataLoading;
+  const { data: usdsCleChartData, isLoading: usdsCleChartDataLoading } = useRewardsChartInfo({
+    rewardContractAddress: usdsCleRewardContract?.contractAddress as string
+  });
+
+  // Find the highest rate from non-deprecated contracts
+  const highestRateData = useHighestRateFromChartData([usdsSpkChartData, usdsCleChartData]);
+  const chartDataLoading = usdsSpkChartDataLoading || usdsCleChartDataLoading;
   const mostRecentRateNumber = highestRateData ? parseFloat(highestRateData.rate) : null;
 
   return (
@@ -51,16 +56,12 @@ export function RewardsCard() {
       subHeading={
         <div className="flex flex-wrap gap-2 lg:gap-4">
           <HStack gap={2}>
-            <PairTokenIcons leftToken="USDS" rightToken="SKY" chainId={mainnet.id} />
-            <Text className="text-textSecondary">With: USDS Get: SKY</Text>
-          </HStack>
-          <HStack gap={2}>
             <PairTokenIcons leftToken="USDS" rightToken="SPK" chainId={mainnet.id} />
             <Text className="text-textSecondary">With: USDS Get: SPK</Text>
           </HStack>
           <HStack gap={2}>
             <PairTokenIcons leftToken="USDS" rightToken="CLE" chainId={mainnet.id} />
-            <Text className="text-textSecondary"> With: USDS Get: Chronicle Points</Text>
+            <Text className="text-textSecondary">With: USDS Get: Chronicle Points</Text>
           </HStack>
         </div>
       }

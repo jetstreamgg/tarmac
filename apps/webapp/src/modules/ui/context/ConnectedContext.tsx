@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { useConnection } from 'wagmi';
+import { useChainId, useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { sanitizeUrl } from '@/lib/utils';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
@@ -37,6 +37,7 @@ const ConnectedContext = createContext<ConnectedContextType>({
 
 export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, address } = useConnection();
+  const chainId = useChainId();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [enabled, setEnabled] = useState(false);
@@ -48,7 +49,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     data: authData,
     isLoading: authIsLoading,
     error: authError
-  } = useRestrictedAddressCheck({ address, authUrl, enabled });
+  } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
 
   const { data: vpnData, isLoading: vpnIsLoading, error: vpnError } = useVpnCheck({ authUrl });
 

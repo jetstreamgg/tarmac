@@ -9,13 +9,14 @@ import { encodeFunctionData, stringToHex } from 'viem';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
-export const updateSealDebtCeiling = async (newDebtCeiling: bigint) => {
+export const updateStakeModuleDebtCeiling = async (newDebtCeiling: bigint) => {
   const TENDERLY_MAINNET_RPC_URL = await getRpcUrlFromFile(NetworkName.mainnet);
 
   // The seal module contract is authorized to change the `line` parameter
   const AUTHORIZED_ADDRESS = sealModuleAddress[TENDERLY_CHAIN_ID];
 
-  const ilkName = getIlkName(1);
+  // Use version 2 for SKY staking (LSEV2_SKY_A ilk)
+  const ilkName = getIlkName(2);
   const ilkHex = stringToHex(ilkName, { size: 32 });
 
   const encodedLineName = stringToHex('line', { size: 32 });
@@ -70,5 +71,5 @@ export const updateSealDebtCeiling = async (newDebtCeiling: bigint) => {
     throw new Error(`Error mining block: ${blockMineResponse.statusText}`);
   }
 
-  console.log('Successfully increased debt ceiling');
+  console.log('Successfully increased stake module debt ceiling');
 };

@@ -55,8 +55,8 @@ export const useActionForToken = () => {
 
       const rewardContracts = getRewardContracts(tokenChainId);
 
-      const skyRewardContract = rewardContracts?.find(
-        (rewardContract: RewardContract) => rewardContract.rewardToken.symbol === 'SKY'
+      const spkRewardContract = rewardContracts?.find(
+        (rewardContract: RewardContract) => rewardContract.rewardToken.symbol === 'SPK'
       );
 
       const isBaseChainAction = isBaseChainId(tokenChainId);
@@ -96,7 +96,7 @@ export const useActionForToken = () => {
               : {
                   label: t`Upgrade your ${formattedBalance} ${upperSymbol} to USDS to get rewards ${isDifferentChain ? 'on Mainnet' : ''}`,
                   actionUrl: getQueryParams(
-                    `?${Network}=${networkName}&${Widget}=${UPGRADE}&${InputAmount}=${balance}&${LinkedAction}=${REWARD}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
+                    `?${Network}=${networkName}&${Widget}=${UPGRADE}&${InputAmount}=${balance}&${LinkedAction}=${REWARD}&${spkRewardContract ? `&reward=${spkRewardContract.contractAddress}` : ''}`
                   ),
                   image
                 },
@@ -146,10 +146,8 @@ export const useActionForToken = () => {
             [mainnet.id]: isRestrictedBuild
               ? undefined
               : {
-                  label: t`Get rewards with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Mainnet' : ''}`,
-                  actionUrl: getQueryParams(
-                    `?${Network}=${networkName}&${Widget}=${REWARD}&${InputAmount}=${balance}&${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
-                  ),
+                  label: t`View rewards options for your ${upperSymbol} ${isDifferentChain ? 'on Mainnet' : ''}`,
+                  actionUrl: getQueryParams(`?${Network}=${networkName}&${Widget}=${REWARD}`),
                   image
                 },
             [base.id]: isRestrictedBuild
@@ -212,7 +210,7 @@ export const useActionForToken = () => {
                     label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS to get rewards ${isDifferentChain ? 'on Mainnet' : ''}`,
                     // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
                     actionUrl: getQueryParams(
-                      `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS&${LinkedAction}=${REWARD}${skyRewardContract ? `&reward=${skyRewardContract.contractAddress}` : ''}`
+                      `?${Network}=${networkName}&${Widget}=${TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS&${LinkedAction}=${REWARD}${spkRewardContract ? `&reward=${spkRewardContract.contractAddress}` : ''}`
                     ),
                     image
                   },

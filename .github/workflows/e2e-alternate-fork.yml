@@ -1,0 +1,224 @@
+name: Alternate VNet E2E Tests
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: alternate-e2e-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  setup-alternate-vnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    outputs:
+      vnets-ready: ${{ steps.check-ready.outputs.ready }}
+
+    env:
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
+      USE_ALTERNATE_VNET: 'true'
+      FUND_NETWORKS: 'mainnet'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Create Alternate VNets
+        run: |
+          echo "🔧 Creating Alternate VNets..."
+          pnpm run vnet:alternate:fork:ci
+          echo "✅ Alternate VNet creation complete"
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Fund accounts and create snapshots
+        run: |
+          echo "💰 Funding test accounts on Alternate VNet..."
+          cd apps/webapp
+          USE_ALTERNATE_VNET=true pnpm e2e:fund
+
+          # Verify snapshots were created
+          if [ ! -f "src/test/e2e/persistent-vnet-snapshots-alternate.json" ]; then
+            echo "❌ Alternate snapshots were not created!"
+            exit 1
+          fi
+          echo "✅ Alternate snapshots created and verified"
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          USE_ALTERNATE_VNET: 'true'
+
+      - name: Upload Alternate VNet data
+        uses: actions/upload-artifact@v4
+        with:
+          name: alternate-vnet-data
+          path: |
+            tenderlyTestnetData-alternate.json
+            apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json
+          retention-days: 1
+
+      - name: Check setup is ready
+        id: check-ready
+        run: |
+          if [ -f "tenderlyTestnetData-alternate.json" ] && [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json" ]; then
+            echo "ready=true" >> $GITHUB_OUTPUT
+            echo "✅ Alternate VNets are ready for tests"
+          else
+            echo "ready=false" >> $GITHUB_OUTPUT
+            echo "❌ Alternate VNets are not ready"
+            exit 1
+          fi
+
+  test-alternate:
+    needs: setup-alternate-vnet
+    if: needs.setup-alternate-vnet.outputs.vnets-ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
+      USE_ALTERNATE_VNET: 'true'
+      VITE_USE_ALTERNATE_VNET: 'true'
+      FUND_NETWORKS: 'mainnet'
+      TEST_WORKERS: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Install Playwright browsers
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Download Alternate VNet data
+        uses: actions/download-artifact@v4
+        with:
+          name: alternate-vnet-data
+
+      - name: Verify VNet files
+        run: |
+          echo "🔍 Verifying Alternate VNet files..."
+          echo "Checking tenderlyTestnetData-alternate.json:"
+          ls -lh tenderlyTestnetData-alternate.json
+          cat tenderlyTestnetData-alternate.json | head -20
+          echo "Checking persistent-vnet-snapshots-alternate.json:"
+          ls -lh apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json
+          cat apps/webapp/src/test/e2e/persistent-vnet-snapshots-alternate.json
+          echo "✅ Alternate VNet files ready"
+
+      - name: Run Alternate E2E tests
+        run: |
+          echo "🧪 Running Alternate VNet tests..."
+          cd apps/webapp
+          pnpm e2e:parallel:alternate
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          USE_ALTERNATE_VNET: 'true'
+          VITE_USE_ALTERNATE_VNET: 'true'
+
+      - name: Upload test results (if failed)
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alternate-test-results-${{ github.run_id }}
+          path: |
+            apps/webapp/playwright-report/
+            apps/webapp/test-results/
+            apps/webapp/test-results.json
+          retention-days: 7
+
+      - name: Upload test traces (if failed)
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alternate-test-traces-${{ github.run_id }}
+          path: apps/webapp/test-results/
+          retention-days: 3
+
+  cleanup:
+    needs: [test-alternate]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download Alternate VNet data
+        uses: actions/download-artifact@v4
+        with:
+          name: alternate-vnet-data
+        continue-on-error: true
+
+      - name: Cleanup Alternate VNets
+        run: |
+          echo "🧹 Cleaning up Alternate Tenderly VNets..."
+          pnpm run vnet:alternate:delete:ci || echo "Alternate VNet cleanup failed, continuing..."
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}

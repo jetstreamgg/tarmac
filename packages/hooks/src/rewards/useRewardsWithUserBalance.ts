@@ -1,47 +1,12 @@
-import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
-import { formatBaLabsUrl } from '../helpers';
-import { useQuery } from '@tanstack/react-query';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { usdsSkyRewardAbi } from '../generated';
+import { useReadContracts } from 'wagmi';
+import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { ReadHook } from '../hooks';
-
-type RewardsDataResponse = {
-  balance: string;
-  reward_balance: string;
-};
 
 type RewardWithUserBalance = {
   rewardContract: `0x${string}`;
   userHasBalance: boolean;
 };
-
-async function fetchRewardsData(
-  baseUrl: string,
-  contractAddresses: `0x${string}`[],
-  address: `0x${string}`
-): Promise<RewardWithUserBalance[]> {
-  const responses = await Promise.all(
-    contractAddresses.map(async contractAddress => {
-      const url = formatBaLabsUrl(
-        new URL(`${baseUrl}/farms/${contractAddress.toLowerCase()}/wallets/${address.toLowerCase()}`)
-      );
-      const res = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data: RewardsDataResponse = await res.json();
-
-      return {
-        rewardContract: contractAddress,
-        userHasBalance: parseFloat(data.balance) > 0 || parseFloat(data.reward_balance) > 0
-      };
-    })
-  );
-
-  return responses;
-}
 
 export const useRewardsWithUserBalance = ({
   contractAddresses,
@@ -52,19 +17,51 @@ export const useRewardsWithUserBalance = ({
   address?: `0x${string}`;
   chainId: number;
 }): ReadHook & { data?: RewardWithUserBalance[] } => {
-  const baseUrl = getBaLabsApiUrl(chainId);
+  // Build contracts array with both balanceOf and earned calls for each contract
+  const contracts = contractAddresses.flatMap(contractAddress => [
+    {
+      address: contractAddress,
+      abi: usdsSkyRewardAbi,
+      functionName: 'balanceOf' as const,
+      args: [address || ZERO_ADDRESS],
+      chainId: chainId as any
+    },
+    {
+      address: contractAddress,
+      abi: usdsSkyRewardAbi,
+      functionName: 'earned' as const,
+      args: [address || ZERO_ADDRESS],
+      chainId: chainId as any
+    }
+  ]);
 
   const {
-    data,
+    data: results,
     error,
     refetch: mutate,
     isLoading
-  } = useQuery<RewardWithUserBalance[] | undefined>({
-    enabled: Boolean(baseUrl && contractAddresses && address),
-    queryKey: ['rewards-with-user-balance', contractAddresses, address, chainId],
-    queryFn: () =>
-      baseUrl ? fetchRewardsData(baseUrl, contractAddresses, address!) : Promise.resolve(undefined)
+  } = useReadContracts({
+    contracts,
+    query: {
+      enabled: Boolean(contractAddresses.length && address && address !== ZERO_ADDRESS)
+    }
   });
+
+  const data: RewardWithUserBalance[] | undefined = results
+    ? contractAddresses.map((contractAddress, index) => {
+        // Each contract has 2 results: balanceOf at index*2, earned at index*2+1
+        const suppliedBalance = results[index * 2]?.result as bigint | undefined;
+        const earnedBalance = results[index * 2 + 1]?.result as bigint | undefined;
+
+        const hasSuppliedBalance = suppliedBalance !== undefined && suppliedBalance > 0n;
+        const hasEarnedBalance = earnedBalance !== undefined && earnedBalance > 0n;
+
+        return {
+          rewardContract: contractAddress,
+          userHasBalance: hasSuppliedBalance || hasEarnedBalance
+        };
+      })
+    : undefined;
 
   return {
     data,
@@ -73,10 +70,10 @@ export const useRewardsWithUserBalance = ({
     mutate,
     dataSources: [
       {
-        title: 'BA Labs API',
-        href: baseUrl || 'https://blockanalitica.com/',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
+        title: 'On-chain data',
+        href: '',
+        onChain: true,
+        trustLevel: TRUST_LEVELS[TrustLevelEnum.ONE]
       }
     ]
   };

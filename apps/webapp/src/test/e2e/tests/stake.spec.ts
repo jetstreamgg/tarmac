@@ -11,6 +11,34 @@ test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
 });
 
+test('Rewards step auto-skipped when only one reward available (SPK/USDS deprecated)', async ({
+  isolatedPage
+}) => {
+  // Fill stake input to enable proceeding (no delegation checkbox checked)
+  await isolatedPage.getByTestId('supply-first-input-lse').fill('1000000');
+
+  // Verify delegation checkbox is NOT checked (so we skip delegate step too)
+  const checkbox = isolatedPage.getByRole('checkbox', { name: /Do you want to delegate voting power?/i });
+  await expect(checkbox).not.toBeChecked();
+
+  // Proceed to next step
+  await expect(isolatedPage.getByTestId('widget-button').first()).toBeEnabled({ timeout: 10000 });
+  await isolatedPage.getByTestId('widget-button').first().click();
+
+  // Since SPK and USDS are deprecated, only SKY remains as a reward option.
+  // With only one option, the rewards step should be AUTO-SKIPPED entirely.
+  // We should go directly to the position summary (since delegation is also unchecked).
+  await expect(isolatedPage.getByText('Confirm your position').nth(0)).toBeVisible({ timeout: 10000 });
+
+  // Verify we did NOT see the reward selection screen
+  await expect(isolatedPage.getByText('Choose your reward token')).not.toBeVisible();
+
+  // Verify the position summary shows SKY as the staking reward (auto-selected)
+  await expect(isolatedPage.getByTestId('position-summary-card').getByText('Staking reward')).toBeVisible();
+
+  console.log('Rewards step was auto-skipped - only SKY reward available after deprecating SPK/USDS');
+});
+
 test('Lock SKY, select rewards, select delegate, and open position', async ({ isolatedPage }) => {
   const SKY_AMOUNT_TO_LOCK = '10000000';
   const SKY_AMOUNT_TO_LOCK_DISPLAY = '10M';

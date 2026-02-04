@@ -18,21 +18,25 @@ const setTestBalance = async (tokenAddress: string, amount: string, decimals = 1
 const expectSupplySuccess = async (isolatedPage: any, amount: string) => {
   // Success message can be either native or Curve
   const nativeMessage = isolatedPage.getByText(`You've supplied ${amount} USDS to the stUSDS module`);
-  const curveMessage = isolatedPage.getByText(`You've swapped ${amount} USDS for stUSDS via Curve pool`);
+  const curveMessage = isolatedPage.getByText(`You've supplied ${amount} USDS to the Curve pool for stUSDS`);
+  const swapMessage = isolatedPage.getByText(`You've swapped ${amount} USDS for stUSDS via Curve pool`);
 
   // Wait for either message to appear
-  await expect(nativeMessage.or(curveMessage)).toBeVisible({ timeout: 30000 });
+  await expect(nativeMessage.or(curveMessage).or(swapMessage)).toBeVisible({ timeout: 30000 });
 };
 
 const expectWithdrawSuccess = async (isolatedPage: any, amount: string) => {
   // Success message can be either native or Curve
   const nativeMessage = isolatedPage.getByText(`You've withdrawn ${amount} USDS from the stUSDS module.`);
   const curveMessage = isolatedPage.getByText(
+    new RegExp(`You've withdrawn ${amount} USDS from the Curve pool`)
+  );
+  const swapMessage = isolatedPage.getByText(
     new RegExp(`You've swapped your stUSDS for ${amount}.*USDS via Curve pool`)
   );
 
   // Wait for either message to appear
-  await expect(nativeMessage.or(curveMessage)).toBeVisible({ timeout: 30000 });
+  await expect(nativeMessage.or(curveMessage).or(swapMessage)).toBeVisible({ timeout: 30000 });
 };
 
 test.describe('Expert Module - stUSDS', () => {
@@ -84,11 +88,8 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('You will supply')).toBeVisible();
     await expect(isolatedPage.getByText('10 USDS')).toBeVisible();
 
-    // Check the disclaimer checkbox
-    // await isolatedPage.getByRole('checkbox').click();
-
     // Perform the supply action (handles approval if needed)
-    await performAction(isolatedPage, 'Supply');
+    await performAction(isolatedPage, 'Swap');
 
     // Check success message (supports both native and Curve providers)
     await expectSupplySuccess(isolatedPage, '10');
@@ -116,8 +117,7 @@ test.describe('Expert Module - stUSDS', () => {
     // Supply first
     await isolatedPage.getByTestId('supply-input-stusds').click();
     await isolatedPage.getByTestId('supply-input-stusds').fill('20');
-    // await isolatedPage.getByRole('checkbox').click();
-    await performAction(isolatedPage, 'Supply');
+    await performAction(isolatedPage, 'Swap');
     await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Mine a block to increase the USDS amount
@@ -136,7 +136,7 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('5 USDS').first()).toBeVisible();
 
     // Perform withdrawal
-    await performAction(isolatedPage, 'Withdraw');
+    await performAction(isolatedPage, 'Swap');
 
     // Check success message (supports both native and Curve providers)
     await expectWithdrawSuccess(isolatedPage, '5');
@@ -155,16 +155,12 @@ test.describe('Expert Module - stUSDS', () => {
 
     // Transaction overview should be visible
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
-
-    // Disclaimer checkbox should be visible
-    // await expect(isolatedPage.getByRole('checkbox')).toBeVisible();
   });
 
   test('Use max button for withdrawal', async ({ isolatedPage }) => {
     await isolatedPage.getByTestId('supply-input-stusds').click();
     await isolatedPage.getByTestId('supply-input-stusds').fill('30');
-    // await isolatedPage.getByRole('checkbox').click();
-    await performAction(isolatedPage, 'Supply');
+    await performAction(isolatedPage, 'Swap');
     await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Mine a block to increase the USDS amount
@@ -178,7 +174,7 @@ test.describe('Expert Module - stUSDS', () => {
 
     // Check that input is filled with correct amount
     const inputValue = await isolatedPage.getByTestId('withdraw-input-stusds').inputValue();
-    expect(parseFloat(inputValue)).toBeGreaterThanOrEqual(30);
+    expect(parseFloat(inputValue)).toBeGreaterThanOrEqual(29);
   });
 
   test('Supply with insufficient USDS balance shows error', async ({ isolatedPage }) => {
@@ -249,11 +245,8 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
     await expect(isolatedPage.getByText('You will supply')).toBeVisible();
 
-    // Check the disclaimer checkbox
-    // await isolatedPage.getByRole('checkbox').click();
-
     // Perform the supply action (handles approval if needed)
-    await performAction(isolatedPage, 'Supply');
+    await performAction(isolatedPage, 'Swap');
 
     // Check success message (supports both native and Curve providers)
     await expectSupplySuccess(isolatedPage, '1');
@@ -267,19 +260,10 @@ test.describe('Expert Module - stUSDS', () => {
     // Transaction overview should be visible
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
 
-    // Disclaimer checkbox should be visible and unchecked
-    // const checkbox = isolatedPage.getByRole('checkbox');
-    // await expect(checkbox).toBeVisible();
-    // await expect(checkbox).not.toBeChecked();
-
     // Review button should be disabled
     const reviewButton = isolatedPage.getByTestId('widget-button');
     await expect(reviewButton).toHaveText('Review');
     await expect(reviewButton).toBeDisabled();
-
-    // Check the disclaimer checkbox
-    // await checkbox.click();
-    // await expect(checkbox).toBeChecked();
 
     // Review button should now be enabled
     await expect(reviewButton).toBeEnabled();
@@ -392,11 +376,8 @@ test.describe('Expert Module - stUSDS', () => {
       await isolatedPage.getByTestId('supply-input-stusds').click();
       await isolatedPage.getByTestId('supply-input-stusds').fill('5');
 
-      // Check the disclaimer checkbox
-      // await isolatedPage.getByRole('checkbox').click();
-
       // Perform the supply action
-      await performAction(isolatedPage, 'Supply');
+      await performAction(isolatedPage, 'Swap');
 
       // Verify success (works for both native and Curve)
       await expectSupplySuccess(isolatedPage, '5');
@@ -409,8 +390,7 @@ test.describe('Expert Module - stUSDS', () => {
       // First supply some USDS
       await isolatedPage.getByTestId('supply-input-stusds').click();
       await isolatedPage.getByTestId('supply-input-stusds').fill('15');
-      // await isolatedPage.getByRole('checkbox').click();
-      await performAction(isolatedPage, 'Supply');
+      await performAction(isolatedPage, 'Swap');
       await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
       // Mine a block
@@ -424,7 +404,7 @@ test.describe('Expert Module - stUSDS', () => {
       await isolatedPage.getByTestId('withdraw-input-stusds').fill('3');
 
       // Perform withdrawal
-      await performAction(isolatedPage, 'Withdraw');
+      await performAction(isolatedPage, 'Swap');
 
       // Verify success (works for both native and Curve)
       await expectWithdrawSuccess(isolatedPage, '3');

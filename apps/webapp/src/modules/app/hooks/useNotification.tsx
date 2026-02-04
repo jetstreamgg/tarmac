@@ -13,6 +13,7 @@ import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isDeprecatedRewardContract } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 
 const generateToastContent = ({
@@ -113,6 +114,11 @@ export const useNotification = () => {
 
     setTimeout(() => {
       if (isRewardsModule) {
+        // Don't show toast for deprecated reward contracts
+        if (isDeprecatedRewardContract(rewardContract?.contractAddress || '', chainId)) {
+          return;
+        }
+
         toastWithClose(
           toastId => (
             <div>
@@ -166,7 +172,7 @@ export const useNotification = () => {
         );
       }
     }, delay); // delay for insufficient balance notifications
-  }, [action, isRewardsModule, isSavingsModule, rewardContract, rate, savingsRate, navigate]);
+  }, [action, isRewardsModule, isSavingsModule, rewardContract, rate, savingsRate, navigate, chainId]);
 
   const handleTokenReceived = useCallback(
     (type: NotificationType) => {

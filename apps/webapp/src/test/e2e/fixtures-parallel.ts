@@ -17,7 +17,7 @@ export const test = playwrightTest.extend<TestFixtures>({
   /**
    * Provides a unique test account from the pool for each test.
    * The account is permanently claimed - never released.
-   * With 100 accounts for ~52 tests, each test gets its own dedicated account.
+   * With 150 accounts for ~108 tests, each test gets its own dedicated account.
    */
   // eslint-disable-next-line no-empty-pattern
   testAccount: async ({}, use, testInfo) => {
@@ -29,7 +29,7 @@ export const test = playwrightTest.extend<TestFixtures>({
 
     try {
       // Claim an account from the pool - NEVER RELEASE IT
-      // With 100 accounts and ~52 tests, we have plenty of accounts
+      // With 150 accounts and ~108 tests, we have buffer for retries
       accountIndex = await accountPool.claimAccount(holderId);
       account = accountPool.getAccountAddress(accountIndex);
 

@@ -36,16 +36,10 @@ export function StakingRewardsCard() {
       module={t`Staking`}
       title={t`Access Staking rewards (or Borrow) with SKY`}
       subHeading={
-        <div className="flex flex-wrap gap-2 lg:gap-4">
-          <HStack gap={2}>
-            <PairTokenIcons leftToken="SKY" rightToken="SKY" chainId={mainnet.id} />
-            <Text className="text-textSecondary">With: SKY Get: SKY</Text>
-          </HStack>
-          <HStack gap={2}>
-            <PairTokenIcons leftToken="SKY" rightToken="SPK" chainId={mainnet.id} />
-            <Text className="text-textSecondary">With: SKY Get: SPK</Text>
-          </HStack>
-        </div>
+        <HStack gap={2}>
+          <PairTokenIcons leftToken="SKY" rightToken="SKY" chainId={mainnet.id} />
+          <Text className="text-textSecondary">With: SKY Get: SKY</Text>
+        </HStack>
       }
       emphasisText={
         chartDataLoading ? (

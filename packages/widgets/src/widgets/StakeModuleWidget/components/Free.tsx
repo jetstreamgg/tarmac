@@ -59,11 +59,19 @@ export const Free = ({
     liquidationRiskThreshold &&
     simulatedVault?.liquidationProximityPercentage > liquidationRiskThreshold;
 
+  const isCappedOsmError =
+    !!skyToFree &&
+    skyToFree > 0n &&
+    !!simulatedVault?.delayedPrice &&
+    !!simulatedVault?.liquidationPrice &&
+    simulatedVault.liquidationPrice > simulatedVault.delayedPrice;
+
   useEffect(() => {
-    const isFreeComplete = !!skySealed && skyToFree <= skySealed && !isLiquidationError && !isLoading;
+    const isFreeComplete =
+      !!skySealed && skyToFree <= skySealed && !isLiquidationError && !isCappedOsmError && !isLoading;
     // If the user is managing their position, they have already accepted the exit fee
     setIsLockCompleted((widgetState.flow === StakeFlow.MANAGE || skyToFree === 0n) && isFreeComplete);
-  }, [skyToFree, skySealed, widgetState.flow, isLiquidationError, isLoading]);
+  }, [skyToFree, skySealed, widgetState.flow, isLiquidationError, isCappedOsmError, isLoading]);
 
   const isSkySupplyBalanceError =
     address && (skySealed || skySealed === 0n) && skyToFree > skySealed && skyToFree !== 0n;
@@ -89,6 +97,9 @@ export const Free = ({
           }
           if (isLiquidationError) {
             return t`Liquidation risk too high`;
+          }
+          if (isCappedOsmError) {
+            return t`Liquidation price is higher than the capped OSM SKY price`;
           }
           return undefined;
         })()}
