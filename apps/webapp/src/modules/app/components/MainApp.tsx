@@ -103,10 +103,10 @@ export function MainApp() {
   const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
-  // Chat is now opt-in on all screen sizes (no longer auto-shown on 3xl+)
+  // Chat is opt-in on most screen sizes, only auto-shown on ultra-wide (3xl+)
   const chatParam = CHATBOT_ENABLED && searchParams.get(QueryParams.Chat) === 'true';
 
-  // On desktop (3xl+), chat is floating; on mobile, it's inline
+  // On tablet+ (md+), chat is floating; on mobile (sm), it's inline
   const showInlineChat = chatParam && !shouldShowFloating;
 
   const inlineChatScrollBehavior = useChatScrollBehavior(showInlineChat);
@@ -272,10 +272,10 @@ export function MainApp() {
         )}
       </AppContainer>
 
-      {/* Floating chat - only on desktop (3xl+) */}
+      {/* Floating chat - tablet and above (md+) */}
       {shouldShowFloating && <FloatingChatPane sendMessage={sendMessage} />}
 
-      {/* Floating chat button - shows when chat is closed on desktop */}
+      {/* Floating chat button - tablet and above (md+) */}
       <FloatingChatButton />
     </>
   );

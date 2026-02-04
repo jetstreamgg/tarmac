@@ -34,13 +34,15 @@ const getBreakpointIndex = (width: number) => {
 };
 
 export const useBreakpointIndex = () => {
-  const width = window.innerWidth;
+  const initialWidth = window.innerWidth;
 
-  const [breakpointIndex, setBreakpointIndex] = useState(getBreakpointIndex(width));
+  const [breakpointIndex, setBreakpointIndex] = useState(getBreakpointIndex(initialWidth));
+  const [width, setWidth] = useState(initialWidth);
 
   useEffect(() => {
     const updateBreakpointIndex = () => {
       setBreakpointIndex(getBreakpointIndex(innerWidth));
+      setWidth(innerWidth);
     };
 
     updateBreakpointIndex();
@@ -51,5 +53,5 @@ export const useBreakpointIndex = () => {
     };
   }, []);
 
-  return { bpi: breakpointIndex };
+  return { bpi: breakpointIndex, width };
 };
