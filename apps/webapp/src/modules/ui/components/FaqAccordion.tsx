@@ -16,7 +16,8 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Chat } from '@/modules/icons';
 import { CHATBOT_FAQ_ASK_ENABLED, QueryParams } from '@/lib/constants';
 import { t } from '@lingui/core/macro';
-import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
+import { Trans } from '@lingui/react/macro';
+import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 
 interface Item {
   question: string;
@@ -28,8 +29,7 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
   const [, setSearchParams] = useSearchParams();
   const { sendMessage } = useSendMessage();
   const { isLoading } = useChatContext();
-  const { bpi } = useBreakpointIndex();
-  const isMobile = bpi === BP.sm;
+  const isTouch = useIsTouchDevice();
 
   const handleAskAboutQuestion = (e: React.MouseEvent, question: string) => {
     e.preventDefault();
@@ -56,12 +56,12 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
               <Heading variant="extraSmall" className="flex-1">
                 {title}
               </Heading>
-              {CHATBOT_FAQ_ASK_ENABLED && !isMobile && (
+              {CHATBOT_FAQ_ASK_ENABLED && !isTouch && (
                 <button
                   type="button"
                   onClick={e => handleAskAboutQuestion(e, title)}
                   disabled={isLoading}
-                  className="mr-2 rounded-md p-1.5 opacity-0 transition-opacity group-hover/faq:opacity-100 hover:bg-white/10 disabled:cursor-not-allowed"
+                  className="pointer-events-none mr-2 rounded-md p-1.5 opacity-0 transition-opacity group-hover/faq:pointer-events-auto group-hover/faq:opacity-100 hover:bg-white/10 disabled:cursor-not-allowed"
                   title={t`Ask about this question`}
                 >
                   <Chat className="text-textSecondary h-4 w-4" />
@@ -120,6 +120,17 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
                   }
                 }}
               />
+              {CHATBOT_FAQ_ASK_ENABLED && isTouch && (
+                <button
+                  type="button"
+                  onClick={e => handleAskAboutQuestion(e, title)}
+                  disabled={isLoading}
+                  className="text-textSecondary mt-4 flex items-center gap-1.5 text-sm hover:text-white disabled:cursor-not-allowed"
+                >
+                  <Chat className="h-4 w-4" />
+                  <Trans>Ask about this</Trans>
+                </button>
+              )}
             </AccordionContent>
           </AccordionItem>
         </Card>
