@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
-import { QueryParams } from '@/lib/constants';
+import { CHATBOT_ENABLED, QueryParams } from '@/lib/constants';
 
 // Breakpoint at which floating chat panel + button is supported (tablet and above)
 export const FLOATING_CHAT_BP = BP.md;
@@ -24,7 +24,7 @@ export const useFloatingChat = () => {
   const [searchParams] = useSearchParams();
   const chatParam = searchParams.get(QueryParams.Chat);
 
-  const supportsFloatingChat = bpi >= FLOATING_CHAT_BP;
+  const supportsFloatingChat = CHATBOT_ENABLED && bpi >= FLOATING_CHAT_BP;
   const isDefaultOpenWidth = width >= CHAT_DEFAULT_OPEN_WIDTH;
 
   // On extra-wide (≥2550px): show by default unless explicitly set to "false"
