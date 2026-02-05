@@ -14,7 +14,6 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Chat } from '@/modules/icons';
 import { CHATBOT_ABOUT_CARD_ASK_ENABLED, QueryParams } from '@/lib/constants';
 import { t } from '@lingui/core/macro';
-import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 
 // Type for banner configuration
@@ -29,9 +28,7 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
   const [, setSearchParams] = useSearchParams();
   const { sendMessage } = useSendMessage();
   const { isLoading } = useChatContext();
-  const { bpi } = useBreakpointIndex();
   const isTouch = useIsTouchDevice();
-  const isTouchMobileOrTablet = isTouch && bpi < BP.lg;
 
   // Map intents to banner IDs - all intents have a default, some have additional variants
   const bannerIdMap: Record<Intent, BannerConfig> = {
@@ -112,7 +109,7 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
             onClick={handleAskAboutModule}
             disabled={isLoading}
             className={`absolute top-4 right-3 z-20 rounded-md p-1.5 transition-opacity hover:bg-white/10 disabled:cursor-not-allowed xl:right-6 ${
-              isTouchMobileOrTablet
+              isTouch
                 ? 'opacity-100'
                 : 'pointer-events-none opacity-0 group-hover/connect:pointer-events-auto group-hover/connect:opacity-100'
             }`}
