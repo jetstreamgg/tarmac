@@ -1,0 +1,193 @@
+name: E2E Tests (Pool)
+
+permissions:
+  contents: read
+
+on:
+  # Disabled until pool is tested and ready
+  pull_request:
+  push:
+    branches:
+      # all branches
+      - "*"
+  workflow_dispatch:
+    inputs:
+      workers:
+        description: 'Number of parallel workers'
+        required: false
+        default: '3'
+        type: string
+      networks:
+        description: 'Networks to test (comma-separated)'
+        required: false
+        default: 'mainnet,base,arbitrum,optimism,unichain'
+        type: string
+
+concurrency:
+  group: e2e-pool-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-pool:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
+      TEST_WORKERS: ${{ github.event.inputs.workers || '3' }}
+      FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Install Playwright browsers
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Restore pool VNet data from repo variables
+        id: restore-pool
+        run: |
+          # VNET_POOL_DATA and VNET_SNAPSHOT_DATA are repo-level variables
+          if [ -n "$VNET_POOL_DATA" ] && [ -n "$VNET_SNAPSHOT_DATA" ]; then
+            echo "Writing VNet data from repo variables..."
+
+            echo "$VNET_POOL_DATA" > tenderlyTestnetData.json
+            echo "$VNET_SNAPSHOT_DATA" > apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
+
+            echo "have_pool=true" >> $GITHUB_OUTPUT
+            echo "VNet data:"
+            cat tenderlyTestnetData.json | jq -r '.[].NETWORK' | tr '\n' ', '
+            echo ""
+            echo "Snapshots:"
+            cat apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | jq -r 'keys[]' | tr '\n' ', '
+            echo ""
+            echo "Pool VNet data restored"
+          else
+            echo "have_pool=false" >> $GITHUB_OUTPUT
+            echo "No pool data found in repo variables."
+            echo "Run: pnpm vnet:pool:provision:store (or the Provision VNet Pool workflow)"
+          fi
+        env:
+          VNET_POOL_DATA: ${{ vars.VNET_POOL_DATA }}
+          VNET_SNAPSHOT_DATA: ${{ vars.VNET_SNAPSHOT_DATA }}
+
+      - name: Validate pool VNets
+        id: validate-pool
+        if: steps.restore-pool.outputs.have_pool == 'true'
+        run: |
+          echo "Validating pool VNets..."
+          cd apps/webapp && npx tsx src/test/e2e/validate-vnets.ts
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+        continue-on-error: true
+
+      - name: Pool status
+        id: pool-status
+        run: |
+          if [ "${{ steps.restore-pool.outputs.have_pool }}" = "true" ] && [ "${{ steps.validate-pool.outcome }}" = "success" ]; then
+            echo "status=ready" >> $GITHUB_OUTPUT
+            echo "Pool VNets are healthy! Tests will start with snapshot revert (fast)."
+          else
+            echo "status=unavailable" >> $GITHUB_OUTPUT
+            echo "Pool VNets are not available or unhealthy."
+            echo "Falling back to fresh VNet provisioning..."
+          fi
+
+      - name: Fallback - Create fresh VNets
+        if: steps.pool-status.outputs.status == 'unavailable'
+        run: |
+          echo "Creating fresh VNets (fallback)..."
+          pnpm run vnet:fork:ci
+          echo "Fresh VNets created"
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Run E2E tests
+        run: |
+          if [ "${{ steps.pool-status.outputs.status }}" = "ready" ]; then
+            echo "Running tests with POOL VNets (snapshot revert = fast!)"
+          else
+            echo "Running tests with FRESH VNets (funding required)"
+          fi
+
+          echo "Workers: $TEST_WORKERS"
+          echo "Networks: $FUND_NETWORKS"
+
+          chmod +x ./apps/webapp/run-tests-with-retry.sh
+          cd apps/webapp && ./run-tests-with-retry.sh
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Upload test results (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pool-test-results-${{ github.run_id }}
+          path: |
+            apps/webapp/playwright-report/
+            apps/webapp/test-results/
+            apps/webapp/test-results.json
+          retention-days: 7
+
+      - name: Upload test traces (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pool-test-traces-${{ github.run_id }}
+          path: apps/webapp/test-results/
+          retention-days: 3
+
+      # Only cleanup on fallback (fresh VNets), never delete pool VNets
+      - name: Cleanup fresh VNets (fallback only)
+        if: always() && steps.pool-status.outputs.status == 'unavailable'
+        run: |
+          echo "Cleaning up fresh VNets (not pool VNets)..."
+          pnpm run vnet:delete:all:ci || echo "Cleanup failed, continuing..."
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## E2E Test Summary (Pool)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pool status**: ${{ steps.pool-status.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers**: $TEST_WORKERS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Networks**: $FUND_NETWORKS" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.pool-status.outputs.status }}" = "ready" ]; then
+            echo "- **Mode**: Pool VNets (fast - snapshot revert)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Mode**: Fresh VNets (fallback - full provisioning)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "- **Status**: All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi

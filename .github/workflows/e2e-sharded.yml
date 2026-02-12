@@ -5,10 +5,10 @@ permissions:
   actions: write  # Required for deleting stale caches
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       shards:
