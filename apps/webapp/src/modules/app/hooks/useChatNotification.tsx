@@ -5,7 +5,7 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { Trans } from '@lingui/react/macro';
 import { Button } from '@/components/ui/button';
 import { useSearchParams } from 'react-router-dom';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useFloatingChat } from '@/modules/chat/hooks/useFloatingChat';
 import {
   CHATBOT_ENABLED,
   QueryParams,
@@ -17,7 +17,7 @@ import { Chat } from '@/modules/icons';
 
 export const useChatNotification = (isAuthorized: boolean) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { bpi } = useBreakpointIndex();
+  const { supportsFloatingChat } = useFloatingChat();
 
   // Use localStorage directly for notification state
   const [chatSuggested, setChatSuggested] = useState(() => {
@@ -29,12 +29,12 @@ export const useChatNotification = (isAuthorized: boolean) => {
   const onClickChat = useCallback(
     (toastId: string | number) => {
       searchParams.set(QueryParams.Chat, 'true');
-      if (bpi < BP['3xl']) searchParams.set(QueryParams.Details, 'false');
+      if (!supportsFloatingChat) searchParams.set(QueryParams.Details, 'false');
       setSearchParams(searchParams);
       toast.dismiss(toastId);
       activeToastIdRef.current = null; // Clear the reference when dismissed
     },
-    [bpi, searchParams, setSearchParams]
+    [supportsFloatingChat, searchParams, setSearchParams]
   );
 
   const onClose = useCallback(() => {

@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { Heading } from '@/modules/layout/components/Typography';
@@ -10,6 +11,13 @@ import {
   POPOVER_TOOLTIP_TYPES,
   type PopoverTooltipType
 } from '@jetstreamgg/sky-widgets';
+import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Chat } from '@/modules/icons';
+import { CHATBOT_FAQ_ASK_ENABLED, QueryParams } from '@/lib/constants';
+import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
+import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 
 interface Item {
   question: string;
@@ -18,15 +26,49 @@ interface Item {
 
 export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
   const parsedItems = items.map(({ question, answer }) => ({ title: question, content: answer }));
+  const [, setSearchParams] = useSearchParams();
+  const { sendMessage } = useSendMessage();
+  const { isLoading } = useChatContext();
+  const isTouch = useIsTouchDevice();
+
+  const handleAskAboutQuestion = (e: React.MouseEvent, question: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Open chat pane via URL param
+    setSearchParams(prevParams => {
+      prevParams.set(QueryParams.Chat, 'true');
+      return prevParams;
+    });
+
+    // Send the FAQ question to chat after small delay to ensure chat is open
+    setTimeout(() => {
+      sendMessage(t`${question}`);
+    }, 100);
+  };
+
   return (
     <Accordion type="multiple" className="w-full">
       {parsedItems.map(({ title, content }) => (
-        <Card key={title} className="mb-3">
+        <Card key={title} className="group/faq mb-3">
           <AccordionItem value={title} className="p-0">
             <AccordionTrigger className="p-0 text-left">
-              <Heading variant="extraSmall">{title}</Heading>
+              <Heading variant="extraSmall" className="flex-1">
+                {title}
+              </Heading>
+              {CHATBOT_FAQ_ASK_ENABLED && !isTouch && (
+                <button
+                  type="button"
+                  onClick={e => handleAskAboutQuestion(e, title)}
+                  disabled={isLoading}
+                  className="pointer-events-none mr-2 rounded-md p-1.5 opacity-0 transition-opacity group-hover/faq:pointer-events-auto group-hover/faq:opacity-100 hover:bg-white/10 disabled:cursor-not-allowed"
+                  title={t`Ask about this question`}
+                >
+                  <Chat className="text-textSecondary h-4 w-4" />
+                </button>
+              )}
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 pb-0 pr-5 pt-4 leading-5">
+            <AccordionContent className="space-y-4 pt-4 pr-5 pb-0 leading-5">
               <SafeMarkdownRenderer
                 markdown={content}
                 components={{
@@ -78,6 +120,17 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
                   }
                 }}
               />
+              {CHATBOT_FAQ_ASK_ENABLED && isTouch && (
+                <button
+                  type="button"
+                  onClick={e => handleAskAboutQuestion(e, title)}
+                  disabled={isLoading}
+                  className="text-textSecondary mt-4 flex items-center gap-1.5 text-sm hover:text-white disabled:cursor-not-allowed"
+                >
+                  <Chat className="h-4 w-4" />
+                  <Trans>Ask about this</Trans>
+                </button>
+              )}
             </AccordionContent>
           </AccordionItem>
         </Card>

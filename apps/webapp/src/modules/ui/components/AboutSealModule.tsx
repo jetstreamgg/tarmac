@@ -16,6 +16,7 @@ export const AboutSealModule = ({ height }: { height?: number | undefined }) => 
   return (
     <AboutCard
       title={<Trans>About Seal Rewards</Trans>}
+      chatLabel="Seal Rewards"
       description={
         <Trans>
           Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engine of the decentralised,

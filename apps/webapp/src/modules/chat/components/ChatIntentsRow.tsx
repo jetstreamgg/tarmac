@@ -421,8 +421,8 @@ const IntentRow = ({
   hideIcon
 }: IntentRowProps & { className?: string; hideIcon?: boolean }) => {
   const chainId = useChainId();
-  const executeIntent = useIntentExecution();
   const { bpi } = useBreakpointIndex();
+  const executeIntent = useIntentExecution();
   const isMobile = bpi < BP.md;
 
   // On mobile, don't retain chat param (it will be set to false by prepareUrlParams)

@@ -63,7 +63,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
     // The remaining padding in the right is added by the scrollbar
     // `details-pane` class is used by the AppContainer component to make the container full width if the details pane is visible
     <motion.div
-      className="scrollbar-thin-always details-pane bg-panel flex w-full flex-col gap-4 p-3 group-has-[.chat-pane]:w-[calc(100%-764px)] md:overflow-auto md:rounded-3xl md:p-6 md:pr-3.5 xl:p-8 xl:pr-[22px]"
+      className="scrollbar-thin-always details-pane bg-panel flex w-full flex-col gap-4 p-3 md:overflow-auto md:rounded-3xl md:p-6 md:pr-3.5 xl:p-8 xl:pr-[22px]"
       layout
       key="details-pane"
       initial={{ opacity: 0 }}

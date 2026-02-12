@@ -3,10 +3,16 @@ import { Toaster as Sonner, type ToastClassnames } from 'sonner';
 import { Success, Failure } from '@/modules/icons';
 import { Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { FLOATING_CHAT_BP } from '@/modules/chat/hooks/useFloatingChat';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
+  const { bpi } = useBreakpointIndex();
+
+  // On wide screens (3xl+), position at bottom-left to avoid conflict with floating chat area
+  const position = bpi >= FLOATING_CHAT_BP ? 'bottom-left' : 'bottom-right';
   const defaultClassNames: ToastClassnames = {
     toast:
       'group flex items-start justify-between space-x-4 rounded-xl bg-container text-text p-6 pr-8 shadow-lg backdrop-blur-[50px] border border-border min-w-[356px] md:min-w-[420px] max-w-[420px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-bottom-full data-[expanded=false]:overflow-hidden',
@@ -34,7 +40,7 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
   return (
     <Sonner
       className={cn('!z-40', className)}
-      position="bottom-right"
+      position={position}
       visibleToasts={5}
       gap={14}
       closeButton={true}
@@ -44,6 +50,7 @@ const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
         info: <Info size={20} className="text-textEmphasis" />,
         close: <X size={16} className="text-text" />
       }}
+      offset={bpi >= FLOATING_CHAT_BP ? { bottom: 40, left: 16 } : undefined}
       toastOptions={{
         ...toastOptions,
         classNames: mergedClassNames

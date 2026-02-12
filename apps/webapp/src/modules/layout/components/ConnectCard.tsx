@@ -8,6 +8,13 @@ import { useChainId } from 'wagmi';
 import { getBannerById } from '@/data/banners/banners';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
+import { useSearchParams } from 'react-router-dom';
+import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
+import { Chat } from '@/modules/icons';
+import { CHATBOT_ABOUT_CARD_ASK_ENABLED, QueryParams } from '@/lib/constants';
+import { t } from '@lingui/core/macro';
+import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
 
 // Type for banner configuration
 type BannerConfig = {
@@ -18,6 +25,10 @@ type BannerConfig = {
 export function ConnectCard({ intent, className }: { intent: Intent; className?: string }) {
   const connect = useCustomConnectModal();
   const chainId = useChainId();
+  const [, setSearchParams] = useSearchParams();
+  const { sendMessage } = useSendMessage();
+  const { isLoading } = useChatContext();
+  const isTouch = useIsTouchDevice();
 
   // Map intents to banner IDs - all intents have a default, some have additional variants
   const bannerIdMap: Record<Intent, BannerConfig> = {
@@ -59,27 +70,69 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
   // Parse banner content - handles tooltips if present, otherwise returns plain text
   const contentText = banner?.description ? parseBannerContent(banner.description) : '';
 
+  // Custom chat labels for intents where the banner title doesn't make a good question
+  const chatLabelOverrides: Partial<Record<Intent, string>> = {
+    [Intent.UPGRADE_INTENT]: 'the Upgrade module'
+  };
+
+  // Use custom label if available, otherwise use the banner heading (stripping "About " prefix to avoid duplication)
+  const chatLabel = chatLabelOverrides[intent] || heading.replace(/^About /, '');
+
+  const handleAskAboutModule = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Open chat pane via URL param
+    setSearchParams(prevParams => {
+      prevParams.set(QueryParams.Chat, 'true');
+      return prevParams;
+    });
+
+    // Send question using the chat label
+    setTimeout(() => {
+      sendMessage(t`Tell me about ${chatLabel}`);
+    }, 100);
+  };
+
   return (
-    <GradientShapeCard
-      colorLeft="radial-gradient(100% 177.78% at 100% 0%, #A273FF 0%, #4331E9 100%)"
-      colorMiddle="radial-gradient(circle at 0% 100%, #FFCD6B 0%, #EB5EDF 150%)"
-      colorRight="#2A197D"
-      className={className}
-    >
-      <div className="w-[80%] space-y-2 self-start xl:w-2/3" data-testid="connect-wallet-card">
-        <Heading className="mb-2">{heading}</Heading>
-        {contentText}
-      </div>
-      <div className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
-        <Button
-          className="border-border"
-          variant="outline"
-          onClick={connect}
-          data-testid="connect-wallet-card-button"
-        >
-          <Trans>Connect wallet</Trans>
-        </Button>
-      </div>
-    </GradientShapeCard>
+    <div className="group/connect">
+      <GradientShapeCard
+        colorLeft="radial-gradient(100% 177.78% at 100% 0%, #A273FF 0%, #4331E9 100%)"
+        colorMiddle="radial-gradient(circle at 0% 100%, #FFCD6B 0%, #EB5EDF 150%)"
+        colorRight="#2A197D"
+        className={className}
+      >
+        {/* Chat icon - top right corner, always visible on touch, hover on desktop */}
+        {CHATBOT_ABOUT_CARD_ASK_ENABLED && chatLabel && (
+          <button
+            type="button"
+            onClick={handleAskAboutModule}
+            disabled={isLoading}
+            className={`absolute top-4 right-3 z-20 rounded-md p-1.5 transition-opacity hover:bg-white/10 disabled:cursor-not-allowed xl:right-6 ${
+              isTouch
+                ? 'opacity-100'
+                : 'pointer-events-none opacity-0 group-hover/connect:pointer-events-auto group-hover/connect:opacity-100'
+            }`}
+            title={t`Ask about ${chatLabel}`}
+          >
+            <Chat className="text-textSecondary h-4 w-4" />
+          </button>
+        )}
+        <div className="w-[80%] space-y-2 self-start xl:w-2/3" data-testid="connect-wallet-card">
+          <Heading className="mb-2">{heading}</Heading>
+          {contentText}
+        </div>
+        <div className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
+          <Button
+            className="border-border"
+            variant="outline"
+            onClick={connect}
+            data-testid="connect-wallet-card-button"
+          >
+            <Trans>Connect wallet</Trans>
+          </Button>
+        </div>
+      </GradientShapeCard>
+    </div>
   );
 }
