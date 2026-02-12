@@ -6,14 +6,14 @@ import {
   MorphoVaultAction
 } from '@jetstreamgg/sky-widgets';
 import { Token } from '@jetstreamgg/sky-hooks';
-import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
+import { ExpertIntentMapping, QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
-import { VaultsIntent } from '@/lib/enums';
+import { ExpertIntent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
 
@@ -33,7 +33,7 @@ export function MorphoVaultWidgetPane({
   ...sharedProps
 }: MorphoVaultWidgetPaneProps) {
   const chainId = useChainId();
-  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedVaultsOption } =
+  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedExpertOption } =
     useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setShouldDisableActionButtons } = useChatContext();
@@ -53,7 +53,7 @@ export function MorphoVaultWidgetPane({
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (
-      searchParams.get(QueryParams.VaultModule) !== VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]
+      searchParams.get(QueryParams.ExpertModule) !== ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT]
     ) {
       return;
     }
@@ -102,10 +102,11 @@ export function MorphoVaultWidgetPane({
 
   const handleBack = () => {
     setSearchParams(params => {
-      params.delete(QueryParams.VaultModule);
+      params.delete(QueryParams.ExpertModule);
+      params.delete(QueryParams.Vault);
       return params;
     });
-    setSelectedVaultsOption(undefined);
+    setSelectedExpertOption(undefined);
   };
 
   if (!currentVaultAddress || !currentAssetAddress) {

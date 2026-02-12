@@ -1,4 +1,4 @@
-import { Balances, RewardsModule, Savings, Stake, Expert, Vaults, Convert, Upgrade, Trade } from '../../icons';
+import { Balances, RewardsModule, Savings, Stake, Expert, Convert, Upgrade, Trade } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
@@ -8,10 +8,9 @@ import {
   QueryParams,
   RESTRICTED_INTENTS,
   ExpertIntentMapping,
-  VaultsIntentMapping,
   ConvertIntentMapping
 } from '@/lib/constants';
-import { ExpertIntent, VaultsIntent, ConvertIntent } from '@/lib/enums';
+import { ExpertIntent, ConvertIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -33,7 +32,6 @@ import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem } from '../types/Widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
-import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
 import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
@@ -150,23 +148,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       'Stake SKY to earn rewards, delegate votes, and borrow USDS'
     ],
     [
-      Intent.VAULTS_INTENT,
-      'Vaults',
-      Vaults,
-      withErrorBoundary(<VaultsWidgetPane {...sharedProps} />),
-      false,
-      undefined,
-      'Third-party vault integrations with Sky ecosystem tokens',
-      [
-        {
-          label: 'USDS Risk Capital',
-          icon: <TokenIcon token={{ symbol: 'USDS' }} className="h-3 w-3" showChainIcon={false} />,
-          paramKey: QueryParams.VaultModule,
-          paramValue: VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]
-        }
-      ]
-    ],
-    [
       Intent.EXPERT_INTENT,
       'Expert',
       Expert,
@@ -180,6 +161,12 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           icon: <TokenIcon token={{ symbol: 'stUSDS' }} className="h-3 w-3" showChainIcon={false} />,
           paramKey: QueryParams.ExpertModule,
           paramValue: ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]
+        },
+        {
+          label: 'USDS Risk Capital',
+          icon: <TokenIcon token={{ symbol: 'USDS' }} className="h-3 w-3" showChainIcon={false} />,
+          paramKey: QueryParams.ExpertModule,
+          paramValue: ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT]
         }
       ]
     ],
@@ -239,14 +226,10 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     },
     {
       id: 'group-3',
-      items: widgetItems.filter(([intent]) => intent === Intent.VAULTS_INTENT)
-    },
-    {
-      id: 'group-4',
       items: widgetItems.filter(([intent]) => intent === Intent.EXPERT_INTENT)
     },
     {
-      id: 'group-5',
+      id: 'group-4',
       items: widgetItems.filter(([intent]) => intent === Intent.CONVERT_INTENT)
     }
   ];

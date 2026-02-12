@@ -32,7 +32,6 @@ export function MainApp() {
     setSelectedRewardContract,
     setSelectedExpertOption,
     expertRiskDisclaimerShown,
-    setSelectedVaultsOption,
     setSelectedConvertOption
   } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
@@ -154,7 +153,6 @@ export function MainApp() {
           chains,
           setSelectedExpertOption,
           expertRiskDisclaimerShown,
-          setSelectedVaultsOption,
           setSelectedConvertOption
         );
         // Runs second validation for linked-action-specific criteria
@@ -170,7 +168,6 @@ export function MainApp() {
     widgetParam,
     setSelectedExpertOption,
     expertRiskDisclaimerShown,
-    setSelectedVaultsOption,
     setSelectedConvertOption
   ]);
 

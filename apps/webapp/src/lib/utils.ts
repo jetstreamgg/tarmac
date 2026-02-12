@@ -5,13 +5,12 @@ import {
   ALLOWED_EXTERNAL_DOMAINS,
   CHAIN_WIDGET_MAP,
   ExpertIntentMapping,
-  VaultsIntentMapping,
   IntentMapping,
   mapIntentToQueryParam,
   QueryParams,
   RESTRICTED_INTENTS
 } from './constants';
-import { ExpertIntent, Intent, VaultsIntent } from './enums';
+import { ExpertIntent, Intent } from './enums';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { Chain } from 'viem';
@@ -147,17 +146,12 @@ export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
   );
 export const getMorphoVaultUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}&vault_module=${VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]}`,
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT]}`,
     searchParams
   );
 export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}`,
-    searchParams
-  );
-export const getVaultsOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
-  getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}`,
     searchParams
   );
 export const getConvertUrl = (searchParams: URLSearchParams, chainId: number) =>

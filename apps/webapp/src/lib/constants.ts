@@ -1,4 +1,4 @@
-import { RewardsModule, Savings, Trade, Upgrade, Seal, Expert, Vaults, Convert } from '@/modules/icons';
+import { RewardsModule, Savings, Trade, Upgrade, Seal, Expert, Convert } from '@/modules/icons';
 import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from './enums';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
@@ -41,7 +41,7 @@ export const RESTRICTED_INTENTS: Intent[] = (() => {
   if (isRestrictedMiCa) {
     return [Intent.TRADE_INTENT];
   } else if (isRestrictedBuild) {
-    return [Intent.SAVINGS_INTENT, Intent.REWARDS_INTENT, Intent.EXPERT_INTENT, Intent.VAULTS_INTENT];
+    return [Intent.SAVINGS_INTENT, Intent.REWARDS_INTENT, Intent.EXPERT_INTENT];
   }
   return [];
 })();
@@ -60,7 +60,8 @@ export const IntentMapping = {
 };
 
 export const ExpertIntentMapping: Record<ExpertIntent, string> = {
-  [ExpertIntent.STUSDS_INTENT]: 'stusds'
+  [ExpertIntent.STUSDS_INTENT]: 'stusds',
+  [ExpertIntent.MORPHO_VAULT_INTENT]: 'morpho'
 };
 
 export const VaultsIntentMapping: Record<VaultsIntent, string> = {
@@ -82,7 +83,6 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.SEAL_INTENT,
     Intent.STAKE_INTENT,
     Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
     Intent.CONVERT_INTENT
   ],
   [tenderly.id]: [
@@ -94,7 +94,6 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.SEAL_INTENT,
     Intent.STAKE_INTENT,
     Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
     Intent.CONVERT_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
@@ -124,28 +123,24 @@ export const intentTxt: Record<string, MessageDescriptor> = {
 export const EXPERT_WIDGET_OPTIONS: {
   id: ExpertIntent;
   name: string;
+  category: 'risk-capital' | 'morpho-vaults';
 }[] = [
   {
     id: ExpertIntent.STUSDS_INTENT,
-    name: 'stUSDS'
-  }
-];
-
-export const VAULTS_WIDGET_OPTIONS: {
-  id: VaultsIntent;
-  name: string;
-}[] = [
+    name: 'stUSDS',
+    category: 'risk-capital'
+  },
   {
-    id: VaultsIntent.MORPHO_VAULT_INTENT,
-    name: 'Morpho Vault'
+    id: ExpertIntent.MORPHO_VAULT_INTENT,
+    name: 'Morpho Vault',
+    category: 'morpho-vaults'
   }
 ];
 
 export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.REWARDS_INTENT],
   IntentMapping[Intent.SAVINGS_INTENT],
-  IntentMapping[Intent.EXPERT_INTENT],
-  IntentMapping[Intent.VAULTS_INTENT]
+  IntentMapping[Intent.EXPERT_INTENT]
 ];
 
 const AvailableIntentMapping = Object.entries(IntentMapping).reduce(
@@ -180,7 +175,6 @@ export const linkedActionMetadata = {
   [IntentMapping[Intent.SEAL_INTENT]]: { text: 'Seal', icon: Seal },
   [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Activate', icon: Seal },
   [IntentMapping[Intent.EXPERT_INTENT]]: { text: 'Expert Modules', icon: Expert },
-  [IntentMapping[Intent.VAULTS_INTENT]]: { text: 'Vaults', icon: Vaults },
   [IntentMapping[Intent.CONVERT_INTENT]]: { text: 'Convert', icon: Convert }
 };
 

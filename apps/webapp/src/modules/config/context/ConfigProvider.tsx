@@ -2,7 +2,7 @@ import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } fr
 import { UserConfig } from '../types/user-config';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
-import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
+import { ConvertIntent, ExpertIntent } from '@/lib/enums';
 import { dynamicActivate } from '@jetstreamgg/sky-utils';
 import { i18n } from '@lingui/core';
 import {
@@ -23,7 +23,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
   const [externalLinkModalUrl, setExternalLinkModalUrl] = useState('');
   const [selectedExpertOption, setSelectedExpertOption] = useState<ExpertIntent | undefined>(undefined);
-  const [selectedVaultsOption, setSelectedVaultsOption] = useState<VaultsIntent | undefined>(undefined);
   const [selectedConvertOption, setSelectedConvertOption] = useState<ConvertIntent | undefined>(undefined);
 
   // Check the user settings on load, and set locale
@@ -151,8 +150,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         onExternalLinkClicked,
         selectedExpertOption,
         setSelectedExpertOption,
-        selectedVaultsOption,
-        setSelectedVaultsOption,
         selectedConvertOption,
         setSelectedConvertOption,
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,

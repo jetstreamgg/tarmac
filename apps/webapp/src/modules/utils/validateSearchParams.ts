@@ -8,10 +8,9 @@ import {
   mapQueryParamToIntent,
   COMING_SOON_MAP,
   ExpertIntentMapping,
-  VaultsIntentMapping,
   ConvertIntentMapping
 } from '@/lib/constants';
-import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
+import { ConvertIntent, ExpertIntent, Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { Chain } from 'viem';
@@ -26,11 +25,21 @@ export const validateSearchParams = (
   chains: readonly [Chain, ...Chain[]],
   setSelectedExpertOption: (expertOption: ExpertIntent | undefined) => void,
   expertRiskDisclaimerShown: boolean,
-  setSelectedVaultsOption: (vaultsOption: VaultsIntent | undefined) => void,
   setSelectedConvertOption: (convertOption: ConvertIntent | undefined) => void
 ) => {
   const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
   const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
+
+  // Backward compat: redirect ?widget=vaults to ?widget=expert
+  if (searchParams.get(QueryParams.Widget) === 'vaults') {
+    searchParams.set(QueryParams.Widget, IntentMapping[Intent.EXPERT_INTENT]);
+    // Translate vault_module to expert_module
+    const vaultModule = searchParams.get(QueryParams.VaultModule);
+    if (vaultModule) {
+      searchParams.set(QueryParams.ExpertModule, vaultModule);
+      searchParams.delete(QueryParams.VaultModule);
+    }
+  }
 
   searchParams.forEach((value, key) => {
     // removes any query param not found in QueryParams
@@ -116,42 +125,13 @@ export const validateSearchParams = (
       }
     }
 
-    // if widget changes to something other than advanced, and we're not in an advanced linked action, reset the selected advanced option
+    // if widget changes to something other than expert, and we're not in an expert linked action, reset the selected expert option
     if (
       widget !== IntentMapping[Intent.EXPERT_INTENT] &&
       searchParams.get(QueryParams.LinkedAction) !== IntentMapping[Intent.EXPERT_INTENT]
     ) {
       searchParams.delete(QueryParams.ExpertModule);
       setSelectedExpertOption(undefined);
-    }
-
-    // validates vaultModule param
-    if (key === QueryParams.VaultModule) {
-      const intent = Object.entries(VaultsIntentMapping).find(
-        ([, intentValue]) => intentValue === value
-      )?.[0] as VaultsIntent | undefined;
-      if (!intent) {
-        searchParams.delete(key);
-      } else {
-        setSelectedVaultsOption(intent);
-      }
-    }
-
-    // Reset the selected vault option if the widget is set to vaults and no valid vault option parameter exists.
-    if (widget === IntentMapping[Intent.VAULTS_INTENT]) {
-      if (!searchParams.get(QueryParams.VaultModule)) {
-        setSelectedVaultsOption(undefined);
-        searchParams.delete(QueryParams.InputAmount);
-      }
-    }
-
-    // if widget changes to something other than vaults, reset the selected vault option
-    if (
-      widget !== IntentMapping[Intent.VAULTS_INTENT] &&
-      searchParams.get(QueryParams.LinkedAction) !== IntentMapping[Intent.VAULTS_INTENT]
-    ) {
-      searchParams.delete(QueryParams.VaultModule);
-      setSelectedVaultsOption(undefined);
     }
 
     // validates convertModule param

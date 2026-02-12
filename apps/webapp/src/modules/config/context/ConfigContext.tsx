@@ -2,7 +2,7 @@ import { createContext } from 'react';
 import { SiteConfig } from '../types/site-config';
 import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
-import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
+import { ConvertIntent, ExpertIntent } from '@/lib/enums';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { SealToken } from '@/modules/seal/constants';
 import { StakeToken } from '@/modules/stake/constants';
@@ -84,8 +84,6 @@ export interface ConfigContextProps {
   onExternalLinkClicked: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   selectedExpertOption: ExpertIntent | undefined;
   setSelectedExpertOption: (intent: ExpertIntent | undefined) => void;
-  selectedVaultsOption: VaultsIntent | undefined;
-  setSelectedVaultsOption: (intent: VaultsIntent | undefined) => void;
   selectedConvertOption: ConvertIntent | undefined;
   setSelectedConvertOption: (intent: ConvertIntent | undefined) => void;
   expertRiskDisclaimerShown: boolean;
@@ -128,8 +126,6 @@ export const ConfigContext = createContext<ConfigContextProps>({
   onExternalLinkClicked: () => {},
   selectedExpertOption: undefined,
   setSelectedExpertOption: () => {},
-  selectedVaultsOption: undefined,
-  setSelectedVaultsOption: () => {},
   selectedConvertOption: undefined,
   setSelectedConvertOption: () => {},
   expertRiskDisclaimerShown: false,

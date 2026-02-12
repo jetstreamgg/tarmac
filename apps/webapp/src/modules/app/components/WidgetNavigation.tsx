@@ -227,6 +227,11 @@ export function WidgetNavigation({
                             <Trans>Soon</Trans>
                           </Text>
                         )}
+                        {widgetIntent === Intent.EXPERT_INTENT && (
+                          <span className="bg-textEmphasis rounded-full px-2 py-0.5 text-[10px] font-semibold leading-none text-white">
+                            <Trans>New</Trans>
+                          </span>
+                        )}
                       </Button>
                     ))
                   )}
@@ -308,6 +313,11 @@ export function WidgetNavigation({
                                 >
                                   <Trans>Soon</Trans>
                                 </Text>
+                              )}
+                              {widgetIntent === Intent.EXPERT_INTENT && (
+                                <span className="bg-textEmphasis absolute -top-1 -right-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white">
+                                  <Trans>New</Trans>
+                                </span>
                               )}
                             </TabsTrigger>
                           </WidgetMenuItemTooltip>

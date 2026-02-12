@@ -13,8 +13,8 @@ import { Token } from '@jetstreamgg/sky-hooks';
 import { AboutStUsds } from '@/modules/ui/components/AboutStUsds';
 import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
-import { VaultsIntentMapping } from '@/lib/constants';
-import { VaultsIntent } from '@/lib/enums';
+import { ExpertIntentMapping } from '@/lib/constants';
+import { ExpertIntent } from '@/lib/enums';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { filterActionsByIntent } from '@/lib/utils';
@@ -35,7 +35,7 @@ export function MorphoVaultDetails({
 }: MorphoVaultDetailsProps): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { linkedActionConfig } = useConfigContext();
-  const widget = VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT];
+  const widget = ExpertIntentMapping[ExpertIntent.MORPHO_VAULT_INTENT];
   const { data: actionData } = useUserSuggestedActions(undefined, widget);
 
   return (

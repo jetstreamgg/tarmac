@@ -70,7 +70,6 @@ export function SealMigrationApp() {
           chains,
           () => {},
           false,
-          () => {},
           () => {}
         );
         // Runs second validation for linked-action-specific criteria

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef } from 'react';
-import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
+import { ConvertIntent, ExpertIntent, Intent } from '@/lib/enums';
 import { TradeDetails } from '@/modules/trade/components/TradeDetails';
 import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
@@ -50,7 +50,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
-  const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
+  const { selectedExpertOption, selectedConvertOption } = useConfigContext();
   const chainId = useChainId();
   const [searchParams] = useSearchParams();
 
@@ -122,7 +122,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                 </MotionDetailsWrapper>
               );
             case Intent.EXPERT_INTENT:
-              // Switch for the multiple expert options
+              // Switch for the multiple expert options (including morpho vaults)
               switch (selectedExpertOption) {
                 case ExpertIntent.STUSDS_INTENT:
                   return (
@@ -130,16 +130,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                       <StUSDSDetails />
                     </MotionDetailsWrapper>
                   );
-                default:
-                  return (
-                    <MotionDetailsWrapper key={keys[6]}>
-                      <ExpertDetailsPane />
-                    </MotionDetailsWrapper>
-                  );
-              }
-            case Intent.VAULTS_INTENT:
-              switch (selectedVaultsOption) {
-                case VaultsIntent.MORPHO_VAULT_INTENT:
+                case ExpertIntent.MORPHO_VAULT_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[10]}>
                       <MorphoVaultDetails
@@ -151,7 +142,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   );
                 default:
                   return (
-                    <MotionDetailsWrapper key={keys[11]}>
+                    <MotionDetailsWrapper key={keys[6]}>
                       <ExpertDetailsPane />
                     </MotionDetailsWrapper>
                   );
