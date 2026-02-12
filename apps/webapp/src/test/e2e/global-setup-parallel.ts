@@ -678,23 +678,6 @@ export default async function globalSetup() {
         const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
         await Promise.all(fundingPromises);
 
-        // Increase stake module debt ceiling on mainnet to allow staking tests to borrow
-        if (networks.includes(NetworkName.mainnet)) {
-          console.log('\n5.5. Increasing stake module debt ceiling...');
-          try {
-            const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
-            // Set to 1 billion USDS in RAD format:
-            // 1 billion * 1e45 = 1e54 (RAD has 45 decimals, converts to 1e27 WAD = 1 billion * 1e18)
-            await updateStakeModuleDebtCeiling(
-              BigInt('1000000000000000000000000000000000000000000000000000000')
-            );
-            console.log('✅ Stake module debt ceiling increased to 1B USDS');
-          } catch (error) {
-            console.warn('⚠️  Failed to increase debt ceiling:', (error as Error).message);
-            console.warn('   Staking tests may fail due to insufficient borrow capacity');
-          }
-        }
-
         // Create snapshots after funding (for next run)
         console.log('\n6. Creating VNet snapshots after funding...');
         const snapshotPromises = networks.map(async network => {
@@ -708,6 +691,22 @@ export default async function globalSetup() {
         await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
         console.log(`✅ Snapshots saved to ${snapshotFile}`);
         console.log('💡 These snapshots will be used for all future test runs (instant setup!)');
+      }
+    }
+
+    // Step 6: Increase stake module debt ceiling on mainnet to allow staking tests to borrow.
+    // This must run every time (not just during funding) because pool snapshots
+    // may have been created without the debt ceiling increase.
+    // It's idempotent (just sets a storage slot) so safe to run from multiple shards.
+    if (networks.includes(NetworkName.mainnet)) {
+      console.log('\n6. Increasing stake module debt ceiling...');
+      try {
+        const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
+        await updateStakeModuleDebtCeiling(BigInt('1000000000000000000000000000000000000000000000000000000'));
+        console.log('✅ Stake module debt ceiling increased to 1B USDS');
+      } catch (error) {
+        console.warn('⚠️  Failed to increase debt ceiling:', (error as Error).message);
+        console.warn('   Staking tests may fail due to insufficient borrow capacity');
       }
     }
 
