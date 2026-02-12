@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL } from './constants';
@@ -24,12 +24,6 @@ export type VaultRateRaw = {
   asset: {
     decimals: number;
     symbol: string;
-  };
-};
-
-type MorphoVaultApiResponse = {
-  data: {
-    vaultV2ByAddress: VaultRateRaw | null;
   };
 };
 
@@ -75,36 +69,6 @@ export type MorphoVaultRateData = {
   /** Symbol of the vault's underlying asset */
   assetSymbol: string;
 };
-
-export type MorphoVaultRateHook = ReadHook & {
-  data?: MorphoVaultRateData;
-};
-
-const VAULT_RATE_QUERY = `
-  query VaultRate($address: String!, $chainId: Int!) {
-    vaultV2ByAddress(address: $address, chainId: $chainId) {
-      address
-      avgApy
-      avgNetApy
-      performanceFee
-      managementFee
-      totalAssetsUsd
-      rewards {
-        supplyApr
-        asset {
-          symbol
-          logoURI
-        }
-      }
-      liquidity
-      totalAssets
-      asset {
-        decimals
-        symbol
-      }
-    }
-  }
-`;
 
 const RATE_FIELDS = `
   address avgApy avgNetApy performanceFee managementFee totalAssetsUsd
@@ -158,75 +122,6 @@ export function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
   };
 }
 
-async function fetchMorphoVaultRate(
-  vaultAddress: string,
-  chainId: number
-): Promise<MorphoVaultRateData | undefined> {
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: VAULT_RATE_QUERY,
-      variables: {
-        address: vaultAddress.toLowerCase(),
-        chainId
-      }
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: MorphoVaultApiResponse = await response.json();
-
-  if (!result.data.vaultV2ByAddress) {
-    return undefined;
-  }
-
-  return parseVaultRateData(result.data.vaultV2ByAddress);
-}
-
-export function useMorphoVaultRateApiData({
-  vaultAddress
-}: {
-  vaultAddress?: `0x${string}`;
-}): MorphoVaultRateHook {
-  // Always use mainnet chainId since Morpho vaults are only on mainnet
-  // This ensures the query is cached across network switches
-  const chainId = mainnet.id;
-
-  const {
-    data,
-    error,
-    refetch: mutate,
-    isLoading
-  } = useQuery({
-    queryKey: ['morpho-vault-rate', vaultAddress, chainId],
-    queryFn: () => fetchMorphoVaultRate(vaultAddress!, chainId),
-    enabled: !!vaultAddress,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
-  });
-
-  return {
-    data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
-    mutate,
-    dataSources: [
-      {
-        title: 'Morpho API',
-        href: 'https://api.morpho.org/graphql',
-        onChain: false,
-        trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
-      }
-    ]
-  };
-}
-
 export type MorphoVaultMultipleRateHook = ReadHook & {
   data?: (MorphoVaultRateData | undefined)[];
 };
@@ -234,7 +129,7 @@ export type MorphoVaultMultipleRateHook = ReadHook & {
 /**
  * Hook for fetching rate data for multiple Morpho V2 vaults.
  *
- * Fetches all vaults in parallel and returns an array of rate data per vault,
+ * Fetches all vaults in a single batched request and returns an array of rate data per vault,
  * preserving the same order as the input addresses.
  *
  * @param vaultAddresses - Array of Morpho V2 vault contract addresses
@@ -245,7 +140,6 @@ export function useMorphoVaultMultipleRateApiData({
   vaultAddresses: `0x${string}`[];
 }): MorphoVaultMultipleRateHook {
   const chainId = mainnet.id;
-  const queryClient = useQueryClient();
 
   const {
     data,
@@ -256,14 +150,7 @@ export function useMorphoVaultMultipleRateApiData({
     queryKey: ['morpho-vault-rate-multiple', ...vaultAddresses, chainId],
     queryFn: async () => {
       const results = await fetchBatchedVaultData<VaultRateRaw>(vaultAddresses, RATE_FIELDS, chainId);
-      const parsed = results.map(r => (r ? parseVaultRateData(r) : undefined));
-      // Seed individual vault caches so detail pages get instant data
-      parsed.forEach((rateData, i) => {
-        if (rateData) {
-          queryClient.setQueryData(['morpho-vault-rate', vaultAddresses[i], chainId], rateData);
-        }
-      });
-      return parsed;
+      return results.map(r => (r ? parseVaultRateData(r) : undefined));
     },
     enabled: vaultAddresses.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes

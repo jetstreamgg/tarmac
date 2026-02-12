@@ -54,7 +54,10 @@ export const ExpertBalanceCard = ({
 
   // Calculate the higher rate between stUSDS and all Morpho vaults
   const stUsdsRate = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-  const morphoMaxRate = (morphoRatesData || []).reduce((max, rate) => Math.max(max, rate.netRate * 100), 0);
+  const morphoMaxRate = (morphoRatesData || []).reduce(
+    (max, rate) => Math.max(max, (rate?.netRate ?? 0) * 100),
+    0
+  );
   const maxRate = Math.max(stUsdsRate, morphoMaxRate);
 
   // Separate loading states: balance data vs rate data
