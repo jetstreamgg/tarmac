@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL } from './constants';
@@ -245,6 +245,7 @@ export function useMorphoVaultMultipleRateApiData({
   vaultAddresses: `0x${string}`[];
 }): MorphoVaultMultipleRateHook {
   const chainId = mainnet.id;
+  const queryClient = useQueryClient();
 
   const {
     data,
@@ -255,7 +256,14 @@ export function useMorphoVaultMultipleRateApiData({
     queryKey: ['morpho-vault-rate-multiple', ...vaultAddresses, chainId],
     queryFn: async () => {
       const results = await fetchBatchedVaultData<VaultRateRaw>(vaultAddresses, RATE_FIELDS, chainId);
-      return results.map(r => (r ? parseVaultRateData(r) : undefined));
+      const parsed = results.map(r => (r ? parseVaultRateData(r) : undefined));
+      // Seed individual vault caches so detail pages get instant data
+      parsed.forEach((rateData, i) => {
+        if (rateData) {
+          queryClient.setQueryData(['morpho-vault-rate', vaultAddresses[i], chainId], rateData);
+        }
+      });
+      return parsed;
     },
     enabled: vaultAddresses.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes

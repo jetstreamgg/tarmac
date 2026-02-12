@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChainId } from 'wagmi';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
@@ -157,6 +157,7 @@ export function useMorphoVaultMultipleChartInfo({
 }): MorphoVaultMultipleChartInfoHook {
   const currentChainId = useChainId();
   const chainId = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
+  const queryClient = useQueryClient();
 
   const {
     data,
@@ -174,9 +175,16 @@ export function useMorphoVaultMultipleChartInfo({
         }
       `;
       const results = await fetchBatchedVaultData<VaultHistoricalRaw>(vaultAddresses, historyFields, chainId);
-      return results.map(r =>
+      const parsed = results.map(r =>
         r ? transformMorphoChartData(r.historicalState.totalAssets, r.historicalState.avgNetApy) : []
       );
+      // Seed individual vault caches so detail pages get instant data
+      parsed.forEach((chartData, i) => {
+        if (chartData.length > 0) {
+          queryClient.setQueryData(['morpho-vault-chart', vaultAddresses[i], chainId], chartData);
+        }
+      });
+      return parsed;
     },
     enabled: vaultAddresses.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
