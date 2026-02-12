@@ -154,7 +154,7 @@ async function fetchMorphoVaultMarketData(
     formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`,
     formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
     formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
-    tvlUsd: totalAssetsUsd,
+    tvlUsd: vault.totalAssetsUsd,
     rewards: rewardsData
   };
 

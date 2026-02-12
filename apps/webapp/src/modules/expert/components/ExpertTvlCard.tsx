@@ -1,40 +1,33 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import {
-  useStUsdsData,
-  useMorphoVaultOnChainData,
-  usdsRiskCapitalVaultAddress
-} from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
+import { useStUsdsData, useMorphoVaultMultipleRateApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { formatNumber } from '@jetstreamgg/sky-utils';
+import { Text } from '@/modules/layout/components/Typography';
 import { mainnet } from 'viem/chains';
+import { useMemo } from 'react';
 
 export function ExpertTvlCard(): React.ReactElement {
   const { data: stUsdsData, isLoading: isStUsdsLoading, error: stUsdsError } = useStUsdsData();
   const {
-    data: morphoData,
+    data: morphoRateData,
     isLoading: isMorphoLoading,
     error: morphoError
-  } = useMorphoVaultOnChainData({
-    // Morpho API is mainnet-only
-    vaultAddress: usdsRiskCapitalVaultAddress[mainnet.id]
+  } = useMorphoVaultMultipleRateApiData({
+    vaultAddresses: MORPHO_VAULTS.map(v => v.vaultAddress[mainnet.id])
   });
 
-  const stUsdsTvl = stUsdsData?.totalAssets || 0n;
-  const morphoTvl = morphoData?.totalAssets || 0n;
+  const stUsdsTvl = Number(stUsdsData?.totalAssets || 0n) / 1e18;
+  const morphoTvl = useMemo(() => {
+    if (!morphoRateData) return 0;
+    return morphoRateData.reduce((sum, vault) => sum + vault.tvlUsd, 0);
+  }, [morphoRateData]);
   const totalTvl = stUsdsTvl + morphoTvl;
 
   return (
     <StatsCard
       className="h-full"
       title={t`Total TVL`}
-      content={
-        <TokenIconWithBalance
-          className="mt-2"
-          token={{ symbol: 'USDS', name: 'usds' }}
-          balance={formatBigInt(totalTvl, { unit: 18 })}
-        />
-      }
+      content={<Text className="mt-2">${formatNumber(totalTvl)}</Text>}
       isLoading={isStUsdsLoading || isMorphoLoading}
       error={stUsdsError || morphoError}
     />
