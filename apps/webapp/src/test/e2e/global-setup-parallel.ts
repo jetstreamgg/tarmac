@@ -583,17 +583,27 @@ export default async function globalSetup() {
 
     // If snapshots exist, revert to them instead of funding
     if (existingSnapshots) {
-      console.log('\n5. Reverting VNets to snapshots (restoring funded state)...');
-      const snapshots = existingSnapshots; // Store in const for TypeScript
-      const revertPromises = networks.map(network => {
-        const snapshotId = snapshots[network];
-        if (snapshotId) {
-          return revertToSnapshot(network, snapshotId);
-        }
-        return Promise.resolve();
-      });
-      await Promise.all(revertPromises);
-      console.log('✅ All VNets reverted to funded state - ready for tests!');
+      if (isSharded) {
+        // In shard mode, do NOT revert snapshots.
+        // The CI setup job already ensured VNets are in a funded state.
+        // Each shard uses its own account partition with unique, unused accounts,
+        // so reverting is unnecessary. Worse, reverting shared VNets while other
+        // shards are running would wipe their in-flight state.
+        console.log('\n5. Shard mode - skipping snapshot revert (accounts are pre-funded and partitioned)');
+        console.log(`   Shard ${shardIndex + 1}/${totalShards} will use its own account partition`);
+      } else {
+        console.log('\n5. Reverting VNets to snapshots (restoring funded state)...');
+        const snapshots = existingSnapshots; // Store in const for TypeScript
+        const revertPromises = networks.map(network => {
+          const snapshotId = snapshots[network];
+          if (snapshotId) {
+            return revertToSnapshot(network, snapshotId);
+          }
+          return Promise.resolve();
+        });
+        await Promise.all(revertPromises);
+        console.log('✅ All VNets reverted to funded state - ready for tests!');
+      }
     } else {
       // No snapshots - need to fund and create snapshots
       // In shard mode, only shard 1 should fund; others should wait
@@ -701,31 +711,42 @@ export async function globalTeardown() {
   console.log('=== Global Teardown ===');
 
   try {
-    // Step 1: Revert all VNets to snapshots (for next test run)
-    console.log('\n1. Reverting VNets to snapshots...');
+    // Detect shard mode
+    const totalShards = process.env.PLAYWRIGHT_SHARD_TOTAL ? parseInt(process.env.PLAYWRIGHT_SHARD_TOTAL) : 1;
+    const isSharded = totalShards > 1;
 
-    // Detect if we're running alternate VNet tests
-    const projectArg = process.argv.find(arg => arg.includes('--project'));
-    const isAlternateProject =
-      projectArg?.includes('chromium-alternate') || process.env.USE_ALTERNATE_VNET === 'true';
-    const snapshotFileName = isAlternateProject
-      ? 'persistent-vnet-snapshots-alternate.json'
-      : 'persistent-vnet-snapshots.json';
-    const snapshotFile = path.join(__dirname, snapshotFileName);
+    if (isSharded) {
+      // In shard mode, do NOT revert snapshots during teardown.
+      // Multiple shards share the same VNets - reverting would wipe other shards' state.
+      // Each shard uses unique accounts from its partition, so no cleanup is needed.
+      console.log('Shard mode - skipping snapshot revert (shared VNets, partitioned accounts)');
+    } else {
+      // Step 1: Revert all VNets to snapshots (for next test run)
+      console.log('\n1. Reverting VNets to snapshots...');
 
-    try {
-      const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
-      const snapshots = JSON.parse(snapshotData);
+      // Detect if we're running alternate VNet tests
+      const projectArg = process.argv.find(arg => arg.includes('--project'));
+      const isAlternateProject =
+        projectArg?.includes('chromium-alternate') || process.env.USE_ALTERNATE_VNET === 'true';
+      const snapshotFileName = isAlternateProject
+        ? 'persistent-vnet-snapshots-alternate.json'
+        : 'persistent-vnet-snapshots.json';
+      const snapshotFile = path.join(__dirname, snapshotFileName);
 
-      const revertPromises = Object.entries(snapshots).map(([network, snapshotId]) =>
-        revertToSnapshot(network as NetworkName, snapshotId as string)
-      );
+      try {
+        const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
+        const snapshots = JSON.parse(snapshotData);
 
-      await Promise.all(revertPromises);
-      console.log('✅ All VNets reverted to clean snapshots');
-      console.log('🎉 VNets are ready for next test run (no funding needed)!');
-    } catch (error) {
-      console.log('ℹ️  No snapshots to revert (first run or snapshots not created)', error);
+        const revertPromises = Object.entries(snapshots).map(([network, snapshotId]) =>
+          revertToSnapshot(network as NetworkName, snapshotId as string)
+        );
+
+        await Promise.all(revertPromises);
+        console.log('✅ All VNets reverted to clean snapshots');
+        console.log('🎉 VNets are ready for next test run (no funding needed)!');
+      } catch (error) {
+        console.log('ℹ️  No snapshots to revert (first run or snapshots not created)', error);
+      }
     }
 
     // Step 2: Reset the account pool to clean state
