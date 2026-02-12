@@ -13,7 +13,7 @@ on:
       shards:
         description: 'Number of shards'
         required: false
-        default: '4'
+        default: '8'
         type: string
       workers_per_shard:
         description: 'Workers per shard'
@@ -172,7 +172,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
 
     env:
       VITE_ENV_NAME: development
@@ -183,7 +183,7 @@ jobs:
       VITE_SKIP_CHAT_AUTH_CHECK: 'true'
       VITE_CHATBOT_ENABLED: 'true'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
-      PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '4' }}
+      PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '8' }}
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '1' }}
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
@@ -227,9 +227,9 @@ jobs:
           ls -lh apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
           echo "VNet files ready"
 
-      - name: Run E2E tests (Shard ${{ matrix.shard }}/${{ github.event.inputs.shards || '4' }})
+      - name: Run E2E tests (Shard ${{ matrix.shard }}/${{ github.event.inputs.shards || '8' }})
         run: |
-          echo "Running shard ${{ matrix.shard }} of ${{ github.event.inputs.shards || '4' }}"
+          echo "Running shard ${{ matrix.shard }} of ${{ github.event.inputs.shards || '8' }}"
           echo "Workers per shard: $TEST_WORKERS"
           echo "Pool status: ${{ needs.setup-pool.outputs.pool-ready }}"
 
@@ -276,7 +276,7 @@ jobs:
           echo "## E2E Test Summary (Pool)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Pool status**: ${{ needs.setup-pool.outputs.pool-ready }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total Shards**: ${{ github.event.inputs.shards || '4' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Shards**: ${{ github.event.inputs.shards || '8' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '1' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Networks**: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
