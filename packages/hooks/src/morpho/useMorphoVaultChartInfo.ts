@@ -5,18 +5,21 @@ import { mainnet } from 'viem/chains';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL, VAULT_V2_HISTORICAL_QUERY } from './constants';
+import { fetchBatchedVaultData } from './helpers';
+
+type VaultHistoricalRaw = {
+  historicalState: {
+    totalAssets: Array<{ x: number; y: string }>;
+    avgNetApy: Array<{ x: number; y: number }>;
+  };
+};
 
 /**
  * Raw API response type for Morpho V2 vault historical data.
  */
 type MorphoVaultHistoricalApiResponse = {
   data: {
-    vaultV2ByAddress: {
-      historicalState: {
-        totalAssets: Array<{ x: number; y: string }>;
-        avgNetApy: Array<{ x: number; y: number }>;
-      };
-    } | null;
+    vaultV2ByAddress: VaultHistoricalRaw | null;
   };
 };
 
@@ -162,7 +165,19 @@ export function useMorphoVaultMultipleChartInfo({
     isLoading
   } = useQuery({
     queryKey: ['morpho-vault-chart-multiple', ...vaultAddresses, chainId],
-    queryFn: () => Promise.all(vaultAddresses.map(addr => fetchMorphoVaultChartInfo(addr, chainId))),
+    queryFn: async () => {
+      const endTimestamp = Math.floor(Date.now() / 1000);
+      const historyFields = `
+        historicalState {
+          totalAssets(options: { startTimestamp: 0, endTimestamp: ${endTimestamp}, interval: DAY }) { x y }
+          avgNetApy(options: { startTimestamp: 0, endTimestamp: ${endTimestamp}, interval: DAY }) { x y }
+        }
+      `;
+      const results = await fetchBatchedVaultData<VaultHistoricalRaw>(vaultAddresses, historyFields, chainId);
+      return results.map(r =>
+        r ? transformMorphoChartData(r.historicalState.totalAssets, r.historicalState.avgNetApy) : []
+      );
+    },
     enabled: vaultAddresses.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes

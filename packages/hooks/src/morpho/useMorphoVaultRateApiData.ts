@@ -2,24 +2,27 @@ import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { MORPHO_API_URL } from './constants';
+import { fetchBatchedVaultData } from './helpers';
 import { mainnet } from 'viem/chains';
+
+type VaultRateRaw = {
+  address: string;
+  avgApy: number;
+  avgNetApy: number;
+  performanceFee: number;
+  managementFee: number;
+  rewards: {
+    supplyApr: number;
+    asset: {
+      symbol: string;
+      logoURI: string | null;
+    };
+  }[];
+};
 
 type MorphoVaultApiResponse = {
   data: {
-    vaultV2ByAddress: {
-      address: string;
-      avgApy: number;
-      avgNetApy: number;
-      performanceFee: number;
-      managementFee: number;
-      rewards: {
-        supplyApr: number;
-        asset: {
-          symbol: string;
-          logoURI: string | null;
-        };
-      }[];
-    } | null;
+    vaultV2ByAddress: VaultRateRaw | null;
   };
 };
 
@@ -79,35 +82,13 @@ const VAULT_RATE_QUERY = `
   }
 `;
 
-async function fetchMorphoVaultRate(
-  vaultAddress: string,
-  chainId: number
-): Promise<MorphoVaultRateData | undefined> {
-  const response = await fetch(MORPHO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: VAULT_RATE_QUERY,
-      variables: {
-        address: vaultAddress.toLowerCase(),
-        chainId
-      }
-    })
-  });
+const RATE_FIELDS = `
+  address avgApy avgNetApy performanceFee managementFee
+  rewards { supplyApr asset { symbol logoURI } }
+`;
 
-  if (!response.ok) {
-    throw new Error(`Morpho API error: ${response.status}`);
-  }
-
-  const result: MorphoVaultApiResponse = await response.json();
-
-  if (!result.data.vaultV2ByAddress) {
-    return undefined;
-  }
-
-  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = result.data.vaultV2ByAddress;
+function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
+  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = raw;
 
   // Transform rewards data (supplyApr is already a decimal, e.g., 0.0026 for 0.26%)
   // Aggregate rewards by symbol and filter out 0% APY rewards
@@ -144,6 +125,37 @@ async function fetchMorphoVaultRate(
     formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
     rewards: rewardsData
   };
+}
+
+async function fetchMorphoVaultRate(
+  vaultAddress: string,
+  chainId: number
+): Promise<MorphoVaultRateData | undefined> {
+  const response = await fetch(MORPHO_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      query: VAULT_RATE_QUERY,
+      variables: {
+        address: vaultAddress.toLowerCase(),
+        chainId
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Morpho API error: ${response.status}`);
+  }
+
+  const result: MorphoVaultApiResponse = await response.json();
+
+  if (!result.data.vaultV2ByAddress) {
+    return undefined;
+  }
+
+  return parseVaultRateData(result.data.vaultV2ByAddress);
 }
 
 export function useMorphoVaultRateApiData({
@@ -210,10 +222,10 @@ export function useMorphoVaultMultipleRateApiData({
     isLoading
   } = useQuery({
     queryKey: ['morpho-vault-rate-multiple', ...vaultAddresses, chainId],
-    queryFn: () =>
-      Promise.all(vaultAddresses.map(addr => fetchMorphoVaultRate(addr, chainId))).then(results =>
-        results.filter((r): r is MorphoVaultRateData => r !== undefined)
-      ),
+    queryFn: async () => {
+      const results = await fetchBatchedVaultData<VaultRateRaw>(vaultAddresses, RATE_FIELDS, chainId);
+      return results.filter((r): r is VaultRateRaw => r !== null).map(parseVaultRateData);
+    },
     enabled: vaultAddresses.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes

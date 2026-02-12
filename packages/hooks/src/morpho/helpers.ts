@@ -9,6 +9,47 @@ import {
 import type { MorphoVaultV1BasicDataApiResponse } from './morpho';
 
 /**
+ * Build a batched GraphQL query using aliases.
+ * Combines multiple vaultV2ByAddress queries into a single HTTP request,
+ * reducing N round-trips to 1.
+ *
+ * @param addresses - Array of vault addresses to query
+ * @param fields - GraphQL fields to select for each vault
+ * @param chainId - Chain ID to query against
+ * @returns Array of results in the same order as the input addresses (null for missing vaults)
+ */
+export async function fetchBatchedVaultData<T>(
+  addresses: string[],
+  fields: string,
+  chainId: number
+): Promise<(T | null)[]> {
+  if (addresses.length === 0) return [];
+
+  const aliasedQueries = addresses
+    .map(
+      (addr, i) =>
+        `vault${i}: vaultV2ByAddress(address: "${addr.toLowerCase()}", chainId: ${chainId}) { ${fields} }`
+    )
+    .join('\n');
+
+  const query = `query BatchVaultData { ${aliasedQueries} }`;
+
+  const response = await fetch(MORPHO_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Morpho API error: ${response.status}`);
+  }
+
+  const result: { data: Record<string, T | null> } = await response.json();
+
+  return addresses.map((_, i) => result.data[`vault${i}`] ?? null);
+}
+
+/**
  * Read the underlying V1 vault address from a MorphoVaultV1Adapter contract.
  */
 export async function readV1VaultFromAdapter(
