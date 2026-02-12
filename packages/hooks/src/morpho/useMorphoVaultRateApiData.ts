@@ -5,7 +5,7 @@ import { MORPHO_API_URL } from './constants';
 import { fetchBatchedVaultData } from './helpers';
 import { mainnet } from 'viem/chains';
 
-type VaultRateRaw = {
+export type VaultRateRaw = {
   address: string;
   avgApy: number;
   avgNetApy: number;
@@ -113,7 +113,7 @@ const RATE_FIELDS = `
   asset { decimals symbol }
 `;
 
-function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
+export function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
   const { avgApy, avgNetApy, managementFee, performanceFee, totalAssetsUsd, rewards } = raw;
 
   // Transform rewards data (supplyApr is already a decimal, e.g., 0.0026 for 0.26%)
@@ -228,7 +228,7 @@ export function useMorphoVaultRateApiData({
 }
 
 export type MorphoVaultMultipleRateHook = ReadHook & {
-  data?: MorphoVaultRateData[];
+  data?: (MorphoVaultRateData | undefined)[];
 };
 
 /**
@@ -255,7 +255,7 @@ export function useMorphoVaultMultipleRateApiData({
     queryKey: ['morpho-vault-rate-multiple', ...vaultAddresses, chainId],
     queryFn: async () => {
       const results = await fetchBatchedVaultData<VaultRateRaw>(vaultAddresses, RATE_FIELDS, chainId);
-      return results.filter((r): r is VaultRateRaw => r !== null).map(parseVaultRateData);
+      return results.map(r => (r ? parseVaultRateData(r) : undefined));
     },
     enabled: vaultAddresses.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes

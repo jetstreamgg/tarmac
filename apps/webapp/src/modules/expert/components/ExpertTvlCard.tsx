@@ -4,8 +4,6 @@ import { useStUsdsData, useMorphoVaultMultipleRateApiData, MORPHO_VAULTS } from 
 import { formatNumber } from '@jetstreamgg/sky-utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { mainnet } from 'viem/chains';
-import { useMemo } from 'react';
-
 export function ExpertTvlCard(): React.ReactElement {
   const { data: stUsdsData, isLoading: isStUsdsLoading, error: stUsdsError } = useStUsdsData();
   const {
@@ -17,10 +15,7 @@ export function ExpertTvlCard(): React.ReactElement {
   });
 
   const stUsdsTvl = Number(stUsdsData?.totalAssets || 0n) / 1e18;
-  const morphoTvl = useMemo(() => {
-    if (!morphoRateData) return 0;
-    return morphoRateData.reduce((sum, vault) => sum + vault.tvlUsd, 0);
-  }, [morphoRateData]);
+  const morphoTvl = morphoRateData?.reduce((sum, vault) => sum + (vault?.tvlUsd ?? 0), 0) ?? 0;
   const totalTvl = stUsdsTvl + morphoTvl;
 
   return (

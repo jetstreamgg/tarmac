@@ -9,7 +9,7 @@ import type {
   MorphoMarketAllocation,
   MorphoVaultAllocationsData
 } from './morpho';
-import type { MorphoRewardData, MorphoVaultRateData } from './useMorphoVaultRateApiData';
+import { parseVaultRateData, type VaultRateRaw, type MorphoVaultRateData } from './useMorphoVaultRateApiData';
 
 /**
  * Cap item from the Morpho API. For MarketV1 caps, `data.market` contains market info.
@@ -41,31 +41,15 @@ type CapItem = {
  */
 type MorphoVaultMarketApiResponse = {
   data: {
-    vaultV2ByAddress: {
-      avgApy: number;
-      avgNetApy: number;
-      performanceFee: number;
-      managementFee: number;
-      rewards: {
-        supplyApr: number;
-        asset: {
-          symbol: string;
-          logoURI: string | null;
-        };
-      }[];
-      totalAssets: string;
-      totalAssetsUsd: number;
-      idleAssets: number | string;
-      idleAssetsUsd: number;
-      liquidity: string;
-      asset: {
-        decimals: number;
-        symbol: string;
-      };
-      caps: {
-        items: CapItem[];
-      };
-    } | null;
+    vaultV2ByAddress:
+      | (VaultRateRaw & {
+          idleAssets: number | string;
+          idleAssetsUsd: number;
+          caps: {
+            items: CapItem[];
+          };
+        })
+      | null;
   };
 };
 
@@ -120,47 +104,7 @@ async function fetchMorphoVaultMarketData(
 
   const vault = result.data.vaultV2ByAddress;
 
-  // --- Process rate data ---
-  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = vault;
-
-  const rewardsMap = new Map<string, { apy: number; logoUri: string | null }>();
-  for (const reward of rewards || []) {
-    if (reward.supplyApr > 0) {
-      const existing = rewardsMap.get(reward.asset.symbol);
-      if (existing) {
-        existing.apy += reward.supplyApr;
-      } else {
-        rewardsMap.set(reward.asset.symbol, {
-          apy: reward.supplyApr,
-          logoUri: reward.asset.logoURI
-        });
-      }
-    }
-  }
-
-  const rewardsData: MorphoRewardData[] = Array.from(rewardsMap.entries()).map(([symbol, data]) => ({
-    apy: data.apy,
-    formattedApy: `+${(data.apy * 100).toFixed(2)}%`,
-    symbol,
-    logoUri: data.logoUri
-  }));
-
-  const rateData: MorphoVaultRateData = {
-    rate: avgApy,
-    netRate: avgNetApy,
-    managementFee,
-    performanceFee,
-    formattedRate: `${(avgApy * 100).toFixed(2)}%`,
-    formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`,
-    formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
-    formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
-    tvlUsd: vault.totalAssetsUsd,
-    rewards: rewardsData,
-    liquidity: BigInt(vault.liquidity),
-    totalAssets: BigInt(vault.totalAssets),
-    assetDecimals: vault.asset.decimals,
-    assetSymbol: vault.asset.symbol
-  };
+  const rateData: MorphoVaultRateData = parseVaultRateData(vault);
 
   // --- Process allocation data ---
   const { totalAssets, totalAssetsUsd, idleAssets, idleAssetsUsd, asset } = vault;
