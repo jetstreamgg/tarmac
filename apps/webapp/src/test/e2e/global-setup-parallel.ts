@@ -512,39 +512,47 @@ export default async function globalSetup() {
       console.log('\n3. ✅ Found existing VNet snapshots!');
       console.log('   Snapshots:', existingSnapshots ? Object.keys(existingSnapshots).join(', ') : 'none');
 
-      // Validate snapshots before using them
-      console.log('\n   🔍 Validating snapshots...');
-      const validationResult = await validateVnets();
-
-      if (validationResult.healthy) {
-        console.log('   ✅ All snapshots valid - will revert to snapshots');
+      if (isSharded) {
+        // In shard mode, skip validation entirely.
+        // The CI setup job already validated VNets before shards started.
+        // Running validateVnets() here would call evm_revert on shared VNets,
+        // potentially corrupting other shards' in-flight state.
+        console.log('   Shard mode - skipping validation (CI setup job already validated)');
       } else {
-        console.log('   ❌ Validation failed - will recreate snapshots by funding accounts');
+        // Validate snapshots before using them
+        console.log('\n   🔍 Validating snapshots...');
+        const validationResult = await validateVnets();
 
-        // Check if validation failed due to VNet not found (expired/deleted)
-        const vnetNotFound = validationResult.results.some(r =>
-          r.errors.some(e => e.includes('not accessible') || e.includes('not found'))
-        );
+        if (validationResult.healthy) {
+          console.log('   ✅ All snapshots valid - will revert to snapshots');
+        } else {
+          console.log('   ❌ Validation failed - will recreate snapshots by funding accounts');
 
-        if (vnetNotFound) {
-          console.log('   ⚠️  VNets appear to be expired/deleted - clearing cache files');
-          try {
-            // Delete both cache files to force VNet recreation
-            await fs
-              .unlink(path.join(__dirname, '..', '..', '..', 'tenderlyTestnetData.json'))
-              .catch(() => {});
-            await fs.unlink(snapshotFile).catch(() => {});
-            console.log('   🗑️  Deleted stale VNet cache files');
-            console.log('   💡 You need to recreate VNets using: pnpm vnet:fork:ci');
-            throw new Error('VNets expired - please recreate them with: pnpm vnet:fork:ci');
-          } catch (error) {
-            if (error instanceof Error && error.message.includes('VNets expired')) {
-              throw error;
+          // Check if validation failed due to VNet not found (expired/deleted)
+          const vnetNotFound = validationResult.results.some(r =>
+            r.errors.some(e => e.includes('not accessible') || e.includes('not found'))
+          );
+
+          if (vnetNotFound) {
+            console.log('   ⚠️  VNets appear to be expired/deleted - clearing cache files');
+            try {
+              // Delete both cache files to force VNet recreation
+              await fs
+                .unlink(path.join(__dirname, '..', '..', '..', 'tenderlyTestnetData.json'))
+                .catch(() => {});
+              await fs.unlink(snapshotFile).catch(() => {});
+              console.log('   🗑️  Deleted stale VNet cache files');
+              console.log('   💡 You need to recreate VNets using: pnpm vnet:fork:ci');
+              throw new Error('VNets expired - please recreate them with: pnpm vnet:fork:ci');
+            } catch (error) {
+              if (error instanceof Error && error.message.includes('VNets expired')) {
+                throw error;
+              }
             }
           }
-        }
 
-        existingSnapshots = null; // Force refunding
+          existingSnapshots = null; // Force refunding
+        }
       }
     } catch {
       console.log('\n3. No existing snapshots found - will fund accounts and create snapshots');
