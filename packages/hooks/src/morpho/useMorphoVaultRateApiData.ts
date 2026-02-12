@@ -11,6 +11,7 @@ type VaultRateRaw = {
   avgNetApy: number;
   performanceFee: number;
   managementFee: number;
+  totalAssetsUsd: number;
   rewards: {
     supplyApr: number;
     asset: {
@@ -55,6 +56,8 @@ export type MorphoVaultRateData = {
   formattedManagementFee: string;
   /** Formatted performance fee for display (e.g., "0%") */
   formattedPerformanceFee: string;
+  /** Total vault TVL in USD */
+  tvlUsd: number;
   /** Rewards/incentives data */
   rewards: MorphoRewardData[];
 };
@@ -71,6 +74,7 @@ const VAULT_RATE_QUERY = `
       avgNetApy
       performanceFee
       managementFee
+      totalAssetsUsd
       rewards {
         supplyApr
         asset {
@@ -83,12 +87,12 @@ const VAULT_RATE_QUERY = `
 `;
 
 const RATE_FIELDS = `
-  address avgApy avgNetApy performanceFee managementFee
+  address avgApy avgNetApy performanceFee managementFee totalAssetsUsd
   rewards { supplyApr asset { symbol logoURI } }
 `;
 
 function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
-  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = raw;
+  const { avgApy, avgNetApy, managementFee, performanceFee, totalAssetsUsd, rewards } = raw;
 
   // Transform rewards data (supplyApr is already a decimal, e.g., 0.0026 for 0.26%)
   // Aggregate rewards by symbol and filter out 0% APY rewards
@@ -123,6 +127,7 @@ function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
     formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`,
     formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
     formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
+    tvlUsd: totalAssetsUsd,
     rewards: rewardsData
   };
 }
