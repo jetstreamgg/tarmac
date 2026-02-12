@@ -12,13 +12,18 @@ import { useSearchParams } from 'react-router-dom';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 import { MorphoVaultStatsCard } from './MorphoVaultStatsCard';
-import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { MORPHO_VAULTS, useMorphoVaultMultipleRateApiData } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
+import { mainnet } from 'viem/chains';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
   const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
+
+  // Fetch rate data for all Morpho vaults in a single batched request
+  const vaultAddresses = MORPHO_VAULTS.map(v => v.vaultAddress[mainnet.id]);
+  const { data: rateData, isLoading: rateLoading } = useMorphoVaultMultipleRateApiData({ vaultAddresses });
 
   // Get the selected vault address from URL params (for multi-vault support)
   const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
@@ -96,15 +101,17 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
                     );
                   case ExpertIntent.MORPHO_VAULT_INTENT:
                     // Render a card for each Morpho vault
-                    return MORPHO_VAULTS.map(vault => {
+                    return MORPHO_VAULTS.map((vault, index) => {
                       const vaultAddressForChain = vault.vaultAddress[chainId];
                       if (!vaultAddressForChain) return null;
                       return (
                         <MorphoVaultStatsCard
                           key={vaultAddressForChain}
-                          vaultAddress={vault.vaultAddress}
+                          vaultAddress={vaultAddressForChain}
                           vaultName={vault.name}
                           assetToken={vault.assetToken}
+                          data={rateData?.[index]}
+                          isLoading={rateLoading}
                           onClick={() => handleSelectMorphoVault(vaultAddressForChain)}
                           disabled={!expertRiskDisclaimerShown}
                         />

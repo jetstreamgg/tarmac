@@ -19,6 +19,12 @@ type VaultRateRaw = {
       logoURI: string | null;
     };
   }[];
+  liquidity: string;
+  totalAssets: string;
+  asset: {
+    decimals: number;
+    symbol: string;
+  };
 };
 
 type MorphoVaultApiResponse = {
@@ -60,6 +66,14 @@ export type MorphoVaultRateData = {
   tvlUsd: number;
   /** Rewards/incentives data */
   rewards: MorphoRewardData[];
+  /** Available liquidity in the vault (native units) */
+  liquidity: bigint;
+  /** Total assets deposited in the vault (native units) */
+  totalAssets: bigint;
+  /** Decimals of the vault's underlying asset */
+  assetDecimals: number;
+  /** Symbol of the vault's underlying asset */
+  assetSymbol: string;
 };
 
 export type MorphoVaultRateHook = ReadHook & {
@@ -82,6 +96,12 @@ const VAULT_RATE_QUERY = `
           logoURI
         }
       }
+      liquidity
+      totalAssets
+      asset {
+        decimals
+        symbol
+      }
     }
   }
 `;
@@ -89,6 +109,8 @@ const VAULT_RATE_QUERY = `
 const RATE_FIELDS = `
   address avgApy avgNetApy performanceFee managementFee totalAssetsUsd
   rewards { supplyApr asset { symbol logoURI } }
+  liquidity totalAssets
+  asset { decimals symbol }
 `;
 
 function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
@@ -128,7 +150,11 @@ function parseVaultRateData(raw: VaultRateRaw): MorphoVaultRateData {
     formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
     formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
     tvlUsd: totalAssetsUsd,
-    rewards: rewardsData
+    rewards: rewardsData,
+    liquidity: BigInt(raw.liquidity),
+    totalAssets: BigInt(raw.totalAssets),
+    assetDecimals: raw.asset.decimals,
+    assetSymbol: raw.asset.symbol
   };
 }
 

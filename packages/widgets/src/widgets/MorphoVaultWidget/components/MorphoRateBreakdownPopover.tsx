@@ -5,20 +5,28 @@ import { TextPaper } from '@widgets/shared/components/icons/TextPaper';
 import { Sparkles } from '@widgets/shared/components/icons/Sparkles';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
-import { useMorphoVaultMarketApiData } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultMarketApiData, type MorphoVaultRateData } from '@jetstreamgg/sky-hooks';
 import { Trans } from '@lingui/react/macro';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
 
 export function MorphoRateBreakdownPopover({
   vaultAddress,
-  tooltipIconClassName
+  tooltipIconClassName,
+  rateData: externalRateData,
+  isLoading: externalIsLoading
 }: {
   vaultAddress: `0x${string}`;
   tooltipIconClassName?: string;
+  rateData?: MorphoVaultRateData;
+  isLoading?: boolean;
 }) {
-  const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
-  const rateData = marketData?.rate;
+  const parentManagesData = externalIsLoading !== undefined;
+  const { data: marketData, isLoading: hookIsLoading } = useMorphoVaultMarketApiData({
+    vaultAddress: parentManagesData ? undefined : vaultAddress
+  });
+  const rateData = externalRateData ?? marketData?.rate;
+  const isLoading = parentManagesData ? (externalIsLoading ?? false) : hookIsLoading;
   const formattedNetRate = rateData?.formattedNetRate || '0.00%';
 
   if (isLoading) return <Skeleton className="bg-textSecondary h-6 w-20" />;

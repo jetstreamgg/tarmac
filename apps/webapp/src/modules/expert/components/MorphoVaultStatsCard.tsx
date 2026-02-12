@@ -1,24 +1,20 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import {
-  useMorphoVaultOnChainData,
-  Token,
-  getTokenDecimals,
-  useMorphoVaultMarketApiData
-} from '@jetstreamgg/sky-hooks';
+import { Token, type MorphoVaultRateData } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useChainId } from 'wagmi';
 import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
 import { Trans } from '@lingui/react/macro';
 
 type MorphoVaultStatsCardProps = {
-  vaultAddress: Record<number, `0x${string}`>;
+  vaultAddress: `0x${string}`;
   vaultName: string;
   assetToken: Token;
+  data?: MorphoVaultRateData;
+  isLoading: boolean;
   onClick?: () => void;
   disabled?: boolean;
 };
@@ -27,29 +23,12 @@ export const MorphoVaultStatsCard = ({
   vaultAddress,
   vaultName,
   assetToken,
+  data,
+  isLoading,
   onClick,
   disabled = false
 }: MorphoVaultStatsCardProps) => {
-  const chainId = useChainId();
-  const assetDecimals = getTokenDecimals(assetToken, chainId);
-
-  const currentVaultAddress = vaultAddress[chainId];
-
-  // Hooks for Morpho vault data
-  const { data: vaultData, isLoading: vaultLoading } = useMorphoVaultOnChainData({
-    vaultAddress: currentVaultAddress
-  });
-
-  const { data: marketData, isLoading: marketDataLoading } = useMorphoVaultMarketApiData({
-    vaultAddress: currentVaultAddress
-  });
-
-  // Data handling
-  const totalAssets = vaultData?.totalAssets || 0n;
-
-  if (!currentVaultAddress) {
-    return null;
-  }
+  const assetDecimals = data?.assetDecimals ?? 18;
 
   return (
     <Card
@@ -66,7 +45,12 @@ export const MorphoVaultStatsCard = ({
         </HStack>
 
         {/* Right side - Rate */}
-        <MorphoRateBreakdownPopover vaultAddress={currentVaultAddress} tooltipIconClassName="w-3 h-3" />
+        <MorphoRateBreakdownPopover
+          vaultAddress={vaultAddress}
+          tooltipIconClassName="w-3 h-3"
+          rateData={data}
+          isLoading={isLoading}
+        />
       </CardHeader>
 
       <CardContent className="mt-5 p-0">
@@ -76,12 +60,11 @@ export const MorphoVaultStatsCard = ({
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>Liquidity</Trans>
             </Text>
-            {marketDataLoading ? (
+            {isLoading ? (
               <Skeleton className="bg-textSecondary h-6 w-21" />
-            ) : marketData?.liquidity !== undefined ? (
+            ) : data?.liquidity !== undefined ? (
               <Text dataTestId="morpho-vault-tvl">
-                {formatBigInt(marketData.liquidity, { unit: assetDecimals, compact: true })}{' '}
-                {assetToken.symbol}
+                {formatBigInt(data.liquidity, { unit: assetDecimals, compact: true })} {assetToken.symbol}
               </Text>
             ) : (
               <Text dataTestId="morpho-vault-tvl">—</Text>
@@ -92,14 +75,16 @@ export const MorphoVaultStatsCard = ({
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>TVL</Trans>
             </Text>
-            {vaultLoading ? (
+            {isLoading ? (
               <div className="flex justify-end">
                 <Skeleton className="bg-textSecondary h-6 w-30" />
               </div>
-            ) : (
+            ) : data?.totalAssets !== undefined ? (
               <Text dataTestId="morpho-vault-tvl">
-                {formatBigInt(totalAssets, { unit: assetDecimals, compact: true })} {assetToken.symbol}
+                {formatBigInt(data.totalAssets, { unit: assetDecimals, compact: true })} {assetToken.symbol}
               </Text>
+            ) : (
+              <Text dataTestId="morpho-vault-tvl">—</Text>
             )}
           </VStack>
         </HStack>

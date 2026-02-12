@@ -155,7 +155,11 @@ async function fetchMorphoVaultMarketData(
     formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
     formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
     tvlUsd: vault.totalAssetsUsd,
-    rewards: rewardsData
+    rewards: rewardsData,
+    liquidity: BigInt(vault.liquidity),
+    totalAssets: BigInt(vault.totalAssets),
+    assetDecimals: vault.asset.decimals,
+    assetSymbol: vault.asset.symbol
   };
 
   // --- Process allocation data ---
