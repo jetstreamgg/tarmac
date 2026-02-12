@@ -61,13 +61,19 @@ export function sanitizeUrl(url: string | undefined) {
   if (!url) return undefined;
   try {
     const parsedUrl = new URL(url);
-    // Ensure that the url begins with 'https:'
-    if (parsedUrl.protocol !== 'https:') {
+
+    // Allow localhost in development for local API testing
+    const isLocalDev =
+      import.meta.env.DEV && (parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1');
+
+    // Ensure that the url begins with 'https:' (except localhost in dev)
+    if (parsedUrl.protocol !== 'https:' && !isLocalDev) {
       return undefined;
     }
 
-    // Check if the domain is in the allowed list. Check for subdomains too
+    // Check if the domain is in the allowed list. Check for subdomains too (except localhost in dev)
     if (
+      !isLocalDev &&
       !ALLOWED_EXTERNAL_DOMAINS.some(
         domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
       )
