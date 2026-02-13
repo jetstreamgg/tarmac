@@ -65,7 +65,8 @@ export default defineConfig({
         '**/pane-visibility.spec.ts',
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
-        '**/capped-osm-unstake.spec.ts'
+        '**/capped-osm-unstake.spec.ts',
+        '**/analytics.spec.ts'
       ]
     },
     {
@@ -81,7 +82,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `VITE_PARALLEL_TEST=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
+    command: `VITE_ANALYTICS_DEBUG=true VITE_PARALLEL_TEST=true ${process.env.USE_ALTERNATE_VNET === 'true' ? 'VITE_USE_ALTERNATE_VNET=true ' : ''}pnpm dev:mock`,
     port: 3000,
     timeout: 120000,
     reuseExistingServer: !process.env.CI,
