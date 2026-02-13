@@ -18,7 +18,7 @@ on:
       workers_per_shard:
         description: 'Workers per shard'
         required: false
-        default: '1'
+        default: '2'
         type: string
       networks:
         description: 'Networks to test (comma-separated)'
@@ -184,7 +184,7 @@ jobs:
       VITE_CHATBOT_ENABLED: 'true'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
       PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '8' }}
-      TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '1' }}
+      TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '2' }}
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
     steps:
@@ -277,7 +277,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Pool status**: ${{ needs.setup-pool.outputs.pool-ready }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Total Shards**: ${{ github.event.inputs.shards || '8' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '1' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '2' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Networks**: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
