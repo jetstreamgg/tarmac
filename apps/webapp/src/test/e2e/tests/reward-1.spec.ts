@@ -111,7 +111,7 @@ test.skip('Balances change after successfully supplying and withdrawing', async 
     // await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // await isolatedPage.waitForTimeout(1000);
     // await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-    // await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+    // await isolatedPage.getByText('With: USDS Get: SPK').first().click();
     // supply again
     await isolatedPage.getByTestId('supply-input-rewards').fill('2');
     await performAction(isolatedPage, 'Supply');
@@ -173,7 +173,7 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   await isolatedPage.getByTestId('supply-input-rewards').fill(supplyAmount.toString());
   await isolatedPage.getByRole('button', { name: 'Review' }).click();
@@ -194,7 +194,7 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   await isolatedPage.getByTestId('supply-input-rewards').fill('10');
   await isolatedPage.getByRole('button', { name: 'Review' }).click();
