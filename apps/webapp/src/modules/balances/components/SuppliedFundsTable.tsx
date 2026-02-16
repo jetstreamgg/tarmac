@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { formatUnits } from 'viem';
 import { Fragment, useMemo } from 'react';
+import { MODULE_ICONS } from '../constants';
 
 type SuppliedFundsTableProps = {
   chainIds?: number[];
@@ -239,7 +240,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
     <SuppliedFundsTableRow
       data={{
         tokenSymbol: 'USDS',
-        moduleIcon: <img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-5 w-5" />,
+        moduleIcon: <img src={MODULE_ICONS['Rewards']} alt="Rewards" className="h-5 w-5" />,
         moduleName: 'Rewards',
         amount: totalUserRewardsSupplied,
         decimals: 18,
@@ -294,7 +295,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
       data={{
         tokenSymbol: 'SKY',
         moduleIcon: (
-          <img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-5 w-5" />
+          <img src={MODULE_ICONS['Staking Engine']} alt="Staking Engine" className="h-5 w-5" />
         ),
         moduleName: 'Staking Engine',
         amount: totalUserStaked ?? 0n,
