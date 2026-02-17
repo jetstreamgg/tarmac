@@ -406,5 +406,5 @@ export { useIsBatchSupported } from './shared/useIsBatchSupported';
 
 // Claims (Claim All Rewards)
 export { useClaimableRewards } from './claims';
-export { useClaimRewards as useClaimSelectedRewards } from './claims';
+export { useExecuteCalls } from './shared/useExecuteCalls';
 export type { ClaimableReward, ClaimableRewardModule, UseClaimableRewardsResponse } from './claims';

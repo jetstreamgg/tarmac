@@ -5,12 +5,7 @@ import { TransactionModal, TransactionModalScreen } from '@/modules/ui/component
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  useClaimSelectedRewards,
-  useIsBatchSupported,
-  TOKENS,
-  type ClaimableReward
-} from '@jetstreamgg/sky-hooks';
+import { useExecuteCalls, useIsBatchSupported, TOKENS, type ClaimableReward } from '@jetstreamgg/sky-hooks';
 import { formatNumber } from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
 import { MODULE_ICONS } from '../constants';
@@ -36,7 +31,7 @@ export function ClaimRewardsModal({
 
   const calls = selectedRewards.map(r => r.call);
 
-  const { execute, prepared, isLoading, error } = useClaimSelectedRewards({
+  const { execute, prepared, isLoading, error } = useExecuteCalls({
     calls,
     shouldUseBatch: batchEnabled,
     enabled: open && screen !== TransactionModalScreen.SUCCESS,
