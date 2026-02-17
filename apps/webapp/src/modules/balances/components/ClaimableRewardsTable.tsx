@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, type ReactNode } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export function ClaimableRewardsTable() {
   }
 
   if (isLoading && rewards.length === 0) {
+    // if (true) {
     return <LoadingClaimableRewardsTable />;
   }
 
@@ -61,36 +62,11 @@ export function ClaimableRewardsTable() {
     <>
       <div className="@container">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]">
-                <Checkbox
-                  checked={someSelected ? 'indeterminate' : allSelected}
-                  onCheckedChange={toggleAll}
-                />
-              </TableHead>
-              <TableHead className="w-1/4">
-                <Text variant="small" className="text-selectActive">
-                  <Trans>Module</Trans>
-                </Text>
-              </TableHead>
-              <TableHead className="w-1/4">
-                <Text variant="small" className="text-selectActive">
-                  <Trans>Reward Token</Trans>
-                </Text>
-              </TableHead>
-              <TableHead className="w-1/4">
-                <Text variant="small" className="text-selectActive">
-                  <Trans>Amount</Trans>
-                </Text>
-              </TableHead>
-              <TableHead className="w-1/4 [@container(width<750px)]:hidden">
-                <Text variant="small" className="text-selectActive">
-                  <Trans>Amount (USD)</Trans>
-                </Text>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
+          <ClaimableRewardsTableHeader
+            checkboxSlot={
+              <Checkbox checked={someSelected ? 'indeterminate' : allSelected} onCheckedChange={toggleAll} />
+            }
+          />
           <TableBody>
             {rewards.map(reward => (
               <ClaimableRewardRow
@@ -184,18 +160,63 @@ function ClaimableRewardRow({
   );
 }
 
+function ClaimableRewardsTableHeader({ checkboxSlot }: { checkboxSlot: ReactNode }) {
+  return (
+    <TableHeader>
+      <TableRow>
+        <TableHead className="w-[40px]">{checkboxSlot}</TableHead>
+        <TableHead className="w-1/4">
+          <Text variant="small" className="text-selectActive">
+            <Trans>Module</Trans>
+          </Text>
+        </TableHead>
+        <TableHead className="w-1/4">
+          <Text variant="small" className="text-selectActive">
+            <Trans>Reward Token</Trans>
+          </Text>
+        </TableHead>
+        <TableHead className="w-1/4">
+          <Text variant="small" className="text-selectActive">
+            <Trans>Amount</Trans>
+          </Text>
+        </TableHead>
+        <TableHead className="w-1/4 [@container(width<750px)]:hidden">
+          <Text variant="small" className="text-selectActive">
+            <Trans>Amount (USD)</Trans>
+          </Text>
+        </TableHead>
+      </TableRow>
+    </TableHeader>
+  );
+}
+
 function LoadingClaimableRewardsTable() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3">
-          <Skeleton className="h-4 w-4" />
-          <Skeleton className="h-5 w-5 rounded-full" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-16" />
-        </div>
-      ))}
+    <div className="@container">
+      <Table>
+        <ClaimableRewardsTableHeader checkboxSlot={<Skeleton className="h-4 w-4" />} />
+        <TableBody>
+          {[1, 2, 3].map(i => (
+            <TableRow key={i}>
+              <TableCell className="w-[40px]">
+                <Skeleton className="h-4 w-4" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+              <TableCell className="[@container(width<750px)]:hidden">
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

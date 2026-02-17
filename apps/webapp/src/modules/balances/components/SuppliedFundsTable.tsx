@@ -1,4 +1,4 @@
-import { Table, TableBody } from '@/components/ui/table';
+import { Table, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { SuppliedFundsTableHeader } from './SuppliedFundsTableHeader';
 import { SuppliedFundsTableRow } from './SuppliedFundsTableRow';
 import { SuppliedFundsSavingsRow } from './SuppliedFundsSavingsRow';
@@ -294,9 +294,7 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
     <SuppliedFundsTableRow
       data={{
         tokenSymbol: 'SKY',
-        moduleIcon: (
-          <img src={MODULE_ICONS['Staking Engine']} alt="Staking Engine" className="h-5 w-5" />
-        ),
+        moduleIcon: <img src={MODULE_ICONS['Staking Engine']} alt="Staking Engine" className="h-5 w-5" />,
         moduleName: 'Staking Engine',
         amount: totalUserStaked ?? 0n,
         decimals: 18,
@@ -352,16 +350,31 @@ export function SuppliedFundsTable({ chainIds }: SuppliedFundsTableProps) {
 
 function LoadingSuppliedFundsTable() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="flex items-center gap-4 px-4 py-3">
-          <Skeleton className="h-6 w-6 rounded-full" />
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-      ))}
+    <div className="@container">
+      <Table>
+        <SuppliedFundsTableHeader />
+        <TableBody>
+          {[1, 2, 3, 4].map(i => (
+            <TableRow key={i}>
+              <TableCell className="h-auto px-4 py-4">
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell className="h-auto px-4 py-4">
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell className="h-auto px-4 py-4">
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+              <TableCell className="h-auto px-4 py-4 [@container(width<750px)]:hidden">
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+              <TableCell className="h-auto px-4 py-4 [@container(width<750px)]:hidden">
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
