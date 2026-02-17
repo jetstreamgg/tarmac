@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useChainId, useConnection, useReadContracts } from 'wagmi';
 import { erc20Abi, formatUnits } from 'viem';
 import { isTestnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
@@ -38,7 +38,8 @@ export function useClaimableRewards(): UseClaimableRewardsResponse {
   const {
     data: rewardContractsToClaim,
     isLoading: rewardsLoading,
-    error: rewardsError
+    error: rewardsError,
+    mutate: refetchRewards
   } = useRewardContractsToClaim({
     rewardContractAddresses:
       rewardContracts?.map(({ contractAddress }) => contractAddress as `0x${string}`) || [],
@@ -110,7 +111,8 @@ export function useClaimableRewards(): UseClaimableRewardsResponse {
   const {
     data: stakeEarnedData,
     isLoading: stakeEarnedLoading,
-    error: stakeEarnedError
+    error: stakeEarnedError,
+    refetch: refetchStakeEarned
   } = useReadContracts({
     contracts: stakeEarnedContracts,
     allowFailure: true,
@@ -203,7 +205,12 @@ export function useClaimableRewards(): UseClaimableRewardsResponse {
   // ============================================================
   // MORPHO VAULTS MODULE (single API call for all vaults)
   // ============================================================
-  const { data: morphoAllRewards, isLoading: morphoLoading, error: morphoError } = useMorphoVaultAllRewards();
+  const {
+    data: morphoAllRewards,
+    isLoading: morphoLoading,
+    error: morphoError,
+    mutate: refetchMorpho
+  } = useMorphoVaultAllRewards();
 
   const morphoItems: ClaimableReward[] = useMemo(() => {
     if (!address || !morphoAllRewards.length) return [];
@@ -267,11 +274,17 @@ export function useClaimableRewards(): UseClaimableRewardsResponse {
 
   const error = rewardsError || stakeEarnedError || morphoError;
 
+  const mutate = useCallback(() => {
+    refetchRewards();
+    refetchStakeEarned();
+    refetchMorpho();
+  }, [refetchRewards, refetchStakeEarned, refetchMorpho]);
+
   return {
     data,
     isLoading,
     error: error as Error | null,
-    mutate: () => {},
+    mutate,
     dataSources: []
   };
 }

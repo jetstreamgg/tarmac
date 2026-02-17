@@ -113,12 +113,14 @@ export function ClaimableRewardsTable() {
         </div>
       </div>
 
-      <ClaimRewardsModal
-        open={isModalOpen}
-        onClose={handleModalClose}
-        selectedRewards={selectedRewards}
-        onClaimSuccess={mutate}
-      />
+      {isModalOpen && (
+        <ClaimRewardsModal
+          open={isModalOpen}
+          onClose={handleModalClose}
+          selectedRewards={selectedRewards}
+          onClaimSuccess={mutate}
+        />
+      )}
     </>
   );
 }
