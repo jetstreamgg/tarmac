@@ -17,7 +17,10 @@ const Checkbox = React.forwardRef<
     style={{ width: '16px', minWidth: '16px', height: '16px', borderColor: '#9492A3' }}
     {...props}
   >
-    <CheckboxPrimitive.Indicator className={cn('flex items-center justify-center text-white')}>
+    <CheckboxPrimitive.Indicator
+      forceMount
+      className={cn('flex items-center justify-center text-white data-[state=unchecked]:invisible')}
+    >
       {props.checked === 'indeterminate' ? (
         <Minus style={{ width: '14px', height: '15px' }} />
       ) : (
