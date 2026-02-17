@@ -49,13 +49,12 @@ export function ClaimableRewardsTable() {
     setIsModalOpen(false);
   };
 
-  if (!isLoading && rewards.length === 0) {
-    return null;
+  if (isLoading) {
+    return <LoadingClaimableRewardsTable />;
   }
 
-  if (isLoading && rewards.length === 0) {
-    // if (true) {
-    return <LoadingClaimableRewardsTable />;
+  if (rewards.length === 0) {
+    return null;
   }
 
   return (
