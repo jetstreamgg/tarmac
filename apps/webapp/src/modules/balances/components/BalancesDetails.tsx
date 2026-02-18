@@ -14,6 +14,7 @@ import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
 import { SuppliedFundsTable } from './SuppliedFundsTable';
+import { ClaimableRewardsTable } from './ClaimableRewardsTable';
 
 export function BalancesDetails() {
   const { bpi } = useBreakpointIndex();
@@ -36,6 +37,13 @@ export function BalancesDetails() {
         <DetailSection title={t`Supplied funds`}>
           <DetailSectionRow>
             <SuppliedFundsTable chainIds={supportedChainIds} />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
+      {isConnectedAndAcceptedTerms && showFundsTable && (
+        <DetailSection title={t`Claimable rewards`}>
+          <DetailSectionRow>
+            <ClaimableRewardsTable />
           </DetailSectionRow>
         </DetailSection>
       )}

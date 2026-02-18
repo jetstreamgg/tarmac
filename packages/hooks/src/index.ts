@@ -99,6 +99,7 @@ export {
   useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
+  useMorphoVaultAllRewards,
   MORPHO_VAULTS
 } from './morpho';
 export type {
@@ -120,7 +121,9 @@ export type {
   MorphoVaultChartInfoHook,
   MorphoVaultMultipleChartInfoHook,
   MorphoVaultSupplierAddressesHook,
-  MorphoVaultsCombinedTvl
+  MorphoVaultsCombinedTvl,
+  MorphoVaultAllRewardsEntry,
+  MorphoVaultAllRewardsHook
 } from './morpho';
 
 // Authentication
@@ -400,3 +403,8 @@ export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
+
+// Claims (Claim All Rewards)
+export { useClaimableRewards } from './claims';
+export { useExecuteCalls } from './shared/useExecuteCalls';
+export type { ClaimableReward, ClaimableRewardModule, UseClaimableRewardsResponse } from './claims';

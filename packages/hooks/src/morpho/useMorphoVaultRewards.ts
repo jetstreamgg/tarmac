@@ -112,13 +112,13 @@ function isMorphoVaultReward(breakdown: MerklRewardBreakdown, vaultAddress: `0x$
 }
 
 /**
- * Fetch user rewards from the Merkl API.
+ * Fetch raw Merkl rewards data for a user on a given chain.
+ * This is the single API call shared by all vault-specific processing.
  */
-async function fetchMorphoVaultRewards(
+export async function fetchMerklRewards(
   userAddress: `0x${string}`,
-  vaultAddress: `0x${string}`,
   chainId: number
-): Promise<MorphoVaultRewardsData | undefined> {
+): Promise<MerklRewardsApiResponse> {
   const url = `${MERKL_API_URL}/users/${userAddress}/rewards?chainId=${chainId}&breakdownPage=0&claimableOnly=true`;
 
   const response = await fetch(url, {
@@ -132,38 +132,36 @@ async function fetchMorphoVaultRewards(
     throw new Error(`Merkl API error: ${response.status}`);
   }
 
-  const result: MerklRewardsApiResponse = await response.json();
+  return response.json();
+}
 
-  // Find rewards for the specified chain
-  const chainRewards = result.find(r => r.chain.id === chainId);
+/**
+ * Process raw Merkl API response to extract rewards for a specific vault.
+ */
+export function processMerklRewardsForVault(
+  merklData: MerklRewardsApiResponse,
+  vaultAddress: `0x${string}`,
+  chainId: number
+): MorphoVaultRewardsData {
+  const chainRewards = merklData.find(r => r.chain.id === chainId);
 
   if (!chainRewards || chainRewards.rewards.length === 0) {
-    return {
-      rewards: [],
-      hasClaimableRewards: false
-    };
+    return { rewards: [], hasClaimableRewards: false };
   }
 
-  // Filter and process rewards that are related to Morpho vaults
   const morphoRewards: MorphoVaultReward[] = [];
 
   for (const reward of chainRewards.rewards) {
-    // Check if any breakdown is from a Morpho vault and the vault corresponds to the given vault address
     const morphoBreakdowns = reward.breakdowns.filter(breakdown =>
       isMorphoVaultReward(breakdown, vaultAddress)
     );
 
-    if (morphoBreakdowns.length === 0) {
-      continue;
-    }
+    if (morphoBreakdowns.length === 0) continue;
 
-    // Calculate the portion of rewards from Morpho vaults
     const morphoAmount = morphoBreakdowns.reduce((sum, b) => sum + BigInt(b.amount), 0n);
     const morphoClaimed = morphoBreakdowns.reduce((sum, b) => sum + BigInt(b.claimed), 0n);
 
     const { token, proofs, root, distributionChainId } = reward;
-
-    // Calculate USD values
     const amountDecimal = Number(morphoAmount) / Math.pow(10, token.decimals);
     const amountUsd = amountDecimal * token.price;
 
@@ -183,12 +181,22 @@ async function fetchMorphoVaultRewards(
     });
   }
 
-  const hasClaimableRewards = morphoRewards.some(r => r.amount > 0n);
-
   return {
     rewards: morphoRewards,
-    hasClaimableRewards
+    hasClaimableRewards: morphoRewards.some(r => r.amount > 0n)
   };
+}
+
+/**
+ * Fetch and process rewards for a single vault (legacy wrapper).
+ */
+async function fetchMorphoVaultRewards(
+  userAddress: `0x${string}`,
+  vaultAddress: `0x${string}`,
+  chainId: number
+): Promise<MorphoVaultRewardsData | undefined> {
+  const merklData = await fetchMerklRewards(userAddress, chainId);
+  return processMerklRewardsForVault(merklData, vaultAddress, chainId);
 }
 
 /**
