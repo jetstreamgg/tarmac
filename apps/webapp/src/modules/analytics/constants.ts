@@ -43,6 +43,9 @@ export function safeCapture(
   properties?: Record<string, unknown>
 ): void {
   try {
+    if (import.meta.env.VITE_ANALYTICS_DEBUG === 'true') {
+      console.log('[Analytics] Event:', event, JSON.stringify(properties));
+    }
     ph?.capture(event, properties);
   } catch (error) {
     reportAnalyticsError(`safeCapture:${event}`, error);
