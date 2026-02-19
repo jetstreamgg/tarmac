@@ -31,8 +31,8 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://static.cloudflareinsights.com
       https://challenges.cloudflare.com
       https://*.posthog.com;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' data: blob: https://explorer-api.walletconnect.com;
+    style-src 'self' 'unsafe-inline' https://*.posthog.com;
+    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com;
     font-src 'self';
     connect-src 'self'
       ${RPC_PROVIDER_MAINNET}

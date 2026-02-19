@@ -1,10 +1,5 @@
-import React, { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
-import {
-  type ServiceConsent,
-  getStoredConsent,
-  saveConsent,
-  hasPostHogCrossDomainCookie
-} from '../consentStorage';
+import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { type ServiceConsent, getStoredConsent, saveConsent } from '../consentStorage';
 
 export type BannerView = 'default' | 'manage';
 
@@ -22,13 +17,23 @@ const CookieConsentContext = createContext<CookieConsentContextProps | undefined
 
 export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [consent, setConsentState] = useState<ServiceConsent | null>(getStoredConsent);
-  const [bannerVisible, setBannerVisible] = useState(() => {
-    // Don't show banner if consent exists or if inherited cookie from marketing site
-    if (getStoredConsent() !== null) return false;
-    if (hasPostHogCrossDomainCookie()) return false;
-    return true;
-  });
+  const [bannerVisible, setBannerVisible] = useState(() => getStoredConsent() === null);
   const [bannerView, setBannerView] = useState<BannerView>('default');
+
+  // Re-read cookie when tab becomes visible (cross-subdomain sync).
+  // Handles: user changes consent on sky.money, switches back to this tab.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      const freshConsent = getStoredConsent();
+      setConsentState(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(freshConsent)) return prev;
+        return freshConsent;
+      });
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   const setConsent = useCallback((newConsent: ServiceConsent) => {
     setConsentState(newConsent);
@@ -37,6 +42,10 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const showBanner = useCallback(() => {
+    // Re-read the cookie to pick up cross-subdomain changes
+    // (e.g. user changed consent on sky.money, then opens Cookie Settings here)
+    const freshConsent = getStoredConsent();
+    setConsentState(freshConsent);
     setBannerView('default');
     setBannerVisible(true);
   }, []);

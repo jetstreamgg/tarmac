@@ -1,7 +1,7 @@
 import posthog from 'posthog-js';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { type ReactNode } from 'react';
-import { getStoredConsent, hasPostHogCrossDomainCookie } from './consentStorage';
+import { getStoredConsent, saveConsent } from './consentStorage';
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST;
@@ -12,9 +12,11 @@ let hasInitializedPostHog = false;
 /**
  * Initialize PostHog with consent-based configuration.
  *
+ * Consent is stored in the cross-subdomain sky_consent cookie (shared across *.sky.money).
+ *
  * - Rejected users: PostHog is NOT initialized (zero events).
  * - Pending users: Cookieless anonymous tracking (cookieless_mode: 'always').
- * - Accepted users / inherited cookie: Full persistent tracking.
+ * - Accepted users: Full persistent tracking.
  *
  * Requires "Cookieless server hash mode" enabled in PostHog project settings.
  */
@@ -24,8 +26,7 @@ export function initializePostHogIfNeeded(forceAccepted = false) {
   }
 
   const consent = getStoredConsent();
-  const inheritedCookie = hasPostHogCrossDomainCookie();
-  const hasAccepted = forceAccepted || consent?.posthog === true || inheritedCookie;
+  const hasAccepted = forceAccepted || consent?.posthog === true;
   const hasRejected = consent?.posthog === false;
 
   if (hasRejected && !forceAccepted) {
@@ -69,6 +70,7 @@ initializePostHogIfNeeded();
 /**
  * Apply a consent change at runtime.
  * Handles cookieless → full tracking transitions (and vice versa).
+ * Writes directly to the cross-subdomain sky_consent cookie.
  */
 export function applyPostHogConsent(enabled: boolean) {
   if (enabled) {
@@ -83,6 +85,9 @@ export function applyPostHogConsent(enabled: boolean) {
     posthog.reset();
     posthog.opt_out_capturing();
   }
+
+  // saveConsent writes to the cookie immediately — no timing issues.
+  saveConsent({ posthog: enabled });
 }
 
 /**
