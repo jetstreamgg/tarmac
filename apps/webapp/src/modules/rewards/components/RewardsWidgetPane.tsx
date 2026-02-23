@@ -38,7 +38,9 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
 
   const chainId = useChainId();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { wrapStateChange } = useWidgetFlowTracking('rewards', chainId);
+  const { wrapStateChange } = useWidgetFlowTracking('rewards', chainId, {
+    rewardContract: selectedRewardContract
+  });
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;
 
   const onRewardContractChange = (rewardContract?: RewardContract) => {

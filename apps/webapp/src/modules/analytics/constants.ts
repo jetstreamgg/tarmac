@@ -12,7 +12,8 @@ export const AppEvents = {
   VPN_CHECK_COMPLETED: 'app_vpn_check_completed',
   VPN_BLOCKED_PAGE_VIEW: 'app_vpn_blocked_page_view',
   WALLET_CONNECTED: 'app_wallet_connected',
-  WALLET_DISCONNECTED: 'app_wallet_disconnected'
+  WALLET_DISCONNECTED: 'app_wallet_disconnected',
+  ONCHAIN_EVENT: 'app_onchain_event'
 } as const;
 
 // ── Types ────────────────────────────────────────────────────────────────────

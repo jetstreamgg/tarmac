@@ -97,13 +97,15 @@ export function useAppAnalytics() {
       chainId,
       txStatus,
       txHash,
-      errorContext
+      errorContext,
+      urnIndex
     }: {
       widgetName: string;
       chainId: number;
       txStatus: TxStatus;
       txHash?: string;
       errorContext?: ErrorContext;
+      urnIndex?: number;
     }) => {
       safeCapture(posthog, AppEvents.TRANSACTION_COMPLETED, {
         widget_name: widgetName,
@@ -113,6 +115,7 @@ export function useAppAnalytics() {
         wallet_address: address,
         ...(txHash && { tx_hash: txHash }),
         ...(errorContext && { error_context: errorContext }),
+        ...(urnIndex != null && { urn_index: Number(urnIndex) }),
         viewport: getViewport(),
         flow_id: getFlowId(),
         ...getUrlParams()

@@ -13,60 +13,50 @@ import {
   IS_STAGING_ENV,
   IS_DEVELOPMENT_ENV
 } from '@/lib/constants';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { mainnet, base, arbitrum, unichain, optimism } from 'viem/chains';
 import { tenderly } from '@/data/wagmi/config/config.default';
 
+function getSubgraphUrl(chainId: number): string {
+  if (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) {
+    switch (chainId) {
+      case mainnet.id:
+        return STAGING_URL_SKY_SUBGRAPH_MAINNET;
+      case base.id:
+        return STAGING_URL_SKY_SUBGRAPH_BASE;
+      case arbitrum.id:
+        return STAGING_URL_SKY_SUBGRAPH_ARBITRUM;
+      case optimism.id:
+        return STAGING_URL_SKY_SUBGRAPH_OPTIMISM;
+      case unichain.id:
+        return STAGING_URL_SKY_SUBGRAPH_UNICHAIN;
+      case tenderly.id:
+        return STAGING_URL_SKY_SUBGRAPH_TESTNET;
+      default:
+        return PROD_URL_SKY_SUBGRAPH_MAINNET;
+    }
+  } else {
+    switch (chainId) {
+      case mainnet.id:
+        return PROD_URL_SKY_SUBGRAPH_MAINNET;
+      case base.id:
+        return PROD_URL_SKY_SUBGRAPH_BASE;
+      case arbitrum.id:
+        return PROD_URL_SKY_SUBGRAPH_ARBITRUM;
+      case optimism.id:
+        return PROD_URL_SKY_SUBGRAPH_OPTIMISM;
+      case unichain.id:
+        return PROD_URL_SKY_SUBGRAPH_UNICHAIN;
+      default:
+        return '';
+    }
+  }
+}
+
 export function useSubgraphUrl(overrideChainId?: number) {
   const connectedChainId = useChainId();
-  const [subgraphUrl, setSubgraphUrl] = useState('');
   const chainId = overrideChainId ?? connectedChainId;
 
-  useEffect(() => {
-    if (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) {
-      switch (chainId) {
-        case mainnet.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_MAINNET);
-          break;
-        case base.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_BASE);
-          break;
-        case arbitrum.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_ARBITRUM);
-          break;
-        case optimism.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_OPTIMISM);
-          break;
-        case unichain.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_UNICHAIN);
-          break;
-        case tenderly.id:
-          setSubgraphUrl(STAGING_URL_SKY_SUBGRAPH_TESTNET);
-          break;
-        default:
-          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_MAINNET);
-      }
-    } else {
-      switch (chainId) {
-        case mainnet.id:
-          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_MAINNET);
-          break;
-        case base.id:
-          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_BASE);
-          break;
-        case arbitrum.id:
-          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_ARBITRUM);
-          break;
-        case optimism.id:
-          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_OPTIMISM);
-          break;
-        case unichain.id:
-          setSubgraphUrl(PROD_URL_SKY_SUBGRAPH_UNICHAIN);
-          break;
-      }
-    }
-  }, [chainId]);
-
-  return subgraphUrl;
+  return useMemo(() => getSubgraphUrl(chainId), [chainId]);
 }
