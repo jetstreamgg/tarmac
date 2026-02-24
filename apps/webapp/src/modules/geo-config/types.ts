@@ -10,6 +10,7 @@ export interface GeoConfig {
   countryCode: string;
   timestamp: string;
   cacheTtl: number;
+  isRegionRestricted: boolean;
   modules: Record<ModuleId, ModuleConfig>;
   chatbot: {
     enabled: boolean;
@@ -23,6 +24,7 @@ export interface GeoConfigContextValue {
   error: Error | null;
   isModuleEnabled: (moduleId: ModuleId) => boolean;
   getModuleRestrictionReason: (moduleId: ModuleId) => string | undefined;
+  isRegionRestricted: boolean;
   isChatbotEnabled: boolean;
   chatbotRestrictionMessage: string | undefined;
 }

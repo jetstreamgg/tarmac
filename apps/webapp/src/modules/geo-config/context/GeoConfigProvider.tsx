@@ -14,6 +14,7 @@ const FALLBACK_CONFIG: GeoConfig = {
   countryCode: 'XX',
   timestamp: new Date().toISOString(),
   cacheTtl: 60,
+  isRegionRestricted: true,
   modules: {
     savings: { enabled: false, restrictionReason: 'Unable to verify region' },
     rewards: { enabled: false, restrictionReason: 'Unable to verify region' },
@@ -84,6 +85,7 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
       error: error as Error | null,
       isModuleEnabled,
       getModuleRestrictionReason,
+      isRegionRestricted: isLoading ? true : (config?.isRegionRestricted ?? true),
       isChatbotEnabled: config?.chatbot.enabled ?? false,
       chatbotRestrictionMessage: config?.chatbot.restrictionMessage
     }),

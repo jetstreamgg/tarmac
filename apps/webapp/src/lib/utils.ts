@@ -8,8 +8,7 @@ import {
   VaultsIntentMapping,
   IntentMapping,
   mapIntentToQueryParam,
-  QueryParams,
-  RESTRICTED_INTENTS
+  QueryParams
 } from './constants';
 import { ExpertIntent, Intent, VaultsIntent } from './enums';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
@@ -95,17 +94,7 @@ export function sanitizeUrl(url: string | undefined) {
 }
 
 export function isIntentAllowed(intent: Intent, chainId: number) {
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
-  const isRestricted = isRestrictedBuild || isRestrictedMiCa;
-
-  // First check if restricted build
-  if (isRestricted && RESTRICTED_INTENTS.includes(intent)) {
-    return false;
-  }
-  // Then check if widget is supported on current chain
   const supportedIntents = CHAIN_WIDGET_MAP[chainId] || [];
-
   return supportedIntents.includes(intent);
 }
 

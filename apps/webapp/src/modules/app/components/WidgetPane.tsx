@@ -16,12 +16,13 @@ import {
   BATCH_TX_LEGAL_NOTICE_URL,
   COMING_SOON_MAP,
   QueryParams,
-  RESTRICTED_INTENTS,
   IntentMapping,
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping
 } from '@/lib/constants';
+import { useGeoConfig } from '@/modules/geo-config';
+import { ModuleId } from '@/modules/geo-config/types';
 import { ExpertIntent, VaultsIntent, ConvertIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
@@ -73,8 +74,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
   const locale = i18n.locale;
 
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
+
+  // Map Intent → ModuleId for geo-config filtering
+  const intentToModule: Partial<Record<Intent, ModuleId>> = {
+    [Intent.SAVINGS_INTENT]: 'savings',
+    [Intent.REWARDS_INTENT]: 'rewards',
+    [Intent.EXPERT_INTENT]: 'expert',
+  };
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
@@ -136,7 +144,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(
         <BalancesWidgetPane
           {...sharedProps}
-          hideModuleBalances={isRestrictedBuild}
+          hideModuleBalances={isRegionRestricted}
           rewardsCardUrl={rewardsUrl}
           savingsCardUrlMap={savingsUrlMap}
           sealCardUrl={sealUrl}
@@ -232,7 +240,10 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       ]
     ]
   ]
-    .filter(([intent]) => !RESTRICTED_INTENTS.includes(intent as Intent))
+    .filter(([intent]) => {
+      const moduleId = intentToModule[intent as Intent];
+      return !moduleId || isModuleEnabled(moduleId);
+    })
     .map(([intent, label, icon, component, , , description, subItems]) => {
       const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
       return [
