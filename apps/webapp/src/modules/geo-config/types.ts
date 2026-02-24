@@ -8,7 +8,7 @@ export interface ModuleConfig {
 export interface GeoConfig {
   version: string;
   countryCode: string;
-  timestamp: string;
+  generatedAt: string;
   cacheTtl: number;
   isRegionRestricted: boolean;
   modules: Record<ModuleId, ModuleConfig>;
