@@ -78,7 +78,8 @@ export function useSequentialTransactionFlow(
   const {
     writeContract,
     error: writeError,
-    data: mutationHash
+    data: mutationHash,
+    reset: resetWrite
   } = useWriteContract({
     mutation: {
       onMutate,
@@ -197,6 +198,16 @@ export function useSequentialTransactionFlow(
     transactionHashes
   ]);
 
+  const reset = useCallback(() => {
+    setIsExecuting(false);
+    setCurrentIndex(0);
+    setTransactionHashes([]);
+    setHasWriteError(false);
+    resetWrite();
+    // Do NOT clear lastProcessedTxHash — it guards against
+    // stale hash being replayed during multi-step execution
+  }, [resetWrite]);
+
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
     if (currentIndex >= stableTransactions.length) {
@@ -237,6 +248,7 @@ export function useSequentialTransactionFlow(
     isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasWriteError),
     prepared,
     error: writeError || miningError || simulationError,
-    currentCallIndex: currentIndex
+    currentCallIndex: currentIndex,
+    reset
   };
 }

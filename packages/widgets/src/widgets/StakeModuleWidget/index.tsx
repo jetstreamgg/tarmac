@@ -622,6 +622,7 @@ function StakeModuleWidgetWrapped({
         setHasNoChanges(false);
       }
     } else {
+      batchMulticall.reset?.();
       if (widgetState.action === StakeAction.CLAIM) {
         setIndexToClaim(undefined);
         setRewardContractsToClaim(undefined);

@@ -333,6 +333,7 @@ export function UpgradeWidgetWrapped({
               : undefined;
 
   const onClickBack = () => {
+    batchActionManager.reset?.();
     shouldAllowExternalUpdate.current = true;
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: UpgradeScreen.ACTION }));

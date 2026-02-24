@@ -111,7 +111,7 @@ test.skip('Balances change after successfully supplying and withdrawing', async 
     // await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // await isolatedPage.waitForTimeout(1000);
     // await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-    // await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+    // await isolatedPage.getByText('With: USDS Get: SPK').first().click();
     // supply again
     await isolatedPage.getByTestId('supply-input-rewards').fill('2');
     await performAction(isolatedPage, 'Supply');

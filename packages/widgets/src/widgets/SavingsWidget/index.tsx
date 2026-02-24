@@ -257,6 +257,8 @@ const SavingsWidgetWrapped = ({
   };
 
   const onClickBack = () => {
+    batchSavingsSupply.reset?.();
+    batchUpgradeAndSupply.reset?.();
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({
       ...prev,

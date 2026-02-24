@@ -53,11 +53,12 @@ export default defineConfig({
     }
   },
   plugins: [
-    dts({
-      insertTypesEntry: true,
-      exclude: ['src/locales', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
-      copyDtsFiles: true
-    }),
+    !process.env.CI &&
+      dts({
+        insertTypesEntry: true,
+        exclude: ['src/locales', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+        copyDtsFiles: true
+      }),
     react({
       plugins: [['@lingui/swc-plugin', {}]]
     }),

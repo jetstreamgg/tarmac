@@ -10515,13 +10515,106 @@ export const usdcAddress = {
 export const usdcConfig = { address: usdcAddress, abi: usdcAbi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// usdcClearstarBoringVault
+// usdcL2
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
+ * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
  */
-export const usdcClearstarBoringVaultAbi = [
+export const usdcL2Abi = [
+  {
+    type: 'constructor',
+    inputs: [{ name: 'implementationContract', internalType: 'address', type: 'address' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'previousAdmin', internalType: 'address', type: 'address', indexed: false },
+      { name: 'newAdmin', internalType: 'address', type: 'address', indexed: false }
+    ],
+    name: 'AdminChanged'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: false }],
+    name: 'Upgraded'
+  },
+  { type: 'fallback', stateMutability: 'payable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'admin',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newAdmin', internalType: 'address', type: 'address' }],
+    name: 'changeAdmin',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'implementation',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newImplementation', internalType: 'address', type: 'address' }],
+    name: 'upgradeTo',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newImplementation', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'upgradeToAndCall',
+    outputs: [],
+    stateMutability: 'payable'
+  }
+] as const;
+
+/**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
+ * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
+ */
+export const usdcL2Address = {
+  10: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
+  130: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
+  8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  42161: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'
+} as const;
+
+/**
+ * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
+ * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
+ * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
+ * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
+ */
+export const usdcL2Config = { address: usdcL2Address, abi: usdcL2Abi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// usdcRiskCapitalVault
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const usdcRiskCapitalVaultAbi = [
   {
     type: 'constructor',
     inputs: [
@@ -11674,113 +11767,20 @@ export const usdcClearstarBoringVaultAbi = [
 ] as const;
 
 /**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
  */
-export const usdcClearstarBoringVaultAddress = {
-  1: '0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49',
-  314310: '0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49'
+export const usdcRiskCapitalVaultAddress = {
+  1: '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf',
+  314310: '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf'
 } as const;
 
 /**
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
  */
-export const usdcClearstarBoringVaultConfig = {
-  address: usdcClearstarBoringVaultAddress,
-  abi: usdcClearstarBoringVaultAbi
+export const usdcRiskCapitalVaultConfig = {
+  address: usdcRiskCapitalVaultAddress,
+  abi: usdcRiskCapitalVaultAbi
 } as const;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// usdcL2
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
- * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
- * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
- * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
- */
-export const usdcL2Abi = [
-  {
-    type: 'constructor',
-    inputs: [{ name: 'implementationContract', internalType: 'address', type: 'address' }],
-    stateMutability: 'nonpayable'
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [
-      { name: 'previousAdmin', internalType: 'address', type: 'address', indexed: false },
-      { name: 'newAdmin', internalType: 'address', type: 'address', indexed: false }
-    ],
-    name: 'AdminChanged'
-  },
-  {
-    type: 'event',
-    anonymous: false,
-    inputs: [{ name: 'implementation', internalType: 'address', type: 'address', indexed: false }],
-    name: 'Upgraded'
-  },
-  { type: 'fallback', stateMutability: 'payable' },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'admin',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view'
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'newAdmin', internalType: 'address', type: 'address' }],
-    name: 'changeAdmin',
-    outputs: [],
-    stateMutability: 'nonpayable'
-  },
-  {
-    type: 'function',
-    inputs: [],
-    name: 'implementation',
-    outputs: [{ name: '', internalType: 'address', type: 'address' }],
-    stateMutability: 'view'
-  },
-  {
-    type: 'function',
-    inputs: [{ name: 'newImplementation', internalType: 'address', type: 'address' }],
-    name: 'upgradeTo',
-    outputs: [],
-    stateMutability: 'nonpayable'
-  },
-  {
-    type: 'function',
-    inputs: [
-      { name: 'newImplementation', internalType: 'address', type: 'address' },
-      { name: 'data', internalType: 'bytes', type: 'bytes' }
-    ],
-    name: 'upgradeToAndCall',
-    outputs: [],
-    stateMutability: 'payable'
-  }
-] as const;
-
-/**
- * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
- * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
- * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
- * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
- */
-export const usdcL2Address = {
-  10: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-  130: '0x078D782b760474a361dDA0AF3839290b0EF57AD6',
-  8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  42161: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831'
-} as const;
-
-/**
- * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
- * - [__View Contract on Unichain Uniscan__](https://uniscan.xyz/address/0x078D782b760474a361dDA0AF3839290b0EF57AD6)
- * - [__View Contract on Base Basescan__](https://basescan.org/address/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913)
- * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xaf88d065e77c8cC2239327C5EDb3A432268e5831)
- */
-export const usdcL2Config = { address: usdcL2Address, abi: usdcL2Abi } as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // usds
@@ -11831,6 +11831,1181 @@ export const usdsAddress = {
  * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xdC035D45d973E3EC169d2276DDab16f1e407384F)
  */
 export const usdsConfig = { address: usdsAddress, abi: usdsAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// usdsFlagshipVault
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const usdsFlagshipVaultAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: '_asset', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'error', inputs: [], name: 'Abdicated' },
+  { type: 'error', inputs: [], name: 'AbsoluteCapExceeded' },
+  { type: 'error', inputs: [], name: 'AbsoluteCapNotDecreasing' },
+  { type: 'error', inputs: [], name: 'AbsoluteCapNotIncreasing' },
+  { type: 'error', inputs: [], name: 'AutomaticallyTimelocked' },
+  { type: 'error', inputs: [], name: 'CannotReceiveAssets' },
+  { type: 'error', inputs: [], name: 'CannotReceiveShares' },
+  { type: 'error', inputs: [], name: 'CannotSendAssets' },
+  { type: 'error', inputs: [], name: 'CannotSendShares' },
+  { type: 'error', inputs: [], name: 'CastOverflow' },
+  { type: 'error', inputs: [], name: 'DataAlreadyPending' },
+  { type: 'error', inputs: [], name: 'DataNotTimelocked' },
+  { type: 'error', inputs: [], name: 'FeeInvariantBroken' },
+  { type: 'error', inputs: [], name: 'FeeTooHigh' },
+  { type: 'error', inputs: [], name: 'InvalidSigner' },
+  { type: 'error', inputs: [], name: 'MaxRateTooHigh' },
+  { type: 'error', inputs: [], name: 'NoCode' },
+  { type: 'error', inputs: [], name: 'NotAdapter' },
+  { type: 'error', inputs: [], name: 'NotInAdapterRegistry' },
+  { type: 'error', inputs: [], name: 'PenaltyTooHigh' },
+  { type: 'error', inputs: [], name: 'PermitDeadlineExpired' },
+  { type: 'error', inputs: [], name: 'RelativeCapAboveOne' },
+  { type: 'error', inputs: [], name: 'RelativeCapExceeded' },
+  { type: 'error', inputs: [], name: 'RelativeCapNotDecreasing' },
+  { type: 'error', inputs: [], name: 'RelativeCapNotIncreasing' },
+  { type: 'error', inputs: [], name: 'TimelockNotDecreasing' },
+  { type: 'error', inputs: [], name: 'TimelockNotExpired' },
+  { type: 'error', inputs: [], name: 'TimelockNotIncreasing' },
+  { type: 'error', inputs: [], name: 'TransferFromReturnedFalse' },
+  { type: 'error', inputs: [], name: 'TransferFromReverted' },
+  { type: 'error', inputs: [], name: 'TransferReturnedFalse' },
+  { type: 'error', inputs: [], name: 'TransferReverted' },
+  { type: 'error', inputs: [], name: 'Unauthorized' },
+  { type: 'error', inputs: [], name: 'ZeroAbsoluteCap' },
+  { type: 'error', inputs: [], name: 'ZeroAddress' },
+  { type: 'error', inputs: [], name: 'ZeroAllocation' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true }],
+    name: 'Abdicate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'Accept'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'previousTotalAssets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'newTotalAssets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'performanceFeeShares', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'managementFeeShares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'AccrueInterest'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'account', internalType: 'address', type: 'address', indexed: true }],
+    name: 'AddAdapter'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'ids', internalType: 'bytes32[]', type: 'bytes32[]', indexed: false },
+      { name: 'change', internalType: 'int256', type: 'int256', indexed: false }
+    ],
+    name: 'Allocate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'AllowanceUpdatedByTransferFrom'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Approval'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'asset', internalType: 'address', type: 'address', indexed: true }
+    ],
+    name: 'Constructor'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'ids', internalType: 'bytes32[]', type: 'bytes32[]', indexed: false },
+      { name: 'change', internalType: 'int256', type: 'int256', indexed: false }
+    ],
+    name: 'Deallocate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DecreaseAbsoluteCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DecreaseRelativeCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DecreaseTimelock'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'onBehalf', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Deposit'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: false },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'onBehalf', internalType: 'address', type: 'address', indexed: true },
+      { name: 'ids', internalType: 'bytes32[]', type: 'bytes32[]', indexed: false },
+      { name: 'penaltyAssets', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'ForceDeallocate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'IncreaseAbsoluteCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'IncreaseRelativeCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'IncreaseTimelock'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Permit'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'account', internalType: 'address', type: 'address', indexed: true }],
+    name: 'RemoveAdapter'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'Revoke'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newAdapterRegistry', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetAdapterRegistry'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newCurator', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetCurator'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'forceDeallocatePenalty', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'SetForceDeallocatePenalty'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newIsAllocator', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'SetIsAllocator'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newIsSentinel', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'SetIsSentinel'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newLiquidityAdapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newLiquidityData', internalType: 'bytes', type: 'bytes', indexed: true }
+    ],
+    name: 'SetLiquidityAdapterAndData'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newManagementFee', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'SetManagementFee'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newManagementFeeRecipient', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetManagementFeeRecipient'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newMaxRate', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'SetMaxRate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newName', internalType: 'string', type: 'string', indexed: false }],
+    name: 'SetName'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetOwner'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newPerformanceFee', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'SetPerformanceFee'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newPerformanceFeeRecipient', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetPerformanceFeeRecipient'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newReceiveAssetsGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetReceiveAssetsGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newReceiveSharesGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetReceiveSharesGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newSendAssetsGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetSendAssetsGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newSendSharesGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetSendSharesGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newSymbol', internalType: 'string', type: 'string', indexed: false }],
+    name: 'SetSymbol'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'executableAt', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Submit'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Transfer'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'receiver', internalType: 'address', type: 'address', indexed: true },
+      { name: 'onBehalf', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Withdraw'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: '_totalAssets',
+    outputs: [{ name: '', internalType: 'uint128', type: 'uint128' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'abdicate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'abdicated',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'absoluteCap',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'accrueInterest', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'accrueInterestView',
+    outputs: [
+      { name: '', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'uint256', type: 'uint256' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'adapterRegistry',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'adapters',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'adaptersLength',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'addAdapter',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+      { name: 'assets', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'allocate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'allocation',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'asset',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canReceiveAssets',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canReceiveShares',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canSendAssets',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canSendShares',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
+    name: 'convertToAssets',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
+    name: 'convertToShares',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'curator',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+      { name: 'assets', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'deallocate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'decreaseAbsoluteCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'decreaseRelativeCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4' },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'decreaseTimelock',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'assets', internalType: 'uint256', type: 'uint256' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'deposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes', type: 'bytes' }],
+    name: 'executableAt',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'firstTotalAssets',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+      { name: 'assets', internalType: 'uint256', type: 'uint256' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'forceDeallocate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'adapter', internalType: 'address', type: 'address' }],
+    name: 'forceDeallocatePenalty',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'increaseAbsoluteCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'increaseRelativeCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4' },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'increaseTimelock',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'isAdapter',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'isAllocator',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'isSentinel',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastUpdate',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'liquidityAdapter',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'liquidityData',
+    outputs: [{ name: '', internalType: 'bytes', type: 'bytes' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'managementFee',
+    outputs: [{ name: '', internalType: 'uint96', type: 'uint96' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'managementFeeRecipient',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxDeposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxMint',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'maxRate',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxRedeem',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxWithdraw',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'shares', internalType: 'uint256', type: 'uint256' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'mint',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes[]', type: 'bytes[]' }],
+    name: 'multicall',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'performanceFee',
+    outputs: [{ name: '', internalType: 'uint96', type: 'uint96' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'performanceFeeRecipient',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewDeposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewMint',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewRedeem',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewWithdraw',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'receiveAssetsGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'receiveSharesGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'shares', internalType: 'uint256', type: 'uint256' },
+      { name: 'receiver', internalType: 'address', type: 'address' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'redeem',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'relativeCap',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'removeAdapter',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes', type: 'bytes' }],
+    name: 'revoke',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'sendAssetsGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'sendSharesGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newAdapterRegistry', internalType: 'address', type: 'address' }],
+    name: 'setAdapterRegistry',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newCurator', internalType: 'address', type: 'address' }],
+    name: 'setCurator',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'newForceDeallocatePenalty', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'setForceDeallocatePenalty',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'newIsAllocator', internalType: 'bool', type: 'bool' }
+    ],
+    name: 'setIsAllocator',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'newIsSentinel', internalType: 'bool', type: 'bool' }
+    ],
+    name: 'setIsSentinel',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newLiquidityAdapter', internalType: 'address', type: 'address' },
+      { name: 'newLiquidityData', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'setLiquidityAdapterAndData',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newManagementFee', internalType: 'uint256', type: 'uint256' }],
+    name: 'setManagementFee',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newManagementFeeRecipient', internalType: 'address', type: 'address' }],
+    name: 'setManagementFeeRecipient',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newMaxRate', internalType: 'uint256', type: 'uint256' }],
+    name: 'setMaxRate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newName', internalType: 'string', type: 'string' }],
+    name: 'setName',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address' }],
+    name: 'setOwner',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newPerformanceFee', internalType: 'uint256', type: 'uint256' }],
+    name: 'setPerformanceFee',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newPerformanceFeeRecipient', internalType: 'address', type: 'address' }],
+    name: 'setPerformanceFeeRecipient',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newReceiveAssetsGate', internalType: 'address', type: 'address' }],
+    name: 'setReceiveAssetsGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newReceiveSharesGate', internalType: 'address', type: 'address' }],
+    name: 'setReceiveSharesGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newSendAssetsGate', internalType: 'address', type: 'address' }],
+    name: 'setSendAssetsGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newSendSharesGate', internalType: 'address', type: 'address' }],
+    name: 'setSendSharesGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newSymbol', internalType: 'string', type: 'string' }],
+    name: 'setSymbol',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes', type: 'bytes' }],
+    name: 'submit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'timelock',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalAssets',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'virtualShares',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'assets', internalType: 'uint256', type: 'uint256' },
+      { name: 'receiver', internalType: 'address', type: 'address' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'withdraw',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const usdsFlagshipVaultAddress = {
+  1: '0xE15fcC81118895b67b6647BBd393182dF44E11E0',
+  314310: '0xE15fcC81118895b67b6647BBd393182dF44E11E0'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const usdsFlagshipVaultConfig = {
+  address: usdsFlagshipVaultAddress,
+  abi: usdsFlagshipVaultAbi
+} as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // usdsL2
@@ -14146,6 +15321,1181 @@ export const usdtAddress = {
  * - [__View Contract on Arbitrum One Arbiscan__](https://arbiscan.io/address/0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9)
  */
 export const usdtConfig = { address: usdtAddress, abi: usdtAbi } as const;
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// usdtRiskCapitalVault
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const usdtRiskCapitalVaultAbi = [
+  {
+    type: 'constructor',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: '_asset', internalType: 'address', type: 'address' }
+    ],
+    stateMutability: 'nonpayable'
+  },
+  { type: 'error', inputs: [], name: 'Abdicated' },
+  { type: 'error', inputs: [], name: 'AbsoluteCapExceeded' },
+  { type: 'error', inputs: [], name: 'AbsoluteCapNotDecreasing' },
+  { type: 'error', inputs: [], name: 'AbsoluteCapNotIncreasing' },
+  { type: 'error', inputs: [], name: 'AutomaticallyTimelocked' },
+  { type: 'error', inputs: [], name: 'CannotReceiveAssets' },
+  { type: 'error', inputs: [], name: 'CannotReceiveShares' },
+  { type: 'error', inputs: [], name: 'CannotSendAssets' },
+  { type: 'error', inputs: [], name: 'CannotSendShares' },
+  { type: 'error', inputs: [], name: 'CastOverflow' },
+  { type: 'error', inputs: [], name: 'DataAlreadyPending' },
+  { type: 'error', inputs: [], name: 'DataNotTimelocked' },
+  { type: 'error', inputs: [], name: 'FeeInvariantBroken' },
+  { type: 'error', inputs: [], name: 'FeeTooHigh' },
+  { type: 'error', inputs: [], name: 'InvalidSigner' },
+  { type: 'error', inputs: [], name: 'MaxRateTooHigh' },
+  { type: 'error', inputs: [], name: 'NoCode' },
+  { type: 'error', inputs: [], name: 'NotAdapter' },
+  { type: 'error', inputs: [], name: 'NotInAdapterRegistry' },
+  { type: 'error', inputs: [], name: 'PenaltyTooHigh' },
+  { type: 'error', inputs: [], name: 'PermitDeadlineExpired' },
+  { type: 'error', inputs: [], name: 'RelativeCapAboveOne' },
+  { type: 'error', inputs: [], name: 'RelativeCapExceeded' },
+  { type: 'error', inputs: [], name: 'RelativeCapNotDecreasing' },
+  { type: 'error', inputs: [], name: 'RelativeCapNotIncreasing' },
+  { type: 'error', inputs: [], name: 'TimelockNotDecreasing' },
+  { type: 'error', inputs: [], name: 'TimelockNotExpired' },
+  { type: 'error', inputs: [], name: 'TimelockNotIncreasing' },
+  { type: 'error', inputs: [], name: 'TransferFromReturnedFalse' },
+  { type: 'error', inputs: [], name: 'TransferFromReverted' },
+  { type: 'error', inputs: [], name: 'TransferReturnedFalse' },
+  { type: 'error', inputs: [], name: 'TransferReverted' },
+  { type: 'error', inputs: [], name: 'Unauthorized' },
+  { type: 'error', inputs: [], name: 'ZeroAbsoluteCap' },
+  { type: 'error', inputs: [], name: 'ZeroAddress' },
+  { type: 'error', inputs: [], name: 'ZeroAllocation' },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true }],
+    name: 'Abdicate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'Accept'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'previousTotalAssets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'newTotalAssets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'performanceFeeShares', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'managementFeeShares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'AccrueInterest'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'account', internalType: 'address', type: 'address', indexed: true }],
+    name: 'AddAdapter'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'ids', internalType: 'bytes32[]', type: 'bytes32[]', indexed: false },
+      { name: 'change', internalType: 'int256', type: 'int256', indexed: false }
+    ],
+    name: 'Allocate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'AllowanceUpdatedByTransferFrom'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Approval'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'asset', internalType: 'address', type: 'address', indexed: true }
+    ],
+    name: 'Constructor'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'ids', internalType: 'bytes32[]', type: 'bytes32[]', indexed: false },
+      { name: 'change', internalType: 'int256', type: 'int256', indexed: false }
+    ],
+    name: 'Deallocate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DecreaseAbsoluteCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DecreaseRelativeCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'DecreaseTimelock'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'onBehalf', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Deposit'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: false },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'onBehalf', internalType: 'address', type: 'address', indexed: true },
+      { name: 'ids', internalType: 'bytes32[]', type: 'bytes32[]', indexed: false },
+      { name: 'penaltyAssets', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'ForceDeallocate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'IncreaseAbsoluteCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'id', internalType: 'bytes32', type: 'bytes32', indexed: true },
+      { name: 'idData', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'IncreaseRelativeCap'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'IncreaseTimelock'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address', indexed: true },
+      { name: 'spender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'nonce', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Permit'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'account', internalType: 'address', type: 'address', indexed: true }],
+    name: 'RemoveAdapter'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false }
+    ],
+    name: 'Revoke'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newAdapterRegistry', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetAdapterRegistry'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newCurator', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetCurator'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'forceDeallocatePenalty', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'SetForceDeallocatePenalty'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newIsAllocator', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'SetIsAllocator'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newIsSentinel', internalType: 'bool', type: 'bool', indexed: false }
+    ],
+    name: 'SetIsSentinel'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newLiquidityAdapter', internalType: 'address', type: 'address', indexed: true },
+      { name: 'newLiquidityData', internalType: 'bytes', type: 'bytes', indexed: true }
+    ],
+    name: 'SetLiquidityAdapterAndData'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newManagementFee', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'SetManagementFee'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newManagementFeeRecipient', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetManagementFeeRecipient'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newMaxRate', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'SetMaxRate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newName', internalType: 'string', type: 'string', indexed: false }],
+    name: 'SetName'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetOwner'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newPerformanceFee', internalType: 'uint256', type: 'uint256', indexed: false }],
+    name: 'SetPerformanceFee'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newPerformanceFeeRecipient', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetPerformanceFeeRecipient'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newReceiveAssetsGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetReceiveAssetsGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newReceiveSharesGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetReceiveSharesGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newSendAssetsGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetSendAssetsGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newSendSharesGate', internalType: 'address', type: 'address', indexed: true }],
+    name: 'SetSendSharesGate'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [{ name: 'newSymbol', internalType: 'string', type: 'string', indexed: false }],
+    name: 'SetSymbol'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4', indexed: true },
+      { name: 'data', internalType: 'bytes', type: 'bytes', indexed: false },
+      { name: 'executableAt', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Submit'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address', indexed: true },
+      { name: 'to', internalType: 'address', type: 'address', indexed: true },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Transfer'
+  },
+  {
+    type: 'event',
+    anonymous: false,
+    inputs: [
+      { name: 'sender', internalType: 'address', type: 'address', indexed: true },
+      { name: 'receiver', internalType: 'address', type: 'address', indexed: true },
+      { name: 'onBehalf', internalType: 'address', type: 'address', indexed: true },
+      { name: 'assets', internalType: 'uint256', type: 'uint256', indexed: false },
+      { name: 'shares', internalType: 'uint256', type: 'uint256', indexed: false }
+    ],
+    name: 'Withdraw'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: '_totalAssets',
+    outputs: [{ name: '', internalType: 'uint128', type: 'uint128' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'abdicate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'abdicated',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'absoluteCap',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  { type: 'function', inputs: [], name: 'accrueInterest', outputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'accrueInterestView',
+    outputs: [
+      { name: '', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'uint256', type: 'uint256' },
+      { name: '', internalType: 'uint256', type: 'uint256' }
+    ],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'adapterRegistry',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    name: 'adapters',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'adaptersLength',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'addAdapter',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+      { name: 'assets', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'allocate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'allocation',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' }
+    ],
+    name: 'allowance',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'approve',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'asset',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canReceiveAssets',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canReceiveShares',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canSendAssets',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'canSendShares',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
+    name: 'convertToAssets',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
+    name: 'convertToShares',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'curator',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+      { name: 'assets', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'deallocate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'decreaseAbsoluteCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'decreaseRelativeCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4' },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'decreaseTimelock',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'assets', internalType: 'uint256', type: 'uint256' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'deposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes', type: 'bytes' }],
+    name: 'executableAt',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'firstTotalAssets',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'data', internalType: 'bytes', type: 'bytes' },
+      { name: 'assets', internalType: 'uint256', type: 'uint256' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'forceDeallocate',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'adapter', internalType: 'address', type: 'address' }],
+    name: 'forceDeallocatePenalty',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newAbsoluteCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'increaseAbsoluteCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'idData', internalType: 'bytes', type: 'bytes' },
+      { name: 'newRelativeCap', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'increaseRelativeCap',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'selector', internalType: 'bytes4', type: 'bytes4' },
+      { name: 'newDuration', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'increaseTimelock',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'isAdapter',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'isAllocator',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'isSentinel',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'lastUpdate',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'liquidityAdapter',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'liquidityData',
+    outputs: [{ name: '', internalType: 'bytes', type: 'bytes' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'managementFee',
+    outputs: [{ name: '', internalType: 'uint96', type: 'uint96' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'managementFeeRecipient',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxDeposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxMint',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'maxRate',
+    outputs: [{ name: '', internalType: 'uint64', type: 'uint64' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxRedeem',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: '', internalType: 'address', type: 'address' }],
+    name: 'maxWithdraw',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'pure'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'shares', internalType: 'uint256', type: 'uint256' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'mint',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes[]', type: 'bytes[]' }],
+    name: 'multicall',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'name',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'owner',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'performanceFee',
+    outputs: [{ name: '', internalType: 'uint96', type: 'uint96' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'performanceFeeRecipient',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: '_owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' }
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewDeposit',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewMint',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'shares', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewRedeem',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'assets', internalType: 'uint256', type: 'uint256' }],
+    name: 'previewWithdraw',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'receiveAssetsGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'receiveSharesGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'shares', internalType: 'uint256', type: 'uint256' },
+      { name: 'receiver', internalType: 'address', type: 'address' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'redeem',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'id', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'relativeCap',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
+    name: 'removeAdapter',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes', type: 'bytes' }],
+    name: 'revoke',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'sendAssetsGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'sendSharesGate',
+    outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newAdapterRegistry', internalType: 'address', type: 'address' }],
+    name: 'setAdapterRegistry',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newCurator', internalType: 'address', type: 'address' }],
+    name: 'setCurator',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'adapter', internalType: 'address', type: 'address' },
+      { name: 'newForceDeallocatePenalty', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'setForceDeallocatePenalty',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'newIsAllocator', internalType: 'bool', type: 'bool' }
+    ],
+    name: 'setIsAllocator',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'newIsSentinel', internalType: 'bool', type: 'bool' }
+    ],
+    name: 'setIsSentinel',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'newLiquidityAdapter', internalType: 'address', type: 'address' },
+      { name: 'newLiquidityData', internalType: 'bytes', type: 'bytes' }
+    ],
+    name: 'setLiquidityAdapterAndData',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newManagementFee', internalType: 'uint256', type: 'uint256' }],
+    name: 'setManagementFee',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newManagementFeeRecipient', internalType: 'address', type: 'address' }],
+    name: 'setManagementFeeRecipient',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newMaxRate', internalType: 'uint256', type: 'uint256' }],
+    name: 'setMaxRate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newName', internalType: 'string', type: 'string' }],
+    name: 'setName',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newOwner', internalType: 'address', type: 'address' }],
+    name: 'setOwner',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newPerformanceFee', internalType: 'uint256', type: 'uint256' }],
+    name: 'setPerformanceFee',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newPerformanceFeeRecipient', internalType: 'address', type: 'address' }],
+    name: 'setPerformanceFeeRecipient',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newReceiveAssetsGate', internalType: 'address', type: 'address' }],
+    name: 'setReceiveAssetsGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newReceiveSharesGate', internalType: 'address', type: 'address' }],
+    name: 'setReceiveSharesGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newSendAssetsGate', internalType: 'address', type: 'address' }],
+    name: 'setSendAssetsGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newSendSharesGate', internalType: 'address', type: 'address' }],
+    name: 'setSendSharesGate',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'newSymbol', internalType: 'string', type: 'string' }],
+    name: 'setSymbol',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'data', internalType: 'bytes', type: 'bytes' }],
+    name: 'submit',
+    outputs: [],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'symbol',
+    outputs: [{ name: '', internalType: 'string', type: 'string' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'selector', internalType: 'bytes4', type: 'bytes4' }],
+    name: 'timelock',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalAssets',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'totalSupply',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transfer',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'from', internalType: 'address', type: 'address' },
+      { name: 'to', internalType: 'address', type: 'address' },
+      { name: 'shares', internalType: 'uint256', type: 'uint256' }
+    ],
+    name: 'transferFrom',
+    outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+    stateMutability: 'nonpayable'
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'virtualShares',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view'
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'assets', internalType: 'uint256', type: 'uint256' },
+      { name: 'receiver', internalType: 'address', type: 'address' },
+      { name: 'onBehalf', internalType: 'address', type: 'address' }
+    ],
+    name: 'withdraw',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'nonpayable'
+  }
+] as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const usdtRiskCapitalVaultAddress = {
+  1: '0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d',
+  314310: '0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d'
+} as const;
+
+/**
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const usdtRiskCapitalVaultConfig = {
+  address: usdtRiskCapitalVaultAddress,
+  abi: usdtRiskCapitalVaultAbi
+} as const;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // usdtSteakhousePrimeInstantVault
@@ -32294,2055 +34644,6 @@ export const useWatchUsdcUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
 });
 
 /**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVault = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultDomainSeparator = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'DOMAIN_SEPARATOR'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"_totalAssets"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultTotalAssets = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: '_totalAssets'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"abdicated"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAbdicated = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'abdicated'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"absoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAbsoluteCap = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'absoluteCap'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"accrueInterestView"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAccrueInterestView = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'accrueInterestView'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"adapterRegistry"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAdapterRegistry = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'adapterRegistry'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"adapters"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAdapters = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'adapters'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"adaptersLength"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAdaptersLength = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'adaptersLength'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"allocation"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAllocation = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'allocation'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"allowance"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAllowance = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'allowance'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"asset"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultAsset = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'asset'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"balanceOf"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultBalanceOf = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'balanceOf'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"canReceiveAssets"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultCanReceiveAssets = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'canReceiveAssets'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"canReceiveShares"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultCanReceiveShares = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'canReceiveShares'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"canSendAssets"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultCanSendAssets = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'canSendAssets'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"canSendShares"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultCanSendShares = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'canSendShares'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"convertToAssets"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultConvertToAssets = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'convertToAssets'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"convertToShares"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultConvertToShares = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'convertToShares'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"curator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultCurator = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'curator'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decimals"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultDecimals = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'decimals'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"executableAt"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultExecutableAt = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'executableAt'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"firstTotalAssets"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultFirstTotalAssets = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'firstTotalAssets'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"forceDeallocatePenalty"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultForceDeallocatePenalty = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'forceDeallocatePenalty'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"isAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultIsAdapter = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'isAdapter'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"isAllocator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultIsAllocator = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'isAllocator'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"isSentinel"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultIsSentinel = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'isSentinel'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"lastUpdate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultLastUpdate = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'lastUpdate'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"liquidityAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultLiquidityAdapter = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'liquidityAdapter'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"liquidityData"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultLiquidityData = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'liquidityData'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"managementFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultManagementFee = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'managementFee'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"managementFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultManagementFeeRecipient = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'managementFeeRecipient'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"maxDeposit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultMaxDeposit = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'maxDeposit'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"maxMint"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultMaxMint = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'maxMint'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"maxRate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultMaxRate = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'maxRate'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"maxRedeem"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultMaxRedeem = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'maxRedeem'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"maxWithdraw"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultMaxWithdraw = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'maxWithdraw'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"name"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultName = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'name'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"nonces"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultNonces = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'nonces'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"owner"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultOwner = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'owner'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"performanceFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultPerformanceFee = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'performanceFee'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"performanceFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultPerformanceFeeRecipient = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'performanceFeeRecipient'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"previewDeposit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultPreviewDeposit = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'previewDeposit'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"previewMint"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultPreviewMint = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'previewMint'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"previewRedeem"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultPreviewRedeem = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'previewRedeem'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"previewWithdraw"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultPreviewWithdraw = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'previewWithdraw'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"receiveAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultReceiveAssetsGate = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'receiveAssetsGate'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"receiveSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultReceiveSharesGate = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'receiveSharesGate'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"relativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultRelativeCap = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'relativeCap'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"sendAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultSendAssetsGate = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'sendAssetsGate'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"sendSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultSendSharesGate = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'sendSharesGate'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"symbol"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultSymbol = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'symbol'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"timelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultTimelock = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'timelock'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"totalAssets"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultTotalAssets_2 = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'totalAssets'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"totalSupply"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultTotalSupply = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'totalSupply'
-});
-
-/**
- * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"virtualShares"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useReadUsdcClearstarBoringVaultVirtualShares = /*#__PURE__*/ createUseReadContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'virtualShares'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVault = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"abdicate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultAbdicate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'abdicate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"accrueInterest"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultAccrueInterest = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'accrueInterest'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"addAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultAddAdapter = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'addAdapter'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"allocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultAllocate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'allocate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"approve"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultApprove = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'approve'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"deallocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultDeallocate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'deallocate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'decreaseAbsoluteCap'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'decreaseRelativeCap'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultDecreaseTimelock = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'decreaseTimelock'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"deposit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultDeposit = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'deposit'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"forceDeallocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultForceDeallocate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'forceDeallocate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'increaseAbsoluteCap'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'increaseRelativeCap'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"increaseTimelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultIncreaseTimelock = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'increaseTimelock'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"mint"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultMint = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'mint'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"multicall"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultMulticall = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'multicall'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"permit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultPermit = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'permit'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"redeem"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultRedeem = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'redeem'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"removeAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultRemoveAdapter = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'removeAdapter'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"revoke"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultRevoke = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'revoke'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetAdapterRegistry = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setAdapterRegistry'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setCurator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetCurator = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setCurator'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetForceDeallocatePenalty = /*#__PURE__*/ createUseWriteContract(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setForceDeallocatePenalty'
-  }
-);
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setIsAllocator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetIsAllocator = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setIsAllocator'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setIsSentinel"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetIsSentinel = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setIsSentinel'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetLiquidityAdapterAndData =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setLiquidityAdapterAndData'
-  });
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setManagementFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetManagementFee = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setManagementFee'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetManagementFeeRecipient = /*#__PURE__*/ createUseWriteContract(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setManagementFeeRecipient'
-  }
-);
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setMaxRate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetMaxRate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setMaxRate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setName"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetName = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setName'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setOwner"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetOwner = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setOwner'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetPerformanceFee = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setPerformanceFee'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetPerformanceFeeRecipient =
-  /*#__PURE__*/ createUseWriteContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setPerformanceFeeRecipient'
-  });
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setReceiveAssetsGate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setReceiveSharesGate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetSendAssetsGate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setSendAssetsGate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetSendSharesGate = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setSendSharesGate'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setSymbol"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSetSymbol = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setSymbol'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"submit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultSubmit = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'submit'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"transfer"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultTransfer = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'transfer'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"transferFrom"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultTransferFrom = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'transferFrom'
-});
-
-/**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"withdraw"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWriteUsdcClearstarBoringVaultWithdraw = /*#__PURE__*/ createUseWriteContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'withdraw'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVault = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"abdicate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultAbdicate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'abdicate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"accrueInterest"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultAccrueInterest = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'accrueInterest'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"addAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultAddAdapter = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'addAdapter'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"allocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultAllocate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'allocate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"approve"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultApprove = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'approve'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"deallocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultDeallocate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'deallocate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'decreaseAbsoluteCap'
-  }
-);
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultDecreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'decreaseRelativeCap'
-  }
-);
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultDecreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'decreaseTimelock'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"deposit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultDeposit = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'deposit'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"forceDeallocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultForceDeallocate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'forceDeallocate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'increaseAbsoluteCap'
-  }
-);
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultIncreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'increaseRelativeCap'
-  }
-);
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"increaseTimelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultIncreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'increaseTimelock'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"mint"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultMint = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'mint'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"multicall"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultMulticall = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'multicall'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"permit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultPermit = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'permit'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"redeem"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultRedeem = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'redeem'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"removeAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultRemoveAdapter = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'removeAdapter'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"revoke"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultRevoke = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'revoke'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetAdapterRegistry = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setAdapterRegistry'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setCurator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetCurator = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setCurator'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetForceDeallocatePenalty =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setForceDeallocatePenalty'
-  });
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setIsAllocator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetIsAllocator = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setIsAllocator'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setIsSentinel"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetIsSentinel = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setIsSentinel'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetLiquidityAdapterAndData =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setLiquidityAdapterAndData'
-  });
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setManagementFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetManagementFee = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setManagementFee'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetManagementFeeRecipient =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setManagementFeeRecipient'
-  });
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setMaxRate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetMaxRate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setMaxRate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setName"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetName = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setName'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setOwner"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetOwner = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setOwner'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetPerformanceFee = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setPerformanceFee'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetPerformanceFeeRecipient =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setPerformanceFeeRecipient'
-  });
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetReceiveAssetsGate =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setReceiveAssetsGate'
-  });
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetReceiveSharesGate =
-  /*#__PURE__*/ createUseSimulateContract({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    functionName: 'setReceiveSharesGate'
-  });
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetSendAssetsGate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setSendAssetsGate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetSendSharesGate = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setSendSharesGate'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"setSymbol"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSetSymbol = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'setSymbol'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"submit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultSubmit = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'submit'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"transfer"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultTransfer = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'transfer'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"transferFrom"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultTransferFrom = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'transferFrom'
-});
-
-/**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `functionName` set to `"withdraw"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useSimulateUsdcClearstarBoringVaultWithdraw = /*#__PURE__*/ createUseSimulateContract({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  functionName: 'withdraw'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVault = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Abdicate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultAbdicate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Abdicate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Accept"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultAccept = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Accept'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"AccrueInterest"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultAccrueInterest = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'AccrueInterest'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"AddAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultAddAdapter = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'AddAdapter'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Allocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultAllocate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Allocate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"AllowanceUpdatedByTransferFrom"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultAllowanceUpdatedByTransferFrom =
-  /*#__PURE__*/ createUseWatchContractEvent({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'AllowanceUpdatedByTransferFrom'
-  });
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Approval"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultApproval = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Approval'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Constructor"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultConstructor = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Constructor'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Deallocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Deallocate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"DecreaseAbsoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'DecreaseAbsoluteCap'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"DecreaseRelativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'DecreaseRelativeCap'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"DecreaseTimelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultDecreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'DecreaseTimelock'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Deposit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultDeposit = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Deposit'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"ForceDeallocate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultForceDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'ForceDeallocate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"IncreaseAbsoluteCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'IncreaseAbsoluteCap'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"IncreaseRelativeCap"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'IncreaseRelativeCap'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"IncreaseTimelock"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultIncreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'IncreaseTimelock'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Permit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultPermit = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Permit'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"RemoveAdapter"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultRemoveAdapter = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'RemoveAdapter'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Revoke"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultRevoke = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Revoke'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetAdapterRegistry"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetAdapterRegistry = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetAdapterRegistry'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetCurator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetCurator = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetCurator'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetForceDeallocatePenalty"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetForceDeallocatePenalty =
-  /*#__PURE__*/ createUseWatchContractEvent({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'SetForceDeallocatePenalty'
-  });
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetIsAllocator"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetIsAllocator = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetIsAllocator'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetIsSentinel"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetIsSentinel = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetIsSentinel'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetLiquidityAdapterAndData"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetLiquidityAdapterAndData =
-  /*#__PURE__*/ createUseWatchContractEvent({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'SetLiquidityAdapterAndData'
-  });
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetManagementFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetManagementFee = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetManagementFee'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetManagementFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetManagementFeeRecipient =
-  /*#__PURE__*/ createUseWatchContractEvent({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'SetManagementFeeRecipient'
-  });
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetMaxRate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetMaxRate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetMaxRate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetName"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetName = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetName'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetOwner"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetOwner = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetOwner'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetPerformanceFee"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetPerformanceFee = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetPerformanceFee'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetPerformanceFeeRecipient"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetPerformanceFeeRecipient =
-  /*#__PURE__*/ createUseWatchContractEvent({
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'SetPerformanceFeeRecipient'
-  });
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetReceiveAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWatchContractEvent(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'SetReceiveAssetsGate'
-  }
-);
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetReceiveSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWatchContractEvent(
-  {
-    abi: usdcClearstarBoringVaultAbi,
-    address: usdcClearstarBoringVaultAddress,
-    eventName: 'SetReceiveSharesGate'
-  }
-);
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetSendAssetsGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetSendAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetSendAssetsGate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetSendSharesGate"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetSendSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetSendSharesGate'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"SetSymbol"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSetSymbol = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'SetSymbol'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Submit"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultSubmit = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Submit'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Transfer"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultTransfer = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Transfer'
-});
-
-/**
- * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcClearstarBoringVaultAbi}__ and `eventName` set to `"Withdraw"`
- *
- * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49)
- */
-export const useWatchUsdcClearstarBoringVaultWithdraw = /*#__PURE__*/ createUseWatchContractEvent({
-  abi: usdcClearstarBoringVaultAbi,
-  address: usdcClearstarBoringVaultAddress,
-  eventName: 'Withdraw'
-});
-
-/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcL2Abi}__
  *
  * - [__View Contract on Op Mainnet Optimism Explorer__](https://optimistic.etherscan.io/address/0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85)
@@ -34532,6 +34833,2035 @@ export const useWatchUsdcL2Upgraded = /*#__PURE__*/ createUseWatchContractEvent(
 });
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVault = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultDomainSeparator = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'DOMAIN_SEPARATOR'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"_totalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultTotalAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: '_totalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"abdicated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAbdicated = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'abdicated'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"absoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAbsoluteCap = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'absoluteCap'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"accrueInterestView"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAccrueInterestView = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'accrueInterestView'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"adapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAdapterRegistry = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'adapterRegistry'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"adapters"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAdapters = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'adapters'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"adaptersLength"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAdaptersLength = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'adaptersLength'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"allocation"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAllocation = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'allocation'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"allowance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAllowance = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'allowance'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"asset"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultAsset = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'asset'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"canReceiveAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultCanReceiveAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'canReceiveAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"canReceiveShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultCanReceiveShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'canReceiveShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"canSendAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultCanSendAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'canSendAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"canSendShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultCanSendShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'canSendShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"convertToAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultConvertToAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'convertToAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"convertToShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultConvertToShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'convertToShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"curator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultCurator = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'curator'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decimals"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultDecimals = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decimals'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"executableAt"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultExecutableAt = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'executableAt'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"firstTotalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultFirstTotalAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'firstTotalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"forceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultForceDeallocatePenalty = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'forceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"isAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultIsAdapter = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'isAdapter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"isAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultIsAllocator = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'isAllocator'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"isSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultIsSentinel = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'isSentinel'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"lastUpdate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultLastUpdate = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'lastUpdate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"liquidityAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultLiquidityAdapter = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'liquidityAdapter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"liquidityData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultLiquidityData = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'liquidityData'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"managementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultManagementFee = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'managementFee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"managementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultManagementFeeRecipient = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'managementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"maxDeposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultMaxDeposit = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'maxDeposit'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"maxMint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultMaxMint = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'maxMint'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"maxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultMaxRate = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'maxRate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"maxRedeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultMaxRedeem = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'maxRedeem'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"maxWithdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultMaxWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'maxWithdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"name"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultName = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'name'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"nonces"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultNonces = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'nonces'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"owner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'owner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"performanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultPerformanceFee = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'performanceFee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"performanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultPerformanceFeeRecipient = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'performanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"previewDeposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultPreviewDeposit = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'previewDeposit'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"previewMint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultPreviewMint = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'previewMint'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"previewRedeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultPreviewRedeem = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'previewRedeem'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"previewWithdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultPreviewWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'previewWithdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"receiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultReceiveAssetsGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'receiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"receiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultReceiveSharesGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'receiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"relativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultRelativeCap = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'relativeCap'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"sendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultSendAssetsGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'sendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"sendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultSendSharesGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'sendSharesGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"symbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultSymbol = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'symbol'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"timelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultTimelock = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'timelock'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"totalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultTotalAssets_2 = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'totalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"virtualShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useReadUsdcRiskCapitalVaultVirtualShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'virtualShares'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVault = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultAbdicate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'abdicate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"accrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultAccrueInterest = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'accrueInterest'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"addAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultAddAdapter = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'addAdapter'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultAllocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'allocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultApprove = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultDeallocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'deallocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultDecreaseTimelock = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultDeposit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'deposit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"forceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultForceDeallocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'forceDeallocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'increaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'increaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"increaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultIncreaseTimelock = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'increaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultMint = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"multicall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultMulticall = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'multicall'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"redeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultRedeem = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'redeem'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"removeAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultRemoveAdapter = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'removeAdapter'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultRevoke = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'revoke'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetAdapterRegistry = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetCurator = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setCurator'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetForceDeallocatePenalty = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setForceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetIsAllocator = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setIsAllocator'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetIsSentinel = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setIsSentinel'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetLiquidityAdapterAndData = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setLiquidityAdapterAndData'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetManagementFee = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setManagementFee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetManagementFeeRecipient = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setManagementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetMaxRate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setMaxRate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetName = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setName'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetOwner = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setOwner'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetPerformanceFee = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetPerformanceFeeRecipient = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setPerformanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetSendAssetsGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetSendSharesGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSetSymbol = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setSymbol'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultSubmit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'submit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultTransferFrom = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWriteUsdcRiskCapitalVaultWithdraw = /*#__PURE__*/ createUseWriteContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVault = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultAbdicate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'abdicate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"accrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultAccrueInterest = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'accrueInterest'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"addAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultAddAdapter = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'addAdapter'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultAllocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'allocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultApprove = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultDeallocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'deallocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultDecreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultDecreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'decreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultDeposit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'deposit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"forceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultForceDeallocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'forceDeallocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'increaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultIncreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'increaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"increaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultIncreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'increaseTimelock'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultMint = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"multicall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultMulticall = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'multicall'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultPermit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"redeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultRedeem = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'redeem'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"removeAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultRemoveAdapter = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'removeAdapter'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultRevoke = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'revoke'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetAdapterRegistry = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetCurator = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setCurator'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetForceDeallocatePenalty =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    functionName: 'setForceDeallocatePenalty'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetIsAllocator = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setIsAllocator'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetIsSentinel = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setIsSentinel'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetLiquidityAdapterAndData =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    functionName: 'setLiquidityAdapterAndData'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetManagementFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setManagementFee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetManagementFeeRecipient =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    functionName: 'setManagementFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetMaxRate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setMaxRate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetName = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setName'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetOwner = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setOwner'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetPerformanceFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetPerformanceFeeRecipient =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    functionName: 'setPerformanceFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetReceiveSharesGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetSendAssetsGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetSendSharesGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"setSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSetSymbol = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'setSymbol'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultSubmit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'submit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultTransfer = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultTransferFrom = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useSimulateUsdcRiskCapitalVaultWithdraw = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVault = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultAbdicate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Abdicate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Accept"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultAccept = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Accept'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"AccrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultAccrueInterest = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'AccrueInterest'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"AddAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultAddAdapter = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'AddAdapter'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultAllocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Allocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"AllowanceUpdatedByTransferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultAllowanceUpdatedByTransferFrom =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    eventName: 'AllowanceUpdatedByTransferFrom'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Approval"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultApproval = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Approval'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Constructor"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultConstructor = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Constructor'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Deallocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"DecreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'DecreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"DecreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'DecreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"DecreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultDecreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'DecreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultDeposit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Deposit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"ForceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultForceDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'ForceDeallocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"IncreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'IncreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"IncreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'IncreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"IncreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultIncreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'IncreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultPermit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Permit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"RemoveAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultRemoveAdapter = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'RemoveAdapter'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultRevoke = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Revoke'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetAdapterRegistry = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetCurator = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetCurator'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetForceDeallocatePenalty =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    eventName: 'SetForceDeallocatePenalty'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetIsAllocator = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetIsAllocator'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetIsSentinel = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetIsSentinel'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetLiquidityAdapterAndData =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    eventName: 'SetLiquidityAdapterAndData'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetManagementFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetManagementFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetManagementFeeRecipient =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    eventName: 'SetManagementFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetMaxRate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetMaxRate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetName = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetName'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetOwner = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetOwner'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetPerformanceFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetPerformanceFeeRecipient =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdcRiskCapitalVaultAbi,
+    address: usdcRiskCapitalVaultAddress,
+    eventName: 'SetPerformanceFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetSendAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetSendSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"SetSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSetSymbol = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'SetSymbol'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultSubmit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Submit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultTransfer = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Transfer'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdcRiskCapitalVaultAbi}__ and `eventName` set to `"Withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf)
+ */
+export const useWatchUsdcRiskCapitalVaultWithdraw = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdcRiskCapitalVaultAbi,
+  address: usdcRiskCapitalVaultAddress,
+  eventName: 'Withdraw'
+});
+
+/**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsAbi}__
  *
  * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xdC035D45d973E3EC169d2276DDab16f1e407384F)
@@ -34547,6 +36877,2023 @@ export const useWatchUsdsUpgraded = /*#__PURE__*/ createUseWatchContractEvent({
   abi: usdsAbi,
   address: usdsAddress,
   eventName: 'Upgraded'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVault = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultDomainSeparator = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'DOMAIN_SEPARATOR'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"_totalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultTotalAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: '_totalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"abdicated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAbdicated = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'abdicated'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"absoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAbsoluteCap = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'absoluteCap'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"accrueInterestView"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAccrueInterestView = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'accrueInterestView'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"adapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAdapterRegistry = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'adapterRegistry'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"adapters"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAdapters = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'adapters'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"adaptersLength"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAdaptersLength = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'adaptersLength'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"allocation"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAllocation = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'allocation'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"allowance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAllowance = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'allowance'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"asset"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultAsset = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'asset'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"canReceiveAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultCanReceiveAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'canReceiveAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"canReceiveShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultCanReceiveShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'canReceiveShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"canSendAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultCanSendAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'canSendAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"canSendShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultCanSendShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'canSendShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"convertToAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultConvertToAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'convertToAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"convertToShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultConvertToShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'convertToShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"curator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultCurator = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'curator'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decimals"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultDecimals = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decimals'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"executableAt"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultExecutableAt = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'executableAt'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"firstTotalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultFirstTotalAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'firstTotalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"forceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultForceDeallocatePenalty = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'forceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"isAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultIsAdapter = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'isAdapter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"isAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultIsAllocator = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'isAllocator'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"isSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultIsSentinel = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'isSentinel'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"lastUpdate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultLastUpdate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'lastUpdate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"liquidityAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultLiquidityAdapter = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'liquidityAdapter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"liquidityData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultLiquidityData = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'liquidityData'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"managementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultManagementFee = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'managementFee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"managementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultManagementFeeRecipient = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'managementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"maxDeposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultMaxDeposit = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'maxDeposit'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"maxMint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultMaxMint = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'maxMint'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"maxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultMaxRate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'maxRate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"maxRedeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultMaxRedeem = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'maxRedeem'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"maxWithdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultMaxWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'maxWithdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"name"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultName = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'name'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"nonces"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultNonces = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'nonces'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"owner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'owner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"performanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultPerformanceFee = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'performanceFee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"performanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultPerformanceFeeRecipient = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'performanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"previewDeposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultPreviewDeposit = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'previewDeposit'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"previewMint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultPreviewMint = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'previewMint'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"previewRedeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultPreviewRedeem = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'previewRedeem'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"previewWithdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultPreviewWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'previewWithdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"receiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultReceiveAssetsGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'receiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"receiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultReceiveSharesGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'receiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"relativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultRelativeCap = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'relativeCap'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"sendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultSendAssetsGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'sendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"sendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultSendSharesGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'sendSharesGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"symbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultSymbol = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'symbol'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"timelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultTimelock = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'timelock'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"totalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultTotalAssets_2 = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'totalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"virtualShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useReadUsdsFlagshipVaultVirtualShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'virtualShares'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVault = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultAbdicate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'abdicate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"accrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultAccrueInterest = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'accrueInterest'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"addAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultAddAdapter = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'addAdapter'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultAllocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'allocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultApprove = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultDeallocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'deallocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultDecreaseTimelock = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultDeposit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'deposit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"forceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultForceDeallocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'forceDeallocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'increaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'increaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"increaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultIncreaseTimelock = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'increaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultMint = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"multicall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultMulticall = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'multicall'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"redeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultRedeem = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'redeem'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"removeAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultRemoveAdapter = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'removeAdapter'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultRevoke = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'revoke'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetAdapterRegistry = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetCurator = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setCurator'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetForceDeallocatePenalty = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setForceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetIsAllocator = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setIsAllocator'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetIsSentinel = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setIsSentinel'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetLiquidityAdapterAndData = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setLiquidityAdapterAndData'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetManagementFee = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setManagementFee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetManagementFeeRecipient = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setManagementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetMaxRate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setMaxRate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetName = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setName'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetOwner = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setOwner'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetPerformanceFee = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetPerformanceFeeRecipient = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setPerformanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetSendAssetsGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetSendSharesGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSetSymbol = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setSymbol'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultSubmit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'submit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultTransferFrom = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWriteUsdsFlagshipVaultWithdraw = /*#__PURE__*/ createUseWriteContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVault = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultAbdicate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'abdicate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"accrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultAccrueInterest = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'accrueInterest'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"addAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultAddAdapter = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'addAdapter'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultAllocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'allocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultApprove = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultDeallocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'deallocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultDecreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultDecreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'decreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultDeposit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'deposit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"forceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultForceDeallocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'forceDeallocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'increaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultIncreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'increaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"increaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultIncreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'increaseTimelock'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultMint = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"multicall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultMulticall = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'multicall'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultPermit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"redeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultRedeem = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'redeem'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"removeAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultRemoveAdapter = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'removeAdapter'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultRevoke = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'revoke'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetAdapterRegistry = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetCurator = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setCurator'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetForceDeallocatePenalty = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setForceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetIsAllocator = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setIsAllocator'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetIsSentinel = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setIsSentinel'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetLiquidityAdapterAndData = /*#__PURE__*/ createUseSimulateContract(
+  { abi: usdsFlagshipVaultAbi, address: usdsFlagshipVaultAddress, functionName: 'setLiquidityAdapterAndData' }
+);
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetManagementFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setManagementFee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetManagementFeeRecipient = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setManagementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetMaxRate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setMaxRate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetName = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setName'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetOwner = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setOwner'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetPerformanceFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetPerformanceFeeRecipient = /*#__PURE__*/ createUseSimulateContract(
+  { abi: usdsFlagshipVaultAbi, address: usdsFlagshipVaultAddress, functionName: 'setPerformanceFeeRecipient' }
+);
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetReceiveSharesGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetSendAssetsGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetSendSharesGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"setSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSetSymbol = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'setSymbol'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultSubmit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'submit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultTransfer = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultTransferFrom = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useSimulateUsdsFlagshipVaultWithdraw = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVault = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultAbdicate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Abdicate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Accept"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultAccept = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Accept'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"AccrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultAccrueInterest = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'AccrueInterest'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"AddAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultAddAdapter = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'AddAdapter'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultAllocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Allocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"AllowanceUpdatedByTransferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultAllowanceUpdatedByTransferFrom =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdsFlagshipVaultAbi,
+    address: usdsFlagshipVaultAddress,
+    eventName: 'AllowanceUpdatedByTransferFrom'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Approval"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultApproval = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Approval'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Constructor"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultConstructor = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Constructor'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Deallocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"DecreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'DecreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"DecreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'DecreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"DecreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultDecreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'DecreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultDeposit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Deposit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"ForceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultForceDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'ForceDeallocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"IncreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'IncreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"IncreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'IncreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"IncreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultIncreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'IncreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultPermit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Permit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"RemoveAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultRemoveAdapter = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'RemoveAdapter'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultRevoke = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Revoke'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetAdapterRegistry = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetCurator = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetCurator'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetForceDeallocatePenalty = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetForceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetIsAllocator = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetIsAllocator'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetIsSentinel = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetIsSentinel'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetLiquidityAdapterAndData = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetLiquidityAdapterAndData'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetManagementFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetManagementFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetManagementFeeRecipient = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetManagementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetMaxRate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetMaxRate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetName = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetName'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetOwner = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetOwner'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetPerformanceFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetPerformanceFeeRecipient = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetPerformanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetSendAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetSendSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"SetSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSetSymbol = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'SetSymbol'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultSubmit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Submit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultTransfer = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Transfer'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdsFlagshipVaultAbi}__ and `eventName` set to `"Withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0xe15fcc81118895b67b6647bbd393182df44e11e0)
+ */
+export const useWatchUsdsFlagshipVaultWithdraw = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdsFlagshipVaultAbi,
+  address: usdsFlagshipVaultAddress,
+  eventName: 'Withdraw'
 });
 
 /**
@@ -38616,6 +42963,2035 @@ export const useWatchUsdtUnpause = /*#__PURE__*/ createUseWatchContractEvent({
   abi: usdtAbi,
   address: usdtAddress,
   eventName: 'Unpause'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVault = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultDomainSeparator = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'DOMAIN_SEPARATOR'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"_totalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultTotalAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: '_totalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"abdicated"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAbdicated = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'abdicated'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"absoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAbsoluteCap = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'absoluteCap'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"accrueInterestView"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAccrueInterestView = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'accrueInterestView'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"adapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAdapterRegistry = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'adapterRegistry'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"adapters"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAdapters = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'adapters'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"adaptersLength"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAdaptersLength = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'adaptersLength'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"allocation"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAllocation = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'allocation'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"allowance"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAllowance = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'allowance'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"asset"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultAsset = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'asset'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"balanceOf"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultBalanceOf = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'balanceOf'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"canReceiveAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultCanReceiveAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'canReceiveAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"canReceiveShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultCanReceiveShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'canReceiveShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"canSendAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultCanSendAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'canSendAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"canSendShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultCanSendShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'canSendShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"convertToAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultConvertToAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'convertToAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"convertToShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultConvertToShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'convertToShares'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"curator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultCurator = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'curator'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decimals"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultDecimals = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decimals'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"executableAt"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultExecutableAt = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'executableAt'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"firstTotalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultFirstTotalAssets = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'firstTotalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"forceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultForceDeallocatePenalty = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'forceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"isAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultIsAdapter = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'isAdapter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"isAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultIsAllocator = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'isAllocator'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"isSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultIsSentinel = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'isSentinel'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"lastUpdate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultLastUpdate = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'lastUpdate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"liquidityAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultLiquidityAdapter = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'liquidityAdapter'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"liquidityData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultLiquidityData = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'liquidityData'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"managementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultManagementFee = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'managementFee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"managementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultManagementFeeRecipient = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'managementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"maxDeposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultMaxDeposit = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'maxDeposit'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"maxMint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultMaxMint = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'maxMint'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"maxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultMaxRate = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'maxRate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"maxRedeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultMaxRedeem = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'maxRedeem'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"maxWithdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultMaxWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'maxWithdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"name"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultName = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'name'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"nonces"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultNonces = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'nonces'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"owner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultOwner = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'owner'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"performanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultPerformanceFee = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'performanceFee'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"performanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultPerformanceFeeRecipient = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'performanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"previewDeposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultPreviewDeposit = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'previewDeposit'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"previewMint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultPreviewMint = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'previewMint'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"previewRedeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultPreviewRedeem = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'previewRedeem'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"previewWithdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultPreviewWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'previewWithdraw'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"receiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultReceiveAssetsGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'receiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"receiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultReceiveSharesGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'receiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"relativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultRelativeCap = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'relativeCap'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"sendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultSendAssetsGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'sendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"sendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultSendSharesGate = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'sendSharesGate'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"symbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultSymbol = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'symbol'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"timelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultTimelock = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'timelock'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"totalAssets"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultTotalAssets_2 = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'totalAssets'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"totalSupply"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultTotalSupply = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'totalSupply'
+});
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"virtualShares"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useReadUsdtRiskCapitalVaultVirtualShares = /*#__PURE__*/ createUseReadContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'virtualShares'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVault = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultAbdicate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'abdicate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"accrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultAccrueInterest = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'accrueInterest'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"addAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultAddAdapter = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'addAdapter'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultAllocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'allocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultApprove = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultDeallocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'deallocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultDecreaseTimelock = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultDeposit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'deposit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"forceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultForceDeallocate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'forceDeallocate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'increaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'increaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"increaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultIncreaseTimelock = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'increaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultMint = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"multicall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultMulticall = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'multicall'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"redeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultRedeem = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'redeem'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"removeAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultRemoveAdapter = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'removeAdapter'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultRevoke = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'revoke'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetAdapterRegistry = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetCurator = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setCurator'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetForceDeallocatePenalty = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setForceDeallocatePenalty'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetIsAllocator = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setIsAllocator'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetIsSentinel = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setIsSentinel'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetLiquidityAdapterAndData = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setLiquidityAdapterAndData'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetManagementFee = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setManagementFee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetManagementFeeRecipient = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setManagementFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetMaxRate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setMaxRate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetName = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setName'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetOwner = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setOwner'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetPerformanceFee = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetPerformanceFeeRecipient = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setPerformanceFeeRecipient'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetSendAssetsGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetSendSharesGate = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSetSymbol = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setSymbol'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultSubmit = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'submit'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultTransfer = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultTransferFrom = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWriteUsdtRiskCapitalVaultWithdraw = /*#__PURE__*/ createUseWriteContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVault = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultAbdicate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'abdicate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"accrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultAccrueInterest = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'accrueInterest'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"addAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultAddAdapter = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'addAdapter'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultAllocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'allocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"approve"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultApprove = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'approve'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultDeallocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'deallocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultDecreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"decreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultDecreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'decreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultDeposit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'deposit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"forceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultForceDeallocate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'forceDeallocate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"increaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'increaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"increaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultIncreaseRelativeCap = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'increaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"increaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultIncreaseTimelock = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'increaseTimelock'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"mint"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultMint = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'mint'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"multicall"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultMulticall = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'multicall'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultPermit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'permit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"redeem"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultRedeem = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'redeem'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"removeAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultRemoveAdapter = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'removeAdapter'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultRevoke = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'revoke'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetAdapterRegistry = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetCurator = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setCurator'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetForceDeallocatePenalty =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    functionName: 'setForceDeallocatePenalty'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetIsAllocator = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setIsAllocator'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetIsSentinel = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setIsSentinel'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetLiquidityAdapterAndData =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    functionName: 'setLiquidityAdapterAndData'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetManagementFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setManagementFee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetManagementFeeRecipient =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    functionName: 'setManagementFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetMaxRate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setMaxRate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetName = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setName'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetOwner = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setOwner'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetPerformanceFee = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetPerformanceFeeRecipient =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    functionName: 'setPerformanceFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetReceiveSharesGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetSendAssetsGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetSendSharesGate = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"setSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSetSymbol = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'setSymbol'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultSubmit = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'submit'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultTransfer = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'transfer'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"transferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultTransferFrom = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'transferFrom'
+});
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `functionName` set to `"withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useSimulateUsdtRiskCapitalVaultWithdraw = /*#__PURE__*/ createUseSimulateContract({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  functionName: 'withdraw'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVault = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Abdicate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultAbdicate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Abdicate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Accept"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultAccept = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Accept'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"AccrueInterest"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultAccrueInterest = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'AccrueInterest'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"AddAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultAddAdapter = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'AddAdapter'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Allocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultAllocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Allocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"AllowanceUpdatedByTransferFrom"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultAllowanceUpdatedByTransferFrom =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    eventName: 'AllowanceUpdatedByTransferFrom'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Approval"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultApproval = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Approval'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Constructor"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultConstructor = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Constructor'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Deallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Deallocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"DecreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultDecreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'DecreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"DecreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultDecreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'DecreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"DecreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultDecreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'DecreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Deposit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultDeposit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Deposit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"ForceDeallocate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultForceDeallocate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'ForceDeallocate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"IncreaseAbsoluteCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultIncreaseAbsoluteCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'IncreaseAbsoluteCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"IncreaseRelativeCap"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultIncreaseRelativeCap = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'IncreaseRelativeCap'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"IncreaseTimelock"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultIncreaseTimelock = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'IncreaseTimelock'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Permit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultPermit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Permit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"RemoveAdapter"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultRemoveAdapter = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'RemoveAdapter'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Revoke"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultRevoke = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Revoke'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetAdapterRegistry"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetAdapterRegistry = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetAdapterRegistry'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetCurator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetCurator = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetCurator'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetForceDeallocatePenalty"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetForceDeallocatePenalty =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    eventName: 'SetForceDeallocatePenalty'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetIsAllocator"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetIsAllocator = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetIsAllocator'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetIsSentinel"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetIsSentinel = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetIsSentinel'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetLiquidityAdapterAndData"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetLiquidityAdapterAndData =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    eventName: 'SetLiquidityAdapterAndData'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetManagementFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetManagementFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetManagementFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetManagementFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetManagementFeeRecipient =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    eventName: 'SetManagementFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetMaxRate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetMaxRate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetMaxRate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetName"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetName = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetName'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetOwner"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetOwner = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetOwner'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetPerformanceFee"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetPerformanceFee = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetPerformanceFee'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetPerformanceFeeRecipient"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetPerformanceFeeRecipient =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: usdtRiskCapitalVaultAbi,
+    address: usdtRiskCapitalVaultAddress,
+    eventName: 'SetPerformanceFeeRecipient'
+  });
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetReceiveAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetReceiveAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetReceiveAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetReceiveSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetReceiveSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetReceiveSharesGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetSendAssetsGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetSendAssetsGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetSendAssetsGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetSendSharesGate"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetSendSharesGate = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetSendSharesGate'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"SetSymbol"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSetSymbol = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'SetSymbol'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Submit"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultSubmit = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Submit'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Transfer"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultTransfer = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Transfer'
+});
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link usdtRiskCapitalVaultAbi}__ and `eventName` set to `"Withdraw"`
+ *
+ * [__View Contract on Ethereum Etherscan__](https://etherscan.io/address/0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d)
+ */
+export const useWatchUsdtRiskCapitalVaultWithdraw = /*#__PURE__*/ createUseWatchContractEvent({
+  abi: usdtRiskCapitalVaultAbi,
+  address: usdtRiskCapitalVaultAddress,
+  eventName: 'Withdraw'
 });
 
 /**

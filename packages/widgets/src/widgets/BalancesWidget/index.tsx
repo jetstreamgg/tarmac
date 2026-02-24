@@ -31,6 +31,7 @@ export type BalancesWidgetProps = WidgetProps & {
   hideZeroBalances?: boolean;
   setHideZeroBalances?: (hideZeroBalances: boolean) => void;
   onExploreVaults?: () => void;
+  hideWalletCard?: boolean;
 };
 
 export const BalancesWidget = ({
@@ -51,7 +52,8 @@ export const BalancesWidget = ({
   hideZeroBalances,
   setShowAllNetworks,
   setHideZeroBalances,
-  onExploreVaults
+  onExploreVaults,
+  hideWalletCard
 }: BalancesWidgetProps) => {
   return (
     <ErrorBoundary componentName="BalancesWidget">
@@ -74,6 +76,7 @@ export const BalancesWidget = ({
           setShowAllNetworks={setShowAllNetworks}
           setHideZeroBalances={setHideZeroBalances}
           onExploreVaults={onExploreVaults}
+          hideWalletCard={hideWalletCard}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -97,7 +100,8 @@ const BalancesWidgetWrapped = ({
   hideZeroBalances,
   setShowAllNetworks,
   setHideZeroBalances,
-  onExploreVaults
+  onExploreVaults,
+  hideWalletCard
 }: BalancesWidgetProps) => {
   const { isConnected, isConnecting } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
@@ -152,10 +156,12 @@ const BalancesWidgetWrapped = ({
           </CardAnimationWrapper>
         ) : (
           <CardAnimationWrapper key="widget-connected" className="flex flex-col gap-4">
-            <BalancesHeader
-              isConnectedAndEnabled={isConnectedAndEnabled}
-              onExternalLinkClicked={onExternalLinkClicked}
-            />
+            {!hideWalletCard && (
+              <BalancesHeader
+                isConnectedAndEnabled={isConnectedAndEnabled}
+                onExternalLinkClicked={onExternalLinkClicked}
+              />
+            )}
             <BalancesContent
               hideModuleBalances={hideModuleBalances}
               rewardsCardUrl={rewardsCardUrl}

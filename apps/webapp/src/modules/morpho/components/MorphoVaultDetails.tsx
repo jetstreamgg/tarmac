@@ -10,14 +10,7 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { MorphoVaultChart } from './MorphoVaultChart';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { Token } from '@jetstreamgg/sky-hooks';
-import { AboutStUsds } from '@/modules/ui/components/AboutStUsds';
-import { AboutUsds } from '@/modules/ui/components/AboutUsds';
-import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
-import { VaultsIntentMapping } from '@/lib/constants';
-import { VaultsIntent } from '@/lib/enums';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
-import { filterActionsByIntent } from '@/lib/utils';
+import { AboutMorphoVaults } from '@/modules/ui/components/AboutMorphoVaults';
 
 type MorphoVaultDetailsProps = {
   /** The Morpho vault contract address */
@@ -34,9 +27,13 @@ export function MorphoVaultDetails({
   vaultName
 }: MorphoVaultDetailsProps): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const { linkedActionConfig } = useConfigContext();
-  const widget = VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT];
-  const { data: actionData } = useUserSuggestedActions(undefined, widget);
+
+  const getBannerId = () => {
+    if (vaultName.includes('Risk Capital')) return 'risk-capital-vault';
+    if (vaultName.includes('Flagship')) return 'flagship-vault';
+    if (vaultName.includes('Steakhouse') || vaultName.includes('Savings')) return 'savings-vault';
+    return 'morpho-vaults';
+  };
 
   return (
     <DetailSectionWrapper>
@@ -57,15 +54,6 @@ export function MorphoVaultDetails({
           <MorphoVaultAllocationsDetails vaultAddress={vaultAddress} />
         </DetailSectionRow>
       </DetailSection>
-      {isConnectedAndAcceptedTerms &&
-        !linkedActionConfig?.showLinkedAction &&
-        (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
-          <DetailSection title={t`Combined actions`}>
-            <DetailSectionRow>
-              <ActionsShowcase widget={widget} currentExpertModule={widget} />
-            </DetailSectionRow>
-          </DetailSection>
-        )}
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your ${vaultName} vault transaction history`}>
           <DetailSectionRow>
@@ -78,12 +66,9 @@ export function MorphoVaultDetails({
           <MorphoVaultChart vaultAddress={vaultAddress} assetToken={assetToken} />
         </DetailSectionRow>
       </DetailSection>
-      <DetailSection title={t`About Native Sky Protocol Tokens`}>
+      <DetailSection title={t`About`}>
         <DetailSectionRow>
-          <div>
-            <AboutStUsds module="stusds-module-banners" />
-            <AboutUsds />
-          </div>
+          <AboutMorphoVaults bannerId={getBannerId()} />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`FAQs`}>

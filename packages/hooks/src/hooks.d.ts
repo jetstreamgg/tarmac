@@ -69,6 +69,7 @@ export type BatchWriteHook = {
   prepared: boolean;
   execute: () => void;
   currentCallIndex: number;
+  reset: () => void;
 };
 
 export type BatchWriteHookParams = {
@@ -141,4 +142,5 @@ export type SequentialTransactionHook = {
   execute: () => void;
   prepared: boolean;
   currentCallIndex: number;
+  reset: () => void;
 };

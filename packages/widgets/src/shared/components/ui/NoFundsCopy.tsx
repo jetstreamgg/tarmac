@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { ConnectWallet } from '../icons/ConnectWallet';
+import { EmptyFunds } from '../icons/EmptyFunds';
 import { Heading } from './Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 
@@ -12,13 +12,13 @@ export function NoFundsCopy({
 }) {
   return (
     <div className={className}>
-      <div className="flex items-center gap-3 py-1 pl-5 pr-3">
+      <div className="flex items-center gap-3 py-1 pr-3 pl-5">
         <div className="px-3 py-1.5">
-          <ConnectWallet />
+          <EmptyFunds />
         </div>
         <div className="space-y-1">
           <Heading variant="small">
-            <Trans>Put your available funds to work</Trans>
+            <Trans>Put your funds to work</Trans>
           </Heading>
           <ExternalLink
             href="https://sky.money/features"

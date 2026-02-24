@@ -340,6 +340,8 @@ const StUSDSWidgetWrapped = ({
   };
 
   const onClickBack = () => {
+    batchStUsdsDeposit.reset?.();
+    if ('reset' in stUsdsWithdraw) stUsdsWithdraw.reset?.();
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({
       ...prev,

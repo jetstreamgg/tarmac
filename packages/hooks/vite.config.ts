@@ -49,11 +49,12 @@ export default defineConfig({
     }
   },
   plugins: [
-    dts({
-      insertTypesEntry: true,
-      copyDtsFiles: true,
-      exclude: ['src/**/*.stories.ts, src/**/*.test.ts, src/**/*.test.tsx']
-    }),
+    !process.env.CI &&
+      dts({
+        insertTypesEntry: true,
+        copyDtsFiles: true,
+        exclude: ['src/**/*.stories.ts, src/**/*.test.ts, src/**/*.test.tsx']
+      }),
     visualizer()
   ]
 });

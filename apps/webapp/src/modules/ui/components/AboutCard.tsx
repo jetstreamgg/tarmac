@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 interface AboutCardProps {
   title?: ReactNode;
   tokenSymbol?: string;
+  icon?: ReactNode;
   description: ReactNode;
   linkHref: string;
   linkLabel?: ReactNode;
@@ -22,6 +23,7 @@ interface AboutCardProps {
 export const AboutCard = ({
   title,
   tokenSymbol,
+  icon,
   description,
   linkHref,
   linkLabel = <Trans>View contract</Trans>,
@@ -30,6 +32,15 @@ export const AboutCard = ({
   contentWidth = 'w-2/3'
 }: AboutCardProps) => {
   const renderTitle = () => {
+    if (icon && title) {
+      return (
+        <>
+          {icon}
+          {title}
+        </>
+      );
+    }
+
     if (title && tokenSymbol) {
       return (
         <>

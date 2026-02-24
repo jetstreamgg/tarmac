@@ -1,4 +1,4 @@
-import { CardAnimationWrapper, MorphoVaultBadge, WidgetContainer } from '@jetstreamgg/sky-widgets';
+import { CardAnimationWrapper, WidgetContainer } from '@jetstreamgg/sky-widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { VaultsIntent } from '@/lib/enums';
@@ -11,48 +11,6 @@ import { useSearchParams } from 'react-router-dom';
 import { MorphoVaultStatsCard } from '@/modules/expert/components/MorphoVaultStatsCard';
 import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { HStack } from '@/modules/layout/components/HStack';
-import { VStack } from '@/modules/layout/components/VStack';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-
-// Hardcoded demo vaults that don't exist yet
-const DEMO_VAULTS = [
-  { name: 'USDS Flagship', tokenSymbol: 'USDS', rate: '6.50%', tvl: '—', liquidity: '—' },
-  { name: 'USDC Risk Capital', tokenSymbol: 'USDC', rate: '8.20%', tvl: '—', liquidity: '—' },
-  { name: 'USDT Risk Capital', tokenSymbol: 'USDT', rate: '7.80%', tvl: '—', liquidity: '—' }
-];
-
-function DemoVaultCard({ name, tokenSymbol, rate, tvl, liquidity }: (typeof DEMO_VAULTS)[number]) {
-  return (
-    <Card className="from-card to-card h-full bg-radial-(--gradient-position) transition-[background-color,background-image,opacity] lg:p-5">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <HStack className="items-center" gap={2}>
-          <TokenIcon className="h-6 w-6" token={{ symbol: tokenSymbol }} />
-          <Text>{name}</Text>
-          <MorphoVaultBadge />
-        </HStack>
-        <Text className="text-bullish text-sm font-semibold">{rate}</Text>
-      </CardHeader>
-      <CardContent className="mt-5 p-0">
-        <HStack className="justify-between" gap={2}>
-          <VStack className="items-stretch justify-between" gap={2}>
-            <Text className="text-textSecondary text-sm leading-4">
-              <Trans>Liquidity</Trans>
-            </Text>
-            <Text>{liquidity}</Text>
-          </VStack>
-          <VStack className="items-stretch justify-between text-right" gap={2}>
-            <Text className="text-textSecondary text-sm leading-4">
-              <Trans>TVL</Trans>
-            </Text>
-            <Text>{tvl}</Text>
-          </VStack>
-        </HStack>
-      </CardContent>
-    </Card>
-  );
-}
 
 export function VaultsWidgetPane(sharedProps: SharedProps) {
   const { selectedVaultsOption, setSelectedVaultsOption } = useConfigContext();
@@ -128,7 +86,6 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
                   />
                 );
               })}
-              {DEMO_VAULTS.map(vault => <DemoVaultCard key={vault.name} {...vault} />)}
             </CardAnimationWrapper>
           </WidgetContainer>
         )}

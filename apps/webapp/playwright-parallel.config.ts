@@ -65,8 +65,8 @@ export default defineConfig({
         '**/pane-visibility.spec.ts',
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
-        '**/capped-osm-unstake.spec.ts'
-        // '**/expert-morpho.spec.ts'
+        '**/capped-osm-unstake.spec.ts',
+        '**/sequential-tx.spec.ts'
       ]
     },
     {

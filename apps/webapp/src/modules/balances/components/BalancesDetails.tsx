@@ -5,24 +5,24 @@ import { t } from '@lingui/core/macro';
 import { BalancesSkyStatsOverview } from './BalancesSkyStatsOverview';
 import { BalancesChart } from './BalancesChart';
 import { BalancesFaq } from './BalancesFaq';
-import { SuggestedActions } from '@/modules/agent/components/SuggestedActions';
+import { SuggestedActions } from '@/modules/vaults/agent/components/SuggestedActions';
 
 export function BalancesDetails() {
   return (
     <DetailSectionWrapper>
-      <DetailSection title={t`Earn with your stables`} fixedOpen>
+      <DetailSection title={t`Earn with your Stables`} fixedOpen>
         <DetailSectionRow>
-          <SuggestedActions widget="stables" />
+          <SuggestedActions widget="stables" variant="card" />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Stake, Borrow, and Earn with SKY`} fixedOpen>
         <DetailSectionRow>
-          <SuggestedActions widget="sky" />
+          <SuggestedActions widget="sky" variant="card" />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Get Sky Protocol Tokens`} fixedOpen>
         <DetailSectionRow>
-          <SuggestedActions widget="tokens" />
+          <SuggestedActions widget="tokens" variant="card-sm" />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Sky Protocol overview`}>

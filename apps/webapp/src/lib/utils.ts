@@ -36,18 +36,30 @@ export function getFooterLinks(): FooterLink[] {
   return footerLinks;
 }
 
-const EXPERT_MODULE_INTENTS = Object.values(ExpertIntentMapping);
+const MODULE_PARENT_LINKED_ACTION_BY_INTENT: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.values(ExpertIntentMapping).map(moduleIntent => [
+      moduleIntent,
+      IntentMapping[Intent.EXPERT_INTENT]
+    ])
+  ),
+  ...Object.fromEntries(
+    Object.values(VaultsIntentMapping).map(moduleIntent => [
+      moduleIntent,
+      IntentMapping[Intent.VAULTS_INTENT]
+    ])
+  )
+};
 
 export function filterActionsByIntent(actions: LinkedAction[], intent: string): LinkedAction[] {
-  // For expert module intents (like 'stusds', 'morpho'), also include actions with la='expert'
-  const isExpertModuleIntent = EXPERT_MODULE_INTENTS.includes(intent);
+  const parentLinkedAction = MODULE_PARENT_LINKED_ACTION_BY_INTENT[intent];
 
   return actions.filter(x => {
     // Direct match on intent or linked action
     if (x.intent === intent || (x as LinkedAction)?.la === intent) {
       return true;
     }
-    if (isExpertModuleIntent && (x as LinkedAction)?.la === IntentMapping[Intent.EXPERT_INTENT]) {
+    if (parentLinkedAction && (x as LinkedAction)?.la === parentLinkedAction) {
       return true;
     }
     return false;

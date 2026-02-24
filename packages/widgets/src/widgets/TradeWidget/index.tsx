@@ -414,7 +414,8 @@ function TradeWidgetWrapped({
     execute: batchUsdtApproveExecute,
     prepared: batchUsdtApprovePrepared,
     isLoading: batchUsdtApproveIsLoading,
-    error: batchUsdtApproveError
+    error: batchUsdtApproveError,
+    reset: batchUsdtApproveReset
   } = useBatchUsdtApprove({
     tokenAddress: originTokenAddress,
     spender: tradeSpenderAddress,
@@ -1250,6 +1251,7 @@ function TradeWidgetWrapped({
       // If success trade we restart the flow
       nextOnClick();
     } else {
+      batchUsdtApproveReset?.();
       setTxStatus(TxStatus.IDLE);
       setEthFlowTxStatus(EthFlowTxStatus.IDLE);
       setWidgetState((prev: WidgetState) => ({

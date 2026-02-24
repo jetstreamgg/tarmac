@@ -331,10 +331,24 @@ export const contracts: {
     }
   },
   {
-    name: 'usdcClearstarBoringVault',
+    name: 'usdcRiskCapitalVault',
     address: {
-      [mainnet.id]: '0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49',
-      [TENDERLY_CHAIN_ID]: '0xF3Cc5c9A25508D8d959618fd48F6AbC18cA4Db49'
+      [mainnet.id]: '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf',
+      [TENDERLY_CHAIN_ID]: '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf'
+    }
+  },
+  {
+    name: 'usdsFlagshipVault',
+    address: {
+      [mainnet.id]: '0xe15fcc81118895b67b6647bbd393182df44e11e0',
+      [TENDERLY_CHAIN_ID]: '0xe15fcc81118895b67b6647bbd393182df44e11e0'
+    }
+  },
+  {
+    name: 'usdtRiskCapitalVault',
+    address: {
+      [mainnet.id]: '0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d',
+      [TENDERLY_CHAIN_ID]: '0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d'
     }
   },
   {

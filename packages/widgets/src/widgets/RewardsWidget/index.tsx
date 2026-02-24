@@ -286,6 +286,7 @@ const RewardsWidgetWrapped = ({
   };
 
   const onClickBack = () => {
+    batchSupply.reset?.();
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({
       ...prev,

@@ -253,6 +253,38 @@ export const banners: Banner[] = [
     description:
       'SPK is the native governance and staking token of [Spark.fi](https://Spark.fi). Designed with a long-term vision for sustainability, decentralization and ecosystem alignment, SPK enables protocol governance, protocol security via staking, and reward distribution to participants.',
     display: ['connected', 'disconnected']
+  },
+  {
+    id: 'morpho-vaults',
+    title: 'Morpho Vaults',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates stablecoin deposits into carefully chosen lending markets, where borrowers can use native Sky Protocol tokens or various blue-chip assets as collateral. Market exposure, risk level and yields vary across specific vaults.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'risk-capital-vault',
+    title: 'Risk Capital Vault',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDS lending market, where borrowers post stUSDS—the higher-yield Expert risk capital token—as collateral to borrow USDS at an 86% LTV ratio.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'savings-vault',
+    title: 'Savings Vault',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDS lending market, where borrowers post sUSDS—the native stablecoin earning the Sky Savings Rate—as collateral to borrow USDS at a 96.5% LTV ratio.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'flagship-vault',
+    title: 'Flagship Vault',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates 80% of deposits into sUSDS earning the Sky Savings Rate, and the remaining 20% to markets with volatile exposures including stUSDS/USDS, cbBTC/USDS, wstETH/USDS and WETH/USDS.',
+    display: ['connected', 'disconnected']
   }
 ];
 

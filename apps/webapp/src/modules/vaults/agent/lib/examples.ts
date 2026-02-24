@@ -10,7 +10,7 @@ export type SuggestedAction = {
   hideFromAll?: boolean;
   /** Optional badge text shown next to the action label (e.g. "New"). */
   badge?: string;
-  /** Rate key for dynamic rate substitution. The label should contain {rate} placeholder. */
+  /** Rate key for dynamic rate substitution. The label or subtitle should contain {rate} placeholder. */
   rateKey?: 'vaults' | 'rewards' | 'savings' | 'stusds' | 'staking';
   /** Module key for displaying the module icon next to the action. */
   module?: string;
@@ -18,6 +18,8 @@ export type SuggestedAction = {
   url?: string;
   /** Show a small Morpho icon next to the badge. */
   showMorphoIcon?: boolean;
+  /** Secondary line shown below the label in card variants. Supports {rate} placeholder. */
+  subtitle?: string;
 };
 
 /**
@@ -160,68 +162,64 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
   ],
   stables: [
     {
-      label: 'Earn up to {rate} with Vaults',
+      label: 'Vaults: USDS, USDT, USDC',
       input: 'Explore vaults',
       tokens: ['USDS', 'USDC', 'USDT'],
       rateKey: 'vaults',
-      badge: 'New',
-      module: 'morpho',
-      showMorphoIcon: true
+      subtitle: 'Rates up to {rate}',
+      module: 'morpho'
     },
     {
-      label: 'Earn up to {rate} in Rewards',
+      label: 'Rewards and Points',
       input: 'Supply {amount} USDS to earn rewards',
       tokens: ['SKY', 'SPK', 'CLE'],
       sourceToken: 'USDS',
       defaultAmount: 500,
       rateKey: 'rewards',
+      subtitle: 'Rates up to {rate}',
       module: 'rewards'
     },
     {
-      label: 'Earn {rate} with Sky Savings',
-      input: 'Deposit {amount} USDS into savings',
+      label: 'Sky Savings Rate',
+      input: '',
       tokens: ['sUSDS'],
-      sourceToken: 'USDS',
-      defaultAmount: 250,
       rateKey: 'savings',
-      module: 'savings'
+      subtitle: 'Rate: {rate}',
+      module: 'savings',
+      url: '?widget=savings'
     },
     {
-      label: 'Earn {rate} with stUSDS',
+      label: 'For Experts: Earn with stUSDS',
       input: 'Deposit {amount} USDS into stUSDS',
       tokens: ['stUSDS'],
       sourceToken: 'USDS',
       defaultAmount: 500,
       rateKey: 'stusds',
+      subtitle: 'Rates up to {rate}',
       module: 'stusds'
     }
   ],
   sky: [
     {
-      label: 'Stake SKY, Borrow USDS, and earn up to {rate}',
+      label: 'Stake and Earn with SKY',
       input: 'Open a staking position with {amount} SKY',
-      tokens: ['SKY', 'USDS'],
+      tokens: ['SKY'],
       sourceToken: 'SKY',
       defaultAmount: 1000,
       rateKey: 'staking',
+      subtitle: 'Rate: {rate}',
       module: 'stake'
     },
     {
-      label: 'Get SKY',
+      label: 'Borrow USDS',
       input: '',
-      tokens: ['SKY'],
-      module: 'trade',
-      url: '?widget=convert&convert_module=trade&target_token=SKY'
+      tokens: ['USDS'],
+      module: 'stake',
+      subtitle: 'Minimum borrow amount is 30K USDS',
+      url: '?widget=stake'
     }
   ],
   tokens: [
-    {
-      label: 'Get SKY',
-      input: '',
-      tokens: ['SKY'],
-      module: 'trade',
-      url: '?widget=convert&convert_module=trade&target_token=SKY'
-    },
     {
       label: 'Get USDS',
       input: '',
@@ -230,11 +228,11 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
       url: '?widget=convert&convert_module=trade&target_token=USDS'
     },
     {
-      label: 'Upgrade MKR to SKY',
+      label: 'Get SKY',
       input: '',
-      tokens: ['MKR', 'SKY'],
-      module: 'upgrade',
-      url: '?widget=convert&convert_module=upgrade&source_token=MKR'
+      tokens: ['SKY'],
+      module: 'trade',
+      url: '?widget=convert&convert_module=trade&target_token=SKY'
     },
     {
       label: 'Upgrade DAI to USDS',
@@ -242,6 +240,13 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
       tokens: ['DAI', 'USDS'],
       module: 'upgrade',
       url: '?widget=convert&convert_module=upgrade&source_token=DAI'
+    },
+    {
+      label: 'Upgrade MKR to SKY',
+      input: '',
+      tokens: ['MKR', 'SKY'],
+      module: 'upgrade',
+      url: '?widget=convert&convert_module=upgrade&source_token=MKR'
     }
   ]
 };

@@ -2,4 +2,5 @@
 export const CORPUS_VERSION = 'v0.43.0';
 
 // Branch name used during content extraction
-export const CORPUS_BRANCH = 'development';
+// TODO change this back to development
+export const CORPUS_BRANCH = 'add-vaults';
