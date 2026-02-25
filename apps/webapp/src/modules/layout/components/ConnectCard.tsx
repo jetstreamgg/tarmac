@@ -1,4 +1,4 @@
-import { Heading } from './Typography';
+import { Heading, Text } from './Typography';
 import { Button } from '@/components/ui/button';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { Trans } from '@lingui/react/macro';
@@ -82,9 +82,17 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
       <div className="w-[80%] space-y-2 self-start xl:w-2/3" data-testid="connect-wallet-card">
         <Heading className="mb-2 flex items-center gap-2">
           {isMorphoVaults && <Morpho className="h-6 w-6 rounded-sm" />}
-          {heading}
+          {isMorphoVaults ? <Trans>Morpho Vaults</Trans> : heading}
         </Heading>
-        {contentText}
+        {isMorphoVaults ? (
+          <Text variant="small" className="leading-[18px]">
+            <Trans>
+              Connect your wallet to start using Sky-curated Morpho Vaults. Deposit USDS, USDT, or USDC and start earning.
+            </Trans>
+          </Text>
+        ) : (
+          contentText
+        )}
       </div>
       <div className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
         <Button

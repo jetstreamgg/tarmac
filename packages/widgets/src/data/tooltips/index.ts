@@ -277,17 +277,16 @@ Bundled transaction: Active`
       'The Sky Savings Rate is variable, determined by decentralized, onchain Sky Ecosystem Governance, and configured on the Ethereum blockchain. Sky Ecosystem Governance is able to adapt the SSR and other relevant parameters at any time at its discretion and without notice, based on market conditions, protocol surplus and other factors. The rate shown here is an estimate of the Sky Savings Rate representing the expected compounded rate per annum. It should be automatically updated every 5 minutes, and is powered by data provided by a third party ([Block Analitica](https://blockanalitica.com/)). This figure does not promise or guarantee future results.'
   },
   {
+    id: 'vault-rate',
+    title: 'Vault Rate',
+    tooltip:
+      'Vault rates are variable and depend on market conditions, borrower demand, and the allocation strategy defined by Sky as vault curator on Morpho. Key factors that influence vault rates include the supply and demand dynamics of the underlying lending markets, the utilization rate of each market the vault allocates to, and the specific allocation strategy and risk profile of the vault. Sky.money does not control or guarantee vault performance. The vault rate provided is an estimated annual rate, updated using data from Morpho, a third-party lending protocol. This estimate is for informational purposes only and does not guarantee future results.'
+  },
+  {
     id: 'rewards-rate',
     title: 'Rewards Rate',
-    tooltip: `The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors:
-
-- The issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance;
-
-- The market price of the token rewarded; and
-
-- The user's proportional supply within the total pool of assets linked to the Sky Token Rewards module.
-
-Sky.money does not control the issuance, determination, or distribution of these rewards. The STR rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results.`
+    tooltip:
+      "The Sky Token Rewards Rate is different for each type of token rewarded, and always fluctuates, determined by the following factors: the issuance rate of the token rewarded, which is determined by Sky Ecosystem Governance; the market price of the token rewarded; and the user's proportional supply within the total pool of assets linked to the Sky Token Rewards module. Sky.money does not control the issuance, determination, or distribution of these rewards. The STR rate provided is an estimated annual rate, updated every 5 minutes using data from a third party provider (Block Analitica). This estimate is for informational purposes only and does not guarantee future results."
   }
 ];
 

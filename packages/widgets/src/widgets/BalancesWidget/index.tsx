@@ -135,7 +135,7 @@ const BalancesWidgetWrapped = ({
           </div>
         ) : allFundsEmpty ? (
           <div className="flex w-full flex-col items-stretch gap-5">
-            <NoFundsCopy onExternalLinkClicked={onExternalLinkClicked} />
+            <NoFundsCopy />
             <LoadingButton
               onClick={onExploreVaults}
               buttonText={t`Explore new Vaults and start earning`}

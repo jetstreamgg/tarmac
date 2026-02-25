@@ -55,6 +55,7 @@ type MorphoVaultMarketApiResponse = {
       }[];
       totalAssets: string;
       totalAssetsUsd: number;
+      totalSupply: string;
       idleAssets: number | string;
       idleAssetsUsd: number;
       liquidity: string;
@@ -83,6 +84,8 @@ export type MorphoVaultMarketData = {
   totalAssets: bigint;
   /** Total assets held by the vault in USD */
   totalAssetsUsd: number;
+  /** Total supply of vault shares */
+  totalSupply: bigint;
 };
 
 export type MorphoVaultMarketDataHook = ReadHook & {
@@ -162,7 +165,7 @@ export async function fetchMorphoVaultMarketData(
   };
 
   // --- Process allocation data ---
-  const { totalAssets, totalAssetsUsd, idleAssets, idleAssetsUsd, asset } = vault;
+  const { totalAssets, totalAssetsUsd, totalSupply, idleAssets, idleAssetsUsd, asset } = vault;
   const assetDecimals = asset.decimals;
   const assetSymbol = asset.symbol;
 
@@ -259,7 +262,8 @@ export async function fetchMorphoVaultMarketData(
     market: allocationsData,
     liquidity: BigInt(vault.liquidity),
     totalAssets: BigInt(totalAssets),
-    totalAssetsUsd
+    totalAssetsUsd,
+    totalSupply: BigInt(totalSupply)
   };
 }
 

@@ -292,6 +292,7 @@ export const VAULT_MARKET_DATA_QUERY = `
       }
       totalAssets
       totalAssetsUsd
+      totalSupply
       idleAssets
       idleAssetsUsd
       liquidity

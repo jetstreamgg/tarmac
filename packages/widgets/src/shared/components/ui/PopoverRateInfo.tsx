@@ -25,7 +25,7 @@ const TOOLTIP_ID_MAP = {
   delegate: 'choose-your-delegate',
   liquidation: 'liquidation-price',
   stusds: 'stusds-rate',
-  morpho: 'morpho-rate',
+  morpho: 'vault-rate',
   expert: 'expert-rate',
   stusdsLiquidity: 'available-liquidity',
   morphoLiquidity: 'morpho-liquidity',
