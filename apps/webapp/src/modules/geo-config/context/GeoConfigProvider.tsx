@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { GeoConfigContext } from './GeoConfigContext';
 import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
 
+// When true, bypass geo-restrictions entirely (for local development)
+const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true';
+
 // Endpoint URL - use staging for now, will be configured via env var
 const GEO_CONFIG_URL =
   import.meta.env.VITE_GEO_CONFIG_URL ||
@@ -12,7 +15,7 @@ const GEO_CONFIG_URL =
 const FALLBACK_CONFIG: GeoConfig = {
   version: '0.0.0',
   countryCode: 'XX',
-  timestamp: new Date().toISOString(),
+  generatedAt: new Date().toISOString(),
   cacheTtl: 60,
   isRegionRestricted: true,
   modules: {
@@ -83,9 +86,9 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
       config,
       isLoading,
       error: error as Error | null,
-      isModuleEnabled,
-      getModuleRestrictionReason,
-      isRegionRestricted: isLoading ? true : (config?.isRegionRestricted ?? true),
+      isModuleEnabled: GEO_BYPASS ? () => true : isModuleEnabled,
+      getModuleRestrictionReason: GEO_BYPASS ? () => undefined : getModuleRestrictionReason,
+      isRegionRestricted: GEO_BYPASS ? false : (isLoading ? true : (config?.isRegionRestricted ?? true)),
       isChatbotEnabled: config?.chatbot.enabled ?? false,
       chatbotRestrictionMessage: config?.chatbot.restrictionMessage
     }),

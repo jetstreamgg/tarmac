@@ -39,6 +39,7 @@ export interface CardProps {
 }
 
 interface ModulesBalancesProps {
+  hideModuleBalances?: boolean;
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
@@ -54,6 +55,7 @@ interface ModulesBalancesProps {
 }
 
 export const ModulesBalances = ({
+  hideModuleBalances: hideModuleBalancesProp,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
@@ -211,7 +213,8 @@ export const ModulesBalances = ({
     multichainSavingsBalancesError || (totalSavingsBalance === 0n && hideZeroBalances)
   );
 
-  const hideModuleBalances = hideSavings && hideRewards && hideSeal;
+  const hideModuleBalancesLocal = hideSavings && hideRewards && hideSeal;
+  const hideModuleBalances = hideModuleBalancesProp || hideModuleBalancesLocal;
 
   // Fixed display order for modules
   const displayOrder: Record<string, number> = {

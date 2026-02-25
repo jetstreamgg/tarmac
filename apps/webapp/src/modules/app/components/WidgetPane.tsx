@@ -84,6 +84,12 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     [Intent.EXPERT_INTENT]: 'expert',
   };
 
+  // If the intent maps to a restricted module, fall back to Balances
+  const restrictedModuleId = intentToModule[intent];
+  const effectiveIntent = restrictedModuleId && !isModuleEnabled(restrictedModuleId)
+    ? Intent.BALANCES_INTENT
+    : intent;
+
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -106,10 +112,10 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // Deeplink detection: fire app_widget_selected when initial intent ≠ default (balances)
   // Uses module-level guard (not useRef) so it survives React StrictMode remounts and key-driven remounts
   useEffect(() => {
-    if (intent && intent !== Intent.BALANCES_INTENT && intent !== lastDeeplinkTracked) {
-      lastDeeplinkTracked = intent;
+    if (effectiveIntent && effectiveIntent !== Intent.BALANCES_INTENT && effectiveIntent !== lastDeeplinkTracked) {
+      lastDeeplinkTracked = effectiveIntent;
       trackWidgetSelected({
-        widgetName: IntentMapping[intent] || intent,
+        widgetName: IntentMapping[effectiveIntent] || effectiveIntent,
         previousWidget: IntentMapping[Intent.BALANCES_INTENT],
         selectionMethod: 'deeplink',
         chainId
@@ -145,11 +151,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         <BalancesWidgetPane
           {...sharedProps}
           hideModuleBalances={isRegionRestricted}
-          rewardsCardUrl={rewardsUrl}
-          savingsCardUrlMap={savingsUrlMap}
+          rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
+          savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
-          stusdsCardUrl={stusdsUrl}
+          stusdsCardUrl={isRegionRestricted ? undefined : stusdsUrl}
           morphoCardUrl={morphoUrl}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
@@ -305,7 +311,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
   return (
-    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent} currentChainId={chainId}>
+    <WidgetNavigation widgetContent={filteredWidgetContent} intent={effectiveIntent} currentChainId={chainId}>
       {children}
     </WidgetNavigation>
   );
