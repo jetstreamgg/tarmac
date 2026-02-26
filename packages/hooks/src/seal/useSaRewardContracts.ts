@@ -32,7 +32,7 @@ export function useSaRewardContracts({
   subgraphUrl?: string;
 } = {}): ReadHook & { data: { contractAddress: `0x${string}` }[] | undefined } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const {
     data,

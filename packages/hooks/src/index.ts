@@ -301,8 +301,7 @@ export {
   ModuleEnum,
   TransactionTypeEnum,
   TRUST_LEVELS,
-  URL_MAKER_SUBGRAPH_MAINNET,
-  URL_MAKER_SUBGRAPH_TENDERLY,
+  URL_SKY_SUBGRAPH,
   ZERO_ADDRESS,
   ZERO_BYTES32
 } from './constants';

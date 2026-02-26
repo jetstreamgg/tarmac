@@ -25,7 +25,7 @@ export function useTotalSavingsSuppliers({
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: number } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const {
     data,

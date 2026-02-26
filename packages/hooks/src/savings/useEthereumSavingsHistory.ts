@@ -70,7 +70,7 @@ export function useEthereumSavingsHistory({
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {

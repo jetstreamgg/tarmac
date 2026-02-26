@@ -104,7 +104,7 @@ export function useRewardContractsInfo({
   chainId: number;
   rewardContracts: RewardContract[];
 }): ReadHook & { data?: RewardContractInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const {
     data,

@@ -93,7 +93,7 @@ export function useMultipleRewardsChartInfo({
   limit?: number;
 }): ReadHook & { data?: RewardsChartInfoParsed[][] } {
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId);
+  const baseUrl = getBaLabsApiUrl();
   const urls: URL[] = [];
   if (baseUrl && rewardContractAddresses.length > 0) {
     rewardContractAddresses.forEach(rewardContractAddress => {

@@ -55,7 +55,7 @@ export const useUserRewardsBalance = ({
   address: `0x${string}`;
   chainId: number;
 }): ReadHook & { data?: RewardsData } => {
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl && contractAddress && address) {
     const endpoint = `${baseUrl}/farms/${contractAddress.toLowerCase()}/wallets/${address.toLowerCase()}`;

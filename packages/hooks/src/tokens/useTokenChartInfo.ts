@@ -61,7 +61,7 @@ export function useTokenChartInfo({
   limit?: number;
 }): ReadHook & { data?: TokenChartInfoParsed[] } {
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
 
   let url: URL | undefined;
   if (baseUrl && tokenAddress) {

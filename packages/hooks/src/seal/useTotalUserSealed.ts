@@ -32,7 +32,7 @@ export function useTotalUserSealed({
 } = {}): ReadHook & { data?: bigint } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const {
     data,

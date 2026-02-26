@@ -71,7 +71,7 @@ export function useRewardsChartInfo({
   limit?: number;
 }): ReadHook & { data?: RewardsChartInfoParsed[] } {
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId);
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl && rewardContractAddress) {
     const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`;

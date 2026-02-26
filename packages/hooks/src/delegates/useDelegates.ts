@@ -85,7 +85,7 @@ export function useDelegates({
   version?: 1 | 2 | 3;
   enabled?: boolean;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const orderByFields = [
     'blockTimestamp',

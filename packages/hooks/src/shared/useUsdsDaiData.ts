@@ -59,7 +59,7 @@ export function useUsdsDaiData(
 ): ReadHook & { data?: UsdsDaiChartInfo[] } {
   const { limit } = props;
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;

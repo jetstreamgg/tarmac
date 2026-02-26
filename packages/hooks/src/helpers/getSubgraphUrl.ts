@@ -1,57 +1,13 @@
-import {
-  URL_MAKER_SUBGRAPH_MAINNET,
-  URL_MAKER_SUBGRAPH_TENDERLY,
-  TENDERLY_CHAIN_ID,
-  URL_BA_LABS_API_MAINNET,
-  URL_BASE_SUBGRAPH_MAINNET,
-  BASE_CHAIN_ID,
-  ARBITRUM_CHAIN_ID,
-  URL_ARBITRUM_SUBGRAPH_MAINNET,
-  OPTIMISM_CHAIN_ID,
-  URL_OPTIMISM_SUBGRAPH_MAINNET,
-  UNICHAIN_CHAIN_ID,
-  URL_UNICHAIN_SUBGRAPH_MAINNET
-} from '../constants';
+import { URL_SKY_SUBGRAPH, URL_BA_LABS_API_MAINNET } from '../constants';
 
-const defaultSubgraphUrl = URL_MAKER_SUBGRAPH_MAINNET;
-const defaultBaseSubgraphUrl = URL_BASE_SUBGRAPH_MAINNET;
-
-export function getMakerSubgraphUrl(chainId: number): string | null {
-  switch (chainId) {
-    case 1:
-    case BASE_CHAIN_ID:
-    case ARBITRUM_CHAIN_ID:
-    case OPTIMISM_CHAIN_ID:
-    case UNICHAIN_CHAIN_ID:
-      return URL_MAKER_SUBGRAPH_MAINNET;
-    case TENDERLY_CHAIN_ID:
-      return URL_MAKER_SUBGRAPH_TENDERLY;
-    default:
-      return defaultSubgraphUrl;
-  }
+export function getMakerSubgraphUrl(): string {
+  return URL_SKY_SUBGRAPH;
 }
 
-export function getL2SubgraphUrl(chainId: number): string | null {
-  switch (chainId) {
-    case 1:
-    case BASE_CHAIN_ID:
-      return URL_BASE_SUBGRAPH_MAINNET;
-    case TENDERLY_CHAIN_ID:
-      return URL_BASE_SUBGRAPH_MAINNET;
-    case ARBITRUM_CHAIN_ID:
-      return URL_ARBITRUM_SUBGRAPH_MAINNET;
-    case OPTIMISM_CHAIN_ID:
-      return URL_OPTIMISM_SUBGRAPH_MAINNET;
-    case UNICHAIN_CHAIN_ID:
-      return URL_UNICHAIN_SUBGRAPH_MAINNET;
-    default:
-      return defaultBaseSubgraphUrl;
-  }
+export function getL2SubgraphUrl(): string {
+  return URL_SKY_SUBGRAPH;
 }
 
-export function getBaLabsApiUrl(chainId: number): string | null {
-  switch (chainId) {
-    default:
-      return URL_BA_LABS_API_MAINNET;
-  }
+export function getBaLabsApiUrl(): string {
+  return URL_BA_LABS_API_MAINNET;
 }

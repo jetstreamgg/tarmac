@@ -62,7 +62,7 @@ export function useUrnsInfo({
   chainId: number;
   user: `0x${string}`;
 }): ReadHook & { data?: UrnInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const {
     data,

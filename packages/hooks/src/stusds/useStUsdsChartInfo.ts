@@ -62,7 +62,7 @@ async function fetchStUsdsChartInfo(url: URL): Promise<StUsdsChartInfoParsed[]> 
 
 export function useStUsdsChartInfo(): ReadHook & { data?: StUsdsChartInfoParsed[] } {
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/overall/historic/`;

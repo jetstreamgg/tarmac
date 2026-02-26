@@ -73,7 +73,7 @@ export function useStakePosition({
 }): ReadHook & { data?: StakePosition } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
 
   const {
     data,

@@ -133,7 +133,7 @@ export function useL2SavingsHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId ?? currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainIdToUse) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl() || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
   const {
     data,

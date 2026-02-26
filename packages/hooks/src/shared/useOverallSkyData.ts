@@ -99,7 +99,7 @@ async function fetchOverallSkyData(url: URL): Promise<OverallSkyData> {
 
 export function useOverallSkyData(): ReadHook & { data?: OverallSkyData } {
   const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/overall/`;
