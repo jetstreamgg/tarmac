@@ -1,6 +1,6 @@
 import request, { gql } from 'graphql-request';
 import { useChainId, useConfig } from 'wagmi';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
@@ -97,7 +97,7 @@ export function useStakeRewardContracts({
   const walletChainId = useChainId();
   const chainId = walletChainId === TENDERLY_CHAIN_ID ? walletChainId : mainnet.id;
   const config = useConfig();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   // Get chainId-specific hardcoded contracts for placeholder
   const hardcodedContracts = getHardcodedRewardContracts(chainId);

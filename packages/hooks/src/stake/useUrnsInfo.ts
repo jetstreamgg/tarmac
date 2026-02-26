@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { UrnInfo, UrnInfoRaw } from './stakeModule';
 
@@ -62,7 +62,7 @@ export function useUrnsInfo({
   chainId: number;
   user: `0x${string}`;
 }): ReadHook & { data?: UrnInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,

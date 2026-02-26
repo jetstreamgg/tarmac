@@ -1,6 +1,6 @@
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useUserDelegates } from '../delegates/useUserDelegates';
 import { useDelegates } from '../delegates/useDelegates';
 import { DelegateInfo } from '../delegates/delegate';
@@ -22,7 +22,7 @@ export function useSaUserDelegates({
   random?: boolean;
   search?: string;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data: userDelegatesData,

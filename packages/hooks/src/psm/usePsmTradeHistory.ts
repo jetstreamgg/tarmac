@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getL2SubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { HistoryItem } from '../shared/shared';
@@ -127,7 +127,7 @@ export function usePsmTradeHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
   const {

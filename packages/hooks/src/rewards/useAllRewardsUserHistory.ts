@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
@@ -95,7 +95,7 @@ export function useAllRewardsUserHistory({
 } = {}): ReadHook & { data?: RewardUserHistoryItem[] } {
   const { address: userAddress } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   //this hook is only used for mainnet, update this if this ever changes
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(chainIdToUse);

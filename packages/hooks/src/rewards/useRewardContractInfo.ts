@@ -2,7 +2,7 @@ import { request, gql } from 'graphql-request';
 import { RewardContractChangeRaw, RewardContractInfo, RewardContractInfoRaw } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 
 async function fetchRewardContractInfo(
@@ -107,7 +107,7 @@ export function useRewardContractInfo({
   chainId: number;
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardContractInfo | null } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,

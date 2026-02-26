@@ -4,7 +4,7 @@ import { StUsdsHistoryItem } from './stusds.d';
 import { request, gql } from 'graphql-request';
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
@@ -131,7 +131,7 @@ export function useStUsdsHistory({
 } = {}): StUsdsHistoryHook {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {

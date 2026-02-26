@@ -1,6 +1,6 @@
 import request, { gql } from 'graphql-request';
 import { useChainId } from 'wagmi';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
@@ -32,7 +32,7 @@ export function useSaRewardContracts({
   subgraphUrl?: string;
 } = {}): ReadHook & { data: { contractAddress: `0x${string}` }[] | undefined } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,

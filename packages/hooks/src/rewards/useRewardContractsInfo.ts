@@ -7,7 +7,7 @@ import {
 } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 
 async function fetchRewardContractsInfo(
@@ -104,7 +104,7 @@ export function useRewardContractsInfo({
   chainId: number;
   rewardContracts: RewardContract[];
 }): ReadHook & { data?: RewardContractInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
