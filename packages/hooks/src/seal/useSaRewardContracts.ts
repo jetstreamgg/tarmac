@@ -5,11 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 
-async function fetchSaRewardContracts(urlSubgraph: string) {
-  // TODO do we want to change the property name?
+async function fetchSaRewardContracts(urlSubgraph: string, chainId: number) {
   const query = gql`
     {
-      rewards(where: { lockstakeActive: true }) {
+      rewards: Reward(where: { lockstakeActive: { _eq: true }, chainId: { _eq: ${chainId} } }) {
         id
       }
     }
@@ -40,8 +39,8 @@ export function useSaRewardContracts({
     refetch: mutate,
     isLoading
   } = useQuery({
-    queryKey: ['saRewardContracts', urlSubgraph],
-    queryFn: () => fetchSaRewardContracts(urlSubgraph),
+    queryKey: ['saRewardContracts', urlSubgraph, chainId],
+    queryFn: () => fetchSaRewardContracts(urlSubgraph, chainId),
     enabled: !!urlSubgraph
   });
 

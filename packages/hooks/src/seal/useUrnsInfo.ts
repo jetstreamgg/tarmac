@@ -5,31 +5,27 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { UrnInfo, UrnInfoRaw } from './sealModule';
 
-async function fetchUrnsInfo(urlSubgraph: string, user: `0x${string}`): Promise<UrnInfo[] | undefined> {
+async function fetchUrnsInfo(urlSubgraph: string, chainId: number, user: `0x${string}`): Promise<UrnInfo[] | undefined> {
   const query = gql`
-  {
-    sealedUrns(where: {owner: "${user.toLowerCase()}"} orderBy: index) {
-      id
-      blockTimestamp
-      rewardContract {
+    {
+      sealedUrns: SealUrn(where: { owner: { _eq: "${user.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { index: asc }) {
         id
-      }
-      mkrLocked
-      nstDebt
-      owner
-      voteDelegate {
-        id
-        ownerAddress
-        totalDelegated
-        metadata {
-          name
-          description
+        blockTimestamp
+        rewardContract {
+          id
         }
+        mkrLocked
+        nstDebt
+        owner
+        voteDelegate {
+          id
+          ownerAddress
+          totalDelegated
+        }
+        index
       }
-      index
     }
-  }
-`;
+  `;
 
   const response = (await request(urlSubgraph, query)) as any;
   const parsedUrns = response.sealedUrns as UrnInfoRaw[];
@@ -71,8 +67,8 @@ export function useUrnsInfo({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && user.length > 0 && user !== ZERO_ADDRESS),
-    queryKey: ['urns-info', urlSubgraph, user],
-    queryFn: () => fetchUrnsInfo(urlSubgraph, user)
+    queryKey: ['urns-info', urlSubgraph, user, chainId],
+    queryFn: () => fetchUrnsInfo(urlSubgraph, chainId, user)
   });
 
   return {

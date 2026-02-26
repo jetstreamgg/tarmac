@@ -5,10 +5,10 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useChainId } from 'wagmi';
 
-async function fetchTotalSavingsSuppliers(urlSubgraph: string): Promise<number> {
+async function fetchTotalSavingsSuppliers(urlSubgraph: string, chainId: number): Promise<number> {
   const query = gql`
     {
-      savingsSuppliers {
+      savingsSuppliers: SavingsSupplier(where: { chainId: { _eq: ${chainId} } }) {
         id
       }
     }
@@ -34,8 +34,8 @@ export function useTotalSavingsSuppliers({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['total-savings-suppliers', urlSubgraph],
-    queryFn: () => fetchTotalSavingsSuppliers(urlSubgraph)
+    queryKey: ['total-savings-suppliers', urlSubgraph, chainId],
+    queryFn: () => fetchTotalSavingsSuppliers(urlSubgraph, chainId)
   });
 
   return {

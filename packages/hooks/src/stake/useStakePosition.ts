@@ -24,13 +24,13 @@ type StakePositionResponse = {
 async function fetchStakePosition(
   urlSubgraph: string,
   urnIndex: number,
+  chainId: number,
   address?: string
 ): Promise<StakePosition | undefined> {
   if (!address) return;
-  // TODO: Update this query once the subgraph is updated
   const query = gql`
     {
-      stakingUrns(where: {owner: "${address}", index: "${urnIndex}"}) {
+      stakingUrns: StakingUrn(where: { owner: { _eq: "${address}" }, index: { _eq: "${urnIndex}" }, chainId: { _eq: ${chainId} } }) {
         skyLocked
         usdsDebt
         voteDelegate {
@@ -82,8 +82,8 @@ export function useStakePosition({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['stake-position-details', urlSubgraph, address, urnIndex],
-    queryFn: () => fetchStakePosition(urlSubgraph, urnIndex, address)
+    queryKey: ['stake-position-details', urlSubgraph, address, urnIndex, chainId],
+    queryFn: () => fetchStakePosition(urlSubgraph, urnIndex, chainId, address)
   });
 
   return {

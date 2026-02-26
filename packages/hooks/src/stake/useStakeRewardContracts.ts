@@ -43,10 +43,10 @@ function getHardcodedRewardContracts(chainId: number): { contractAddress: `0x${s
   return contracts;
 }
 
-async function fetchStakeRewardContracts(urlSubgraph: string) {
+async function fetchStakeRewardContracts(urlSubgraph: string, chainId: number) {
   const query = gql`
     {
-      rewards(where: { stakingEngineActive: true }) {
+      rewards: Reward(where: { stakingEngineActive: { _eq: true }, chainId: { _eq: ${chainId} } }) {
         id
       }
     }
@@ -109,8 +109,8 @@ export function useStakeRewardContracts({
     refetch: mutate,
     isLoading: isGraphqlLoading
   } = useQuery({
-    queryKey: ['stakeRewardContracts', urlSubgraph],
-    queryFn: () => fetchStakeRewardContracts(urlSubgraph),
+    queryKey: ['stakeRewardContracts', urlSubgraph, chainId],
+    queryFn: () => fetchStakeRewardContracts(urlSubgraph, chainId),
     enabled: !!urlSubgraph,
     placeholderData: hardcodedContracts
   });

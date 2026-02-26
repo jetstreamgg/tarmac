@@ -36,26 +36,26 @@ async function fetchPsmTradeHistory(
 
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
 
-  let whereClause = `{
-    sender: "${address}",
-    receiver: "${address}"`;
+  const whereConditions: Record<string, any> = {
+    sender: { _eq: address },
+    receiver: { _eq: address },
+    chainId: { _eq: chainId }
+  };
 
   if (excludeSUsds) {
-    whereClause += `,
-    assetIn_not: "${sUsdsAddressForChain.toLowerCase()}",
-    assetOut_not: "${sUsdsAddressForChain.toLowerCase()}"`;
+    whereConditions.assetIn = { _neq: sUsdsAddressForChain.toLowerCase() };
+    whereConditions.assetOut = { _neq: sUsdsAddressForChain.toLowerCase() };
   }
 
   if (maxBlockTimestamp) {
-    whereClause += `,
-    blockTimestamp_lte: "${maxBlockTimestamp}"`;
+    whereConditions.blockTimestamp = { _lte: String(maxBlockTimestamp) };
   }
 
-  whereClause += '}';
+  const whereClause = JSON.stringify(whereConditions).replace(/"([^"]+)":/g, '$1:');
 
   const query = gql`
   {
-    swaps(where: ${whereClause}) {
+    swaps: Swap(where: ${whereClause}) {
       id
       transactionHash
       assetIn

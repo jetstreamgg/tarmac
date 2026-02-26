@@ -14,30 +14,30 @@ async function fetchAllRewardsUserHistory(
   rewardContracts: RewardContract[],
   chainId: number
 ): Promise<RewardUserHistoryItem[] | undefined> {
-  const rewardContractAddresses = rewardContracts.map(f => `"${f.contractAddress}"`);
+  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress}"`);
 
   const query = gql`
-  {
-    rewards(where: {id_in: [${rewardContractAddresses}]}) {
-      id
-      supplyInstances(where: {user: "${userAddress}"}) {
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      withdrawals(where: {user: "${userAddress}"})  { 
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      rewardClaims(where: {user: "${userAddress}"}) {
-        blockTimestamp
-        transactionHash
-        amount
+    {
+      rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
+        id
+        supplyInstances(where: { user: { _eq: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        withdrawals(where: { user: { _eq: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        rewardClaims(where: { user: { _eq: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
       }
     }
-  }
-`;
+  `;
 
   const response = (await request(urlSubgraph, query)) as AllRewardsUserHistoryResponse;
 

@@ -25,15 +25,17 @@ async function fetchSealHistory(
   index?: number
 ): Promise<SealHistory | undefined> {
   if (!address) return [];
-  const indexQuery = index ? `, index: "${index}"` : '';
+  const indexFilter = index ? `, index: { _eq: "${index}" }` : '';
+  const urnFilter = `{ urn: { owner: { _eq: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
+  const ownerFilter = `{ owner: { _eq: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
   const query = gql`
     {
-      sealOpens(where: {owner: "${address}"${indexQuery}}) {
+      sealOpens: SealOpen(where: ${ownerFilter}) {
         index
         blockTimestamp
         transactionHash
       }
-      sealSelectVoteDelegates(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealSelectVoteDelegates: SealSelectVoteDelegate(where: ${urnFilter}) {
         index
         voteDelegate {
           id
@@ -41,7 +43,7 @@ async function fetchSealHistory(
         blockTimestamp
         transactionHash
       }
-      sealSelectRewards(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealSelectRewards: SealSelectReward(where: ${urnFilter}) {
         index
         reward {
           id
@@ -49,50 +51,50 @@ async function fetchSealHistory(
         blockTimestamp
         transactionHash
       }
-      sealLocks(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealLocks: SealLock(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealLockSkies(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealLockSkies: SealLockSky(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealFrees(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealFrees: SealFree(where: ${urnFilter}) {
         index
         freed
         blockTimestamp
         transactionHash
       }
-      sealFreeSkies(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealFreeSkies: SealFreeSky(where: ${urnFilter}) {
         index
         skyFreed
         blockTimestamp
         transactionHash
       }
-      sealDraws(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealDraws: SealDraw(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealWipes(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealWipes: SealWipe(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealGetRewards(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealGetRewards: SealGetReward(where: ${urnFilter}) {
         index
         reward
         amt
         blockTimestamp
         transactionHash
       }
-      sealOnKicks(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealOnKicks: SealOnKick(where: ${urnFilter}) {
         id
         wad
         blockTimestamp

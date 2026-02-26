@@ -23,12 +23,13 @@ type SealPositionResponse = {
 async function fetchSealPosition(
   urlSubgraph: string,
   urnIndex: number,
+  chainId: number,
   address?: string
 ): Promise<SealPosition | undefined> {
   if (!address) return;
   const query = gql`
     {
-      sealUrns(where: {owner: "${address}", index: "${urnIndex}"}) {
+      sealUrns: SealUrn(where: { owner: { _eq: "${address}" }, index: { _eq: "${urnIndex}" }, chainId: { _eq: ${chainId} } }) {
         mkrLocked
         usdsDebt
         voteDelegate {
@@ -80,8 +81,8 @@ export function useSealPosition({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['seal-position-details', urlSubgraph, address, urnIndex],
-    queryFn: () => fetchSealPosition(urlSubgraph, urnIndex, address)
+    queryKey: ['seal-position-details', urlSubgraph, address, urnIndex, chainId],
+    queryFn: () => fetchSealPosition(urlSubgraph, urnIndex, chainId, address)
   });
 
   return {

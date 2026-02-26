@@ -5,11 +5,10 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 
-async function fetchTotalUserStaked(urlSubgraph: string, address: string): Promise<bigint> {
-  // TODO: Update this query once the subgraph is updated
+async function fetchTotalUserStaked(urlSubgraph: string, chainId: number, address: string): Promise<bigint> {
   const query = gql`
     {
-      stakingUrns(where: {owner: "${address}"}) {
+      stakingUrns: StakingUrn(where: { owner: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
         skyLocked
       }
     }
@@ -42,8 +41,8 @@ export function useTotalUserStaked({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && address),
-    queryKey: ['user-total-staked', urlSubgraph, address],
-    queryFn: () => fetchTotalUserStaked(urlSubgraph, address!)
+    queryKey: ['user-total-staked', urlSubgraph, address, chainId],
+    queryFn: () => fetchTotalUserStaked(urlSubgraph, chainId, address!)
   });
 
   return {

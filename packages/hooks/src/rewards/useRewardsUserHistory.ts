@@ -16,23 +16,23 @@ async function fetchRewardsUserHistory(
   if (!rewardContractAddress || !userAddress) return [];
   const query = gql`
     {
-        reward(id:"${rewardContractAddress}"){
-            supplyInstances(where: {user: "${userAddress}"}) {
-            blockTimestamp,
-            transactionHash
-            amount
-            }
-            withdrawals(where: {user: "${userAddress}"})  { 
-            blockTimestamp,
-            transactionHash
-            amount
-            }
-            rewardClaims(where: {user: "${userAddress}"}) {
-            blockTimestamp
-            transactionHash
-            amount
-            }
+      reward: Reward_by_pk(id: "${chainId}-${rewardContractAddress}") {
+        supplyInstances(where: { user: { _eq: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
         }
+        withdrawals(where: { user: { _eq: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        rewardClaims(where: { user: { _eq: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+      }
     }
   `;
 

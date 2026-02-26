@@ -9,20 +9,24 @@ import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchUserDelegates(
   urlSubgraph: string,
+  chainId: number,
   user: `0x${string}`,
   search?: string,
   version?: 1 | 2 | 3
 ): Promise<DelegateInfo[] | undefined> {
-  const whereConditions = [`{delegations_: {delegator_contains_nocase: "${user}", amount_gt: 0}}`];
-  if (version) whereConditions.push(`{version: "${version}"}`);
+  const whereConditions = [
+    `{ chainId: { _eq: ${chainId} } }`,
+    `{ delegations: { delegator: { _ilike: "%${user}%" }, amount: { _gt: "0" } } }`
+  ];
+  if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
   if (search) {
-    whereConditions.push(`{id_contains_nocase: "${search}"}`);
+    whereConditions.push(`{ id: { _ilike: "%${search}%" } }`);
   }
-  const whereClause = `where: { and: [${whereConditions.join(', ')}] }`;
+  const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
   const query = gql`
     {
-      delegates(
+      delegates: Delegate(
         ${whereClause}
       ) {
         id
@@ -30,8 +34,8 @@ async function fetchUserDelegates(
         ownerAddress
         delegators
         delegations(
-          first: 1000
-          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
+          limit: 1000
+          where: { delegator: { _nin: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"] } }
         ) {
           id
           delegator
@@ -89,8 +93,8 @@ export function useUserDelegates({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && user.length > 0 && user !== ZERO_ADDRESS),
-    queryKey: ['user-delegates', urlSubgraph, user, search, version],
-    queryFn: () => fetchUserDelegates(urlSubgraph, user, search, version)
+    queryKey: ['user-delegates', urlSubgraph, chainId, user, search, version],
+    queryFn: () => fetchUserDelegates(urlSubgraph, chainId, user, search, version)
   });
 
   const { data: metadataMapping } = useDelegateMetadataMapping();

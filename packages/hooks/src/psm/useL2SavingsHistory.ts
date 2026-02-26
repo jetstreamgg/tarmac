@@ -23,10 +23,11 @@ async function fetchL2SavingsHistory(
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
   const query = gql`
   {
-    usdsIn: swaps(where: {
-      sender: "${address}",
-      receiver: "${address}",
-      assetIn: "${sUsdsAddressForChain.toLowerCase()}"
+    usdsIn: Swap(where: {
+      sender: { _eq: "${address}" },
+      receiver: { _eq: "${address}" },
+      assetIn: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
+      chainId: { _eq: ${chainId} }
     }) {
       id
       transactionHash
@@ -39,10 +40,11 @@ async function fetchL2SavingsHistory(
       referralCode
       blockTimestamp
     }
-    usdsOut: swaps(where: {
-      sender: "${address}",
-      receiver: "${address}",
-      assetOut: "${sUsdsAddressForChain.toLowerCase()}"
+    usdsOut: Swap(where: {
+      sender: { _eq: "${address}" },
+      receiver: { _eq: "${address}" },
+      assetOut: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
+      chainId: { _eq: ${chainId} }
     }) {
       id
       transactionHash
