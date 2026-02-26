@@ -1,3 +1,4 @@
+import { isAddress } from 'viem';
 import type { ParsedIntent, ActionType, RewardContractId, StakingRewardFarmId } from '../types';
 
 function inferRewardContract(text: string): RewardContractId | undefined {
@@ -21,7 +22,8 @@ function inferStakingRewardFarm(text: string): StakingRewardFarmId | undefined {
 
 function extractAddress(text: string): string | undefined {
   const match = text.match(/0x[a-fA-F0-9]{40}/);
-  return match ? match[0] : undefined;
+  if (!match) return undefined;
+  return isAddress(match[0]) ? match[0] : undefined;
 }
 
 function extractUrnIndex(text: string): number | undefined {
