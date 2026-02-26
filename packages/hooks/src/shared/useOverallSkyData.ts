@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { useChainId } from 'wagmi';
+
 import { formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
@@ -98,7 +98,6 @@ async function fetchOverallSkyData(url: URL): Promise<OverallSkyData> {
 }
 
 export function useOverallSkyData(): ReadHook & { data?: OverallSkyData } {
-  const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { parseEther } from 'viem';
 import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { useChainId } from 'wagmi';
+
 import { formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
@@ -61,7 +61,6 @@ async function fetchStUsdsChartInfo(url: URL): Promise<StUsdsChartInfoParsed[]> 
 }
 
 export function useStUsdsChartInfo(): ReadHook & { data?: StUsdsChartInfoParsed[] } {
-  const chainId = useChainId();
   const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {

@@ -48,12 +48,10 @@ async function fetchRewardsData(url: URL): Promise<RewardsData> {
 
 export const useUserRewardsBalance = ({
   contractAddress,
-  address,
-  chainId
+  address
 }: {
   contractAddress?: `0x${string}`;
   address: `0x${string}`;
-  chainId: number;
 }): ReadHook & { data?: RewardsData } => {
   const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
