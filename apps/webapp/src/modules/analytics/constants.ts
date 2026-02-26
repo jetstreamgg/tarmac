@@ -4,8 +4,9 @@ import type posthog from 'posthog-js';
 
 export const AppEvents = {
   WIDGET_SELECTED: 'app_widget_selected',
-  WIDGET_FLOW_STARTED: 'app_widget_flow_started',
-  WIDGET_FLOW_COMPLETED: 'app_widget_flow_completed',
+  TRANSACTION_STARTED: 'app_widget_flow_started',
+  TRANSACTION_COMPLETED: 'app_widget_flow_completed',
+  WIDGET_REVIEW_VIEWED: 'app_widget_review_viewed',
   DETAILS_PANE_TOGGLED: 'app_details_pane_toggled',
   CHAT_PANE_TOGGLED: 'app_chat_pane_toggled',
   VPN_CHECK_COMPLETED: 'app_vpn_check_completed',
@@ -64,4 +65,31 @@ export function safeCapture(
  */
 export function reportAnalyticsError(context: string, error: unknown): void {
   console.warn(`[Analytics] ${context}:`, error);
+}
+
+// ── Withdrawal Flows ────────────────────────────────────────────────────────
+// Flows where the user is removing funds — input_amount should be negative.
+
+const WITHDRAWAL_FLOWS: Record<string, Set<string>> = {
+  savings: new Set(['withdraw']),
+  rewards: new Set(['withdraw']),
+  stusds: new Set(['withdraw'])
+};
+
+// Stake/Seal use tab params instead of flow to determine direction
+const WITHDRAWAL_TABS = new Set(['free']);
+
+export function isWithdrawalFlow(
+  widget: string | null,
+  expertModule: string | null,
+  flow: string | null,
+  stakeTab: string | null,
+  sealTab: string | null
+): boolean {
+  if (!widget) return false;
+  const flowWidget = widget === 'expert' ? expertModule : widget;
+  if (flow && flowWidget && WITHDRAWAL_FLOWS[flowWidget]?.has(flow)) return true;
+  if (widget === 'stake' && stakeTab && WITHDRAWAL_TABS.has(stakeTab)) return true;
+  if (widget === 'seal' && sealTab && WITHDRAWAL_TABS.has(sealTab)) return true;
+  return false;
 }

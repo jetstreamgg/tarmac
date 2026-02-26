@@ -29,7 +29,7 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
 
   const chainId = useChainId();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { wrapStateChange } = useWidgetFlowTracking('stusds', chainId);
+  const { wrapStateChange } = useWidgetFlowTracking('expert', chainId);
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as StUSDSFlow | undefined;
 

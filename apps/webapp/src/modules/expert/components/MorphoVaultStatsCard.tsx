@@ -66,7 +66,7 @@ export const MorphoVaultStatsCard = ({
               <Trans>Liquidity</Trans>
             </Text>
             {marketDataLoading ? (
-              <Skeleton className="bg-textSecondary h-6 w-21" />
+              <Skeleton className="h-4 w-21" />
             ) : marketData?.liquidity !== undefined ? (
               <Text dataTestId="morpho-vault-tvl">
                 {formatBigInt(marketData.liquidity, { unit: assetDecimals, compact: true })}{' '}
@@ -83,7 +83,7 @@ export const MorphoVaultStatsCard = ({
             </Text>
             {marketDataLoading ? (
               <div className="flex justify-end">
-                <Skeleton className="bg-textSecondary h-6 w-30" />
+                <Skeleton className="h-4 w-30" />
               </div>
             ) : (
               <Text dataTestId="morpho-vault-tvl">

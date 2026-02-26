@@ -21,7 +21,7 @@ export function MorphoRateBreakdownPopover({
   const rateData = marketData?.rate;
   const formattedNetRate = rateData?.formattedNetRate || '0.00%';
 
-  if (isLoading) return <Skeleton className="bg-textSecondary h-6 w-20" />;
+  if (isLoading) return <Skeleton className="h-4 w-20" />;
   if (!rateData) return null;
 
   return (

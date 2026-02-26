@@ -38,6 +38,7 @@ export enum StakeStep {
 
 export enum StakeScreen {
   ACTION = 'action',
+  REVIEW = 'review',
   TRANSACTION = 'transaction'
 }
 

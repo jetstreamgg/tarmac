@@ -1,4 +1,3 @@
-// TODO: Remove this if we no longer need to generate a UUID
 export function generateUUID(): string {
   // Explicitly constructing the string before replacing
   const template = '10000000-1000-4000-8000-100000000000';

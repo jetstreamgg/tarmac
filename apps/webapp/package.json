@@ -11,7 +11,7 @@
     "preview": "pnpm build && vite preview  --config vite.config.ts",
     "start": "vite --host --config vite.config.ts",
     "lint-no-files": "eslint --fix --ext .tsx,.ts,.js,.jsx",
-    "lint": "pnpm lint-no-files src scripts",
+    "lint": "pnpm lint-no-files src",
     "test": "vitest run",
     "e2e": "ACCOUNT_COUNT=20 playwright test --config playwright-parallel.config.ts --workers=1 --trace on",
     "e2e:ui": "ACCOUNT_COUNT=10 playwright test --config playwright-parallel.config.ts --workers=1 --ui",

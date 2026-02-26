@@ -34,6 +34,9 @@ const resolveWidgetForTokenValidation = (searchParams: URLSearchParams): string 
   return undefined;
 };
 
+const isValidConvertIntentForChain = (intent: ConvertIntent, isL2Chain: boolean): boolean =>
+  !(isL2Chain && intent === ConvertIntent.UPGRADE_INTENT);
+
 export const validateSearchParams = (
   searchParams: URLSearchParams,
   rewardContracts: RewardContract[],
@@ -176,7 +179,7 @@ export const validateSearchParams = (
       const intent = Object.entries(ConvertIntentMapping).find(
         ([, intentValue]) => intentValue === value
       )?.[0] as ConvertIntent | undefined;
-      if (!intent) {
+      if (!intent || !isValidConvertIntentForChain(intent, isL2Chain)) {
         searchParams.delete(key);
       } else {
         setSelectedConvertOption(intent);

@@ -53,7 +53,7 @@ export default defineConfig({
     }
   },
   plugins: [
-    !process.env.CI &&
+    !process.env.VERCEL &&
       dts({
         insertTypesEntry: true,
         exclude: ['src/locales', 'src/**/*.test.ts', 'src/**/*.test.tsx'],

@@ -3,7 +3,7 @@ import { MutationFunction, useMutation } from '@tanstack/react-query';
 import { SendMessageRequest, SendMessageResponse, ChatIntent } from '../types/Chat';
 import { useChatContext } from '../context/ChatContext';
 import { CHATBOT_NAME, MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '../constants';
-import { generateUUID } from '../lib/generateUUID';
+import { generateUUID } from '@/lib/generateUUID';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import {

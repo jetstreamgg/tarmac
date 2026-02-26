@@ -34,7 +34,7 @@ export default defineConfig({
     }
   },
   plugins: [
-    !process.env.CI &&
+    !process.env.VERCEL &&
       dts({
         insertTypesEntry: true,
         copyDtsFiles: true,

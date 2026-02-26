@@ -7,7 +7,7 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useTermsAcceptance } from '../hooks/useTermsAcceptance';
 import { triggerWalletAssociation } from '../services/walletTermsAssociation';
-import { generateUUID } from '../lib/generateUUID';
+import { generateUUID } from '@/lib/generateUUID';
 import { MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '../constants';
 import { getTermsContent, TermsType } from '@/modules/ui/components/terms-loader';
 

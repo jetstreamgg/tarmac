@@ -37,13 +37,15 @@ import { useNotification } from '../hooks/useNotification';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 import { useChainId } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
 import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
 import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem } from '../types/Widgets';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
@@ -51,6 +53,7 @@ import { useModuleUrls } from '../hooks/useModuleUrls';
 import { useAvailableTokenRewardContracts, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
+import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 
 // Module-level guard: persists across React remounts/StrictMode, resets on page reload (fresh deeplink)
 let lastDeeplinkTracked: string | null = null;
@@ -108,12 +111,14 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   };
 
   const { trackWidgetSelected } = useAppAnalytics();
+  const { startNewFlow } = useAnalyticsFlow();
 
   // Deeplink detection: fire app_widget_selected when initial intent ≠ default (balances)
   // Uses module-level guard (not useRef) so it survives React StrictMode remounts and key-driven remounts
   useEffect(() => {
     if (effectiveIntent && effectiveIntent !== Intent.BALANCES_INTENT && effectiveIntent !== lastDeeplinkTracked) {
       lastDeeplinkTracked = effectiveIntent;
+      startNewFlow();
       trackWidgetSelected({
         widgetName: IntentMapping[effectiveIntent] || effectiveIntent,
         previousWidget: IntentMapping[Intent.BALANCES_INTENT],
@@ -133,12 +138,14 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     params: { [QueryParams.Reward]: contract.contractAddress }
   }));
 
-  const vaultSubItems = MORPHO_VAULTS.filter(vault => vault.vaultAddress[chainId]).map(vault => ({
+  // Vaults only exist on mainnet/testnet, so use appropriate chain based on environment
+  const vaultChainId = isTestnetId(chainId) ? TENDERLY_CHAIN_ID : mainnet.id;
+  const vaultSubItems = MORPHO_VAULTS.filter(vault => vault.vaultAddress[vaultChainId]).map(vault => ({
     label: vault.name,
     icon: <TokenIcon token={{ symbol: vault.assetToken.symbol }} className="h-3 w-3" showChainIcon={false} />,
     params: {
       [QueryParams.VaultModule]: VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT],
-      [QueryParams.Vault]: vault.vaultAddress[chainId]
+      [QueryParams.Vault]: vault.vaultAddress[vaultChainId]
     }
   }));
 
@@ -236,7 +243,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         {
           label: 'Upgrade',
           icon: <Upgrade className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT] }
+          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT] },
+          intent: Intent.UPGRADE_INTENT
         },
         {
           label: 'Trade',

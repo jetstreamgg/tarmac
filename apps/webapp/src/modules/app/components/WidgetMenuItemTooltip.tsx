@@ -1,7 +1,7 @@
 import React from 'react';
 import { Intent } from '@/lib/enums';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPortal } from '@/components/ui/tooltip';
-import { getChainIcon } from '@jetstreamgg/sky-utils';
+import { getChainIcon, isMainnetId } from '@jetstreamgg/sky-utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
@@ -44,15 +44,26 @@ export function WidgetMenuItemTooltip({
   const [, setSearchParams] = useSearchParams();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
 
+  const getMainnetChainId = (supportedChainIds: number[]) =>
+    supportedChainIds.find(isMainnetId) || supportedChainIds[0];
+
   const handleSubItemClick = (subItem: WidgetSubItem) => {
+    if (!currentChainId) return;
+
+    const supportedChainIds = getSupportedChainIds(currentChainId);
+
+    // Use subItem's intent if specified, otherwise fall back to parent widget's intent
+    const targetIntent = subItem.intent ?? widgetIntent;
+    // For multichain intents, use current network; for mainnet-only, use mainnet
+    const targetChainId = isMultichain(targetIntent) ? currentChainId : getMainnetChainId(supportedChainIds);
+
+    const targetChain = chains.find(c => c.id === targetChainId);
+    if (!targetChain) return;
+
+    setIsSwitchingNetwork(currentChainId !== targetChainId);
     setSearchParams(prevParams => {
       const searchParams = deleteSearchParams(prevParams);
-      if (currentChainId) {
-        const chain = chains.find(c => c.id === currentChainId);
-        if (chain) {
-          searchParams.set(QueryParams.Network, normalizeUrlParam(chain.name));
-        }
-      }
+      searchParams.set(QueryParams.Network, normalizeUrlParam(targetChain.name));
       searchParams.set(QueryParams.Widget, mapIntentToQueryParam(widgetIntent));
       Object.entries(subItem.params).forEach(([key, value]) => {
         searchParams.set(key, value);
@@ -113,11 +124,7 @@ export function WidgetMenuItemTooltip({
       });
     } else {
       // Show only Ethereum mainnet for mainnet-only widgets
-      const mainnetId =
-        supportedChainIds.find(id => {
-          const chain = chains.find(c => c.id === id);
-          return chain && (chain.name === 'Ethereum' || chain.name.includes('mainnet'));
-        }) || supportedChainIds[0];
+      const mainnetId = getMainnetChainId(supportedChainIds);
 
       const chain = chains.find(c => c.id === mainnetId);
       if (!chain) return null;

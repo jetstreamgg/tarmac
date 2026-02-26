@@ -1,4 +1,5 @@
 import React from 'react';
+import { Intent } from '@/lib/enums';
 
 export type SharedProps = {
   onConnect: (() => void) | undefined;
@@ -18,6 +19,8 @@ export type WidgetSubItem = {
   icon?: React.ReactNode;
   /** Query params to set when this sub-item is clicked */
   params: Record<string, string>;
+  /** Target intent for network determination (defaults to parent widget's intent) */
+  intent?: Intent;
 };
 
 export type WidgetItem = [

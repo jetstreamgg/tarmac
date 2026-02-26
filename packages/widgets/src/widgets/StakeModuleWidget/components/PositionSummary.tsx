@@ -40,7 +40,8 @@ import {
   stakeOpenReviewTitle,
   getStakeOpenReviewSubtitle,
   stakeManageReviewTitle,
-  getStakeManageReviewSubtitle
+  getStakeManageReviewSubtitle,
+  StakeScreen
 } from '../lib/constants';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
 import { useLingui } from '@lingui/react/macro';
@@ -48,6 +49,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { BatchStatus } from '@widgets/shared/constants';
 import { useChainId } from 'wagmi';
 import { Checkbox } from '@widgets/components/ui/checkbox';
+import { WidgetState } from '@widgets/index';
 
 const { usds } = TOKENS;
 const TOKENS_BY_SYMBOL = Object.values(TOKENS).reduce<Record<string, Token>>((accumulator, token) => {
@@ -162,6 +164,12 @@ export const PositionSummary = ({
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
   const chainId = useChainId();
+  const { setWidgetState } = useContext(WidgetContext);
+
+  // Update widgetState on mount to REVIEW
+  useEffect(() => {
+    setWidgetState((prev: WidgetState) => ({ ...prev, screen: StakeScreen.REVIEW }));
+  }, []);
 
   const {
     activeUrn,
