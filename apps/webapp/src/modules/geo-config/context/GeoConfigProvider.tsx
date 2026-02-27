@@ -8,8 +8,7 @@ const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true';
 
 // Endpoint URL - use staging for now, will be configured via env var
 const GEO_CONFIG_URL =
-  import.meta.env.VITE_GEO_CONFIG_URL ||
-  'https://api-workers-staging.jetstream-account.workers.dev/geo-config';
+  import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.jetstream.gg/geo-config';
 
 // Restrictive fallback config - block everything that might be restricted
 const FALLBACK_CONFIG: GeoConfig = {
