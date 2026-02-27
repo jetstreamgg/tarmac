@@ -89,7 +89,9 @@ export const RewardsBalanceCard = ({
       headerRightContent={
         loading || pricesLoading ? (
           <Skeleton className="w-32" />
-        ) : totalUserRewardsSupplied !== undefined && !!pricesData?.USDS ? (
+        ) : totalUserRewardsSupplied === undefined || totalUserRewardsSupplied === 0n ? (
+          <Text>$0</Text>
+        ) : pricesData?.USDS && Number.isFinite(parseFloat(pricesData.USDS.price)) ? (
           <Text>
             $
             {formatNumber(
@@ -100,7 +102,7 @@ export const RewardsBalanceCard = ({
             )}
           </Text>
         ) : (
-          <Text>$0</Text>
+          <Text>—</Text>
         )
       }
       footer={
@@ -120,7 +122,7 @@ export const RewardsBalanceCard = ({
         </div>
       }
       footerRightContent={
-        unclaimedRewardsLoading ? (
+        unclaimedRewardsLoading || pricesLoading ? (
           <Skeleton className="h-[13px] w-20" />
         ) : totalUnclaimedRewardsValue > 0 ? (
           <div className="flex flex-col items-end gap-1">

@@ -33,7 +33,9 @@ export const ExpertBalanceCard = ({
       headerRightContent={
         loading || pricesLoading || isBalanceLoading ? (
           <Skeleton className="w-32" />
-        ) : stUsdsSupplied > 0n && !!pricesData?.USDS ? (
+        ) : stUsdsSupplied === 0n ? (
+          <Text>$0</Text>
+        ) : pricesData?.USDS ? (
           <Text>
             $
             {formatNumber(
@@ -44,7 +46,7 @@ export const ExpertBalanceCard = ({
             )}
           </Text>
         ) : (
-          <Text>$0</Text>
+          <Text>—</Text>
         )
       }
       footer={
@@ -71,7 +73,9 @@ export const ExpertBalanceCard = ({
       content={
         loading || pricesLoading || isBalanceLoading ? (
           <Skeleton className="w-32" />
-        ) : stUsdsSupplied > 0n && !!pricesData?.USDS ? (
+        ) : stUsdsSupplied === 0n ? (
+          <Text>$0</Text>
+        ) : pricesData?.USDS ? (
           <Text>
             $
             {formatNumber(
@@ -82,7 +86,7 @@ export const ExpertBalanceCard = ({
             )}
           </Text>
         ) : (
-          <Text>$0</Text>
+          <Text>—</Text>
         )
       }
     />
