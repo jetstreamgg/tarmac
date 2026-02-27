@@ -3,7 +3,7 @@ import {
   useMorphoVaultsCombinedTvl,
   useMorphoVaultsCombinedUserData
 } from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -78,10 +78,20 @@ export const VaultsBalanceCard = ({
       url={url}
       logoName="vaults"
       content={
-        isBalanceLoading ? (
+        isBalanceLoading || pricesLoading ? (
           <Skeleton className="w-32" />
+        ) : totalUserAssets > 0n && !!pricesData?.USDS ? (
+          <Text>
+            $
+            {formatNumber(
+              parseFloat(formatUnits(totalUserAssets, 18)) * parseFloat(pricesData.USDS.price),
+              {
+                maxDecimals: 2
+              }
+            )}
+          </Text>
         ) : (
-          <Text>{formatBigInt(totalUserAssets)} USDS</Text>
+          <Text>$0</Text>
         )
       }
     />

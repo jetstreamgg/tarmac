@@ -32,7 +32,9 @@ export const SavingsBalanceCard = ({
       headerRightContent={
         loading || pricesLoading ? (
           <Skeleton className="w-32" />
-        ) : totalSavingsBalance !== undefined && !!pricesData?.USDS ? (
+        ) : totalSavingsBalance !== undefined &&
+          !!pricesData?.USDS &&
+          Number.isFinite(parseFloat(pricesData.USDS.price)) ? (
           <Text>
             $
             {formatNumber(

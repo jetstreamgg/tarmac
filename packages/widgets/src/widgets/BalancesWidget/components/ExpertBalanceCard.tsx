@@ -1,5 +1,5 @@
 import { useStUsdsData, usePrices } from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatNumber, calculateApyFromStr } from '@jetstreamgg/sky-utils';
+import { formatNumber, calculateApyFromStr } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -69,10 +69,20 @@ export const ExpertBalanceCard = ({
       url={url}
       logoName="expert"
       content={
-        loading || isBalanceLoading ? (
+        loading || pricesLoading || isBalanceLoading ? (
           <Skeleton className="w-32" />
+        ) : stUsdsSupplied > 0n && !!pricesData?.USDS ? (
+          <Text>
+            $
+            {formatNumber(
+              parseFloat(formatUnits(stUsdsSupplied, 18)) * parseFloat(pricesData.USDS.price),
+              {
+                maxDecimals: 2
+              }
+            )}
+          </Text>
         ) : (
-          <Text>{formatBigInt(stUsdsSupplied)} USDS</Text>
+          <Text>$0</Text>
         )
       }
     />
