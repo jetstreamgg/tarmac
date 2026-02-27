@@ -30,7 +30,9 @@ export function StakingRewardRateCard() {
   // Only count contracts that have actual rate data > 0
   const contractsWithRates = (stakeRewardsChartsInfoData || []).filter(chartData => {
     if (!chartData || chartData.length === 0) return false;
-    const mostRecent = chartData.sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0];
+    const mostRecent = chartData.reduce((latest, current) =>
+      current.blockTimestamp > latest.blockTimestamp ? current : latest
+    );
     return parseFloat(mostRecent?.rate || '0') > 0;
   });
   const hasMultipleRates = contractsWithRates.length > 1;

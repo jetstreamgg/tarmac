@@ -124,10 +124,11 @@ export function useMorphoVaultsCombinedUserData(): MorphoVaultsCombinedUserData 
       const assetPerShare = assetPerShareResult.result as bigint;
       const userShares = userSharesResult.result as bigint;
 
-      // Calculate userAssets: shares * assetPerShare / 10^decimals
-      const userAssets = userShares > 0n ? (userShares * assetPerShare) / 10n ** BigInt(decimals) : 0n;
+      // Calculate userAssets in asset's native decimals
+      const userAssets = userShares > 0n ? (userShares * assetPerShare) / 10n ** 18n : 0n;
 
-      totalUserAssets += userAssets;
+      // Normalize to 18 decimals before summing (handles USDT 6 decimals, USDS 18 decimals, etc.)
+      totalUserAssets += userAssets * 10n ** BigInt(18 - decimals);
       vaults.push({
         vaultAddress: config.address,
         vaultName: config.name,

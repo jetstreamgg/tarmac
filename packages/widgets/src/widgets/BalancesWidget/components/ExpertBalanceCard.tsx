@@ -22,7 +22,7 @@ export const ExpertBalanceCard = ({
   const stUsdsRate = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
 
   const isBalanceLoading = stUsdsLoading;
-  const isRateLoading = stUsdsLoading;
+  const isRateLoading = loading || stUsdsLoading;
 
   const expertIcon = <img src="/images/expert_icon_large.svg" alt="Expert" className="h-full w-full" />;
 

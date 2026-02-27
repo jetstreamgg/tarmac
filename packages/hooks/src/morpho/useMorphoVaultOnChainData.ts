@@ -122,9 +122,9 @@ export function useMorphoVaultOnChainData({
     // User data defaults to 0 if not connected or call failed
     const userShares = userData?.[0]?.status === 'success' ? userData[0].result : 0n;
 
-    // Calculate userAssets using convertToAssets formula: shares * assetPerShare / 10^decimals
-    // assetPerShare is the result of convertToAssets(10^18), so we need to adjust for decimals
-    const userAssets = userShares > 0n ? (userShares * assetPerShare) / 10n ** BigInt(decimals) : 0n;
+    // Calculate userAssets: shares * assetPerShare / 10^18
+    // We divide by 10^18 because convertToAssets was called with 10^18 as the reference
+    const userAssets = userShares > 0n ? (userShares * assetPerShare) / 10n ** 18n : 0n;
 
     return {
       totalAssets,
