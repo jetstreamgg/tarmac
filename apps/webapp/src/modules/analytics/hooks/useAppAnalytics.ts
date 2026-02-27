@@ -10,29 +10,17 @@ import {
   type ErrorContext
 } from '../constants';
 import { useAnalyticsFlow } from '../context/AnalyticsFlowContext';
-import { useSearchParams } from 'react-router-dom';
 
 export function useAppAnalytics() {
   const posthog = usePostHog();
   const { address } = useConnection();
   const chains = useChains();
   const { getFlowId } = useAnalyticsFlow();
-  const [searchParams] = useSearchParams();
 
   const getChainName = useCallback(
     (chainId: number) => chains.find(c => c.id === chainId)?.name ?? `unknown_${chainId}`,
     [chains]
   );
-
-  const getUrlParams = useCallback(() => {
-    const params: Record<string, string> = {};
-    searchParams.forEach((value, key) => {
-      if (key !== 'widget') {
-        params[key] = value;
-      }
-    });
-    return params;
-  }, [searchParams]);
 
   const trackWidgetSelected = ({
     widgetName,
@@ -63,11 +51,10 @@ export function useAppAnalytics() {
         chain_id: chainId,
         chain_name: getChainName(chainId),
         viewport: getViewport(),
-        flow_id: getFlowId(),
-        ...getUrlParams()
+        flow_id: getFlowId()
       });
     },
-    [posthog, getChainName, getUrlParams]
+    [posthog, getChainName, getFlowId]
   );
 
   const trackTransactionCompleted = useCallback(
@@ -93,11 +80,10 @@ export function useAppAnalytics() {
         ...(txHash && { tx_hash: txHash }),
         ...(errorContext && { error_context: errorContext }),
         viewport: getViewport(),
-        flow_id: getFlowId(),
-        ...getUrlParams()
+        flow_id: getFlowId()
       });
     },
-    [posthog, address, getChainName, getUrlParams]
+    [posthog, address, getChainName, getFlowId]
   );
 
   const trackWidgetReviewViewed = useCallback(
@@ -112,7 +98,7 @@ export function useAppAnalytics() {
         flow_id: getFlowId()
       });
     },
-    [posthog, address, getChainName]
+    [posthog, address, getChainName, getFlowId]
   );
 
   const trackDetailsPaneToggled = ({

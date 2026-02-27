@@ -18,6 +18,7 @@ import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { NotificationType, TxStatus } from '@widgets/shared/constants';
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
@@ -68,6 +69,7 @@ const MorphoVaultWidgetWrapped = ({
   onStateValidated,
   onNotification,
   onWidgetStateChange,
+  onAnalyticsEvent,
   onExternalLinkClicked,
   enabled = true,
   legalBatchTxUrl,
@@ -206,6 +208,8 @@ const MorphoVaultWidgetWrapped = ({
       assetAddress,
       assetDecimals,
       assetSymbol: assetToken.symbol,
+      vaultName,
+      needsAllowance,
       shouldUseBatch,
       rewards: rewardsData?.rewards,
       hasClaimableRewards: rewardsData?.hasClaimableRewards,
@@ -215,7 +219,8 @@ const MorphoVaultWidgetWrapped = ({
       mutateRewards,
       addRecentTransaction,
       onWidgetStateChange,
-      onNotification
+      onNotification,
+      onAnalyticsEvent
     });
 
   // Derive current call index based on active flow (for multi-step tracking)
@@ -329,6 +334,19 @@ const MorphoVaultWidgetWrapped = ({
       ...prev,
       screen: MorphoVaultScreen.REVIEW
     }));
+
+    try {
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedAmount, assetDecimals)),
+        assetSymbol: assetToken.symbol,
+        data: { module: 'morpho', product: vaultName, productAddress: vaultAddress, assetAddress, assetSymbol: assetToken.symbol }
+      });
+    } catch {
+      // Analytics must never break functionality
+    }
   };
 
   const onClickBack = () => {

@@ -43,6 +43,8 @@ import { useMaxInForWithdraw } from './hooks/useMaxInForWithdraw';
 import { useMaxOutForDeposit } from './hooks/useMaxOutForDeposit';
 import { Trans } from '@lingui/react/macro';
 import { getTooltipById } from '../../data/tooltips';
+import { useTradeAnalytics } from '../TradeWidget/hooks/useTradeAnalytics';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -69,6 +71,7 @@ function TradeWidgetWrapped({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
+  onAnalyticsEvent,
   enabled = true,
   legalBatchTxUrl,
   referralCode,
@@ -215,6 +218,18 @@ function TradeWidgetWrapped({
 
   const needsAllowance = !!(!allowance || allowance < debouncedOriginAmount);
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
+
+  const { fireAnalytics, swapData } = useTradeAnalytics({
+    onAnalyticsEvent,
+    swapProvider: 'psm',
+    originToken,
+    targetToken,
+    debouncedOriginAmount,
+    targetAmount,
+    quoteKind: lastUpdated === TradeSide.IN ? 'sell' : 'buy',
+    batchEnabled: !!batchEnabled
+  });
+
   useEffect(() => {
     if (txStatus === TxStatus.IDLE) {
       setShowStepIndicator(needsAllowance);
@@ -522,6 +537,8 @@ function TradeWidgetWrapped({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
+    swapData,
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
@@ -663,6 +680,12 @@ function TradeWidgetWrapped({
   }, [chainId]);
 
   const tradeOnClick = () => {
+    fireAnalytics({
+      event: WidgetAnalyticsEventType.TRANSACTION_STARTED,
+      action: 'trade',
+      flow: 'trade',
+      data: swapData
+    });
     const executeFunction = lastUpdated === TradeSide.OUT ? batchTradeOut.execute : batchTrade.execute;
     executeFunction();
   };
@@ -699,6 +722,12 @@ function TradeWidgetWrapped({
   };
 
   const reviewOnClick = () => {
+    fireAnalytics({
+      event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+      action: 'trade',
+      flow: 'trade',
+      data: swapData
+    });
     setWidgetState((prev: WidgetState) => ({
       ...prev,
       screen: TradeScreen.REVIEW

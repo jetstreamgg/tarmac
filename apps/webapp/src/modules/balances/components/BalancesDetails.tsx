@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro';
 import { BalancesSkyStatsOverview } from './BalancesSkyStatsOverview';
 import { BalancesChart } from './BalancesChart';
 import { BalancesFaq } from './BalancesFaq';
-import { SuggestedActions } from '@/modules/vaults/agent/components/SuggestedActions';
+import { SuggestedActions } from '@/modules/vaults/components/SuggestedActions';
 
 export function BalancesDetails() {
   const isRestricted = import.meta.env.VITE_RESTRICTED_BUILD === 'true';

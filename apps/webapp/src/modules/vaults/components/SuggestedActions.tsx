@@ -22,9 +22,8 @@ import {
 import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
 import { Savings, Upgrade, RewardsModule, Stake, Seal, Expert, Vaults, Trade } from '@/modules/icons';
 import { type IconProps } from '@/modules/icons/Icon';
-import { parseIntent } from '../engine/intent-parser';
-import { intentToWidgetParams } from '../engine/intent-to-widget';
-import { SUGGESTED_ACTIONS, type SuggestedAction } from '../lib/examples';
+import { parseIntent, intentToWidgetParams } from '../lib/intent';
+import { SUGGESTED_ACTIONS, type SuggestedAction } from '../lib/actions';
 import { Morpho } from '@jetstreamgg/sky-widgets';
 import { InfoTooltip } from '@/components/InfoTooltip';
 

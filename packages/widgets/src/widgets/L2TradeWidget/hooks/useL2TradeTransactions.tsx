@@ -4,6 +4,7 @@ import { useL2TradeTransactionCallbacks } from './useL2TradeTransactionCallbacks
 import { useContext } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { TradeAction } from '@widgets/widgets/TradeWidget/lib/constants';
+import { WidgetAnalyticsEvent } from '@widgets/shared/types/analyticsEvents';
 
 interface UseL2TradeTransactionsParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
@@ -14,6 +15,8 @@ interface UseL2TradeTransactionsParameters
   referralCode: number | undefined;
   maxAmountInForWithdraw: bigint;
   shouldUseBatch: boolean;
+  onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
+  swapData: Record<string, unknown>;
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
@@ -31,6 +34,8 @@ export const useL2TradeTransactions = ({
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
+  onAnalyticsEvent,
+  swapData,
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
@@ -49,6 +54,8 @@ export const useL2TradeTransactions = ({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
+    swapData,
     setShowAddToken
   });
 

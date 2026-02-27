@@ -24,7 +24,7 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -52,7 +52,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { wrapStateChange } = useWidgetFlowTracking('upgrade', chainId);
+  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
 
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
@@ -266,7 +266,8 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
             ? (linkedActionConfig.sourceToken.toUpperCase() as keyof typeof upgradeTokens)
             : undefined) as keyof typeof upgradeTokens | undefined
       }}
-      onWidgetStateChange={wrapStateChange(onUpgradeWidgetStateChange)}
+      onWidgetStateChange={onUpgradeWidgetStateChange}
+      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={

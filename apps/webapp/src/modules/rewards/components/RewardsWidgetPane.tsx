@@ -18,7 +18,7 @@ import {
 import { useSearchParams } from 'react-router-dom';
 import { useChainId } from 'wagmi';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -38,7 +38,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
 
   const chainId = useChainId();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { wrapStateChange } = useWidgetFlowTracking('rewards', chainId);
+  const onAnalyticsEvent = useWidgetAnalytics('rewards', chainId);
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;
 
   const onRewardContractChange = (rewardContract?: RewardContract) => {
@@ -142,7 +142,8 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
       {...sharedProps}
       onRewardContractChange={onRewardContractChange}
       externalWidgetState={{ selectedRewardContract, amount: linkedActionConfig?.inputAmount, flow }}
-      onWidgetStateChange={wrapStateChange(onRewardsWidgetStateChange)}
+      onWidgetStateChange={onRewardsWidgetStateChange}
+      onAnalyticsEvent={onAnalyticsEvent}
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
       disclaimer={<RewardsUsdsSkyDisclaimer />}

@@ -202,13 +202,12 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
   sky: [
     {
       label: 'Stake and Earn with SKY',
-      input: 'Open a staking position with {amount} SKY',
+      input: '',
       tokens: ['SKY'],
-      sourceToken: 'SKY',
-      defaultAmount: 1000,
       rateKey: 'staking',
       subtitle: 'Rate: {rate}',
-      module: 'stake'
+      module: 'stake',
+      url: '?widget=stake'
     },
     {
       label: 'Borrow USDS',

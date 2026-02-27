@@ -9,9 +9,11 @@ import {
   StUsdsProviderType,
   StUsdsDirection,
   useCurveAllowance,
-  useStUsdsWithdrawBalances
+  useStUsdsWithdrawBalances,
+  stUsdsAddress
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce } from '@jetstreamgg/sky-utils';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import {
@@ -59,6 +61,7 @@ const StUSDSWidgetWrapped = ({
   onStateValidated,
   onNotification,
   onWidgetStateChange,
+  onAnalyticsEvent,
   onExternalLinkClicked,
   enabled = true,
   referralCode,
@@ -176,6 +179,7 @@ const StUSDSWidgetWrapped = ({
     amount,
     referralCode,
     max,
+    needsAllowance,
     shouldUseBatch,
     mutateNativeSupplyAllowance,
     mutateStUsds,
@@ -184,6 +188,7 @@ const StUSDSWidgetWrapped = ({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
     selectedProvider: providerSelection.selectedProvider,
     expectedOutput: providerSelection.selectedQuote?.outputAmount ?? 0n,
     // For Curve withdrawals: stUsdsAmount is the calculated stUSDS input needed
@@ -337,6 +342,25 @@ const StUSDSWidgetWrapped = ({
       ...prev,
       screen: StUSDSScreen.REVIEW
     }));
+
+    try {
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedAmount, 18)),
+        assetSymbol: 'USDS',
+        data: {
+          module: 'expert',
+          product: 'stUSDS',
+          productAddress: stUsdsAddress[chainId as keyof typeof stUsdsAddress],
+          assetSymbol: 'USDS',
+          provider: isCurveSelected ? 'curve' : 'native'
+        }
+      });
+    } catch {
+      // Analytics must never break functionality
+    }
   };
 
   const onClickBack = () => {
