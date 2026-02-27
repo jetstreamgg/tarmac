@@ -17,12 +17,3 @@ export function formatBaLabsUrl(url: URL) {
 
   return url;
 }
-
-/**
- * Strips the `{chainId}-` prefix from an Envio entity ID to recover the original value.
- * e.g. "1-0xabc123..." → "0xabc123..."
- */
-export function stripChainIdPrefix(id: string): string {
-  const dashIndex = id.indexOf('-');
-  return dashIndex !== -1 ? id.slice(dashIndex + 1) : id;
-}

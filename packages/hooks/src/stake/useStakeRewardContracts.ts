@@ -4,7 +4,6 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TENDERLY_CHAIN_ID, TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { stripChainIdPrefix } from '../helpers';
 import {
   stakeModuleAbi,
   stakeModuleAddress,
@@ -48,19 +47,19 @@ async function fetchStakeRewardContracts(urlSubgraph: string, chainId: number) {
   const query = gql`
     {
       rewards: Reward(where: { stakingEngineActive: { _eq: true }, chainId: { _eq: ${chainId} } }) {
-        id
+        address
       }
     }
   `;
 
-  const response = await request<{ rewards: { id: `0x${string}` }[] }>(urlSubgraph, query);
+  const response = await request<{ rewards: { address: string }[] }>(urlSubgraph, query);
   const parsedRewardContracts = response.rewards;
   if (!parsedRewardContracts) {
     return [];
   }
 
   return parsedRewardContracts.map(f => ({
-    contractAddress: stripChainIdPrefix(f.id) as `0x${string}`
+    contractAddress: f.address as `0x${string}`
   }));
 }
 

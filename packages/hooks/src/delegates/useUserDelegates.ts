@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
-import { stripChainIdPrefix } from '../helpers';
 
 async function fetchUserDelegates(
   urlSubgraph: string,
@@ -21,7 +20,7 @@ async function fetchUserDelegates(
   ];
   if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
   if (search) {
-    whereConditions.push(`{ id: { _ilike: "%${search}%" } }`);
+    whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
   }
   const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
@@ -30,7 +29,7 @@ async function fetchUserDelegates(
       delegates: Delegate(
         ${whereClause}
       ) {
-        id
+        address
         blockTimestamp
         ownerAddress
         delegators
@@ -47,10 +46,10 @@ async function fetchUserDelegates(
     }
   `;
 
-  const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
-    id: stripChainIdPrefix(d.id) as `0x${string}`,
+    id: d.address as `0x${string}`,
     totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
   }));
   if (!parsedDelegates) {

@@ -2,7 +2,6 @@ import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
-import { stripChainIdPrefix } from '../helpers';
 import { Bark, StakePosition } from './stakeModule';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
@@ -13,10 +12,10 @@ type StakePositionResponse = {
     skyLocked: string;
     usdsDebt: string;
     voteDelegate: {
-      id: string;
+      address: string;
     } | null;
     reward: {
-      id: string;
+      address: string;
     } | null;
     barks: Bark[];
   }[];
@@ -35,13 +34,12 @@ async function fetchStakePosition(
         skyLocked
         usdsDebt
         voteDelegate {
-          id
+          address
         }
         reward {
-          id
+          address
         }
         barks {
-          id
           ilk
           clipperId
         }
@@ -59,9 +57,9 @@ async function fetchStakePosition(
     index: urnIndex,
     skyLocked: BigInt(skyLocked),
     usdsDebt: BigInt(usdsDebt),
-    selectedDelegate: voteDelegate?.id ? stripChainIdPrefix(voteDelegate.id) : undefined,
-    selectedReward: reward?.id ? stripChainIdPrefix(reward.id) : undefined,
-    barks: response.stakingUrns[0].barks.map(b => ({ ...b, id: stripChainIdPrefix(b.id) }))
+    selectedDelegate: voteDelegate?.address,
+    selectedReward: reward?.address,
+    barks: response.stakingUrns[0].barks
   };
 }
 

@@ -4,25 +4,24 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { stripChainIdPrefix } from '../helpers';
 
 async function fetchSaRewardContracts(urlSubgraph: string, chainId: number) {
   const query = gql`
     {
       rewards: Reward(where: { lockstakeActive: { _eq: true }, chainId: { _eq: ${chainId} } }) {
-        id
+        address
       }
     }
   `;
 
-  const response = await request<{ rewards: { id: `0x${string}` }[] }>(urlSubgraph, query);
+  const response = await request<{ rewards: { address: string }[] }>(urlSubgraph, query);
   const parsedRewardContracts = response.rewards;
   if (!parsedRewardContracts) {
     return undefined;
   }
 
   return parsedRewardContracts.map(f => ({
-    contractAddress: stripChainIdPrefix(f.id) as `0x${string}`
+    contractAddress: f.address as `0x${string}`
   }));
 }
 

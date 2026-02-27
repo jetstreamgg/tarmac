@@ -8,7 +8,6 @@ import { getRandomItem } from '@jetstreamgg/sky-utils';
 import { useMemo } from 'react';
 import { parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
-import { stripChainIdPrefix } from '../helpers';
 
 async function fetchDelegates(
   urlSubgraph: string,
@@ -23,8 +22,9 @@ async function fetchDelegates(
 ): Promise<DelegateInfo[] | undefined> {
   const whereConditions: string[] = [`{ chainId: { _eq: ${chainId} } }`];
   if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
-  if (exclude?.length) whereConditions.push(`{ id: { _nin: [${exclude.map(addr => `"${addr}"`).join(', ')}] } }`);
-  if (search) whereConditions.push(`{ id: { _ilike: "%${search}%" } }`);
+  if (exclude?.length)
+    whereConditions.push(`{ address: { _nin: [${exclude.map(addr => `"${addr}"`).join(', ')}] } }`);
+  if (search) whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
   const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
   const paginationClause = first !== undefined && skip !== undefined ? `limit: ${first}, offset: ${skip}` : '';
@@ -37,7 +37,7 @@ async function fetchDelegates(
         blockTimestamp
         blockNumber
         ownerAddress
-        id
+        address
         delegators
         delegations(
           limit: 1000
@@ -49,10 +49,10 @@ async function fetchDelegates(
     }
   `;
 
-  const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
-    id: stripChainIdPrefix(d.id) as `0x${string}`,
+    id: d.address as `0x${string}`,
     totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
   })) as DelegateRaw[];
   if (!parsedDelegates) {
