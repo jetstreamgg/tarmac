@@ -30,10 +30,20 @@ export const SavingsBalanceCard = ({
       title={t`Supplied to Savings`}
       icon={<img src="/images/savings_icon_large.svg" alt="Savings" className="h-full w-full" />}
       headerRightContent={
-        loading ? (
+        loading || pricesLoading ? (
           <Skeleton className="w-32" />
+        ) : totalSavingsBalance !== undefined && !!pricesData?.USDS ? (
+          <Text>
+            $
+            {formatNumber(
+              parseFloat(formatUnits(totalSavingsBalance, 18)) * parseFloat(pricesData.USDS.price),
+              {
+                maxDecimals: 2
+              }
+            )}
+          </Text>
         ) : (
-          <Text>{`${totalSavingsBalance !== undefined ? formatBigInt(totalSavingsBalance) : '0'}`}</Text>
+          <Text>$0</Text>
         )
       }
       footer={
@@ -49,21 +59,7 @@ export const SavingsBalanceCard = ({
           <></>
         )
       }
-      footerRightContent={
-        loading || pricesLoading ? (
-          <Skeleton className="h-[13px] w-20" />
-        ) : totalSavingsBalance !== undefined && !!pricesData?.USDS ? (
-          <Text variant="small" className="text-textSecondary">
-            $
-            {formatNumber(
-              parseFloat(formatUnits(totalSavingsBalance, 18)) * parseFloat(pricesData.USDS.price),
-              {
-                maxDecimals: 2
-              }
-            )}
-          </Text>
-        ) : undefined
-      }
+      footerRightContent={undefined}
       balancesByChain={savingsBalances ?? []}
       urlMap={urlMap}
       pricesData={pricesData ?? {}}

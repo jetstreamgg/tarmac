@@ -31,10 +31,20 @@ export const ExpertBalanceCard = ({
       title={t`Supplied to Expert`}
       icon={expertIcon}
       headerRightContent={
-        loading || isBalanceLoading ? (
+        loading || pricesLoading || isBalanceLoading ? (
           <Skeleton className="w-32" />
+        ) : stUsdsSupplied > 0n && !!pricesData?.USDS ? (
+          <Text>
+            $
+            {formatNumber(
+              parseFloat(formatUnits(stUsdsSupplied, 18)) * parseFloat(pricesData.USDS.price),
+              {
+                maxDecimals: 2
+              }
+            )}
+          </Text>
         ) : (
-          <Text>{formatBigInt(stUsdsSupplied)}</Text>
+          <Text>$0</Text>
         )
       }
       footer={
@@ -50,21 +60,7 @@ export const ExpertBalanceCard = ({
           <></>
         )
       }
-      footerRightContent={
-        loading || pricesLoading || isBalanceLoading ? (
-          <Skeleton className="h-[13px] w-20" />
-        ) : stUsdsSupplied > 0n && !!pricesData?.USDS ? (
-          <Text variant="small" className="text-textSecondary">
-            $
-            {formatNumber(
-              parseFloat(formatUnits(stUsdsSupplied, 18)) * parseFloat(pricesData.USDS.price),
-              {
-                maxDecimals: 2
-              }
-            )}
-          </Text>
-        ) : undefined
-      }
+      footerRightContent={undefined}
       url={url}
     />
   ) : (

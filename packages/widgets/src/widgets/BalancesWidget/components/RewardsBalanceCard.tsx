@@ -87,12 +87,20 @@ export const RewardsBalanceCard = ({
       title={t`Supplied to Rewards`}
       icon={<img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-full w-full" />}
       headerRightContent={
-        loading ? (
+        loading || pricesLoading ? (
           <Skeleton className="w-32" />
-        ) : (
+        ) : totalUserRewardsSupplied !== undefined && !!pricesData?.USDS ? (
           <Text>
-            {`${totalUserRewardsSupplied !== undefined ? formatBigInt(totalUserRewardsSupplied) : '0'}`}
+            $
+            {formatNumber(
+              parseFloat(formatUnits(totalUserRewardsSupplied, 18)) * parseFloat(pricesData.USDS.price),
+              {
+                maxDecimals: 2
+              }
+            )}
           </Text>
+        ) : (
+          <Text>$0</Text>
         )
       }
       footer={
@@ -112,28 +120,16 @@ export const RewardsBalanceCard = ({
         </div>
       }
       footerRightContent={
-        loading || pricesLoading || unclaimedRewardsLoading ? (
+        unclaimedRewardsLoading ? (
           <Skeleton className="h-[13px] w-20" />
-        ) : (
+        ) : totalUnclaimedRewardsValue > 0 ? (
           <div className="flex flex-col items-end gap-1">
-            {totalUserRewardsSupplied !== undefined && !!pricesData?.USDS && (
-              <Text variant="small" className="text-textSecondary leading-4">
-                $
-                {formatNumber(
-                  parseFloat(formatUnits(totalUserRewardsSupplied, 18)) * parseFloat(pricesData.USDS.price),
-                  {
-                    maxDecimals: 2
-                  }
-                )}
-              </Text>
-            )}
-            {totalUnclaimedRewardsValue > 0 && (
-              <Text variant="small" className="text-textPrimary leading-4">
-                ${formatNumber(totalUnclaimedRewardsValue, { maxDecimals: 2 })}
-              </Text>
-            )}
+            <div className="h-4" />
+            <Text variant="small" className="text-textPrimary leading-4">
+              ${formatNumber(totalUnclaimedRewardsValue, { maxDecimals: 2 })}
+            </Text>
           </div>
-        )
+        ) : undefined
       }
       url={url}
     />

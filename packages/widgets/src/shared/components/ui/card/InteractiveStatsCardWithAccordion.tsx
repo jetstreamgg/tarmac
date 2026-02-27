@@ -11,7 +11,7 @@ import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
-import { formatBigInt, formatNumber, getChainIcon } from '@jetstreamgg/sky-utils';
+import { formatNumber, getChainIcon } from '@jetstreamgg/sky-utils';
 import { Link } from 'react-router-dom';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 import { PriceData } from '@jetstreamgg/sky-hooks';
@@ -122,27 +122,18 @@ export const InteractiveStatsCardWithAccordion = ({
                 return (
                   <Link to={urlMap[chainId]} key={chainId}>
                     <div className="group/interactive-card from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer bg-radial-(--gradient-position) transition-colors">
-                      <div className="flex items-start gap-2 p-2 px-4 lg:px-5">
-                        <TokenIcon
-                          className="h-8 w-8"
-                          token={{ symbol: 'USDS', name: 'USDS' }}
-                          chainId={chainId}
-                        />
+                      <div className="flex items-center gap-2 p-2 px-4 lg:px-5">
+                        {getChainIcon(chainId, 'h-7 w-7')}
                         <div className="grow">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
                               <Text>{networkName}</Text>
                               <ArrowRight
                                 size={16}
                                 className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
                               />
                             </div>
-                            <div className="flex flex-col items-end">
-                              <Text>{formatBigInt(balance)}</Text>
-                              <Text variant="small" className="text-textSecondary">
-                                ${formatNumber(usdValue, { maxDecimals: 2 })}
-                              </Text>
-                            </div>
+                            <Text>${formatNumber(usdValue, { maxDecimals: 2 })}</Text>
                           </div>
                         </div>
                       </div>

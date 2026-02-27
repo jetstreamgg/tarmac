@@ -81,10 +81,17 @@ export const StakeBalanceCard = ({
       title={t`Supplied to Staking Engine`}
       icon={<img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />}
       headerRightContent={
-        loading ? (
+        loading || pricesLoading ? (
           <Skeleton className="w-32" />
+        ) : stakeBalance !== undefined && !!pricesData?.SKY ? (
+          <Text>
+            $
+            {formatNumber(totalStakedValue, {
+              maxDecimals: 2
+            })}
+          </Text>
         ) : (
-          <Text>{`${stakeBalance ? formatBigInt(stakeBalance) : '0'}`}</Text>
+          <Text>$0</Text>
         )
       }
       footer={
@@ -102,25 +109,14 @@ export const StakeBalanceCard = ({
         </div>
       }
       footerRightContent={
-        loading || pricesLoading ? (
-          <Skeleton className="h-[13px] w-20" />
-        ) : (
+        totalUnclaimedRewardsValue > 0 ? (
           <div className="flex flex-col items-end gap-1">
-            {stakeBalance !== undefined && !!pricesData?.SKY && (
-              <Text variant="small" className="text-textSecondary leading-4">
-                $
-                {formatNumber(totalStakedValue, {
-                  maxDecimals: 2
-                })}
-              </Text>
-            )}
-            {totalUnclaimedRewardsValue > 0 && (
-              <Text variant="small" className="text-textPrimary leading-4">
-                ${formatNumber(totalUnclaimedRewardsValue, { maxDecimals: 2 })}
-              </Text>
-            )}
+            <div className="h-4" />
+            <Text variant="small" className="text-textPrimary leading-4">
+              ${formatNumber(totalUnclaimedRewardsValue, { maxDecimals: 2 })}
+            </Text>
           </div>
-        )
+        ) : undefined
       }
       url={url}
     />

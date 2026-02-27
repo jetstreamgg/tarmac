@@ -40,10 +40,20 @@ export const VaultsBalanceCard = ({
       title={t`Supplied to Vaults`}
       icon={vaultsIcon}
       headerRightContent={
-        isBalanceLoading ? (
+        isBalanceLoading || pricesLoading ? (
           <Skeleton className="w-32" />
+        ) : totalUserAssets > 0n && !!pricesData?.USDS ? (
+          <Text>
+            $
+            {formatNumber(
+              parseFloat(formatUnits(totalUserAssets, 18)) * parseFloat(pricesData.USDS.price),
+              {
+                maxDecimals: 2
+              }
+            )}
+          </Text>
         ) : (
-          <Text>{formatBigInt(totalUserAssets)}</Text>
+          <Text>$0</Text>
         )
       }
       footer={
@@ -59,21 +69,7 @@ export const VaultsBalanceCard = ({
           <></>
         )
       }
-      footerRightContent={
-        isBalanceLoading || pricesLoading ? (
-          <Skeleton className="h-[13px] w-20" />
-        ) : totalUserAssets > 0n && !!pricesData?.USDS ? (
-          <Text variant="small" className="text-textSecondary">
-            $
-            {formatNumber(
-              parseFloat(formatUnits(totalUserAssets, 18)) * parseFloat(pricesData.USDS.price),
-              {
-                maxDecimals: 2
-              }
-            )}
-          </Text>
-        ) : undefined
-      }
+      footerRightContent={undefined}
       url={url}
     />
   ) : (
