@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { parseDelegatesFn } from './utils';
 import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
+import { stripChainIdPrefix } from '../helpers';
 
 async function fetchUserDelegates(
   urlSubgraph: string,
@@ -49,6 +50,7 @@ async function fetchUserDelegates(
   const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
+    id: stripChainIdPrefix(d.id) as `0x${string}`,
     totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
   }));
   if (!parsedDelegates) {

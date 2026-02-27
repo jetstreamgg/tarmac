@@ -4,6 +4,7 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
+import { stripChainIdPrefix } from '../helpers';
 
 async function fetchSaRewardContracts(urlSubgraph: string, chainId: number) {
   const query = gql`
@@ -21,7 +22,7 @@ async function fetchSaRewardContracts(urlSubgraph: string, chainId: number) {
   }
 
   return parsedRewardContracts.map(f => ({
-    contractAddress: f.id
+    contractAddress: stripChainIdPrefix(f.id) as `0x${string}`
   }));
 }
 

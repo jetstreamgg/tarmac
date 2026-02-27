@@ -2,6 +2,7 @@ import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { stripChainIdPrefix } from '../helpers';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
@@ -55,7 +56,7 @@ async function fetchAllRewardsUserHistory(
       rewardsClaim: false,
       module: ModuleEnum.REWARDS,
       type: TransactionTypeEnum.SUPPLY,
-      rewardContractAddress: f.id,
+      rewardContractAddress: stripChainIdPrefix(f.id),
       chainId
     }));
     const withdrawals = f.withdrawals.map(e => ({
@@ -65,7 +66,7 @@ async function fetchAllRewardsUserHistory(
       rewardsClaim: false,
       module: ModuleEnum.REWARDS,
       type: TransactionTypeEnum.WITHDRAW,
-      rewardContractAddress: f.id,
+      rewardContractAddress: stripChainIdPrefix(f.id),
       chainId
     }));
     const rewardClaims = f.rewardClaims.map(e => ({
@@ -75,7 +76,7 @@ async function fetchAllRewardsUserHistory(
       rewardsClaim: true,
       module: ModuleEnum.REWARDS,
       type: TransactionTypeEnum.REWARD,
-      rewardContractAddress: f.id,
+      rewardContractAddress: stripChainIdPrefix(f.id),
       chainId
     }));
 

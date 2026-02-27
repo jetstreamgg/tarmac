@@ -2,6 +2,7 @@ import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { stripChainIdPrefix } from '../helpers';
 import { useQuery } from '@tanstack/react-query';
 import { UrnInfo, UrnInfoRaw } from './sealModule';
 
@@ -37,9 +38,14 @@ async function fetchUrnsInfo(urlSubgraph: string, chainId: number, user: `0x${st
     (urn: UrnInfoRaw) =>
       ({
         ...urn,
+        id: stripChainIdPrefix(urn.id) as `0x${string}`,
+        rewardContract: urn.rewardContract
+          ? { ...urn.rewardContract, id: stripChainIdPrefix(urn.rewardContract.id) as `0x${string}` }
+          : urn.rewardContract,
         voteDelegate: urn.voteDelegate
           ? {
               ...urn.voteDelegate,
+              id: stripChainIdPrefix(urn.voteDelegate.id) as `0x${string}`,
               totalDelegated: BigInt(urn.voteDelegate.totalDelegated || '0')
             }
           : null,

@@ -2,6 +2,7 @@ import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { stripChainIdPrefix } from '../helpers';
 import {
   BaseStakeHistoryItem,
   StakeHistoryItemWithAmount,
@@ -108,7 +109,7 @@ async function fetchStakeHistory(
   const selectVoteDelegates: StakeSelectDelegate[] = response.stakingSelectVoteDelegates.map(
     (e: StakeSelectDelegateResponse) => ({
       urnIndex: +e.index,
-      delegate: e.voteDelegate?.id || '',
+      delegate: e.voteDelegate?.id ? stripChainIdPrefix(e.voteDelegate.id) : '',
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
@@ -120,7 +121,7 @@ async function fetchStakeHistory(
   const selectRewards: StakeSelectReward[] = response.stakingSelectRewards.map(
     (e: StakeSelectRewardResponse) => ({
       urnIndex: +e.index,
-      rewardContract: e.reward?.id || '',
+      rewardContract: e.reward?.id ? stripChainIdPrefix(e.reward.id) : '',
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
@@ -193,7 +194,7 @@ async function fetchStakeHistory(
   const kicks: StakeHistoryKick[] = response.stakingOnKicks.map(
     (e: BaseStakeHistoryItemResponse & { wad: string; urn: { id: string } }) => ({
       amount: BigInt(e.wad),
-      urnAddress: e.urn.id,
+      urnAddress: stripChainIdPrefix(e.urn.id),
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,

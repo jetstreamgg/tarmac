@@ -2,6 +2,7 @@ import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { stripChainIdPrefix } from '../helpers';
 import { Bark, SealPosition } from './sealModule';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
@@ -57,9 +58,9 @@ async function fetchSealPosition(
     index: urnIndex,
     mkrLocked: BigInt(mkrLocked),
     usdsDebt: BigInt(usdsDebt),
-    selectedDelegate: voteDelegate?.id,
-    selectedReward: reward?.id,
-    barks: response.sealUrns[0].barks
+    selectedDelegate: voteDelegate?.id ? stripChainIdPrefix(voteDelegate.id) : undefined,
+    selectedReward: reward?.id ? stripChainIdPrefix(reward.id) : undefined,
+    barks: response.sealUrns[0].barks.map(b => ({ ...b, id: stripChainIdPrefix(b.id) }))
   };
 }
 

@@ -2,6 +2,7 @@ import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { stripChainIdPrefix } from '../helpers';
 import {
   BaseSealHistoryItem,
   SealHistoryItemWithAmount,
@@ -120,7 +121,7 @@ async function fetchSealHistory(
   const selectVoteDelegates: SealSelectDelegate[] = response.sealSelectVoteDelegates.map(
     (e: SealSelectDelegateResponse) => ({
       urnIndex: +e.index,
-      delegate: e.voteDelegate?.id || '',
+      delegate: e.voteDelegate?.id ? stripChainIdPrefix(e.voteDelegate.id) : '',
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
@@ -131,7 +132,7 @@ async function fetchSealHistory(
 
   const selectRewards: SealSelectReward[] = response.sealSelectRewards.map((e: SealSelectRewardResponse) => ({
     urnIndex: +e.index,
-    rewardContract: e.reward?.id || '',
+    rewardContract: e.reward?.id ? stripChainIdPrefix(e.reward.id) : '',
     blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
     transactionHash: e.transactionHash,
     module: ModuleEnum.SEAL,
@@ -227,7 +228,7 @@ async function fetchSealHistory(
   const kicks: SealHistoryKick[] = response.sealOnKicks.map(
     (e: BaseSealHistoryItemResponse & { wad: string; urn: { id: string } }) => ({
       amount: BigInt(e.wad),
-      urnAddress: e.urn.id,
+      urnAddress: stripChainIdPrefix(e.urn.id),
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
