@@ -69,6 +69,7 @@ export const SavingsBalanceCard = ({
   ) : (
     <InteractiveStatsCardAlt
       title={t`Supplied to Savings`}
+      icon={<img src="/images/savings_icon_large.svg" alt="Savings" className="h-full w-full" />}
       url={urlMap[chainId]}
       logoName="savings"
       noChain={true}

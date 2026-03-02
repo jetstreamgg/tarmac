@@ -15,7 +15,7 @@ export function ConnectedModalTabs() {
   const chainId = useChainId();
   const { onExternalLinkClicked } = useConfigContext();
 
-  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, vaultsUrl } = useModuleUrls();
+  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, morphoUrl } = useModuleUrls();
 
   return (
     <Tabs defaultValue={ConnectedModalTabsEnum.SUPPLIED_FUNDS} className="flex min-h-0 flex-1 flex-col">
@@ -39,7 +39,7 @@ export function ConnectedModalTabs() {
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={expertOverviewUrl}
-          morphoCardUrl={vaultsUrl}
+          morphoCardUrl={morphoUrl}
           onExternalLinkClicked={onExternalLinkClicked}
         />
       </TabsContent>

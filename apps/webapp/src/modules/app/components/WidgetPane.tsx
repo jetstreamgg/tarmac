@@ -114,7 +114,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   }, []);
 
-  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, vaultsUrl } = useModuleUrls();
+  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, morphoUrl } = useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const rewardSubItems = rewardContracts.map(contract => ({
     label: `${contract.rewardToken.symbol} Rewards`,
@@ -149,7 +149,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={stusdsUrl}
-          morphoCardUrl={vaultsUrl}
+          morphoCardUrl={morphoUrl}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
           setHideZeroBalances={setHideZeroBalances}

@@ -138,6 +138,7 @@ export const RewardsBalanceCard = ({
   ) : (
     <InteractiveStatsCardAlt
       title={t`Supplied to Rewards`}
+      icon={<img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-full w-full" />}
       url={url}
       logoName="rewards"
       content={

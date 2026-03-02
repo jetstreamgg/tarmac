@@ -11,7 +11,8 @@ import {
   type TokenItem,
   useOverallSkyData,
   useStUsdsData,
-  useMorphoVaultsCombinedTvl,
+  useMorphoVaultMultipleRateApiData,
+  MORPHO_VAULTS,
   useAvailableTokenRewardContracts,
   useRewardsChartInfo,
   useHighestRateFromChartData,
@@ -118,8 +119,12 @@ function useActionRates(actions: SuggestedAction[], chainId: number): { rates: R
   // stUSDS rate
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
 
-  // Morpho vault rates (max rate across all vaults)
-  const { maxRate: morphoMaxRate, isLoading: vaultsLoading } = useMorphoVaultsCombinedTvl();
+  // Morpho vault rates (all vaults)
+  const vaultAddresses = useMemo(
+    () => MORPHO_VAULTS.map(v => v.vaultAddress[mainnetChainId]),
+    [mainnetChainId]
+  );
+  const { data: morphoRatesData, isLoading: vaultsLoading } = useMorphoVaultMultipleRateApiData({ vaultAddresses });
 
   // Rewards rate
   const allRewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
@@ -180,8 +185,13 @@ function useActionRates(actions: SuggestedAction[], chainId: number): { rates: R
 
     if (rateKeys.has('vaults')) {
       loading.vaults = vaultsLoading;
-      const rate = morphoMaxRate * 100;
-      rates.vaults = rate > 0 ? `${rate.toFixed(2)}%` : '—';
+      if (morphoRatesData != null && morphoRatesData.length > 0) {
+        const maxRate = morphoRatesData.reduce((max, r) => Math.max(max, r.netRate), 0);
+        const rate = maxRate * 100;
+        rates.vaults = `${rate.toFixed(2)}%`;
+      } else {
+        rates.vaults = '—';
+      }
     }
 
     if (rateKeys.has('rewards')) {
@@ -205,7 +215,7 @@ function useActionRates(actions: SuggestedAction[], chainId: number): { rates: R
     }
 
     return { rates, loading };
-  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoMaxRate, rewardsHighestRate, stakeHighestRateData, savingsLoading, stUsdsLoading, vaultsLoading, rewardsLoading, stakingLoading]);
+  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoRatesData, rewardsHighestRate, stakeHighestRateData, savingsLoading, stUsdsLoading, vaultsLoading, rewardsLoading, stakingLoading]);
 }
 
 export function SuggestedActions({ widget, variant = 'default', restrictedModules }: { widget: string; variant?: 'default' | 'card' | 'card-sm'; restrictedModules?: string[] }) {

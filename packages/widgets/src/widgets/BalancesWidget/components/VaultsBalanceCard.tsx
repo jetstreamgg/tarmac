@@ -1,17 +1,20 @@
 import {
   usePrices,
-  useMorphoVaultsCombinedTvl,
-  useMorphoVaultsCombinedUserData
+  useAllMorphoVaultsUserAssets,
+  useMorphoVaultMultipleRateApiData,
+  MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber, isTestnetId, chainId } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { formatUnits } from 'viem';
 import { ModuleCardVariant } from './ModulesBalances';
+import { useChainId } from 'wagmi';
 import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
 import { InteractiveStatsCardAlt } from '@widgets/shared/components/ui/card/InteractiveStatsCardAlt';
+import { Vaults as VaultsIcon } from '@widgets/shared/components/icons/Vaults';
 
 export const VaultsBalanceCard = ({
   url,
@@ -22,18 +25,23 @@ export const VaultsBalanceCard = ({
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   variant?: ModuleCardVariant;
 }) => {
-  // Fetch combined user balance across all vaults
-  const { totalUserAssets, isLoading: userDataLoading } = useMorphoVaultsCombinedUserData();
+  const connectedChainId = useChainId();
+  const vaultChainId = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
 
-  // Fetch max rate across all vaults
-  const { maxRate: morphoMaxRate, formattedMaxRate, isLoading: morphoRatesLoading } = useMorphoVaultsCombinedTvl();
+  const { data: totalUserAssets, isLoading: morphoDataLoading } = useAllMorphoVaultsUserAssets();
+  const { data: morphoRatesData, isLoading: morphoRatesLoading } = useMorphoVaultMultipleRateApiData({
+    vaultAddresses: MORPHO_VAULTS.map(v => v.vaultAddress[vaultChainId])
+  });
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
-  const isBalanceLoading = userDataLoading;
+  const morphoSupplied = totalUserAssets;
+  const morphoMaxRate = (morphoRatesData || []).reduce((max, rate) => Math.max(max, rate.netRate), 0);
+
+  const isBalanceLoading = morphoDataLoading;
   const isRateLoading = morphoRatesLoading;
 
-  const vaultsIcon = <img src="/images/vaults_icon_large.svg" alt="Vaults" className="h-full w-full" />;
+  const vaultsIcon = <VaultsIcon className="h-full w-full" />;
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
@@ -61,7 +69,7 @@ export const VaultsBalanceCard = ({
           <Skeleton className="h-4 w-20" />
         ) : morphoMaxRate > 0 ? (
           <RateLineWithArrow
-            rateText={t`Rates up to: ${formattedMaxRate}`}
+            rateText={t`Rates up to: ${(morphoMaxRate * 100).toFixed(2)}%`}
             popoverType="expert"
             onExternalLinkClicked={onExternalLinkClicked}
           />
@@ -75,6 +83,7 @@ export const VaultsBalanceCard = ({
   ) : (
     <InteractiveStatsCardAlt
       title={t`Supplied to Vaults`}
+      icon={vaultsIcon}
       url={url}
       logoName="vaults"
       content={

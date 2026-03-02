@@ -99,7 +99,6 @@ export {
   useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
-  useMorphoVaultsCombinedUserData,
   useAllMorphoVaultsUserAssets,
   MORPHO_VAULTS
 } from './morpho';
@@ -122,9 +121,7 @@ export type {
   MorphoVaultChartInfoHook,
   MorphoVaultMultipleChartInfoHook,
   MorphoVaultSupplierAddressesHook,
-  MorphoVaultsCombinedTvl,
-  MorphoVaultsCombinedUserData,
-  MorphoVaultUserData
+  MorphoVaultsCombinedTvl
 } from './morpho';
 
 // Authentication
