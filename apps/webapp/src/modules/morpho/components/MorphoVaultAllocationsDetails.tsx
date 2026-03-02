@@ -1,4 +1,4 @@
-import { useMorphoVaultMarketApiData } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultMarketApiData, useOverallSkyData } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,8 @@ import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
 import { useChainId } from 'wagmi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { InfoTooltip } from '@/components/InfoTooltip';
 
 /** Small SVG ring that fills clockwise based on a 0-1 value */
 function CapUtilizationRing({ value, size = 18 }: { value: number; size?: number }) {
@@ -57,6 +59,7 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
   const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
   const allocationsData = marketData?.market;
   const chainId = useChainId();
+  const { data: overallSkyData } = useOverallSkyData();
 
   if (isLoading) {
     return (
@@ -383,7 +386,22 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                   <Text className="text-textSecondary text-sm">-</Text>
                 </TableCell>
                 <TableCell className="h-auto py-4 text-right">
-                  <Text className="text-textSecondary text-sm">-</Text>
+                  {idle.assetSymbol === 'USDS' &&
+                  idle.idleAssetsUsd > 0 &&
+                  overallSkyData?.skySavingsRatecRate ? (
+                    <div className="flex items-center justify-end gap-1">
+                      <Text className="text-sm">
+                        {formatDecimalPercentage(parseFloat(overallSkyData.skySavingsRatecRate))}
+                      </Text>
+                      <InfoTooltip
+                        content={
+                          <Trans>Earns the full Sky Savings Rate. Distributed via Merkl.</Trans>
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <Text className="text-textSecondary text-sm">-</Text>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

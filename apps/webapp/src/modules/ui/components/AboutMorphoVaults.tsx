@@ -18,7 +18,7 @@ const getVaultIcon = (bannerId: string) => {
     );
   }
 
-  if (bannerId === 'risk-capital-vault') {
+  if (bannerId.endsWith('risk-capital-vault')) {
     return (
       <span className="flex items-center gap-1">
         {morphoIcon}
@@ -27,10 +27,19 @@ const getVaultIcon = (bannerId: string) => {
     );
   }
 
+  if (bannerId.endsWith('savings-vault')) {
+    return (
+      <span className="flex items-center gap-1">
+        {morphoIcon}
+        <TokenIcon token={{ symbol: 'sUSDS' }} width={24} className="h-6 w-6" showChainIcon={false} />
+      </span>
+    );
+  }
+
   return morphoIcon;
 };
 
-export const AboutMorphoVaults = ({ bannerId = 'morpho-vaults' }: { bannerId?: string }) => {
+export const AboutMorphoVaults = ({ bannerId = 'vaults' }: { bannerId?: string }) => {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
 
   const banner = getBannerByIdAndModule(bannerId, 'vaults-banners');
@@ -49,7 +58,7 @@ export const AboutMorphoVaults = ({ bannerId = 'morpho-vaults' }: { bannerId?: s
       title={banner.title}
       icon={getVaultIcon(bannerId)}
       description={contentText}
-      linkHref="https://morpho.org"
+      linkHref="https://docs.morpho.org/learn/concepts/vault-v2/"
       linkLabel={<Trans>Learn more</Trans>}
       colorMiddle="linear-gradient(360deg, #2470FF 0%, #1B4ECF 300%)"
     />

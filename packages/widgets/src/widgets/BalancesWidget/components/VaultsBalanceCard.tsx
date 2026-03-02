@@ -1,16 +1,10 @@
 import {
   usePrices,
-  useMorphoVaultOnChainData,
-  useMorphoVaultMarketApiData,
+  useAllMorphoVaultsUserAssets,
+  useMorphoVaultMultipleRateApiData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
-import {
-  formatBigInt,
-  formatDecimalPercentage,
-  formatNumber,
-  isTestnetId,
-  chainId
-} from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatNumber, isTestnetId, chainId } from '@jetstreamgg/sky-utils';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { InteractiveStatsCard } from '@widgets/shared/components/ui/card/InteractiveStatsCard';
@@ -20,7 +14,7 @@ import { ModuleCardVariant } from './ModulesBalances';
 import { useChainId } from 'wagmi';
 import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
 import { InteractiveStatsCardAlt } from '@widgets/shared/components/ui/card/InteractiveStatsCardAlt';
-import { MorphoVaultBadge } from '@widgets/widgets/MorphoVaultWidget/components/MorphoVaultBadge';
+import { Vaults as VaultsIcon } from '@widgets/shared/components/icons/Vaults';
 
 export const VaultsBalanceCard = ({
   url,
@@ -34,25 +28,20 @@ export const VaultsBalanceCard = ({
   const connectedChainId = useChainId();
   const vaultChainId = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
 
-  const defaultMorphoVault = MORPHO_VAULTS[0];
-  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[vaultChainId];
-  const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultOnChainData({
-    vaultAddress: morphoVaultAddress
+  const { data: totalUserAssets, isLoading: morphoDataLoading } = useAllMorphoVaultsUserAssets();
+  const { data: morphoRatesData, isLoading: morphoRatesLoading } = useMorphoVaultMultipleRateApiData({
+    vaultAddresses: MORPHO_VAULTS.map(v => v.vaultAddress[vaultChainId])
   });
-  const { data: morphoSingleMarketData, isLoading: morphoSingleMarketLoading } =
-    useMorphoVaultMarketApiData({
-      vaultAddress: morphoVaultAddress
-    });
 
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
-  const morphoSupplied = morphoData?.userAssets ?? 0n;
-  const morphoRate = morphoSingleMarketData?.rate.netRate ? morphoSingleMarketData.rate.netRate : 0;
+  const morphoSupplied = totalUserAssets;
+  const morphoMaxRate = (morphoRatesData || []).reduce((max, rate) => Math.max(max, rate.netRate), 0);
 
   const isBalanceLoading = morphoDataLoading;
-  const isRateLoading = morphoSingleMarketLoading;
+  const isRateLoading = morphoRatesLoading;
 
-  const vaultsIcon = <MorphoVaultBadge className="h-full w-full rounded-sm" />;
+  const vaultsIcon = <VaultsIcon className="h-full w-full" />;
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
@@ -68,9 +57,9 @@ export const VaultsBalanceCard = ({
       footer={
         isRateLoading ? (
           <Skeleton className="h-4 w-20" />
-        ) : morphoRate > 0 ? (
+        ) : morphoMaxRate > 0 ? (
           <RateLineWithArrow
-            rateText={`Rate: ${formatDecimalPercentage(morphoRate)}`}
+            rateText={t`Rates up to: ${(morphoMaxRate * 100).toFixed(2)}%`}
             popoverType="expert"
             onExternalLinkClicked={onExternalLinkClicked}
           />
@@ -105,7 +94,7 @@ export const VaultsBalanceCard = ({
         isBalanceLoading ? (
           <Skeleton className="w-32" />
         ) : (
-          <Text>{formatBigInt(morphoSupplied)} USDS</Text>
+          <Text>{formatBigInt(morphoSupplied)}</Text>
         )
       }
     />

@@ -30,7 +30,7 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
     [Intent.SEAL_INTENT]: { default: 'about-the-seal-engine' },
     [Intent.STAKE_INTENT]: { default: 'about-the-staking-engine' },
     [Intent.EXPERT_INTENT]: { default: 'about-expert-modules' },
-    [Intent.VAULTS_INTENT]: { default: 'morpho-vaults' },
+    [Intent.VAULTS_INTENT]: { default: 'vaults' },
     [Intent.CONVERT_INTENT]: { default: 'ready-to-upgrade-and-explore' }
   };
 
@@ -82,12 +82,13 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
       <div className="w-[80%] space-y-2 self-start xl:w-2/3" data-testid="connect-wallet-card">
         <Heading className="mb-2 flex items-center gap-2">
           {isMorphoVaults && <Morpho className="h-6 w-6 rounded-sm" />}
-          {isMorphoVaults ? <Trans>Morpho Vaults</Trans> : heading}
+          {isMorphoVaults ? <Trans>Vaults</Trans> : heading}
         </Heading>
         {isMorphoVaults ? (
           <Text variant="small" className="leading-[18px]">
             <Trans>
-              Connect your wallet to start using Sky-curated Morpho Vaults. Deposit USDS, USDT, or USDC and start earning.
+              Connect your wallet to start using Sky-curated Morpho Vaults. Deposit USDS, USDT, or USDC and
+              start earning.
             </Trans>
           </Text>
         ) : (

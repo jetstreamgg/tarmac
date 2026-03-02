@@ -26,6 +26,7 @@ import { RewardsOverview } from './components/RewardsOverview';
 import { Button } from '@widgets/components/ui/button';
 import { getValidatedState } from '../../lib/utils';
 import { formatUnits, parseUnits } from 'viem';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowLeft } from 'lucide-react';
@@ -58,6 +59,7 @@ const RewardsWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onExternalLinkClicked,
+  onAnalyticsEvent,
   enabled = true,
   legalBatchTxUrl,
   referralCode,
@@ -163,10 +165,12 @@ const RewardsWidgetWrapped = ({
     amount,
     referralCode,
     rewardsBalance,
+    needsAllowance,
     shouldUseBatch,
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
     mutateAllowance,
     mutateTokenBalance,
     mutateRewardsBalance,
@@ -283,6 +287,28 @@ const RewardsWidgetWrapped = ({
       ...prev,
       screen: RewardsScreen.REVIEW
     }));
+    try {
+      const decimals = selectedRewardContract
+        ? getTokenDecimals(selectedRewardContract.supplyToken, chainId)
+        : 18;
+      const symbol = selectedRewardContract?.supplyToken.symbol ?? '';
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedAmount, decimals)),
+        assetSymbol: symbol,
+        data: {
+          module: 'rewards',
+          product: selectedRewardContract?.name,
+          productAddress: selectedRewardContract?.contractAddress,
+          assetAddress: selectedRewardContract?.supplyToken.address[chainId],
+          assetSymbol: symbol
+        }
+      });
+    } catch {
+      /* Analytics must never break functionality */
+    }
   };
 
   const onClickBack = () => {

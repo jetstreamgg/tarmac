@@ -13,11 +13,12 @@ import { RewardsAction } from '../lib/constants';
 import { useRewardsTransactionCallbacks } from './useRewardsTransactionCallbacks';
 
 interface UseRewardsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   selectedRewardContract: RewardContract | undefined;
   referralCode: number | undefined;
   amount: bigint;
   rewardsBalance: bigint | undefined;
+  needsAllowance: boolean;
   shouldUseBatch: boolean;
   mutateAllowance: () => void;
   mutateTokenBalance: () => void;
@@ -31,10 +32,12 @@ export const useRewardsTransactions = ({
   referralCode,
   amount,
   rewardsBalance,
+  needsAllowance,
   shouldUseBatch,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
+  onAnalyticsEvent,
   mutateAllowance,
   mutateTokenBalance,
   mutateRewardsBalance,
@@ -51,6 +54,8 @@ export const useRewardsTransactions = ({
     selectedRewardContract,
     amount,
     rewardsBalance,
+    needsAllowance,
+    shouldUseBatch,
     mutateAllowance,
     mutateTokenBalance,
     mutateRewardsBalance,
@@ -58,6 +63,7 @@ export const useRewardsTransactions = ({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
     setClaimAmount
   });
 

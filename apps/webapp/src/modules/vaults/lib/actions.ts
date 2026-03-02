@@ -158,6 +158,12 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
       input: 'Deposit 500 USDS into Morpho vault',
       tokens: ['USDT'],
       module: 'morpho'
+    },
+    {
+      label: 'Deposit into USDT Savings vault',
+      input: 'Deposit 500 USDS into Morpho vault',
+      tokens: ['USDT'],
+      module: 'morpho'
     }
   ],
   stables: [
@@ -180,7 +186,7 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
       module: 'rewards'
     },
     {
-      label: 'Sky Savings Rate',
+      label: 'Sky Savings Rate (sUSDS)',
       input: '',
       tokens: ['sUSDS'],
       rateKey: 'savings',
@@ -189,7 +195,7 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
       url: '?widget=savings'
     },
     {
-      label: 'For Experts: Earn with stUSDS',
+      label: 'Expert: stUSDS',
       input: 'Deposit {amount} USDS into stUSDS',
       tokens: ['stUSDS'],
       sourceToken: 'USDS',
@@ -202,13 +208,12 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
   sky: [
     {
       label: 'Stake and Earn with SKY',
-      input: 'Open a staking position with {amount} SKY',
+      input: '',
       tokens: ['SKY'],
-      sourceToken: 'SKY',
-      defaultAmount: 1000,
       rateKey: 'staking',
       subtitle: 'Rate: {rate}',
-      module: 'stake'
+      module: 'stake',
+      url: '?widget=stake'
     },
     {
       label: 'Borrow USDS',

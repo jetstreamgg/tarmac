@@ -352,10 +352,10 @@ export const contracts: {
     }
   },
   {
-    name: 'usdtSteakhousePrimeInstantVault',
+    name: 'usdtSavingsVault',
     address: {
-      [mainnet.id]: '0xbeef003C68896c7D2c3c60d363e8d71a49Ab2bf9',
-      [TENDERLY_CHAIN_ID]: '0xbeef003C68896c7D2c3c60d363e8d71a49Ab2bf9'
+      [mainnet.id]: '0x23f5E9c35820f4baB695Ac1F19c203cC3f8e1e11',
+      [TENDERLY_CHAIN_ID]: '0x23f5E9c35820f4baB695Ac1F19c203cC3f8e1e11'
     }
   },
   {

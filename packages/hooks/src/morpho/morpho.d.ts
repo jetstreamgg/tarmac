@@ -81,6 +81,8 @@ export type MorphoIdleLiquidityAllocation = {
   formattedAssets: string;
   /** Formatted assets in USD (e.g., "$0") */
   formattedAssetsUsd: string;
+  /** Idle assets value in USD (numeric, for threshold checks) */
+  idleAssetsUsd: number;
 };
 
 /** Direct Morpho market allocation */

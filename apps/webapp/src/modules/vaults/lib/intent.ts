@@ -1,5 +1,8 @@
+import { QueryParams } from '@/lib/constants';
 import { isAddress } from 'viem';
 import type { ParsedIntent, ActionType, RewardContractId, StakingRewardFarmId } from '../types';
+
+// --- Helpers ---
 
 function inferRewardContract(text: string): RewardContractId | undefined {
   if (/\bsky\b/i.test(text)) return 'usdsSkyReward';
@@ -31,13 +34,18 @@ function extractUrnIndex(text: string): number | undefined {
   return match ? parseInt(match[1], 10) : undefined;
 }
 
-/**
- * Parse intent via the LLM-backed API (stub for M1 — falls back to regex immediately).
- */
-export async function parseIntentAsync(input: string): Promise<ParsedIntent | null> {
-  // M1: regex-only, no LLM proxy
-  return parseIntent(input);
+// On-chain reward contract addresses per chainId (from packages/hooks/src/generated.ts)
+const REWARD_CONTRACT_ADDRESSES: Record<RewardContractId, Record<number, string>> = {
+  usdsSkyReward: { 1: '0x0650CAF159C5A49f711e8169D4336ECB9b950275', 314310: '0x0650CAF159C5A49f711e8169D4336ECB9b950275' },
+  usdsSpkReward: { 1: '0x173e314C7635B45322cd8Cb14f44b312e079F3af', 314310: '0x173e314C7635B45322cd8Cb14f44b312e079F3af' },
+  cleReward: { 1: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce', 314310: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce' }
+};
+
+function resolveRewardAddress(rewardContract: RewardContractId, chainId: number): string | undefined {
+  return REWARD_CONTRACT_ADDRESSES[rewardContract]?.[chainId];
 }
+
+// --- Public API ---
 
 /**
  * Parse natural language intent into a structured ParsedIntent.
@@ -333,53 +341,203 @@ export function parseIntent(input: string): ParsedIntent | null {
 }
 
 /**
- * Generate a human-readable description of the parsed intent.
+ * Maps a ParsedIntent to webapp URL search params for widget navigation.
+ * Returns null if the intent can't be mapped to a valid widget route.
  */
-export function describeIntent(intent: ParsedIntent): string {
-  const col = intent.collateralToken ?? 'SKY';
-  const farmName = intent.stakingRewardFarm
-    ? (
-        {
-          lsSkyUsdsReward: 'USDS',
-          lsSkySpkReward: 'SPK',
-          lsSkySkyReward: 'SKY',
-          lsMkrUsdsReward: 'USDS'
-        } as const
-      )[intent.stakingRewardFarm]
-    : 'rewards';
+export function intentToWidgetParams(intent: ParsedIntent, chainId: number, networkName: string): URLSearchParams | null {
+  const params = new URLSearchParams();
+  params.set(QueryParams.Network, networkName);
 
-  const descriptions: Record<ActionType, string> = {
-    deposit_assets: `Deposit ${intent.amount} USDS into the Sky Savings Rate vault`,
-    withdraw_assets: `Withdraw ${intent.amount} USDS from the Sky Savings Rate vault`,
-    redeem_shares: `Redeem ${intent.amount} sUSDS shares for USDS`,
-    mint_shares: `Mint ${intent.amount} sUSDS shares`,
-    upgrade_dai_to_usds: `Upgrade ${intent.amount} DAI to USDS`,
-    revert_usds_to_dai: `Revert ${intent.amount} USDS to DAI`,
-    upgrade_mkr_to_sky: `Upgrade ${intent.amount} MKR to SKY (receives ${Number(intent.amount) * 24000} SKY)`,
-    revert_sky_to_mkr: `Revert ${intent.amount} SKY to MKR (receives ${Number(intent.amount) / 24000} MKR)`,
-    rewards_supply: `Supply ${intent.amount} USDS to earn ${intent.rewardContract === 'usdsSkyReward' ? 'SKY' : intent.rewardContract === 'usdsSpkReward' ? 'SPK' : intent.rewardContract === 'cleReward' ? 'CLE' : 'rewards'}`,
-    rewards_withdraw: `Withdraw ${intent.amount} USDS from ${intent.rewardContract === 'usdsSkyReward' ? 'SKY' : intent.rewardContract === 'usdsSpkReward' ? 'SPK' : intent.rewardContract === 'cleReward' ? 'CLE' : ''} rewards`,
-    rewards_claim: `Claim ${intent.rewardContract === 'usdsSkyReward' ? 'SKY' : intent.rewardContract === 'usdsSpkReward' ? 'SPK' : intent.rewardContract === 'cleReward' ? 'CLE' : ''} rewards`,
-    rewards_claim_all: 'Claim all earned rewards across all reward contracts',
-    stusds_deposit: `Deposit ${intent.amount} USDS into the stUSDS vault`,
-    stusds_withdraw: `Withdraw ${intent.amount} USDS from the stUSDS vault`,
-    morpho_deposit: `Deposit ${intent.amount} USDS into the Morpho vault`,
-    morpho_withdraw: `Withdraw ${intent.amount} USDS from the Morpho vault`,
-    vaults_overview: 'Navigate to vaults overview',
-    stake_open: `Open staking position with ${intent.amount} ${col}${intent.delegateAddress ? ` (delegate: ${intent.delegateAddress})` : ''}${intent.stakingRewardFarm ? ` (farm: ${farmName})` : ''}`,
-    stake_lock: `Lock ${intent.amount} ${col} into staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_free: `Free ${intent.amount} ${col} from staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_borrow: `Borrow ${intent.amount} USDS against staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_repay: `Repay ${intent.amount} USDS on staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_repay_all: `Repay all borrowed USDS on staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_claim: `Claim ${farmName} from staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_select_delegate: `Set vote delegate to ${intent.delegateAddress ?? 'specified address'} on staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`,
-    stake_select_reward: `Select ${farmName} reward farm for staking position${intent.urnIndex !== undefined ? ` #${intent.urnIndex}` : ''}`
+  const setAmount = () => {
+    if (intent.amount && intent.amount !== '0') {
+      params.set(QueryParams.InputAmount, intent.amount);
+    }
   };
 
-  let desc = descriptions[intent.action];
-  if (intent.referral !== undefined) {
-    desc += ` (referral: ${intent.referral})`;
+  switch (intent.action) {
+    // --- Savings ---
+    case 'deposit_assets':
+      params.set(QueryParams.Widget, 'savings');
+      params.set(QueryParams.Flow, 'supply');
+      params.set(QueryParams.SourceToken, 'USDS');
+      setAmount();
+      break;
+
+    case 'withdraw_assets':
+      params.set(QueryParams.Widget, 'savings');
+      params.set(QueryParams.Flow, 'withdraw');
+      setAmount();
+      break;
+
+    case 'redeem_shares':
+      params.set(QueryParams.Widget, 'savings');
+      params.set(QueryParams.Flow, 'withdraw');
+      setAmount();
+      break;
+
+    case 'mint_shares':
+      params.set(QueryParams.Widget, 'savings');
+      params.set(QueryParams.Flow, 'supply');
+      setAmount();
+      break;
+
+    // --- Upgrade ---
+    case 'upgrade_dai_to_usds':
+      params.set(QueryParams.Widget, 'convert');
+      params.set(QueryParams.ConvertModule, 'upgrade');
+      params.set(QueryParams.SourceToken, 'DAI');
+      setAmount();
+      break;
+
+    case 'revert_usds_to_dai':
+      params.set(QueryParams.Widget, 'convert');
+      params.set(QueryParams.ConvertModule, 'upgrade');
+      params.set(QueryParams.SourceToken, 'USDS');
+      setAmount();
+      break;
+
+    case 'upgrade_mkr_to_sky':
+      params.set(QueryParams.Widget, 'convert');
+      params.set(QueryParams.ConvertModule, 'upgrade');
+      params.set(QueryParams.SourceToken, 'MKR');
+      setAmount();
+      break;
+
+    case 'revert_sky_to_mkr':
+      params.set(QueryParams.Widget, 'convert');
+      params.set(QueryParams.ConvertModule, 'upgrade');
+      params.set(QueryParams.SourceToken, 'SKY');
+      setAmount();
+      break;
+
+    // --- Rewards ---
+    case 'rewards_supply': {
+      params.set(QueryParams.Widget, 'rewards');
+      params.set(QueryParams.Flow, 'supply');
+      if (intent.rewardContract) {
+        const address = resolveRewardAddress(intent.rewardContract, chainId);
+        if (address) params.set(QueryParams.Reward, address);
+      }
+      setAmount();
+      break;
+    }
+
+    case 'rewards_withdraw': {
+      params.set(QueryParams.Widget, 'rewards');
+      params.set(QueryParams.Flow, 'withdraw');
+      if (intent.rewardContract) {
+        const address = resolveRewardAddress(intent.rewardContract, chainId);
+        if (address) params.set(QueryParams.Reward, address);
+      }
+      setAmount();
+      break;
+    }
+
+    case 'rewards_claim': {
+      params.set(QueryParams.Widget, 'rewards');
+      params.set(QueryParams.Flow, 'claim');
+      if (intent.rewardContract) {
+        const address = resolveRewardAddress(intent.rewardContract, chainId);
+        if (address) params.set(QueryParams.Reward, address);
+      }
+      break;
+    }
+
+    case 'rewards_claim_all':
+      params.set(QueryParams.Widget, 'rewards');
+      break;
+
+    // --- Staking ---
+    case 'stake_open':
+      params.set(QueryParams.Widget, 'stake');
+      params.set(QueryParams.Flow, 'open');
+      setAmount();
+      break;
+
+    case 'stake_lock':
+      params.set(QueryParams.Widget, 'stake');
+      params.set(QueryParams.Flow, 'lock');
+      params.set(QueryParams.StakeTab, 'lock');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      setAmount();
+      break;
+
+    case 'stake_free':
+      params.set(QueryParams.Widget, 'stake');
+      params.set(QueryParams.Flow, 'free');
+      params.set(QueryParams.StakeTab, 'free');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      setAmount();
+      break;
+
+    case 'stake_borrow':
+      params.set(QueryParams.Widget, 'stake');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      break;
+
+    case 'stake_repay':
+      params.set(QueryParams.Widget, 'stake');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      setAmount();
+      break;
+
+    case 'stake_repay_all':
+      params.set(QueryParams.Widget, 'stake');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      break;
+
+    case 'stake_claim':
+      params.set(QueryParams.Widget, 'stake');
+      params.set(QueryParams.Flow, 'claim');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      break;
+
+    case 'stake_select_delegate':
+      params.set(QueryParams.Widget, 'stake');
+      params.set(QueryParams.Flow, 'manage');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      break;
+
+    case 'stake_select_reward':
+      params.set(QueryParams.Widget, 'stake');
+      params.set(QueryParams.Flow, 'manage');
+      if (intent.urnIndex !== undefined) params.set(QueryParams.UrnIndex, String(intent.urnIndex));
+      break;
+
+    // --- stUSDS ---
+    case 'stusds_deposit':
+      params.set(QueryParams.Widget, 'expert');
+      params.set(QueryParams.ExpertModule, 'stusds');
+      setAmount();
+      break;
+
+    case 'stusds_withdraw':
+      params.set(QueryParams.Widget, 'expert');
+      params.set(QueryParams.ExpertModule, 'stusds');
+      setAmount();
+      break;
+
+    // --- Morpho Vaults ---
+    case 'morpho_deposit':
+      params.set(QueryParams.Widget, 'vaults');
+      params.set(QueryParams.VaultModule, 'morpho');
+      setAmount();
+      break;
+
+    case 'morpho_withdraw':
+      params.set(QueryParams.Widget, 'vaults');
+      params.set(QueryParams.VaultModule, 'morpho');
+      setAmount();
+      break;
+
+    // --- Vaults overview ---
+    case 'vaults_overview':
+      params.set(QueryParams.Widget, 'vaults');
+      break;
+
+    default:
+      return null;
   }
-  return desc;
+
+  return params;
 }

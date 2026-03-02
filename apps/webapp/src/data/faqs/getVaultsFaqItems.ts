@@ -13,13 +13,13 @@ Vault yields are variable and depend on market conditions, borrower demand, and 
       question: 'What are the differences between vaults?',
       answer: `Sky curates three different vault types: Savings, Flagship and Risk Capital vaults.
 
-* Savings vault, exposed only to the sUSDS lending market, minimizing risk from crypto asset volatility. The most conservative option.
+• **Savings vault** — exposed only to the sUSDS lending market, minimizing risk from crypto asset volatility. The most conservative option.
 
-* Flagship vault, balances risk and yield by adding exposure to stUSDS, cbBTC, wstETH, and WETH markets. 80% of deposited funds are held as sUSDS, which provides a significant liquidity buffer while earning the Sky Savings Rate.
+• **Flagship vault** — balances risk and yield by adding exposure to stUSDS, cbBTC, wstETH, and WETH markets. 80% of deposited funds are held as USDS, which provides a significant liquidity buffer while earning the Sky Savings Rate.
 
-* Risk Capital vaults, allocated exclusively to stUSDS markets, which carry exposure to SKY token price volatility. The highest-yielding vaults, but also the highest risk in terms of availble liquidity.
+• **Risk Capital vaults** — allocated exclusively to stUSDS markets, which carry exposure to SKY token price volatility. The highest-yielding vaults, but also the highest risk in terms of available liquidity.
 
-Risk Capital vaults accept different stablecoins as deposits (USDC, USDT), while all the others accept only USDS.`,
+Vaults have different stablecoins that can be used as a deposit, depending on the particular vault. USDS, USDC and USDT vaults are available.`,
       index: 1
     },
     {

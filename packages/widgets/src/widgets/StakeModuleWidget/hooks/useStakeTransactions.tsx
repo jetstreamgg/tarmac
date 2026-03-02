@@ -7,11 +7,11 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { useContext } from 'react';
 import { WidgetContext } from '@widgets/context/WidgetContext';
-import { StakeAction } from '../lib/constants';
+import { StakeAction, StakeFlow } from '../lib/constants';
 import { useConnection } from 'wagmi';
 
 interface UseStakeTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   lockAmount: bigint;
   usdsAmount: bigint;
   calldata: `0x${string}`[];
@@ -25,6 +25,24 @@ interface UseStakeTransactionsParameters
   setRestakeSkyAmount: React.Dispatch<React.SetStateAction<bigint>>;
   mutateStakeSkyAllowance: () => void;
   mutateStakeUsdsAllowance: () => void;
+  // Analytics params
+  needsAllowance: boolean;
+  flow: StakeFlow;
+  urnIndex: bigint | undefined;
+  skyToLock: bigint;
+  skyToFree: bigint;
+  usdsToWipe: bigint;
+  usdsToBorrow: bigint;
+  selectedRewardContract: `0x${string}` | undefined;
+  wantsToDelegate: boolean | undefined;
+  selectedDelegate: `0x${string}` | undefined;
+  restakeSkyRewards: boolean;
+  restakeSkyAmount: bigint;
+  rewardClaimAmounts: Array<{
+    contractAddress: `0x${string}`;
+    claimBalance: bigint;
+    rewardSymbol: string;
+  }>;
 }
 
 export const useStakeTransactions = ({
@@ -43,11 +61,25 @@ export const useStakeTransactions = ({
   mutateStakeUsdsAllowance,
   addRecentTransaction,
   onWidgetStateChange,
-  onNotification
+  onNotification,
+  onAnalyticsEvent,
+  needsAllowance,
+  flow,
+  urnIndex,
+  skyToLock,
+  skyToFree,
+  usdsToWipe,
+  usdsToBorrow,
+  selectedRewardContract,
+  wantsToDelegate,
+  selectedDelegate,
+  restakeSkyRewards,
+  restakeSkyAmount,
+  rewardClaimAmounts
 }: UseStakeTransactionsParameters) => {
   const { address } = useConnection();
   const { widgetState } = useContext(WidgetContext);
-  const { multicallTransactionCallbacks, claimTransactionCallbacks } = useStakeTransactionCallbacks({
+  const { multicallTransactionCallbacks, claimTransactionCallbacks, stakeData } = useStakeTransactionCallbacks({
     lockAmount,
     setIndexToClaim,
     setRewardContractsToClaim,
@@ -57,7 +89,22 @@ export const useStakeTransactions = ({
     mutateStakeUsdsAllowance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent,
+    needsAllowance,
+    shouldUseBatch,
+    flow,
+    urnIndex,
+    skyToLock,
+    skyToFree,
+    usdsToWipe,
+    usdsToBorrow,
+    selectedRewardContract,
+    wantsToDelegate,
+    selectedDelegate,
+    restakeSkyRewards,
+    restakeSkyAmount,
+    rewardClaimAmounts
   });
 
   const batchMulticall = useBatchStakeMulticall({
@@ -91,5 +138,5 @@ export const useStakeTransactions = ({
     ...claimTransactionCallbacks
   });
 
-  return { batchMulticall, claimRewards, claimAllRewards };
+  return { batchMulticall, claimRewards, claimAllRewards, stakeData };
 };

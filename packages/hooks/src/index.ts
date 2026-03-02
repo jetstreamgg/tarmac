@@ -99,6 +99,7 @@ export {
   useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
+  useAllMorphoVaultsUserAssets,
   MORPHO_VAULTS
 } from './morpho';
 export type {

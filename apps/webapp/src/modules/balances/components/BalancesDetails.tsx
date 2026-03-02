@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro';
 import { BalancesSkyStatsOverview } from './BalancesSkyStatsOverview';
 import { BalancesChart } from './BalancesChart';
 import { BalancesFaq } from './BalancesFaq';
-import { SuggestedActions } from '@/modules/vaults/agent/components/SuggestedActions';
+import { SuggestedActions } from '@/modules/vaults/components/SuggestedActions';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function BalancesDetails() {
@@ -13,13 +13,15 @@ export function BalancesDetails() {
 
   return (
     <DetailSectionWrapper>
-      {!isRegionRestricted && (
-        <DetailSection title={t`Earn with your Stables`} fixedOpen>
-          <DetailSectionRow>
-            <SuggestedActions widget="stables" variant="card" />
-          </DetailSectionRow>
-        </DetailSection>
-      )}
+      <DetailSection title={t`Earn with your Stables`} fixedOpen>
+        <DetailSectionRow>
+          <SuggestedActions
+            widget="stables"
+            variant="card"
+            restrictedModules={isRegionRestricted ? ['morpho'] : undefined}
+          />
+        </DetailSectionRow>
+      </DetailSection>
       <DetailSection title={t`Stake, Borrow, and Earn with SKY`} fixedOpen>
         <DetailSectionRow>
           <SuggestedActions widget="sky" variant="card" />

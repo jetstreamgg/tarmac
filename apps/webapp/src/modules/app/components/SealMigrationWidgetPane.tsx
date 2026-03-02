@@ -28,7 +28,6 @@ import { IntentMapping } from '@/lib/constants';
 import { QueryParams } from '@/lib/constants';
 import { DetailsSwitcher } from '@/components/DetailsSwitcher';
 import { CustomConnectButton } from '@/modules/layout/components/CustomConnectButton';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
 import { WidgetContent, WidgetItem } from '../types/Widgets';
 
 type WidgetPaneProps = {
@@ -52,7 +51,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const { switchChain } = useSwitchChain();
   const { isConnected } = useConnection();
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
-  const { wrapStateChange } = useWidgetFlowTracking('seal-migration', chainId);
 
   const rightHeaderComponent = <DetailsSwitcher />;
 
@@ -180,7 +178,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
           ) : (
             <SealModuleWidget
               {...sharedProps}
-              onWidgetStateChange={wrapStateChange(onSealWidgetStateChange)}
+              onWidgetStateChange={onSealWidgetStateChange}
               termsLink={termsLink[0]}
               mkrSkyUpgradeUrl="https://upgrademkrtosky.sky.money"
             />

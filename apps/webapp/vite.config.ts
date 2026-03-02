@@ -82,6 +82,8 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://metamask-sdk.api.cx.metamask.io/evt
       wss://metamask-sdk.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
+      https://api.jetstream.gg
+      https://staging-api.jetstream.gg
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
       https://*.posthog.com;

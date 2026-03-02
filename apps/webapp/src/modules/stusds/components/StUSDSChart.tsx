@@ -40,6 +40,7 @@ export function StUSDSChart() {
           isLoading={isLoading}
           error={error}
           isPercentage={activeChart === ChartName.RATE}
+          hidePercentChange={activeChart === ChartName.RATE}
           symbol={activeChart === ChartName.TVL ? 'USDS' : undefined}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);

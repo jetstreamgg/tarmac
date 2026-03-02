@@ -7,7 +7,7 @@ import { useChainId } from 'wagmi';
 import { useL2SavingsTransactionCallbacks } from './useL2SavingsTransactionCallbacks';
 
 interface UseL2SavingsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   originToken: Token;
   amount: bigint;
   isMaxWithdraw: boolean;
@@ -16,6 +16,7 @@ interface UseL2SavingsTransactionsParameters
   minAmountOutForWithdrawAll: bigint;
   maxAmountInForWithdraw: bigint;
   shouldUseBatch: boolean;
+  needsAllowance: boolean;
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   sUsdsBalance: bigint | undefined;
@@ -32,12 +33,14 @@ export const useL2SavingsTransactions = ({
   minAmountOutForWithdrawAll,
   maxAmountInForWithdraw,
   shouldUseBatch,
+  needsAllowance,
   mutateAllowance,
   mutateOriginBalance,
   mutateSUsdsBalance,
   addRecentTransaction,
   onWidgetStateChange,
-  onNotification
+  onNotification,
+  onAnalyticsEvent
 }: UseL2SavingsTransactionsParameters) => {
   const { widgetState } = useContext(WidgetContext);
   const chainId = useChainId();
@@ -45,12 +48,15 @@ export const useL2SavingsTransactions = ({
   const { supplyTransactionCallbacks, withdrawTransactionCallbacks } = useL2SavingsTransactionCallbacks({
     amount,
     originToken,
+    needsAllowance,
+    shouldUseBatch,
     mutateAllowance,
     mutateOriginBalance,
     mutateSUsdsBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
 
   const batchSavingsSupply = useBatchPsmSwapExactIn({

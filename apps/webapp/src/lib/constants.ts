@@ -125,7 +125,7 @@ export const VAULTS_WIDGET_OPTIONS: {
 }[] = [
   {
     id: VaultsIntent.MORPHO_VAULT_INTENT,
-    name: 'Morpho Vault'
+    name: 'Vault'
   }
 ];
 
@@ -183,7 +183,7 @@ export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHATBOT_SUGGESTIONS
 
 export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
 export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
-export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
+export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.jetstream.gg';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
 // Feature flag to enable chatbot pre-fill filtering
