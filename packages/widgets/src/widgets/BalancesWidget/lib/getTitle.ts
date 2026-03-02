@@ -20,7 +20,7 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
       } else if (module === ModuleEnum.STUSDS) {
         return t`stUSDS Supply`;
       } else if (module === ModuleEnum.MORPHO) {
-        return t`Morpho Vault Supply`;
+        return t`Vault Supply`;
       }
       return t`Supply`;
     case TransactionTypeEnum.WITHDRAW:
@@ -31,7 +31,7 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
       } else if (module === ModuleEnum.STUSDS) {
         return t`stUSDS Withdraw`;
       } else if (module === ModuleEnum.MORPHO) {
-        return t`Morpho Vault Withdraw`;
+        return t`Vault Withdraw`;
       }
       return t`Withdraw`;
     case TransactionTypeEnum.REWARD:

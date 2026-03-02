@@ -24,7 +24,7 @@ import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
 import { useConnection, useChainId } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
-import { Heading, Text } from '@widgets/shared/components/ui/Typography';
+import { Heading } from '@widgets/shared/components/ui/Typography';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@widgets/components/ui/button';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
@@ -36,7 +36,6 @@ import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState
 import { MorphoVaultTransactionReview } from './components/MorphoVaultTransactionReview';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
-import { VaultPoweredBy } from './components/VaultPoweredBy';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -61,7 +60,7 @@ const MorphoVaultWidgetWrapped = ({
   vaultAddress,
   assetAddress,
   assetToken,
-  vaultName = 'Morpho Vault',
+  vaultName = 'Vault',
   onConnect,
   addRecentTransaction,
   rightHeaderComponent,
@@ -527,12 +526,6 @@ const MorphoVaultWidgetWrapped = ({
           </Heading>
         </div>
       }
-      subHeader={
-        <Text className="text-textSecondary" variant="small">
-          {/* TODO make this dynamic for other vaults */}
-          <Trans>Access a variable rate on USDS by lending against stUSDS collateral</Trans>
-        </Text>
-      }
       rightHeader={rightHeaderComponent}
       footer={
         <WidgetButtons
@@ -544,9 +537,6 @@ const MorphoVaultWidgetWrapped = ({
         />
       }
     >
-      <div className="mt-[-16px] space-y-0">
-        <VaultPoweredBy onExternalLinkClicked={onExternalLinkClicked} />
-      </div>
       <AnimatePresence mode="popLayout" initial={false}>
         {txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="widget-transaction-status">

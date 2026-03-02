@@ -49,4 +49,5 @@ export {
   type MorphoVaultsCombinedUserData,
   type MorphoVaultUserData
 } from './useMorphoVaultsCombinedUserData';
+export { useAllMorphoVaultsUserAssets } from './useAllMorphoVaultsUserAssets';
 export { MORPHO_VAULTS } from './constants';

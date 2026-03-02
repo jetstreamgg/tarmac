@@ -10,6 +10,7 @@ interface ChatbotTermsModalProps {
   isOpen: boolean;
   onAccept: () => void;
   onDecline: () => void;
+  onAbandon?: () => void;
   termsVersion: string;
   termsContent?: string;
   isLoading?: boolean;
@@ -21,6 +22,7 @@ export const ChatbotTermsModal: React.FC<ChatbotTermsModalProps> = ({
   isOpen,
   onAccept,
   onDecline,
+  onAbandon,
   termsVersion,
   termsContent,
   isLoading = false,
@@ -50,11 +52,17 @@ export const ChatbotTermsModal: React.FC<ChatbotTermsModalProps> = ({
   const handleOpenChange = useCallback(
     (open: boolean) => {
       if (!open) {
-        if (!closedByAcceptRef.current) onDecline();
+        if (!closedByAcceptRef.current) {
+          if (onAbandon) {
+            onAbandon();
+          } else {
+            onDecline();
+          }
+        }
         closedByAcceptRef.current = false;
       }
     },
-    [onDecline]
+    [onDecline, onAbandon]
   );
 
   const handleTermsCheckboxChange = (checkedState: CheckedState) => {

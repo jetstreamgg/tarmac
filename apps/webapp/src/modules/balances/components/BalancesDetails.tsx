@@ -12,13 +12,11 @@ export function BalancesDetails() {
 
   return (
     <DetailSectionWrapper>
-      {!isRestricted && (
-        <DetailSection title={t`Earn with your Stables`} fixedOpen>
-          <DetailSectionRow>
-            <SuggestedActions widget="stables" variant="card" />
-          </DetailSectionRow>
-        </DetailSection>
-      )}
+      <DetailSection title={t`Earn with your Stables`} fixedOpen>
+        <DetailSectionRow>
+          <SuggestedActions widget="stables" variant="card" restrictedModules={isRestricted ? ['morpho'] : undefined} />
+        </DetailSectionRow>
+      </DetailSection>
       <DetailSection title={t`Stake, Borrow, and Earn with SKY`} fixedOpen>
         <DetailSectionRow>
           <SuggestedActions widget="sky" variant="card" />

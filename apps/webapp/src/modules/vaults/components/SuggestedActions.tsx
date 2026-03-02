@@ -21,6 +21,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
 import { Savings, Upgrade, RewardsModule, Stake, Seal, Expert, Vaults, Trade } from '@/modules/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
 import { parseIntent, intentToWidgetParams } from '../lib/intent';
 import { SUGGESTED_ACTIONS, type SuggestedAction } from '../lib/actions';
@@ -99,7 +100,7 @@ function resolveAction(
 }
 
 /** Fetch rates for actions that have a rateKey. */
-function useActionRates(actions: SuggestedAction[], chainId: number): Record<string, string> {
+function useActionRates(actions: SuggestedAction[], chainId: number): { rates: Record<string, string>; loading: Record<string, boolean> } {
   const rateKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const action of actions) {
@@ -112,13 +113,13 @@ function useActionRates(actions: SuggestedAction[], chainId: number): Record<str
   const mainnetChainId = isTestnetId(chainId) ? chainIdConstants.tenderly : chainIdConstants.mainnet;
 
   // Savings rate
-  const { data: overallSkyData } = useOverallSkyData();
+  const { data: overallSkyData, isLoading: savingsLoading } = useOverallSkyData();
 
   // stUSDS rate
-  const { data: stUsdsData } = useStUsdsData();
+  const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
 
   // Morpho vault rates (max rate across all vaults)
-  const { maxRate: morphoMaxRate } = useMorphoVaultsCombinedTvl();
+  const { maxRate: morphoMaxRate, isLoading: vaultsLoading } = useMorphoVaultsCombinedTvl();
 
   // Rewards rate
   const allRewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
@@ -133,56 +134,81 @@ function useActionRates(actions: SuggestedAction[], chainId: number): Record<str
       contract.supplyToken.symbol === TOKENS.usds.symbol && contract.rewardToken.symbol === TOKENS.cle.symbol
   );
 
-  const { data: usdsSpkChartData } = useRewardsChartInfo({
+  const { data: usdsSpkChartData, isLoading: spkLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsSpkRewardContract?.contractAddress as string
   });
-  const { data: usdsCleChartData } = useRewardsChartInfo({
+  const { data: usdsCleChartData, isLoading: cleLoading } = useRewardsChartInfo({
     rewardContractAddress: usdsCleRewardContract?.contractAddress as string
   });
   const rewardsHighestRate = useHighestRateFromChartData([usdsSpkChartData, usdsCleChartData]);
+  const rewardsLoading = spkLoading || cleLoading;
 
   // Staking rate
-  const { data: stakeRewardContracts } = useStakeRewardContracts();
-  const { data: stakeRewardsChartsInfoData } = useMultipleRewardsChartInfo({
+  const { data: stakeRewardContracts, isLoading: stakeContractsLoading } = useStakeRewardContracts();
+  const { data: stakeRewardsChartsInfoData, isLoading: stakeChartsLoading } = useMultipleRewardsChartInfo({
     rewardContractAddresses: stakeRewardContracts?.map(c => c.contractAddress) || []
   });
   const stakeHighestRateData = useHighestRateFromChartData(stakeRewardsChartsInfoData || []);
+  const stakingLoading = stakeContractsLoading || stakeChartsLoading;
 
   return useMemo(() => {
-    if (!hasRates) return {};
+    if (!hasRates) return { rates: {}, loading: {} };
 
     const rates: Record<string, string> = {};
+    const loading: Record<string, boolean> = {};
 
     if (rateKeys.has('savings')) {
-      const rate = parseFloat(overallSkyData?.skySavingsRatecRate ?? '0');
-      rates.savings = rate > 0 ? formatDecimalPercentage(rate) : '0%';
+      loading.savings = savingsLoading;
+      const rawRate = overallSkyData?.skySavingsRatecRate;
+      if (rawRate != null) {
+        const rate = parseFloat(rawRate);
+        rates.savings = !isNaN(rate) ? formatDecimalPercentage(rate) : '—';
+      } else {
+        rates.savings = '—';
+      }
     }
 
     if (rateKeys.has('stusds')) {
-      const rate = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;
-      rates.stusds = rate > 0 ? `${rate.toFixed(2)}%` : '0%';
+      loading.stusds = stUsdsLoading;
+      if (stUsdsData?.moduleRate != null) {
+        const rate = calculateApyFromStr(stUsdsData.moduleRate);
+        rates.stusds = !isNaN(rate) ? `${rate.toFixed(2)}%` : '—';
+      } else {
+        rates.stusds = '—';
+      }
     }
 
     if (rateKeys.has('vaults')) {
+      loading.vaults = vaultsLoading;
       const rate = morphoMaxRate * 100;
-      rates.vaults = rate > 0 ? `${rate.toFixed(2)}%` : '0%';
+      rates.vaults = rate > 0 ? `${rate.toFixed(2)}%` : '—';
     }
 
     if (rateKeys.has('rewards')) {
-      const rate = rewardsHighestRate ? parseFloat(rewardsHighestRate.rate) : 0;
-      rates.rewards = rate > 0 ? formatDecimalPercentage(rate) : '0%';
+      loading.rewards = rewardsLoading;
+      if (rewardsHighestRate?.rate != null) {
+        const rate = parseFloat(rewardsHighestRate.rate);
+        rates.rewards = !isNaN(rate) ? formatDecimalPercentage(rate) : '—';
+      } else {
+        rates.rewards = '—';
+      }
     }
 
     if (rateKeys.has('staking')) {
-      const rate = stakeHighestRateData ? parseFloat(stakeHighestRateData.rate) : 0;
-      rates.staking = rate > 0 ? formatDecimalPercentage(rate) : '0%';
+      loading.staking = stakingLoading;
+      if (stakeHighestRateData?.rate != null) {
+        const rate = parseFloat(stakeHighestRateData.rate);
+        rates.staking = !isNaN(rate) ? formatDecimalPercentage(rate) : '—';
+      } else {
+        rates.staking = '—';
+      }
     }
 
-    return rates;
-  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoMaxRate, rewardsHighestRate, stakeHighestRateData]);
+    return { rates, loading };
+  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoMaxRate, rewardsHighestRate, stakeHighestRateData, savingsLoading, stUsdsLoading, vaultsLoading, rewardsLoading, stakingLoading]);
 }
 
-export function SuggestedActions({ widget, variant = 'default' }: { widget: string; variant?: 'default' | 'card' | 'card-sm' }) {
+export function SuggestedActions({ widget, variant = 'default', restrictedModules }: { widget: string; variant?: 'default' | 'card' | 'card-sm'; restrictedModules?: string[] }) {
   const [, setSearchParams] = useSearchParams();
   const { address } = useAccount();
   const chainId = useChainId();
@@ -193,13 +219,19 @@ export function SuggestedActions({ widget, variant = 'default' }: { widget: stri
 
   // "all" combines every widget's actions into one list, tagging each with its module
   const actions = useMemo<ActionWithModule[]>(() => {
+    let result: ActionWithModule[];
     if (widget === 'all') {
-      return Object.entries(SUGGESTED_ACTIONS).flatMap(([key, acts]) =>
+      result = Object.entries(SUGGESTED_ACTIONS).flatMap(([key, acts]) =>
         acts.filter(a => !a.hideFromAll).map(a => ({ ...a, module: a.module ?? key }))
       );
+    } else {
+      result = SUGGESTED_ACTIONS[widget] ?? [];
     }
-    return SUGGESTED_ACTIONS[widget] ?? [];
-  }, [widget]);
+    if (restrictedModules) {
+      result = result.filter(a => a.module && restrictedModules.includes(a.module));
+    }
+    return result;
+  }, [widget, restrictedModules]);
 
   // Collect unique source tokens we need balances for
   const tokenItems = useMemo<TokenItem[]>(() => {
@@ -235,7 +267,7 @@ export function SuggestedActions({ widget, variant = 'default' }: { widget: stri
   }, [balances]);
 
   // Fetch rates for actions with rateKey
-  const rateMap = useActionRates(actions, chainId);
+  const { rates: rateMap, loading: rateLoading } = useActionRates(actions, chainId);
 
   const handleClick = useCallback(
     (action: SuggestedAction, resolvedInput: string) => {
@@ -296,10 +328,14 @@ export function SuggestedActions({ widget, variant = 'default' }: { widget: stri
               <div className="flex min-w-0 flex-1 flex-col">
                 <Text className="text-text truncate">{resolved.label}</Text>
                 {resolved.subtitle && (
-                  <Text variant="small" className={`flex items-center gap-1 ${action.rateKey ? 'text-bullish' : 'text-textSecondary'}`}>
-                    {resolved.subtitle}
-                    {action.rateKey && <InfoTooltip content="Rates are variable and subject to change based on market conditions." iconSize={12} iconClassName="text-textSecondary" />}
-                  </Text>
+                  action.rateKey && rateLoading[action.rateKey] ? (
+                    <Skeleton className="h-4 w-24" />
+                  ) : (
+                    <Text variant="small" className={`flex items-center gap-1 ${action.rateKey && rateMap[action.rateKey] !== '—' ? 'text-bullish' : 'text-textSecondary'}`}>
+                      {resolved.subtitle}
+                      {action.rateKey && rateMap[action.rateKey] !== '—' && <InfoTooltip content="Rates are variable and subject to change based on market conditions." iconSize={12} iconClassName="text-textSecondary" />}
+                    </Text>
+                  )
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-2">

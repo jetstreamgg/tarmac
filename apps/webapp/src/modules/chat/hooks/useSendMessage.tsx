@@ -9,6 +9,7 @@ import { useLingui } from '@lingui/react';
 import {
   chainIdNameMapping,
   isChatIntentAllowed,
+  rewriteChatbotTradeUpgradeIntent,
   processNetworkNameInUrl,
   ensureIntentHasNetwork,
   hasPreFillParameters
@@ -21,6 +22,8 @@ import {
   IS_PRODUCTION_ENV,
   MAX_HISTORY_LENGTH
 } from '@/lib/constants';
+import { useChatAnalytics } from './useChatAnalytics';
+import { getInputLengthBucket } from '@/modules/analytics/constants';
 
 interface ChatbotResponse {
   chatResponse: {
@@ -82,9 +85,13 @@ const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
       }
 
       // For other 403 errors, throw a generic error
-      throw new Error(errorData?.error || 'Request forbidden');
+      const error: any = new Error(errorData?.error || 'Request forbidden');
+      error.status = 403;
+      throw error;
     }
-    throw new Error('Advanced chat response was not ok');
+    const error: any = new Error('Advanced chat response was not ok');
+    error.status = response.status;
+    throw error;
   }
 
   const data = await response.json();
@@ -147,6 +154,7 @@ export const useSendMessage = () => {
   const chainId = useChainId();
   const { isConnected } = useConnection();
   const { i18n } = useLingui();
+  const { trackMessageSent, trackResponseReceived, trackWorkerError } = useChatAnalytics();
 
   const { loading: LOADING, error: ERROR, canceled: CANCELED, authError: AUTH_ERROR } = MessageType;
   const { mutate } = useMutation<SendMessageResponse, Error, { messagePayload: Partial<SendMessageRequest> }>(
@@ -164,6 +172,13 @@ export const useSendMessage = () => {
   const network = isConnected ? chainIdNameMapping[chainId as keyof typeof chainIdNameMapping] : 'ethereum';
 
   const sendMessage = (message: string) => {
+    const startTime = Date.now();
+
+    trackMessageSent({
+      input_length_bucket: getInputLengthBucket(message.length),
+      network
+    });
+
     mutate(
       {
         messagePayload: {
@@ -174,17 +189,28 @@ export const useSendMessage = () => {
       },
       {
         onSuccess: data => {
+          const latencyMs = Date.now() - startTime;
           const intents = data.intents
-            ?.filter(chatIntent => isChatIntentAllowed(chatIntent))
-            ?.filter(chatIntent => {
-              // Filter out intents with pre-fill parameters if filtering is enabled
-              return !CHATBOT_PREFILL_FILTERING_ENABLED || !hasPreFillParameters(chatIntent);
-            })
-            .map(intent => {
+            ?.map(intent => {
               const processedUrl = processNetworkNameInUrl(intent.url);
               const urlWithNetwork = ensureIntentHasNetwork(processedUrl, chainId);
               return { ...intent, url: urlWithNetwork };
-            });
+            })
+            .filter(chatIntent => isChatIntentAllowed(chatIntent))
+            .filter(chatIntent => {
+              // Filter out intents with pre-fill parameters if filtering is enabled
+              return !CHATBOT_PREFILL_FILTERING_ENABLED || !hasPreFillParameters(chatIntent);
+            })
+            .map(rewriteChatbotTradeUpgradeIntent); // TODO: Remove once backend sends widget=convert
+
+          // Count unique intent titles to match the UI grouping
+          const uniqueIntentCount = new Set(intents?.map(i => i.title)).size;
+
+          trackResponseReceived({
+            latency_ms: latencyMs,
+            has_intents: uniqueIntentCount > 0,
+            intent_count: uniqueIntentCount
+          });
 
           setChatHistory(prevHistory => {
             return prevHistory[prevHistory.length - 1].type === CANCELED
@@ -202,6 +228,17 @@ export const useSendMessage = () => {
         },
         onError: async (error: any) => {
           console.error('Failed to send message:', JSON.stringify(error));
+
+          trackWorkerError({
+            status_code: error.status,
+            error_type: error.code === 'TERMS_NOT_ACCEPTED'
+              ? 'terms_not_accepted'
+              : error.code === 'JURISDICTION_RESTRICTED'
+                ? 'jurisdiction_restricted'
+                : error.status
+                  ? `http_${error.status}`
+                  : 'unknown'
+          });
           if (error.status === 403) {
             setIsRestricted(true);
             setChatHistory([]);

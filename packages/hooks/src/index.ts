@@ -100,6 +100,7 @@ export {
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
   useMorphoVaultsCombinedUserData,
+  useAllMorphoVaultsUserAssets,
   MORPHO_VAULTS
 } from './morpho';
 export type {

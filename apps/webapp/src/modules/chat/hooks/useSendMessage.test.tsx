@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { hasPreFillParameters } from '../lib/intentUtils';
+import {
+  ensureIntentHasNetwork,
+  hasPreFillParameters,
+  isChatIntentAllowed,
+  processNetworkNameInUrl,
+  rewriteChatbotTradeUpgradeIntent
+} from '../lib/intentUtils';
 import { ChatIntent } from '../types/Chat';
 
 /**
@@ -450,6 +456,203 @@ describe('useSendMessage - Intent Filtering Integration', () => {
       expect(filteredIntents[0].url).toContain('widget=savings');
       expect(filteredIntents[0].url).toContain('network=ethereum');
       expect(filteredIntents[0].url).toContain('chat=true');
+    });
+  });
+
+  // TODO: Remove this section once the backend sends widget=convert natively
+  describe('trade/upgrade → convert rewrite integration', () => {
+    const CHATBOT_DISABLE_PREFILL = true;
+    const runIntentPipeline = (intents: ChatIntent[], chainId = 1) =>
+      intents
+        .map(intent => {
+          const processedUrl = processNetworkNameInUrl(intent.url);
+          const urlWithNetwork = ensureIntentHasNetwork(processedUrl, chainId);
+          return { ...intent, url: urlWithNetwork };
+        })
+        .filter(intent => isChatIntentAllowed(intent))
+        .filter(intent => !CHATBOT_DISABLE_PREFILL || !hasPreFillParameters(intent))
+        .map(rewriteChatbotTradeUpgradeIntent);
+
+    it('rewrites trade intents to convert after validation', () => {
+      const intents: ChatIntent[] = [
+        {
+          title: 'Go to Trade',
+          url: '?widget=trade&network=ethereum',
+          intent_id: 'trade',
+          widget: 'trade',
+          priority: 1
+        }
+      ];
+
+      const result = runIntentPipeline(intents);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].widget).toBe('convert');
+      const params = new URLSearchParams(result[0].url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('trade');
+      expect(params.get('network')).toBe('ethereum');
+    });
+
+    it('rewrites upgrade intents to convert after validation', () => {
+      const intents: ChatIntent[] = [
+        {
+          title: 'Go to Upgrade',
+          url: '?widget=upgrade&network=ethereum',
+          intent_id: 'upgrade',
+          widget: 'upgrade',
+          priority: 1
+        }
+      ];
+
+      const result = runIntentPipeline(intents);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].widget).toBe('convert');
+      const params = new URLSearchParams(result[0].url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('upgrade');
+    });
+
+    it('routes upgrade intents without a network to ethereum before rewriting on L2', () => {
+      const intents: ChatIntent[] = [
+        {
+          title: 'Go to Upgrade',
+          url: '?widget=upgrade',
+          intent_id: 'upgrade',
+          widget: 'upgrade',
+          priority: 1
+        }
+      ];
+
+      const result = runIntentPipeline(intents, 8453);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].widget).toBe('convert');
+      const params = new URLSearchParams(result[0].url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('upgrade');
+      expect(params.get('network')).toBe('ethereum');
+    });
+
+    it('filters out upgrade intents that explicitly target an L2', () => {
+      const intents: ChatIntent[] = [
+        {
+          title: 'Go to Upgrade',
+          url: '?widget=upgrade&network=base',
+          intent_id: 'upgrade',
+          widget: 'upgrade',
+          priority: 1
+        }
+      ];
+
+      const result = runIntentPipeline(intents);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('passes through backend convert URLs unchanged (forward-compatible)', () => {
+      // Simulates the future backend response that sends widget=convert directly
+      const intents: ChatIntent[] = [
+        {
+          title: 'Go to Convert (Trade)',
+          url: '?widget=convert&convert_module=trade&network=ethereum',
+          intent_id: 'convert',
+          widget: 'convert',
+          priority: 1
+        },
+        {
+          title: 'Go to Convert (Upgrade)',
+          url: '?widget=convert&convert_module=upgrade&network=ethereum',
+          intent_id: 'convert',
+          widget: 'convert',
+          priority: 2
+        }
+      ];
+
+      const result = runIntentPipeline(intents);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].widget).toBe('convert');
+      expect(result[1].widget).toBe('convert');
+      const params0 = new URLSearchParams(result[0].url.split('?')[1]);
+      expect(params0.get('convert_module')).toBe('trade');
+      const params1 = new URLSearchParams(result[1].url.split('?')[1]);
+      expect(params1.get('convert_module')).toBe('upgrade');
+    });
+
+    it('handles mixed response with trade, upgrade, and other widgets', () => {
+      const intents: ChatIntent[] = [
+        {
+          title: 'Go to Trade',
+          url: '?widget=trade&network=ethereum',
+          intent_id: 'trade',
+          widget: 'trade',
+          priority: 1
+        },
+        {
+          title: 'Go to Upgrade',
+          url: '?widget=upgrade&network=ethereum',
+          intent_id: 'upgrade',
+          widget: 'upgrade',
+          priority: 2
+        },
+        {
+          title: 'Go to Savings',
+          url: '?widget=savings&network=ethereum',
+          intent_id: 'savings',
+          widget: 'savings',
+          priority: 3
+        },
+        {
+          title: 'View Balances',
+          url: '?widget=balances',
+          intent_id: 'balances',
+          widget: 'balances',
+          priority: 4
+        }
+      ];
+
+      const result = runIntentPipeline(intents);
+
+      expect(result).toHaveLength(4);
+      // Trade and upgrade rewritten to convert
+      expect(result[0].widget).toBe('convert');
+      expect(new URLSearchParams(result[0].url.split('?')[1]).get('convert_module')).toBe('trade');
+      expect(result[1].widget).toBe('convert');
+      expect(new URLSearchParams(result[1].url.split('?')[1]).get('convert_module')).toBe('upgrade');
+      // Others unchanged
+      expect(result[2].widget).toBe('savings');
+      expect(result[3].widget).toBe('balances');
+    });
+
+    it('rewrite + prefill filter: filters out trade intents with prefill params', () => {
+      const intents: ChatIntent[] = [
+        {
+          title: 'Trade 100 DAI for USDS',
+          url: '?widget=trade&input_amount=100&source_token=DAI&target_token=USDS&network=ethereum',
+          intent_id: 'trade',
+          widget: 'trade',
+          priority: 1
+        },
+        {
+          title: 'Go to Trade',
+          url: '?widget=trade&network=ethereum',
+          intent_id: 'trade',
+          widget: 'trade',
+          priority: 2
+        }
+      ];
+
+      const result = runIntentPipeline(intents);
+
+      // Only the navigation intent survives prefill filtering
+      expect(result).toHaveLength(1);
+      expect(result[0].widget).toBe('convert');
+      const params = new URLSearchParams(result[0].url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('trade');
+      expect(params.has('input_amount')).toBe(false);
     });
   });
 });
