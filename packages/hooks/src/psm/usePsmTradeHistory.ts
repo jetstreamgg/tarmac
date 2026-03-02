@@ -37,8 +37,8 @@ async function fetchPsmTradeHistory(
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
 
   const whereConditions: Record<string, any> = {
-    sender: { _eq: address },
-    receiver: { _eq: address },
+    sender: { _ilike: address },
+    receiver: { _ilike: address },
     chainId: { _eq: chainId }
   };
 

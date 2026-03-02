@@ -8,7 +8,7 @@ import { useConnection, useChainId } from 'wagmi';
 async function fetchTotalUserSealed(urlSubgraph: string, chainId: number, address: string): Promise<bigint> {
   const query = gql`
     {
-      sealUrns: SealUrn(where: { owner: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      sealUrns: SealUrn(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrLocked
       }
     }

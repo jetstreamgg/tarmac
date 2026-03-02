@@ -8,7 +8,7 @@ import { UrnInfo, UrnInfoRaw } from './stakeModule';
 async function fetchUrnsInfo(urlSubgraph: string, chainId: number, user: `0x${string}`): Promise<UrnInfo[] | undefined> {
   const query = gql`
     {
-      sealedUrns: StakingUrn(where: { owner: { _eq: "${user.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { index: asc }) {
+      sealedUrns: StakingUrn(where: { owner: { _ilike: "${user.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { index: asc }) {
         address
         blockTimestamp
         rewardContract {

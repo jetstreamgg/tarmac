@@ -30,7 +30,7 @@ async function fetchStakePosition(
   if (!address) return;
   const query = gql`
     {
-      stakingUrns: StakingUrn(where: { owner: { _eq: "${address}" }, index: { _eq: "${urnIndex}" }, chainId: { _eq: ${chainId} } }) {
+      stakingUrns: StakingUrn(where: { owner: { _ilike: "${address}" }, index: { _eq: "${urnIndex}" }, chainId: { _eq: ${chainId} } }) {
         skyLocked
         usdsDebt
         voteDelegate {

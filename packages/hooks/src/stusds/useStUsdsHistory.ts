@@ -16,12 +16,12 @@ import { StUsdsProviderType } from './providers/types';
 async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, address: string) {
   const query = gql`
     {
-      stusdsDeposits: StusdsDeposit(where: { owner: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      stusdsDeposits: StusdsDeposit(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         assets
         blockTimestamp
         transactionHash
       }
-      stusdsWithdraws: StusdsWithdraw(where: { owner: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      stusdsWithdraws: StusdsWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         assets
         blockTimestamp
         transactionHash
@@ -60,7 +60,7 @@ async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, ad
 async function fetchCurveStusdsHistory(urlSubgraph: string, chainId: number, address: string) {
   const query = gql`
     {
-      curveTokenExchanges: CurveTokenExchange(where: { buyer: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      curveTokenExchanges: CurveTokenExchange(where: { buyer: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         soldId
         amountSold
         boughtId

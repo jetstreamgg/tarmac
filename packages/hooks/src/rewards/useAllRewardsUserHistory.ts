@@ -20,17 +20,17 @@ async function fetchAllRewardsUserHistory(
     {
       rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
         address
-        supplyInstances(where: { user: { _eq: "${userAddress}" } }) {
+        supplyInstances(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash
           amount
         }
-        withdrawals(where: { user: { _eq: "${userAddress}" } }) {
+        withdrawals(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash
           amount
         }
-        rewardClaims(where: { user: { _eq: "${userAddress}" } }) {
+        rewardClaims(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash
           amount

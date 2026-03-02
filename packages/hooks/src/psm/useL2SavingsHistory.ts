@@ -24,9 +24,9 @@ async function fetchL2SavingsHistory(
   const query = gql`
   {
     usdsIn: Swap(where: {
-      sender: { _eq: "${address}" },
-      receiver: { _eq: "${address}" },
-      assetIn: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
+      sender: { _ilike: "${address}" },
+      receiver: { _ilike: "${address}" },
+      assetIn: { _ilike: "${sUsdsAddressForChain.toLowerCase()}" },
       chainId: { _eq: ${chainId} }
     }) {
       id
@@ -41,9 +41,9 @@ async function fetchL2SavingsHistory(
       blockTimestamp
     }
     usdsOut: Swap(where: {
-      sender: { _eq: "${address}" },
-      receiver: { _eq: "${address}" },
-      assetOut: { _eq: "${sUsdsAddressForChain.toLowerCase()}" },
+      sender: { _ilike: "${address}" },
+      receiver: { _ilike: "${address}" },
+      assetOut: { _ilike: "${sUsdsAddressForChain.toLowerCase()}" },
       chainId: { _eq: ${chainId} }
     }) {
       id

@@ -26,8 +26,8 @@ async function fetchSealHistory(
 ): Promise<SealHistory | undefined> {
   if (!address) return [];
   const indexFilter = index ? `, index: { _eq: "${index}" }` : '';
-  const urnFilter = `{ urn: { owner: { _eq: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
-  const ownerFilter = `{ owner: { _eq: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
+  const urnFilter = `{ urn: { owner: { _ilike: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
+  const ownerFilter = `{ owner: { _ilike: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
   const query = gql`
     {
       sealOpens: SealOpen(where: ${ownerFilter}) {

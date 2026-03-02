@@ -17,17 +17,17 @@ async function fetchRewardsUserHistory(
   const query = gql`
     {
       reward: Reward_by_pk(id: "${chainId}-${rewardContractAddress}") {
-        supplyInstances(where: { user: { _eq: "${userAddress}" } }) {
+        supplyInstances(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash
           amount
         }
-        withdrawals(where: { user: { _eq: "${userAddress}" } }) {
+        withdrawals(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash
           amount
         }
-        rewardClaims(where: { user: { _eq: "${userAddress}" } }) {
+        rewardClaims(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash
           amount

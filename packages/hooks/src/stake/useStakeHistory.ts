@@ -26,8 +26,8 @@ async function fetchStakeHistory(
 ): Promise<StakeHistory | undefined> {
   if (!address) return [];
   const indexFilter = index !== undefined ? `, index: { _eq: "${index}" }` : '';
-  const urnFilter = `{ urn: { owner: { _eq: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
-  const ownerFilter = `{ owner: { _eq: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
+  const urnFilter = `{ urn: { owner: { _ilike: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
+  const ownerFilter = `{ owner: { _ilike: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
   const query = gql`
     {
       stakingOpens: StakingOpen(where: ${ownerFilter}) {

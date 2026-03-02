@@ -23,12 +23,12 @@ async function fetchEthereumSavingsHistory(
   if (!address) return [];
   const query = gql`
     {
-      savingsSupplies: SavingsSupply(where: { owner: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      savingsSupplies: SavingsSupply(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         assets
         blockTimestamp
         transactionHash
       }
-      savingsWithdraws: SavingsWithdraw(where: { owner: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      savingsWithdraws: SavingsWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         blockTimestamp
         assets
         transactionHash

@@ -16,29 +16,29 @@ async function fetchUpgradeHistory(
   // Note: 'usr' is the reciever of the upgraded/reverted token, 'caller' is the sender.
   const query = gql`
     {
-      daiToUsdsUpgrades: DaiToUsdsUpgrade(where: { usr: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      daiToUsdsUpgrades: DaiToUsdsUpgrade(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         wad
         blockTimestamp
         transactionHash
       }
-      usdsToDaiReverts: UsdsToDaiRevert(where: { usr: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      usdsToDaiReverts: UsdsToDaiRevert(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         wad
         blockTimestamp
         transactionHash
       }
-      mkrToSkyUpgrades: MkrToSkyUpgrade(where: { usr: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      mkrToSkyUpgrades: MkrToSkyUpgrade(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrAmt
         skyAmt
         blockTimestamp
         transactionHash
       }
-      mkrToSkyUpgradeV2S: MkrToSkyUpgradeV2(where: { usr: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      mkrToSkyUpgradeV2S: MkrToSkyUpgradeV2(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrAmt
         skyAmt
         blockTimestamp
         transactionHash
       }
-      skyToMkrReverts: SkyToMkrRevert(where: { usr: { _eq: "${address}" }, chainId: { _eq: ${chainId} } }) {
+      skyToMkrReverts: SkyToMkrRevert(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrAmt
         skyAmt
         blockTimestamp
