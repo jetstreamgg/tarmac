@@ -255,27 +255,51 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
-    id: 'morpho-vaults',
-    title: 'Morpho Vaults',
+    id: 'vaults',
+    title: 'Vaults',
     module: 'vaults-banners',
     description:
-      'Curated by Sky on Morpho, allocates stablecoin deposits into carefully chosen lending markets, where borrowers can use native Sky Protocol tokens or various blue-chip assets as collateral. Market exposure, risk level and yields vary across specific vaults.',
+      'Curated by Sky on Morpho, allocates stablecoin deposits into chosen lending markets, where borrowers can use native Sky Protocol tokens or various blue-chip assets as collateral. Market exposure, risk level and yields vary across specific vaults.',
     display: ['connected', 'disconnected']
   },
   {
-    id: 'risk-capital-vault',
-    title: 'Risk Capital Vault',
+    id: 'usds-risk-capital-vault',
+    title: 'USDS Risk Capital Vault',
     module: 'vaults-banners',
     description:
-      'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDS lending market, where borrowers post stUSDS—the higher-yield Expert risk capital token—as collateral to borrow USDS at an 86% LTV ratio.',
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDS lending market, where borrowers post stUSDS, the higher-yield Expert risk capital token, as collateral to borrow USDS at an 86% LTV ratio.',
     display: ['connected', 'disconnected']
   },
   {
-    id: 'savings-vault',
-    title: 'Savings Vault',
+    id: 'usdt-risk-capital-vault',
+    title: 'USDT Risk Capital Vault',
     module: 'vaults-banners',
     description:
-      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDS lending market, where borrowers post sUSDS—the native stablecoin earning the Sky Savings Rate—as collateral to borrow USDS at a 96.5% LTV ratio.',
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDT lending market, where borrowers post stUSDS, the higher-yield Expert risk capital token, as collateral to borrow USDT at an 86% LTV ratio.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'usdc-risk-capital-vault',
+    title: 'USDC Risk Capital Vault',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDC lending market, where borrowers post stUSDS, the higher-yield Expert risk capital token, as collateral to borrow USDC at an 86% LTV ratio.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'usds-savings-vault',
+    title: 'USDS Savings Vault',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDS lending market, where borrowers post sUSDS, the native stablecoin earning the Sky Savings Rate, as collateral to borrow USDS at a 96.5% LTV ratio.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'usdt-savings-vault',
+    title: 'USDT Savings Vault',
+    module: 'vaults-banners',
+    description:
+      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDT lending market, where borrowers post sUSDS, the native stablecoin earning the Sky Savings Rate, as collateral to borrow USDT at a 96.5% LTV ratio.',
     display: ['connected', 'disconnected']
   },
   {
@@ -283,7 +307,7 @@ export const banners: Banner[] = [
     title: 'Flagship Vault',
     module: 'vaults-banners',
     description:
-      'Curated by Sky on Morpho, allocates 80% of deposits into sUSDS earning the Sky Savings Rate, and the remaining 20% to markets with volatile exposures including stUSDS/USDS, cbBTC/USDS, wstETH/USDS and WETH/USDS.',
+      'Curated by Sky on Morpho, allocates 80% of deposits into sUSDS earning the Sky Savings Rate, and the remaining 20% to markets with volatile bluechip collateral exposure including stUSDS/USDS, cbBTC/USDS, wstETH/USDS and WETH/USDS.',
     display: ['connected', 'disconnected']
   }
 ];

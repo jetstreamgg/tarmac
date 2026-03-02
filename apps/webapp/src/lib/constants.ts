@@ -125,7 +125,7 @@ export const VAULTS_WIDGET_OPTIONS: {
 }[] = [
   {
     id: VaultsIntent.MORPHO_VAULT_INTENT,
-    name: 'Morpho Vault'
+    name: 'Vault'
   }
 ];
 

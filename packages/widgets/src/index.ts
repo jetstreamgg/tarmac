@@ -26,6 +26,8 @@ export type {
   WidgetStateChangeParams,
   ExternalWidgetState
 } from './shared/types/widgetState';
+export { WidgetAnalyticsEventType } from './shared/types/analyticsEvents';
+export type { WidgetAnalyticsEvent } from './shared/types/analyticsEvents';
 export * from './widgets/SavingsWidget/lib/constants';
 export * from './widgets/StUSDSWidget/lib/constants';
 export * from './widgets/TradeWidget/lib/constants';

@@ -12,7 +12,7 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useMorphoVaultTransactionCallbacks } from './useMorphoVaultTransactionCallbacks';
 
 interface UseMorphoVaultTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   /** Amount of underlying assets to deposit/withdraw */
   amount: bigint;
   /** User's vault shares (used for redeem) */
@@ -27,6 +27,10 @@ interface UseMorphoVaultTransactionsParameters
   assetDecimals: number;
   /** Symbol of the underlying asset token */
   assetSymbol: string;
+  /** Display name for the vault */
+  vaultName: string;
+  /** Whether the supply flow requires a token approval step */
+  needsAllowance: boolean;
   /** Whether to use batch transactions */
   shouldUseBatch: boolean;
   /** Rewards data for claiming */
@@ -51,6 +55,8 @@ export const useMorphoVaultTransactions = ({
   assetAddress,
   assetDecimals,
   assetSymbol,
+  vaultName,
+  needsAllowance,
   shouldUseBatch,
   rewards,
   hasClaimableRewards,
@@ -60,7 +66,8 @@ export const useMorphoVaultTransactions = ({
   mutateRewards,
   addRecentTransaction,
   onWidgetStateChange,
-  onNotification
+  onNotification,
+  onAnalyticsEvent
 }: UseMorphoVaultTransactionsParameters) => {
   const { widgetState } = useContext(WidgetContext);
 
@@ -69,13 +76,20 @@ export const useMorphoVaultTransactions = ({
       amount,
       assetDecimals,
       assetSymbol,
+      vaultAddress,
+      assetAddress,
+      vaultName,
+      rewards,
+      needsAllowance,
+      shouldUseBatch,
       mutateAllowance,
       mutateVaultData,
       mutateAssetBalance,
       mutateRewards,
       addRecentTransaction,
       onWidgetStateChange,
-      onNotification
+      onNotification,
+      onAnalyticsEvent
     });
 
   // Deposit hook (with batch approval support)

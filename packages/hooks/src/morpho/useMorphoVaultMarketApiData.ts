@@ -174,7 +174,8 @@ export async function fetchMorphoVaultMarketData(
     {
       assetSymbol,
       formattedAssets: formatBigInt(BigInt(idleAssets), { unit: assetDecimals, compact: true }),
-      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`
+      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`,
+      idleAssetsUsd
     }
   ];
 

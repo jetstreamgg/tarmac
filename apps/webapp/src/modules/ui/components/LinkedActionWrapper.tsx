@@ -24,7 +24,7 @@ export const LinkedActionWrapper = () => {
       return 'stUSDS';
     }
     if (linkedActionConfig.expertModule === VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]) {
-      return 'Morpho Vault';
+      return 'Vault';
     }
     return linkedActionMetadata[linkedActionConfig.linkedAction!]?.text || '';
   };

@@ -6,8 +6,9 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { notificationTypeMaping } from '@widgets/shared/constants';
 import { useTransactionCallbacks } from '@widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@widgets/shared/types/transactionCallbacks';
+import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { WidgetProps } from '@widgets/shared/types/widgetState';
-import { useContext, useMemo } from 'react';
+import { useCallback, useContext, useMemo } from 'react';
 import { useChainId } from 'wagmi';
 
 interface UseL2TradeTransactionCallbacksParameters
@@ -16,6 +17,8 @@ interface UseL2TradeTransactionCallbacksParameters
   originToken: TokenForChain | undefined;
   targetAmount: bigint;
   targetToken: TokenForChain | undefined;
+  onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
+  swapData: Record<string, unknown>;
   mutateAllowance: () => void;
   mutateOriginBalance: () => void;
   mutateTargetBalance: () => void;
@@ -33,8 +36,11 @@ export const useL2TradeTransactionCallbacks = ({
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
+  onAnalyticsEvent,
+  swapData,
   setShowAddToken
 }: UseL2TradeTransactionCallbacksParameters) => {
+  // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
@@ -44,6 +50,18 @@ export const useL2TradeTransactionCallbacks = ({
   const chainId = useChainId();
   const { i18n } = useLingui();
   const locale = i18n.locale;
+
+  /** Safe analytics fire — analytics must never break functionality */
+  const fireAnalytics = useCallback(
+    (event: WidgetAnalyticsEvent) => {
+      try {
+        onAnalyticsEvent?.(event);
+      } catch {
+        // Silently swallow — analytics must never break functionality
+      }
+    },
+    [onAnalyticsEvent]
+  );
 
   const tradeTransactionCallbacks = useMemo<TransactionCallbacks>(
     () => ({
@@ -78,6 +96,13 @@ export const useL2TradeTransactionCallbacks = ({
         mutateOriginBalance();
         mutateTargetBalance();
         setShowAddToken(true);
+        fireAnalytics({
+          event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
+          action: 'trade',
+          flow: 'trade',
+          txHash: hash,
+          data: swapData
+        });
       },
       onError: (error: Error, hash: string | undefined) => {
         handleOnError({
@@ -85,6 +110,13 @@ export const useL2TradeTransactionCallbacks = ({
           hash,
           notificationTitle: t`Trade failed`,
           notificationDescription: t`Something went wrong with your transaction. Please try again.`
+        });
+        fireAnalytics({
+          event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
+          action: 'trade',
+          flow: 'trade',
+          txHash: hash,
+          data: swapData
         });
       }
     }),
@@ -103,7 +135,8 @@ export const useL2TradeTransactionCallbacks = ({
       setBackButtonText,
       setShowAddToken,
       targetAmount,
-      targetToken
+      targetToken,
+      onAnalyticsEvent
     ]
   );
 
@@ -140,6 +173,13 @@ export const useL2TradeTransactionCallbacks = ({
         mutateOriginBalance();
         mutateTargetBalance();
         setShowAddToken(true);
+        fireAnalytics({
+          event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
+          action: 'trade',
+          flow: 'trade',
+          txHash: hash,
+          data: swapData
+        });
       },
       onError: (error, hash) => {
         handleOnError({
@@ -147,6 +187,13 @@ export const useL2TradeTransactionCallbacks = ({
           hash,
           notificationTitle: t`Trade failed`,
           notificationDescription: t`Something went wrong with your transaction. Please try again.`
+        });
+        fireAnalytics({
+          event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
+          action: 'trade',
+          flow: 'trade',
+          txHash: hash,
+          data: swapData
         });
       }
     }),
@@ -165,7 +212,8 @@ export const useL2TradeTransactionCallbacks = ({
       setBackButtonText,
       setShowAddToken,
       targetAmount,
-      targetToken
+      targetToken,
+      onAnalyticsEvent
     ]
   );
 

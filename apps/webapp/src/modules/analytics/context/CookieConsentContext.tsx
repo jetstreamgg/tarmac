@@ -7,7 +7,9 @@ interface CookieConsentContextProps {
   readonly consent: ServiceConsent | null;
   readonly bannerVisible: boolean;
   readonly bannerView: BannerView;
+  readonly bannerHeight: number;
   readonly setBannerView: (view: BannerView) => void;
+  readonly setBannerHeight: (height: number) => void;
   readonly setConsent: (consent: ServiceConsent) => void;
   readonly showBanner: () => void;
   readonly hideBanner: () => void;
@@ -19,6 +21,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [consent, setConsentState] = useState<ServiceConsent | null>(getStoredConsent);
   const [bannerVisible, setBannerVisible] = useState(() => getStoredConsent() === null);
   const [bannerView, setBannerView] = useState<BannerView>('default');
+  const [bannerHeight, setBannerHeight] = useState(0);
 
   // Re-read cookie when tab becomes visible (cross-subdomain sync).
   // Handles: user changes consent on sky.money, switches back to this tab.
@@ -54,7 +57,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
   return (
     <CookieConsentContext.Provider
-      value={{ consent, bannerVisible, bannerView, setBannerView, setConsent, showBanner, hideBanner }}
+      value={{ consent, bannerVisible, bannerView, bannerHeight, setBannerView, setBannerHeight, setConsent, showBanner, hideBanner }}
     >
       {children}
     </CookieConsentContext.Provider>

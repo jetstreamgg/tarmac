@@ -49,13 +49,3 @@ export type ParsedIntent = {
   stakingRewardFarm?: StakingRewardFarmId;
 };
 
-export type AgentMessageType = 'text' | 'confirmation' | 'error' | 'navigated';
-
-export type AgentMessage = {
-  id: string;
-  role: 'user' | 'agent';
-  content: string;
-  intent?: ParsedIntent;
-  widgetRoute?: string;
-  type: AgentMessageType;
-};

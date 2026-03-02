@@ -29,10 +29,17 @@ export function MorphoVaultDetails({
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
 
   const getBannerId = () => {
-    if (vaultName.includes('Risk Capital')) return 'risk-capital-vault';
+    if (vaultName.includes('Risk Capital')) {
+      if (vaultName.includes('USDT')) return 'usdt-risk-capital-vault';
+      if (vaultName.includes('USDC')) return 'usdc-risk-capital-vault';
+      return 'usds-risk-capital-vault';
+    }
     if (vaultName.includes('Flagship')) return 'flagship-vault';
-    if (vaultName.includes('Steakhouse') || vaultName.includes('Savings')) return 'savings-vault';
-    return 'morpho-vaults';
+    if (vaultName.includes('Savings')) {
+      if (vaultName.includes('USDT')) return 'usdt-savings-vault';
+      return 'usds-savings-vault';
+    }
+    return 'vaults';
   };
 
   return (

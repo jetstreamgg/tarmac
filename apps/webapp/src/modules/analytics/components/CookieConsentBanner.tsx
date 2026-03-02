@@ -8,7 +8,8 @@ import { getFooterLinks } from '@/lib/utils';
 import { type ServiceConsent } from '../consentStorage';
 
 export function CookieConsentBanner() {
-  const { consent, bannerVisible, bannerView, setBannerView, setConsent } = useCookieConsent();
+  const { consent, bannerVisible, bannerView, setBannerView, setConsent, setBannerHeight } = useCookieConsent();
+  const bannerRef = useRef<HTMLDivElement>(null);
   const [delayComplete, setDelayComplete] = useState(false);
 
   // Local toggle state for the manage view
@@ -56,17 +57,34 @@ export function CookieConsentBanner() {
 
   const visible = bannerVisible && (consent !== null || delayComplete);
 
+  // Report banner height to context so toasts can stack above it
+  useEffect(() => {
+    if (!visible) {
+      setBannerHeight(0);
+      return;
+    }
+    const el = bannerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => {
+      setBannerHeight(el.offsetHeight);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visible, setBannerHeight]);
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={bannerRef}
           role="region"
           aria-label="Cookie consent"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed right-3 bottom-4 z-40 max-w-[400px] min-w-[300px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:right-5 md:z-[999] lg:right-10"
+          className="fixed bottom-4 left-4 right-4 z-40 mx-auto min-w-[356px] max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:left-auto md:right-6 md:mx-0 md:min-w-[420px] md:z-[999]"
         >
           <AnimatePresence mode="wait" initial={false}>
             {bannerView === 'default' ? (

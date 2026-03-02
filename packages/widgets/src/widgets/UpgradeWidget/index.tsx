@@ -43,6 +43,7 @@ import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState
 import { UpgradeTransactionReview } from './components/UpgradeTransactionReview';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { useUpgradeTransactions } from './hooks/useUpgradeTransactions';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import {
   calculateOriginOptions,
   calculateTargetOptions,
@@ -69,6 +70,7 @@ export function UpgradeWidgetWrapped({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
+  onAnalyticsEvent,
   upgradeOptions = defaultUpgradeOptions,
   batchEnabled,
   setBatchEnabled,
@@ -218,6 +220,7 @@ export function UpgradeWidgetWrapped({
     originToken,
     targetToken,
     originAmount,
+    needsAllowance: !hasAllowance,
     shouldUseBatch,
     tabIndex,
     shouldAllowExternalUpdate,
@@ -226,7 +229,8 @@ export function UpgradeWidgetWrapped({
     mutateTargetBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
 
   useEffect(() => {
@@ -316,6 +320,25 @@ export function UpgradeWidgetWrapped({
       ...prev,
       screen: UpgradeScreen.REVIEW
     }));
+    try {
+      const decimals = getTokenDecimals(originToken, chainId);
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedOriginAmount, decimals)),
+        assetSymbol: originToken.symbol,
+        data: {
+          module: 'upgrade',
+          assetAddress: originToken.address[chainId],
+          assetSymbol: originToken.symbol,
+          targetSymbol: targetToken.symbol,
+          targetAddress: targetToken.address[chainId]
+        }
+      });
+    } catch {
+      /* Analytics must never break functionality */
+    }
   };
 
   const onClickAction = !isConnectedAndEnabled

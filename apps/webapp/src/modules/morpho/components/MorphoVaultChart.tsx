@@ -48,6 +48,7 @@ export function MorphoVaultChart({ vaultAddress, assetToken }: MorphoVaultChartP
           isLoading={isLoading}
           error={error}
           isPercentage={activeChart === ChartName.RATE}
+          hidePercentChange={activeChart === ChartName.RATE}
           symbol={activeChart === ChartName.TVL ? assetToken.symbol : undefined}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);

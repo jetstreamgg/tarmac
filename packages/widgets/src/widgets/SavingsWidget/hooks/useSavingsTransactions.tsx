@@ -12,12 +12,16 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
 interface UseSavingsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   amount: bigint;
   max: boolean;
   referralCode: number | undefined;
   originToken: Token;
   shouldUseBatch: boolean;
+  assetDecimals: number;
+  assetSymbol: string;
+  assetAddress: `0x${string}`;
+  needsAllowance: boolean;
   mutateAllowance: () => void;
   mutateSavings: () => void;
   mutateOriginBalance: () => void;
@@ -29,22 +33,33 @@ export const useSavingsTransactions = ({
   referralCode,
   originToken,
   shouldUseBatch,
+  assetDecimals,
+  assetSymbol,
+  assetAddress,
+  needsAllowance,
   mutateAllowance,
   mutateSavings,
   mutateOriginBalance,
   addRecentTransaction,
   onWidgetStateChange,
-  onNotification
+  onNotification,
+  onAnalyticsEvent
 }: UseSavingsTransactionsParameters) => {
   const { widgetState } = useContext(WidgetContext);
   const { supplyTransactionCallbacks, withdrawTransactionCallbacks } = useSavingsTransactionCallbacks({
     amount,
+    assetDecimals,
+    assetSymbol,
+    assetAddress,
+    needsAllowance,
+    shouldUseBatch,
     mutateAllowance,
     mutateSavings,
     mutateOriginBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
 
   const batchSavingsSupply = useBatchSavingsSupply({

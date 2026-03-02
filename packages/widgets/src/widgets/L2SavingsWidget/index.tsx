@@ -9,6 +9,7 @@ import {
   getTokenDecimals
 } from '@jetstreamgg/sky-hooks';
 import { useDebounce, math } from '@jetstreamgg/sky-utils';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from '../SavingsWidget/lib/constants';
@@ -56,6 +57,7 @@ const SavingsWidgetWrapped = ({
   onStateValidated,
   onNotification,
   onWidgetStateChange,
+  onAnalyticsEvent,
   onExternalLinkClicked,
   enabled = true,
   referralCode,
@@ -193,6 +195,8 @@ const SavingsWidgetWrapped = ({
   const shares = math.calculateSharesFromAssets(debouncedWadAmount, updatedChiForDeposit);
   const supplyMinAmountOut = originToken.symbol === 'USDC' ? math.roundDownLastTwelveDigits(shares) : shares;
 
+  const needsAllowance = !!(!allowance || allowance < (amountToApprove || 0n));
+
   const { batchSavingsSupply, batchSavingsWithdraw } = useL2SavingsTransactions({
     originToken,
     amount: debouncedAmount,
@@ -203,15 +207,15 @@ const SavingsWidgetWrapped = ({
     minAmountOutForWithdrawAll,
     maxAmountInForWithdraw,
     shouldUseBatch,
+    needsAllowance,
     mutateAllowance,
     mutateOriginBalance,
     mutateSUsdsBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
-
-  const needsAllowance = !!(!allowance || allowance < (amountToApprove || 0n));
 
   useEffect(() => {
     //Initialize the supply flow only when we are connected
@@ -308,6 +312,20 @@ const SavingsWidgetWrapped = ({
       ...prev,
       screen: SavingsScreen.REVIEW
     }));
+
+    try {
+      const assetDecimals = getTokenDecimals(originToken, chainId);
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedAmount, assetDecimals)),
+        assetSymbol: originToken.symbol,
+        data: { module: 'savings', assetAddress: originToken.address[chainId], assetSymbol: originToken.symbol }
+      });
+    } catch {
+      // Analytics must never break functionality
+    }
   };
 
   const onClickBack = () => {

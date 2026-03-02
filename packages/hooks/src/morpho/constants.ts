@@ -2,8 +2,8 @@ import {
   usdcRiskCapitalVaultAddress,
   usdsFlagshipVaultAddress,
   usdsRiskCapitalVaultAddress,
-  usdtRiskCapitalVaultAddress
-  // usdtSteakhousePrimeInstantVaultAddress
+  usdtRiskCapitalVaultAddress,
+  usdtSavingsVaultAddress
 } from '../generated';
 import { TOKENS } from '../tokens/tokens.constants';
 import { MorphoVaultConfig } from './morpho';
@@ -27,14 +27,9 @@ export enum MorphoTransactionType {
  */
 export const MORPHO_VAULTS: MorphoVaultConfig[] = [
   {
-    name: 'USDS Risk Capital',
-    vaultAddress: usdsRiskCapitalVaultAddress,
-    assetToken: TOKENS.usds
-  },
-  {
-    name: 'USDC Risk Capital',
-    vaultAddress: usdcRiskCapitalVaultAddress,
-    assetToken: TOKENS.usdc
+    name: 'USDT Savings',
+    vaultAddress: usdtSavingsVaultAddress,
+    assetToken: TOKENS.usdt
   },
   {
     name: 'USDS Flagship',
@@ -42,21 +37,20 @@ export const MORPHO_VAULTS: MorphoVaultConfig[] = [
     assetToken: TOKENS.usds
   },
   {
+    name: 'USDS Risk Capital',
+    vaultAddress: usdsRiskCapitalVaultAddress,
+    assetToken: TOKENS.usds
+  },
+  {
     name: 'USDT Risk Capital',
     vaultAddress: usdtRiskCapitalVaultAddress,
     assetToken: TOKENS.usdt
   },
-  // {
-  //   name: 'Steakhouse Prime Instant',
-  //   vaultAddress: usdtSteakhousePrimeInstantVaultAddress,
-  //   assetToken: TOKENS.usdt
-  // }
-  // Add more vaults here as needed:
-  // {
-  //   name: 'Another Vault Name',
-  //   vaultAddress: anotherVaultAddress,
-  //   assetToken: TOKENS.usds
-  // }
+  {
+    name: 'USDC Risk Capital',
+    vaultAddress: usdcRiskCapitalVaultAddress,
+    assetToken: TOKENS.usdc
+  }
 ];
 
 /**

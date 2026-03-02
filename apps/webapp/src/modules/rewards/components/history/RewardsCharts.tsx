@@ -55,6 +55,7 @@ export function RewardsCharts({ rewardContract }: { rewardContract: RewardContra
           data={activeChart === ChartName.TVL ? chartData.totalSupplied : chartData.rate}
           isLoading={isLoading}
           isPercentage={activeChart === ChartName.TVL ? false : true}
+          hidePercentChange={activeChart === ChartName.RATE}
           symbol={rewardContract.supplyToken.symbol}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);

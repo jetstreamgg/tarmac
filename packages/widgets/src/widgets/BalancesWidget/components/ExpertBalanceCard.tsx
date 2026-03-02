@@ -1,7 +1,7 @@
 import {
   useStUsdsData,
   usePrices,
-  useMorphoVaultOnChainData,
+  useAllMorphoVaultsUserAssets,
   useMorphoVaultMultipleRateApiData,
   MORPHO_VAULTS
 } from '@jetstreamgg/sky-hooks';
@@ -33,12 +33,8 @@ export const ExpertBalanceCard = ({
   const { data: stUsdsData, isLoading: stUsdsLoading } = useStUsdsData();
   const { data: pricesData, isLoading: pricesLoading } = usePrices();
 
-  // Get Morpho vault on-chain data
-  const defaultMorphoVault = MORPHO_VAULTS[0];
-  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[vaultChainId];
-  const { data: morphoData, isLoading: morphoDataLoading } = useMorphoVaultOnChainData({
-    vaultAddress: morphoVaultAddress
-  });
+  // Get aggregate Morpho vault on-chain data
+  const { data: totalMorphoUserAssets, isLoading: morphoDataLoading } = useAllMorphoVaultsUserAssets();
 
   // Get Morpho vault rates for all vaults
   const { data: morphoRatesData, isLoading: morphoRatesLoading } = useMorphoVaultMultipleRateApiData({
@@ -47,8 +43,7 @@ export const ExpertBalanceCard = ({
 
   // Combine stUSDS and Morpho supplied amounts
   const stUsdsSupplied = stUsdsData?.userSuppliedUsds || 0n;
-  const morphoSupplied = morphoData?.userAssets || 0n;
-  const totalSuppliedUsds = stUsdsSupplied + morphoSupplied;
+  const totalSuppliedUsds = stUsdsSupplied + totalMorphoUserAssets;
 
   // Calculate the higher rate between stUSDS and all Morpho vaults
   const stUsdsRate = stUsdsData?.moduleRate ? calculateApyFromStr(stUsdsData.moduleRate) : 0;

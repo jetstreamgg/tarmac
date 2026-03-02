@@ -1,5 +1,6 @@
 import { useCallback, useContext } from 'react';
 import { WidgetProps, WidgetState } from '../types/widgetState';
+import { WidgetAnalyticsEventType } from '../types/analyticsEvents';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useConnection, useChainId } from 'wagmi';
@@ -7,7 +8,7 @@ import { InitialScreen, NotificationType, TxStatus } from '../constants';
 
 type UseTransactionCallbacksParameters = Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
 >;
 
 interface TransactionStartParameters {
@@ -32,7 +33,8 @@ interface TransactionErrorParameters {
 export const useTransactionCallbacks = ({
   addRecentTransaction,
   onWidgetStateChange,
-  onNotification
+  onNotification,
+  onAnalyticsEvent
 }: UseTransactionCallbacksParameters) => {
   const { widgetState, setWidgetState, setExternalLink, setTxStatus } = useContext(WidgetContext);
 
@@ -44,7 +46,17 @@ export const useTransactionCallbacks = ({
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: InitialScreen.TRANSACTION }));
     setTxStatus(TxStatus.INITIALIZED);
     setExternalLink(undefined);
-  }, [setWidgetState, setTxStatus, setExternalLink]);
+
+    try {
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.TRANSACTION_STARTED,
+        action: widgetState.action,
+        flow: widgetState.flow
+      });
+    } catch {
+      // Analytics must never break functionality
+    }
+  }, [setWidgetState, setTxStatus, setExternalLink, onAnalyticsEvent, widgetState]);
 
   const handleOnStart = useCallback(
     ({ hash, recentTransactionDescription }: TransactionStartParameters) => {
@@ -88,6 +100,17 @@ export const useTransactionCallbacks = ({
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.SUCCESS });
+
+      try {
+        onAnalyticsEvent?.({
+          event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
+          action: widgetState.action,
+          flow: widgetState.flow,
+          txHash: hash
+        });
+      } catch {
+        // Analytics must never break functionality
+      }
     },
     [
       address,
@@ -95,6 +118,7 @@ export const useTransactionCallbacks = ({
       isSafeWallet,
       onNotification,
       onWidgetStateChange,
+      onAnalyticsEvent,
       setExternalLink,
       setTxStatus,
       widgetState
@@ -114,6 +138,17 @@ export const useTransactionCallbacks = ({
       }
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.ERROR });
       console.log(error);
+
+      try {
+        onAnalyticsEvent?.({
+          event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
+          action: widgetState.action,
+          flow: widgetState.flow,
+          txHash: hash
+        });
+      } catch {
+        // Analytics must never break functionality
+      }
     },
     [
       address,
@@ -121,6 +156,7 @@ export const useTransactionCallbacks = ({
       isSafeWallet,
       onNotification,
       onWidgetStateChange,
+      onAnalyticsEvent,
       setExternalLink,
       setTxStatus,
       widgetState

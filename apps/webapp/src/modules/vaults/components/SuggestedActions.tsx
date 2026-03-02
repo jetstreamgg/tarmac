@@ -11,7 +11,7 @@ import {
   type TokenItem,
   useOverallSkyData,
   useStUsdsData,
-  useMorphoVaultMarketApiData,
+  useMorphoVaultMultipleRateApiData,
   MORPHO_VAULTS,
   useAvailableTokenRewardContracts,
   useRewardsChartInfo,
@@ -23,9 +23,8 @@ import {
 import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
 import { Savings, Upgrade, RewardsModule, Stake, Seal, Expert, Vaults, Trade } from '@/modules/icons';
 import { type IconProps } from '@/modules/icons/Icon';
-import { parseIntent } from '../engine/intent-parser';
-import { intentToWidgetParams } from '../engine/intent-to-widget';
-import { SUGGESTED_ACTIONS, type SuggestedAction } from '../lib/examples';
+import { parseIntent, intentToWidgetParams } from '../lib/intent';
+import { SUGGESTED_ACTIONS, type SuggestedAction } from '../lib/actions';
 import { Morpho } from '@jetstreamgg/sky-widgets';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
@@ -119,12 +118,12 @@ function useActionRates(actions: SuggestedAction[], chainId: number): Record<str
   // stUSDS rate
   const { data: stUsdsData } = useStUsdsData();
 
-  // Morpho vault rate
-  const defaultMorphoVault = MORPHO_VAULTS[0];
-  const morphoVaultAddress = defaultMorphoVault?.vaultAddress[mainnetChainId];
-  const { data: morphoMarketData } = useMorphoVaultMarketApiData({
-    vaultAddress: morphoVaultAddress
-  });
+  // Morpho vault rates (all vaults)
+  const vaultAddresses = useMemo(
+    () => MORPHO_VAULTS.map(v => v.vaultAddress[mainnetChainId]),
+    [mainnetChainId]
+  );
+  const { data: morphoRatesData } = useMorphoVaultMultipleRateApiData({ vaultAddresses });
 
   // Rewards rate
   const allRewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
@@ -170,7 +169,8 @@ function useActionRates(actions: SuggestedAction[], chainId: number): Record<str
     }
 
     if (rateKeys.has('vaults')) {
-      const rate = morphoMarketData?.rate.netRate ? morphoMarketData.rate.netRate * 100 : 0;
+      const maxRate = (morphoRatesData || []).reduce((max, r) => Math.max(max, r.netRate), 0);
+      const rate = maxRate * 100;
       rates.vaults = rate > 0 ? `${rate.toFixed(2)}%` : '0%';
     }
 
@@ -185,10 +185,10 @@ function useActionRates(actions: SuggestedAction[], chainId: number): Record<str
     }
 
     return rates;
-  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoMarketData, rewardsHighestRate, stakeHighestRateData]);
+  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoRatesData, rewardsHighestRate, stakeHighestRateData]);
 }
 
-export function SuggestedActions({ widget, variant = 'default' }: { widget: string; variant?: 'default' | 'card' | 'card-sm' }) {
+export function SuggestedActions({ widget, variant = 'default', restrictedModules }: { widget: string; variant?: 'default' | 'card' | 'card-sm'; restrictedModules?: string[] }) {
   const [, setSearchParams] = useSearchParams();
   const { address } = useAccount();
   const chainId = useChainId();
@@ -199,13 +199,19 @@ export function SuggestedActions({ widget, variant = 'default' }: { widget: stri
 
   // "all" combines every widget's actions into one list, tagging each with its module
   const actions = useMemo<ActionWithModule[]>(() => {
+    let result: ActionWithModule[];
     if (widget === 'all') {
-      return Object.entries(SUGGESTED_ACTIONS).flatMap(([key, acts]) =>
+      result = Object.entries(SUGGESTED_ACTIONS).flatMap(([key, acts]) =>
         acts.filter(a => !a.hideFromAll).map(a => ({ ...a, module: a.module ?? key }))
       );
+    } else {
+      result = SUGGESTED_ACTIONS[widget] ?? [];
     }
-    return SUGGESTED_ACTIONS[widget] ?? [];
-  }, [widget]);
+    if (restrictedModules) {
+      result = result.filter(a => a.module && restrictedModules.includes(a.module));
+    }
+    return result;
+  }, [widget, restrictedModules]);
 
   // Collect unique source tokens we need balances for
   const tokenItems = useMemo<TokenItem[]>(() => {

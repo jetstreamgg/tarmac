@@ -44,4 +44,5 @@ export {
   type MorphoVaultSupplierAddressesHook
 } from './useMorphoVaultSupplierAddresses';
 export { useMorphoVaultsCombinedTvl, type MorphoVaultsCombinedTvl } from './useMorphoVaultsCombinedTvl';
+export { useAllMorphoVaultsUserAssets } from './useAllMorphoVaultsUserAssets';
 export { MORPHO_VAULTS } from './constants';

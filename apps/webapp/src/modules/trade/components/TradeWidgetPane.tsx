@@ -22,7 +22,7 @@ import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-ut
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
@@ -39,7 +39,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { setShouldDisableActionButtons } = useChatContext();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { wrapStateChange } = useWidgetFlowTracking('trade', chainId);
+  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { isRegionRestricted } = useGeoConfig();
   const tradeTokenList = isRegionRestricted
     ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
@@ -220,7 +220,8 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       {...sharedProps}
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
       customTokenList={tradeTokenList}
-      onWidgetStateChange={wrapStateChange(onTradeWidgetStateChange)}
+      onWidgetStateChange={onTradeWidgetStateChange}
+      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       externalWidgetState={externalWidgetState}

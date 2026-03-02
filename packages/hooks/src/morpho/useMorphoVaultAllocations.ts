@@ -79,7 +79,8 @@ async function fetchMorphoVaultAllocations(
     {
       assetSymbol,
       formattedAssets: formatBigInt(idleAssets, { unit: assetDecimals, compact: true }),
-      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`
+      formattedAssetsUsd: `$${formatNumber(idleAssetsUsd, { compact: true })}`,
+      idleAssetsUsd
     }
   ];
 

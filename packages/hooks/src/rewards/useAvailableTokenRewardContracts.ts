@@ -40,7 +40,7 @@ const createRewardContracts = (chainId: number): RewardContract[] => {
     ...config,
     contractAddress: config.getAddress(chainId),
     chainId
-  }));
+  })).filter(contract => contract.contractAddress !== undefined);
 };
 
 export function useAvailableTokenRewardContracts(chainId: number) {
