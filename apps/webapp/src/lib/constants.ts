@@ -34,15 +34,6 @@ export enum Environment {
   Development = 'development'
 }
 
-const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-
-export const RESTRICTED_INTENTS: Intent[] = (() => {
-  if (isRestrictedBuild) {
-    return [Intent.SAVINGS_INTENT, Intent.REWARDS_INTENT, Intent.EXPERT_INTENT];
-  }
-  return [];
-})();
-
 export const IntentMapping = {
   [Intent.BALANCES_INTENT]: 'balances',
   [Intent.UPGRADE_INTENT]: 'upgrade',
@@ -145,24 +136,13 @@ export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.VAULTS_INTENT]
 ];
 
-const AvailableIntentMapping = Object.entries(IntentMapping).reduce(
-  (acc, [key, value]) => {
-    const isRestricted = isRestrictedBuild;
-    if (!isRestricted || !RESTRICTED_INTENTS.includes(key as Intent)) {
-      acc[key as Intent] = value;
-    }
-    return acc;
-  },
-  {} as typeof IntentMapping
-);
-
 export function mapIntentToQueryParam(intent: Intent): string {
-  return AvailableIntentMapping[intent] || '';
+  return IntentMapping[intent] || '';
 }
 
 export function mapQueryParamToIntent(queryParam?: string | null): Intent {
-  const intent = Object.keys(AvailableIntentMapping).find(
-    key => AvailableIntentMapping[key as keyof typeof AvailableIntentMapping] === queryParam
+  const intent = Object.keys(IntentMapping).find(
+    key => IntentMapping[key as keyof typeof IntentMapping] === queryParam
   );
   return (intent as Intent) || Intent.BALANCES_INTENT;
 }
@@ -223,7 +203,7 @@ export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHATBOT_SUGGESTIONS
 
 export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
 export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
-export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
+export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.jetstream.gg';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
 // Feature flag to enable chatbot pre-fill filtering

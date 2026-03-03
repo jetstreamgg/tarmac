@@ -7,9 +7,11 @@ import { AboutSky } from '@/modules/ui/components/AboutSky';
 import { AboutSpk } from '@/modules/ui/components/AboutSpk';
 import { AboutSUsds } from '@/modules/ui/components/AboutSUsds';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export function AboutTokensCarousel() {
   const { bpi } = useBreakpointIndex();
+  const { isRegionRestricted } = useGeoConfig();
   const isMobileOrTablet = bpi < BP['2xl'];
   const [carouselHeight, setCarouselHeight] = useState<number | undefined>(undefined);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -105,7 +107,7 @@ export function AboutTokensCarousel() {
               <AboutUsds height={carouselHeight} />
             </div>
           </CarouselItem>
-          {import.meta.env.VITE_RESTRICTED_BUILD !== 'true' && (
+          {!isRegionRestricted && (
             <CarouselItem>
               <div
                 ref={el => {
