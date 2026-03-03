@@ -89,7 +89,7 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('10 USDS')).toBeVisible();
 
     // Perform the supply action (handles approval if needed)
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Supply');
 
     // Check success message (supports both native and Curve providers)
     await expectSupplySuccess(isolatedPage, '10');
@@ -104,7 +104,7 @@ test.describe('Expert Module - stUSDS', () => {
 
     // go to balance page
     await isolatedPage.getByRole('tab', { name: 'Balance' }).click();
-    await expect(isolatedPage.getByText('USDS supplied to Expert')).toBeVisible();
+    await expect(isolatedPage.getByText('Supplied to Expert')).toBeVisible();
 
     // Click the Expert balance card (links to Expert overview)
     await isolatedPage.locator('a[href*="widget=expert"]').first().click();
@@ -125,7 +125,7 @@ test.describe('Expert Module - stUSDS', () => {
     // Supply first
     await isolatedPage.getByTestId('supply-input-stusds').click();
     await isolatedPage.getByTestId('supply-input-stusds').fill('20');
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Supply');
     await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Mine a block to increase the USDS amount
@@ -144,7 +144,7 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('5 USDS').first()).toBeVisible();
 
     // Perform withdrawal
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Withdraw');
 
     // Check success message (supports both native and Curve providers)
     await expectWithdrawSuccess(isolatedPage, '5');
@@ -168,7 +168,7 @@ test.describe('Expert Module - stUSDS', () => {
   test('Use max button for withdrawal', async ({ isolatedPage }) => {
     await isolatedPage.getByTestId('supply-input-stusds').click();
     await isolatedPage.getByTestId('supply-input-stusds').fill('30');
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Supply');
     await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Mine a block to increase the USDS amount
@@ -254,7 +254,7 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('You will supply')).toBeVisible();
 
     // Perform the supply action (handles approval if needed)
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Supply');
 
     // Check success message (supports both native and Curve providers)
     await expectSupplySuccess(isolatedPage, '1');
@@ -385,7 +385,7 @@ test.describe('Expert Module - stUSDS', () => {
       await isolatedPage.getByTestId('supply-input-stusds').fill('5');
 
       // Perform the supply action
-      await performAction(isolatedPage, 'Swap');
+      await performAction(isolatedPage, 'Supply');
 
       // Verify success (works for both native and Curve)
       await expectSupplySuccess(isolatedPage, '5');
@@ -398,7 +398,7 @@ test.describe('Expert Module - stUSDS', () => {
       // First supply some USDS
       await isolatedPage.getByTestId('supply-input-stusds').click();
       await isolatedPage.getByTestId('supply-input-stusds').fill('15');
-      await performAction(isolatedPage, 'Swap');
+      await performAction(isolatedPage, 'Supply');
       await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
       // Mine a block
@@ -412,7 +412,7 @@ test.describe('Expert Module - stUSDS', () => {
       await isolatedPage.getByTestId('withdraw-input-stusds').fill('3');
 
       // Perform withdrawal
-      await performAction(isolatedPage, 'Swap');
+      await performAction(isolatedPage, 'Withdraw');
 
       // Verify success (works for both native and Curve)
       await expectWithdrawSuccess(isolatedPage, '3');

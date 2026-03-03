@@ -18,12 +18,13 @@ import { useCallback, useMemo, useState } from 'react';
 export type BalancesWidgetProps = WidgetProps & {
   chainIds?: number[];
   hideModuleBalances?: boolean;
+  hideRestrictedModules?: boolean;
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
-  morphoCardUrl?: string;
+  vaultsCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   showAllNetworks?: boolean;
@@ -39,6 +40,7 @@ export const BalancesWidget = ({
   locale,
   rightHeaderComponent,
   hideModuleBalances = false,
+  hideRestrictedModules = false,
   enabled = true,
   onExternalLinkClicked,
   rewardsCardUrl,
@@ -46,7 +48,7 @@ export const BalancesWidget = ({
   sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
-  morphoCardUrl,
+  vaultsCardUrl,
   chainIds,
   showAllNetworks,
   hideZeroBalances,
@@ -62,6 +64,7 @@ export const BalancesWidget = ({
           onConnect={onConnect}
           rightHeaderComponent={rightHeaderComponent}
           hideModuleBalances={hideModuleBalances}
+          hideRestrictedModules={hideRestrictedModules}
           enabled={enabled}
           chainIds={chainIds}
           rewardsCardUrl={rewardsCardUrl}
@@ -69,7 +72,7 @@ export const BalancesWidget = ({
           sealCardUrl={sealCardUrl}
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
-          morphoCardUrl={morphoCardUrl}
+          vaultsCardUrl={vaultsCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
           showAllNetworks={showAllNetworks}
           hideZeroBalances={hideZeroBalances}
@@ -87,6 +90,7 @@ const BalancesWidgetWrapped = ({
   onConnect,
   rightHeaderComponent,
   hideModuleBalances = false,
+  hideRestrictedModules = false,
   enabled = true,
   onExternalLinkClicked,
   chainIds,
@@ -95,7 +99,7 @@ const BalancesWidgetWrapped = ({
   sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
-  morphoCardUrl,
+  vaultsCardUrl,
   showAllNetworks,
   hideZeroBalances,
   setShowAllNetworks,
@@ -164,12 +168,13 @@ const BalancesWidgetWrapped = ({
             )}
             <BalancesContent
               hideModuleBalances={hideModuleBalances}
+              hideRestrictedModules={hideRestrictedModules}
               rewardsCardUrl={rewardsCardUrl}
               savingsCardUrlMap={savingsCardUrlMap}
               sealCardUrl={sealCardUrl}
               stakeCardUrl={stakeCardUrl}
               stusdsCardUrl={stusdsCardUrl}
-              morphoCardUrl={morphoCardUrl}
+              vaultsCardUrl={vaultsCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
               chainIds={chainIds}
               showAllNetworks={showAllNetworks}

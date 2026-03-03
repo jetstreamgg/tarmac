@@ -2,9 +2,7 @@ import { formatBigInt } from '@jetstreamgg/sky-utils';
 import {
   Token,
   getTokenDecimals,
-  useMorphoVaultMarketApiData,
-  useMorphoVaultOnChainData,
-  useMorphoVaultRewards
+  useMorphoVaultMarketApiData
 } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -40,16 +38,7 @@ export const MorphoVaultStatsCard = ({
     vaultAddress: currentVaultAddress
   });
 
-  const { data: onChainData, isLoading: onChainDataLoading } = useMorphoVaultOnChainData({
-    vaultAddress: currentVaultAddress
-  });
-
-  const { data: rewardsData, isLoading: rewardsLoading } = useMorphoVaultRewards({
-    vaultAddress: currentVaultAddress as `0x${string}`
-  });
-
   const totalAssets = marketData?.totalAssets ?? 0n;
-  const hasUserBalance = onChainData?.userAssets !== undefined && onChainData.userAssets > 0n;
 
   if (!currentVaultAddress) {
     return null;
@@ -75,87 +64,36 @@ export const MorphoVaultStatsCard = ({
 
       <CardContent className="mt-5 p-0">
         <HStack className="justify-between" gap={2}>
-          {hasUserBalance ? (
-            <>
-              {/* Supplied Balance */}
-              <VStack className="items-stretch justify-between" gap={2} data-testid="supplied-balance-container">
-                <Text className="text-textSecondary text-sm leading-4">
-                  <Trans>Supplied Balance</Trans>
-                </Text>
-                {onChainDataLoading ? (
-                  <Skeleton className="h-4 w-21" />
-                ) : (
-                  <Text dataTestId="morpho-vault-supplied-balance">
-                    {formatBigInt(onChainData.userAssets, { unit: assetDecimals, compact: true })}{' '}
-                    {assetToken.symbol}
-                  </Text>
-                )}
-              </VStack>
-              {/* Claimable Rewards */}
-              <VStack
-                className="items-stretch justify-between text-right"
-                gap={2}
-                data-testid="claimable-rewards-container"
-              >
-                <Text className="text-textSecondary text-sm leading-4">
-                  <Trans>Claimable Rewards</Trans>
-                </Text>
-                {rewardsLoading ? (
-                  <div className="flex justify-end">
-                    <Skeleton className="h-4 w-30" />
-                  </div>
-                ) : rewardsData?.rewards && rewardsData.rewards.length > 0 ? (
-                  <VStack className="items-end" gap={1}>
-                    {rewardsData.rewards.map(reward => (
-                      <Text key={reward.tokenAddress} dataTestId="morpho-vault-claimable-rewards">
-                        {reward.formattedAmount} {reward.tokenSymbol}
-                      </Text>
-                    ))}
-                  </VStack>
-                ) : (
-                  <Text dataTestId="morpho-vault-claimable-rewards">—</Text>
-                )}
-              </VStack>
-            </>
-          ) : (
-            <>
-              {/* Liquidity */}
-              <VStack className="items-stretch justify-between" gap={2} data-testid="liquidity-container">
-                <Text className="text-textSecondary text-sm leading-4">
-                  <Trans>Liquidity</Trans>
-                </Text>
-                {marketDataLoading ? (
-                  <Skeleton className="h-4 w-21" />
-                ) : marketData?.liquidity !== undefined ? (
-                  <Text dataTestId="morpho-vault-tvl">
-                    {formatBigInt(marketData.liquidity, { unit: assetDecimals, compact: true })}{' '}
-                    {assetToken.symbol}
-                  </Text>
-                ) : (
-                  <Text dataTestId="morpho-vault-tvl">—</Text>
-                )}
-              </VStack>
-              {/* TVL */}
-              <VStack
-                className="items-stretch justify-between text-right"
-                gap={2}
-                data-testid="tvl-container"
-              >
-                <Text className="text-textSecondary text-sm leading-4">
-                  <Trans>TVL</Trans>
-                </Text>
-                {marketDataLoading ? (
-                  <div className="flex justify-end">
-                    <Skeleton className="h-4 w-30" />
-                  </div>
-                ) : (
-                  <Text dataTestId="morpho-vault-tvl">
-                    {formatBigInt(totalAssets, { unit: assetDecimals, compact: true })} {assetToken.symbol}
-                  </Text>
-                )}
-              </VStack>
-            </>
-          )}
+          {/* Liquidity */}
+          <VStack className="items-stretch justify-between" gap={2} data-testid="liquidity-container">
+            <Text className="text-textSecondary text-sm leading-4">
+              <Trans>Liquidity</Trans>
+            </Text>
+            {marketDataLoading ? (
+              <Skeleton className="h-4 w-21" />
+            ) : marketData?.liquidity !== undefined ? (
+              <Text dataTestId="morpho-vault-tvl">
+                {formatBigInt(marketData.liquidity, { unit: assetDecimals, compact: true })} {assetToken.symbol}
+              </Text>
+            ) : (
+              <Text dataTestId="morpho-vault-tvl">—</Text>
+            )}
+          </VStack>
+          {/* TVL */}
+          <VStack className="items-stretch justify-between text-right" gap={2} data-testid="tvl-container">
+            <Text className="text-textSecondary text-sm leading-4">
+              <Trans>TVL</Trans>
+            </Text>
+            {marketDataLoading ? (
+              <div className="flex justify-end">
+                <Skeleton className="h-4 w-30" />
+              </div>
+            ) : (
+              <Text dataTestId="morpho-vault-tvl">
+                {formatBigInt(totalAssets, { unit: assetDecimals, compact: true })} {assetToken.symbol}
+              </Text>
+            )}
+          </VStack>
         </HStack>
       </CardContent>
     </Card>

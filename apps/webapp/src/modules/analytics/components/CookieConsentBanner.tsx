@@ -84,7 +84,7 @@ export function CookieConsentBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-4 left-4 right-4 z-40 mx-auto min-w-[356px] max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:left-auto md:right-6 md:mx-0 md:min-w-[420px] md:z-[999]"
+          className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:left-auto md:right-6 md:mx-0 md:min-w-[420px] md:z-[999]"
         >
           <AnimatePresence mode="wait" initial={false}>
             {bannerView === 'default' ? (

@@ -66,7 +66,10 @@ export default defineConfig({
     lingui(),
     visualizer(),
     viteStaticCopy({
-      targets: [{ src: 'src/public/fonts/*', dest: 'fonts' }]
+      targets: [
+        { src: 'src/public/fonts/*', dest: 'fonts' },
+        { src: 'src/public/images/*', dest: 'images' }
+      ]
     })
   ]
 });

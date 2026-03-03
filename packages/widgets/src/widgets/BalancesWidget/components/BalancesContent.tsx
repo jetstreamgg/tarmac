@@ -10,13 +10,14 @@ import { useChainId } from 'wagmi';
 
 interface BalancesContentProps {
   hideModuleBalances?: boolean;
+  hideRestrictedModules?: boolean;
   chainIds?: number[];
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
-  morphoCardUrl?: string;
+  vaultsCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   showAllNetworks?: boolean;
   hideZeroBalances?: boolean;
@@ -27,6 +28,7 @@ interface BalancesContentProps {
 
 export const BalancesContent = ({
   hideModuleBalances,
+  hideRestrictedModules,
   onExternalLinkClicked,
   chainIds,
   rewardsCardUrl,
@@ -34,7 +36,7 @@ export const BalancesContent = ({
   sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
-  morphoCardUrl,
+  vaultsCardUrl,
   showAllNetworks: showAllNetworksProp,
   hideZeroBalances: hideZeroBalancesProp,
   setShowAllNetworks: setShowAllNetworksProp,
@@ -87,11 +89,12 @@ export const BalancesContent = ({
           sealCardUrl={sealCardUrl}
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
-          morphoCardUrl={morphoCardUrl}
+          vaultsCardUrl={vaultsCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
           chainIds={chainIds}
           hideZeroBalances={hideZeroBalances}
           showAllNetworks={showAllNetworks}
+          hideRestrictedModules={hideRestrictedModules}
           onAllFundsEmpty={handleAllFundsEmpty}
         />
       </motion.div>

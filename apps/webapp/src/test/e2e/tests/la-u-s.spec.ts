@@ -3,7 +3,7 @@ import { performAction } from '../utils/approveOrPerformAction.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 
 test('Linked Action - Upgrade DAI then supply to Savings', async ({ isolatedPage }) => {
-  await isolatedPage.goto('?widget=upgrade&input_amount=100&linked_action=savings');
+  await isolatedPage.goto('?widget=convert&convert_module=upgrade&input_amount=100&linked_action=savings');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
 

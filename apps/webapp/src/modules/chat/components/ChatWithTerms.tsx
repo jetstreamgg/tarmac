@@ -10,6 +10,8 @@ import { triggerWalletAssociation } from '../services/walletTermsAssociation';
 import { generateUUID } from '@/lib/generateUUID';
 import { MessageType, UserType, TERMS_ACCEPTANCE_MESSAGE } from '../constants';
 import { getTermsContent, TermsType } from '@/modules/ui/components/terms-loader';
+import { useChatAnalytics } from '../hooks/useChatAnalytics';
+import { getInputLengthBucket } from '@/modules/analytics/constants';
 
 const parseTerms = (termsMarkdown: string) => {
   const lines = termsMarkdown.split('\n');
@@ -43,9 +45,35 @@ interface ChatWithTermsProps {
   sendMessage: (message: string) => void;
 }
 
+// Default suggested questions — must match ChatBubble's defaults for message_source detection
+const DEFAULT_SUGGESTED_QUESTIONS = [
+  'What is Sky Protocol?',
+  'How can I get USDS?',
+  'What can I do with USDS?'
+];
+
+function getSuggestedQuestions(): string[] {
+  const envQuestions = import.meta.env.VITE_CHATBOT_SUGGESTED_QUESTIONS;
+  if (envQuestions) {
+    try {
+      if (envQuestions.startsWith('[')) return JSON.parse(envQuestions);
+      return envQuestions
+        .split(',')
+        .map((q: string) => q.trim())
+        .filter(Boolean);
+    } catch {
+      return DEFAULT_SUGGESTED_QUESTIONS;
+    }
+  }
+  return DEFAULT_SUGGESTED_QUESTIONS;
+}
+
 export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => {
   const { i18n } = useLingui();
   const { address } = useConnection();
+  const { trackMessageAttempted, trackTermsPrompted, trackTermsAccepted, trackTermsDeclined, trackTermsAbandoned } =
+    useChatAnalytics();
+  const suggestedQuestions = React.useMemo(() => getSuggestedQuestions(), []);
 
   const termsMarkdown = getTermsContent(TermsType.Chatbot);
   const parsedTerms = parseTerms(termsMarkdown);
@@ -68,6 +96,13 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
   const [hasInteracted, setHasInteracted] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [hasProcessedAuthError, setHasProcessedAuthError] = useState(false);
+
+  // Track when the terms modal is shown, regardless of which code path opens it
+  useEffect(() => {
+    if (showTermsModal) {
+      trackTermsPrompted();
+    }
+  }, [showTermsModal, trackTermsPrompted]);
 
   // Send pending message after terms are accepted
   useEffect(() => {
@@ -99,6 +134,21 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
     // Reset the auth error processed flag when user sends a new message
     setHasProcessedAuthError(false);
 
+    const longerMessage = t`Please, extend your answer`;
+    const simplerMessage = t`Please, simplify your answer`;
+    const messageSource = suggestedQuestions.includes(message)
+      ? 'suggested_question'
+      : message === longerMessage
+        ? 'modifier_longer'
+        : message === simplerMessage
+          ? 'modifier_simpler'
+          : 'user_input';
+
+    trackMessageAttempted({
+      input_length_bucket: getInputLengthBucket(message.length),
+      message_source: messageSource
+    });
+
     if (!hasInteracted) {
       setHasInteracted(true);
 
@@ -125,6 +175,7 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
     setIsAccepting(true);
     try {
       await acceptTerms(termsVersion);
+      trackTermsAccepted();
       if (address) {
         triggerWalletAssociation(address);
       }
@@ -135,7 +186,7 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
     }
   };
 
-  const handleDeclineTerms = () => {
+  const dismissTermsModal = () => {
     setShowTermsModal(false);
 
     // If user had a pending message, add it to chat history and show auth error
@@ -158,6 +209,16 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
     }
   };
 
+  const handleDeclineTerms = () => {
+    trackTermsDeclined();
+    dismissTermsModal();
+  };
+
+  const handleAbandonTerms = () => {
+    trackTermsAbandoned({ abandon_method: 'overlay_or_escape' });
+    dismissTermsModal();
+  };
+
   return (
     <>
       <ChatPane sendMessage={wrappedSendMessage} />
@@ -165,6 +226,7 @@ export const ChatWithTerms: React.FC<ChatWithTermsProps> = ({ sendMessage }) => 
         isOpen={showTermsModal}
         onAccept={handleAcceptTerms}
         onDecline={handleDeclineTerms}
+        onAbandon={handleAbandonTerms}
         termsVersion={termsVersion}
         termsContent={termsContent}
         isLoading={isAccepting || isCheckingTerms}

@@ -19,19 +19,21 @@ export function MorphoRateBreakdownPopover({
 }) {
   const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
   const rateData = marketData?.rate;
-  const formattedNetRate = rateData?.formattedNetRate || '0.00%';
 
   if (isLoading) return <Skeleton className="h-4 w-20" />;
   if (!rateData) return null;
+
+  const hasExtraIncentive = rateData.rewards.length > 0;
+  const displayedRate = hasExtraIncentive ? rateData.formattedNetRate : rateData.formattedRate;
 
   return (
     <div className="flex items-center gap-2">
       <InfoTooltip
         trigger={
           <div className="flex items-center gap-1">
-            <Sparkles className="h-4 w-4" />
-            <Text variant="large" className="text-bullish">
-              {formattedNetRate}
+            {hasExtraIncentive && <Sparkles className="h-4 w-4" />}
+            <Text variant="large" className={hasExtraIncentive ? 'text-bullish' : 'text-text'}>
+              {displayedRate}
             </Text>
           </div>
         }
@@ -101,12 +103,22 @@ export function MorphoRateBreakdownPopover({
             {/* Net Rate */}
             <div className="flex items-center justify-between gap-8">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <Text className="text-bullish text-sm font-medium">
+                {hasExtraIncentive && <Sparkles className="h-4 w-4" />}
+                <Text
+                  className={
+                    hasExtraIncentive ? 'text-bullish text-sm font-medium' : 'text-text text-sm font-medium'
+                  }
+                >
                   <Trans>Net Rate</Trans>
                 </Text>
               </div>
-              <Text className="text-bullish text-sm font-medium">={rateData.formattedNetRate}</Text>
+              <Text
+                className={
+                  hasExtraIncentive ? 'text-bullish text-sm font-medium' : 'text-text text-sm font-medium'
+                }
+              >
+                ={rateData.formattedNetRate}
+              </Text>
             </div>
           </div>
         }

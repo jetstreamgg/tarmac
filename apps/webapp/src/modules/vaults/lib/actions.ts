@@ -201,7 +201,7 @@ export const SUGGESTED_ACTIONS: Record<string, SuggestedAction[]> = {
       sourceToken: 'USDS',
       defaultAmount: 500,
       rateKey: 'stusds',
-      subtitle: 'Rates up to {rate}',
+      subtitle: 'Rate: {rate}',
       module: 'stusds'
     }
   ],

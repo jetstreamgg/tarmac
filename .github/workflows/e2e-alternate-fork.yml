@@ -5,10 +5,10 @@ permissions:
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
 
 concurrency:
   group: alternate-e2e-${{ github.head_ref || github.ref_name }}

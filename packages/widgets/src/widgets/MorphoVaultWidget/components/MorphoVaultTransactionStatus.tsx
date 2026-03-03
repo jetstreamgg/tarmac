@@ -86,7 +86,29 @@ export const MorphoVaultTransactionStatus = ({
 
     const formattedAmount = formatBigInt(amount, { unit: getTokenDecimals(assetToken, chainId) });
 
-    if (flow === MorphoVaultFlow.SUPPLY) {
+    if (action === MorphoVaultAction.CLAIM) {
+      if (screen === MorphoVaultScreen.TRANSACTION) {
+        setTxTitle(i18n._(morphoVaultClaimTitle[txStatus as keyof TxCardCopyText]));
+        setTxSubtitle(
+          i18n._(
+            claimSubtitle({
+              txStatus,
+              claimAmountText: claimAmountText || ''
+            })
+          )
+        );
+        setTxDescription(i18n._(claimActionDescription({ txStatus })));
+        setLoadingText(
+          i18n._(
+            claimLoadingButtonText({
+              txStatus,
+              claimAmountText: claimAmountText || ''
+            })
+          )
+        );
+        setStep(2);
+      }
+    } else if (flow === MorphoVaultFlow.SUPPLY) {
       setStepTwoTitle(t`Supply`);
 
       if (screen === MorphoVaultScreen.TRANSACTION) {
@@ -172,27 +194,6 @@ export const MorphoVaultTransactionStatus = ({
         );
 
         setStep(2);
-      }
-    } else if (flow === MorphoVaultFlow.CLAIM) {
-      if (screen === MorphoVaultScreen.TRANSACTION) {
-        setTxTitle(i18n._(morphoVaultClaimTitle[txStatus as keyof TxCardCopyText]));
-        setTxSubtitle(
-          i18n._(
-            claimSubtitle({
-              txStatus,
-              claimAmountText: claimAmountText || ''
-            })
-          )
-        );
-        setTxDescription(i18n._(claimActionDescription({ txStatus })));
-        setLoadingText(
-          i18n._(
-            claimLoadingButtonText({
-              txStatus,
-              claimAmountText: claimAmountText || ''
-            })
-          )
-        );
       }
     }
   }, [
