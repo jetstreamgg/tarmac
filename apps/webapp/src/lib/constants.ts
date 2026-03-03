@@ -174,8 +174,8 @@ export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.P
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
-export const PROD_URL_SKY_SUBGRAPH = 'https://indexer.dev.hyperindex.xyz/502d280/v1/graphql';
-export const STAGING_URL_SKY_SUBGRAPH = 'https://indexer.dev.hyperindex.xyz/502d280/v1/graphql';
+export const PROD_URL_SKY_SUBGRAPH = 'https://indexer.dev.hyperindex.xyz/8f55a37/v1/graphql';
+export const STAGING_URL_SKY_SUBGRAPH = 'https://indexer.dev.hyperindex.xyz/8f55a37/v1/graphql';
 
 export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
 export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');
