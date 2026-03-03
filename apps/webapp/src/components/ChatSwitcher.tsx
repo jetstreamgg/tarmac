@@ -13,7 +13,12 @@ import { t } from '@lingui/core/macro';
 import { Chat } from '@/modules/icons';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
-import { JSX } from 'react';
+import { useChatAnalytics } from '@/modules/chat/hooks/useChatAnalytics';
+import { JSX, useEffect } from 'react';
+
+// Module-level flag so the impression fires exactly once per page load,
+// regardless of React Strict Mode or parent remounts.
+let entryImpressionTracked = false;
 
 export function ChatSwitcher(): JSX.Element {
   const { bpi } = useBreakpointIndex();
@@ -24,6 +29,17 @@ export function ChatSwitcher(): JSX.Element {
       : searchParams.get(QueryParams.Chat) === 'true';
 
   const { trackChatPaneToggled } = useAppAnalytics();
+  const { trackEntryImpression } = useChatAnalytics();
+
+  // Only track the impression when chat is not already open,
+  // since on large viewports chat is open by default and the
+  // toggle is not the entry point.
+  useEffect(() => {
+    if (!entryImpressionTracked && !showingChat) {
+      entryImpressionTracked = true;
+      trackEntryImpression({ entry_type: 'toggle_button' });
+    }
+  }, [trackEntryImpression, showingChat]);
 
   const handleSwitch = (pressed: boolean) => {
     trackChatPaneToggled({

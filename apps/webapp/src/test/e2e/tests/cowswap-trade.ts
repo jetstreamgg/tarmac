@@ -13,7 +13,9 @@ export const runCowTradeTests = async ({ networkName }: { networkName: NetworkNa
     if (networkName !== NetworkName.mainnet) {
       await switchToL2(isolatedPage, networkName);
     }
-    await isolatedPage.getByRole('tab', { name: 'Trade' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    const tradeButton = isolatedPage.getByRole('button', { name: 'Trade Trade popular tokens' });
+    await tradeButton.click();
   });
 
   test('Trade DAI for sUSDS', async ({ isolatedPage }) => {

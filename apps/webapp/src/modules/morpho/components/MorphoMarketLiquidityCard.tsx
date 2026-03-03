@@ -22,6 +22,7 @@ export function MorphoMarketLiquidityCard({
 }: MorphoMarketLiquidityCardProps) {
   const { i18n } = useLingui();
   const chainId = useChainId();
+  const liquidityTooltip = `The amount of ${assetToken.symbol} currently idle in the Morpho market and available for immediate withdrawal or new borrowing.`;
 
   const assetDecimals =
     typeof assetToken.decimals === 'number'
@@ -36,7 +37,13 @@ export function MorphoMarketLiquidityCard({
       title={
         <div className="flex items-center gap-1">
           <span>{i18n._(msg`Available liquidity`)}</span>
-          <PopoverInfo type="morphoLiquidity" iconClassName="text-textSecondary" width={14} height={14} />
+          <PopoverInfo
+            type="morphoLiquidity"
+            tooltipOverride={{ description: liquidityTooltip }}
+            iconClassName="text-textSecondary"
+            width={14}
+            height={14}
+          />
         </div>
       }
       content={

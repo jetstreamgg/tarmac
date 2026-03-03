@@ -4,7 +4,7 @@ import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAc
 
 test('Linked Action - Upgrade DAI then get reward', async ({ isolatedPage }) => {
   await isolatedPage.goto(
-    '?widget=upgrade&input_amount=100&linked_action=rewards&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275'
+    '?widget=convert&convert_module=upgrade&input_amount=100&linked_action=rewards&reward=0x0650CAF159C5A49f711e8169D4336ECB9b950275'
   );
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);

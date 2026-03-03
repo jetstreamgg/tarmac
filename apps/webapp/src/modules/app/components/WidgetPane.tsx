@@ -84,14 +84,13 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
     [Intent.SAVINGS_INTENT]: 'savings',
     [Intent.REWARDS_INTENT]: 'rewards',
-    [Intent.EXPERT_INTENT]: 'expert',
+    [Intent.EXPERT_INTENT]: 'expert'
   };
 
   // If the intent maps to a restricted module, fall back to Balances
   const restrictedModuleId = intentToModule[intent];
-  const effectiveIntent = restrictedModuleId && !isModuleEnabled(restrictedModuleId)
-    ? Intent.BALANCES_INTENT
-    : intent;
+  const effectiveIntent =
+    restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
@@ -116,7 +115,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // Deeplink detection: fire app_widget_selected when initial intent ≠ default (balances)
   // Uses module-level guard (not useRef) so it survives React StrictMode remounts and key-driven remounts
   useEffect(() => {
-    if (effectiveIntent && effectiveIntent !== Intent.BALANCES_INTENT && effectiveIntent !== lastDeeplinkTracked) {
+    if (
+      effectiveIntent &&
+      effectiveIntent !== Intent.BALANCES_INTENT &&
+      effectiveIntent !== lastDeeplinkTracked
+    ) {
       lastDeeplinkTracked = effectiveIntent;
       startNewFlow();
       trackWidgetSelected({
@@ -128,7 +131,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   }, []);
 
-  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, morphoUrl } = useModuleUrls();
+  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, vaultsUrl } = useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const rewardSubItems = rewardContracts.map(contract => ({
     label: `${contract.rewardToken.symbol} Rewards`,
@@ -163,7 +166,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={isRegionRestricted ? undefined : stusdsUrl}
-          morphoCardUrl={morphoUrl}
+          vaultsCardUrl={vaultsUrl}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
           setHideZeroBalances={setHideZeroBalances}

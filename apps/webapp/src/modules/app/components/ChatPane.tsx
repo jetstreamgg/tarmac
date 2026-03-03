@@ -14,6 +14,7 @@ import { ConversationFeedbackModal } from '@/modules/chat/components/Conversatio
 import { submitFeedback, FEEDBACK_TYPE } from '@/modules/chat/services/feedbackApi';
 import { useChatbotFeedbackNotification } from '@/modules/chat/hooks/useChatbotFeedbackNotification';
 import { isChatbotRestrictedError } from '@/modules/chat/lib/ChatbotRestrictedError';
+import { useChatAnalytics } from '@/modules/chat/hooks/useChatAnalytics';
 
 export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => void }) => {
   const {
@@ -32,6 +33,7 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
   const [isConversationFeedbackModalOpen, setIsConversationFeedbackModalOpen] = useState(false);
   const [selectedRating, setSelectedRating] = useState<'positive' | 'negative' | undefined>(undefined);
   const { showFeedbackSuccess } = useChatbotFeedbackNotification();
+  const { trackFeedbackSubmitted } = useChatAnalytics();
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -57,6 +59,8 @@ export const ChatPane = ({ sendMessage }: { sendMessage: (message: string) => vo
         comment,
         session_id: sessionId
       });
+
+      trackFeedbackSubmitted({ feedback_type: rating });
 
       // Show success notification on successful submission
       // Keep the feedback prompt visible to allow multiple submissions

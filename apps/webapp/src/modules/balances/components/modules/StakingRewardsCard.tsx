@@ -30,7 +30,15 @@ export function StakingRewardsCard() {
   const chartDataLoading = stakeRewardsContractsLoading || stakeRewardsChartsDataLoading;
   const mostRecentRateNumber = highestRateData ? parseFloat(highestRateData.rate) : null;
 
-  const hasMultipleRates = (stakeRewardContracts?.length ?? 0) > 1;
+  // Only count contracts that have actual rate data > 0
+  const contractsWithRates = (stakeRewardsChartsInfoData || []).filter(chartData => {
+    if (!chartData || chartData.length === 0) return false;
+    const mostRecent = chartData.reduce((latest, current) =>
+      current.blockTimestamp > latest.blockTimestamp ? current : latest
+    );
+    return parseFloat(mostRecent?.rate || '0') > 0;
+  });
+  const hasMultipleRates = contractsWithRates.length > 1;
 
   return (
     <ModuleCard
