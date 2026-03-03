@@ -9,8 +9,9 @@ import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWi
 import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { MorphoVaultStatsCard } from '@/modules/expert/components/MorphoVaultStatsCard';
-import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { MORPHO_VAULTS, useAllMorphoVaultsUserAssets } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
+import { useMemo } from 'react';
 
 export function VaultsWidgetPane(sharedProps: SharedProps) {
   const { selectedVaultsOption, setSelectedVaultsOption } = useConfigContext();
@@ -22,6 +23,16 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
   const selectedVault =
     MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
     MORPHO_VAULTS[0];
+
+  // Fetch user balances for all vaults
+  const { perVaultData } = useAllMorphoVaultsUserAssets();
+
+  // Split vaults into "My Vaults" (user has balance) and "All Vaults" (no balance)
+  const [userVaults, allVaults] = useMemo(() => {
+    const userVaults = perVaultData.filter(v => v.hasBalance);
+    const allVaults = perVaultData.filter(v => !v.hasBalance);
+    return [userVaults, allVaults];
+  }, [perVaultData]);
 
   // Derive effective option from URL param so deep-links and quick access work
   const effectiveVaultsOption = selectedVaultAddress
@@ -73,19 +84,38 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
             rightHeader={sharedProps.rightHeaderComponent}
           >
             <CardAnimationWrapper className="flex flex-col gap-4">
-              {MORPHO_VAULTS.map(vault => {
-                const vaultAddressForChain = vault.vaultAddress[chainId];
-                if (!vaultAddressForChain) return null;
-                return (
-                  <MorphoVaultStatsCard
-                    key={vaultAddressForChain}
-                    vaultAddress={vault.vaultAddress}
-                    vaultName={vault.name}
-                    assetToken={vault.assetToken}
-                    onClick={() => handleSelectMorphoVault(vaultAddressForChain)}
-                  />
-                );
-              })}
+              {userVaults.length > 0 && (
+                <div className="space-y-3">
+                  <Heading tag="h3" variant="medium">
+                    <Trans>My vaults</Trans>
+                  </Heading>
+                  {userVaults.map(({ vault, vaultAddress }) => (
+                    <MorphoVaultStatsCard
+                      key={vaultAddress}
+                      vaultAddress={vault.vaultAddress}
+                      vaultName={vault.name}
+                      assetToken={vault.assetToken}
+                      onClick={() => handleSelectMorphoVault(vaultAddress)}
+                    />
+                  ))}
+                </div>
+              )}
+              {allVaults.length > 0 && (
+                <div className="space-y-3">
+                  <Heading tag="h3" variant="medium">
+                    <Trans>All vaults</Trans>
+                  </Heading>
+                  {allVaults.map(({ vault, vaultAddress }) => (
+                    <MorphoVaultStatsCard
+                      key={vaultAddress}
+                      vaultAddress={vault.vaultAddress}
+                      vaultName={vault.name}
+                      assetToken={vault.assetToken}
+                      onClick={() => handleSelectMorphoVault(vaultAddress)}
+                    />
+                  ))}
+                </div>
+              )}
             </CardAnimationWrapper>
           </WidgetContainer>
         )}

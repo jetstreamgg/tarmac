@@ -5,17 +5,31 @@ import { MORPHO_VAULTS } from './constants';
 import { ZERO_ADDRESS } from '../constants';
 import { chainId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { ReadHook } from '../hooks';
+import { MorphoVaultConfig } from './morpho';
 
 function getTokenDecimals(decimals: number | Record<number, number>, forChainId: number): number {
   if (typeof decimals === 'number') return decimals;
   return decimals[forChainId] ?? 18;
 }
 
+export type MorphoVaultUserData = {
+  vault: MorphoVaultConfig;
+  vaultAddress: `0x${string}`;
+  userAssets: bigint;
+  hasBalance: boolean;
+};
+
+export type AllMorphoVaultsUserAssetsHook = ReadHook & {
+  data: bigint;
+  perVaultData: MorphoVaultUserData[];
+};
+
 /**
  * Hook that aggregates user assets across all Morpho vaults.
- * Returns the total user-supplied value normalized to 18 decimals (WAD).
+ * Returns the total user-supplied value normalized to 18 decimals (WAD),
+ * plus per-vault data for filtering/display purposes.
  */
-export function useAllMorphoVaultsUserAssets(): ReadHook & { data: bigint } {
+export function useAllMorphoVaultsUserAssets(): AllMorphoVaultsUserAssetsHook {
   const { address: userAddress } = useConnection();
   const connectedChainId = useChainId();
   const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
@@ -54,14 +68,29 @@ export function useAllMorphoVaultsUserAssets(): ReadHook & { data: bigint } {
     query: { enabled: !!userAddress && contracts.length > 0 }
   });
 
-  const totalUserAssets = useMemo(() => {
-    if (!data) return 0n;
+  const { totalUserAssets, perVaultData } = useMemo(() => {
+    const perVaultData: MorphoVaultUserData[] = [];
+    if (!data) {
+      return {
+        totalUserAssets: 0n,
+        perVaultData: vaultsWithAddress.map(({ vault, address }) => ({
+          vault,
+          vaultAddress: address,
+          userAssets: 0n,
+          hasBalance: false
+        }))
+      };
+    }
+
     let total = 0n;
     for (let i = 0; i < vaultsWithAddress.length; i++) {
+      const { vault, address } = vaultsWithAddress[i];
       const idx = i * 3;
       const sharesResult = data[idx];
       const assetPerShareResult = data[idx + 1];
       const decimalsResult = data[idx + 2];
+
+      let userAssets = 0n;
 
       if (
         sharesResult?.status === 'success' &&
@@ -74,25 +103,31 @@ export function useAllMorphoVaultsUserAssets(): ReadHook & { data: bigint } {
 
         if (shares > 0n) {
           // userAssets in the asset's native decimals
-          const userAssets = (shares * assetPerShare) / 10n ** BigInt(shareDecimals);
+          userAssets = (shares * assetPerShare) / 10n ** BigInt(shareDecimals);
 
-          // Normalize to 18 decimals
-          const assetDecimals = getTokenDecimals(
-            vaultsWithAddress[i].vault.assetToken.decimals,
-            chainIdToUse
-          );
+          // Normalize to 18 decimals for total
+          const assetDecimals = getTokenDecimals(vault.assetToken.decimals, chainIdToUse);
           const normalized =
             assetDecimals < 18 ? userAssets * 10n ** BigInt(18 - assetDecimals) : userAssets;
 
           total += normalized;
         }
       }
+
+      perVaultData.push({
+        vault,
+        vaultAddress: address,
+        userAssets,
+        hasBalance: userAssets > 0n
+      });
     }
-    return total;
+
+    return { totalUserAssets: total, perVaultData };
   }, [data, vaultsWithAddress, chainIdToUse]);
 
   return {
     data: totalUserAssets,
+    perVaultData,
     isLoading,
     error: error || null,
     mutate,
