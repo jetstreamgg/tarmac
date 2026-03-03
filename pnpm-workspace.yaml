@@ -16,7 +16,7 @@ catalog:
   '@lingui/format-po': ^5.7.0
   '@lingui/macro': ^5.7.0
   '@lingui/react': ^5.7.0
-  '@lingui/swc-plugin': ^5.7.0
+  '@lingui/swc-plugin': ~5.7.0
   '@lingui/vite-plugin': ^5.7.0
   '@metamask/sdk': ~0.33.1
   '@playwright/test': ^1.58.1
