@@ -107,6 +107,16 @@ export default ({ mode }: { mode: modeEnum }) => {
           /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/,
           'https://app.safe.global'
         ]
+      },
+      proxy: {
+        // Proxy API requests to local api-workers (localhost:8787)
+        // This keeps requests same-origin so cookies (SameSite=None; Secure) work over HTTP
+        '/ip/status': 'http://localhost:8787',
+        '/address/status': 'http://localhost:8787',
+        '/terms-acceptance': 'http://localhost:8787',
+        '/chatbot': 'http://localhost:8787',
+        '/chat': 'http://localhost:8787',
+        '/health': 'http://localhost:8787'
       }
     },
     preview: {
