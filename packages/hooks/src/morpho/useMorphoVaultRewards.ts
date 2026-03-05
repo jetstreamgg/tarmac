@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChainId, useConnection } from 'wagmi';
+import { useCallback } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { isTestnetId, formatBigInt } from '@jetstreamgg/sky-utils';
@@ -117,9 +118,18 @@ function isMorphoVaultReward(breakdown: MerklRewardBreakdown, vaultAddress: `0x$
 async function fetchMorphoVaultRewards(
   userAddress: `0x${string}`,
   vaultAddress: `0x${string}`,
-  chainId: number
+  chainId: number,
+  forceReload?: boolean
 ): Promise<MorphoVaultRewardsData | undefined> {
-  const url = `${MERKL_API_URL}/users/${userAddress}/rewards?chainId=${chainId}&breakdownPage=0&claimableOnly=true`;
+  const params = new URLSearchParams({
+    chainId: String(chainId),
+    breakdownPage: '0',
+    claimableOnly: 'true'
+  });
+  if (forceReload) {
+    params.set('reloadChainId', String(chainId));
+  }
+  const url = `${MERKL_API_URL}/users/${userAddress}/rewards?${params.toString()}`;
 
   const response = await fetch(url, {
     method: 'GET',
@@ -208,13 +218,15 @@ export function useMorphoVaultRewards({
   const connectedChainId = useChainId();
   const chainId = isTestnetId(connectedChainId) ? mainnet.id : connectedChainId;
 
+  const queryClient = useQueryClient();
+  const queryKey = ['morpho-vault-rewards', userAddress, vaultAddress, chainId];
+
   const {
     data,
     error,
-    refetch: mutate,
     isLoading
   } = useQuery({
-    queryKey: ['morpho-vault-rewards', userAddress, vaultAddress, chainId],
+    queryKey,
     queryFn: () => {
       if (!userAddress) {
         throw new Error('User address not available');
@@ -225,6 +237,16 @@ export function useMorphoVaultRewards({
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000 // 5 minutes
   });
+
+  // Refetch using Merkl's reloadChainId parameter to force a server-side cache update
+  const mutate = useCallback(() => {
+    if (!userAddress) return;
+    void queryClient.prefetchQuery({
+      queryKey,
+      queryFn: () => fetchMorphoVaultRewards(userAddress, vaultAddress, chainId, true),
+      staleTime: 0
+    });
+  }, [queryClient, queryKey, userAddress, vaultAddress, chainId]);
 
   return {
     data,
