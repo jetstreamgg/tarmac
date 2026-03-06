@@ -8,3 +8,9 @@ export const useReadSavingsUsds = /*#__PURE__*/ createUseReadContract({
   abi: sUsdsImplementationAbi,
   address: sUsdsAddress
 });
+
+export const useReadSavingsUsdsMaxWithdraw = /*#__PURE__*/ createUseReadContract({
+  abi: sUsdsImplementationAbi,
+  address: sUsdsAddress,
+  functionName: 'maxWithdraw'
+});

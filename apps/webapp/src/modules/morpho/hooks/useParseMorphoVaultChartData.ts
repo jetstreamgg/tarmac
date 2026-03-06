@@ -6,10 +6,13 @@ import { MorphoVaultChartDataPoint } from '@jetstreamgg/sky-hooks';
 export function useParseMorphoVaultChartData(
   timeFrame: TimeFrame,
   chartData: MorphoVaultChartDataPoint[],
-  decimals?: number
+  decimals?: number,
+  useHourlyInterval?: boolean
 ): { tvl: Data[]; rate: Data[] } {
+  const intervalOverride = useHourlyInterval ? 3600 : undefined;
+
   // For TVL, use amount field
-  const tvlData = useParseTvlChartData(timeFrame, chartData, decimals);
+  const tvlData = useParseTvlChartData(timeFrame, chartData, decimals, intervalOverride);
 
   // For Rate, transform the data to use apy field
   // APY is already a decimal (e.g., 0.05 for 5%), convert to bigint for the parser
@@ -26,7 +29,7 @@ export function useParseMorphoVaultChartData(
   );
 
   // Parse rate data using the TVL parser
-  const parsedRateData = useParseTvlChartData(timeFrame, rateChartData);
+  const parsedRateData = useParseTvlChartData(timeFrame, rateChartData, undefined, intervalOverride);
 
   // Convert rate values to percentages for display
   const rateData = useMemo(

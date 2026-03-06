@@ -1,8 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId, useChains } from 'wagmi';
-import { QueryParams } from '@/lib/constants';
+import { QueryParams, mapQueryParamToIntent } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { isMultichain } from '@/lib/widget-network-map';
+import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import {
@@ -18,7 +20,7 @@ import {
   useStakeRewardContracts,
   useMultipleRewardsChartInfo
 } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, isMainnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
 import { Savings, Upgrade, RewardsModule, Stake, Expert, Vaults, Trade } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
@@ -271,9 +273,31 @@ export function BalancesSuggestedActions({
   const [, setSearchParams] = useSearchParams();
   const chainId = useChainId();
   const chains = useChains();
+  const { setIsSwitchingNetwork } = useNetworkSwitch();
 
   const connectedChain = chains.find(c => c.id === chainId);
   const networkName = connectedChain ? normalizeUrlParam(connectedChain.name) : 'ethereum';
+
+  // Use current chain if it's mainnet or tenderly, otherwise default to mainnet
+  const mainnetChainId = isMainnetId(chainId) ? chainId : chainIdConstants.mainnet;
+
+  // Determine the target network name based on module's network requirements
+  const getTargetNetworkName = useCallback(
+    (module: string | undefined): string => {
+      if (!module) return networkName;
+
+      const targetIntent = mapQueryParamToIntent(module);
+
+      // For multichain intents, use current network; for mainnet-only, use mainnet
+      if (isMultichain(targetIntent)) {
+        return networkName;
+      }
+
+      const mainnetChain = chains.find(c => c.id === mainnetChainId);
+      return mainnetChain ? normalizeUrlParam(mainnetChain.name) : 'ethereum';
+    },
+    [networkName, chains, mainnetChainId]
+  );
 
   const actions = useMemo(() => {
     let result = widget === 'stables' ? STABLE_ACTIONS : widget === 'sky' ? SKY_ACTIONS : TOKEN_ACTIONS;
@@ -287,9 +311,18 @@ export function BalancesSuggestedActions({
 
   const handleClick = useCallback(
     (action: BalancesAction) => {
+      // Determine target network based on module's network requirements
+      const targetNetworkName = getTargetNetworkName(action.module);
+      const isNetworkChange = targetNetworkName !== networkName;
+
       const params = new URLSearchParams(action.url.replace(/^\?/, ''));
       params.delete(QueryParams.InputAmount);
-      params.set(QueryParams.Network, networkName);
+      params.set(QueryParams.Network, targetNetworkName);
+
+      // Show switching UI if changing networks
+      if (isNetworkChange) {
+        setIsSwitchingNetwork(true);
+      }
 
       setSearchParams(prev => {
         const next = new URLSearchParams();
@@ -303,7 +336,7 @@ export function BalancesSuggestedActions({
         return next;
       });
     },
-    [networkName, setSearchParams]
+    [networkName, getTargetNetworkName, setIsSwitchingNetwork, setSearchParams]
   );
 
   if (actions.length === 0) return null;

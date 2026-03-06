@@ -8,8 +8,9 @@ import {
   mcdVatAddress,
   stakeModuleAbi,
   stakeModuleAddress,
-  useReadMcdSpot,
-  useReadMcdVat
+  useReadMcdSpotIlks,
+  useReadMcdSpotPar,
+  useReadMcdVatIlks
 } from '../generated';
 import { RISK_LEVEL_THRESHOLDS, RiskLevel } from '../vaults/vaults.constants';
 import { parseUnits, stringToHex } from 'viem';
@@ -65,9 +66,8 @@ export function usePositionsAtRisk(): ReadHook & { data?: number[] } {
     isLoading: isLoadingVatIlk,
     error: errorVatIlk,
     refetch: refetchVatIlk
-  } = useReadMcdVat({
+  } = useReadMcdVatIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `vat-ilk-${ilkName}`
   });
@@ -77,9 +77,8 @@ export function usePositionsAtRisk(): ReadHook & { data?: number[] } {
     isLoading: isLoadingSpotIlk,
     error: errorSpotIlk,
     refetch: refetchSpotIlk
-  } = useReadMcdSpot({
+  } = useReadMcdSpotIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `spot-ilks-${ilkName}`
   });
@@ -89,9 +88,8 @@ export function usePositionsAtRisk(): ReadHook & { data?: number[] } {
     isLoading: isLoadingSpotPar,
     error: errorSpotPar,
     refetch: refetchSpotPar
-  } = useReadMcdSpot({
+  } = useReadMcdSpotPar({
     chainId: chainId as any,
-    functionName: 'par',
     scopeKey: 'spot-par'
   });
 

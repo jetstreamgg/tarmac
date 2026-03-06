@@ -1,10 +1,11 @@
 import {
-  useReadMcdVat,
-  useReadMcdJug,
   useReadMcdSpot,
   mcdVatAddress,
   mcdJugAddress,
-  mcdSpotAddress
+  mcdSpotAddress,
+  useReadMcdVatIlks,
+  useReadMcdJugIlks,
+  useReadMcdSpotIlks
 } from '../generated';
 import { getEtherscanLink } from '@jetstreamgg/sky-utils';
 import { stringToHex } from 'viem';
@@ -42,9 +43,8 @@ export function useCollateralData(
     isLoading: isLoadingVatIlk,
     error: errorVatIlk,
     refetch: refetchVatIlk
-  } = useReadMcdVat({
+  } = useReadMcdVatIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `vat-ilk-${name}`
   });
@@ -66,9 +66,8 @@ export function useCollateralData(
     isLoading: isLoadingJugIlk,
     error: errorJugIlk,
     refetch: refetchJugIlk
-  } = useReadMcdJug({
+  } = useReadMcdJugIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     scopeKey: 'jug-ilks',
     args: [ilkHex]
   });
@@ -104,9 +103,8 @@ export function useCollateralData(
     isLoading: isLoadingSpotIlk,
     error: errorSpotIlk,
     refetch: refetchSpotIlk
-  } = useReadMcdSpot({
+  } = useReadMcdSpotIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `spot-ilks-${ilkName}`
   });

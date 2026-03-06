@@ -246,6 +246,23 @@ export const VAULT_V2_HISTORICAL_QUERY = `
   }
 `;
 
+export const VAULT_V2_HISTORICAL_HOURLY_QUERY = `
+  query VaultV2HistoryHourly($address: String!, $chainId: Int!, $endTimestamp: Int!) {
+    vaultV2ByAddress(address: $address, chainId: $chainId) {
+      historicalState {
+        totalAssets(options: { startTimestamp: 0, endTimestamp: $endTimestamp, interval: HOUR }) {
+          x
+          y
+        }
+        avgNetApy(options:{ startTimestamp: 0, endTimestamp: $endTimestamp, interval: HOUR }) {
+          x
+          y
+        }
+      }
+    }
+  }
+`;
+
 /**
  * GraphQL query for Morpho V2 vault positions (depositors) with pagination.
  * Includes shares to filter for active suppliers client-side (API doesn't support where clause).
