@@ -13,6 +13,7 @@ import { ConnectedProvider } from '@/modules/ui/context/ConnectedContext';
 import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
 import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersContext';
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
+import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
@@ -50,10 +51,12 @@ const AppContent = () => {
             <TooltipProvider delayDuration={300}>
               <ChainModalProvider>
                 <NetworkSwitchProvider>
-                  <ExternalLinkModal />
-                  <Toaster />
-                  <ToastCloseAll />
-                  <RouterProvider router={router} />
+                  <TransactionProvider>
+                    <ExternalLinkModal />
+                    <Toaster />
+                    <ToastCloseAll />
+                    <RouterProvider router={router} />
+                  </TransactionProvider>
                 </NetworkSwitchProvider>
               </ChainModalProvider>
             </TooltipProvider>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useMerklRewards, useMerklClaimRewards, MerklTokenReward } from '@jetstreamgg/sky-hooks';
+import { useMerklRewards, useMerklClaimRewards, useBatchSavingsSupply, MerklTokenReward } from '@jetstreamgg/sky-hooks';
+import { parseUnits } from 'viem';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 
@@ -17,6 +19,7 @@ export function ClaimableRewardsTable() {
   const { data, isLoading, mutate } = useMerklRewards();
   const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
   const [expandedTokens, setExpandedTokens] = useState<Set<string>>(new Set());
+  const { launch, txCallbacks } = useTransaction();
 
   const rewards = data?.rewards ?? [];
 
@@ -25,10 +28,13 @@ export function ClaimableRewardsTable() {
 
   const claimRewards = useMerklClaimRewards({
     rewards: selectedRewards,
-    onSuccess: () => {
-      setSelectedTokens(new Set());
-      mutate();
-    }
+    ...txCallbacks
+  });
+
+  // TODO: Remove test hook — temporary for Tenderly testing
+  const testSupply = useBatchSavingsSupply({
+    amount: parseUnits('0.01', 18),
+    ...txCallbacks
   });
 
   const toggleToken = useCallback((tokenAddress: string) => {
@@ -165,13 +171,60 @@ export function ClaimableRewardsTable() {
         </TableBody>
       </Table>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
         <Button
           variant="primary"
           disabled={!hasSelection || !claimRewards.prepared}
-          onClick={hasSelection ? claimRewards.execute : undefined}
+          onClick={() =>
+            launch({
+              title: t`Claim rewards`,
+              subtitle: t`You are claiming rewards for ${selectedRewards.length} token(s).`,
+              reviewContent: (
+                <div className="flex flex-col gap-3">
+                  {selectedRewards.map(r => (
+                    <div key={r.tokenAddress} className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-2">
+                        <TokenIcon className="h-6 w-6" token={{ symbol: r.tokenSymbol }} />
+                        <Text>{r.tokenSymbol}</Text>
+                      </div>
+                      <Text>{r.formattedTotalAmount}</Text>
+                    </div>
+                  ))}
+                </div>
+              ),
+              onConfirm: claimRewards.execute,
+              confirmLabel: t`Claim`,
+              onSuccess: () => {
+                setSelectedTokens(new Set());
+                mutate();
+              }
+            })
+          }
         >
           {hasSelection ? <Trans>Claim selected</Trans> : <Trans>Select rewards to claim</Trans>}
+        </Button>
+        {/* TODO: Remove — temporary test button for Tenderly */}
+        <Button
+          variant="primary"
+          disabled={!testSupply.prepared}
+          onClick={() =>
+            launch({
+              title: t`Supply to Savings`,
+              subtitle: t`You are supplying 0.01 USDS to the Sky Savings Rate module.`,
+              reviewContent: (
+                <div className="flex items-center gap-2 py-2">
+                  <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS' }} />
+                  <Text>0.01 USDS</Text>
+                </div>
+              ),
+              onConfirm: testSupply.execute,
+              confirmLabel: t`Supply`,
+              steps: [t`Approve`, t`Supply`],
+              currentStep: testSupply.currentCallIndex
+            })
+          }
+        >
+          <Trans>Test Supply 0.01 USDS</Trans>
         </Button>
       </div>
     </div>
