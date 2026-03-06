@@ -93,6 +93,7 @@ export {
   useMorphoVaultMarketApiData,
   fetchMorphoVaultMarketData,
   useMorphoVaultRewards,
+  useMerklRewards,
   useMorphoVaultClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
@@ -117,11 +118,17 @@ export type {
   MorphoVaultReward,
   MorphoVaultRewardsData,
   MorphoVaultRewardsHook,
+  MerklRewardSource,
+  MerklTokenReward,
+  MerklRewardsData,
+  MerklRewardsHook,
   MorphoVaultChartDataPoint,
   MorphoVaultChartInfoHook,
   MorphoVaultMultipleChartInfoHook,
   MorphoVaultSupplierAddressesHook,
-  MorphoVaultsCombinedTvl
+  MorphoVaultsCombinedTvl,
+  MorphoVaultBalance,
+  AllMorphoVaultsUserAssetsData
 } from './morpho';
 
 // Authentication

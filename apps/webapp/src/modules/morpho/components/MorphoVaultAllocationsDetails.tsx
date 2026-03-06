@@ -69,14 +69,14 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
             <TableHead>
               <Skeleton className="h-4 w-24" />
             </TableHead>
-            <TableHead className="text-center">
-              <Skeleton className="mx-auto h-4 w-16" />
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-16" />
             </TableHead>
-            <TableHead className="text-center">
-              <Skeleton className="mx-auto h-4 w-14" />
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
             </TableHead>
-            <TableHead className="text-center">
-              <Skeleton className="mx-auto h-4 w-14" />
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
             </TableHead>
             <TableHead className="text-right">
               <Skeleton className="ml-auto h-4 w-12" />
@@ -99,14 +99,14 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                 <Skeleton className="h-4 w-28" />
               </div>
             </TableCell>
-            <TableCell className="h-auto py-4 text-center">
-              <Skeleton className="mx-auto h-4 w-14" />
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
             </TableCell>
-            <TableCell className="h-auto py-4 text-center">
-              <Skeleton className="mx-auto h-4 w-12" />
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
             </TableCell>
-            <TableCell className="h-auto py-4 text-center">
-              <Skeleton className="mx-auto h-4 w-12" />
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
             </TableCell>
             <TableCell className="h-auto py-4 text-right">
               <Skeleton className="ml-auto h-4 w-12" />
@@ -124,14 +124,14 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                 <Skeleton className="h-4 w-28" />
               </div>
             </TableCell>
-            <TableCell className="h-auto py-4 text-center">
-              <Skeleton className="mx-auto h-4 w-14" />
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
             </TableCell>
-            <TableCell className="h-auto py-4 text-center">
-              <Skeleton className="mx-auto h-4 w-12" />
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
             </TableCell>
-            <TableCell className="h-auto py-4 text-center">
-              <Skeleton className="mx-auto h-4 w-12" />
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
             </TableCell>
             <TableCell className="h-auto py-4 text-right">
               <Skeleton className="ml-auto h-4 w-12" />
@@ -165,17 +165,17 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
               <Trans>Vaults / Markets</Trans>
             </Text>
           </TableHead>
-          <TableHead className="text-center">
+          <TableHead className="text-right">
             <Text variant="small">
               <Trans>Allocation ({allocationsData.assetSymbol})</Trans>
             </Text>
           </TableHead>
-          <TableHead className="text-center">
+          <TableHead className="text-right">
             <Text variant="small">
               <Trans>Absolute Cap</Trans>
             </Text>
           </TableHead>
-          <TableHead className="text-center">
+          <TableHead className="text-right">
             <Text variant="small">
               <Trans>Relative Cap</Trans>
             </Text>
@@ -221,7 +221,7 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     </Tooltip>
                   </div>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Tooltip>
                     <TooltipTrigger className="cursor-default">
                       <Text className="text-text text-sm">{v1Vault.formattedAssets}</Text>
@@ -231,10 +231,10 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Text className="text-textSecondary text-sm">-</Text>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Text className="text-textSecondary text-sm">-</Text>
                 </TableCell>
                 <TableCell className="h-auto py-4 text-right">
@@ -296,7 +296,7 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     </Tooltip>
                   </div>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Tooltip>
                     <TooltipTrigger asChild className="cursor-default">
                       <Text className="text-text text-sm">{market.formattedAssets}</Text>
@@ -307,7 +307,7 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   {market.formattedAbsoluteCap === 'Unlimited' ? (
                     <Text className="text-text text-sm">{market.formattedAbsoluteCap}</Text>
                   ) : (
@@ -327,7 +327,7 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     </Tooltip>
                   )}
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Tooltip>
                     <TooltipTrigger asChild className="cursor-default">
                       <div className="inline-flex items-center gap-1.5">
@@ -369,7 +369,7 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     <Text className="text-text text-sm">{idle.assetSymbol}</Text>
                   </div>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Tooltip>
                     <TooltipTrigger className="cursor-default">
                       <Text className="text-text text-sm">{idle.formattedAssets}</Text>
@@ -379,10 +379,10 @@ export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAlloc
                     </TooltipContent>
                   </Tooltip>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Text className="text-textSecondary text-sm">-</Text>
                 </TableCell>
-                <TableCell className="h-auto py-4 text-center">
+                <TableCell className="h-auto py-4 text-right">
                   <Text className="text-textSecondary text-sm">-</Text>
                 </TableCell>
                 <TableCell className="h-auto py-4 text-right">

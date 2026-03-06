@@ -138,10 +138,11 @@ export const ModulesBalances = ({
 
   // Get aggregate Morpho vault data across all vaults
   const {
-    data: totalMorphoUserAssets,
+    data: morphoAssetsData,
     isLoading: morphoLoading,
     error: morphoError
   } = useAllMorphoVaultsUserAssets();
+  const totalMorphoUserAssets = morphoAssetsData.total;
 
   // Expert balance = total across expert modules (stUSDS only for now)
   const totalExpertSavingsBalance = stUsdsData?.userSuppliedUsds || 0n;
@@ -391,6 +392,7 @@ export const ModulesBalances = ({
             url={vaultsCardUrl}
             onExternalLinkClicked={onExternalLinkClicked}
             variant={variant}
+            hideZeroBalances={hideZeroBalances}
           />
         );
     }

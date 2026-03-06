@@ -59,6 +59,7 @@ export { useTokenImage } from './shared/hooks/useTokenImage';
 export { useChainImage } from './shared/hooks/useChainImage';
 export { WidgetContainer } from './shared/components/ui/widget/WidgetContainer';
 export { CardAnimationWrapper } from './shared/animation/Wrappers';
+export { positionAnimations } from './shared/animation/presets';
 export type { WithWidgetProviderProps } from './shared/hocs/withWidgetProvider';
 export { ConnectWalletCopy } from './shared/components/ui/ConnectWalletCopy';
 export { ConnectWallet } from './shared/components/icons/ConnectWallet';

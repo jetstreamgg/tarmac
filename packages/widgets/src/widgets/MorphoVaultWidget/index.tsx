@@ -521,7 +521,7 @@ const MorphoVaultWidgetWrapped = ({
               </HStack>
             </Button>
           )}
-          <Heading variant="x-large">
+          <Heading variant="x-large" className="whitespace-nowrap">
             <Trans>{vaultName}</Trans>
           </Heading>
         </div>

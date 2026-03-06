@@ -68,9 +68,7 @@ export function MorphoVaultBalanceDetails({ vaultAddress, assetToken }: MorphoVa
       <div className="min-w-[250px] flex-1">
         <AssetBalanceCard />
       </div>
-      <div className="min-w-[250px] flex-1">
-        <MorphoVaultRewardsDetails vaultAddress={vaultAddress} />
-      </div>
+      <MorphoVaultRewardsDetails vaultAddress={vaultAddress} />
     </div>
   );
 }
