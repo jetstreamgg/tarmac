@@ -46,14 +46,14 @@ function calculateCumulativeTotalSupply(chartData: TvlChartInfoParsed[]) {
   return [...mergedData.values()].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 }
 
-function useVaultsChartInfo(useHourlyInterval?: boolean) {
+function useVaultsChartInfo(useHourlyInterval?: boolean, hourlyWindow?: 'w' | 'm') {
   const vaultAddresses = MORPHO_VAULTS.map(vault => vault.vaultAddress[mainnet.id]) as `0x${string}`[];
 
   const {
     data: morphoChartData,
     isLoading,
     error
-  } = useMorphoVaultMultipleChartInfo({ vaultAddresses, useHourlyInterval });
+  } = useMorphoVaultMultipleChartInfo({ vaultAddresses, useHourlyInterval, hourlyWindow });
 
   const data = useMemo(() => {
     const normalize = useHourlyInterval ? normalizeToHour : normalizeToDay;
@@ -78,16 +78,17 @@ export function VaultsChart() {
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const useHourlyInterval = timeFrame === 'w' || timeFrame === 'm';
+  const hourlyWindow = timeFrame === 'w' || timeFrame === 'm' ? timeFrame : undefined;
   const intervalOverride = useHourlyInterval ? 3600 : undefined;
 
-  const { data: vaultsChartData, isLoading, error } = useVaultsChartInfo(useHourlyInterval);
-  const { totalAssetsScaled, isLoading: isCombinedTvlLoading } = useMorphoVaultsCombinedTvl();
+  const { data: vaultsChartData, isLoading, error } = useVaultsChartInfo(useHourlyInterval, hourlyWindow);
+  const { totalAssetsScaled, isLoading: isCombinedTvlLoading, error: combinedTvlError } = useMorphoVaultsCombinedTvl();
 
   const parsedChartData = useParseTvlChartData(timeFrame, vaultsChartData, undefined, intervalOverride);
 
   // Append live data point to chart data
   const chartData = useMemo(() => {
-    if (isCombinedTvlLoading || parsedChartData.length === 0) return parsedChartData;
+    if (isCombinedTvlLoading || combinedTvlError || parsedChartData.length === 0) return parsedChartData;
     return [
       ...parsedChartData,
       {
@@ -96,7 +97,7 @@ export function VaultsChart() {
         tooltipLabel: 'Current value'
       }
     ];
-  }, [parsedChartData, totalAssetsScaled, isCombinedTvlLoading]);
+  }, [parsedChartData, totalAssetsScaled, isCombinedTvlLoading, combinedTvlError]);
 
   const tooltipLabel = useHourlyInterval ? 'Hourly average' : 'Daily average';
 
