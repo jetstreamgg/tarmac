@@ -6,25 +6,21 @@ import { Trans } from '@lingui/react/macro';
 import { useParseTvlChartData } from '@/modules/ui/hooks/useParseTvlChartData';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mainnet } from 'viem/chains';
-import { formatUnits } from 'viem';
-import { math } from '@jetstreamgg/sky-utils';
+import { parseUnits } from 'viem';
 
 type TvlChartInfoParsed = {
   blockTimestamp: number;
   amount: bigint;
 };
 
-const normalizeToDay = (data: TvlChartInfoParsed[]): TvlChartInfoParsed[] =>
-  data.map(d => ({
-    ...d,
-    blockTimestamp: Math.floor(d.blockTimestamp / 86400) * 86400
-  }));
-
-const normalizeToHour = (data: TvlChartInfoParsed[]): TvlChartInfoParsed[] =>
-  data.map(d => ({
-    ...d,
-    blockTimestamp: Math.floor(d.blockTimestamp / 3600) * 3600
-  }));
+const normalizeToInterval = (data: TvlChartInfoParsed[], intervalSeconds: number): TvlChartInfoParsed[] => {
+  const map = new Map<number, TvlChartInfoParsed>();
+  data.forEach(d => {
+    const ts = Math.floor(d.blockTimestamp / intervalSeconds) * intervalSeconds;
+    map.set(ts, { ...d, blockTimestamp: ts });
+  });
+  return [...map.values()];
+};
 
 function calculateCumulativeTotalSupply(chartData: TvlChartInfoParsed[]) {
   if (!chartData || chartData.length === 0) return [];
@@ -56,15 +52,14 @@ function useVaultsChartInfo(useHourlyInterval?: boolean, hourlyWindow?: 'w' | 'm
   } = useMorphoVaultMultipleChartInfo({ vaultAddresses, useHourlyInterval, hourlyWindow });
 
   const data = useMemo(() => {
-    const normalize = useHourlyInterval ? normalizeToHour : normalizeToDay;
-    const normalizedMorpho = (morphoChartData || []).flatMap((vaultData, index) => {
+    const interval = useHourlyInterval ? 3600 : 86400;
+    const normalizedMorpho = (morphoChartData || []).flatMap(vaultData => {
       if (!vaultData) return [];
-      const vault = MORPHO_VAULTS[index];
-      const decimals = math.resolveDecimals(vault.assetToken.decimals, mainnet.id);
-      return normalize(vaultData).map(d => ({
-        ...d,
-        amount: math.scaleToBaseDecimals(d.amount, decimals)
+      const usdData = vaultData.map(d => ({
+        blockTimestamp: d.blockTimestamp,
+        amount: parseUnits(d.amountUsd.toString(), 18)
       }));
+      return normalizeToInterval(usdData, interval);
     });
 
     return calculateCumulativeTotalSupply(normalizedMorpho);
@@ -78,11 +73,11 @@ export function VaultsChart() {
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
 
   const useHourlyInterval = timeFrame === 'w' || timeFrame === 'm';
-  const hourlyWindow = timeFrame === 'w' || timeFrame === 'm' ? timeFrame : undefined;
+  const hourlyWindow = useHourlyInterval ? timeFrame : undefined;
   const intervalOverride = useHourlyInterval ? 3600 : undefined;
 
   const { data: vaultsChartData, isLoading, error } = useVaultsChartInfo(useHourlyInterval, hourlyWindow);
-  const { totalAssetsScaled, isLoading: isCombinedTvlLoading, error: combinedTvlError } = useMorphoVaultsCombinedTvl();
+  const { totalAssetsUsd, isLoading: isCombinedTvlLoading, error: combinedTvlError } = useMorphoVaultsCombinedTvl();
 
   const parsedChartData = useParseTvlChartData(timeFrame, vaultsChartData, undefined, intervalOverride);
 
@@ -92,12 +87,12 @@ export function VaultsChart() {
     return [
       ...parsedChartData,
       {
-        value: parseFloat(formatUnits(totalAssetsScaled, 18)),
+        value: totalAssetsUsd,
         date: new Date(),
         tooltipLabel: 'Current value'
       }
     ];
-  }, [parsedChartData, totalAssetsScaled, isCombinedTvlLoading, combinedTvlError]);
+  }, [parsedChartData, totalAssetsUsd, isCombinedTvlLoading, combinedTvlError]);
 
   const tooltipLabel = useHourlyInterval ? 'Hourly average' : 'Daily average';
 
@@ -118,7 +113,7 @@ export function VaultsChart() {
           data={chartData}
           isLoading={isLoading}
           error={error}
-          symbol={'USDS'}
+          prefix="$"
           tooltipLabel={tooltipLabel}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);

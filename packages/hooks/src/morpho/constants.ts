@@ -237,6 +237,10 @@ export const VAULT_V2_HISTORICAL_QUERY = `
           x
           y
         }
+        totalAssetsUsd(options: { startTimestamp: 0, endTimestamp: $endTimestamp, interval: DAY }) {
+          x
+          y
+        }
         avgNetApy(options:{ startTimestamp: 0, endTimestamp: $endTimestamp, interval: DAY }) {
           x
           y
@@ -251,6 +255,10 @@ export const VAULT_V2_HISTORICAL_HOURLY_QUERY = `
     vaultV2ByAddress(address: $address, chainId: $chainId) {
       historicalState {
         totalAssets(options: { startTimestamp: $startTimestamp, endTimestamp: $endTimestamp, interval: HOUR }) {
+          x
+          y
+        }
+        totalAssetsUsd(options: { startTimestamp: $startTimestamp, endTimestamp: $endTimestamp, interval: HOUR }) {
           x
           y
         }
