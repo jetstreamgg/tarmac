@@ -79,7 +79,6 @@ export const RewardsStatsCard = ({
     isLoading: pointsLoading,
     error: pointsError
   } = useUserRewardsBalance({
-    chainId,
     address: (address || ZERO_ADDRESS) as `0x${string}`,
     contractAddress: rewardContract.contractAddress as `0x${string}`
   });

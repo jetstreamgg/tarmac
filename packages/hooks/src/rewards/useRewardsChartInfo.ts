@@ -2,7 +2,7 @@ import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
-import { useChainId } from 'wagmi';
+
 import { formatBaLabsUrl } from '../helpers';
 
 type RewardsChartInfo = {
@@ -70,8 +70,7 @@ export function useRewardsChartInfo({
   rewardContractAddress: string;
   limit?: number;
 }): ReadHook & { data?: RewardsChartInfoParsed[] } {
-  const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId);
+  const baseUrl = getBaLabsApiUrl();
   let url: URL | undefined;
   if (baseUrl && rewardContractAddress) {
     const endpoint = `${baseUrl}/farms/${rewardContractAddress.toLowerCase()}/historic/?p_size=${limit}`;

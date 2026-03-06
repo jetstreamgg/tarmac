@@ -7,50 +7,51 @@ import {
 } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 
 async function fetchRewardContractsInfo(
   urlSubgraph: string,
-  rewardContracts: RewardContract[]
+  rewardContracts: RewardContract[],
+  chainId: number
 ): Promise<RewardContractInfo[] | undefined> {
-  const rewardContractAddress = rewardContracts.map(f => `"${f.contractAddress}"`);
+  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress}"`);
   const query = gql`
-  {
-    rewards(where: {id_in: [${rewardContractAddress}]}) {
-      id
-      totalSupplied,
-      totalRewardsClaimed
-      supplyInstances {
+    {
+      rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
         id
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      withdrawals  {
-        id
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      rewardClaims {
-        id
-        amount
-        transactionHash
-        blockTimestamp
-      }
-      tvl {
-        id
-        amount
-        transactionHash
-        blockTimestamp
-      }
-      suppliers {
-        user
+        totalSupplied
+        totalRewardsClaimed
+        supplyInstances {
+          id
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        withdrawals {
+          id
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        rewardClaims {
+          id
+          amount
+          transactionHash
+          blockTimestamp
+        }
+        tvl {
+          id
+          amount
+          transactionHash
+          blockTimestamp
+        }
+        suppliers {
+          user
+        }
       }
     }
-  }
-`;
+  `;
 
   const response = (await request(urlSubgraph, query)) as any;
   const parsedRewards = response.rewards as RewardContractInfoRaw[];
@@ -104,7 +105,7 @@ export function useRewardContractsInfo({
   chainId: number;
   rewardContracts: RewardContract[];
 }): ReadHook & { data?: RewardContractInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -113,8 +114,8 @@ export function useRewardContractsInfo({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && rewardContracts.length > 0),
-    queryKey: ['reward-contracts-info', urlSubgraph, rewardContracts],
-    queryFn: () => fetchRewardContractsInfo(urlSubgraph, rewardContracts)
+    queryKey: ['reward-contracts-info', urlSubgraph, rewardContracts, chainId],
+    queryFn: () => fetchRewardContractsInfo(urlSubgraph, rewardContracts, chainId)
   });
 
   return {
