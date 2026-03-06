@@ -93,13 +93,14 @@ export {
   useMorphoVaultMarketApiData,
   fetchMorphoVaultMarketData,
   useMorphoVaultRewards,
-  useMorphoVaultClaimRewards,
+  useMerklClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
   useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
   useAllMorphoVaultsUserAssets,
+  useMerklRewards,
   MORPHO_VAULTS
 } from './morpho';
 export type {
@@ -117,6 +118,10 @@ export type {
   MorphoVaultReward,
   MorphoVaultRewardsData,
   MorphoVaultRewardsHook,
+  MerklTokenReward,
+  MerklRewardSource,
+  MerklRewardsData,
+  MerklRewardsHook,
   MorphoVaultChartDataPoint,
   MorphoVaultChartInfoHook,
   MorphoVaultMultipleChartInfoHook,

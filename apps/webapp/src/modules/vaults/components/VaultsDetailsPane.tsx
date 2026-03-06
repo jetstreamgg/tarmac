@@ -6,8 +6,12 @@ import { VaultsOverview } from './VaultsOverview';
 import { VaultsChart } from './VaultsChart';
 import { VaultsAbout } from './VaultsAbout';
 import { VaultsFaq } from './VaultsFaq';
+import { ClaimableRewardsTable } from './ClaimableRewardsTable';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export function VaultsDetailsPane() {
+  const { isConnectedAndAcceptedTerms } = useConnectedContext();
+
   return (
     <DetailSectionWrapper>
       <DetailSection title={t`Vaults overview`}>
@@ -15,6 +19,13 @@ export function VaultsDetailsPane() {
           <VaultsOverview />
         </DetailSectionRow>
       </DetailSection>
+      {isConnectedAndAcceptedTerms && (
+        <DetailSection title={t`Claimable rewards`}>
+          <DetailSectionRow>
+            <ClaimableRewardsTable />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
       <DetailSection title={t`Vaults activity`}>
         <DetailSectionRow>
           <VaultsChart />

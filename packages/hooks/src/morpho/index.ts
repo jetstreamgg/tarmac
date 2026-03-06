@@ -30,7 +30,14 @@ export {
   type MorphoVaultRewardsData,
   type MorphoVaultRewardsHook
 } from './useMorphoVaultRewards';
-export { useMorphoVaultClaimRewards } from './useMorphoVaultClaimRewards';
+export {
+  useMerklRewards,
+  type MerklTokenReward,
+  type MerklRewardSource,
+  type MerklRewardsData,
+  type MerklRewardsHook
+} from './useMerklRewards';
+export { useMerklClaimRewards } from './useMerklClaimRewards';
 export { useMorphoVaultHistory } from './useMorphoVaultHistory';
 export {
   useMorphoVaultChartInfo,
