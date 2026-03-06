@@ -33,9 +33,10 @@ async function fetchUserDelegates(
         blockTimestamp
         ownerAddress
         delegators
+        totalDelegated
         delegations(
-          limit: 1000
-          where: { delegator: { _nin: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"] } }
+          limit: 1
+          where: { delegator: { _ilike: "%${user}%" } }
         ) {
           id
           delegator
@@ -49,8 +50,7 @@ async function fetchUserDelegates(
   const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
-    id: d.address as `0x${string}`,
-    totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
+    id: d.address as `0x${string}`
   }));
   if (!parsedDelegates) {
     return undefined;
