@@ -303,6 +303,18 @@ export { usePsmTradeHistory } from './psm/usePsmTradeHistory';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
 export { usePreviewSwapExactIn } from './psm/usePreviewSwapExactIn';
 export { usePreviewSwapExactOut } from './psm/usePreviewSwapExactOut';
+export { usdsPsmWrapperAbi, usdsPsmWrapperAddress, psmPocketAddress } from './psm/usdsPsmWrapper';
+export { useUsdsPsmWrapperSellGem } from './psm/useUsdsPsmWrapperSellGem';
+export { useUsdsPsmWrapperBuyGem } from './psm/useUsdsPsmWrapperBuyGem';
+export { useBatchUsdsPsmWrapperSellGem } from './psm/useBatchUsdsPsmWrapperSellGem';
+export { useBatchUsdsPsmWrapperBuyGem } from './psm/useBatchUsdsPsmWrapperBuyGem';
+export {
+  useUsdsPsmWrapperTin,
+  useUsdsPsmWrapperTout,
+  useUsdsPsmWrapperLive,
+  useUsdsPsmWrapperHalted
+} from './psm/useUsdsPsmWrapperReads';
+export { usePsmPocketBalance } from './psm/usePsmPocketBalance';
 
 export {
   TrustLevelEnum,

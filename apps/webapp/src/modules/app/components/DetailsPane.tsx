@@ -24,6 +24,7 @@ import { ExpertDetailsPane } from '@/modules/expert/components/ExpertDetailsPane
 import { VaultsDetailsPane } from '@/modules/vaults/components/VaultsDetailsPane';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
+import { PsmConversionDetails } from '@/modules/convert/components/PsmConversionDetails';
 
 type DetailsPaneProps = {
   intent: Intent;
@@ -48,7 +49,7 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
   const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
@@ -159,21 +160,27 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
               }
             case Intent.CONVERT_INTENT:
               switch (selectedConvertOption) {
-                case ConvertIntent.UPGRADE_INTENT:
+                case ConvertIntent.PSM_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[12]}>
+                      <PsmConversionDetails />
+                    </MotionDetailsWrapper>
+                  );
+                case ConvertIntent.UPGRADE_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[13]}>
                       <UpgradeDetails />
                     </MotionDetailsWrapper>
                   );
                 case ConvertIntent.TRADE_INTENT:
                   return (
-                    <MotionDetailsWrapper key={keys[13]}>
+                    <MotionDetailsWrapper key={keys[14]}>
                       <TradeDetails />
                     </MotionDetailsWrapper>
                   );
                 default:
                   return (
-                    <MotionDetailsWrapper key={keys[14]}>
+                    <MotionDetailsWrapper key={keys[15]}>
                       <BalancesDetails />
                     </MotionDetailsWrapper>
                   );

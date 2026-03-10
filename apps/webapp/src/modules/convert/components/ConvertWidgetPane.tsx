@@ -14,10 +14,11 @@ import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardHeader } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
-import { Upgrade, Trade } from '@/modules/icons';
+import { Convert, Upgrade, Trade } from '@/modules/icons';
 import { useChainId, useChains, useSwitchChain } from 'wagmi';
 import { isL2ChainId, isMainnetId, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { PsmConversionWidgetPane } from './PsmConversionWidgetPane';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
@@ -81,6 +82,8 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
 
   const renderSelectedWidget = () => {
     switch (selectedConvertOption) {
+      case ConvertIntent.PSM_INTENT:
+        return <PsmConversionWidgetPane {...sharedProps} />;
       case ConvertIntent.UPGRADE_INTENT:
         return <UpgradeWidgetPane {...sharedProps} />;
       case ConvertIntent.TRADE_INTENT:
@@ -104,12 +107,68 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
             }
             subHeader={
               <Text className="text-textSecondary" variant="small">
-                <Trans>Upgrade legacy tokens or trade for Sky ecosystem tokens</Trans>
+                <Trans>Get Sky ecosystem tokens with best possible rates</Trans>
               </Text>
             }
             rightHeader={sharedProps.rightHeaderComponent}
           >
             <CardAnimationWrapper className="flex flex-col gap-4">
+              <Card
+                role="button"
+                tabIndex={isPending ? -1 : 0}
+                aria-disabled={isPending}
+                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start/25 hover:to-primary-end/25 bg-radial-(--gradient-position) border-primary-start/30 transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                onClick={() => handleSelectOption(ConvertIntent.PSM_INTENT)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectOption(ConvertIntent.PSM_INTENT);
+                  }
+                }}
+              >
+                <CardHeader className="flex flex-row items-center space-y-0">
+                  <HStack className="items-center gap-3">
+                    <Convert color="inherit" boxSize={28} />
+                    <div>
+                      <Text>
+                        <Trans>1:1 Conversion</Trans>
+                      </Text>
+                      <Text className="text-textSecondary" variant="small">
+                        <Trans>Convert USDC to USDS with 1:1 rate, with no swap fees and no slippage</Trans>
+                      </Text>
+                    </div>
+                  </HStack>
+                </CardHeader>
+              </Card>
+
+              <Card
+                role="button"
+                tabIndex={isPending ? -1 : 0}
+                aria-disabled={isPending}
+                className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectOption(ConvertIntent.TRADE_INTENT);
+                  }
+                }}
+              >
+                <CardHeader className="flex flex-row items-center space-y-0">
+                  <HStack className="items-center gap-3">
+                    <Trade color="inherit" />
+                    <div>
+                      <Text>
+                        <Trans>Trade</Trans>
+                      </Text>
+                      <Text className="text-textSecondary" variant="small">
+                        <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+                      </Text>
+                    </div>
+                  </HStack>
+                </CardHeader>
+              </Card>
+
               {shouldShowUpgradeOption && (
                 <Card
                   role="button"
@@ -139,34 +198,6 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                   </CardHeader>
                 </Card>
               )}
-
-              <Card
-                role="button"
-                tabIndex={isPending ? -1 : 0}
-                aria-disabled={isPending}
-                className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
-                onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleSelectOption(ConvertIntent.TRADE_INTENT);
-                  }
-                }}
-              >
-                <CardHeader className="flex flex-row items-center space-y-0">
-                  <HStack className="items-center gap-3">
-                    <Trade color="inherit" />
-                    <div>
-                      <Text>
-                        <Trans>Trade</Trans>
-                      </Text>
-                      <Text className="text-textSecondary" variant="small">
-                        <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
-                      </Text>
-                    </div>
-                  </HStack>
-                </CardHeader>
-              </Card>
             </CardAnimationWrapper>
           </WidgetContainer>
         )}
