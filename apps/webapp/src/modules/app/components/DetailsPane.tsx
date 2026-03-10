@@ -6,7 +6,7 @@ import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
 import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
-import { QueryParams } from '@/lib/constants';
+import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
 import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
@@ -55,6 +55,9 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
   const chainId = useChainId();
   const [searchParams] = useSearchParams();
+  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
+    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
+  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
 
   // Get the selected vault address from URL params (for multi-vault support)
   const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
@@ -159,7 +162,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   );
               }
             case Intent.CONVERT_INTENT:
-              switch (selectedConvertOption) {
+              switch (activeConvertOption) {
                 case ConvertIntent.PSM_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[12]}>

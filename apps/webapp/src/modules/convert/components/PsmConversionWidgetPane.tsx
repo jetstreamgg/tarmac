@@ -1,17 +1,32 @@
-import { WidgetContainer } from '@jetstreamgg/sky-widgets';
+import {
+  PsmConversionWidget,
+  TxStatus,
+  WidgetStateChangeParams
+} from '@jetstreamgg/sky-widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { Heading, Text } from '@/modules/layout/components/Typography';
-import { Button } from '@/components/ui/button';
-import { QueryParams } from '@/lib/constants';
-import { ArrowLeftRight } from 'lucide-react';
+import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
+import { ConvertIntent } from '@/lib/enums';
 import { useSearchParams } from 'react-router-dom';
-import { Trans } from '@lingui/react/macro';
-import { Card, CardContent } from '@/components/ui/card';
+import { useMemo } from 'react';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { useChainId } from 'wagmi';
+import { useChatContext } from '@/modules/chat/context/ChatContext';
 
 export function PsmConversionWidgetPane(sharedProps: SharedProps) {
-  const [, setSearchParams] = useSearchParams();
+  const chainId = useChainId();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { setSelectedConvertOption } = useConfigContext();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
+  const { setShouldDisableActionButtons } = useChatContext();
+  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
+  const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
+  const sourceTokenParam = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
+  const inputAmountParam = searchParams.get(QueryParams.InputAmount) || undefined;
+  const isPsmContext =
+    widgetParam === 'convert' && convertModuleParam === ConvertIntentMapping[ConvertIntent.PSM_INTENT];
 
   const handleBackToConvert = () => {
     setSearchParams(params => {
@@ -21,36 +36,62 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
     setSelectedConvertOption(undefined);
   };
 
+  const onPsmConversionWidgetStateChange = ({
+    txStatus,
+    originToken,
+    originAmount
+  }: WidgetStateChangeParams) => {
+    if (!isPsmContext) {
+      return;
+    }
+
+    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
+
+    const nextSourceToken = originToken || '';
+    const nextInputAmount = originAmount && originAmount !== '0' ? originAmount : '';
+    const currentSourceToken = searchParams.get(QueryParams.SourceToken) || '';
+    const currentInputAmount = searchParams.get(QueryParams.InputAmount) || '';
+
+    if (currentSourceToken === nextSourceToken && currentInputAmount === nextInputAmount) {
+      return;
+    }
+
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+
+      if (nextSourceToken) {
+        next.set(QueryParams.SourceToken, nextSourceToken);
+      } else {
+        next.delete(QueryParams.SourceToken);
+      }
+
+      if (nextInputAmount) {
+        next.set(QueryParams.InputAmount, nextInputAmount);
+      } else {
+        next.delete(QueryParams.InputAmount);
+      }
+
+      return next;
+    }, { replace: true });
+  };
+
+  const externalWidgetState = useMemo(
+    () => ({
+      amount: inputAmountParam,
+      token: sourceTokenParam
+    }),
+    [inputAmountParam, sourceTokenParam]
+  );
+
   return (
-    <WidgetContainer
-      header={
-        <div className="flex flex-col items-start gap-3">
-          <Button variant="ghost" className="-ml-3 gap-2 px-3" onClick={handleBackToConvert}>
-            <ArrowLeftRight className="h-4 w-4 rotate-90" />
-            <Trans>Back to Convert</Trans>
-          </Button>
-          <Heading variant="x-large">
-            <Trans>1:1 Conversion</Trans>
-          </Heading>
-        </div>
-      }
-      subHeader={
-        <Text className="text-textSecondary" variant="small">
-          <Trans>Phase 1 wires routing, deeplinks, and details rendering. The transaction widget lands next.</Trans>
-        </Text>
-      }
-      rightHeader={sharedProps.rightHeaderComponent}
-    >
-      <Card className="from-card to-card bg-radial-(--gradient-position)">
-        <CardContent className="space-y-2 p-6">
-          <Text>
-            <Trans>PSM 1:1 Conversion is now addressable through Convert and deeplinks.</Trans>
-          </Text>
-          <Text className="text-textSecondary" variant="small">
-            <Trans>Input, review, and transaction execution will be added in the next implementation phase.</Trans>
-          </Text>
-        </CardContent>
-      </Card>
-    </WidgetContainer>
+    <PsmConversionWidget
+      {...sharedProps}
+      onWidgetStateChange={onPsmConversionWidgetStateChange}
+      onAnalyticsEvent={onAnalyticsEvent}
+      externalWidgetState={externalWidgetState}
+      batchEnabled={batchEnabled}
+      setBatchEnabled={setBatchEnabled}
+      onBackToConvert={handleBackToConvert}
+    />
   );
 }

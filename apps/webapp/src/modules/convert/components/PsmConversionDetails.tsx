@@ -1,18 +1,17 @@
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
-import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { AboutUsds } from '@/modules/ui/components/AboutUsds';
+import { PsmConversionFaq } from './PsmConversionFaq';
+import { PsmConversionHistory } from './PsmConversionHistory';
 
 export function PsmConversionDetails() {
   return (
     <DetailSectionWrapper>
       <DetailSection title={t`Your Conversion history`}>
         <DetailSectionRow>
-          <Text className="text-textSecondary" variant="small">
-            {t`No transactions found`}
-          </Text>
+          <PsmConversionHistory />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`About USDS Conversions`}>
@@ -22,9 +21,7 @@ export function PsmConversionDetails() {
       </DetailSection>
       <DetailSection title={t`FAQs`}>
         <DetailSectionRow>
-          <Text className="text-textSecondary" variant="small">
-            {t`Conversion-specific FAQs will be added in a later phase.`}
-          </Text>
+          <PsmConversionFaq />
         </DetailSectionRow>
       </DetailSection>
     </DetailSectionWrapper>

@@ -44,6 +44,35 @@ export function useAppAnalytics() {
     });
   };
 
+  const trackConvertModuleSelected = useCallback(
+    ({
+      convertModule,
+      previousConvertModule,
+      selectionMethod,
+      entrySurface,
+      chainId
+    }: {
+      convertModule: string;
+      previousConvertModule?: string;
+      selectionMethod: SelectionMethod;
+      entrySurface: string;
+      chainId: number;
+    }) => {
+      safeCapture(posthog, AppEvents.CONVERT_MODULE_SELECTED, {
+        widget_name: 'convert',
+        convert_module: convertModule,
+        ...(previousConvertModule ? { previous_convert_module: previousConvertModule } : {}),
+        selection_method: selectionMethod,
+        entry_surface: entrySurface,
+        chain_id: chainId,
+        chain_name: getChainName(chainId),
+        viewport: getViewport(),
+        flow_id: getFlowId()
+      });
+    },
+    [getChainName, getFlowId, posthog]
+  );
+
   const trackTransactionStarted = useCallback(
     ({ widgetName, chainId }: { widgetName: string; chainId: number }) => {
       safeCapture(posthog, AppEvents.TRANSACTION_STARTED, {
@@ -157,6 +186,7 @@ export function useAppAnalytics() {
 
   return {
     trackWidgetSelected,
+    trackConvertModuleSelected,
     trackTransactionStarted,
     trackTransactionCompleted,
     trackWidgetReviewViewed,

@@ -19,10 +19,11 @@ import { useChainId, useChains, useSwitchChain } from 'wagmi';
 import { isL2ChainId, isMainnetId, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { PsmConversionWidgetPane } from './PsmConversionWidgetPane';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { info, error } = useToast();
   const chainId = useChainId();
   const chains = useChains();
@@ -32,8 +33,12 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const mainnetChainId = supportedChainIds.find(isMainnetId) ?? supportedChainIds[0];
   const mainnetChain = chains.find(chain => chain.id === mainnetChainId);
   const { switchChain, isPending } = useSwitchChain();
+  const { trackConvertModuleSelected } = useAppAnalytics();
   const shouldShowUpgradeOption = !isL2 || !isSafeWallet;
   const cardInteractionClass = isPending ? 'pointer-events-none cursor-not-allowed opacity-60' : 'cursor-pointer';
+  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
+    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
+  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
 
   const handleSelectOption = (convertIntent: ConvertIntent) => {
     if (isPending) {
@@ -73,6 +78,16 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
       return;
     }
 
+    if (convertIntent === ConvertIntent.PSM_INTENT) {
+      trackConvertModuleSelected({
+        convertModule: ConvertIntentMapping[convertIntent],
+        previousConvertModule: activeConvertOption ? ConvertIntentMapping[activeConvertOption] : undefined,
+        selectionMethod: 'card',
+        entrySurface: 'convert_landing',
+        chainId
+      });
+    }
+
     setSearchParams(params => {
       params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);
       return params;
@@ -81,7 +96,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   };
 
   const renderSelectedWidget = () => {
-    switch (selectedConvertOption) {
+    switch (activeConvertOption) {
       case ConvertIntent.PSM_INTENT:
         return <PsmConversionWidgetPane {...sharedProps} />;
       case ConvertIntent.UPGRADE_INTENT:
@@ -95,8 +110,8 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
 
   return (
     <AnimatePresence mode="popLayout" initial={false}>
-      <CardAnimationWrapper key={selectedConvertOption} className="h-full">
-        {selectedConvertOption ? (
+      <CardAnimationWrapper key={activeConvertOption} className="h-full">
+        {activeConvertOption ? (
           renderSelectedWidget()
         ) : (
           <WidgetContainer
