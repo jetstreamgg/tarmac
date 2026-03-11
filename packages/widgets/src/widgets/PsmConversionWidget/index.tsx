@@ -364,8 +364,8 @@ function PsmConversionWidgetWrapped({
   useEffect(() => {
     const disabled =
       widgetState.screen === PsmConversionScreen.REVIEW ? confirmDisabled : reviewDisabled;
-    setIsDisabled(isConnectedAndEnabled && disabled);
-  }, [confirmDisabled, isConnectedAndEnabled, reviewDisabled, setIsDisabled, widgetState.screen]);
+    setIsDisabled(txStatus === TxStatus.IDLE && isConnectedAndEnabled && disabled);
+  }, [confirmDisabled, isConnectedAndEnabled, reviewDisabled, setIsDisabled, txStatus, widgetState.screen]);
 
   useEffect(() => {
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
