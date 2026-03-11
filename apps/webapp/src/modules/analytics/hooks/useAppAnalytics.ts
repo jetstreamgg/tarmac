@@ -74,13 +74,28 @@ export function useAppAnalytics() {
   );
 
   const trackTransactionStarted = useCallback(
-    ({ widgetName, chainId }: { widgetName: string; chainId: number }) => {
+    ({
+      widgetName,
+      chainId,
+      action,
+      flow,
+      data
+    }: {
+      widgetName: string;
+      chainId: number;
+      action?: string;
+      flow?: string;
+      data?: Record<string, unknown>;
+    }) => {
       safeCapture(posthog, AppEvents.TRANSACTION_STARTED, {
         widget_name: widgetName,
         chain_id: chainId,
         chain_name: getChainName(chainId),
         viewport: getViewport(),
-        flow_id: getFlowId()
+        flow_id: getFlowId(),
+        ...(action && { action }),
+        ...(flow && { flow }),
+        ...data
       });
     },
     [posthog, getChainName, getFlowId]
@@ -92,13 +107,19 @@ export function useAppAnalytics() {
       chainId,
       txStatus,
       txHash,
-      errorContext
+      errorContext,
+      action,
+      flow,
+      data
     }: {
       widgetName: string;
       chainId: number;
       txStatus: TxStatus;
       txHash?: string;
       errorContext?: ErrorContext;
+      action?: string;
+      flow?: string;
+      data?: Record<string, unknown>;
     }) => {
       safeCapture(posthog, AppEvents.TRANSACTION_COMPLETED, {
         widget_name: widgetName,
@@ -108,6 +129,9 @@ export function useAppAnalytics() {
         wallet_address: address,
         ...(txHash && { tx_hash: txHash }),
         ...(errorContext && { error_context: errorContext }),
+        ...(action && { action }),
+        ...(flow && { flow }),
+        ...data,
         viewport: getViewport(),
         flow_id: getFlowId()
       });

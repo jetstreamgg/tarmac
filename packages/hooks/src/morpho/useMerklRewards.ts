@@ -1,12 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useChainId, useConnection } from 'wagmi';
-import { useCallback } from 'react';
+import { useChainId, useConnection, useReadContracts } from 'wagmi';
+import { useCallback, useMemo } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { isTestnetId, formatBigInt } from '@jetstreamgg/sky-utils';
 import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { MERKL_API_URL, MORPHO_VAULTS, getMorphoVaultByAddress } from './constants';
+import { morphoMerklDistributorAddress, morphoMerklDistributorImplementationAbi } from '../generated';
 
 /**
  * Token data from the Merkl API response.
@@ -241,6 +242,11 @@ async function fetchMerklRewards(
   };
 }
 
+// TODO: Remove the on-chain claimed() check once the Merkl API updates rewards immediately after claiming.
+// Currently the Merkl API takes ~2 minutes to reflect a claim, so we use the contract's claimed()
+// timestamp to filter out tokens that were recently claimed (within the last 5 minutes).
+const RECENT_CLAIM_THRESHOLD_MS = 5 * 60 * 1000;
+
 /**
  * Hook for fetching all Merkl rewards for the connected user, grouped by token
  * with a breakdown by source (which Morpho vault, other campaigns).
@@ -258,7 +264,11 @@ export function useMerklRewards(): MerklRewardsHook {
   const queryClient = useQueryClient();
   const queryKey = ['merkl-rewards-all', userAddress, chainId];
 
-  const { data, error, isLoading } = useQuery({
+  const {
+    data: apiData,
+    error: apiError,
+    isLoading: apiIsLoading
+  } = useQuery({
     queryKey,
     queryFn: () => {
       if (!userAddress) {
@@ -271,6 +281,54 @@ export function useMerklRewards(): MerklRewardsHook {
     gcTime: 5 * 60 * 1000
   });
 
+  // TODO: Remove this useReadContracts call once the Merkl API updates immediately after claiming
+  const claimedContracts = useMemo(
+    () =>
+      (apiData?.rewards ?? []).map(reward => ({
+        address:
+          morphoMerklDistributorAddress[chainId as keyof typeof morphoMerklDistributorAddress],
+        abi: morphoMerklDistributorImplementationAbi,
+        functionName: 'claimed' as const,
+        args: [userAddress!, reward.tokenAddress] as const
+      })),
+    [apiData?.rewards, chainId, userAddress]
+  );
+
+  const {
+    data: claimedData,
+    isLoading: claimedIsLoading,
+    error: claimedError,
+    refetch: refetchClaimed
+  } = useReadContracts({
+    contracts: claimedContracts,
+    query: {
+      enabled: !!userAddress && (apiData?.rewards ?? []).length > 0
+    }
+  });
+
+  // Filter out tokens that were recently claimed on-chain but still show in the API
+  const data = useMemo(() => {
+    if (!apiData) return undefined;
+    if (!claimedData || claimedData.length === 0) return apiData;
+
+    const now = Date.now();
+    const filteredRewards = apiData.rewards.filter((_reward, index) => {
+      const result = claimedData[index];
+      if (!result || result.status === 'failure') return true;
+
+      const [, timestamp] = result.result as readonly [bigint, number, `0x${string}`];
+      const claimedAtMs = Number(timestamp) * 1000;
+
+      // Keep the reward if it was NOT claimed recently
+      return now - claimedAtMs > RECENT_CLAIM_THRESHOLD_MS;
+    });
+
+    return {
+      rewards: filteredRewards,
+      hasClaimableRewards: filteredRewards.length > 0
+    };
+  }, [apiData, claimedData]);
+
   const mutate = useCallback(() => {
     if (!userAddress) return;
     void queryClient.prefetchQuery({
@@ -278,12 +336,13 @@ export function useMerklRewards(): MerklRewardsHook {
       queryFn: () => fetchMerklRewards(userAddress, chainId, true),
       staleTime: 0
     });
-  }, [queryClient, queryKey, userAddress, chainId]);
+    void refetchClaimed();
+  }, [queryClient, queryKey, userAddress, chainId, refetchClaimed]);
 
   return {
     data,
-    isLoading: !data && isLoading,
-    error: error as Error | null,
+    isLoading: !data && (apiIsLoading || claimedIsLoading),
+    error: (apiError ?? claimedError) as Error | null,
     mutate,
     dataSources: [
       {
