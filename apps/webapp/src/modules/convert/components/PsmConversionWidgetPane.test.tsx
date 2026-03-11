@@ -9,7 +9,7 @@ const setSearchParamsMock = vi.fn(
     next:
       | URLSearchParams
       | ((params: URLSearchParams) => URLSearchParams),
-    _options?: { replace?: boolean }
+    _options?: { replace?: boolean } // eslint-disable-line @typescript-eslint/no-unused-vars
   ) => {
     mockSearchParams =
       typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);

@@ -2,7 +2,6 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useContext, useEffect } from 'react';
 import { Token } from '@jetstreamgg/sky-hooks';
-import { BatchStatus } from '@widgets/shared/constants';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 
