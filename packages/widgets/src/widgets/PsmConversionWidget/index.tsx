@@ -584,7 +584,7 @@ function PsmConversionWidgetWrapped({
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">
-          <Trans>Convert between USDC and USDS at a fixed 1:1 rate through the Peg Stability Module.</Trans>
+          <Trans>Convert your USDC to USDS, or USDS to USDC at 1:1 rate with no fees and slippage</Trans>
         </Text>
       }
       rightHeader={rightHeaderComponent}
