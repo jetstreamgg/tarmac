@@ -83,6 +83,7 @@ export const BalancesContent = ({
           </>
         )}
         <ModulesBalances
+          hideModuleBalances={hideModuleBalances}
           rewardsCardUrl={rewardsCardUrl}
           savingsCardUrlMap={savingsCardUrlMap}
           sealCardUrl={sealCardUrl}
