@@ -6,7 +6,6 @@ import {
   Expert,
   Vaults,
   Convert,
-  ArrowRightLong,
   Upgrade,
   Trade
 } from '../../icons';
@@ -231,7 +230,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       [
         {
           label: '1:1 Conversion',
-          icon: <ArrowRightLong className="h-3 w-3" />,
+          icon: <Convert className="h-3 w-3" />,
           params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.PSM_INTENT] }
         },
         {

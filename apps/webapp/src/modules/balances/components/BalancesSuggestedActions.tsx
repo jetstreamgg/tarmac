@@ -447,8 +447,8 @@ export function BalancesSuggestedActions({
                       <TokenIcon
                         key={symbol}
                         token={{ symbol, name: symbol }}
-                        className="h-6 w-6"
-                        width={24}
+                        className="h-5 w-5"
+                        width={20}
                         showChainIcon={false}
                       />
                     ))}
