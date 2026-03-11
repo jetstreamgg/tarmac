@@ -35,7 +35,7 @@ export function PsmConversionInputs({
   const chainId = useChainId();
 
   return (
-    <VStack className="items-stretch" gap={2}>
+    <VStack className="items-stretch" gap={0}>
       <motion.div variants={positionAnimations}>
         <TokenInput
           key={originToken.symbol}
@@ -57,7 +57,7 @@ export function PsmConversionInputs({
         />
       </motion.div>
 
-      <motion.div variants={positionAnimations} className="flex justify-center">
+      <motion.div variants={positionAnimations} className="-my-3 z-10 flex justify-center">
         <Button
           aria-label="Switch conversion direction"
           size="icon"
