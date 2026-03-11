@@ -1,4 +1,11 @@
-import { mcdSpotAddress, mcdVatAddress, useReadMcdSpot, useReadMcdVat } from '../generated';
+import {
+  mcdSpotAddress,
+  mcdVatAddress,
+  useReadMcdSpot,
+  useReadMcdSpotIlks,
+  useReadMcdVatIlks,
+  useReadMcdVatUrns
+} from '../generated';
 import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
@@ -43,9 +50,8 @@ export function useVault(
     isLoading: isLoadingVatIlk,
     error: errorVatIlk,
     refetch: refetchVatIlk
-  } = useReadMcdVat({
+  } = useReadMcdVatIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `vat-ilk-${ilkName}`
   });
@@ -57,9 +63,8 @@ export function useVault(
     isLoading: isLoadingVatUrn,
     error: errorVatUrn,
     refetch: refetchVatUrn
-  } = useReadMcdVat({
+  } = useReadMcdVatUrns({
     chainId: chainId as any,
-    functionName: 'urns',
     args: [ilkHex, urn!],
     scopeKey: `vat-urn-${ilkName}-${urn}`,
     query: { enabled: !!urn }
@@ -91,9 +96,8 @@ export function useVault(
     isLoading: isLoadingSpotIlk,
     error: errorSpotIlk,
     refetch: refetchSpotIlk
-  } = useReadMcdSpot({
+  } = useReadMcdSpotIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `spot-ilks-${ilkName}`
   });

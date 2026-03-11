@@ -3,7 +3,12 @@ import { WriteHook, WriteHookParams } from '../hooks';
 import { useSavingsData } from './useSavingsData';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { useReadSavingsUsds, sUsdsAddress, sUsdsImplementationAbi } from './useReadSavingsUsds';
+import {
+  useReadSavingsUsds,
+  sUsdsAddress,
+  sUsdsImplementationAbi,
+  useReadSavingsUsdsMaxWithdraw
+} from './useReadSavingsUsds';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 
 export function useSavingsWithdraw({
@@ -27,8 +32,7 @@ export function useSavingsWithdraw({
   const { data: blockNumber } = useBlockNumber({ chainId, watch: true });
 
   // When 'max' is true, use the maxWithdrawBalance to avoid leaving dust
-  const { data: maxWithdraw, queryKey } = useReadSavingsUsds({
-    functionName: 'maxWithdraw',
+  const { data: maxWithdraw, queryKey } = useReadSavingsUsdsMaxWithdraw({
     args: connectedAddress ? [connectedAddress] : undefined,
     chainId: chainId as keyof typeof useReadSavingsUsds,
     query: {

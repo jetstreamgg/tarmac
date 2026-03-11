@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro';
 import { BalancesSkyStatsOverview } from './BalancesSkyStatsOverview';
 import { BalancesChart } from './BalancesChart';
 import { BalancesFaq } from './BalancesFaq';
-import { SuggestedActions } from '@/modules/vaults/components/SuggestedActions';
+import { BalancesSuggestedActions } from './BalancesSuggestedActions';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function BalancesDetails() {
@@ -15,21 +15,17 @@ export function BalancesDetails() {
     <DetailSectionWrapper>
       <DetailSection title={t`Earn with your Stables`} fixedOpen>
         <DetailSectionRow>
-          <SuggestedActions
-            widget="stables"
-            variant="card"
-            restrictedModules={isRegionRestricted ? ['morpho'] : undefined}
-          />
+          <BalancesSuggestedActions widget="stables" variant="card" restrictedModules={isRegionRestricted ? ['morpho'] : undefined} />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Stake, Borrow, and Earn with SKY`} fixedOpen>
         <DetailSectionRow>
-          <SuggestedActions widget="sky" variant="card" />
+          <BalancesSuggestedActions widget="sky" variant="card" />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Get Sky Protocol Tokens`} fixedOpen>
         <DetailSectionRow>
-          <SuggestedActions widget="tokens" variant="card-sm" />
+          <BalancesSuggestedActions widget="tokens" variant="card-sm" />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Sky Protocol overview`}>

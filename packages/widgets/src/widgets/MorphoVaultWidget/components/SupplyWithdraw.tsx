@@ -1,6 +1,6 @@
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { getTokenDecimals, Token, WriteHook } from '@jetstreamgg/sky-hooks';
+import { getTokenDecimals, Token } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
@@ -64,12 +64,6 @@ type SupplyWithdrawProps = {
   vaultRate?: string;
   /** Share decimals for formatting vault shares (typically 18) */
   shareDecimals: number;
-  /** Claim rewards hook */
-  claimRewards?: WriteHook;
-  /** Whether rewards are loading */
-  isRewardsLoading?: boolean;
-  /** Whether there are claimable rewards */
-  hasClaimableRewards?: boolean;
   /** Available liquidity in the vault for withdrawals */
   availableLiquidity?: bigint;
   /** Whether the liquidity disclaimer checkbox is checked */
@@ -101,9 +95,6 @@ export const SupplyWithdraw = ({
   vaultTvl,
   vaultRate,
   shareDecimals,
-  claimRewards,
-  isRewardsLoading,
-  hasClaimableRewards,
   availableLiquidity,
   disclaimerChecked = false,
   onDisclaimerChange
@@ -152,9 +143,6 @@ export const SupplyWithdraw = ({
           shareDecimals={shareDecimals}
           isConnectedAndEnabled={isConnectedAndEnabled}
           onExternalLinkClicked={onExternalLinkClicked}
-          claimRewards={claimRewards}
-          isRewardsLoading={isRewardsLoading}
-          hasClaimableRewards={hasClaimableRewards}
         />
 
         <TabsContent value="left">

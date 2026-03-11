@@ -32,7 +32,7 @@ import { useBatchStakeMulticall } from './useBatchStakeMulticall';
 
 describe('Stake Module Multicall tests', async () => {
   const wrapper = WagmiWrapper;
-  const URN_INDEX = 0n;
+  let URN_INDEX = 0n;
   const skyToLockStr = '1200000';
   const SKY_TO_LOCK = parseEther(skyToLockStr);
   const USDS_TO_DRAW = parseEther('30000');
@@ -44,16 +44,18 @@ describe('Stake Module Multicall tests', async () => {
     // Set initial SKY balance
     await setErc20Balance(skyAddress[TENDERLY_CHAIN_ID], skyToLockStr);
 
-    // Make sure URN_INDEX is correct
+    // Get the current URN index dynamically (fork may have pre-existing urns)
     const { result: resultUrnIndex } = renderHook(() => useCurrentUrnIndex(), { wrapper });
 
     await waitFor(
       () => {
-        expect(resultUrnIndex.current.data).toEqual(URN_INDEX);
+        expect(resultUrnIndex.current.data).toBeDefined();
         return;
       },
       { timeout: 5000 }
     );
+
+    URN_INDEX = resultUrnIndex.current.data!;
 
     // Unlimited approvals for convenience
     const { result: resultApproveSky } = renderHook(
@@ -332,14 +334,14 @@ describe('Stake Module Multicall tests', async () => {
     const urnAddress = await getUrnAddress(URN_INDEX, useUrnAddress);
 
     // Check Urn locked SKY equivalent amount
-    const { result: resultSkyLocked } = renderHook(() => useVault(urnAddress), {
+    const { result: resultSkyLocked } = renderHook(() => useVault(urnAddress, ILK_NAME), {
       wrapper
     });
 
     await waitFor(
       () => {
-        // After freeing SKY, no balance should remain locked
-        expect(resultSkyLocked.current.data?.collateralAmount).toBe(0n);
+        // After freeing SKY_TO_LOCK, the remaining collateral is from the initial lock in test 1
+        expect(resultSkyLocked.current.data?.collateralAmount).toBe(SKY_TO_LOCK);
         return;
       },
       { timeout: 5000 }

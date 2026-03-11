@@ -1,7 +1,14 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { useTokenBalance } from '../tokens/useTokenBalance';
-import { mcdPotAddress, usdsAddress, usdsL2Address } from '../generated';
+import {
+  mcdPotAddress,
+  usdsAddress,
+  usdsL2Address,
+  useReadMcdPotChi,
+  useReadMcdPotDsr,
+  useReadMcdPotPie
+} from '../generated';
 import { useReadMcdPot } from '../generated';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { DataSource, ReadHook } from '../hooks';
@@ -35,7 +42,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
     isLoading: chiIsLoading,
     error: chiError,
     refetch: refetchChi
-  } = useReadMcdPot({ functionName: 'chi', chainId: ethereumChainId as keyof typeof useReadMcdPot });
+  } = useReadMcdPotChi({ chainId: ethereumChainId as keyof typeof useReadMcdPot });
 
   const dataSourcesChi: DataSource = {
     title: 'MCD_POT Contract. chi',
@@ -53,7 +60,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
     isLoading: PieIsLoading,
     error: PieError,
     refetch: refetchPie
-  } = useReadMcdPot({ functionName: 'Pie', chainId: ethereumChainId as keyof typeof useReadMcdPot });
+  } = useReadMcdPotPie({ chainId: ethereumChainId as keyof typeof useReadMcdPot });
 
   const dataSourcesPie: DataSource = {
     title: 'MCD_POT Contract. Pie',
@@ -71,7 +78,7 @@ export function useSavingsData(address?: `0x${string}`): DsrHook {
     isLoading: dsrIsLoading,
     error: dsrError,
     refetch: refetchDsr
-  } = useReadMcdPot({ functionName: 'dsr', chainId: ethereumChainId as keyof typeof useReadMcdPot });
+  } = useReadMcdPotDsr({ chainId: ethereumChainId as keyof typeof useReadMcdPot });
 
   const dataSourcesDsr = {
     title: 'MCD_POT Contract. dsr',

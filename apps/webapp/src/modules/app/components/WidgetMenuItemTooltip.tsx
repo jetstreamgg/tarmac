@@ -156,7 +156,9 @@ export function WidgetMenuItemTooltip({
 
   return (
     <Tooltip delayDuration={150}>
-      <TooltipTrigger disabled={disabled}>{children}</TooltipTrigger>
+      <TooltipTrigger asChild disabled={disabled}>
+        {children}
+      </TooltipTrigger>
       {description && !isMobile && (
         <TooltipPortal>
           <TooltipContent side="right" className="max-w-xs">
