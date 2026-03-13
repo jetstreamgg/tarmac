@@ -209,9 +209,9 @@ test.describe('Vaults Module - Morpho Vaults', () => {
       await expect(isolatedPage.getByText('Claimable rewards')).toBeVisible({ timeout: 10000 });
 
       // Verify table headers
-      await expect(isolatedPage.getByText('Token')).toBeVisible();
-      await expect(isolatedPage.getByText('Source')).toBeVisible();
-      await expect(isolatedPage.getByText('Amount')).toBeVisible();
+      await expect(isolatedPage.getByRole('columnheader', { name: 'Token' })).toBeVisible();
+      await expect(isolatedPage.getByRole('columnheader', { name: 'Source' })).toBeVisible();
+      await expect(isolatedPage.getByRole('columnheader', { name: 'Amount' })).toBeVisible();
 
       // Verify MORPHO token row appears in the table
       await expect(isolatedPage.getByText('MORPHO').first()).toBeVisible();
