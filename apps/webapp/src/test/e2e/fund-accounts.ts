@@ -19,6 +19,7 @@ import { validateVnets } from './validate-vnets';
 import {
   usdsAddress,
   usdcAddress,
+  usdtAddress,
   mcdDaiAddress,
   mkrAddress,
   skyAddress,
@@ -294,6 +295,7 @@ async function fundAccountsOnVnet(network: NetworkName, addresses: string[]): Pr
         { token: usdsAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'USDS' },
         { token: mcdDaiAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'DAI' },
         { token: usdcAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 6, name: 'USDC' },
+        { token: usdtAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 6, name: 'USDT' },
         { token: mkrAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'MKR' },
         { token: skyAddress[TENDERLY_CHAIN_ID], amount: '100000000', decimals: 18, name: 'SKY' },
         { token: wethAddress[TENDERLY_CHAIN_ID], amount: '900', decimals: 18, name: 'WETH' },
