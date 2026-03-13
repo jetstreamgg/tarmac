@@ -62,7 +62,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
       https://vote.sky.money
-      https://indexer.dev.hyperindex.xyz
+      https://indexer.hyperindex.xyz
       https://staging-api.sky.money
       https://api.sky.money
       https://info-sky.blockanalitica.com
