@@ -4,6 +4,7 @@ import { ConfigProvider } from '../modules/config/context/ConfigProvider';
 import { App } from './App';
 import { ErrorBoundary } from '../modules/layout/components/ErrorBoundary';
 
+import '../modules/analytics/gtag';
 import '../globals.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

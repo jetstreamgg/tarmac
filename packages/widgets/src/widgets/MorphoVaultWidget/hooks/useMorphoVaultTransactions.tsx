@@ -1,9 +1,7 @@
 import {
   useBatchMorphoVaultDeposit,
   useMorphoVaultWithdraw,
-  useMorphoVaultRedeem,
-  useMorphoVaultClaimRewards,
-  MorphoVaultReward
+  useMorphoVaultRedeem
 } from '@jetstreamgg/sky-hooks';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useContext } from 'react';
@@ -12,7 +10,10 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useMorphoVaultTransactionCallbacks } from './useMorphoVaultTransactionCallbacks';
 
 interface UseMorphoVaultTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+  extends Pick<
+    WidgetProps,
+    'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  > {
   /** Amount of underlying assets to deposit/withdraw */
   amount: bigint;
   /** User's vault shares (used for redeem) */
@@ -33,18 +34,12 @@ interface UseMorphoVaultTransactionsParameters
   needsAllowance: boolean;
   /** Whether to use batch transactions */
   shouldUseBatch: boolean;
-  /** Rewards data for claiming */
-  rewards?: MorphoVaultReward[];
-  /** Whether rewards can be claimed */
-  hasClaimableRewards?: boolean;
   /** Callback to refresh allowance data */
   mutateAllowance: () => void;
   /** Callback to refresh vault data */
   mutateVaultData: () => void;
   /** Callback to refresh asset balance */
   mutateAssetBalance: () => void;
-  /** Callback to refresh rewards data */
-  mutateRewards?: () => void;
 }
 
 export const useMorphoVaultTransactions = ({
@@ -58,12 +53,9 @@ export const useMorphoVaultTransactions = ({
   vaultName,
   needsAllowance,
   shouldUseBatch,
-  rewards,
-  hasClaimableRewards,
   mutateAllowance,
   mutateVaultData,
   mutateAssetBalance,
-  mutateRewards,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
@@ -71,7 +63,7 @@ export const useMorphoVaultTransactions = ({
 }: UseMorphoVaultTransactionsParameters) => {
   const { widgetState } = useContext(WidgetContext);
 
-  const { supplyTransactionCallbacks, withdrawTransactionCallbacks, claimRewardsTransactionCallbacks } =
+  const { supplyTransactionCallbacks, withdrawTransactionCallbacks } =
     useMorphoVaultTransactionCallbacks({
       amount,
       assetDecimals,
@@ -79,13 +71,11 @@ export const useMorphoVaultTransactions = ({
       vaultAddress,
       assetAddress,
       vaultName,
-      rewards,
       needsAllowance,
       shouldUseBatch,
       mutateAllowance,
       mutateVaultData,
       mutateAssetBalance,
-      mutateRewards,
       addRecentTransaction,
       onWidgetStateChange,
       onNotification,
@@ -120,12 +110,5 @@ export const useMorphoVaultTransactions = ({
     ...withdrawTransactionCallbacks
   });
 
-  // Claim rewards hook
-  const morphoVaultClaimRewards = useMorphoVaultClaimRewards({
-    rewards: rewards ?? [],
-    enabled: hasClaimableRewards ?? false,
-    ...claimRewardsTransactionCallbacks
-  });
-
-  return { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem, morphoVaultClaimRewards };
+  return { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem };
 };

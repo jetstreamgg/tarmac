@@ -133,13 +133,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, vaultsUrl } = useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
-  const rewardSubItems = rewardContracts.map(contract => ({
-    label: `${contract.rewardToken.symbol} Rewards`,
-    icon: (
-      <TokenIcon token={{ symbol: contract.rewardToken.symbol }} className="h-3 w-3" showChainIcon={false} />
-    ),
-    params: { [QueryParams.Reward]: contract.contractAddress }
-  }));
+  const rewardSubItems = rewardContracts
+    .filter(contract => contract.rewardToken.symbol !== 'SKY')
+    .map(contract => ({
+      label: `${contract.rewardToken.symbol} Rewards`,
+      icon: (
+        <TokenIcon token={{ symbol: contract.rewardToken.symbol }} className="h-3 w-3" showChainIcon={false} />
+      ),
+      params: { [QueryParams.Reward]: contract.contractAddress }
+    }));
 
   // Vaults only exist on mainnet/testnet, so use appropriate chain based on environment
   const vaultChainId = isTestnetId(chainId) ? TENDERLY_CHAIN_ID : mainnet.id;

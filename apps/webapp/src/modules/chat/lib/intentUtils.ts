@@ -70,7 +70,8 @@ export const intents = {
   trade: Intent.TRADE_INTENT,
   convert: Intent.CONVERT_INTENT,
   stake: Intent.STAKE_INTENT,
-  expert: Intent.EXPERT_INTENT
+  expert: Intent.EXPERT_INTENT,
+  vaults: Intent.VAULTS_INTENT
 } as const;
 
 export type NetworkName = keyof typeof networkMapping;

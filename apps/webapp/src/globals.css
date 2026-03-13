@@ -95,6 +95,8 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-slide-down: slide-down 0.2s ease-out;
   --animate-slide-up: slide-up 0.2s ease-out;
+  --animate-slide-down-fade: slide-down-fade 0.2s ease-out;
+  --animate-slide-up-fade: slide-up-fade 0.2s ease-out;
 
   --max-height-screen-70: calc(100vh - 70px);
 
@@ -146,6 +148,30 @@
     }
     to {
       height: 0;
+    }
+  }
+  @keyframes slide-down-fade {
+    from {
+      height: 0;
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-up-fade {
+    from {
+      height: var(--radix-collapsible-content-height);
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      height: 0;
+      opacity: 0;
+      transform: translateY(-4px);
     }
   }
 }

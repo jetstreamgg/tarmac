@@ -5,7 +5,12 @@ import { getTimeFrameInterval } from '@/modules/rewards/helpers/getTimeFrameInte
 
 type TvlData = { blockTimestamp: number; amount: bigint };
 
-export function useParseTvlChartData(timeFrame: TimeFrame, tvl: TvlData[], decimals?: number): Data[] {
+export function useParseTvlChartData(
+  timeFrame: TimeFrame,
+  tvl: TvlData[],
+  decimals?: number,
+  intervalOverride?: number
+): Data[] {
   return useMemo(() => {
     const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
@@ -31,11 +36,12 @@ export function useParseTvlChartData(timeFrame: TimeFrame, tvl: TvlData[], decim
       startTimestamp,
       endTimestamp,
       timeFrame,
-      decimals
+      decimals,
+      intervalOverride
     );
 
     return dataPoints;
-  }, [timeFrame, tvl]);
+  }, [timeFrame, tvl, intervalOverride]);
 }
 
 function determineTimeframeBounds(
@@ -76,8 +82,8 @@ const interpolateDataPoints = (
 ): Data[] => {
   const dataPoints: Data[] = [];
   let currentTime = startTimestamp;
-  // Start with an initial amount if tvl is not empty, assuming BigInt for accuracy
-  let lastKnownAmount = tvl.length > 0 ? BigInt(tvl[0].amount) : BigInt(0);
+  // Start at 0 — values before the first data point should show as zero, not extrapolated
+  let lastKnownAmount = 0n;
 
   let lastProcessedIndex = -1;
   while (currentTime <= endTimestamp) {
@@ -125,22 +131,15 @@ function generateDataPoints(
   startTimestamp: number,
   endTimestamp: number,
   timeFrame: TimeFrame,
-  decimals?: number
+  decimals?: number,
+  intervalOverride?: number
 ): Data[] {
   // Sort tvl by timestamp in ascending order to ensure correct processing
   const sortedTvl = [...tvl].sort((a, b) => a.blockTimestamp - b.blockTimestamp);
 
-  let dataPoints;
-  if (timeFrame === 'all' || timeFrame === 'y') {
-    // Handle 'all' timeframe by generating equidistant points across the entire dataset
-    const totalPoints = 7; // Including start and end, with 5 in between
-    const interval = (endTimestamp - startTimestamp) / (totalPoints - 1);
-    dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval, decimals);
-  } else {
-    // For other timeframes, calculate the interval based on the timeframe
-    const interval = getTimeFrameInterval(timeFrame);
-    dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval, decimals);
-  }
+  // Use daily interval (86400s) for all timeframes by default
+  const interval = intervalOverride || getTimeFrameInterval(timeFrame);
+  const dataPoints = interpolateDataPoints(sortedTvl, startTimestamp, endTimestamp, interval, decimals);
 
   //Find min and max points
   let minValue = Number.MAX_VALUE;

@@ -4,7 +4,13 @@ import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
-import { MORPHO_API_URL, VAULT_V2_HISTORICAL_QUERY } from './constants';
+import { MORPHO_API_URL, VAULT_V2_HISTORICAL_QUERY, VAULT_V2_HISTORICAL_HOURLY_QUERY } from './constants';
+
+const HOUR_IN_SECONDS = 3600;
+const WEEK_IN_SECONDS = 604800;
+const MONTH_IN_SECONDS = 2592000;
+
+export type MorphoVaultHourlyWindow = 'w' | 'm';
 
 /**
  * Raw API response type for Morpho V2 vault historical data.
@@ -14,6 +20,7 @@ type MorphoVaultHistoricalApiResponse = {
     vaultV2ByAddress: {
       historicalState: {
         totalAssets: Array<{ x: number; y: string }>;
+        totalAssetsUsd: Array<{ x: number; y: number }>;
         avgNetApy: Array<{ x: number; y: number }>;
       };
     } | null;
@@ -26,8 +33,10 @@ type MorphoVaultHistoricalApiResponse = {
 export type MorphoVaultChartDataPoint = {
   /** Unix timestamp in seconds */
   blockTimestamp: number;
-  /** Total assets in the vault (bigint) */
+  /** Total assets in the vault (bigint in native token decimals) */
   amount: bigint;
+  /** Total assets in USD */
+  amountUsd: number;
   /** Average net APY as a decimal (e.g., 0.05 for 5%) */
   apy?: number;
 };
@@ -37,17 +46,24 @@ export type MorphoVaultChartDataPoint = {
  */
 function transformMorphoChartData(
   totalAssets: Array<{ x: number; y: string }>,
+  totalAssetsUsd: Array<{ x: number; y: number }>,
   avgNetApy: Array<{ x: number; y: number }>
 ): MorphoVaultChartDataPoint[] {
-  // Create a map of timestamp to APY for easy lookup
+  // Create maps for easy lookup by timestamp
   const apyMap = new Map<number, number>();
   avgNetApy.forEach(item => {
     apyMap.set(item.x, item.y);
   });
 
+  const usdMap = new Map<number, number>();
+  totalAssetsUsd.forEach(item => {
+    usdMap.set(item.x, item.y);
+  });
+
   return totalAssets.map(item => ({
     blockTimestamp: item.x,
     amount: BigInt(item.y),
+    amountUsd: usdMap.get(item.x) ?? 0,
     apy: apyMap.get(item.x)
   }));
 }
@@ -57,20 +73,37 @@ function transformMorphoChartData(
  */
 async function fetchMorphoVaultChartInfo(
   vaultAddress: string,
-  chainId: number
+  chainId: number,
+  useHourlyInterval?: boolean,
+  hourlyWindow?: MorphoVaultHourlyWindow
 ): Promise<MorphoVaultChartDataPoint[]> {
+  const endTimestamp = Math.floor(Date.now() / 1000);
+  // Fetch one extra hour of data to ensure the first point isn't excluded
+  // by the parser's independently calculated startTimestamp
+  const hourlyStartTimestamp =
+    endTimestamp - (hourlyWindow === 'w' ? WEEK_IN_SECONDS : MONTH_IN_SECONDS) - HOUR_IN_SECONDS;
+
+  const variables = useHourlyInterval
+    ? {
+        address: vaultAddress.toLowerCase(),
+        chainId,
+        startTimestamp: hourlyStartTimestamp,
+        endTimestamp
+      }
+    : {
+        address: vaultAddress.toLowerCase(),
+        chainId,
+        endTimestamp
+      };
+
   const response = await fetch(MORPHO_API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      query: VAULT_V2_HISTORICAL_QUERY,
-      variables: {
-        address: vaultAddress.toLowerCase(),
-        chainId,
-        endTimestamp: Math.floor(Date.now() / 1000)
-      }
+      query: useHourlyInterval ? VAULT_V2_HISTORICAL_HOURLY_QUERY : VAULT_V2_HISTORICAL_QUERY,
+      variables
     })
   });
 
@@ -84,8 +117,8 @@ async function fetchMorphoVaultChartInfo(
     return [];
   }
 
-  const { totalAssets, avgNetApy } = result.data.vaultV2ByAddress.historicalState;
-  return transformMorphoChartData(totalAssets, avgNetApy);
+  const { totalAssets, totalAssetsUsd, avgNetApy } = result.data.vaultV2ByAddress.historicalState;
+  return transformMorphoChartData(totalAssets, totalAssetsUsd, avgNetApy);
 }
 
 export type MorphoVaultChartInfoHook = ReadHook & {
@@ -100,9 +133,13 @@ export type MorphoVaultChartInfoHook = ReadHook & {
  * @param vaultAddress - The Morpho V2 vault contract address
  */
 export function useMorphoVaultChartInfo({
-  vaultAddress
+  vaultAddress,
+  useHourlyInterval,
+  hourlyWindow
 }: {
   vaultAddress: `0x${string}`;
+  useHourlyInterval?: boolean;
+  hourlyWindow?: MorphoVaultHourlyWindow;
 }): MorphoVaultChartInfoHook {
   const currentChainId = useChainId();
   const chainId = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
@@ -113,8 +150,8 @@ export function useMorphoVaultChartInfo({
     refetch: mutate,
     isLoading
   } = useQuery({
-    queryKey: ['morpho-vault-chart', vaultAddress, chainId],
-    queryFn: () => fetchMorphoVaultChartInfo(vaultAddress, chainId),
+    queryKey: ['morpho-vault-chart', vaultAddress, chainId, useHourlyInterval, hourlyWindow],
+    queryFn: () => fetchMorphoVaultChartInfo(vaultAddress, chainId, useHourlyInterval, hourlyWindow),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes
   });
@@ -148,17 +185,21 @@ export type MorphoVaultMultipleChartInfoHook = ReadHook & {
  * @param vaultAddresses - Array of Morpho V2 vault contract addresses
  */
 export function useMorphoVaultMultipleChartInfo({
-  vaultAddresses
+  vaultAddresses,
+  useHourlyInterval,
+  hourlyWindow
 }: {
   vaultAddresses: `0x${string}`[];
+  useHourlyInterval?: boolean;
+  hourlyWindow?: MorphoVaultHourlyWindow;
 }): MorphoVaultMultipleChartInfoHook {
   const currentChainId = useChainId();
   const chainId = isTestnetId(currentChainId) ? mainnet.id : currentChainId;
 
   const results = useQueries({
     queries: vaultAddresses.map(addr => ({
-      queryKey: ['morpho-vault-chart', addr, chainId] as const,
-      queryFn: () => fetchMorphoVaultChartInfo(addr, chainId),
+      queryKey: ['morpho-vault-chart', addr, chainId, useHourlyInterval, hourlyWindow] as const,
+      queryFn: () => fetchMorphoVaultChartInfo(addr, chainId, useHourlyInterval, hourlyWindow),
       enabled: vaultAddresses.length > 0,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000 // 10 minutes

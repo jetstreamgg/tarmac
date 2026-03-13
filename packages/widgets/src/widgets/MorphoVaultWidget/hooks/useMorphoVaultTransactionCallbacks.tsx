@@ -1,14 +1,12 @@
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { MorphoVaultReward } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { formatUnits } from 'viem';
-import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useTransactionCallbacks } from '@widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@widgets/shared/types/transactionCallbacks';
-import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
-import { useContext, useMemo, useRef } from 'react';
-import { MorphoVaultAction, MorphoVaultFlow, MorphoVaultScreen } from '../lib/constants';
+import { useMemo, useRef } from 'react';
+import { MorphoVaultAction, MorphoVaultFlow } from '../lib/constants';
 
 interface UseMorphoVaultTransactionCallbacksParameters
   extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
@@ -23,8 +21,6 @@ interface UseMorphoVaultTransactionCallbacksParameters
   assetAddress: `0x${string}`;
   /** Display name for the vault */
   vaultName: string;
-  /** Rewards data for claim events */
-  rewards?: MorphoVaultReward[];
   /** Whether the supply flow requires a token approval step */
   needsAllowance: boolean;
   /** Whether batch mode is active (approve+deposit bundled into one call) */
@@ -32,7 +28,6 @@ interface UseMorphoVaultTransactionCallbacksParameters
   mutateAllowance: () => void;
   mutateVaultData: () => void;
   mutateAssetBalance: () => void;
-  mutateRewards?: () => void;
 }
 
 export const useMorphoVaultTransactionCallbacks = ({
@@ -42,19 +37,16 @@ export const useMorphoVaultTransactionCallbacks = ({
   vaultAddress,
   assetAddress,
   vaultName,
-  rewards,
   needsAllowance,
   shouldUseBatch,
   mutateAllowance,
   mutateVaultData,
   mutateAssetBalance,
-  mutateRewards,
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
 }: UseMorphoVaultTransactionCallbacksParameters) => {
-  const { setWidgetState } = useContext(WidgetContext);
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
@@ -238,96 +230,5 @@ export const useMorphoVaultTransactionCallbacks = ({
     ]
   );
 
-  // Claim rewards transaction callbacks
-  const claimRewardsTransactionCallbacks = useMemo<TransactionCallbacks>(
-    () => ({
-      onMutate: () => {
-        handleOnMutate();
-        setWidgetState((prev: WidgetState) => ({
-          ...prev,
-          flow: MorphoVaultFlow.CLAIM,
-          action: MorphoVaultAction.CLAIM,
-          screen: MorphoVaultScreen.TRANSACTION
-        }));
-        fireAnalytics({
-          event: WidgetAnalyticsEventType.TRANSACTION_STARTED,
-          action: MorphoVaultAction.CLAIM,
-          flow: MorphoVaultFlow.CLAIM,
-          assetSymbol,
-          data: {
-            ...vaultData,
-            claimedRewards: rewards
-              ?.filter(r => r.amount > 0n)
-              .map(r => ({
-                tokenSymbol: r.tokenSymbol,
-                amount: Number(formatUnits(r.amount, r.tokenDecimals)),
-                tokenAddress: r.tokenAddress
-              }))
-          }
-        });
-      },
-      onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Claiming rewards`
-        });
-      },
-      onSuccess: hash => {
-        handleOnSuccess({
-          hash,
-          notificationTitle: t`Claim successful`,
-          notificationDescription: t`You claimed your rewards`
-        });
-        mutateRewards?.();
-        fireAnalytics({
-          event: WidgetAnalyticsEventType.TRANSACTION_COMPLETED,
-          action: MorphoVaultAction.CLAIM,
-          flow: MorphoVaultFlow.CLAIM,
-          txHash: hash,
-          assetSymbol,
-          data: {
-            ...vaultData,
-            claimedRewards: rewards
-              ?.filter(r => r.amount > 0n)
-              .map(r => ({
-                tokenSymbol: r.tokenSymbol,
-                amount: Number(formatUnits(r.amount, r.tokenDecimals)),
-                tokenAddress: r.tokenAddress
-              }))
-          }
-        });
-      },
-      onError: (error, hash) => {
-        handleOnError({
-          error,
-          hash,
-          notificationTitle: t`Claim failed`,
-          notificationDescription: t`Something went wrong with claiming your rewards. Please try again.`
-        });
-        fireAnalytics({
-          event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
-          action: MorphoVaultAction.CLAIM,
-          flow: MorphoVaultFlow.CLAIM,
-          txHash: hash,
-          assetSymbol,
-          data: vaultData
-        });
-      }
-    }),
-    [
-      rewards,
-      vaultAddress,
-      assetAddress,
-      vaultName,
-      handleOnError,
-      handleOnMutate,
-      handleOnStart,
-      handleOnSuccess,
-      mutateRewards,
-      setWidgetState,
-      onAnalyticsEvent
-    ]
-  );
-
-  return { supplyTransactionCallbacks, withdrawTransactionCallbacks, claimRewardsTransactionCallbacks };
+  return { supplyTransactionCallbacks, withdrawTransactionCallbacks };
 };

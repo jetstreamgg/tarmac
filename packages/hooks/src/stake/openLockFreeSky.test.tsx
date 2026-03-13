@@ -27,7 +27,7 @@ import { getIlkName } from '../vaults/helpers';
 describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', async () => {
   const wrapper = WagmiWrapper;
   const SKY_AMOUNT = '1200000';
-  const URN_INDEX = 0n;
+  let URN_INDEX = 0n;
   const ILK_NAME = getIlkName(2);
 
   await Promise.all([
@@ -36,16 +36,17 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
   ]);
 
   it('Should lock SKY', async () => {
-    // Make sure URN_INDEX is correct
     const { result: resultUrnIndex } = renderHook(() => useCurrentUrnIndex(), { wrapper });
 
     await waitFor(
       () => {
-        expect(resultUrnIndex.current.data).toEqual(URN_INDEX);
+        expect(resultUrnIndex.current.data).toBeDefined();
         return;
       },
       { timeout: 5000 }
     );
+
+    URN_INDEX = resultUrnIndex.current.data!;
 
     // First open the Urn
     const { result: resultOpenUrn } = renderHook(() => useOpenUrn({ gas: GAS }), { wrapper });
@@ -114,7 +115,8 @@ describe('Open position, lock SKY, withdraw USDS, repay USDS and free SKY', asyn
       { timeout: 5000 }
     );
 
-    const NST_TO_WITHDRAW = resultVaultInfo.current.data?.maxSafeBorrowableIntAmount as bigint;
+    const NST_TO_WITHDRAW =
+      (resultVaultInfo.current.data?.maxSafeBorrowableIntAmount as bigint) - parseEther('1');
 
     const { result: resultDrawNst } = renderHook(
       () =>

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLinkIcon } from 'lucide-react';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { Heading, Text } from '@/modules/layout/components/Typography';
+import { Heading } from '@/modules/layout/components/Typography';
 import { GradientShapeCard } from './GradientShapeCard';
 import { TokenIcon } from './TokenIcon';
 import { ReactNode } from 'react';
@@ -78,7 +78,7 @@ export const AboutCard = ({
     >
       <div className={cn('w-[80%] space-y-2 self-start', contentWidth === 'w-1/2' ? 'xl:w-1/2' : 'xl:w-2/3')}>
         {titleContent && <Heading className="flex items-center gap-2">{titleContent}</Heading>}
-        <Text variant="small">{description}</Text>
+        <div className="font-graphik text-[13px] font-normal leading-normal">{description}</div>
       </div>
       <ExternalLink href={linkHref} showIcon={false} className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
         <Button variant="outline" className="border-border gap-2">

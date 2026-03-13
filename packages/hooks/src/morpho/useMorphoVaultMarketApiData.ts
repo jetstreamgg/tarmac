@@ -153,6 +153,7 @@ export async function fetchMorphoVaultMarketData(
   }));
 
   const rateData: MorphoVaultRateData = {
+    address: vaultAddress,
     rate: avgApy,
     netRate: avgNetApy,
     managementFee,

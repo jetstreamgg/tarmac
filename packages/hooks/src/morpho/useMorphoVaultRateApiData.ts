@@ -36,6 +36,8 @@ export type MorphoRewardData = {
 };
 
 export type MorphoVaultRateData = {
+  /** Vault address */
+  address: string;
   /** Native APY (before performance fee) as a decimal (e.g., 0.05 for 5%) */
   rate: number;
   /** Net APY (after performance fee, including rewards) as a decimal */
@@ -107,7 +109,7 @@ async function fetchMorphoVaultRate(
     return undefined;
   }
 
-  const { avgApy, avgNetApy, managementFee, performanceFee, rewards } = result.data.vaultV2ByAddress;
+  const { address, avgApy, avgNetApy, managementFee, performanceFee, rewards } = result.data.vaultV2ByAddress;
 
   // Transform rewards data (supplyApr is already a decimal, e.g., 0.0026 for 0.26%)
   // Aggregate rewards by symbol and filter out 0% APY rewards
@@ -134,6 +136,7 @@ async function fetchMorphoVaultRate(
   }));
 
   return {
+    address,
     rate: avgApy,
     netRate: avgNetApy,
     managementFee,

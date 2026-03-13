@@ -1,5 +1,4 @@
 import {
-  UseSimulateContractParameters,
   useConnection,
   useSimulateContract,
   useWaitForTransactionReceipt,
@@ -73,7 +72,7 @@ export function useSequentialTransactionFlow(
     data: simulationData,
     isLoading: isSimulationLoading,
     error: simulationError
-  } = useSimulateContract(simulationParams as UseSimulateContractParameters);
+  } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
 
   const {
     writeContract,
@@ -136,7 +135,7 @@ export function useSequentialTransactionFlow(
       currentIndex < stableTransactions.length &&
       !transactionHashes[currentIndex] // Only execute if not already executed
     ) {
-      writeContract(simulationData.request);
+      writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     }
   }, [currentIndex, prepared, simulationData, stableTransactions.length, transactionHashes, writeContract]);
 
@@ -222,7 +221,7 @@ export function useSequentialTransactionFlow(
 
     if (simulationData?.request) {
       setIsExecuting(true);
-      writeContract(simulationData.request);
+      writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else {
       console.log(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}

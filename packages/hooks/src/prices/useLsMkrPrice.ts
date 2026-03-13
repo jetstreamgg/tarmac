@@ -1,7 +1,14 @@
 import { useChainId } from 'wagmi';
 import { PriceData } from './usePrices';
 import { formatEther, stringToHex } from 'viem';
-import { lsMkrAddress, mcdSpotAddress, mcdVatAddress, useReadMcdSpot, useReadMcdVat } from '../generated';
+import {
+  lsMkrAddress,
+  mcdSpotAddress,
+  mcdVatAddress,
+  useReadMcdSpotIlks,
+  useReadMcdSpotPar,
+  useReadMcdVatIlks
+} from '../generated';
 import { getEtherscanLink, math } from '@jetstreamgg/sky-utils';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
@@ -18,9 +25,8 @@ export const useLsMkrPrice = (): ReadHook & { data?: PriceData } => {
     isLoading: isLoadingVatIlk,
     error: errorVatIlk,
     refetch: mutateVatIlk
-  } = useReadMcdVat({
+  } = useReadMcdVatIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `vat-ilk-${ilkName}`
   });
@@ -32,9 +38,8 @@ export const useLsMkrPrice = (): ReadHook & { data?: PriceData } => {
     isLoading: isLoadingSpotPar,
     error: errorSpotPar,
     refetch: mutateSpotPar
-  } = useReadMcdSpot({
+  } = useReadMcdSpotPar({
     chainId: chainId as any,
-    functionName: 'par',
     scopeKey: 'spot-par'
   });
 
@@ -43,9 +48,8 @@ export const useLsMkrPrice = (): ReadHook & { data?: PriceData } => {
     isLoading: isLoadingSpotIlk,
     error: errorSpotIlk,
     refetch: mutateSpotIlk
-  } = useReadMcdSpot({
+  } = useReadMcdSpotIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `spot-ilks-${ilkName}`
   });

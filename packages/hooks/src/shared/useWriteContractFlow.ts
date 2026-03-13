@@ -39,7 +39,7 @@ export function useWriteContractFlow<
   } = useSimulateContract({
     ...useSimulateContractParamters,
     query: { ...useSimulateContractParamters.query, enabled, gcTime: gcTime || 30000 }
-  } as UseSimulateContractParameters);
+  } as unknown as UseSimulateContractParameters<abi, functionName, args, config, chainId>);
 
   const {
     writeContract,
@@ -105,7 +105,7 @@ export function useWriteContractFlow<
   return {
     execute: () => {
       if (simulationData?.request) {
-        writeContract(simulationData.request);
+        writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
       } else {
         console.log(`ERROR: the contract interaction was triggered before the call was ready.
           contract address: ${useSimulateContractParamters.address}

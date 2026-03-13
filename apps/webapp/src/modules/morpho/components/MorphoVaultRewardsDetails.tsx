@@ -9,30 +9,8 @@ type MorphoVaultRewardsDetailsProps = {
 export function MorphoVaultRewardsDetails({ vaultAddress }: MorphoVaultRewardsDetailsProps) {
   const { data: rewardsData, isLoading, error } = useMorphoVaultRewards({ vaultAddress });
 
-  // Build reward cards for each token with claimable rewards
-  const rewardCards = rewardsData?.rewards
-    .filter(r => r.amount > 0n)
-    .map(reward => {
-      const token = {
-        symbol: reward.tokenSymbol,
-        name: reward.tokenSymbol,
-        decimals: reward.tokenDecimals
-      };
-
-      return (
-        <RewardsBalanceCard
-          key={reward.tokenAddress}
-          balance={reward.formattedAmount}
-          isLoading={isLoading}
-          token={token}
-          label={t`Accumulated Rewards`}
-          error={error}
-        />
-      );
-    });
-
-  // Show reward cards if available, otherwise show a zero-state card
-  const hasRewardCards = rewardCards && rewardCards.length > 0;
+  const rewards = rewardsData?.rewards ?? [];
+  const hasRewards = rewards.some(r => r.amount > 0n);
 
   const defaultToken = {
     symbol: '',
@@ -40,19 +18,44 @@ export function MorphoVaultRewardsDetails({ vaultAddress }: MorphoVaultRewardsDe
     decimals: 18
   };
 
+  // Return cards wrapped in flex items to sit side by side in parent container
+  if (hasRewards) {
+    return (
+      <>
+        {rewards
+          .filter(r => r.amount > 0n)
+          .map(reward => {
+            const token = {
+              symbol: reward.tokenSymbol,
+              name: reward.tokenSymbol,
+              decimals: reward.tokenDecimals
+            };
+
+            return (
+              <div key={reward.tokenAddress} className="min-w-[250px] flex-1">
+                <RewardsBalanceCard
+                  balance={reward.formattedAmount}
+                  isLoading={isLoading}
+                  token={token}
+                  label={t`Accumulated Rewards`}
+                  error={error}
+                />
+              </div>
+            );
+          })}
+      </>
+    );
+  }
+
   return (
-    <div className="flex w-full flex-col gap-3">
-      {hasRewardCards ? (
-        rewardCards
-      ) : (
-        <RewardsBalanceCard
-          balance={0n}
-          isLoading={isLoading}
-          token={defaultToken}
-          label={t`Accumulated Rewards`}
-          error={error}
-        />
-      )}
+    <div className="min-w-[250px] flex-1">
+      <RewardsBalanceCard
+        balance={0n}
+        isLoading={isLoading}
+        token={defaultToken}
+        label={t`Accumulated Rewards`}
+        error={error}
+      />
     </div>
   );
 }
