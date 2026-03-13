@@ -174,28 +174,8 @@ export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.P
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
-export const PROD_URL_SKY_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const STAGING_URL_SKY_SUBGRAPH_MAINNET =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const STAGING_URL_SKY_SUBGRAPH_TESTNET =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-testnet';
-export const PROD_URL_SKY_SUBGRAPH_BASE =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const STAGING_URL_SKY_SUBGRAPH_BASE =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const PROD_URL_SKY_SUBGRAPH_ARBITRUM =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const PROD_URL_SKY_SUBGRAPH_OPTIMISM =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-export const PROD_URL_SKY_SUBGRAPH_UNICHAIN =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
-export const STAGING_URL_SKY_SUBGRAPH_OPTIMISM =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-export const STAGING_URL_SKY_SUBGRAPH_UNICHAIN =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
+export const PROD_URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
+export const STAGING_URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
 
 export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
 export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');

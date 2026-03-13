@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { UpgradeTotals } from './upgrade';
 import { useChainId } from 'wagmi';
@@ -10,19 +10,22 @@ type GraphQLUpgradeTotalResponse = {
   total: string;
 };
 
-async function fetchUpgradeTotals(urlSubgraph: string): Promise<UpgradeTotals | undefined> {
+async function fetchUpgradeTotals(
+  urlSubgraph: string,
+  chainId: number
+): Promise<UpgradeTotals | undefined> {
   const query = gql`
     {
-      mkrTotal: total(id: "mkrUpgraded") {
+      mkrTotal: Total_by_pk(id: "${chainId}-mkrUpgraded") {
         total
       }
-      daiTotal: total(id: "daiUpgraded") {
+      daiTotal: Total_by_pk(id: "${chainId}-daiUpgraded") {
         total
       }
-      skyUpgraded: total(id: "skyUpgraded") {
+      skyUpgraded: Total_by_pk(id: "${chainId}-skyUpgraded") {
         total
       }
-      skyUpgradeFees: total(id: "skyUpgradeFees") {
+      skyUpgradeFees: Total_by_pk(id: "${chainId}-skyUpgradeFees") {
         total
       }
     }
@@ -47,7 +50,7 @@ export function useUpgradeTotals({
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: UpgradeTotals } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -56,8 +59,8 @@ export function useUpgradeTotals({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['upgrade-totals', urlSubgraph],
-    queryFn: () => fetchUpgradeTotals(urlSubgraph)
+    queryKey: ['upgrade-totals', urlSubgraph, chainId],
+    queryFn: () => fetchUpgradeTotals(urlSubgraph, chainId)
   });
 
   return {

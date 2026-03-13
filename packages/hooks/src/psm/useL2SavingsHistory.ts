@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getL2SubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { TOKENS } from '../tokens/tokens.constants';
@@ -23,10 +23,11 @@ async function fetchL2SavingsHistory(
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
   const query = gql`
   {
-    usdsIn: swaps(where: {
-      sender: "${address}",
-      receiver: "${address}",
-      assetIn: "${sUsdsAddressForChain.toLowerCase()}"
+    usdsIn: Swap(where: {
+      sender: { _ilike: "${address}" },
+      receiver: { _ilike: "${address}" },
+      assetIn: { _ilike: "${sUsdsAddressForChain.toLowerCase()}" },
+      chainId: { _eq: ${chainId} }
     }) {
       id
       transactionHash
@@ -39,10 +40,11 @@ async function fetchL2SavingsHistory(
       referralCode
       blockTimestamp
     }
-    usdsOut: swaps(where: {
-      sender: "${address}",
-      receiver: "${address}",
-      assetOut: "${sUsdsAddressForChain.toLowerCase()}"
+    usdsOut: Swap(where: {
+      sender: { _ilike: "${address}" },
+      receiver: { _ilike: "${address}" },
+      assetOut: { _ilike: "${sUsdsAddressForChain.toLowerCase()}" },
+      chainId: { _eq: ${chainId} }
     }) {
       id
       transactionHash
@@ -133,7 +135,7 @@ export function useL2SavingsHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId ?? currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainIdToUse) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
   const {
     data,
