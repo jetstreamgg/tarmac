@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - main
+      - development
   workflow_dispatch:
     inputs:
       shards:

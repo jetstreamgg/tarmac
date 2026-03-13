@@ -1,0 +1,101 @@
+name: Promote to Staging
+
+on:
+  workflow_run:
+    workflows: ['Packages', 'Sharded E2E Tests']
+    types: [completed]
+    branches: [development]
+
+# Prevent concurrent promotion attempts
+concurrency:
+  group: promote-to-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  promote:
+    # Only proceed if the triggering workflow succeeded
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: development
+          fetch-depth: 0
+
+      - name: Check all CI workflows passed for this commit
+        id: check-ci
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          echo "Checking CI status for commit $SHA"
+
+          # Check Packages workflow
+          PACKAGES=$(gh run list \
+            --workflow=main.yml \
+            --branch=development \
+            --json headSha,conclusion \
+            -q ".[] | select(.headSha==\"$SHA\") | .conclusion" \
+            | head -1)
+
+          # Check Sharded E2E Tests workflow
+          E2E=$(gh run list \
+            --workflow=e2e-sharded.yml \
+            --branch=development \
+            --json headSha,conclusion \
+            -q ".[] | select(.headSha==\"$SHA\") | .conclusion" \
+            | head -1)
+
+          echo "Packages: ${PACKAGES:-pending}"
+          echo "E2E: ${E2E:-pending}"
+
+          if [[ "$PACKAGES" == "success" && "$E2E" == "success" ]]; then
+            echo "All CI workflows passed"
+            echo "all_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not all workflows have passed yet, skipping promotion"
+            echo "all_passed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or update PR to staging
+        if: steps.check-ci.outputs.all_passed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if a PR from development to staging already exists
+          EXISTING_PR=$(gh pr list \
+            --base staging \
+            --head development \
+            --json number \
+            -q '.[0].number')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists (auto-updates with new commits)"
+            # Re-enable auto-merge in case it was dismissed
+            gh pr merge "$EXISTING_PR" --auto --merge || true
+          else
+            echo "Creating new PR: development -> staging"
+            PR_URL=$(gh pr create \
+              --base staging \
+              --head development \
+              --title "Promote development to staging" \
+              --body "$(cat <<'EOF'
+Automated promotion of `development` to `staging`.
+
+All CI checks have passed on the development branch.
+
+This PR will auto-merge once all staging branch checks pass.
+EOF
+            )")
+
+            echo "Created PR: $PR_URL"
+
+            # Enable auto-merge on the new PR
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+            gh pr merge "$PR_NUMBER" --auto --merge || true
+          fi
