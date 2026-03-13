@@ -66,8 +66,8 @@ export default defineConfig({
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
         // '**/capped-osm-unstake.spec.ts',
-        '**/sequential-tx.spec.ts'
-        // '**/vaults-morpho.spec.ts'
+        '**/sequential-tx.spec.ts',
+        '**/vaults-morpho.spec.ts'
       ]
     }
     // {
