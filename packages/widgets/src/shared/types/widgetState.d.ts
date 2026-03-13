@@ -7,6 +7,11 @@ import {
 } from '@/widgets/UpgradeWidget/lib/constants';
 import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidget/lib/constants';
 import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
+import {
+  PsmConversionAction,
+  PsmConversionFlow,
+  PsmConversionScreen
+} from '@/widgets/PsmConversionWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { TxStatus, NotificationType } from '../constants';
 import { SealFlow } from '@widgets/widgets/SealModuleWidget/lib/constants';
@@ -20,15 +25,17 @@ export type WidgetState = {
     | UpgradeFlow
     | RewardsFlow
     | TradeFlow
+    | PsmConversionFlow
     | StakeFlow
     | SealFlow;
-  action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction;
+  action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction | PsmConversionAction;
   screen:
     | InitialScreen
     | SavingsScreen
     | UpgradeScreen
     | RewardsScreen
     | TradeScreen
+    | PsmConversionScreen
     | StakeScreen
     | SealScreen;
 };

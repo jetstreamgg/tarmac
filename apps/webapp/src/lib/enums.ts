@@ -20,6 +20,7 @@ export enum VaultsIntent {
 }
 
 export enum ConvertIntent {
+  PSM_INTENT = 'PSM_INTENT',
   UPGRADE_INTENT = 'UPGRADE_INTENT',
   TRADE_INTENT = 'TRADE_INTENT'
 }

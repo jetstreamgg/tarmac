@@ -6,7 +6,7 @@ import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
 import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
-import { QueryParams } from '@/lib/constants';
+import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
 import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
@@ -24,6 +24,7 @@ import { ExpertDetailsPane } from '@/modules/expert/components/ExpertDetailsPane
 import { VaultsDetailsPane } from '@/modules/vaults/components/VaultsDetailsPane';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
+import { PsmConversionDetails } from '@/modules/convert/components/PsmConversionDetails';
 
 type DetailsPaneProps = {
   intent: Intent;
@@ -48,12 +49,15 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
   const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
   const chainId = useChainId();
   const [searchParams] = useSearchParams();
+  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
+    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
+  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
 
   // Get the selected vault address from URL params (for multi-vault support)
   const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
@@ -158,22 +162,28 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   );
               }
             case Intent.CONVERT_INTENT:
-              switch (selectedConvertOption) {
-                case ConvertIntent.UPGRADE_INTENT:
+              switch (activeConvertOption) {
+                case ConvertIntent.PSM_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[12]}>
+                      <PsmConversionDetails />
+                    </MotionDetailsWrapper>
+                  );
+                case ConvertIntent.UPGRADE_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[13]}>
                       <UpgradeDetails />
                     </MotionDetailsWrapper>
                   );
                 case ConvertIntent.TRADE_INTENT:
                   return (
-                    <MotionDetailsWrapper key={keys[13]}>
+                    <MotionDetailsWrapper key={keys[14]}>
                       <TradeDetails />
                     </MotionDetailsWrapper>
                   );
                 default:
                   return (
-                    <MotionDetailsWrapper key={keys[14]}>
+                    <MotionDetailsWrapper key={keys[15]}>
                       <BalancesDetails />
                     </MotionDetailsWrapper>
                   );
