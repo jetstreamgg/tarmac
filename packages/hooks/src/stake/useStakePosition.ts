@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { Bark, StakePosition } from './stakeModule';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
@@ -12,10 +12,10 @@ type StakePositionResponse = {
     skyLocked: string;
     usdsDebt: string;
     voteDelegate: {
-      id: string;
+      address: string;
     } | null;
     reward: {
-      id: string;
+      address: string;
     } | null;
     barks: Bark[];
   }[];
@@ -24,23 +24,22 @@ type StakePositionResponse = {
 async function fetchStakePosition(
   urlSubgraph: string,
   urnIndex: number,
+  chainId: number,
   address?: string
 ): Promise<StakePosition | undefined> {
   if (!address) return;
-  // TODO: Update this query once the subgraph is updated
   const query = gql`
     {
-      stakingUrns(where: {owner: "${address}", index: "${urnIndex}"}) {
+      stakingUrns: StakingUrn(where: { owner: { _ilike: "${address}" }, index: { _eq: "${urnIndex}" }, chainId: { _eq: ${chainId} } }) {
         skyLocked
         usdsDebt
         voteDelegate {
-          id
+          address
         }
         reward {
-          id
+          address
         }
         barks {
-          id
           ilk
           clipperId
         }
@@ -58,8 +57,8 @@ async function fetchStakePosition(
     index: urnIndex,
     skyLocked: BigInt(skyLocked),
     usdsDebt: BigInt(usdsDebt),
-    selectedDelegate: voteDelegate?.id,
-    selectedReward: reward?.id,
+    selectedDelegate: voteDelegate?.address,
+    selectedReward: reward?.address,
     barks: response.stakingUrns[0].barks
   };
 }
@@ -73,7 +72,7 @@ export function useStakePosition({
 }): ReadHook & { data?: StakePosition } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -82,8 +81,8 @@ export function useStakePosition({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['stake-position-details', urlSubgraph, address, urnIndex],
-    queryFn: () => fetchStakePosition(urlSubgraph, urnIndex, address)
+    queryKey: ['stake-position-details', urlSubgraph, address, urnIndex, chainId],
+    queryFn: () => fetchStakePosition(urlSubgraph, urnIndex, chainId, address)
   });
 
   return {

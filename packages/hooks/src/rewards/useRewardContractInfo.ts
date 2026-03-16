@@ -2,46 +2,47 @@ import { request, gql } from 'graphql-request';
 import { RewardContractChangeRaw, RewardContractInfo, RewardContractInfoRaw } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 
 async function fetchRewardContractInfo(
   urlSubgraph: string,
-  rewardContractId: string
+  rewardContractId: string,
+  chainId: number
 ): Promise<RewardContractInfo | null> {
   const query = gql`
     {
-        reward(id:"${rewardContractId}"){
-            totalSupplied,
-            totalRewardsClaimed
-            supplyInstances {
-              id 
-              blockTimestamp,
-              transactionHash
-              amount
-            }
-            withdrawals  { 
-              id 
-              blockTimestamp,
-              transactionHash
-              amount
-            }
-            rewardClaims {
-              id
-              amount
-              transactionHash
-              blockTimestamp
-            }
-            tvl {
-              id
-              amount
-              transactionHash
-              blockTimestamp
-            }
-            suppliers {
-             user
-            }
+      reward: Reward_by_pk(id: "${chainId}-${rewardContractId}") {
+        totalSupplied
+        totalRewardsClaimed
+        supplyInstances {
+          id
+          blockTimestamp
+          transactionHash
+          amount
         }
+        withdrawals {
+          id
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        rewardClaims {
+          id
+          amount
+          transactionHash
+          blockTimestamp
+        }
+        tvl {
+          id
+          amount
+          transactionHash
+          blockTimestamp
+        }
+        suppliers {
+          user
+        }
+      }
     }
   `;
 
@@ -107,7 +108,7 @@ export function useRewardContractInfo({
   chainId: number;
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardContractInfo | null } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -116,8 +117,8 @@ export function useRewardContractInfo({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && rewardContractAddress),
-    queryKey: ['reward-contract-info', urlSubgraph, rewardContractAddress],
-    queryFn: () => fetchRewardContractInfo(urlSubgraph, rewardContractAddress)
+    queryKey: ['reward-contract-info', urlSubgraph, rewardContractAddress, chainId],
+    queryFn: () => fetchRewardContractInfo(urlSubgraph, rewardContractAddress, chainId)
   });
 
   return {

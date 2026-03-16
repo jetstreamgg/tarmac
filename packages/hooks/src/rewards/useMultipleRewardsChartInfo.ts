@@ -2,7 +2,7 @@ import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
-import { useChainId } from 'wagmi';
+
 import { formatBaLabsUrl } from '../helpers';
 
 type RewardsChartInfo = {
@@ -92,8 +92,7 @@ export function useMultipleRewardsChartInfo({
   rewardContractAddresses: string[];
   limit?: number;
 }): ReadHook & { data?: RewardsChartInfoParsed[][] } {
-  const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId);
+  const baseUrl = getBaLabsApiUrl();
   const urls: URL[] = [];
   if (baseUrl && rewardContractAddresses.length > 0) {
     rewardContractAddresses.forEach(rewardContractAddress => {
