@@ -1,28 +1,27 @@
 import request, { gql } from 'graphql-request';
 import { useChainId } from 'wagmi';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 
-async function fetchSaRewardContracts(urlSubgraph: string) {
-  // TODO do we want to change the property name?
+async function fetchSaRewardContracts(urlSubgraph: string, chainId: number) {
   const query = gql`
     {
-      rewards(where: { lockstakeActive: true }) {
-        id
+      rewards: Reward(where: { lockstakeActive: { _eq: true }, chainId: { _eq: ${chainId} } }) {
+        address
       }
     }
   `;
 
-  const response = await request<{ rewards: { id: `0x${string}` }[] }>(urlSubgraph, query);
+  const response = await request<{ rewards: { address: string }[] }>(urlSubgraph, query);
   const parsedRewardContracts = response.rewards;
   if (!parsedRewardContracts) {
     return undefined;
   }
 
   return parsedRewardContracts.map(f => ({
-    contractAddress: f.id
+    contractAddress: f.address as `0x${string}`
   }));
 }
 
@@ -32,7 +31,7 @@ export function useSaRewardContracts({
   subgraphUrl?: string;
 } = {}): ReadHook & { data: { contractAddress: `0x${string}` }[] | undefined } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -40,8 +39,8 @@ export function useSaRewardContracts({
     refetch: mutate,
     isLoading
   } = useQuery({
-    queryKey: ['saRewardContracts', urlSubgraph],
-    queryFn: () => fetchSaRewardContracts(urlSubgraph),
+    queryKey: ['saRewardContracts', urlSubgraph, chainId],
+    queryFn: () => fetchSaRewardContracts(urlSubgraph, chainId),
     enabled: !!urlSubgraph
   });
 

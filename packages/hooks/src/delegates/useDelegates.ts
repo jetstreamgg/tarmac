@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { getRandomItem } from '@jetstreamgg/sky-utils';
@@ -11,6 +11,7 @@ import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchDelegates(
   urlSubgraph: string,
+  chainId: number,
   first: number,
   skip: number,
   exclude?: `0x${string}`[],
@@ -19,43 +20,34 @@ async function fetchDelegates(
   search?: string,
   version?: 1 | 2 | 3
 ): Promise<DelegateInfo[] | undefined> {
-  const whereConditions = [];
-  if (version) whereConditions.push(`{version: "${version}"}`);
-  if (exclude?.length) whereConditions.push(`{id_not_in: [${exclude.map(addr => `"${addr}"`).join(', ')}]}`);
-  if (search) whereConditions.push(`{id_contains_nocase: "${search}"}`);
-  const whereClause = whereConditions.length ? `where: { and: [${whereConditions.join(', ')}] }` : '';
+  const whereConditions: string[] = [`{ chainId: { _eq: ${chainId} } }`];
+  if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
+  if (exclude?.length)
+    whereConditions.push(`{ address: { _nin: [${exclude.map(addr => `"${addr}"`).join(', ')}] } }`);
+  if (search) whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
+  const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
-  const paginationClause = first !== undefined && skip !== undefined ? `first: ${first}, skip: ${skip}` : '';
+  const paginationClause = first !== undefined && skip !== undefined ? `limit: ${first}, offset: ${skip}` : '';
 
-  const orderByClause =
-    orderBy && orderDirection ? `orderBy: ${orderBy}, orderDirection: ${orderDirection}` : '';
+  const orderByClause = orderBy && orderDirection ? `order_by: { ${orderBy}: ${orderDirection} }` : '';
 
   const query = gql`
     {
-        delegates${
-          whereClause || paginationClause
-            ? `(${[whereClause, paginationClause, orderByClause].filter(Boolean).join(', ')})`
-            : ''
-        } {
+      delegates: Delegate(${[whereClause, paginationClause, orderByClause].filter(Boolean).join(', ')}) {
         blockTimestamp
         blockNumber
         ownerAddress
-        id
+        address
         delegators
-        delegations(
-          first: 1000
-          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
-        ) {
-          amount
-        }
+        totalDelegated
       }
     }
   `;
 
-  const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
-    totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
+    id: d.address as `0x${string}`
   })) as DelegateRaw[];
   if (!parsedDelegates) {
     return undefined;
@@ -85,7 +77,7 @@ export function useDelegates({
   version?: 1 | 2 | 3;
   enabled?: boolean;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const orderByFields = [
     'blockTimestamp',
@@ -108,6 +100,7 @@ export function useDelegates({
     queryKey: [
       'delegates',
       urlSubgraph,
+      chainId,
       exclude,
       page,
       pageSize,
@@ -119,6 +112,7 @@ export function useDelegates({
     queryFn: () =>
       fetchDelegates(
         urlSubgraph,
+        chainId,
         pageSize,
         (page - 1) * pageSize,
         exclude,

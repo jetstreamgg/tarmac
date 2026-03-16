@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { DaiUsdsRow, MkrSkyRow, UpgradeHistory, UpgradeResponse, UpgradeResponses } from './upgrade';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
@@ -16,29 +16,29 @@ async function fetchUpgradeHistory(
   // Note: 'usr' is the reciever of the upgraded/reverted token, 'caller' is the sender.
   const query = gql`
     {
-      daiToUsdsUpgrades(where: {usr: "${address}"}) {
+      daiToUsdsUpgrades: DaiToUsdsUpgrade(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         wad
         blockTimestamp
         transactionHash
       }
-      usdsToDaiReverts(where: {usr: "${address}"}) {
+      usdsToDaiReverts: UsdsToDaiRevert(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         wad
         blockTimestamp
         transactionHash
       }
-      mkrToSkyUpgrades(where: {usr: "${address}"}) {
+      mkrToSkyUpgrades: MkrToSkyUpgrade(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrAmt
         skyAmt
         blockTimestamp
         transactionHash
       }
-      mkrToSkyUpgradeV2S(where: {usr: "${address}"}) {
+      mkrToSkyUpgradeV2S: MkrToSkyUpgradeV2(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrAmt
         skyAmt
         blockTimestamp
         transactionHash
       }
-      skyToMkrReverts(where: {usr: "${address}"}) {
+      skyToMkrReverts: SkyToMkrRevert(where: { usr: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrAmt
         skyAmt
         blockTimestamp
@@ -121,7 +121,7 @@ export function useUpgradeHistory({
 } = {}): ReadHook & { data?: UpgradeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
