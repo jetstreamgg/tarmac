@@ -1,8 +1,12 @@
+import { readFileSync } from 'fs';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
+
+const { version: APP_VERSION } = JSON.parse(readFileSync('./package.json', 'utf-8'));
 import react from '@vitejs/plugin-react-swc';
 import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -14,7 +18,22 @@ enum modeEnum {
 
 // https://vitejs.dev/config/
 export default ({ mode }: { mode: modeEnum }) => {
-  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+  process.env = { ...process.env, ...loadEnv(mode, process.cwd(), ['VITE_', 'SENTRY_']) };
+
+  // Must match the release format in src/modules/sentry/init.ts
+  const sentryEnvironment =
+    process.env.VITE_SENTRY_ENVIRONMENT || process.env.VITE_ENV_NAME || 'development';
+  const sentryRelease =
+    process.env.VITE_SENTRY_RELEASE ||
+    process.env.VITE_CF_PAGES_COMMIT_SHA ||
+    `${APP_VERSION}-${sentryEnvironment}`;
+
+  // Only generate and upload sourcemaps when all Sentry credentials are present
+  const shouldUploadSourcemaps = !!(
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+  );
 
   const RPC_PROVIDER_MAINNET = process.env.VITE_RPC_PROVIDER_MAINNET || '';
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
@@ -88,7 +107,9 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://staging-api.jetstream.gg
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
-      https://*.posthog.com;
+      https://*.posthog.com
+      https://*.sentry.io
+      https://*.ingest.sentry.io;
     frame-src 'self'
       https://verify.walletconnect.com
       https://verify.walletconnect.org
@@ -114,14 +135,19 @@ export default ({ mode }: { mode: modeEnum }) => {
     },
     root: 'src',
     envDir: '../',
+    define: {
+      __APP_VERSION__: JSON.stringify(APP_VERSION)
+    },
     build: {
+      sourcemap: shouldUploadSourcemaps,
       outDir: '../dist',
       emptyOutDir: true
     },
     test: {
       exclude: [...configDefaults.exclude],
       globals: true,
-      environment: 'happy-dom'
+      environment: 'happy-dom',
+      setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')]
     },
     resolve: {
       alias: {
@@ -171,7 +197,17 @@ export default ({ mode }: { mode: modeEnum }) => {
         plugins: [['@lingui/swc-plugin', {}]]
       }),
       tailwindcss(),
-      lingui()
+      lingui(),
+      sentryVitePlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        release: { name: sentryRelease },
+        disable: !shouldUploadSourcemaps,
+        sourcemaps: {
+          filesToDeleteAfterUpload: ['**/*.map']
+        }
+      })
     ]
   });
 };

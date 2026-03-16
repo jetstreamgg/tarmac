@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import type posthog from 'posthog-js';
 
 // ── Event Names ──────────────────────────────────────────────────────────────
@@ -89,6 +90,10 @@ export function safeCapture(
  */
 export function reportAnalyticsError(context: string, error: unknown): void {
   console.warn(`[Analytics] ${context}:`, error);
+  Sentry.captureException(error, {
+    level: 'warning',
+    tags: { context, type: 'analytics_error' }
+  });
 }
 
 // ── Withdrawal Flows ────────────────────────────────────────────────────────

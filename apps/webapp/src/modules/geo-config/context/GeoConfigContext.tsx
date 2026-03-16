@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { GeoConfigContextValue, ModuleId } from '../types';
+import { GeoConfigContextValue } from '../types';
 
 // Restrictive defaults - block potentially restricted features until config loads
 export const defaultGeoConfigContext: GeoConfigContextValue = {
