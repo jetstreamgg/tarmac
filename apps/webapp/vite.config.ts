@@ -81,10 +81,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
       https://vote.sky.money
-      https://query-subgraph-testnet.sky.money
-      https://query-subgraph-staging.sky.money
-      https://query-subgraph.sky.money
-      https://api.thegraph.com
+      https://indexer.hyperindex.xyz
       https://staging-api.sky.money
       https://api.sky.money
       https://info-sky.blockanalitica.com
@@ -106,6 +103,9 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://a.markfi.xyz
       wss://metamask-sdk.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
+      https://api.jetstream.gg
+      https://staging-api.jetstream.gg
+      https://*.jetstream-account.workers.dev
       cloudflareinsights.com
       https://*.posthog.com
       https://*.sentry.io

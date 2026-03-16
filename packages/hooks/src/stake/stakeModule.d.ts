@@ -10,16 +10,16 @@ export type StakeWriteHookReturnType = WriteHook & {
 };
 
 export type UrnInfoRaw = {
-  id: `0x${string}`;
+  address: `0x${string}`;
   blockTimestamp: number;
   rewardContract: {
-    id: `0x${string}`;
+    address: `0x${string}`;
   };
   mkrLocked: string;
   nstDebt: string;
   owner: `0x${string}`;
   voteDelegate: {
-    id: `0x${string}`;
+    address: `0x${string}`;
     ownerAddress: `0x${string}`;
     totalDelegated: string;
     metadata: {
@@ -30,12 +30,14 @@ export type UrnInfoRaw = {
   index: number;
 };
 
-export type UrnInfo = UrnInfoRaw & {
+export type UrnInfo = Omit<UrnInfoRaw, 'mkrLocked' | 'nstDebt' | 'voteDelegate'> & {
   mkrLocked: bigint;
   nstDebt: bigint;
-  voteDelegate: Omit<UrnInfoRaw['voteDelegate'], 'totalDelegated'> & {
-    totalDelegated: bigint;
-  };
+  voteDelegate:
+    | (Omit<UrnInfoRaw['voteDelegate'], 'totalDelegated'> & {
+        totalDelegated: bigint;
+      })
+    | null;
 };
 
 export type BaseStakeHistoryItemResponse = {
@@ -46,13 +48,13 @@ export type BaseStakeHistoryItemResponse = {
 
 export type StakeSelectDelegateResponse = BaseStakeHistoryItemResponse & {
   voteDelegate: {
-    id: string;
+    address: string;
   };
 };
 
 export type StakeSelectRewardResponse = BaseStakeHistoryItemResponse & {
   reward: {
-    id: string;
+    address: string;
   };
 };
 
