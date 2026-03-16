@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { useConnection, useChainId } from 'wagmi';
 import { MutationFunction, useMutation } from '@tanstack/react-query';
 import { SendMessageRequest, SendMessageResponse, ChatIntent } from '../types/Chat';
@@ -30,6 +31,19 @@ interface ChatbotResponse {
     response: string;
   };
   actionIntentResponse: Pick<ChatIntent, 'title' | 'url' | 'priority'>[];
+}
+
+type ChatError = Error & {
+  code?: string;
+  status?: number;
+};
+
+function shouldCaptureChatError(error: ChatError): boolean {
+  if (error.code === 'TERMS_NOT_ACCEPTED') return false;
+  if (error.code === 'JURISDICTION_RESTRICTED') return false;
+  if (error.status === 401) return false;
+
+  return true;
 }
 
 const fetchEndpoints = async (messagePayload: Partial<SendMessageRequest>) => {
@@ -226,7 +240,21 @@ export const useSendMessage = () => {
                 ];
           });
         },
-        onError: async (error: any) => {
+        onError: async (error: ChatError) => {
+          if (shouldCaptureChatError(error)) {
+            Sentry.captureException(error, {
+              tags: {
+                type: 'chat_send_error',
+                network,
+                status_code: error.status ? String(error.status) : 'unknown',
+                error_code: error.code ?? 'unknown'
+              },
+              extra: {
+                isConnected
+              }
+            });
+          }
+
           console.error('Failed to send message:', JSON.stringify(error));
 
           trackWorkerError({
