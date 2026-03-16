@@ -1,18 +1,21 @@
+import * as Sentry from '@sentry/react';
 import React from 'react';
-import { Error } from './Error';
-export class ErrorBoundary extends React.Component<{
+import { Error as ErrorView } from './Error';
+interface Props {
   componentName?: string;
   children: React.ReactNode;
   variant?: 'large' | 'medium' | 'small';
-}> {
+}
+
+interface State {
+  hasError: boolean;
+}
+
+export class ErrorBoundary extends React.Component<Props, State> {
   componentName = 'component';
   variant: 'large' | 'small' | 'medium' = 'large';
 
-  constructor(props: {
-    componentName?: string;
-    children: React.ReactNode;
-    variant?: 'large' | 'medium' | 'small';
-  }) {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
     this.variant = props.variant || this.variant;
@@ -24,15 +27,26 @@ export class ErrorBoundary extends React.Component<{
     return { hasError: true };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
-    // You can also log the error to an error reporting service
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    Sentry.captureException(error, {
+      tags: {
+        boundary: this.componentName,
+        type: 'react_error_boundary'
+      },
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack
+        }
+      }
+    });
+
     console.error({ error, errorInfo });
   }
 
   render() {
-    if ((this.state as any).hasError) {
+    if (this.state.hasError) {
       // You can render any custom fallback UI
-      return <Error variant={this.variant} />;
+      return <ErrorView variant={this.variant} />;
     }
 
     return this.props.children;
