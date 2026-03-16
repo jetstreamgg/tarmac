@@ -188,7 +188,7 @@ export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://st
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
 // Feature flag to enable chatbot pre-fill filtering
-// Enabled by default unless explicitly set to 'false'
+// Enabled by default unless explicitly set to false
 export const CHATBOT_PREFILL_FILTERING_ENABLED =
   import.meta.env.VITE_CHATBOT_PREFILL_FILTERING_ENABLED !== 'false';
 
