@@ -132,7 +132,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 role="button"
                 tabIndex={isPending ? -1 : 0}
                 aria-disabled={isPending}
-                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start/25 hover:to-primary-end/25 bg-radial-(--gradient-position) border-primary-start/30 transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) border-primary-start/30 transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                 onClick={() => handleSelectOption(ConvertIntent.PSM_INTENT)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
