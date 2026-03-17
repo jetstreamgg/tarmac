@@ -182,7 +182,7 @@ test.describe('stUSDS Provider', () => {
     await isolatedPage.waitForTimeout(2000);
 
     // Perform withdrawal (bundled transactions with batch wallet)
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Supply');
 
     // Verify success (works for both providers)
     const nativeWithdrawSuccess = isolatedPage.getByText("You've withdrawn 5 USDS from the stUSDS module.");
