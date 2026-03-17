@@ -47,7 +47,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const skipAuthCheck = !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
 
-  const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
+  const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.jetstream.gg';
   const {
     data: authData,
     isLoading: authIsLoading,
@@ -63,29 +63,6 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     setEnabled(!!address);
   }, [address]);
-
-  // Check whether the user is in a restricted region,
-  // but only flag to reload if the current build is unrestricted
-  const isRestrictedRegion = useMemo(
-    () =>
-      !vpnIsLoading &&
-      import.meta.env.VITE_RESTRICTED_BUILD !== 'true' &&
-      vpnData?.isRestrictedRegion,
-    [vpnIsLoading, vpnData?.isRestrictedRegion]
-  );
-
-  // Reload page if build should be restricted, but isn't.
-  // Since the user now appears to be in a restricted region, reloading
-  // the page should serve them the correct build
-  useEffect(() => {
-    if (isRestrictedRegion) {
-      // Add a slight delay to show message before reloading
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isRestrictedRegion]);
 
   // Terms acceptance check
   const checkTermsAcceptance = async (address: string) => {

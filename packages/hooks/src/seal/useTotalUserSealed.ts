@@ -1,14 +1,14 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 
-async function fetchTotalUserSealed(urlSubgraph: string, address: string): Promise<bigint> {
+async function fetchTotalUserSealed(urlSubgraph: string, chainId: number, address: string): Promise<bigint> {
   const query = gql`
     {
-      sealUrns(where: {owner: "${address}"}) {
+      sealUrns: SealUrn(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         mkrLocked
       }
     }
@@ -32,7 +32,7 @@ export function useTotalUserSealed({
 } = {}): ReadHook & { data?: bigint } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -41,8 +41,8 @@ export function useTotalUserSealed({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && address),
-    queryKey: ['user-total-sealed', urlSubgraph, address],
-    queryFn: () => fetchTotalUserSealed(urlSubgraph, address!)
+    queryKey: ['user-total-sealed', urlSubgraph, address, chainId],
+    queryFn: () => fetchTotalUserSealed(urlSubgraph, chainId, address!)
   });
 
   return {

@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import {
   BaseSealHistoryItem,
   SealHistoryItemWithAmount,
@@ -25,80 +25,81 @@ async function fetchSealHistory(
   index?: number
 ): Promise<SealHistory | undefined> {
   if (!address) return [];
-  const indexQuery = index ? `, index: "${index}"` : '';
+  const indexFilter = index ? `, index: { _eq: "${index}" }` : '';
+  const urnFilter = `{ urn: { owner: { _ilike: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
+  const ownerFilter = `{ owner: { _ilike: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
   const query = gql`
     {
-      sealOpens(where: {owner: "${address}"${indexQuery}}) {
+      sealOpens: SealOpen(where: ${ownerFilter}) {
         index
         blockTimestamp
         transactionHash
       }
-      sealSelectVoteDelegates(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealSelectVoteDelegates: SealSelectVoteDelegate(where: ${urnFilter}) {
         index
         voteDelegate {
-          id
+          address
         }
         blockTimestamp
         transactionHash
       }
-      sealSelectRewards(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealSelectRewards: SealSelectReward(where: ${urnFilter}) {
         index
         reward {
-          id
+          address
         }
         blockTimestamp
         transactionHash
       }
-      sealLocks(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealLocks: SealLock(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealLockSkies(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealLockSkies: SealLockSky(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealFrees(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealFrees: SealFree(where: ${urnFilter}) {
         index
         freed
         blockTimestamp
         transactionHash
       }
-      sealFreeSkies(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealFreeSkies: SealFreeSky(where: ${urnFilter}) {
         index
         skyFreed
         blockTimestamp
         transactionHash
       }
-      sealDraws(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealDraws: SealDraw(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealWipes(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealWipes: SealWipe(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      sealGetRewards(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      sealGetRewards: SealGetReward(where: ${urnFilter}) {
         index
         reward
         amt
         blockTimestamp
         transactionHash
       }
-      sealOnKicks(where: { urn_: {owner: "${address}"${indexQuery}}}) {
-        id
+      sealOnKicks: SealOnKick(where: ${urnFilter}) {
         wad
         blockTimestamp
         transactionHash
         urn {
-          id
+          address
         }
       }
     }
@@ -118,7 +119,7 @@ async function fetchSealHistory(
   const selectVoteDelegates: SealSelectDelegate[] = response.sealSelectVoteDelegates.map(
     (e: SealSelectDelegateResponse) => ({
       urnIndex: +e.index,
-      delegate: e.voteDelegate?.id || '',
+      delegate: e.voteDelegate?.address || '',
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
@@ -129,7 +130,7 @@ async function fetchSealHistory(
 
   const selectRewards: SealSelectReward[] = response.sealSelectRewards.map((e: SealSelectRewardResponse) => ({
     urnIndex: +e.index,
-    rewardContract: e.reward?.id || '',
+    rewardContract: e.reward?.address || '',
     blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
     transactionHash: e.transactionHash,
     module: ModuleEnum.SEAL,
@@ -223,9 +224,9 @@ async function fetchSealHistory(
   );
 
   const kicks: SealHistoryKick[] = response.sealOnKicks.map(
-    (e: BaseSealHistoryItemResponse & { wad: string; urn: { id: string } }) => ({
+    (e: BaseSealHistoryItemResponse & { wad: string; urn: { address: string } }) => ({
       amount: BigInt(e.wad),
-      urnAddress: e.urn.id,
+      urnAddress: e.urn.address,
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.SEAL,
@@ -259,7 +260,7 @@ export function useSealHistory({
 } = {}): ReadHook & { data?: SealHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {

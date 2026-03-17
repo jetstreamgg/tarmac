@@ -15,6 +15,7 @@ import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 import { isDeprecatedRewardContract } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
+import { useGeoConfig } from '@/modules/geo-config';
 
 const generateToastContent = ({
   description,
@@ -60,7 +61,7 @@ const delay = 4000;
 const NOTIFICATION_DEBOUNCE_MS = 2000; // Prevent duplicate notifications within 2 seconds
 
 export const useNotification = () => {
-  const isRestricted = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isRegionRestricted: isRestricted } = useGeoConfig();
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
   const { linkedActionConfig } = useConfigContext();

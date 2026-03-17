@@ -7,9 +7,11 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { TOKENS } from '@jetstreamgg/sky-hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { defaultConfig } from '@jetstreamgg/sky-widgets';
+import { restrictedTradeTokenList } from '@/modules/config/tokenListConfig';
 import { mainnet } from 'viem/chains';
 import { useChainId } from 'wagmi';
 import { useMemo } from 'react';
+import { useGeoConfig } from '@/modules/geo-config';
 
 const SKY_TOKEN_SYMBOLS = new Set([
   TOKENS.dai.symbol,
@@ -22,9 +24,12 @@ const SKY_TOKEN_SYMBOLS = new Set([
 
 export function TradeCard() {
   const chainId = useChainId();
+  const { isRegionRestricted } = useGeoConfig();
 
   const { skyTokens, nonSkyTokens } = useMemo(() => {
-    const tokens = defaultConfig.tradeTokenList[chainId] || [];
+    const tokens = isRegionRestricted
+      ? (restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList] || [])
+      : (defaultConfig.tradeTokenList[chainId] || []);
     const sky: typeof tokens = [];
     const nonSky: typeof tokens = [];
 
@@ -37,7 +42,7 @@ export function TradeCard() {
     }
 
     return { skyTokens: sky, nonSkyTokens: nonSky };
-  }, [chainId]);
+  }, [chainId, isRegionRestricted]);
 
   return (
     <ModuleCard

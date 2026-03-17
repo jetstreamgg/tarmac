@@ -6,15 +6,16 @@ import { BalancesSkyStatsOverview } from './BalancesSkyStatsOverview';
 import { BalancesChart } from './BalancesChart';
 import { BalancesFaq } from './BalancesFaq';
 import { BalancesSuggestedActions } from './BalancesSuggestedActions';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export function BalancesDetails() {
-  const isRestricted = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isRegionRestricted } = useGeoConfig();
 
   return (
     <DetailSectionWrapper>
       <DetailSection title={t`Earn with your Stables`} fixedOpen>
         <DetailSectionRow>
-          <BalancesSuggestedActions widget="stables" variant="card" restrictedModules={isRestricted ? ['morpho'] : undefined} />
+          <BalancesSuggestedActions widget="stables" variant="card" restrictedModules={isRegionRestricted ? ['morpho'] : undefined} />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Stake, Borrow, and Earn with SKY`} fixedOpen>

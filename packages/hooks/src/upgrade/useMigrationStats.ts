@@ -30,7 +30,7 @@ interface MigrationData {
 }
 
 export function useMigrationStats(chainId: number): ReadHook & { data?: MigrationData } {
-  const baseUrl = getBaLabsApiUrl(chainId);
+  const baseUrl = getBaLabsApiUrl();
 
   const result = useQuery<MigrationData>({
     queryKey: ['migrationStats', chainId],

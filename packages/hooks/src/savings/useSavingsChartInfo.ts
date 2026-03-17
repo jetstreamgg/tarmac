@@ -55,7 +55,7 @@ export function useSavingsChartInfo(
   const { limit } = options;
   const wagmiChainId = useChainId();
   const chainId = paramChainId || wagmiChainId;
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
   const savingsAddress = sUsdsAddress[chainId as keyof typeof sUsdsAddress];
   let url: URL | undefined;
   if (baseUrl && savingsAddress) {

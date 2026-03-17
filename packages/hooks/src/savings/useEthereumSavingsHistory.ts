@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import {
   SavingsSupply,
   SavingsHistory,
@@ -23,12 +23,12 @@ async function fetchEthereumSavingsHistory(
   if (!address) return [];
   const query = gql`
     {
-      savingsSupplies(where: {owner: "${address}"}) {
+      savingsSupplies: SavingsSupply(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         assets
         blockTimestamp
         transactionHash
       }
-      savingsWithdraws(where: {owner: "${address}"}) {
+      savingsWithdraws: SavingsWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         blockTimestamp
         assets
         transactionHash
@@ -70,7 +70,7 @@ export function useEthereumSavingsHistory({
 } = {}): ReadHook & { data?: SavingsHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
