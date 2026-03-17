@@ -183,6 +183,22 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
+    id: 'about-11-conversion',
+    title: 'About 1:1 Conversion',
+    module: 'one-to-one-conversion-banners',
+    description:
+      'Convert between USDC and USDS at a fixed 1:1 rate through the Peg Stability Module [(PSM)](#tooltip-psm) of the decentralized Sky Protocol. No price slippage is applied, and you always remain in control of your assets, as this feature is non-custodial.',
+    display: ['disconnected']
+  },
+  {
+    id: 'usds',
+    title: 'USDS',
+    module: 'one-to-one-conversion-banners',
+    description:
+      'USDS is the stablecoin of the decentralized Sky Protocol. It can be used in several ways, including to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) and get Sky Token Rewards without giving up control. It is the upgraded version of DAI.',
+    display: ['connected', 'disconnected']
+  },
+  {
     id: 'about-trade',
     title: 'About Trade',
     module: 'trade-banners',

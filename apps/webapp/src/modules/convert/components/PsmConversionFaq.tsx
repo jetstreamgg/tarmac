@@ -1,10 +1,8 @@
-import { useChainId } from 'wagmi';
-import { getPsmConversionFaqItems } from '@/data/faqs/getPsmConversionFaqItems';
+import { getOneToOneConversionFaqItems } from '@/data/faqs/getOneToOneConversionFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 
 export function PsmConversionFaq() {
-  const chainId = useChainId();
-  const faqItems = getPsmConversionFaqItems(chainId);
+  const faqItems = getOneToOneConversionFaqItems();
 
   return <FaqAccordion items={faqItems} />;
 }
