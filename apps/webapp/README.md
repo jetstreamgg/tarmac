@@ -37,7 +37,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_RPC_PROVIDER_UNICHAIN`: URL for the Unichain provider
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production
 - `VITE_AUTH_URL`: Base URL for the authentication service
-- `VITE_RESTRICTED_BUILD`: Boolean flag to enable certain restrictions
+- `VITE_GEO_CONFIG_URL`: (Optional) URL for the geo-config endpoint that provides runtime region-based restrictions. Falls back to staging URL if not set
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
 - `VITE_SKIP_CHAT_AUTH_CHECK`: Boolean flag to bypass chatbot terms acceptance check during testing (only works in non-production environments)
@@ -52,6 +52,13 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_BATCH_TX_ENABLED`: Boolean flag to enable the use of EIP-7702 batch transactions in widgets
 - `VITE_ENV_NAME`: (Optional) Environment name (e.g., 'development', 'staging', 'production')
 - `VITE_CF_PAGES_COMMIT_SHA`: (Optional) Git commit hash of the current build
+- `VITE_SENTRY_DSN`: (Optional) Public Sentry DSN for browser-side error and performance reporting
+- `VITE_SENTRY_ENVIRONMENT`: (Optional) Sentry environment name. If omitted, the app falls back to `VITE_ENV_NAME`, then `development`
+- `VITE_SENTRY_RELEASE`: (Optional) Explicit Sentry release identifier. If omitted, the app falls back to `VITE_CF_PAGES_COMMIT_SHA`, then `<package-version>-<environment>`
+- `VITE_SENTRY_DEBUG`: (Optional) Set to `'true'` to enable Sentry debug mode and full trace sampling in non-production environments
+- `SENTRY_ORG`: (Optional) Sentry organization slug used by the Vite plugin for source map uploads during build
+- `SENTRY_PROJECT`: (Optional) Sentry project slug used by the Vite plugin for source map uploads during build
+- `SENTRY_AUTH_TOKEN`: (Optional) Build-time auth token for Sentry source map uploads. If omitted, the app still builds and runtime Sentry can still report events, but source maps are not uploaded
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
 - `VITE_CHATBOT_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom chatbot terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-chatbot-terms.md`). If not specified, uses the default `chatbot_terms.md` file. This allows external teams to provide their own chatbot-specific terms file
 - `VITE_CHATBOT_ENABLED`: If set to `'true'`, enables the chatbot functionality
@@ -101,6 +108,8 @@ You will need to have the `TEST_CHAIN` env var set. You can set it locally by en
 ## Building the App
 
 To build the application for production, run `pnpm build`.
+
+If `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` are set at build time, the Vite build will also upload source maps to Sentry. The current initial Sentry integration covers browser errors and router tracing; Session Replay is not enabled in this app.
 
 ## Linting and Formatting
 

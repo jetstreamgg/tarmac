@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { DelegateInfo, DelegateRaw } from './delegate';
 import { parseDelegatesFn } from './utils';
@@ -9,29 +9,34 @@ import { useDelegateMetadataMapping } from './useDelegateMetadataMapping';
 
 async function fetchUserDelegates(
   urlSubgraph: string,
+  chainId: number,
   user: `0x${string}`,
   search?: string,
   version?: 1 | 2 | 3
 ): Promise<DelegateInfo[] | undefined> {
-  const whereConditions = [`{delegations_: {delegator_contains_nocase: "${user}", amount_gt: 0}}`];
-  if (version) whereConditions.push(`{version: "${version}"}`);
+  const whereConditions = [
+    `{ chainId: { _eq: ${chainId} } }`,
+    `{ delegations: { delegator: { _ilike: "%${user}%" }, amount: { _gt: "0" } } }`
+  ];
+  if (version) whereConditions.push(`{ version: { _eq: "${version}" } }`);
   if (search) {
-    whereConditions.push(`{id_contains_nocase: "${search}"}`);
+    whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
   }
-  const whereClause = `where: { and: [${whereConditions.join(', ')}] }`;
+  const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
   const query = gql`
     {
-      delegates(
+      delegates: Delegate(
         ${whereClause}
       ) {
-        id
+        address
         blockTimestamp
         ownerAddress
         delegators
+        totalDelegated
         delegations(
-          first: 1000
-          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
+          limit: 1
+          where: { delegator: { _ilike: "%${user}%" } }
         ) {
           id
           delegator
@@ -42,10 +47,10 @@ async function fetchUserDelegates(
     }
   `;
 
-  const response = await request<{ delegates: DelegateRaw[] }>(urlSubgraph, query);
+  const response = await request<{ delegates: (DelegateRaw & { address: string })[] }>(urlSubgraph, query);
   const parsedDelegates = response.delegates.map(d => ({
     ...d,
-    totalDelegated: d.delegations.reduce((acc, curr) => acc + BigInt(curr.amount), BigInt(0)).toString()
+    id: d.address as `0x${string}`
   }));
   if (!parsedDelegates) {
     return undefined;
@@ -80,7 +85,7 @@ export function useUserDelegates({
   search?: string;
   version?: 1 | 2 | 3;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data: subgraphDelegates,
@@ -89,8 +94,8 @@ export function useUserDelegates({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && user.length > 0 && user !== ZERO_ADDRESS),
-    queryKey: ['user-delegates', urlSubgraph, user, search, version],
-    queryFn: () => fetchUserDelegates(urlSubgraph, user, search, version)
+    queryKey: ['user-delegates', urlSubgraph, chainId, user, search, version],
+    queryFn: () => fetchUserDelegates(urlSubgraph, chainId, user, search, version)
   });
 
   const { data: metadataMapping } = useDelegateMetadataMapping();

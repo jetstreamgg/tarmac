@@ -4,9 +4,9 @@ import {
   VaultsIntentMapping,
   ConvertIntentMapping,
   QueryParams,
-  CHAIN_WIDGET_MAP,
-  RESTRICTED_INTENTS
+  CHAIN_WIDGET_MAP
 } from '@/lib/constants';
+import { useGeoConfig } from '@/modules/geo-config';
 import { Intent, ConvertIntent } from '@/lib/enums';
 import {
   useTokens,
@@ -75,7 +75,8 @@ const fetchUserSuggestedActions = (
   rewardContracts?: RewardContract[],
   currentRewardContract?: RewardContract,
   currentExpertModule?: string,
-  chains?: readonly any[]
+  chains?: readonly any[],
+  restrictedIntentStrings?: string[]
 ): {
   suggestedActions: SuggestedAction[];
   linkedActions: LinkedAction[];
@@ -530,8 +531,7 @@ const fetchUserSuggestedActions = (
     action.url = addNetworkParam(action.url, chainId, chains);
   });
 
-  // Convert Intent enums to their string mappings for comparison
-  const restrictedIntentStrings = RESTRICTED_INTENTS.map(intent => IntentMapping[intent]);
+  const restricted = restrictedIntentStrings || [];
 
   const supportedIntents = CHAIN_WIDGET_MAP[chainId] || [];
 
@@ -544,12 +544,12 @@ const fetchUserSuggestedActions = (
   };
 
   const filteredSuggestedActions = suggestedActions.filter(action => {
-    if (restrictedIntentStrings.includes(action.intent)) return false;
+    if (restricted.includes(action.intent)) return false;
     return isIntentSupported(action.intent);
   });
 
   const filteredLinkedActions = linkedActions.filter(action => {
-    if (restrictedIntentStrings.includes(action.intent) || restrictedIntentStrings.includes(action.la))
+    if (restricted.includes(action.intent) || restricted.includes(action.la))
       return false;
     return isIntentSupported(action.intent) && isIntentSupported(action.la);
   });
@@ -567,6 +567,13 @@ export const useUserSuggestedActions = (
   const { address } = useConnection();
   const chainId = useChainId();
   const chains = useChains();
+  const { isModuleEnabled } = useGeoConfig();
+
+  // Build restricted intent strings from geo-config
+  const geoRestrictedIntents: string[] = [];
+  if (!isModuleEnabled('savings')) geoRestrictedIntents.push(IntentMapping[Intent.SAVINGS_INTENT]);
+  if (!isModuleEnabled('rewards')) geoRestrictedIntents.push(IntentMapping[Intent.REWARDS_INTENT]);
+  if (!isModuleEnabled('expert')) geoRestrictedIntents.push(IntentMapping[Intent.EXPERT_INTENT]);
   const tokens = useTokens(chainId);
   const [data, setData] = useState<
     { suggestedActions: SuggestedAction[]; linkedActions: LinkedAction[] } | undefined
@@ -610,7 +617,8 @@ export const useUserSuggestedActions = (
             rewardContracts,
             currentRewardContract,
             currentExpertModule,
-            chains
+            chains,
+            geoRestrictedIntents
           );
           setData(result);
           setError(undefined);
@@ -633,7 +641,8 @@ export const useUserSuggestedActions = (
     currentRewardContract,
     currentExpertModule,
     chainId,
-    chains
+    chains,
+    geoRestrictedIntents.join(',')
   ]);
 
   return { data, isLoading: isLoading || tokenBalancesIsLoading, error: error || tokenBalanceError };

@@ -22,6 +22,7 @@ import { AnalyticsErrorBoundary } from '@/modules/analytics/AnalyticsErrorBounda
 import { CookieConsentProvider } from '@/modules/analytics/context/CookieConsentContext';
 import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
 import { CookieConsentBanner } from '@/modules/analytics/components/CookieConsentBanner';
+import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { CORPUS_VERSION, CORPUS_BRANCH } from '@/data/version';
 
@@ -74,11 +75,13 @@ export const App = () => (
         <AnalyticsErrorBoundary>
           <CookieConsentProvider>
             <PostHogProvider>
-              <AnalyticsFlowProvider>
-                <ConnectModalProvider>
-                  <AppContent />
-                </ConnectModalProvider>
-              </AnalyticsFlowProvider>
+              <GeoConfigProvider>
+                <AnalyticsFlowProvider>
+                  <ConnectModalProvider>
+                    <AppContent />
+                  </ConnectModalProvider>
+                </AnalyticsFlowProvider>
+              </GeoConfigProvider>
               {POSTHOG_ENABLED && <CookieConsentBanner />}
             </PostHogProvider>
           </CookieConsentProvider>

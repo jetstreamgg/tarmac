@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { RouteObject, createBrowserRouter, redirect } from 'react-router-dom';
 import Home from './Home';
 import ErrorPage from './ErrorPage';
@@ -6,8 +7,6 @@ import Dev from './Dev';
 import { SealEngine } from './SealEngine';
 import { BatchTransactionsLegal } from './BatchTransactionsLegal';
 import { rewriteLegacyWidgetParams } from '@/modules/utils/validateSearchParams';
-
-const restrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
 
 // TODO: Remove once all references to widget=trade|upgrade are migrated
 const legacyWidgetLoader = ({ request }: { request: Request }) => {
@@ -20,43 +19,40 @@ const legacyWidgetLoader = ({ request }: { request: Request }) => {
   return null;
 };
 
-const commonRoutes = [
+const routes: RouteObject[] = [
   {
     path: '/',
     element: <Home />,
     loader: legacyWidgetLoader,
     errorElement: <ErrorPage />
-  } as RouteObject,
+  },
   {
     path: '/seal-engine',
     element: <SealEngine />,
     errorElement: <ErrorPage />
-  } as RouteObject,
+  },
   {
     path: '/batch-transactions-legal-notice',
     element: <BatchTransactionsLegal />,
     errorElement: <ErrorPage />
-  } as RouteObject,
+  },
   // catch all and show NotFound component
   {
     path: '*',
     element: <NotFound />,
     errorElement: <ErrorPage />
-  } as RouteObject
+  },
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev',
+          element: <Dev />,
+          errorElement: <ErrorPage />
+        }
+      ]
+    : [])
 ];
 
-const restrictedRoutes = [] as RouteObject[];
+const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV6(createBrowserRouter);
 
-const devRoutes = [
-  {
-    path: '/dev',
-    element: <Dev />,
-    errorElement: <ErrorPage />
-  } as RouteObject
-];
-
-const routes = restrictedBuild
-  ? [...commonRoutes, ...(import.meta.env.DEV ? devRoutes : [])]
-  : [...commonRoutes, ...restrictedRoutes, ...(import.meta.env.DEV ? devRoutes : [])];
-
-export const router = createBrowserRouter(routes);
+export const router = sentryCreateBrowserRouter(routes);
