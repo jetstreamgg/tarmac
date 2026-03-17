@@ -8,6 +8,7 @@ import { formatUnits } from 'viem';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
 import { RateLineWithArrow } from '@widgets/shared/components/ui/RateLineWithArrow';
 import { InteractiveStatsCardAlt } from '@widgets/shared/components/ui/card/InteractiveStatsCardAlt';
+import { ArrowRight } from 'lucide-react';
 import { useChainId } from 'wagmi';
 
 export const SavingsBalanceCard = ({
@@ -40,11 +41,20 @@ export const SavingsBalanceCard = ({
         overallSkyDataLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : skySavingsRate > 0 ? (
-          <RateLineWithArrow
-            rateText={`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
-            popoverType="ssr"
-            onExternalLinkClicked={onExternalLinkClicked}
-          />
+          <div className="flex items-center gap-2">
+            <RateLineWithArrow
+              rateText={`Rate: ${formatDecimalPercentage(skySavingsRate)}`}
+              popoverType="ssr"
+              onExternalLinkClicked={onExternalLinkClicked}
+              showArrow={false}
+            />
+            {urlMap[chainId] && (
+              <ArrowRight
+                size={16}
+                className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100 group-hover/header-link:opacity-100"
+              />
+            )}
+          </div>
         ) : (
           <></>
         )
@@ -67,6 +77,7 @@ export const SavingsBalanceCard = ({
       balancesByChain={savingsBalances ?? []}
       urlMap={urlMap}
       pricesData={pricesData ?? {}}
+      url={urlMap[chainId]}
     />
   ) : (
     <InteractiveStatsCardAlt

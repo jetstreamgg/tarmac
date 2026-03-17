@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import React from 'react';
 import { Error } from './Error';
 
@@ -25,8 +26,20 @@ export class ErrorBoundary extends React.Component<{
     return { hasError: true };
   }
 
-  componentDidCatch(error: any, errorInfo: any) {
-    // You can also log the error to an error reporting service
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    Sentry.captureException(error, {
+      tags: {
+        boundary: this.componentName,
+        type: 'react_error_boundary',
+        source: 'sky_widgets'
+      },
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack
+        }
+      }
+    });
+
     console.error({ error, errorInfo });
   }
 

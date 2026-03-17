@@ -13,6 +13,7 @@ import { ConnectedProvider } from '@/modules/ui/context/ConnectedContext';
 import { TermsModalProvider } from '@/modules/ui/context/TermsModalContext';
 import { BalanceFiltersProvider } from '@/modules/ui/context/BalanceFiltersContext';
 import { ChainModalProvider } from '@/modules/ui/context/ChainModalContext';
+import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
@@ -21,6 +22,7 @@ import { AnalyticsErrorBoundary } from '@/modules/analytics/AnalyticsErrorBounda
 import { CookieConsentProvider } from '@/modules/analytics/context/CookieConsentContext';
 import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
 import { CookieConsentBanner } from '@/modules/analytics/components/CookieConsentBanner';
+import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { CORPUS_VERSION, CORPUS_BRANCH } from '@/data/version';
 
@@ -50,10 +52,12 @@ const AppContent = () => {
             <TooltipProvider delayDuration={300}>
               <ChainModalProvider>
                 <NetworkSwitchProvider>
-                  <ExternalLinkModal />
-                  <Toaster />
-                  <ToastCloseAll />
-                  <RouterProvider router={router} />
+                  <TransactionProvider>
+                    <ExternalLinkModal />
+                    <Toaster />
+                    <ToastCloseAll />
+                    <RouterProvider router={router} />
+                  </TransactionProvider>
                 </NetworkSwitchProvider>
               </ChainModalProvider>
             </TooltipProvider>
@@ -71,11 +75,13 @@ export const App = () => (
         <AnalyticsErrorBoundary>
           <CookieConsentProvider>
             <PostHogProvider>
-              <AnalyticsFlowProvider>
-                <ConnectModalProvider>
-                  <AppContent />
-                </ConnectModalProvider>
-              </AnalyticsFlowProvider>
+              <GeoConfigProvider>
+                <AnalyticsFlowProvider>
+                  <ConnectModalProvider>
+                    <AppContent />
+                  </ConnectModalProvider>
+                </AnalyticsFlowProvider>
+              </GeoConfigProvider>
               {POSTHOG_ENABLED && <CookieConsentBanner />}
             </PostHogProvider>
           </CookieConsentProvider>

@@ -32,12 +32,12 @@ export {
 } from './useMorphoVaultRewards';
 export {
   useMerklRewards,
-  type MerklRewardSource,
   type MerklTokenReward,
+  type MerklRewardSource,
   type MerklRewardsData,
   type MerklRewardsHook
 } from './useMerklRewards';
-export { useMorphoVaultClaimRewards } from './useMorphoVaultClaimRewards';
+export { useMerklClaimRewards } from './useMerklClaimRewards';
 export { useMorphoVaultHistory } from './useMorphoVaultHistory';
 export {
   useMorphoVaultChartInfo,

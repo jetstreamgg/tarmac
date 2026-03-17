@@ -6,10 +6,9 @@ import {
   Token,
   useMorphoVaultOnChainData,
   useMorphoVaultMarketApiData,
-  useMorphoVaultRewards,
   usdtAddress
 } from '@jetstreamgg/sky-hooks';
-import { useDebounce, formatBigInt } from '@jetstreamgg/sky-utils';
+import { useDebounce } from '@jetstreamgg/sky-utils';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './lib/constants';
@@ -101,14 +100,6 @@ const MorphoVaultWidgetWrapped = ({
     vaultAddress
   });
 
-  // Vault rewards hook - fetches claimable rewards from Merkl API
-  const {
-    data: rewardsData,
-    isLoading: isRewardsLoading,
-    mutate: mutateRewards
-  } = useMorphoVaultRewards({
-    vaultAddress
-  });
   const userAssets = vaultData?.userAssets ?? 0n;
   const availableLiquidity = marketData?.liquidity;
   const hasLiquidityData = !isMarketDataLoading && availableLiquidity !== undefined;
@@ -119,16 +110,6 @@ const MorphoVaultWidgetWrapped = ({
       : availableLiquidity
     : undefined;
   const isLiquidityConstrained = hasLiquidityData && userAssets > 0n && availableLiquidity < userAssets;
-
-  // Build the claim amount text for display in transaction status
-  const claimAmountText = useMemo(() => {
-    return (
-      rewardsData?.rewards
-        .filter(r => r.amount > 0n)
-        .map(r => `${formatBigInt(r.amount, { unit: r.tokenDecimals, maxDecimals: 2 })} ${r.tokenSymbol}`)
-        .join(' + ') || ''
-    );
-  }, [rewardsData?.rewards]);
 
   // User's underlying asset balance (e.g., USDC balance)
   const { data: assetBalance, refetch: mutateAssetBalance } = useTokenBalance({
@@ -198,7 +179,7 @@ const MorphoVaultWidgetWrapped = ({
     !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === MorphoVaultFlow.SUPPLY;
 
   // Transaction hooks
-  const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem, morphoVaultClaimRewards } =
+  const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem } =
     useMorphoVaultTransactions({
       amount: debouncedAmount,
       shares: vaultData?.userShares ?? 0n,
@@ -210,12 +191,9 @@ const MorphoVaultWidgetWrapped = ({
       vaultName,
       needsAllowance,
       shouldUseBatch,
-      rewards: rewardsData?.rewards,
-      hasClaimableRewards: rewardsData?.hasClaimableRewards,
       mutateAllowance,
       mutateVaultData,
       mutateAssetBalance,
-      mutateRewards,
       addRecentTransaction,
       onWidgetStateChange,
       onNotification,
@@ -361,8 +339,6 @@ const MorphoVaultWidgetWrapped = ({
       return morphoVaultDeposit.execute();
     } else if (widgetState.action === MorphoVaultAction.WITHDRAW) {
       return max ? morphoVaultRedeem.execute() : morphoVaultWithdraw.execute();
-    } else if (widgetState.action === MorphoVaultAction.CLAIM) {
-      return morphoVaultClaimRewards.execute();
     }
     return undefined;
   };
@@ -548,7 +524,6 @@ const MorphoVaultWidgetWrapped = ({
               needsAllowance={needsAllowance}
               needsAllowanceReset={needsAllowanceReset}
               currentCallIndex={currentCallIndex}
-              claimAmountText={claimAmountText}
             />
           </CardAnimationWrapper>
         ) : widgetState.screen === MorphoVaultScreen.REVIEW ? (
@@ -601,9 +576,6 @@ const MorphoVaultWidgetWrapped = ({
               vaultTvl={vaultData?.totalAssets}
               vaultRate={marketData?.rate?.formattedNetRate}
               shareDecimals={vaultData?.decimals ?? 18}
-              claimRewards={morphoVaultClaimRewards}
-              isRewardsLoading={isRewardsLoading}
-              hasClaimableRewards={rewardsData?.hasClaimableRewards}
               availableLiquidity={availableLiquidity}
               disclaimerChecked={disclaimerChecked}
               onDisclaimerChange={setDisclaimerChecked}

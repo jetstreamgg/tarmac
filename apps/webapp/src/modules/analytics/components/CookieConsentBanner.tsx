@@ -105,8 +105,8 @@ export function CookieConsentBanner() {
                 transition={{ duration: 0.15 }}
               >
                 <Text variant="captionSm" className="text-white/60">
-                  We use analytics cookies to understand how this app is used and to improve it. No personal
-                  data is collected.
+                  We collect anonymous usage analytics to understand how this app is used and to improve it. No
+                  personal data is collected. Accepting enables persistent cookies for better insights.
                   {privacyLink && (
                     <>
                       {' '}

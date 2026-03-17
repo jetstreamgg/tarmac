@@ -64,6 +64,7 @@ export { positionAnimations } from './shared/animation/presets';
 export type { WithWidgetProviderProps } from './shared/hocs/withWidgetProvider';
 export { ConnectWalletCopy } from './shared/components/ui/ConnectWalletCopy';
 export { ConnectWallet } from './shared/components/icons/ConnectWallet';
+export { Clock, InProgress, SuccessCheck, SuccessCheckSolidColor, FailedX, Cancel } from './shared/components/icons/Icons';
 export { Morpho } from './shared/components/icons/Morpho';
 export { WalletCard } from './widgets/BalancesWidget/components/WalletCard';
 export { ModuleCardVariant, ModulesBalances } from './widgets/BalancesWidget/components/ModulesBalances';

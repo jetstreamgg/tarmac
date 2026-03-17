@@ -25,7 +25,8 @@ export const InteractiveStatsCardWithAccordion = ({
   balancesByChain,
   urlMap,
   pricesData,
-  icon
+  icon,
+  url
 }: {
   title: React.ReactElement | string;
   headerRightContent: React.ReactElement | string;
@@ -36,9 +37,11 @@ export const InteractiveStatsCardWithAccordion = ({
   urlMap: Record<number, string>;
   pricesData: Record<string, PriceData>;
   icon?: React.ReactNode;
+  url?: string;
 }): React.ReactElement => {
   const chains = useChains();
-  if (balancesByChain.length === 1) {
+  if (balancesByChain.length <= 1) {
+    const singleChain = balancesByChain[0];
     return (
       <InteractiveStatsCard
         title={title}
@@ -46,42 +49,51 @@ export const InteractiveStatsCardWithAccordion = ({
         footer={footer}
         footerRightContent={footerRightContent}
         tokenSymbol={tokenSymbol}
-        url={urlMap[balancesByChain[0].chainId]}
-        chainId={balancesByChain[0].chainId}
+        url={singleChain ? urlMap[singleChain.chainId] : url}
+        chainId={singleChain?.chainId}
         icon={icon}
       />
     );
   }
+
+  const headerContent = (
+    <div className="flex items-center gap-2">
+      {icon ? (
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center">{icon}</div>
+      ) : tokenSymbol ? (
+        <TokenIcon
+          className="h-8 w-8"
+          token={{ symbol: tokenSymbol, name: tokenSymbol }}
+          noChain={true}
+        />
+      ) : null}
+      <div className="grow">
+        <CardContent className="flex items-center justify-between gap-4">
+          <Text>{title}</Text>
+          {headerRightContent}
+        </CardContent>
+        <CardFooter>
+          <div className="flex w-full items-start justify-between">
+            <div className="flex-1">{footer}</div>
+            {footerRightContent}
+          </div>
+        </CardFooter>
+      </div>
+    </div>
+  );
+
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="details" className="accordion-item border-0">
-        <AccordionTrigger className="w-full p-0 hover:no-underline [&>svg]:hidden">
-          <Card variant="stats" className="w-full px-0 pb-4 lg:px-0">
-            <div className="px-4 lg:px-5">
-              <div className="flex items-center gap-2">
-                {icon ? (
-                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center">{icon}</div>
-                ) : tokenSymbol ? (
-                  <TokenIcon
-                    className="h-8 w-8"
-                    token={{ symbol: tokenSymbol, name: tokenSymbol }}
-                    noChain={true}
-                  />
-                ) : null}
-                <div className="grow">
-                  <CardContent className="flex items-center justify-between gap-4">
-                    <Text>{title}</Text>
-                    {headerRightContent}
-                  </CardContent>
-                  <CardFooter>
-                    <div className="flex w-full items-start justify-between">
-                      <div className="flex-1">{footer}</div>
-                      {footerRightContent}
-                    </div>
-                  </CardFooter>
-                </div>
-              </div>
-              <HStack className="my-2">
+        <Card variant="stats" className="w-full !px-0 transition-colors has-[.header-link:hover]:bg-radial-(--gradient-position) has-[.header-link:hover]:from-primary-start/100 has-[.header-link:hover]:to-primary-end/100">
+          <div className="group/header-link relative -mt-3 px-4 pb-1 pt-3 lg:-mt-5 lg:px-5 lg:pt-5">
+            <div>
+              {headerContent}
+            </div>
+            {url && <Link to={url} aria-label={typeof title === 'string' ? title : undefined} className="header-link absolute inset-0 z-0 h-full w-full" />}
+          </div>
+          <AccordionTrigger className="-mb-3 w-full px-4 pb-5 hover:no-underline lg:-mb-5 lg:px-5 lg:pb-5 [&>svg]:hidden">
+              <HStack className="pt-1.5 w-full justify-between">
                 <HStack className="items-center -space-x-0.5 opacity-100 transition-opacity duration-200 [.accordion-item[data-state=open]_&]:opacity-0">
                   {balancesByChain.map(({ chainId }, index) => (
                     <div key={chainId} style={{ zIndex: balancesByChain.length - index }}>
@@ -111,48 +123,51 @@ export const InteractiveStatsCardWithAccordion = ({
                   </svg>
                 </HStack>
               </HStack>
-            </div>
-            <AccordionContent className="p-0">
-              {balancesByChain.map(({ chainId, balance }) => {
-                const networkName = chains.find(c => c.id === chainId)?.name;
-                const usdValue = pricesData?.USDS?.price
-                  ? parseFloat(formatUnits(balance, 18)) * parseFloat(pricesData.USDS.price)
-                  : 0;
+            </AccordionTrigger>
+          <AccordionContent className="mt-2 p-0">
+            {balancesByChain.map(({ chainId, balance }) => {
+              const networkName = chains.find(c => c.id === chainId)?.name;
+              const usdValue = pricesData?.USDS?.price
+                ? parseFloat(formatUnits(balance, 18)) * parseFloat(pricesData.USDS.price)
+                : 0;
 
-                return (
-                  <Link to={urlMap[chainId]} key={chainId}>
-                    <div className="group/interactive-card from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer bg-radial-(--gradient-position) transition-colors">
-                      <div className="flex items-start gap-2 p-2 px-4 lg:px-5">
-                        <TokenIcon
-                          className="h-8 w-8"
-                          token={{ symbol: 'USDS', name: 'USDS' }}
-                          chainId={chainId}
-                        />
-                        <div className="grow">
-                          <div className="flex items-start justify-between">
-                            <div className="flex flex-col">
-                              <Text>{networkName}</Text>
-                              <ArrowRight
-                                size={16}
-                                className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
-                              />
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <Text>{formatBigInt(balance)}</Text>
-                              <Text variant="small" className="text-textSecondary">
-                                ${formatNumber(usdValue, { maxDecimals: 2 })}
-                              </Text>
-                            </div>
-                          </div>
+              const rowContent = (
+                <div className="group/interactive-card from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer bg-radial-(--gradient-position) transition-colors">
+                  <div className="flex items-start gap-2 p-2 px-4 lg:px-5">
+                    <TokenIcon
+                      className="h-8 w-8"
+                      token={{ symbol: 'USDS', name: 'USDS' }}
+                      chainId={chainId}
+                    />
+                    <div className="grow">
+                      <div className="flex items-start justify-between">
+                        <div className="flex flex-col">
+                          <Text>{networkName}</Text>
+                          <ArrowRight
+                            size={16}
+                            className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
+                          />
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <Text>{formatBigInt(balance)}</Text>
+                          <Text variant="small" className="text-textSecondary">
+                            ${formatNumber(usdValue, { maxDecimals: 2 })}
+                          </Text>
                         </div>
                       </div>
                     </div>
-                  </Link>
-                );
-              })}
-            </AccordionContent>
-          </Card>
-        </AccordionTrigger>
+                  </div>
+                </div>
+              );
+
+              return (
+                <Link to={urlMap[chainId]} key={chainId}>
+                  {rowContent}
+                </Link>
+              );
+            })}
+          </AccordionContent>
+        </Card>
       </AccordionItem>
     </Accordion>
   );

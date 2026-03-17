@@ -15,9 +15,8 @@ let hasInitializedPostHog = false;
  *
  * Consent is stored in the cross-subdomain sky_consent cookie (shared across *.sky.money).
  *
- * - Rejected users: PostHog is NOT initialized (zero events).
- * - Pending users: Memory-only persistence (persistence: 'memory'). Each user gets a real UUID
- *   distinct_id in JS heap memory — no cookies, localStorage, or sessionStorage.
+ * - Rejected/Pending users: Memory-only persistence (persistence: 'memory'). Each user gets a
+ *   real UUID distinct_id in JS heap memory — no cookies, localStorage, or sessionStorage.
  * - Accepted users: Full persistent tracking.
  *
  * Cross-domain attribution: If __ph_id and/or __ph_session_id URL params are present
@@ -80,11 +79,6 @@ export function initializePostHogIfNeeded(forceAccepted = false) {
 
   const consent = getStoredConsent();
   const hasAccepted = forceAccepted || consent?.posthog === true;
-  const hasRejected = consent?.posthog === false;
-
-  if (hasRejected && !forceAccepted) {
-    return;
-  }
 
   const bootstrapConfig = getBootstrapConfig();
 
@@ -121,7 +115,7 @@ export function initializePostHogIfNeeded(forceAccepted = false) {
   hasInitializedPostHog = true;
 }
 
-// Initialize immediately unless rejected.
+// Initialize immediately (all consent states get PostHog, rejected/pending use memory-only).
 initializePostHogIfNeeded();
 
 /**
@@ -138,11 +132,15 @@ export function applyPostHogConsent(enabled: boolean) {
     posthog.opt_in_capturing();
     posthog.register({ app_name: 'app' });
   } else {
-    if (!hasInitializedPostHog) return;
-    // reset() MUST come before opt_out — reset clears all stored data including
-    // opt flags. opt_out_capturing() must be last so the opt-out flag persists.
+    // Downgrade to memory-only anonymous tracking (same as pending state).
+    // Initialize PostHog if it hasn't been yet (shouldn't happen, but just in case).
+    initializePostHogIfNeeded();
+    // reset() clears all stored data and generates a fresh anonymous distinct_id.
     posthog.reset();
-    posthog.opt_out_capturing();
+    // Switch to memory persistence — no cookies, localStorage, or sessionStorage.
+    posthog.set_config({ persistence: 'memory' });
+    posthog.opt_in_capturing();
+    posthog.register({ app_name: 'app' });
     // Clear bootstrap sessionStorage so rejected users aren't re-bootstrapped on refresh
     try {
       sessionStorage.removeItem(SESSION_STORAGE_PH_ID);

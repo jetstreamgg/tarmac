@@ -93,14 +93,14 @@ export {
   useMorphoVaultMarketApiData,
   fetchMorphoVaultMarketData,
   useMorphoVaultRewards,
-  useMerklRewards,
-  useMorphoVaultClaimRewards,
+  useMerklClaimRewards,
   useMorphoVaultHistory,
   useMorphoVaultChartInfo,
   useMorphoVaultMultipleChartInfo,
   useMorphoVaultSupplierAddresses,
   useMorphoVaultsCombinedTvl,
   useAllMorphoVaultsUserAssets,
+  useMerklRewards,
   MORPHO_VAULTS
 } from './morpho';
 export type {
@@ -118,8 +118,8 @@ export type {
   MorphoVaultReward,
   MorphoVaultRewardsData,
   MorphoVaultRewardsHook,
-  MerklRewardSource,
   MerklTokenReward,
+  MerklRewardSource,
   MerklRewardsData,
   MerklRewardsHook,
   MorphoVaultChartDataPoint,
@@ -321,8 +321,7 @@ export {
   ModuleEnum,
   TransactionTypeEnum,
   TRUST_LEVELS,
-  URL_MAKER_SUBGRAPH_MAINNET,
-  URL_MAKER_SUBGRAPH_TENDERLY,
+  URL_SKY_SUBGRAPH,
   ZERO_ADDRESS,
   ZERO_BYTES32
 } from './constants';

@@ -147,7 +147,7 @@ export const VaultsBalanceCard = ({
       }
       // Parse the base URL and append vault query param
       const separator = url.includes('?') ? '&' : '?';
-      map[v.vaultAddress] = `${url}${separator}vault=${v.vaultAddress}`;
+      map[v.vaultAddress] = `${url}${separator}vault=${v.vaultAddress}&vault_module=morpho`;
     });
     return map;
   }, [vaultUrlMap, morphoAssetsData.vaults, url]);

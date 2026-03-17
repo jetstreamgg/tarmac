@@ -5,15 +5,11 @@ import {
   MorphoVaultScreen,
   supplySubtitle,
   withdrawSubtitle,
-  claimSubtitle,
   morphoVaultActionDescription,
-  claimActionDescription,
   supplyLoadingButtonText,
   withdrawLoadingButtonText,
-  claimLoadingButtonText,
   morphoVaultSupplyTitle,
-  morphoVaultWithdrawTitle,
-  morphoVaultClaimTitle
+  morphoVaultWithdrawTitle
 } from '../lib/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -35,8 +31,7 @@ export const MorphoVaultTransactionStatus = ({
   isBatchTransaction,
   needsAllowance,
   needsAllowanceReset,
-  currentCallIndex,
-  claimAmountText
+  currentCallIndex
 }: {
   amount: bigint;
   assetToken: Token;
@@ -45,7 +40,6 @@ export const MorphoVaultTransactionStatus = ({
   needsAllowance: boolean;
   needsAllowanceReset: boolean;
   currentCallIndex: number;
-  claimAmountText?: string;
 }) => {
   // Capture at mount to avoid state changes during transaction
   const [flowNeedsAllowance] = useState(needsAllowance);
@@ -86,29 +80,7 @@ export const MorphoVaultTransactionStatus = ({
 
     const formattedAmount = formatBigInt(amount, { unit: getTokenDecimals(assetToken, chainId) });
 
-    if (action === MorphoVaultAction.CLAIM) {
-      if (screen === MorphoVaultScreen.TRANSACTION) {
-        setTxTitle(i18n._(morphoVaultClaimTitle[txStatus as keyof TxCardCopyText]));
-        setTxSubtitle(
-          i18n._(
-            claimSubtitle({
-              txStatus,
-              claimAmountText: claimAmountText || ''
-            })
-          )
-        );
-        setTxDescription(i18n._(claimActionDescription({ txStatus })));
-        setLoadingText(
-          i18n._(
-            claimLoadingButtonText({
-              txStatus,
-              claimAmountText: claimAmountText || ''
-            })
-          )
-        );
-        setStep(2);
-      }
-    } else if (flow === MorphoVaultFlow.SUPPLY) {
+    if (flow === MorphoVaultFlow.SUPPLY) {
       setStepTwoTitle(t`Supply`);
 
       if (screen === MorphoVaultScreen.TRANSACTION) {
@@ -207,7 +179,6 @@ export const MorphoVaultTransactionStatus = ({
     amount,
     assetToken,
     chainId,
-    claimAmountText,
     i18n,
     setTxTitle,
     setTxSubtitle,

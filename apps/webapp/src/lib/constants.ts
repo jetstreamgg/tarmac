@@ -34,15 +34,6 @@ export enum Environment {
   Development = 'development'
 }
 
-const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-
-export const RESTRICTED_INTENTS: Intent[] = (() => {
-  if (isRestrictedBuild) {
-    return [Intent.SAVINGS_INTENT, Intent.REWARDS_INTENT, Intent.EXPERT_INTENT];
-  }
-  return [];
-})();
-
 export const IntentMapping = {
   [Intent.BALANCES_INTENT]: 'balances',
   [Intent.UPGRADE_INTENT]: 'upgrade',
@@ -147,24 +138,13 @@ export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.VAULTS_INTENT]
 ];
 
-const AvailableIntentMapping = Object.entries(IntentMapping).reduce(
-  (acc, [key, value]) => {
-    const isRestricted = isRestrictedBuild;
-    if (!isRestricted || !RESTRICTED_INTENTS.includes(key as Intent)) {
-      acc[key as Intent] = value;
-    }
-    return acc;
-  },
-  {} as typeof IntentMapping
-);
-
 export function mapIntentToQueryParam(intent: Intent): string {
-  return AvailableIntentMapping[intent] || '';
+  return IntentMapping[intent] || '';
 }
 
 export function mapQueryParamToIntent(queryParam?: string | null): Intent {
-  const intent = Object.keys(AvailableIntentMapping).find(
-    key => AvailableIntentMapping[key as keyof typeof AvailableIntentMapping] === queryParam
+  const intent = Object.keys(IntentMapping).find(
+    key => IntentMapping[key as keyof typeof IntentMapping] === queryParam
   );
   return (intent as Intent) || Intent.BALANCES_INTENT;
 }
@@ -189,35 +169,16 @@ export const ALLOWED_EXTERNAL_DOMAINS = [
   'docs.sky.money',
   'vote.sky.money',
   'upgrademkrtosky.sky.money',
-  'jobs.ashbyhq.com'
+  'jobs.ashbyhq.com',
+  'jetstream.gg'
 ];
 
 export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.Production;
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
-export const PROD_URL_SKY_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const STAGING_URL_SKY_SUBGRAPH_MAINNET =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const STAGING_URL_SKY_SUBGRAPH_TESTNET =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-testnet';
-export const PROD_URL_SKY_SUBGRAPH_BASE =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const STAGING_URL_SKY_SUBGRAPH_BASE =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const PROD_URL_SKY_SUBGRAPH_ARBITRUM =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const PROD_URL_SKY_SUBGRAPH_OPTIMISM =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-export const PROD_URL_SKY_SUBGRAPH_UNICHAIN =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
-export const STAGING_URL_SKY_SUBGRAPH_OPTIMISM =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-export const STAGING_URL_SKY_SUBGRAPH_UNICHAIN =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
+export const PROD_URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
+export const STAGING_URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
 
 export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
 export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');
@@ -225,11 +186,11 @@ export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHATBOT_SUGGESTIONS
 
 export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
 export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
-export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
+export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.jetstream.gg';
 export const CHATBOT_USE_TESTNET_NETWORK_NAME =
   import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
 // Feature flag to enable chatbot pre-fill filtering
-// Enabled by default unless explicitly set to 'false'
+// Enabled by default unless explicitly set to false
 export const CHATBOT_PREFILL_FILTERING_ENABLED =
   import.meta.env.VITE_CHATBOT_PREFILL_FILTERING_ENABLED !== 'false';
 
