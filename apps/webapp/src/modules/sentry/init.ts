@@ -53,21 +53,9 @@ export function initSentry(): void {
         return null;
       }
 
-      const message = event.exception?.values?.[0]?.value || event.message || '';
       const stack = event.exception?.values?.[0]?.stacktrace?.frames || [];
 
       if (stack.some(frame => /^(chrome|moz)-extension:\/\//.test(frame.filename || ''))) {
-        return null;
-      }
-
-      const ignorePatterns = [
-        'Network Error',
-        'Failed to fetch',
-        'AbortError',
-        'The operation was aborted'
-      ];
-
-      if (ignorePatterns.some(pattern => message.includes(pattern))) {
         return null;
       }
 

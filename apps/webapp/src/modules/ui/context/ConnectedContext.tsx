@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import * as Sentry from '@sentry/react';
 import { useChainId, useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { sanitizeUrl } from '@/lib/utils';
@@ -59,6 +60,18 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
   const vpnTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (vpnError) {
+      Sentry.captureException(vpnError, { tags: { endpoint: 'ip-status' } });
+    }
+  }, [vpnError]);
+
+  useEffect(() => {
+    if (authError) {
+      Sentry.captureException(authError, { tags: { endpoint: 'address-status' } });
+    }
+  }, [authError]);
 
   useEffect(() => {
     setEnabled(!!address);
