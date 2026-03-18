@@ -25,6 +25,7 @@ import { VaultsDetailsPane } from '@/modules/vaults/components/VaultsDetailsPane
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
 import { PsmConversionDetails } from '@/modules/convert/components/PsmConversionDetails';
+import { ConvertOverviewDetails } from '@/modules/convert/components/ConvertOverviewDetails';
 
 type DetailsPaneProps = {
   intent: Intent;
@@ -184,7 +185,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                 default:
                   return (
                     <MotionDetailsWrapper key={keys[15]}>
-                      <BalancesDetails />
+                      <ConvertOverviewDetails />
                     </MotionDetailsWrapper>
                   );
               }
