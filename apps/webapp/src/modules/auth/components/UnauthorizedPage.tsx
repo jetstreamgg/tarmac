@@ -61,7 +61,7 @@ const getTitle = (authData: AuthData, vpnData: VpnData): string => {
 
 const getMessage = (authData: AuthData, vpnData: VpnData, termsLink: any[]): string | React.ReactElement => {
   if (vpnData.vpnError || authData.authError) {
-    return t`Unable to connect to the server. Please check your connection and try again.`;
+    return t`Please check your connection and try again.`;
   }
 
   if (!vpnData.vpnIsLoading && vpnData.isConnectedToVpn && !vpnData.vpnError) {
@@ -174,7 +174,8 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => {
+                    onClick={e => {
+                      (e.target as HTMLButtonElement).blur();
                       vpnData.vpnRefetch();
                       authData.authRefetch();
                     }}
