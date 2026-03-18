@@ -443,6 +443,18 @@ function PsmConversionWidgetWrapped({
     conversion.execute();
   };
 
+  const retryOnClick = () => {
+    // Reset the sequential flow after a failed approval so the wallet is prompted
+    // for the approval signature again instead of reusing stale hook state.
+    if (widgetState.action === PsmConversionAction.APPROVE) {
+      stepRef.current = 0;
+      conversion.reset();
+      setExternalLink(undefined);
+    }
+
+    conversion.execute();
+  };
+
   const resetFlow = () => {
     stepRef.current = 0;
     conversion.reset();
@@ -500,7 +512,7 @@ function PsmConversionWidgetWrapped({
     : txStatus === TxStatus.SUCCESS
       ? resetFlow
       : txStatus === TxStatus.ERROR
-        ? convertOnClick
+        ? retryOnClick
         : widgetState.screen === PsmConversionScreen.ACTION
           ? reviewOnClick
           : convertOnClick;
