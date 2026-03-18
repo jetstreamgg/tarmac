@@ -31,6 +31,7 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
   const handleBackToConvert = () => {
     setSearchParams(params => {
       params.delete(QueryParams.ConvertModule);
+      params.delete(QueryParams.InputAmount);
       return params;
     });
     setSelectedConvertOption(undefined);
