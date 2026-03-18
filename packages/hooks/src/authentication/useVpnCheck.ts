@@ -30,17 +30,19 @@ const checkVpn = async (authUrl: string): Promise<VpnResponse> => {
   return { countryCode, isConnectedToVpn, isRestrictedRegion };
 };
 
-type Props = ReadHookParams<VpnResponse> & { authUrl: string };
+type Props = ReadHookParams<VpnResponse> & { authUrl: string; skip?: boolean };
 
 export const useVpnCheck = ({
   authUrl,
   refetchInterval = 60000, // default to perform VPN check every 60 seconds
+  skip = false,
   ...options
 }: Props): { data: VpnResponse | undefined; error: any | undefined; isLoading: boolean } => {
   const { data, error, isLoading } = useQuery({
     queryKey: ['vpn'],
     queryFn: () => checkVpn(authUrl),
     refetchInterval,
+    enabled: !skip,
     ...options
   });
 

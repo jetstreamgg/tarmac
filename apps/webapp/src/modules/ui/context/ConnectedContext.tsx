@@ -55,7 +55,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     error: authError
   } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
 
-  const { data: vpnData, isLoading: vpnIsLoading, error: vpnError } = useVpnCheck({ authUrl });
+  const { data: vpnData, isLoading: vpnIsLoading, error: vpnError } = useVpnCheck({ authUrl, skip: true });
 
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
