@@ -113,7 +113,7 @@ export function usePsmConversion({
   const hasNonZeroFee = !isL2 && feeWad !== undefined && feeWad > 0n;
   const isDirectionHalted =
     !isL2 && haltedValue !== undefined && feeWad !== undefined && haltedValue === feeWad;
-  const isLive = isL2 ? true : live === 1n;
+  const isLive = isL2 ? true : live !== undefined ? live === 1n : undefined;
   const pocketBalance = pocketBalanceData?.value;
   const hasSufficientLiquidity =
     direction === 'USDC_TO_USDS' || isL2
