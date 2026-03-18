@@ -21,8 +21,7 @@ export default ({ mode }: { mode: modeEnum }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd(), ['VITE_', 'SENTRY_']) };
 
   // Must match the release format in src/modules/sentry/init.ts
-  const sentryEnvironment =
-    process.env.VITE_SENTRY_ENVIRONMENT || process.env.VITE_ENV_NAME || 'development';
+  const sentryEnvironment = process.env.VITE_SENTRY_ENVIRONMENT || process.env.VITE_ENV_NAME || 'development';
   const sentryRelease =
     process.env.VITE_SENTRY_RELEASE ||
     process.env.VITE_CF_PAGES_COMMIT_SHA ||
@@ -102,8 +101,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://a.markfi.xyz
       wss://metamask-sdk.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
-      https://api.jetstream.gg
-      https://staging-api.jetstream.gg
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
       https://*.posthog.com
