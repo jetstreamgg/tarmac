@@ -1,4 +1,4 @@
-import { CHATBOT_DOMAIN, IS_PRODUCTION_ENV } from '@/lib/constants';
+import { CHATBOT_DOMAIN } from '@/lib/constants';
 import { FEEDBACK_TYPE, type FeedbackType } from '../constants';
 import { handleRestrictedResponse } from '../lib/ChatbotRestrictedError';
 
@@ -25,17 +25,6 @@ export const submitFeedback = async (feedback: FeedbackRequest): Promise<Feedbac
   const headers: HeadersInit = {
     'Content-Type': 'application/json'
   };
-
-  // Add auth-related headers if environment variables are present
-  // Should not exist in production, values would be visible in client
-  const cfAccessClientId = import.meta.env.VITE_CHATBOT_CF_ACCESS_CLIENT_ID;
-  const cfAccessClientSecret = import.meta.env.VITE_CHATBOT_CF_ACCESS_CLIENT_SECRET;
-
-  // Only add auth-related headers if not in production
-  if (!IS_PRODUCTION_ENV && cfAccessClientId && cfAccessClientSecret) {
-    headers['CF-Access-Client-Id'] = cfAccessClientId;
-    headers['CF-Access-Client-Secret'] = cfAccessClientSecret;
-  }
 
   const response = await fetch(`${CHATBOT_DOMAIN}/chatbot/feedback`, {
     method: 'POST',
