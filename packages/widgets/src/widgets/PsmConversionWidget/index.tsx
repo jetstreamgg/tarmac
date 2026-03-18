@@ -128,10 +128,15 @@ function PsmConversionWidgetWrapped({
   } | undefined>(undefined);
 
   useEffect(() => {
+    // Don't override origin amount during active transactions to avoid a race condition
+    // where handleOnSuccess calls onWidgetStateChange without originAmount, causing the
+    // parent to clear the URL param, which resets originAmount to 0n before the success
+    // screen renders.
+    if (txStatus !== TxStatus.IDLE) return;
     const nextDirection = getDirectionForToken(validatedExternalState?.token);
     setDirection(nextDirection);
     setOriginAmount(parseUnits(validatedExternalState?.amount || '0', getDecimalsForDirection(nextDirection)));
-  }, [validatedExternalState?.amount, validatedExternalState?.token]);
+  }, [validatedExternalState?.amount, validatedExternalState?.token, txStatus]);
 
   const transactionStateRef = useRef<{
     originToken?: TokenForChain;
