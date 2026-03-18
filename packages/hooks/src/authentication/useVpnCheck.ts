@@ -36,13 +36,13 @@ export const useVpnCheck = ({
   authUrl,
   refetchInterval = 60000, // default to perform VPN check every 60 seconds
   ...options
-}: Props): { data: VpnResponse | undefined; error: any | undefined; isLoading: boolean } => {
-  const { data, error, isLoading } = useQuery({
+}: Props): { data: VpnResponse | undefined; error: any | undefined; isLoading: boolean; refetch: () => void } => {
+  const { data, error, isLoading, refetch } = useQuery({
     queryKey: ['vpn'],
     queryFn: () => checkVpn(authUrl),
     refetchInterval,
     ...options
   });
 
-  return { data, error, isLoading: !data && isLoading };
+  return { data, error, isLoading: !data && isLoading, refetch };
 };

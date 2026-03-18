@@ -40,12 +40,13 @@ export const useRestrictedAddressCheck = ({
   enabled,
   chainId = DEFAULT_ORACLE_CHAIN_ID,
   ...options
-}: Props): { data: AuthResponse | undefined; error: Error | undefined; isLoading: boolean } => {
+}: Props): { data: AuthResponse | undefined; error: Error | undefined; isLoading: boolean; refetch: () => void } => {
   // Primary: HTTP API check
   const {
     data: httpData,
     error: httpError,
-    isLoading: httpIsLoading
+    isLoading: httpIsLoading,
+    refetch: httpRefetch
   } = useQuery({
     queryKey: ['auth', address],
     enabled: !!address && enabled,
@@ -73,5 +74,5 @@ export const useRestrictedAddressCheck = ({
   // Loading if HTTP is loading, or if HTTP failed and oracle is loading
   const isLoading = httpIsLoading || (!!httpError && oracleIsLoading);
 
-  return { data, error, isLoading: !data && isLoading };
+  return { data, error, isLoading: !data && isLoading, refetch: httpRefetch };
 };

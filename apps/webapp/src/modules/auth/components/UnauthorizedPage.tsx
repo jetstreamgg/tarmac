@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Unavailable } from '@/modules/icons';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { LoadingSpinner } from '@/modules/ui/components/LoadingSpinner';
+import { Button } from '@/components/ui/button';
 import { sanitizeUrl } from '@/lib/utils';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { type BlockReason } from '@/modules/analytics/constants';
@@ -15,6 +16,7 @@ type AuthData = {
   authIsLoading?: boolean;
   address?: string;
   authError?: Error;
+  authRefetch: () => void;
 };
 
 type VpnData = {
@@ -23,6 +25,7 @@ type VpnData = {
   vpnIsLoading?: boolean;
   vpnError?: Error;
   countryCode?: string | null;
+  vpnRefetch: () => void;
 };
 
 type UnauthorizedPageProps = {
@@ -57,6 +60,10 @@ const getTitle = (authData: AuthData, vpnData: VpnData): string => {
 };
 
 const getMessage = (authData: AuthData, vpnData: VpnData, termsLink: any[]): string | React.ReactElement => {
+  if (vpnData.vpnError || authData.authError) {
+    return t`Unable to connect to the server. Please check your connection and try again.`;
+  }
+
   if (!vpnData.vpnIsLoading && vpnData.isConnectedToVpn && !vpnData.vpnError) {
     return t`Access via VPN is not permitted. Please disconnect your VPN and refresh the page to continue.`;
   }
@@ -158,9 +165,23 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
                     {getTitle(authData, vpnData)}
                   </Text>
                 </DialogTitle>
-                <Text className="font-graphik text-text mb-10">
+                <Text
+                  className={`font-graphik text-text ${vpnData.vpnError || authData.authError ? 'mb-6' : 'mb-10'}`}
+                >
                   {getMessage(authData, vpnData, termsLink)}
                 </Text>
+                {(vpnData.vpnError || authData.authError) && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      vpnData.vpnRefetch();
+                      authData.authRefetch();
+                    }}
+                  >
+                    <Trans>Retry</Trans>
+                  </Button>
+                )}
               </div>
             </div>
           </DialogContent>

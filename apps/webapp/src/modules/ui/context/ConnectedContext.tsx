@@ -16,6 +16,7 @@ interface ConnectedContextType {
     authIsLoading: boolean;
     address?: string;
     authError?: Error;
+    authRefetch: () => void;
   };
   vpnData: {
     isConnectedToVpn?: boolean;
@@ -23,6 +24,7 @@ interface ConnectedContextType {
     vpnIsLoading: boolean;
     vpnError?: Error;
     countryCode?: string | null;
+    vpnRefetch: () => void;
   };
 }
 
@@ -32,10 +34,12 @@ const ConnectedContext = createContext<ConnectedContextType>({
   setHasAcceptedTerms: () => {},
   isCheckingTerms: false,
   authData: {
-    authIsLoading: false
+    authIsLoading: false,
+    authRefetch: () => {}
   },
   vpnData: {
-    vpnIsLoading: false
+    vpnIsLoading: false,
+    vpnRefetch: () => {}
   }
 });
 
@@ -52,10 +56,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const {
     data: authData,
     isLoading: authIsLoading,
-    error: authError
+    error: authError,
+    refetch: authRefetch
   } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
 
-  const { data: vpnData, isLoading: vpnIsLoading, error: vpnError } = useVpnCheck({ authUrl });
+  const { data: vpnData, isLoading: vpnIsLoading, error: vpnError, refetch: vpnRefetch } = useVpnCheck({ authUrl });
 
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
@@ -163,14 +168,16 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           addressAllowed: authData?.addressAllowed,
           authIsLoading,
           address,
-          authError
+          authError,
+          authRefetch
         },
         vpnData: {
           isConnectedToVpn: vpnData?.isConnectedToVpn,
           isRestrictedRegion: vpnData?.isRestrictedRegion,
           vpnIsLoading,
           vpnError,
-          countryCode: vpnData?.countryCode ?? null
+          countryCode: vpnData?.countryCode ?? null,
+          vpnRefetch
         }
       }}
     >
