@@ -44,9 +44,10 @@ jobs:
       VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
-      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true' 
       VITE_SKIP_CHAT_AUTH_CHECK: 'true'
       VITE_CHATBOT_ENABLED: 'true'
+      VITE_GEO_BYPASS: 'true'
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
     steps:
