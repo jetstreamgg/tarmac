@@ -4,16 +4,10 @@ import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapp
 import { t } from '@lingui/core/macro';
 import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 import { PsmConversionFaq } from './PsmConversionFaq';
-import { PsmConversionHistory } from './PsmConversionHistory';
 
 export function PsmConversionDetails() {
   return (
     <DetailSectionWrapper>
-      <DetailSection title={t`Your Conversion history`}>
-        <DetailSectionRow>
-          <PsmConversionHistory />
-        </DetailSectionRow>
-      </DetailSection>
       <DetailSection title={t`About USDS Conversions`}>
         <DetailSectionRow>
           <AboutUsds />
