@@ -13,7 +13,7 @@ interface AboutCardProps {
   tokenSymbol?: string;
   icon?: ReactNode;
   description: ReactNode;
-  linkHref: string;
+  linkHref?: string;
   linkLabel?: ReactNode;
   colorMiddle: string;
   height?: number | undefined;
@@ -80,12 +80,14 @@ export const AboutCard = ({
         {titleContent && <Heading className="flex items-center gap-2">{titleContent}</Heading>}
         <div className="font-graphik text-[13px] font-normal leading-normal">{description}</div>
       </div>
-      <ExternalLink href={linkHref} showIcon={false} className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
-        <Button variant="outline" className="border-border gap-2">
-          {linkLabel}
-          <ExternalLinkIcon size={16} />
-        </Button>
-      </ExternalLink>
+      {linkHref && (
+        <ExternalLink href={linkHref} showIcon={false} className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
+          <Button variant="outline" className="border-border gap-2">
+            {linkLabel}
+            <ExternalLinkIcon size={16} />
+          </Button>
+        </ExternalLink>
+      )}
     </GradientShapeCard>
   );
 };
