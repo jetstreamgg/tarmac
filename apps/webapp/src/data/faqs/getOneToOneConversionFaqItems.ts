@@ -21,7 +21,7 @@ export const getOneToOneConversionFaqItems = () => {
     {
       question: 'Which networks support 1:1 Conversion?',
       answer:
-        "1:1 Conversion is available on **Ethereum Mainnet** and supported Layer 2 networks where Sky's PSM infrastructure is deployed. On Ethereum Mainnet, the flow uses the UsdsPsmWrapper. On supported L2s, the flow uses the PSM3 conversion contracts.",
+        "1:1 Conversion is available on Ethereum Mainnet and supported Layer 2 networks where Sky's PSM infrastructure is deployed. On Ethereum Mainnet, the flow uses the UsdsPsmWrapper. On supported L2s—including Base, Arbitrum, Optimism, and Unichain—the flow uses the PSM3 conversion contracts.",
       index: 3
     }
   ];
