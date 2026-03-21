@@ -293,15 +293,15 @@ function PsmConversionWidgetWrapped({
     address,
     token: conversion.targetToken?.address
   });
+  const { mutatePocketBalance } = conversion;
 
   useEffect(() => {
     if (txStatus === TxStatus.SUCCESS || txStatus === TxStatus.ERROR) {
-      conversion.mutateAllowance();
-      conversion.mutatePocketBalance();
+      mutatePocketBalance();
       mutateOriginBalance();
       mutateTargetBalance();
     }
-  }, [conversion, mutateOriginBalance, mutateTargetBalance, txStatus]);
+  }, [mutateOriginBalance, mutatePocketBalance, mutateTargetBalance, txStatus]);
 
   useEffect(() => {
     setWidgetState({
@@ -543,7 +543,7 @@ function PsmConversionWidgetWrapped({
                       unit: getTokenDecimals(conversion.originToken, chainId),
                       compact: true
                     }),
-                    formatBigInt(originBalance.value - originAmount, {
+                    formatBigInt(originBalance.value > originAmount ? originBalance.value - originAmount : 0n, {
                       unit: getTokenDecimals(conversion.originToken, chainId),
                       compact: true
                     })
@@ -619,9 +619,9 @@ function PsmConversionWidgetWrapped({
         {conversion.originToken && conversion.targetToken && txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="psm-conversion-status">
             <PsmConversionStatus
-              originToken={conversion.originToken as any}
+              originToken={conversion.originToken}
               originAmount={originAmount}
-              targetToken={conversion.targetToken as any}
+              targetToken={conversion.targetToken}
               targetAmount={conversion.targetAmount}
               onExternalLinkClicked={onExternalLinkClicked}
               isBatchTransaction={conversion.shouldUseBatch}
@@ -637,9 +637,9 @@ function PsmConversionWidgetWrapped({
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
               isBatchTransaction={conversion.shouldUseBatch}
-              originToken={conversion.originToken as any}
+              originToken={conversion.originToken}
               originAmount={originAmount}
-              targetToken={conversion.targetToken as any}
+              targetToken={conversion.targetToken}
               targetAmount={conversion.targetAmount}
               needsAllowance={conversion.needsAllowance}
               legalBatchTxUrl={legalBatchTxUrl}
@@ -650,8 +650,8 @@ function PsmConversionWidgetWrapped({
           <CardAnimationWrapper key="psm-conversion-inputs">
             <div className="space-y-4">
               <PsmConversionInputs
-                originToken={conversion.originToken as any}
-                targetToken={conversion.targetToken as any}
+                originToken={conversion.originToken}
+                targetToken={conversion.targetToken}
                 originAmount={originAmount}
                 targetAmount={conversion.targetAmount}
                 originBalance={originBalance?.value}

@@ -191,7 +191,7 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
-    id: 'usds',
+    id: 'one-to-one-conversion-usds',
     title: 'USDS',
     module: 'one-to-one-conversion-banners',
     description:

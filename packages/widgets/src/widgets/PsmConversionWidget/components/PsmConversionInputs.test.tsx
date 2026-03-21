@@ -10,6 +10,8 @@ const tokenInputMock = vi.fn((props: Record<string, any>) => (
     {props.error && <span>{props.error}</span>}
     {props.limitText && <span>{props.limitText}</span>}
     <span>{props.showPercentageButtons ? 'percentages-on' : 'percentages-off'}</span>
+    <span>{props.inputDisabled ? 'input-disabled' : 'input-enabled'}</span>
+    <span>{props.enabled ? 'enabled' : 'disabled'}</span>
   </div>
 ));
 
@@ -63,11 +65,15 @@ describe('PsmConversionInputs', () => {
     expect(screen.getByTestId('psm-conversion-origin').textContent).toContain('USDC');
     expect(screen.getByTestId('psm-conversion-origin').textContent).toContain('Insufficient funds');
     expect(screen.getByTestId('psm-conversion-origin').textContent).toContain('percentages-on');
+    expect(screen.getByTestId('psm-conversion-origin').textContent).toContain('input-enabled');
+    expect(screen.getByTestId('psm-conversion-origin').textContent).toContain('enabled');
 
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('You will receive');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('USDS');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('1.25 USDS');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('percentages-off');
+    expect(screen.getByTestId('psm-conversion-target').textContent).toContain('input-disabled');
+    expect(screen.getByTestId('psm-conversion-target').textContent).toContain('enabled');
   });
 
   it('calls onSwitchDirection when the switch button is clicked', () => {

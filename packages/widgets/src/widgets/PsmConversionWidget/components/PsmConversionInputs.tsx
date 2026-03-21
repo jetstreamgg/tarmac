@@ -1,4 +1,9 @@
-import { Token, getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import {
+  ZERO_ADDRESS,
+  type TokenForChain,
+  getTokenDecimals,
+  tokenForChainToToken
+} from '@jetstreamgg/sky-hooks';
 import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
@@ -21,8 +26,8 @@ export function PsmConversionInputs({
   onOriginAmountChange,
   onSwitchDirection
 }: {
-  originToken: Token;
-  targetToken: Token;
+  originToken: TokenForChain;
+  targetToken: TokenForChain;
   originAmount: bigint;
   targetAmount: bigint;
   originBalance?: bigint;
@@ -33,6 +38,8 @@ export function PsmConversionInputs({
   onSwitchDirection: () => void;
 }) {
   const chainId = useChainId();
+  const originTokenForInput = tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId);
+  const targetTokenForInput = tokenForChainToToken(targetToken, targetToken.address || ZERO_ADDRESS, chainId);
 
   return (
     <VStack className="items-stretch" gap={0}>
@@ -41,8 +48,8 @@ export function PsmConversionInputs({
           key={originToken.symbol}
           className="w-full"
           label={t`Enter the amount to convert`}
-          token={originToken}
-          tokenList={[originToken]}
+          token={originTokenForInput}
+          tokenList={[originTokenForInput]}
           balance={originBalance}
           onChange={value => onOriginAmountChange(value)}
           value={originAmount}
@@ -59,7 +66,7 @@ export function PsmConversionInputs({
 
       <motion.div variants={positionAnimations} className="-my-3 z-10 flex justify-center">
         <Button
-          aria-label="Switch conversion direction"
+          aria-label={t`Switch conversion direction`}
           size="icon"
           className="border-background text-tabPrimary focus:outline-hidden h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
           onClick={onSwitchDirection}
@@ -73,8 +80,8 @@ export function PsmConversionInputs({
           key={targetToken.symbol}
           className="w-full"
           label={t`You will receive`}
-          token={targetToken}
-          tokenList={[targetToken]}
+          token={targetTokenForInput}
+          tokenList={[targetTokenForInput]}
           balance={targetBalance}
           onChange={() => null}
           value={targetAmount}

@@ -148,5 +148,14 @@ describe('PsmConversionWidgetPane', () => {
     expect(mockSearchParams.get('convert_module')).toBeNull();
     expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(setSelectedConvertOptionMock).toHaveBeenCalledWith(undefined);
+    expect(setShouldDisableActionButtonsMock).toHaveBeenCalledWith(false);
+  });
+
+  it('re-enables chat action buttons when the pane unmounts', () => {
+    const { unmount } = render(<PsmConversionWidgetPane {...sharedProps} />);
+
+    unmount();
+
+    expect(setShouldDisableActionButtonsMock).toHaveBeenCalledWith(false);
   });
 });

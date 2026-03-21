@@ -8,7 +8,7 @@ import { TokenIcon } from './TokenIcon';
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
-interface AboutCardProps {
+type AboutCardProps = {
   title?: ReactNode;
   tokenSymbol?: string;
   icon?: ReactNode;
@@ -18,7 +18,7 @@ interface AboutCardProps {
   colorMiddle: string;
   height?: number | undefined;
   contentWidth?: 'w-2/3' | 'w-1/2';
-}
+};
 
 export const AboutCard = ({
   title,
@@ -81,12 +81,16 @@ export const AboutCard = ({
         <div className="font-graphik text-[13px] font-normal leading-normal">{description}</div>
       </div>
       {linkHref && (
-        <ExternalLink href={linkHref} showIcon={false} className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
-          <Button variant="outline" className="border-border gap-2">
+        <Button
+          asChild
+          variant="outline"
+          className="border-border mt-auto w-fit gap-2 pt-3 xl:self-end xl:pt-0"
+        >
+          <ExternalLink href={linkHref} showIcon={false}>
             {linkLabel}
             <ExternalLinkIcon size={16} />
-          </Button>
-        </ExternalLink>
+          </ExternalLink>
+        </Button>
       )}
     </GradientShapeCard>
   );

@@ -1,7 +1,12 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useContext, useEffect, useState } from 'react';
-import { Token, getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import {
+  ZERO_ADDRESS,
+  type TokenForChain,
+  getTokenDecimals,
+  tokenForChainToToken
+} from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 import { TxStatus } from '@widgets/shared/constants';
@@ -19,9 +24,9 @@ export function PsmConversionStatus({
   needsAllowance,
   currentCallIndex
 }: {
-  originToken: Token;
+  originToken: TokenForChain;
   originAmount: bigint;
-  targetToken: Token;
+  targetToken: TokenForChain;
   targetAmount: bigint;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   isBatchTransaction?: boolean;
@@ -30,6 +35,8 @@ export function PsmConversionStatus({
 }) {
   const [flowNeedsAllowance] = useState(needsAllowance);
   const chainId = useChainId();
+  const originTokenForContext = tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId);
+  const targetTokenForContext = tokenForChainToToken(targetToken, targetToken.address || ZERO_ADDRESS, chainId);
   const { i18n } = useLingui();
   const {
     setLoadingText,
@@ -48,11 +55,20 @@ export function PsmConversionStatus({
   } = useContext(WidgetContext);
 
   useEffect(() => {
-    setOriginToken(originToken);
+    setOriginToken(originTokenForContext);
     setOriginAmount(originAmount);
-    setTargetToken(targetToken);
+    setTargetToken(targetTokenForContext);
     setTargetAmount(targetAmount);
-  }, [originAmount, originToken, setOriginAmount, setOriginToken, setTargetAmount, setTargetToken, targetAmount, targetToken]);
+  }, [
+    originAmount,
+    originTokenForContext,
+    setOriginAmount,
+    setOriginToken,
+    setTargetAmount,
+    setTargetToken,
+    targetAmount,
+    targetTokenForContext
+  ]);
 
   useEffect(() => {
     const isWaitingForSecondTransaction =

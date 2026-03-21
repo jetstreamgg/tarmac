@@ -72,7 +72,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
       if (prevIntentState !== intent) {
         // By giving the keys a new value, we force the motion component to animate the new component in, even if it's
         // the same component as before. This prevents the component from being re-added before being removed
-        setKeys(prevKeys => prevKeys.map(key => key + 15));
+        setKeys(prevKeys => prevKeys.map(key => key + prevKeys.length));
       }
 
       return intent || defaultDetail;
