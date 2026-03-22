@@ -32,6 +32,8 @@ import { PsmConversionStatus } from './components/PsmConversionStatus';
 import { usePsmConversion } from './hooks/usePsmConversion';
 import {
   getPsmTargetAmount,
+  getPsmDecimalsForDirection,
+  getValidatedPsmExternalAmount,
   type PsmConversionDirection,
   type PsmConversionDisabledReason
 } from './hooks/usePsmConversion.helpers';
@@ -48,9 +50,6 @@ const supportedTokens = ['USDC', 'USDS'];
 
 const getDirectionForToken = (symbol?: string): PsmConversionDirection =>
   symbol?.toUpperCase() === 'USDS' ? 'USDS_TO_USDC' : 'USDC_TO_USDS';
-
-const getDecimalsForDirection = (direction: PsmConversionDirection) =>
-  direction === 'USDC_TO_USDS' ? 6 : 18;
 
 const getDisabledReasonText = (reason?: PsmConversionDisabledReason) => {
   switch (reason) {
@@ -88,7 +87,24 @@ function PsmConversionWidgetWrapped({
   setBatchEnabled,
   onBackToConvert
 }: PsmConversionWidgetProps): React.ReactElement {
-  const validatedExternalState = getValidatedState(externalWidgetState, supportedTokens);
+  const validatedExternalState = useMemo(() => {
+    const state = getValidatedState(externalWidgetState, supportedTokens);
+    if (!state) {
+      return undefined;
+    }
+
+    const direction = getDirectionForToken(state.token);
+    const amount = getValidatedPsmExternalAmount(state.amount, direction);
+
+    if (amount === state.amount) {
+      return state;
+    }
+
+    return {
+      ...state,
+      amount
+    };
+  }, [externalWidgetState]);
   const initialDirection = getDirectionForToken(validatedExternalState?.token);
 
   useEffect(() => {
@@ -100,7 +116,7 @@ function PsmConversionWidgetWrapped({
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [enabled, isConnected]);
   const initialAmount = parseUnits(
     validatedExternalState?.amount || '0',
-    getDecimalsForDirection(initialDirection)
+    getPsmDecimalsForDirection(initialDirection)
   );
 
   const [direction, setDirection] = useState<PsmConversionDirection>(initialDirection);
@@ -135,7 +151,7 @@ function PsmConversionWidgetWrapped({
     if (txStatus !== TxStatus.IDLE) return;
     const nextDirection = getDirectionForToken(validatedExternalState?.token);
     setDirection(nextDirection);
-    setOriginAmount(parseUnits(validatedExternalState?.amount || '0', getDecimalsForDirection(nextDirection)));
+    setOriginAmount(parseUnits(validatedExternalState?.amount || '0', getPsmDecimalsForDirection(nextDirection)));
   }, [validatedExternalState?.amount, validatedExternalState?.token, txStatus]);
 
   const transactionStateRef = useRef<{

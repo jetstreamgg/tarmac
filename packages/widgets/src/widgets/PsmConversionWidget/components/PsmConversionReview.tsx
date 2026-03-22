@@ -54,7 +54,7 @@ export function PsmConversionReview({
     setTxSubtitle(
       i18n._(
         needsAllowance
-          ? batchEnabled
+          ? isBatchTransaction
             ? t`Approve and convert ${originToken.symbol} to ${targetToken.symbol} in one bundled transaction.`
             : t`Approve ${originToken.symbol} first, then complete the conversion to ${targetToken.symbol}.`
           : t`Convert ${originToken.symbol} to ${targetToken.symbol} at a 1:1 rate.`
