@@ -183,6 +183,7 @@ jobs:
       VITE_SKIP_AUTH_CHECK: 'true'
       VITE_SKIP_CHAT_AUTH_CHECK: 'true'
       VITE_CHATBOT_ENABLED: 'true'
+      VITE_GEO_BYPASS: 'true'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
       PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '8' }}
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '2' }}
