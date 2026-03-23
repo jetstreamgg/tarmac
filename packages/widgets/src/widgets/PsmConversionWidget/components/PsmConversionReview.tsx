@@ -1,6 +1,6 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo } from 'react';
 import { ZERO_ADDRESS, type TokenForChain, tokenForChainToToken } from '@jetstreamgg/sky-hooks';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
 import { WidgetContext } from '@widgets/context/WidgetContext';
@@ -41,15 +41,21 @@ export function PsmConversionReview({
     setTargetAmount,
     setTxDescription
   } = useContext(WidgetContext);
-  const originTokenForContext = tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId);
-  const targetTokenForContext = tokenForChainToToken(targetToken, targetToken.address || ZERO_ADDRESS, chainId);
+  const originTokenForContext = useMemo(
+    () => tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId),
+    [originToken, chainId]
+  );
+  const targetTokenForContext = useMemo(
+    () => tokenForChainToToken(targetToken, targetToken.address || ZERO_ADDRESS, chainId),
+    [targetToken, chainId]
+  );
 
   useEffect(() => {
     setOriginToken(originTokenForContext);
     setOriginAmount(originAmount);
     setTargetToken(targetTokenForContext);
     setTargetAmount(targetAmount);
-    setStepTwoTitle(t`Convert`);
+    setStepTwoTitle(i18n._(t`Convert`));
     setTxTitle(i18n._(t`Review conversion`));
     setTxSubtitle(
       i18n._(
