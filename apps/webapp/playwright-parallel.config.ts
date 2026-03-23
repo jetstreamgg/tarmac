@@ -57,15 +57,15 @@ export default defineConfig({
         '**/reward-2.spec.ts',
         '**/la-u-r.spec.ts',
         '**/la-u-s.spec.ts',
-        '**/stake.spec.ts',
+        // '**/stake.spec.ts',
         '**/landing.spec.ts',
         '**/upgrade.spec.ts',
-        '**/unstake-repay.spec.ts',
+        // '**/unstake-repay.spec.ts',
         '**/chatbot.spec.ts',
         '**/pane-visibility.spec.ts',
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
-        '**/capped-osm-unstake.spec.ts',
+        // '**/capped-osm-unstake.spec.ts',
         '**/sequential-tx.spec.ts',
         '**/vaults-morpho.spec.ts'
       ]
