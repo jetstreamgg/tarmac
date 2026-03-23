@@ -8,7 +8,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { ConvertIntent } from '@/lib/enums';
 import { useSearchParams } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useChainId } from 'wagmi';
@@ -28,7 +28,10 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
   const isPsmContext =
     widgetParam === 'convert' && convertModuleParam === ConvertIntentMapping[ConvertIntent.PSM_INTENT];
 
+  useEffect(() => () => setShouldDisableActionButtons(false), [setShouldDisableActionButtons]);
+
   const handleBackToConvert = () => {
+    setShouldDisableActionButtons(false);
     setSearchParams(params => {
       params.delete(QueryParams.ConvertModule);
       params.delete(QueryParams.InputAmount);

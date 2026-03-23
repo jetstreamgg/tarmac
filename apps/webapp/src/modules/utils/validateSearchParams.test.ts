@@ -95,6 +95,12 @@ describe('validateSearchParams for convert psm', () => {
     expect(params.get('source_token')).toBe('USDC');
   });
 
+  it('keeps USDS source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=USDS');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.get('source_token')).toBe('USDS');
+  });
+
   it('removes unsupported source token for convert_module=psm', () => {
     const params = validateParams('widget=convert&convert_module=psm&source_token=DAI');
     expect(params.get('convert_module')).toBe('psm');

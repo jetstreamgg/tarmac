@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   getPsmConversionTokens,
+  getPsmDecimalsForDirection,
+  getPsmDirectionHalted,
   getPsmTargetAmount,
   getPsmExecutionAmounts,
-  getPsmDisabledReason
+  getPsmDisabledReason,
+  getValidatedPsmExternalAmount
 } from './usePsmConversion.helpers';
 import { mainnet, base } from 'wagmi/chains';
 
@@ -54,5 +57,62 @@ describe('usePsmConversion helpers', () => {
         mainnetGemAmt: 1_000_000n
       })
     ).toBeUndefined();
+  });
+
+  it('returns the correct source decimals for each direction', () => {
+    expect(getPsmDecimalsForDirection('USDC_TO_USDS')).toBe(6);
+    expect(getPsmDecimalsForDirection('USDS_TO_USDC')).toBe(18);
+  });
+
+  it('rejects deep-link amounts that parseUnits cannot parse for the active direction', () => {
+    expect(getValidatedPsmExternalAmount('1e-7', 'USDC_TO_USDS')).toBeUndefined();
+    expect(getValidatedPsmExternalAmount('0.0000001', 'USDC_TO_USDS')).toBeUndefined();
+    expect(getValidatedPsmExternalAmount('0.0000001', 'USDS_TO_USDC')).toBe('0.0000001');
+  });
+
+  it('treats zero halted flags as unhalted even when fees are zero', () => {
+    expect(
+      getPsmDirectionHalted({
+        direction: 'USDC_TO_USDS',
+        feeWad: 0n,
+        haltedValue: 0n
+      })
+    ).toBe(false);
+  });
+
+  it('decodes direction-specific halt flags for each conversion path', () => {
+    expect(
+      getPsmDirectionHalted({
+        direction: 'USDC_TO_USDS',
+        feeWad: 0n,
+        haltedValue: 2n
+      })
+    ).toBe(true);
+    expect(
+      getPsmDirectionHalted({
+        direction: 'USDS_TO_USDC',
+        feeWad: 0n,
+        haltedValue: 2n
+      })
+    ).toBe(false);
+    expect(
+      getPsmDirectionHalted({
+        direction: 'USDS_TO_USDC',
+        feeWad: 0n,
+        haltedValue: 1n
+      })
+    ).toBe(true);
+  });
+
+  it('falls back to fee-based halt sentinels for lite-psm compatible wrappers', () => {
+    const haltedFee = (1n << 256n) - 1n;
+
+    expect(
+      getPsmDirectionHalted({
+        direction: 'USDC_TO_USDS',
+        feeWad: haltedFee,
+        haltedValue: haltedFee
+      })
+    ).toBe(true);
   });
 });

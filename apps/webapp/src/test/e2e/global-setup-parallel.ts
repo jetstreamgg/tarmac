@@ -512,39 +512,47 @@ export default async function globalSetup() {
       console.log('\n3. ✅ Found existing VNet snapshots!');
       console.log('   Snapshots:', existingSnapshots ? Object.keys(existingSnapshots).join(', ') : 'none');
 
-      // Validate snapshots before using them
-      console.log('\n   🔍 Validating snapshots...');
-      const validationResult = await validateVnets();
-
-      if (validationResult.healthy) {
-        console.log('   ✅ All snapshots valid - will revert to snapshots');
+      if (isSharded) {
+        // In shard mode, skip validation entirely.
+        // The CI setup job already validated VNets before shards started.
+        // Running validateVnets() here would call evm_revert on shared VNets,
+        // potentially corrupting other shards' in-flight state.
+        console.log('   Shard mode - skipping validation (CI setup job already validated)');
       } else {
-        console.log('   ❌ Validation failed - will recreate snapshots by funding accounts');
+        // Validate snapshots before using them
+        console.log('\n   🔍 Validating snapshots...');
+        const validationResult = await validateVnets();
 
-        // Check if validation failed due to VNet not found (expired/deleted)
-        const vnetNotFound = validationResult.results.some(r =>
-          r.errors.some(e => e.includes('not accessible') || e.includes('not found'))
-        );
+        if (validationResult.healthy) {
+          console.log('   ✅ All snapshots valid - will revert to snapshots');
+        } else {
+          console.log('   ❌ Validation failed - will recreate snapshots by funding accounts');
 
-        if (vnetNotFound) {
-          console.log('   ⚠️  VNets appear to be expired/deleted - clearing cache files');
-          try {
-            // Delete both cache files to force VNet recreation
-            await fs
-              .unlink(path.join(__dirname, '..', '..', '..', 'tenderlyTestnetData.json'))
-              .catch(() => {});
-            await fs.unlink(snapshotFile).catch(() => {});
-            console.log('   🗑️  Deleted stale VNet cache files');
-            console.log('   💡 You need to recreate VNets using: pnpm vnet:fork:ci');
-            throw new Error('VNets expired - please recreate them with: pnpm vnet:fork:ci');
-          } catch (error) {
-            if (error instanceof Error && error.message.includes('VNets expired')) {
-              throw error;
+          // Check if validation failed due to VNet not found (expired/deleted)
+          const vnetNotFound = validationResult.results.some(r =>
+            r.errors.some(e => e.includes('not accessible') || e.includes('not found'))
+          );
+
+          if (vnetNotFound) {
+            console.log('   ⚠️  VNets appear to be expired/deleted - clearing cache files');
+            try {
+              // Delete both cache files to force VNet recreation
+              await fs
+                .unlink(path.join(__dirname, '..', '..', '..', 'tenderlyTestnetData.json'))
+                .catch(() => {});
+              await fs.unlink(snapshotFile).catch(() => {});
+              console.log('   🗑️  Deleted stale VNet cache files');
+              console.log('   💡 You need to recreate VNets using: pnpm vnet:fork:ci');
+              throw new Error('VNets expired - please recreate them with: pnpm vnet:fork:ci');
+            } catch (error) {
+              if (error instanceof Error && error.message.includes('VNets expired')) {
+                throw error;
+              }
             }
           }
-        }
 
-        existingSnapshots = null; // Force refunding
+          existingSnapshots = null; // Force refunding
+        }
       }
     } catch {
       console.log('\n3. No existing snapshots found - will fund accounts and create snapshots');
@@ -594,17 +602,27 @@ export default async function globalSetup() {
 
     // If snapshots exist, revert to them instead of funding
     if (existingSnapshots) {
-      console.log('\n5. Reverting VNets to snapshots (restoring funded state)...');
-      const snapshots = existingSnapshots; // Store in const for TypeScript
-      const revertPromises = networks.map(network => {
-        const snapshotId = snapshots[network];
-        if (snapshotId) {
-          return revertToSnapshot(network, snapshotId);
-        }
-        return Promise.resolve();
-      });
-      await Promise.all(revertPromises);
-      console.log('✅ All VNets reverted to funded state - ready for tests!');
+      if (isSharded) {
+        // In shard mode, do NOT revert snapshots.
+        // The CI setup job already ensured VNets are in a funded state.
+        // Each shard uses its own account partition with unique, unused accounts,
+        // so reverting is unnecessary. Worse, reverting shared VNets while other
+        // shards are running would wipe their in-flight state.
+        console.log('\n5. Shard mode - skipping snapshot revert (accounts are pre-funded and partitioned)');
+        console.log(`   Shard ${shardIndex + 1}/${totalShards} will use its own account partition`);
+      } else {
+        console.log('\n5. Reverting VNets to snapshots (restoring funded state)...');
+        const snapshots = existingSnapshots; // Store in const for TypeScript
+        const revertPromises = networks.map(network => {
+          const snapshotId = snapshots[network];
+          if (snapshotId) {
+            return revertToSnapshot(network, snapshotId);
+          }
+          return Promise.resolve();
+        });
+        await Promise.all(revertPromises);
+        console.log('✅ All VNets reverted to funded state - ready for tests!');
+      }
     } else {
       // No snapshots - need to fund and create snapshots
       // In shard mode, only shard 1 should fund; others should wait
@@ -660,23 +678,6 @@ export default async function globalSetup() {
         const fundingPromises = networks.map(network => fundAccountsOnVnet(network, addresses));
         await Promise.all(fundingPromises);
 
-        // Increase stake module debt ceiling on mainnet to allow staking tests to borrow
-        if (networks.includes(NetworkName.mainnet)) {
-          console.log('\n5.5. Increasing stake module debt ceiling...');
-          try {
-            const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
-            // Set to 1 billion USDS in RAD format:
-            // 1 billion * 1e45 = 1e54 (RAD has 45 decimals, converts to 1e27 WAD = 1 billion * 1e18)
-            await updateStakeModuleDebtCeiling(
-              BigInt('1000000000000000000000000000000000000000000000000000000')
-            );
-            console.log('✅ Stake module debt ceiling increased to 1B USDS');
-          } catch (error) {
-            console.warn('⚠️  Failed to increase debt ceiling:', (error as Error).message);
-            console.warn('   Staking tests may fail due to insufficient borrow capacity');
-          }
-        }
-
         // Create snapshots after funding (for next run)
         console.log('\n6. Creating VNet snapshots after funding...');
         const snapshotPromises = networks.map(async network => {
@@ -690,6 +691,22 @@ export default async function globalSetup() {
         await fs.writeFile(snapshotFile, JSON.stringify(snapshotData, null, 2));
         console.log(`✅ Snapshots saved to ${snapshotFile}`);
         console.log('💡 These snapshots will be used for all future test runs (instant setup!)');
+      }
+    }
+
+    // Step 6: Increase stake module debt ceiling on mainnet to allow staking tests to borrow.
+    // This must run every time (not just during funding) because pool snapshots
+    // may have been created without the debt ceiling increase.
+    // It's idempotent (just sets a storage slot) so safe to run from multiple shards.
+    if (networks.includes(NetworkName.mainnet)) {
+      console.log('\n6. Increasing stake module debt ceiling...');
+      try {
+        const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
+        await updateStakeModuleDebtCeiling(BigInt('1000000000000000000000000000000000000000000000000000000'));
+        console.log('✅ Stake module debt ceiling increased to 1B USDS');
+      } catch (error) {
+        console.warn('⚠️  Failed to increase debt ceiling:', (error as Error).message);
+        console.warn('   Staking tests may fail due to insufficient borrow capacity');
       }
     }
 
@@ -712,31 +729,42 @@ export async function globalTeardown() {
   console.log('=== Global Teardown ===');
 
   try {
-    // Step 1: Revert all VNets to snapshots (for next test run)
-    console.log('\n1. Reverting VNets to snapshots...');
+    // Detect shard mode
+    const totalShards = process.env.PLAYWRIGHT_SHARD_TOTAL ? parseInt(process.env.PLAYWRIGHT_SHARD_TOTAL) : 1;
+    const isSharded = totalShards > 1;
 
-    // Detect if we're running alternate VNet tests
-    const projectArg = process.argv.find(arg => arg.includes('--project'));
-    const isAlternateProject =
-      projectArg?.includes('chromium-alternate') || process.env.USE_ALTERNATE_VNET === 'true';
-    const snapshotFileName = isAlternateProject
-      ? 'persistent-vnet-snapshots-alternate.json'
-      : 'persistent-vnet-snapshots.json';
-    const snapshotFile = path.join(__dirname, snapshotFileName);
+    if (isSharded) {
+      // In shard mode, do NOT revert snapshots during teardown.
+      // Multiple shards share the same VNets - reverting would wipe other shards' state.
+      // Each shard uses unique accounts from its partition, so no cleanup is needed.
+      console.log('Shard mode - skipping snapshot revert (shared VNets, partitioned accounts)');
+    } else {
+      // Step 1: Revert all VNets to snapshots (for next test run)
+      console.log('\n1. Reverting VNets to snapshots...');
 
-    try {
-      const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
-      const snapshots = JSON.parse(snapshotData);
+      // Detect if we're running alternate VNet tests
+      const projectArg = process.argv.find(arg => arg.includes('--project'));
+      const isAlternateProject =
+        projectArg?.includes('chromium-alternate') || process.env.USE_ALTERNATE_VNET === 'true';
+      const snapshotFileName = isAlternateProject
+        ? 'persistent-vnet-snapshots-alternate.json'
+        : 'persistent-vnet-snapshots.json';
+      const snapshotFile = path.join(__dirname, snapshotFileName);
 
-      const revertPromises = Object.entries(snapshots).map(([network, snapshotId]) =>
-        revertToSnapshot(network as NetworkName, snapshotId as string)
-      );
+      try {
+        const snapshotData = await fs.readFile(snapshotFile, 'utf-8');
+        const snapshots = JSON.parse(snapshotData);
 
-      await Promise.all(revertPromises);
-      console.log('✅ All VNets reverted to clean snapshots');
-      console.log('🎉 VNets are ready for next test run (no funding needed)!');
-    } catch (error) {
-      console.log('ℹ️  No snapshots to revert (first run or snapshots not created)', error);
+        const revertPromises = Object.entries(snapshots).map(([network, snapshotId]) =>
+          revertToSnapshot(network as NetworkName, snapshotId as string)
+        );
+
+        await Promise.all(revertPromises);
+        console.log('✅ All VNets reverted to clean snapshots');
+        console.log('🎉 VNets are ready for next test run (no funding needed)!');
+      } catch (error) {
+        console.log('ℹ️  No snapshots to revert (first run or snapshots not created)', error);
+      }
     }
 
     // Step 2: Reset the account pool to clean state

@@ -1,5 +1,6 @@
 import { TOKENS, type TokenForChain } from '@jetstreamgg/sky-hooks';
 import { math, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { parseUnits } from 'viem';
 
 export type PsmConversionDirection = 'USDC_TO_USDS' | 'USDS_TO_USDC';
 
@@ -10,6 +11,61 @@ export type PsmConversionDisabledReason =
   | 'direction_halted'
   | 'non_zero_fee'
   | 'insufficient_liquidity';
+
+const BUY_GEM_HALTED = 1n;
+const SELL_GEM_HALTED = 2n;
+const KNOWN_DIRECTION_HALT_FLAGS = BUY_GEM_HALTED | SELL_GEM_HALTED;
+const DECIMAL_AMOUNT_PATTERN = /^(?:\d+\.?\d*|\.\d+)$/;
+
+export function getPsmDecimalsForDirection(direction: PsmConversionDirection) {
+  return direction === 'USDC_TO_USDS' ? 6 : 18;
+}
+
+export function getValidatedPsmExternalAmount(
+  amount: string | undefined,
+  direction: PsmConversionDirection
+): string | undefined {
+  if (amount === undefined || amount === '') {
+    return amount;
+  }
+
+  if (!DECIMAL_AMOUNT_PATTERN.test(amount)) {
+    return undefined;
+  }
+
+  const fractionalDigits = amount.split('.')[1]?.length ?? 0;
+  if (fractionalDigits > getPsmDecimalsForDirection(direction)) {
+    return undefined;
+  }
+
+  try {
+    parseUnits(amount, getPsmDecimalsForDirection(direction));
+    return amount;
+  } catch {
+    return undefined;
+  }
+}
+
+export function getPsmDirectionHalted({
+  direction,
+  feeWad,
+  haltedValue
+}: {
+  direction: PsmConversionDirection;
+  feeWad?: bigint;
+  haltedValue?: bigint;
+}) {
+  if (haltedValue === undefined) {
+    return false;
+  }
+
+  if (haltedValue >= 0n && haltedValue <= KNOWN_DIRECTION_HALT_FLAGS) {
+    const directionFlag = direction === 'USDC_TO_USDS' ? SELL_GEM_HALTED : BUY_GEM_HALTED;
+    return (haltedValue & directionFlag) === directionFlag;
+  }
+
+  return feeWad !== undefined && haltedValue === feeWad;
+}
 
 export function getPsmConversionTokens(
   chainId: number,

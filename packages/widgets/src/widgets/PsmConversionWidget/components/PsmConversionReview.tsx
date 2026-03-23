@@ -1,9 +1,10 @@
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useContext, useEffect } from 'react';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { ZERO_ADDRESS, type TokenForChain, tokenForChainToToken } from '@jetstreamgg/sky-hooks';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
 import { WidgetContext } from '@widgets/context/WidgetContext';
+import { useChainId } from 'wagmi';
 
 export function PsmConversionReview({
   batchEnabled,
@@ -20,14 +21,15 @@ export function PsmConversionReview({
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
-  originToken: Token;
+  originToken: TokenForChain;
   originAmount: bigint;
-  targetToken: Token;
+  targetToken: TokenForChain;
   targetAmount: bigint;
   needsAllowance: boolean;
   legalBatchTxUrl?: string;
   isBatchFlowSupported?: boolean;
 }) {
+  const chainId = useChainId();
   const { i18n } = useLingui();
   const {
     setTxTitle,
@@ -39,18 +41,20 @@ export function PsmConversionReview({
     setTargetAmount,
     setTxDescription
   } = useContext(WidgetContext);
+  const originTokenForContext = tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId);
+  const targetTokenForContext = tokenForChainToToken(targetToken, targetToken.address || ZERO_ADDRESS, chainId);
 
   useEffect(() => {
-    setOriginToken(originToken);
+    setOriginToken(originTokenForContext);
     setOriginAmount(originAmount);
-    setTargetToken(targetToken);
+    setTargetToken(targetTokenForContext);
     setTargetAmount(targetAmount);
     setStepTwoTitle(t`Convert`);
     setTxTitle(i18n._(t`Review conversion`));
     setTxSubtitle(
       i18n._(
         needsAllowance
-          ? batchEnabled
+          ? isBatchTransaction
             ? t`Approve and convert ${originToken.symbol} to ${targetToken.symbol} in one bundled transaction.`
             : t`Approve ${originToken.symbol} first, then complete the conversion to ${targetToken.symbol}.`
           : t`Convert ${originToken.symbol} to ${targetToken.symbol} at a 1:1 rate.`
@@ -70,6 +74,7 @@ export function PsmConversionReview({
     needsAllowance,
     originAmount,
     originToken,
+    originTokenForContext,
     setOriginAmount,
     setOriginToken,
     setStepTwoTitle,
@@ -79,7 +84,8 @@ export function PsmConversionReview({
     setTxSubtitle,
     setTxTitle,
     targetAmount,
-    targetToken
+    targetToken,
+    targetTokenForContext
   ]);
 
   return (
