@@ -1,5 +1,33 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const sharedStateSpecs = ['**/stusds-provider-switching.spec.ts'];
+
+const pooledShardSpecs = [
+  '**/mainnet-savings.spec.ts',
+  '**/base-trade.spec.ts',
+  '**/arbitrum-trade.spec.ts',
+  '**/optimism-trade.spec.ts',
+  '**/unichain-trade.spec.ts',
+  '**/base-savings.spec.ts',
+  '**/arbitrum-savings.spec.ts',
+  '**/optimism-savings.spec.ts',
+  '**/unichain-savings.spec.ts',
+  '**/reward-1.spec.ts',
+  '**/reward-2.spec.ts',
+  '**/la-u-r.spec.ts',
+  '**/la-u-s.spec.ts',
+  // '**/stake.spec.ts',
+  '**/landing.spec.ts',
+  '**/upgrade.spec.ts',
+  // '**/unstake-repay.spec.ts',
+  '**/chatbot.spec.ts',
+  '**/pane-visibility.spec.ts',
+  '**/expert-stusds.spec.ts',
+  // Shard-unsafe specs run in a dedicated follow-up job against the same VNets.
+  '**/sequential-tx.spec.ts',
+  '**/vaults-morpho.spec.ts'
+];
+
 export default defineConfig({
   testDir: 'src/test/e2e/tests',
 
@@ -42,33 +70,17 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         viewport: { width: 1920, height: 1080 }
       },
-      // All E2E tests - unified VNet fork (has Curve pool configured)
-      testMatch: [
-        '**/mainnet-savings.spec.ts',
-        '**/base-trade.spec.ts',
-        '**/arbitrum-trade.spec.ts',
-        '**/optimism-trade.spec.ts',
-        '**/unichain-trade.spec.ts',
-        '**/base-savings.spec.ts',
-        '**/arbitrum-savings.spec.ts',
-        '**/optimism-savings.spec.ts',
-        '**/unichain-savings.spec.ts',
-        '**/reward-1.spec.ts',
-        '**/reward-2.spec.ts',
-        '**/la-u-r.spec.ts',
-        '**/la-u-s.spec.ts',
-        // '**/stake.spec.ts',
-        '**/landing.spec.ts',
-        '**/upgrade.spec.ts',
-        // '**/unstake-repay.spec.ts',
-        '**/chatbot.spec.ts',
-        '**/pane-visibility.spec.ts',
-        '**/expert-stusds.spec.ts',
-        '**/stusds-provider-switching.spec.ts',
-        // '**/capped-osm-unstake.spec.ts',
-        '**/sequential-tx.spec.ts',
-        '**/vaults-morpho.spec.ts'
-      ]
+      // Shard-safe E2E tests that can run against the shared pooled VNets.
+      testMatch: pooledShardSpecs
+    },
+    {
+      name: 'chromium-shared-state',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1920, height: 1080 }
+      },
+      // These specs mutate shared VNet state and must run outside the shard fan-out.
+      testMatch: sharedStateSpecs
     }
     // {
     //   name: 'chromium-alternate',
