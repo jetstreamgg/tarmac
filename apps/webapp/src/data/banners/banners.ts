@@ -183,6 +183,14 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
+    id: 'about-convert',
+    title: 'About Convert',
+    module: 'convert-banners',
+    description:
+      'Convert USDC to USDS at a fixed 1:1 rate, trade popular tokens for Sky Ecosystem tokens, or upgrade your DAI to USDS and MKR to SKY.',
+    display: ['disconnected']
+  },
+  {
     id: 'about-11-conversions',
     title: 'About 1:1 Conversions',
     module: 'one-to-one-conversion-banners',
