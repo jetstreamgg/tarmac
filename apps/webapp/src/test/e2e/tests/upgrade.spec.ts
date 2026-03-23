@@ -11,8 +11,8 @@ test('Upgrade DAI and revert USDS', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
 
   await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
 
@@ -34,8 +34,8 @@ test('Upgrade MKR but revert SKY isnt allowed', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('undefined-menu-button').click();
   await isolatedPage.getByRole('button', { name: 'MKR MKR MKR' }).click();
 
@@ -55,8 +55,8 @@ test('Upgrade and revert with insufficient balance', async ({ isolatedPage }) =>
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
 
   await expect(isolatedPage.getByTestId('upgrade-input-origin-balance')).not.toHaveText(
     'No wallet connected'
@@ -88,8 +88,8 @@ test('Balances change after successfully upgrading and reverting', async ({ isol
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
 
   await expect(isolatedPage.getByTestId('upgrade-input-origin-balance')).not.toHaveText(
     'No wallet connected'
@@ -156,8 +156,8 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
   await isolatedPage.getByTestId('upgrade-input-origin').fill('90');
   await isolatedPage.getByTestId('widget-button').getByText('Review').click();
@@ -208,7 +208,7 @@ test('if not connected it should show a connect button', async ({ isolatedPage }
   await isolatedPage.goto('/');
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
   // click the Upgrade card
-  await isolatedPage.getByRole('button', { name: /^Upgrade\s/ }).click();
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
 
   // Connect button and copy should be visible
   const widgetConnectButton = isolatedPage
@@ -226,8 +226,8 @@ test('percentage buttons work', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
 
   await expect(isolatedPage.getByTestId('upgrade-input-origin-balance')).not.toHaveText(
     'No wallet connected'
@@ -274,8 +274,8 @@ test('enter amount button should be disabled', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
 
   await expect(
     isolatedPage.getByTestId('widget-container').locator('button').filter({ hasText: 'Enter amount' })
@@ -305,8 +305,8 @@ test('An approval error redirects to the error screen', async ({ isolatedPage })
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
   await isolatedPage.getByTestId('upgrade-input-origin').fill('100');
   await isolatedPage.getByTestId('widget-button').getByText('Review').click();
@@ -348,8 +348,8 @@ test('An upgrade error redirects to the error screen', async ({ isolatedPage }) 
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
   await isolatedPage.getByTestId('upgrade-input-origin').fill('1');
 
@@ -370,8 +370,8 @@ test('A revert error redirects to the error screen', async ({ isolatedPage }) =>
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByRole('tab', { name: 'Revert' }).click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
   await isolatedPage.getByTestId('upgrade-input-origin').fill('1');
