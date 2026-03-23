@@ -102,7 +102,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://a.markfi.xyz
       wss://metamask-sdk.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
-      wss://nbstream.yshyqxx.com/wallet-connector
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
       https://*.posthog.com
