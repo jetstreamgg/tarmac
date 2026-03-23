@@ -31,8 +31,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-shards:
+    runs-on: ubuntu-latest
+
+    outputs:
+      shard-count: ${{ steps.shards.outputs.count }}
+      shard-matrix: ${{ steps.shards.outputs.matrix }}
+
+    steps:
+      - name: Validate shard input
+        id: shards
+        run: |
+          SHARD_COUNT="${{ github.event.inputs.shards || '8' }}"
+
+          if ! [[ "$SHARD_COUNT" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid shard count: $SHARD_COUNT"
+            exit 1
+          fi
+
+          MATRIX=$(jq -nc --argjson count "$SHARD_COUNT" '[range(1; $count + 1)]')
+
+          echo "count=$SHARD_COUNT" >> "$GITHUB_OUTPUT"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+
   # Job to restore pool VNets and validate before shards run
   setup-pool:
+    needs: prepare-shards
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -166,14 +190,14 @@ jobs:
 
   # Run tests in shards
   test-shards:
-    needs: setup-pool
+    needs: [prepare-shards, setup-pool]
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: ${{ fromJSON(needs.prepare-shards.outputs.shard-matrix) }}
 
     env:
       VITE_ENV_NAME: development
@@ -185,7 +209,7 @@ jobs:
       VITE_CHATBOT_ENABLED: 'true'
       VITE_GEO_BYPASS: 'true'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
-      PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '8' }}
+      PLAYWRIGHT_SHARD_TOTAL: ${{ needs.prepare-shards.outputs.shard-count }}
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '2' }}
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
@@ -229,14 +253,14 @@ jobs:
           ls -lh apps/webapp/src/test/e2e/persistent-vnet-snapshots.json
           echo "VNet files ready"
 
-      - name: Run E2E tests (Shard ${{ matrix.shard }}/${{ github.event.inputs.shards || '8' }})
+      - name: Run E2E tests (Shard ${{ matrix.shard }}/${{ needs.prepare-shards.outputs.shard-count }})
         run: |
-          echo "Running shard ${{ matrix.shard }} of ${{ github.event.inputs.shards || '8' }}"
+          echo "Running shard ${{ matrix.shard }} of ${{ needs.prepare-shards.outputs.shard-count }}"
           echo "Workers per shard: $TEST_WORKERS"
           echo "Pool status: ${{ needs.setup-pool.outputs.pool-ready }}"
 
           chmod +x ./apps/webapp/run-tests-with-retry.sh
-          cd apps/webapp && ./run-tests-with-retry.sh
+          cd apps/webapp && ./run-tests-with-retry.sh --project=chromium
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
@@ -259,9 +283,85 @@ jobs:
           path: apps/webapp/test-results/
           retention-days: 3
 
+  # Run shard-unsafe shared-state specs after pooled shards complete
+  test-shared-state:
+    needs: [setup-pool, test-shards]
+    if: always() && needs.setup-pool.result == 'success' && needs.test-shards.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      VITE_ENV_NAME: development
+      VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
+      VITE_BATCH_TX_ENABLED: 'true'
+      VITE_USE_MOCK_WALLET: 'true'
+      VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
+      VITE_CHATBOT_ENABLED: 'true'
+      VITE_GEO_BYPASS: 'true'
+      TEST_WORKERS: '1'
+      FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build:packages
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+
+      - name: Install Playwright browsers
+        run: pnpm -F webapp exec playwright install --with-deps chromium
+
+      - name: Download VNet data
+        uses: actions/download-artifact@v4
+        with:
+          name: vnet-data
+
+      - name: Run shard-unsafe E2E tests serially
+        run: |
+          cd apps/webapp
+          pnpm playwright test --config=playwright-parallel.config.ts --project=chromium-shared-state --workers=1
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+
+      - name: Upload shared-state test results (if failed)
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-state-test-results-${{ github.run_id }}
+          path: |
+            apps/webapp/playwright-report/
+            apps/webapp/test-results/
+            apps/webapp/test-results.json
+          retention-days: 7
+
+      - name: Upload shared-state test traces (if failed)
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-state-test-traces-${{ github.run_id }}
+          path: apps/webapp/test-results/
+          retention-days: 3
+
   # Aggregate results from all shards
   aggregate-results:
-    needs: [setup-pool, test-shards]
+    needs: [prepare-shards, setup-pool, test-shards, test-shared-state]
     if: always()
     runs-on: ubuntu-latest
 
@@ -269,7 +369,7 @@ jobs:
       - name: Download all shard results
         uses: actions/download-artifact@v4
         with:
-          pattern: shard-*-test-results-${{ github.run_id }}
+          pattern: '*-test-results-${{ github.run_id }}'
           path: all-results
         continue-on-error: true
 
@@ -278,7 +378,7 @@ jobs:
           echo "## E2E Test Summary (Pool)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Pool status**: ${{ needs.setup-pool.outputs.pool-ready }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total Shards**: ${{ github.event.inputs.shards || '8' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Shards**: ${{ needs.prepare-shards.outputs.shard-count }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Workers per Shard**: ${{ github.event.inputs.workers_per_shard || '2' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Networks**: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -290,17 +390,21 @@ jobs:
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.test-shards.result }}" == "success" ]; then
-            echo "### All shards passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Sharded suite**: ${{ needs.test-shards.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Shared-state suite**: ${{ needs.test-shared-state.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.test-shards.result }}" == "success" ] && [ "${{ needs.test-shared-state.result }}" == "success" ]; then
+            echo "### All pooled E2E jobs passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "### Some shards failed" >> $GITHUB_STEP_SUMMARY
+            echo "### Some pooled E2E jobs failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Check individual shard artifacts for details." >> $GITHUB_STEP_SUMMARY
+            echo "Check individual job artifacts for details." >> $GITHUB_STEP_SUMMARY
           fi
 
   # Cleanup fresh VNets only (never delete pool VNets)
   cleanup:
-    needs: [setup-pool, test-shards, aggregate-results]
+    needs: [setup-pool, test-shards, test-shared-state, aggregate-results]
     if: always() && needs.setup-pool.outputs.pool-ready == 'unavailable'
     runs-on: ubuntu-latest
 
@@ -330,7 +434,7 @@ jobs:
 
       - name: Cleanup fresh VNets (fallback only)
         run: |
-          echo "Cleaning up fresh VNets (not pool VNets)..."
-          pnpm run vnet:delete:all:ci || echo "VNet cleanup failed, continuing..."
+          echo "Cleaning up only the fresh VNets created for this fallback run..."
+          node ./scripts/deleteVnetsFromFile.js tenderlyTestnetData.json || echo "VNet cleanup failed, continuing..."
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
