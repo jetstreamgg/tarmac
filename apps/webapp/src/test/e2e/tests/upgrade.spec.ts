@@ -207,8 +207,8 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
 test('if not connected it should show a connect button', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-  // click by text Upgrade your DAI to USDS and MKR to SKY
-  await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+  // click the Upgrade card
+  await isolatedPage.getByRole('button', { name: /^Upgrade\s/ }).click();
 
   // Connect button and copy should be visible
   const widgetConnectButton = isolatedPage
