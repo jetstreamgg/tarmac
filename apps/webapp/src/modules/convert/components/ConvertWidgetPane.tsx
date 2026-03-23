@@ -40,6 +40,16 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
     ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
   )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
 
+  const trackModuleSelection = (convertIntent: ConvertIntent) => {
+    trackConvertModuleSelected({
+      convertModule: ConvertIntentMapping[convertIntent],
+      previousConvertModule: activeConvertOption ? ConvertIntentMapping[activeConvertOption] : undefined,
+      selectionMethod: 'card',
+      entrySurface: 'convert_landing',
+      chainId
+    });
+  };
+
   const handleSelectOption = (convertIntent: ConvertIntent) => {
     if (isPending) {
       return;
@@ -56,6 +66,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
         { chainId: mainnetChain.id },
         {
           onSuccess: () => {
+            trackModuleSelection(convertIntent);
             setSearchParams(params => {
               params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);
               params.set(QueryParams.Network, normalizeUrlParam(mainnetChain.name));
@@ -78,15 +89,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
       return;
     }
 
-    if (convertIntent === ConvertIntent.PSM_INTENT) {
-      trackConvertModuleSelected({
-        convertModule: ConvertIntentMapping[convertIntent],
-        previousConvertModule: activeConvertOption ? ConvertIntentMapping[activeConvertOption] : undefined,
-        selectionMethod: 'card',
-        entrySurface: 'convert_landing',
-        chainId
-      });
-    }
+    trackModuleSelection(convertIntent);
 
     setSearchParams(params => {
       params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);

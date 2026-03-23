@@ -126,6 +126,7 @@ function PsmConversionWidgetWrapped({
     setButtonText,
     setIsDisabled,
     setIsLoading,
+    setShowStepIndicator,
     setTxStatus,
     txStatus,
     setExternalLink,
@@ -169,7 +170,7 @@ function PsmConversionWidgetWrapped({
   });
   const stepRef = useRef(0);
 
-  const { handleOnSuccess, handleOnError } = useTransactionCallbacks({
+  const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification
@@ -225,7 +226,16 @@ function PsmConversionWidgetWrapped({
         }
       });
     },
-    onStart: () => null,
+    onStart: hash => {
+      const current = transactionStateRef.current;
+      handleOnStart({
+        hash,
+        recentTransactionDescription:
+          current.action === PsmConversionAction.APPROVE
+            ? t`Approving ${current.originToken?.symbol || ''}`
+            : t`Convert ${current.originToken?.symbol || ''} into ${current.targetToken?.symbol || ''}`
+      });
+    },
     onSuccess: hash => {
       const current = transactionStateRef.current;
       stepRef.current = 0;
@@ -318,6 +328,12 @@ function PsmConversionWidgetWrapped({
       mutateTargetBalance();
     }
   }, [mutateOriginBalance, mutatePocketBalance, mutateTargetBalance, txStatus]);
+
+  useEffect(() => {
+    if (txStatus === TxStatus.IDLE) {
+      setShowStepIndicator(conversion.needsAllowance);
+    }
+  }, [conversion.needsAllowance, setShowStepIndicator, txStatus]);
 
   useEffect(() => {
     setWidgetState({
