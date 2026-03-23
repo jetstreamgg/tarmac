@@ -110,7 +110,7 @@ describe('useDelegates', async () => {
 
     // Check that the query string contains the search parameter
     expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
-    checkDefaultQueryParameters(query);
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('Should build the correct query with exclude parameter', async () => {
@@ -135,7 +135,7 @@ describe('useDelegates', async () => {
 
     // Check that the query string contains the exclude parameter
     expect(query).toContain('{ address: { _nin: ["0x123", "0x456"] } }');
-    checkDefaultQueryParameters(query);
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('Should build the correct query with random order parameters', async () => {
@@ -160,7 +160,7 @@ describe('useDelegates', async () => {
 
     // Check that the query string contains order_by parameter
     expect(query).toContain('order_by:');
-    checkDefaultQueryParameters(query);
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('Should build the correct query without order parameters when random is false', async () => {
@@ -185,7 +185,7 @@ describe('useDelegates', async () => {
 
     // Check that the query string does not contain order_by parameter
     expect(query).not.toContain('order_by:');
-    checkDefaultQueryParameters(query);
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('should handle zero page size correctly', async () => {
@@ -291,8 +291,8 @@ describe('useUserDelegates', async () => {
   });
 });
 
-const checkDefaultQueryParameters = (query: string) => {
+const checkDefaultQueryParameters = (query: string, expectedLimit = 100) => {
   expect(query).toContain('Delegate');
-  expect(query).toContain('limit: 100');
+  expect(query).toContain(`limit: ${expectedLimit}`);
   expect(query).toContain('offset: 0');
 };

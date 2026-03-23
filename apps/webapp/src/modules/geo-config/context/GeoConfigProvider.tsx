@@ -7,8 +7,7 @@ import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
 const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true';
 
 // Endpoint URL - use staging for now, will be configured via env var
-const GEO_CONFIG_URL =
-  import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.jetstream.gg/geo-config';
+const GEO_CONFIG_URL = import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.sky.money/geo-config';
 
 // Restrictive fallback config - block everything that might be restricted
 const FALLBACK_CONFIG: GeoConfig = {
@@ -87,7 +86,7 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
       error: error as Error | null,
       isModuleEnabled: GEO_BYPASS ? () => true : isModuleEnabled,
       getModuleRestrictionReason: GEO_BYPASS ? () => undefined : getModuleRestrictionReason,
-      isRegionRestricted: GEO_BYPASS ? false : (isLoading ? true : (config?.isRegionRestricted ?? true)),
+      isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (config?.isRegionRestricted ?? true),
       isChatbotEnabled: config?.chatbot.enabled ?? false,
       chatbotRestrictionMessage: config?.chatbot.restrictionMessage
     }),

@@ -50,7 +50,7 @@ export function getTermsContent(termsType: TermsType = TermsType.App): string {
   );
 
   if (matchedKey) {
-    console.log(`Using custom terms file: ${fileName} (matched key: ${matchedKey})`);
+    // console.log(`Using custom terms file: ${fileName} (matched key: ${matchedKey})`);
     return termsModules[matchedKey];
   }
 
