@@ -385,7 +385,11 @@ async function main() {
   try {
     // Step 1: Validate VNets (skip balance check since we're about to fund them)
     console.log('1. Validating VNets (checking connectivity, not balances)...');
-    const validationResult = await validateVnets(true); // skipBalanceCheck = true
+    const validationResult = await validateVnets({
+      skipBalanceCheck: true,
+      // Funding will mutate state + create new snapshots, so stale snapshot IDs shouldn't block it.
+      skipSnapshotCheck: true
+    });
 
     if (!validationResult.healthy) {
       console.error('❌ VNet validation failed!');

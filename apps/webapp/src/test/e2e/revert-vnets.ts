@@ -68,4 +68,7 @@ async function main() {
   }
 }
 
-main();
+// Only run when called directly, not when imported as a module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

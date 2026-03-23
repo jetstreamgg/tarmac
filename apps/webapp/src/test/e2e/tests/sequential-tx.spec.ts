@@ -223,6 +223,7 @@ test.describe('Sequential transactions — Upgrade DAI', () => {
   test('Sequential: upgrade DAI completes successfully in two steps', async ({ isolatedPage }) => {
     await isolatedPage.getByTestId('upgrade-input-origin').fill('2');
 
+    // click convert
     await performSequentialAction(isolatedPage, 'Upgrade');
 
     await expect(isolatedPage.getByText(/Success!/i)).toBeVisible({ timeout: 15000 });

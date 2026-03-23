@@ -12,6 +12,11 @@ const DEFAULT_MAINNET_FORK_CONTAINER_ID = 'bf27af19-1335-404a-9257-18affa774f5a'
 const MAINNET_FORK_CONTAINER_ID =
   process.env.ALTERNATE_FORK_CONTAINER_ID || DEFAULT_MAINNET_FORK_CONTAINER_ID;
 
+// Allow override via environment variable for alternate vnet naming
+// Usage: VNET_PREFIX=my-prefix pnpm vnet:fork
+// Default: ci-tests-testnet
+const VNET_PREFIX = process.env.VNET_PREFIX || 'ci-tests-testnet';
+
 const ARBITRUM_CONFIG = {
   chainId: 42161,
   // Fixed block from after the Arbitrum PSM was funded
@@ -33,14 +38,12 @@ const UNICHAIN_CONFIG = {
   forkBlock: '18140271'
 };
 
-//@ts-expect-error script doesn't work with TS
-const forkVnets = async chainType => {
+const forkVnets = async (chainType) => {
   const currentTime = Date.now();
 
   const chainsToFork = chainType ?? ['mainnet', 'base', 'arbitrum', 'optimism', 'unichain']; // Re-enable when we add tests for these chains
 
   const responses = await Promise.all(
-    //@ts-expect-error script doesn't work with TS
     chainsToFork.map(chain => {
       switch (chain) {
         case 'mainnet':
@@ -53,7 +56,7 @@ const forkVnets = async chainType => {
             method: 'POST',
             body: JSON.stringify({
               vnet_id: MAINNET_FORK_CONTAINER_ID,
-              display_name: 'ci-tests-testnet'
+              display_name: VNET_PREFIX
             })
           });
         case 'base':
@@ -65,8 +68,8 @@ const forkVnets = async chainType => {
             ],
             method: 'POST',
             body: JSON.stringify({
-              slug: `ci-tests-testnet-${BASE_CONFIG.chainId}-${currentTime}`,
-              display_name: 'ci-tests-testnet',
+              slug: `${VNET_PREFIX}-${BASE_CONFIG.chainId}-${currentTime}`,
+              display_name: VNET_PREFIX,
               fork_config: {
                 network_id: BASE_CONFIG.chainId,
                 block_number: BASE_CONFIG.forkBlock
@@ -87,8 +90,8 @@ const forkVnets = async chainType => {
             ],
             method: 'POST',
             body: JSON.stringify({
-              slug: `ci-tests-testnet-${ARBITRUM_CONFIG.chainId}-${currentTime}`,
-              display_name: 'ci-tests-testnet',
+              slug: `${VNET_PREFIX}-${ARBITRUM_CONFIG.chainId}-${currentTime}`,
+              display_name: VNET_PREFIX,
               fork_config: {
                 network_id: ARBITRUM_CONFIG.chainId,
                 block_number: ARBITRUM_CONFIG.forkBlock
@@ -109,8 +112,8 @@ const forkVnets = async chainType => {
             ],
             method: 'POST',
             body: JSON.stringify({
-              slug: `ci-tests-testnet-${OPTIMISM_CONFIG.chainId}-${currentTime}`,
-              display_name: 'ci-tests-testnet',
+              slug: `${VNET_PREFIX}-${OPTIMISM_CONFIG.chainId}-${currentTime}`,
+              display_name: VNET_PREFIX,
               fork_config: {
                 network_id: OPTIMISM_CONFIG.chainId,
                 block_number: OPTIMISM_CONFIG.forkBlock
@@ -131,8 +134,8 @@ const forkVnets = async chainType => {
             ],
             method: 'POST',
             body: JSON.stringify({
-              slug: `ci-tests-testnet-${UNICHAIN_CONFIG.chainId}-${currentTime}`,
-              display_name: 'ci-tests-testnet',
+              slug: `${VNET_PREFIX}-${UNICHAIN_CONFIG.chainId}-${currentTime}`,
+              display_name: VNET_PREFIX,
               fork_config: {
                 network_id: UNICHAIN_CONFIG.chainId,
                 block_number: UNICHAIN_CONFIG.forkBlock
@@ -144,6 +147,8 @@ const forkVnets = async chainType => {
               }
             })
           });
+        default:
+          throw new Error(`Unsupported chain: ${chain}`);
       }
     })
   );
@@ -194,12 +199,12 @@ const forkVnets = async chainType => {
   }
 
   // Update or add new chain data
-  const updatedData = existingData.filter(item => !chainsToFork.includes(item.NETWORK));
+  const updatedData = existingData.filter((item) => !chainsToFork.includes(item.NETWORK));
 
   // Add the newly forked chains
   chainsToFork.forEach((chain, index) => {
     const testnetData = testnetsData[index];
-    const adminEndpoint = testnetData.rpcs.find(x => x.name === 'Admin RPC');
+    const adminEndpoint = testnetData.rpcs.find((x) => x.name === 'Admin RPC');
 
     updatedData.push({
       NETWORK: chain,

@@ -25,7 +25,7 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
+    trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
     video: process.env.RECORD_VIDEO ? 'on' : 'off',
     // Add explicit viewport for all tests
     viewport: { width: 1920, height: 1080 },
