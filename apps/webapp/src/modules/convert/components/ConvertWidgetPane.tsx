@@ -35,7 +35,9 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { switchChain, isPending } = useSwitchChain();
   const { trackConvertModuleSelected } = useAppAnalytics();
   const shouldShowUpgradeOption = !isL2 || !isSafeWallet;
-  const cardInteractionClass = isPending ? 'pointer-events-none cursor-not-allowed opacity-60' : 'cursor-pointer';
+  const cardInteractionClass = isPending
+    ? 'pointer-events-none cursor-not-allowed opacity-60'
+    : 'cursor-pointer';
   const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
     ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
   )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
@@ -135,7 +137,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 role="button"
                 tabIndex={isPending ? -1 : 0}
                 aria-disabled={isPending}
-                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) border-primary-start/30 transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start hover:to-primary-end border-primary-start/30 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                 onClick={() => handleSelectOption(ConvertIntent.PSM_INTENT)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -146,7 +148,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
               >
                 <CardHeader className="flex flex-row items-center space-y-0">
                   <HStack className="items-center gap-3">
-                    <Convert color="inherit" boxSize={28} />
+                    <Convert className="shrink-0" color="inherit" />
                     <div>
                       <Text>
                         <Trans>1:1 Conversion</Trans>
@@ -163,7 +165,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 role="button"
                 tabIndex={isPending ? -1 : 0}
                 aria-disabled={isPending}
-                className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                 onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -174,7 +176,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
               >
                 <CardHeader className="flex flex-row items-center space-y-0">
                   <HStack className="items-center gap-3">
-                    <Trade color="inherit" />
+                    <Trade className="shrink-0" color="inherit" />
                     <div>
                       <Text>
                         <Trans>Trade</Trans>
@@ -192,8 +194,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                   role="button"
                   tabIndex={isPending ? -1 : 0}
                   aria-disabled={isPending}
-                  data-testid="convert-upgrade-card"
-                  className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                   onClick={() => handleSelectOption(ConvertIntent.UPGRADE_INTENT)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -204,7 +205,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 >
                   <CardHeader className="flex flex-row items-center space-y-0">
                     <HStack className="items-center gap-3">
-                      <Upgrade color="inherit" />
+                      <Upgrade className="shrink-0" color="inherit" />
                       <div>
                         <Text>
                           <Trans>Upgrade</Trans>

@@ -157,7 +157,7 @@ export function WidgetMenuItemTooltip({
   return (
     <Tooltip delayDuration={150}>
       <TooltipTrigger asChild disabled={disabled}>
-        {children}
+        <span className="inline-flex">{children}</span>
       </TooltipTrigger>
       {description && !isMobile && (
         <TooltipPortal>
