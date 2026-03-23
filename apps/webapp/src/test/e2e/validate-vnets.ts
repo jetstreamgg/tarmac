@@ -23,6 +23,52 @@ interface ValidationResult {
   errors: string[];
 }
 
+type ValidateVnetsOptions =
+  | boolean
+  | {
+      skipBalanceCheck?: boolean;
+      /**
+       * If true, do not attempt `evm_revert` even if snapshot IDs exist locally.
+       * Useful for flows that will immediately mutate state (e.g. funding) and then
+       * create new snapshots.
+       */
+      skipSnapshotCheck?: boolean;
+    };
+
+function getRequestedNetworksFromEnv(): NetworkName[] {
+  const targetNetworks = process.env.FUND_NETWORKS || process.env.TEST_NETWORKS;
+
+  if (!targetNetworks) {
+    return [
+      NetworkName.mainnet,
+      NetworkName.base,
+      NetworkName.arbitrum,
+      NetworkName.optimism,
+      NetworkName.unichain
+    ];
+  }
+
+  const requestedNetworks = targetNetworks.split(',').map(n => n.trim().toLowerCase());
+  return requestedNetworks
+    .map(n => {
+      switch (n) {
+        case 'mainnet':
+          return NetworkName.mainnet;
+        case 'base':
+          return NetworkName.base;
+        case 'arbitrum':
+          return NetworkName.arbitrum;
+        case 'optimism':
+          return NetworkName.optimism;
+        case 'unichain':
+          return NetworkName.unichain;
+        default:
+          return null;
+      }
+    })
+    .filter(n => n !== null) as NetworkName[];
+}
+
 /**
  * Get balance of an account (ETH or ERC20)
  */
@@ -228,7 +274,8 @@ async function validateAccountBalances(
 async function validateVnet(
   network: NetworkName,
   snapshotId?: string,
-  skipBalanceCheck = false
+  skipBalanceCheck = false,
+  skipSnapshotCheck = false
 ): Promise<ValidationResult> {
   const errors: string[] = [];
 
@@ -283,8 +330,10 @@ async function validateVnet(
       return { network, healthy: false, errors };
     }
 
-    // 2. If snapshot exists, test reverting to it
-    if (snapshotId) {
+    // 2. If snapshot exists, test reverting to it (unless explicitly skipped)
+    if (skipSnapshotCheck) {
+      console.log(`  ⏭️  Skipping snapshot validation for ${network}`);
+    } else if (snapshotId) {
       console.log(`  📸 Testing snapshot revert for ${network}...`);
       const revertResult = await testSnapshotRevert(rpcUrl, network, snapshotId);
       if (!revertResult.success) {
@@ -319,13 +368,16 @@ async function validateVnet(
 
 /**
  * Main validation function
- * @param skipBalanceCheck - If true, skip checking account balances (useful when VNets are fresh/unfunded)
+ * @param options - Either legacy boolean `skipBalanceCheck` or an options object
  */
-export async function validateVnets(skipBalanceCheck = false): Promise<{
+export async function validateVnets(options: ValidateVnetsOptions = false): Promise<{
   healthy: boolean;
   results: ValidationResult[];
 }> {
   console.log('🔍 Validating cached VNets and snapshots...\n');
+
+  const skipBalanceCheck = typeof options === 'boolean' ? options : !!options.skipBalanceCheck;
+  const skipSnapshotCheck = typeof options === 'boolean' ? false : !!options.skipSnapshotCheck;
 
   // Determine which VNet data file to use based on environment
   const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
@@ -376,45 +428,13 @@ export async function validateVnets(skipBalanceCheck = false): Promise<{
     console.log('⚠️  No snapshot file found - validation will check VNets without snapshots');
   }
 
-  // Determine which networks to validate
-  const targetNetworks = process.env.FUND_NETWORKS || process.env.TEST_NETWORKS;
-  let networks: NetworkName[];
-
-  if (targetNetworks) {
-    const requestedNetworks = targetNetworks.split(',').map(n => n.trim().toLowerCase());
-    networks = requestedNetworks
-      .map(n => {
-        switch (n) {
-          case 'mainnet':
-            return NetworkName.mainnet;
-          case 'base':
-            return NetworkName.base;
-          case 'arbitrum':
-            return NetworkName.arbitrum;
-          case 'optimism':
-            return NetworkName.optimism;
-          case 'unichain':
-            return NetworkName.unichain;
-          default:
-            return null;
-        }
-      })
-      .filter(n => n !== null) as NetworkName[];
-  } else {
-    networks = [
-      NetworkName.mainnet,
-      NetworkName.base,
-      NetworkName.arbitrum,
-      NetworkName.optimism,
-      NetworkName.unichain
-    ];
-  }
+  const networks = getRequestedNetworksFromEnv();
 
   // Validate each network
   const results: ValidationResult[] = [];
   for (const network of networks) {
     console.log(`Validating ${network}...`);
-    const result = await validateVnet(network, snapshots[network], skipBalanceCheck);
+    const result = await validateVnet(network, snapshots[network], skipBalanceCheck, skipSnapshotCheck);
 
     if (result.healthy) {
       console.log(`  ✅ ${network} is healthy`);
