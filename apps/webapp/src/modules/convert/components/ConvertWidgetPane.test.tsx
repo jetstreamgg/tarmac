@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConvertWidgetPane } from './ConvertWidgetPane';
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 i18n.load('en', {});
 i18n.activate('en');
 
