@@ -1,4 +1,5 @@
 import { UpgradeFaq } from './UpgradeFaq';
+import { UpgradeHistory } from './UpgradeHistory';
 import { t } from '@lingui/core/macro';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
@@ -34,6 +35,13 @@ export function UpgradeDetails(): React.ReactElement {
             </DetailSectionRow>
           </DetailSection>
         )}
+      {isConnectedAndAcceptedTerms && (
+        <DetailSection title={t`Your Upgrade/Revert transaction history`}>
+          <DetailSectionRow>
+            <UpgradeHistory />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
       <DetailSection title={t`Metrics`}>
         <DetailSectionRow>
           <UpgradeChart />
