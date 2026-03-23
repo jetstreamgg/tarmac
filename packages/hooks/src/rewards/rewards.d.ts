@@ -9,6 +9,7 @@ export type RewardUserHistoryItem = HistoryItem & {
 
 export type RewardHistory = {
   id: string;
+  address: string;
   supplyInstances: {
     blockTimestamp: string;
     transactionHash: string;

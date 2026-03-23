@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getBaLabsApiUrl } from '../helpers/getSubgraphUrl';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { useChainId } from 'wagmi';
+
 import { formatBaLabsUrl } from '../helpers';
 import { ReadHook } from '../hooks';
 
@@ -58,8 +58,7 @@ export function useUsdsDaiData(
   props: { limit?: number } = { limit: 100 }
 ): ReadHook & { data?: UsdsDaiChartInfo[] } {
   const { limit } = props;
-  const chainId = useChainId();
-  const baseUrl = getBaLabsApiUrl(chainId) || '';
+  const baseUrl = getBaLabsApiUrl() || '';
   let url: URL | undefined;
   if (baseUrl) {
     const endpoint = `${baseUrl}/overall/historic/?p_size=${limit}`;

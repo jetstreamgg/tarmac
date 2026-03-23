@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import {
   BaseStakeHistoryItem,
   StakeHistoryItemWithAmount,
@@ -25,69 +25,69 @@ async function fetchStakeHistory(
   index?: number
 ): Promise<StakeHistory | undefined> {
   if (!address) return [];
-  const indexQuery = index !== undefined ? `, index: "${index}"` : '';
-  // TODO: Update this query when the stake module is deployed and subgraph is updated
+  const indexFilter = index !== undefined ? `, index: { _eq: "${index}" }` : '';
+  const urnFilter = `{ urn: { owner: { _ilike: "${address}" }${indexFilter} }, chainId: { _eq: ${chainId} } }`;
+  const ownerFilter = `{ owner: { _ilike: "${address}" }${indexFilter}, chainId: { _eq: ${chainId} } }`;
   const query = gql`
     {
-      stakingOpens(where: {owner: "${address}"${indexQuery}}) {
+      stakingOpens: StakingOpen(where: ${ownerFilter}) {
         index
         blockTimestamp
         transactionHash
       }
-      stakingSelectVoteDelegates(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingSelectVoteDelegates: StakingSelectVoteDelegate(where: ${urnFilter}) {
         index
         voteDelegate {
-          id
+          address
         }
         blockTimestamp
         transactionHash
       }
-      stakingSelectRewards(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingSelectRewards: StakingSelectReward(where: ${urnFilter}) {
         index
         reward {
-          id
+          address
         }
         blockTimestamp
         transactionHash
       }
-      stakingLocks(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingLocks: StakingLock(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingFrees(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingFrees: StakingFree(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingDraws(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingDraws: StakingDraw(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingWipes(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingWipes: StakingWipe(where: ${urnFilter}) {
         index
         wad
         blockTimestamp
         transactionHash
       }
-      stakingGetRewards(where: { urn_: {owner: "${address}"${indexQuery}}}) {
+      stakingGetRewards: StakingGetReward(where: ${urnFilter}) {
         index
         reward
         amt
         blockTimestamp
         transactionHash
       }
-      stakingOnKicks(where: { urn_: {owner: "${address}"${indexQuery}}}) {
-        id
+      stakingOnKicks: StakingOnKick(where: ${urnFilter}) {
         wad
         blockTimestamp
         transactionHash
         urn {
-          id
+          address
         }
       }
     }
@@ -107,7 +107,7 @@ async function fetchStakeHistory(
   const selectVoteDelegates: StakeSelectDelegate[] = response.stakingSelectVoteDelegates.map(
     (e: StakeSelectDelegateResponse) => ({
       urnIndex: +e.index,
-      delegate: e.voteDelegate?.id || '',
+      delegate: e.voteDelegate?.address || '',
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
@@ -119,7 +119,7 @@ async function fetchStakeHistory(
   const selectRewards: StakeSelectReward[] = response.stakingSelectRewards.map(
     (e: StakeSelectRewardResponse) => ({
       urnIndex: +e.index,
-      rewardContract: e.reward?.id || '',
+      rewardContract: e.reward?.address || '',
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
@@ -190,9 +190,9 @@ async function fetchStakeHistory(
   );
 
   const kicks: StakeHistoryKick[] = response.stakingOnKicks.map(
-    (e: BaseStakeHistoryItemResponse & { wad: string; urn: { id: string } }) => ({
+    (e: BaseStakeHistoryItemResponse & { wad: string; urn: { address: string } }) => ({
       amount: BigInt(e.wad),
-      urnAddress: e.urn.id,
+      urnAddress: e.urn.address,
       blockTimestamp: new Date(parseInt(e.blockTimestamp) * 1000),
       transactionHash: e.transactionHash,
       module: ModuleEnum.STAKE,
@@ -224,7 +224,7 @@ export function useStakeHistory({
 } = {}): ReadHook & { data?: StakeHistory } {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {
