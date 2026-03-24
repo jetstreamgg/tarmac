@@ -1,5 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { rewriteLegacyWidgetParams } from './validateSearchParams';
+import { describe, it, expect, vi } from 'vitest';
+import { validateSearchParams, rewriteLegacyWidgetParams } from './validateSearchParams';
+import { mainnet } from 'wagmi/chains';
+
+const validateParams = (query: string) => {
+  const params = new URLSearchParams(query);
+  return validateSearchParams(
+    params,
+    [],
+    'convert',
+    vi.fn(),
+    mainnet.id,
+    [mainnet] as [typeof mainnet],
+    vi.fn(),
+    true,
+    vi.fn(),
+    vi.fn()
+  );
+};
 
 describe('rewriteLegacyWidgetParams', () => {
   it('rewrites widget=trade to widget=convert&convert_module=trade', () => {
@@ -68,5 +85,31 @@ describe('rewriteLegacyWidgetParams', () => {
     rewriteLegacyWidgetParams(params);
     expect(params.get('widget')).toBe('convert');
     expect(params.get('convert_module')).toBe('trade');
+  });
+});
+
+describe('validateSearchParams for convert psm', () => {
+  it('keeps USDC source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=USDC');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.get('source_token')).toBe('USDC');
+  });
+
+  it('keeps USDS source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=USDS');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.get('source_token')).toBe('USDS');
+  });
+
+  it('removes unsupported source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=DAI');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.has('source_token')).toBe(false);
+  });
+
+  it('removes target token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&target_token=USDS');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.has('target_token')).toBe(false);
   });
 });
