@@ -23,7 +23,7 @@ function makeBidirectional(
 }
 
 const targetTokensSort = (a: TokenForChain, b: TokenForChain): number => {
-  const order = ['USDS', 'sUSDS', 'SKY', 'stUSDS', 'SPK', 'DAI', 'MKR'];
+  const order = ['USDS', 'sUSDS', 'SKY', 'stUSDS', 'SPK', 'DAI'];
   const aIndex = order.indexOf(a.symbol);
   const bIndex = order.indexOf(b.symbol);
 

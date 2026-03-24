@@ -35,7 +35,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       onMutate,
       onSuccess: () => {
         if (onStart) {
-          onStart();
+          onStart(undefined);
         }
       },
       onError: (err: Error) => {

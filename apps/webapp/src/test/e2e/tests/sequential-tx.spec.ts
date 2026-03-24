@@ -216,12 +216,14 @@ test.describe('Sequential transactions — Upgrade DAI', () => {
   test.beforeEach(async ({ isolatedPage }) => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByRole('tab', { name: 'Upgrade' }).click();
+    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    await isolatedPage.getByTestId('convert-upgrade-card').click();
   });
 
   test('Sequential: upgrade DAI completes successfully in two steps', async ({ isolatedPage }) => {
     await isolatedPage.getByTestId('upgrade-input-origin').fill('2');
 
+    // click convert
     await performSequentialAction(isolatedPage, 'Upgrade');
 
     await expect(isolatedPage.getByText(/Success!/i)).toBeVisible({ timeout: 15000 });
