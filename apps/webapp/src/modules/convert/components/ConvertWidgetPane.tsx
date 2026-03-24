@@ -194,6 +194,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                   role="button"
                   tabIndex={isPending ? -1 : 0}
                   aria-disabled={isPending}
+                  data-testid="convert-upgrade-card"
                   className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                   onClick={() => handleSelectOption(ConvertIntent.UPGRADE_INTENT)}
                   onKeyDown={e => {
