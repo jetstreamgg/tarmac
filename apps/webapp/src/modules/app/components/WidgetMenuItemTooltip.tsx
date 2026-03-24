@@ -157,7 +157,7 @@ export function WidgetMenuItemTooltip({
   return (
     <Tooltip delayDuration={150}>
       <TooltipTrigger asChild disabled={disabled}>
-        {children}
+        <span className="inline-flex">{children}</span>
       </TooltipTrigger>
       {description && !isMobile && (
         <TooltipPortal>
@@ -166,7 +166,7 @@ export function WidgetMenuItemTooltip({
             {subItems && subItems.length > 0 && (
               <>
                 <p className="mt-2 text-xs text-gray-400">Quick access:</p>
-                <div className="mt-1 flex flex-wrap gap-1.5">
+                <div className="mt-1 mb-1 flex flex-wrap gap-1.5">
                   {subItems.map(subItem => (
                     <button
                       key={subItem.label}
@@ -184,7 +184,7 @@ export function WidgetMenuItemTooltip({
                 </div>
               </>
             )}
-            {currentChainId && widgetIntent !== Intent.BALANCES_INTENT && (
+            {currentChainId && widgetIntent !== Intent.BALANCES_INTENT && widgetIntent !== Intent.CONVERT_INTENT && (
               <>
                 <p className="mt-2 text-xs text-gray-400">Supported on:</p>
                 <div className="mt-1 flex gap-2">{renderNetworkIcons()}</div>
