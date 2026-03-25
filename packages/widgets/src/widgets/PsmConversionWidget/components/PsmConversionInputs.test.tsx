@@ -65,6 +65,16 @@ describe('PsmConversionInputs', () => {
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('percentages-off');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('input-disabled');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('enabled');
+
+    // Ensure the target input receives and renders the expected receive amount value.
+    const targetInputProps = tokenInputMock.mock.calls
+      .map(([props]) => props)
+      .find(props => props.dataTestId === 'psm-conversion-target');
+    expect(targetInputProps).toEqual(
+      expect.objectContaining({
+        value: 1_250_000_000_000_000_000n
+      })
+    );
   });
 
   it('calls onSwitchDirection when the switch button is clicked', () => {
