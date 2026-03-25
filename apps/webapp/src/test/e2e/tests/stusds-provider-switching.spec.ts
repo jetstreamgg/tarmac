@@ -169,7 +169,7 @@ test.describe('stUSDS Provider', () => {
     // First supply some USDS (doesn't matter which provider)
     await isolatedPage.getByTestId('supply-input-stusds').click();
     await isolatedPage.getByTestId('supply-input-stusds').fill('20');
-    await performAction(isolatedPage, 'Supply');
+    await performAction(isolatedPage, 'Swap');
     await isolatedPage.getByRole('button', { name: 'Back to stUSDS' }).click();
 
     // Switch to Withdraw tab

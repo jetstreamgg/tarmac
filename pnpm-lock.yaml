@@ -568,6 +568,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.2.1(vite@7.3.1(@types/node@24.3.0)(jiti@1.21.7)(lightningcss@1.31.1)(terser@5.37.0)(yaml@2.7.0))
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@vitejs/plugin-react-swc':
         specifier: 'catalog:'
         version: 4.2.3(@swc/helpers@0.5.17)(vite@7.3.1(@types/node@24.3.0)(jiti@1.21.7)(lightningcss@1.31.1)(terser@5.37.0)(yaml@2.7.0))

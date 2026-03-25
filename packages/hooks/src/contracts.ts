@@ -198,6 +198,13 @@ export const contracts: {
     }
   },
   {
+    name: 'usdsPsmWrapper',
+    address: {
+      [mainnet.id]: '0xA188EEC8F81263234dA3622A406892F3D630f98c',
+      [TENDERLY_CHAIN_ID]: '0xA188EEC8F81263234dA3622A406892F3D630f98c'
+    }
+  },
+  {
     name: 'sky',
     address: {
       [mainnet.id]: '0x56072C95FAA701256059aa122697B133aDEd9279',

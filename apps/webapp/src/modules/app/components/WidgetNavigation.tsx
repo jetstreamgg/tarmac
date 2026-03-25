@@ -273,17 +273,21 @@ export function WidgetNavigation({
         asChild
         activationMode="manual"
       >
-        <motion.div layout transition={{ layout: { duration: 0 } }} className="lg:flex lg:w-full lg:flex-row">
+        <motion.div
+          layout
+          transition={{ layout: { duration: 0 } }}
+          className="lg:flex lg:h-full lg:w-full lg:flex-row"
+        >
           {/* Desktop vertical tabs, hidden on mobile and tablet */}
-          <div className="relative">
+          <div className="relative lg:h-full">
             <TooltipProvider>
               {/* Outer container with overflow-visible for tooltips */}
-              <div className={cn('overflow-visible', hideTabs && 'hidden', showDrawerMenu && 'hidden')}>
+              <div className={cn('overflow-visible lg:h-full', hideTabs && 'hidden', showDrawerMenu && 'hidden')}>
                 {/* Inner scrollable container */}
                 <TabsList
                   ref={tabsListRef}
                   className={cn(
-                    `scrollbar-hidden flex h-fit max-h-[calc(100vh-120px)] flex-col justify-start gap-2 py-1 pr-[10px] pl-1 ${isOverflowing ? 'overflow-y-scroll' : 'overflow-y-clip'}`
+                    `scrollbar-hidden flex h-fit max-h-full flex-col justify-start gap-2 py-1 pr-[10px] pl-1 ${isOverflowing ? 'overflow-y-scroll' : 'overflow-y-clip'}`
                   )}
                   data-testid="widget-navigation"
                 >

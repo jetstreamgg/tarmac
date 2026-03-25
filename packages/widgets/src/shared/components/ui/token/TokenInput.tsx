@@ -187,13 +187,6 @@ export function TokenInput({
     }
   }, [value]);
 
-  //clear the input if we switch to a disabled state
-  useEffect(() => {
-    if (disabled || inputDisabled) {
-      setInputValue('');
-    }
-  }, [disabled, inputDisabled]);
-
   useEffect(() => {
     const newValue = parseUnits(inputValue, decimals);
     const needsUpdate = value !== newValue;

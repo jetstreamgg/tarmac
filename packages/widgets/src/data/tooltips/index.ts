@@ -257,7 +257,7 @@ Bundled transaction: Active`
     id: 'psm',
     title: 'PSM',
     tooltip:
-      'Peg Stability Modules (PSMs) are smart contracts that allow users to convert certain stablecoins directly with the Sky Protocol for USDS or DAI at a fixed rate and with relatively low fees. They are designed to maintain the stability of USDS and DAI. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol.'
+      'Peg Stability Modules (PSMs) are smart contracts that allow users to convert certain stablecoins directly with the Sky Protocol for USDS or DAI at a fixed rate and with relatively low or no fees. They are designed to maintain the stability of USDS and DAI. Unlike decentralized exchange (DEX) transactions, PSM operations do not involve trading between users. Instead, they are direct, non-custodial conversions (generate and burn) executed with the decentralized smart contracts of the Sky Protocol. The 1:1 Conversion feature surfaces existing PSM functionality as a dedicated conversion flow, available on Ethereum Mainnet via the UsdsPsmWrapper and on supported L2 networks via PSM3 contracts, which are governed by Sky Ecosystem Governance.'
   },
   {
     id: 'slippage',
