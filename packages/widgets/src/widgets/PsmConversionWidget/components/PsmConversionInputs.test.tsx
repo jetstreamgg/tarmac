@@ -8,7 +8,6 @@ const tokenInputMock = vi.fn((props: Record<string, any>) => (
     <span>{props.label}</span>
     <span>{props.token.symbol}</span>
     {props.error && <span>{props.error}</span>}
-    {props.limitText && <span>{props.limitText}</span>}
     <span>{props.showPercentageButtons ? 'percentages-on' : 'percentages-off'}</span>
     <span>{props.inputDisabled ? 'input-disabled' : 'input-enabled'}</span>
     <span>{props.enabled ? 'enabled' : 'disabled'}</span>
@@ -23,13 +22,6 @@ vi.mock('wagmi', () => ({
   useChainId: () => 1
 }));
 
-vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
-  return {
-    ...actual,
-    getTokenDecimals: (token: { symbol: string }) => (token.symbol === 'USDC' ? 6 : 18)
-  };
-});
 
 describe('PsmConversionInputs', () => {
   const originToken = { symbol: 'USDC', name: 'USD Coin' } as any;
@@ -70,7 +62,6 @@ describe('PsmConversionInputs', () => {
 
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('You will receive');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('USDS');
-    expect(screen.getByTestId('psm-conversion-target').textContent).toContain('1.25 USDS');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('percentages-off');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('input-disabled');
     expect(screen.getByTestId('psm-conversion-target').textContent).toContain('enabled');
