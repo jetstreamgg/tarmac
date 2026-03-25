@@ -14,7 +14,7 @@ async function fetchAllRewardsUserHistory(
   rewardContracts: RewardContract[],
   chainId: number
 ): Promise<RewardUserHistoryItem[] | undefined> {
-  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress}"`);
+  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress.toLowerCase()}"`);
 
   const query = gql`
     {
