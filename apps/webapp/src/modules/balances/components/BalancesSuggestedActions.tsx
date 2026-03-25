@@ -21,7 +21,7 @@ import {
   useMultipleRewardsChartInfo
 } from '@jetstreamgg/sky-hooks';
 import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, isMainnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
-import { Savings, Upgrade, RewardsModule, Stake, Expert, Vaults, Trade } from '@/modules/icons';
+import { Savings, Upgrade, RewardsModule, Stake, Expert, Vaults, Trade, Convert } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
 import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@jetstreamgg/sky-widgets';
@@ -29,7 +29,7 @@ import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@jetstreamgg/s
 type BalancesAction = {
   label: string;
   tokens: string[];
-  module: 'morpho' | 'rewards' | 'savings' | 'stusds' | 'stake' | 'trade' | 'upgrade';
+  module: 'convert' | 'morpho' | 'rewards' | 'savings' | 'stusds' | 'stake' | 'trade' | 'upgrade';
   url: string;
   rateKey?: 'vaults' | 'rewards' | 'savings' | 'stusds' | 'staking';
   badge?: string;
@@ -92,6 +92,13 @@ const SKY_ACTIONS: BalancesAction[] = [
 
 const TOKEN_ACTIONS: BalancesAction[] = [
   {
+    label: '1:1 Conversion',
+    tokens: ['USDC', 'USDS'],
+    module: 'convert',
+    subtitle: 'Convert USDC and USDS at a fixed 1:1 rate',
+    url: '?widget=convert&convert_module=psm&source_token=USDC'
+  },
+  {
     label: 'Get USDS',
     tokens: ['USDS'],
     module: 'trade',
@@ -118,6 +125,7 @@ const TOKEN_ACTIONS: BalancesAction[] = [
 ];
 
 const MODULE_ICONS: Record<BalancesAction['module'], (props: IconProps) => React.ReactElement> = {
+  convert: Convert,
   savings: Savings,
   upgrade: Upgrade,
   trade: Trade,
@@ -409,37 +417,33 @@ export function BalancesSuggestedActions({
   }
 
   if (variant === 'card-sm') {
+    const featuredAction = widget === 'tokens' ? actions[0] : undefined;
+    const compactActions = widget === 'tokens' ? actions.slice(1) : actions;
+
     return (
       <div className="@container">
-        <div className="grid grid-cols-1 gap-1 @[600px]:grid-cols-2">
-          {actions.map(action => {
-            const resolved = resolveAction(action, rateMap);
-            const ModuleIcon = MODULE_ICONS[action.module];
-            return (
-              <button
-                key={action.label}
-                onClick={() => handleClick(action)}
-                className="bg-card hover:from-primary-start/100 hover:to-primary-end/100 flex cursor-pointer items-center gap-3 rounded-[16px] px-3 py-2 text-left transition-colors hover:bg-radial-(--gradient-position)"
-              >
-                <ModuleIcon boxSize={16} className="text-textSecondary shrink-0" />
-                <Text variant="small" className="text-text min-w-0 flex-1">
-                  {resolved.label}
-                </Text>
-                <div className="flex shrink-0 items-center gap-2">
-                  {action.badge && (
-                    <span
-                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                        action.showMorphoIcon
-                          ? 'bg-[#2973FF]/15 text-[#2973FF]'
-                          : 'bg-textEmphasis/15 text-textEmphasis'
-                      }`}
-                    >
-                      {action.showMorphoIcon && <Morpho className="h-3 w-3 rounded-sm" />}
-                      {action.badge}
-                    </span>
-                  )}
-                  <div className="flex -space-x-1.5">
-                    {action.tokens.map(symbol => (
+        <div className="space-y-2">
+          {featuredAction && (
+            (() => {
+              const resolved = resolveAction(featuredAction, rateMap);
+              const ModuleIcon = MODULE_ICONS[featuredAction.module];
+              return (
+                <button
+                  key={featuredAction.label}
+                  onClick={() => handleClick(featuredAction)}
+                  className="from-primary-start/15 to-primary-end/15 hover:from-primary-start/25 hover:to-primary-end/25 border-primary-start/30 bg-radial-(--gradient-position) flex w-full cursor-pointer items-center gap-3 rounded-[20px] border px-4 py-3 text-left transition-[background-color,background-image]"
+                >
+                  <ModuleIcon boxSize={20} className="text-textSecondary shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <Text className="text-text">{resolved.label}</Text>
+                    {resolved.subtitle && (
+                      <Text variant="small" className="text-textSecondary">
+                        {resolved.subtitle}
+                      </Text>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 -space-x-1.5">
+                    {featuredAction.tokens.map(symbol => (
                       <TokenIcon
                         key={symbol}
                         token={{ symbol, name: symbol }}
@@ -449,10 +453,54 @@ export function BalancesSuggestedActions({
                       />
                     ))}
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })()
+          )}
+
+          <div className="grid grid-cols-1 gap-1 @[600px]:grid-cols-2">
+            {compactActions.map(action => {
+              const resolved = resolveAction(action, rateMap);
+              const ModuleIcon = MODULE_ICONS[action.module];
+              return (
+                <button
+                  key={action.label}
+                  onClick={() => handleClick(action)}
+                  className="bg-card hover:from-primary-start/100 hover:to-primary-end/100 flex cursor-pointer items-center gap-3 rounded-[16px] px-3 py-2 text-left transition-colors hover:bg-radial-(--gradient-position)"
+                >
+                  <ModuleIcon boxSize={16} className="text-textSecondary shrink-0" />
+                  <Text variant="small" className="text-text min-w-0 flex-1">
+                    {resolved.label}
+                  </Text>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {action.badge && (
+                      <span
+                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          action.showMorphoIcon
+                            ? 'bg-[#2973FF]/15 text-[#2973FF]'
+                            : 'bg-textEmphasis/15 text-textEmphasis'
+                        }`}
+                      >
+                        {action.showMorphoIcon && <Morpho className="h-3 w-3 rounded-sm" />}
+                        {action.badge}
+                      </span>
+                    )}
+                    <div className="flex -space-x-1.5">
+                      {action.tokens.map(symbol => (
+                        <TokenIcon
+                          key={symbol}
+                          token={{ symbol, name: symbol }}
+                          className="h-5 w-5"
+                          width={20}
+                          showChainIcon={false}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     );

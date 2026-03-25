@@ -47,6 +47,9 @@ const resolveWidgetForTokenValidation = (searchParams: URLSearchParams): string 
   if (convertModule === ConvertIntentMapping[ConvertIntent.TRADE_INTENT]) {
     return IntentMapping[Intent.TRADE_INTENT];
   }
+  if (convertModule === ConvertIntentMapping[ConvertIntent.PSM_INTENT]) {
+    return ConvertIntentMapping[ConvertIntent.PSM_INTENT];
+  }
   return undefined;
 };
 
@@ -215,21 +218,24 @@ export const validateSearchParams = (
 
     // validate source token
     if (key === QueryParams.SourceToken) {
-      // source token is only valid for upgrade, savings and trade in Mainnet,
-      // and for savings and trade on L2 chains.
-      // Convert delegates to upgrade/trade via convert_module.
+      // source token is only valid for upgrade, savings, trade, and psm on Mainnet,
+      // and for savings, trade, and psm on L2 chains.
+      // Convert delegates to a submodule via convert_module.
       const widgetParam = resolveWidgetForTokenValidation(searchParams);
       if (
         !widgetParam ||
         (![
           IntentMapping[Intent.UPGRADE_INTENT],
           IntentMapping[Intent.SAVINGS_INTENT],
-          IntentMapping[Intent.TRADE_INTENT]
+          IntentMapping[Intent.TRADE_INTENT],
+          ConvertIntentMapping[ConvertIntent.PSM_INTENT]
         ].includes(widgetParam.toLowerCase()) &&
           !isL2Chain) ||
-        (![IntentMapping[Intent.SAVINGS_INTENT], IntentMapping[Intent.TRADE_INTENT]].includes(
-          widgetParam.toLowerCase()
-        ) &&
+        (![
+          IntentMapping[Intent.SAVINGS_INTENT],
+          IntentMapping[Intent.TRADE_INTENT],
+          ConvertIntentMapping[ConvertIntent.PSM_INTENT]
+        ].includes(widgetParam.toLowerCase()) &&
           isL2Chain)
       ) {
         searchParams.delete(key);
@@ -246,6 +252,12 @@ export const validateSearchParams = (
       if (widgetParam === IntentMapping[Intent.TRADE_INTENT]) {
         const tradeValidValues = Object.values(SUPPORTED_TOKEN_SYMBOLS).map(symbol => symbol.toLowerCase());
         if (!tradeValidValues.includes(value.toLowerCase())) {
+          searchParams.delete(key);
+        }
+      }
+
+      if (widgetParam === ConvertIntentMapping[ConvertIntent.PSM_INTENT]) {
+        if (!['usdc', 'usds'].includes(value.toLowerCase())) {
           searchParams.delete(key);
         }
       }
