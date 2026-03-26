@@ -1,10 +1,4 @@
-import {
-  ZERO_ADDRESS,
-  type TokenForChain,
-  getTokenDecimals,
-  tokenForChainToToken
-} from '@jetstreamgg/sky-hooks';
-import { formatUnits } from 'viem';
+import { ZERO_ADDRESS, type TokenForChain, tokenForChainToToken } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 import { motion } from 'framer-motion';
 import { Button } from '@widgets/components/ui/button';
@@ -92,11 +86,6 @@ export function PsmConversionInputs({
           inputDisabled
           enableSearch={false}
           maxVisibleTokenRows={1}
-          limitText={
-            targetAmount > 0n
-              ? `${formatUnits(targetAmount, getTokenDecimals(targetToken, chainId))} ${targetToken.symbol}`
-              : undefined
-          }
         />
       </motion.div>
     </VStack>

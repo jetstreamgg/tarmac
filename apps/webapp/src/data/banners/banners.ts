@@ -191,11 +191,11 @@ export const banners: Banner[] = [
     display: ['disconnected']
   },
   {
-    id: 'about-11-conversions',
-    title: 'About 1:1 Conversions',
+    id: 'about-11-conversion',
+    title: 'About 1:1 Conversion',
     module: 'one-to-one-conversion-banners',
     description:
-      '1:1 Conversion uses contracts deployed by Sky Protocol, that enables to swap USDC and USDS at a fixed rate through the Peg Stability Module [(PSM)](#tooltip-psm). This means that unlike the market trades, PSM conversions are not exposed to slippage and MEV risks, enabling to seamlessly swap between supported stablecoins.',
+      '1:1 Conversion uses contracts deployed by Sky Protocol that enable swapping USDC and USDS at a fixed rate through the Peg Stability Module [(PSM)](#tooltip-psm). This means that unlike market trades, PSM conversions are not exposed to slippage and MEV risks, enabling seamless swapping between supported stablecoins.',
     display: ['connected', 'disconnected']
   },
   {
