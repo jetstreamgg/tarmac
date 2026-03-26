@@ -81,16 +81,12 @@ export const AboutCard = ({
         <div className="font-graphik text-[13px] font-normal leading-normal">{description}</div>
       </div>
       {linkHref && (
-        <Button
-          asChild
-          variant="outline"
-          className="border-border mt-auto w-fit gap-2 pt-3 xl:self-end xl:pt-0"
-        >
-          <ExternalLink href={linkHref} showIcon={false}>
+        <ExternalLink href={linkHref} showIcon={false} className="mt-auto w-fit pt-3 xl:self-end xl:pt-0">
+          <Button variant="outline" className="border-border gap-2">
             {linkLabel}
             <ExternalLinkIcon size={16} />
-          </ExternalLink>
-        </Button>
+          </Button>
+        </ExternalLink>
       )}
     </GradientShapeCard>
   );
