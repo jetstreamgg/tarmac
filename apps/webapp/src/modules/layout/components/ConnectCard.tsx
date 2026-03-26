@@ -42,7 +42,7 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
 
   // Map convert sub-options to banner IDs
   const convertBannerIdMap: Record<ConvertIntent, BannerConfig> = {
-    [ConvertIntent.PSM_INTENT]: { default: 'about-11-conversions' },
+    [ConvertIntent.PSM_INTENT]: { default: 'about-11-conversion' },
     [ConvertIntent.UPGRADE_INTENT]: { default: 'ready-to-upgrade-and-explore' },
     [ConvertIntent.TRADE_INTENT]: { allL2s: 'trade', default: 'about-trade' }
   };
