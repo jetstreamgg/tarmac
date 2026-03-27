@@ -60,6 +60,20 @@ export const contracts: {
       [arbitrum.id]: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9'
     }
   },
+  {
+    name: 'cbBtc',
+    address: {
+      [mainnet.id]: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf',
+      [TENDERLY_CHAIN_ID]: '0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf'
+    }
+  },
+  {
+    name: 'wstEth',
+    address: {
+      [mainnet.id]: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+      [TENDERLY_CHAIN_ID]: '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0'
+    }
+  },
 
   // Proxy
   {
@@ -306,6 +320,56 @@ export const contracts: {
       [base.id]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
       [arbitrum.id]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC',
       [TENDERLY_CHAIN_ID]: '0xbA3cB449bD2B4ADddBc894D8697F5170800EAdeC'
+    }
+  },
+  // Morpho vaults
+  {
+    name: 'usdsRiskCapitalVault',
+    address: {
+      [mainnet.id]: '0xf42bca228D9bd3e2F8EE65Fec3d21De1063882d4',
+      [TENDERLY_CHAIN_ID]: '0xf42bca228D9bd3e2F8EE65Fec3d21De1063882d4'
+    }
+  },
+  {
+    name: 'usdcRiskCapitalVault',
+    address: {
+      [mainnet.id]: '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf',
+      [TENDERLY_CHAIN_ID]: '0x56bfa6f53669B836D1E0Dfa5e99706b12c373ecf'
+    }
+  },
+  {
+    name: 'usdsFlagshipVault',
+    address: {
+      [mainnet.id]: '0xe15fcc81118895b67b6647bbd393182df44e11e0',
+      [TENDERLY_CHAIN_ID]: '0xe15fcc81118895b67b6647bbd393182df44e11e0'
+    }
+  },
+  {
+    name: 'usdtRiskCapitalVault',
+    address: {
+      [mainnet.id]: '0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d',
+      [TENDERLY_CHAIN_ID]: '0x2bD3A43863c07B6A01581FADa0E1614ca5DF0E3d'
+    }
+  },
+  {
+    name: 'usdtSavingsVault',
+    address: {
+      [mainnet.id]: '0x23f5E9c35820f4baB695Ac1F19c203cC3f8e1e11',
+      [TENDERLY_CHAIN_ID]: '0x23f5E9c35820f4baB695Ac1F19c203cC3f8e1e11'
+    }
+  },
+  {
+    name: 'MorphoMerklDistributor',
+    address: {
+      [mainnet.id]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+      [TENDERLY_CHAIN_ID]: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae'
+    }
+  },
+  {
+    name: 'MorphoMerklDistributorImplementation',
+    address: {
+      [mainnet.id]: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0',
+      [TENDERLY_CHAIN_ID]: '0x0e6590F64a82CbC838b2a087281689dE1a5bC8E0'
     }
   }
 ];

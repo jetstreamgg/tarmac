@@ -64,13 +64,15 @@ export function BatchTransactionStatus({
   onExternalLinkClicked,
   transactionDetail,
   isBatchTransaction,
-  customSteps
+  customSteps,
+  totalSteps = 2
 }: {
   explorerName?: ExplorerName;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   transactionDetail?: React.ReactElement;
   isBatchTransaction?: boolean;
   customSteps?: React.ReactElement;
+  totalSteps?: number;
 }): React.ReactElement {
   const { txStatus, txTitle, txSubtitle, externalLink, step, stepTwoTitle, showStepIndicator } =
     useContext(WidgetContext);
@@ -78,8 +80,8 @@ export function BatchTransactionStatus({
   const isSafeWallet = useIsSafeWallet();
   const explorerName = paramExplorerName ?? getExplorerName(chainId, isSafeWallet);
 
-  const approvalSuccess = txStatus === TxStatus.SUCCESS && step === 1;
-  const flowSuccess = txStatus === TxStatus.SUCCESS && step === 2;
+  const approvalSuccess = txStatus === TxStatus.SUCCESS && step < totalSteps;
+  const flowSuccess = txStatus === TxStatus.SUCCESS && step === totalSteps;
 
   return (
     <VStack className="w-full items-center justify-center" color="primary">

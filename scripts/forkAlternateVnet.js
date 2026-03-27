@@ -12,7 +12,7 @@ require('dotenv').config();
 const { writeFile } = require('fs/promises');
 
 // Default alternate fork container (has Curve pool properly configured)
-const DEFAULT_ALTERNATE_FORK_CONTAINER_ID = 'cec455a4-3a8a-4a93-ac66-fc98fa1a8103';
+const DEFAULT_ALTERNATE_FORK_CONTAINER_ID = '8c4079a1-61ab-4f95-be10-c7a7cb8017e5';
 const ALTERNATE_FORK_CONTAINER_ID =
   process.env.ALTERNATE_FORK_CONTAINER_ID || DEFAULT_ALTERNATE_FORK_CONTAINER_ID;
 

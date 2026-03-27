@@ -4,10 +4,11 @@ import { Token } from '@jetstreamgg/sky-hooks';
 import { useUpgradeTransactionCallbacks } from './useUpgradeTransactionCallbacks';
 
 interface UseUpgradeTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   originToken: Token;
   targetToken: Token;
   originAmount: bigint;
+  needsAllowance: boolean;
   shouldUseBatch: boolean;
   shouldAllowExternalUpdate: React.RefObject<boolean>;
   mutateAllowance: () => void;
@@ -20,6 +21,7 @@ export const useUpgradeTransactions = ({
   originToken,
   targetToken,
   originAmount,
+  needsAllowance,
   shouldUseBatch,
   shouldAllowExternalUpdate,
   mutateAllowance,
@@ -28,6 +30,7 @@ export const useUpgradeTransactions = ({
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
+  onAnalyticsEvent,
   tabIndex
 }: UseUpgradeTransactionsParameters) => {
   const { upgradeManagerTransactionCallbacks } = useUpgradeTransactionCallbacks({
@@ -35,13 +38,16 @@ export const useUpgradeTransactions = ({
     originToken,
     targetToken,
     tabIndex,
+    needsAllowance,
+    shouldUseBatch,
     shouldAllowExternalUpdate,
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
 
   const batchActionManager = useBatchUpgraderManager({

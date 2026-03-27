@@ -1,5 +1,14 @@
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
-import { getRewardsUrl, getSavingsUrl, getSealUrl, getStakeUrl, getStUsdsUrl } from '@/lib/utils';
+import {
+  getConvertUrl,
+  getExpertOverviewUrl,
+  getRewardsUrl,
+  getSavingsUrl,
+  getSealUrl,
+  getStakeUrl,
+  getStUsdsUrl,
+  getVaultsOverviewUrl
+} from '@/lib/utils';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId, useChains } from 'wagmi';
 
@@ -16,9 +25,10 @@ export const useModuleUrls = () => {
   }
   const sealUrl = getSealUrl(searchParams, chainId);
   const stakeUrl = getStakeUrl(searchParams, chainId);
-  // Attempt to redirect to the stUSDS module, but if user hasn't acknowledged the risk checkbox,
-  // they will be redirected to the overview of the expert widget
+  const expertOverviewUrl = getExpertOverviewUrl(searchParams, chainId);
   const stusdsUrl = getStUsdsUrl(searchParams, chainId);
+  const vaultsUrl = getVaultsOverviewUrl(searchParams, chainId);
+  const convertUrl = getConvertUrl(searchParams, chainId);
 
-  return { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl };
+  return { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, stusdsUrl, vaultsUrl, convertUrl };
 };

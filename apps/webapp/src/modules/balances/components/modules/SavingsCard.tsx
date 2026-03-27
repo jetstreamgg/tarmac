@@ -30,7 +30,7 @@ export function SavingsCard() {
           <Skeleton className="h-10.5 w-48" />
         ) : (
           <Text className="text-2xl lg:text-[32px]">
-            Rate {skySavingsRate ? formatDecimalPercentage(skySavingsRate) : '0%'}
+            Rate: {skySavingsRate ? formatDecimalPercentage(skySavingsRate) : '0%'}
             <PopoverRateInfo type="ssr" iconClassName="mt-auto -translate-y-1/4 ml-2" />
           </Text>
         )

@@ -170,8 +170,7 @@ export function TermsModal() {
       acceptButtonText={getButtonText()}
       declineButtonText="Reject"
       acceptButtonDisabled={!isChecked}
-      showScrollInstruction={true}
-      scrollInstructionText="Please scroll to the bottom and read the entire terms and conditions; the checkbox will become enabled afterward."
+      showScrollInstruction={false}
       hideScrollTracking={false}
       triggerButton={triggerButton}
       showLoadingState={isCheckingTerms || signStatus === 'loading'}

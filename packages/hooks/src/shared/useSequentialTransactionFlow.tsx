@@ -1,5 +1,4 @@
 import {
-  UseSimulateContractParameters,
   useConnection,
   useSimulateContract,
   useWaitForTransactionReceipt,
@@ -73,12 +72,13 @@ export function useSequentialTransactionFlow(
     data: simulationData,
     isLoading: isSimulationLoading,
     error: simulationError
-  } = useSimulateContract(simulationParams as UseSimulateContractParameters);
+  } = useSimulateContract(simulationParams as unknown as Parameters<typeof useSimulateContract>[0]);
 
   const {
     writeContract,
     error: writeError,
-    data: mutationHash
+    data: mutationHash,
+    reset: resetWrite
   } = useWriteContract({
     mutation: {
       onMutate,
@@ -135,7 +135,7 @@ export function useSequentialTransactionFlow(
       currentIndex < stableTransactions.length &&
       !transactionHashes[currentIndex] // Only execute if not already executed
     ) {
-      writeContract(simulationData.request);
+      writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     }
   }, [currentIndex, prepared, simulationData, stableTransactions.length, transactionHashes, writeContract]);
 
@@ -197,6 +197,16 @@ export function useSequentialTransactionFlow(
     transactionHashes
   ]);
 
+  const reset = useCallback(() => {
+    setIsExecuting(false);
+    setCurrentIndex(0);
+    setTransactionHashes([]);
+    setHasWriteError(false);
+    resetWrite();
+    // Do NOT clear lastProcessedTxHash — it guards against
+    // stale hash being replayed during multi-step execution
+  }, [resetWrite]);
+
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
     if (currentIndex >= stableTransactions.length) {
@@ -211,7 +221,7 @@ export function useSequentialTransactionFlow(
 
     if (simulationData?.request) {
       setIsExecuting(true);
-      writeContract(simulationData.request);
+      writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else {
       console.log(`ERROR: Transaction ${currentIndex} is not ready to execute.
       contract address: ${currentTransaction.to}
@@ -236,6 +246,8 @@ export function useSequentialTransactionFlow(
     execute,
     isLoading: isSimulationLoading || (isMining && !txReverted) || (isExecuting && !hasWriteError),
     prepared,
-    error: writeError || miningError || simulationError
+    error: writeError || miningError || simulationError,
+    currentCallIndex: currentIndex,
+    reset
   };
 }

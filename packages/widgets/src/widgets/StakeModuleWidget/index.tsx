@@ -45,6 +45,7 @@ import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { Wizard } from './components/Wizard';
 import { ManagePosition } from './components/ManagePosition';
 import { useStakeTransactions } from './hooks/useStakeTransactions';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -68,6 +69,7 @@ function StakeModuleWidgetWrapped({
   enabled = true,
   onNotification,
   onWidgetStateChange,
+  onAnalyticsEvent,
   onExternalLinkClicked,
   onShowHelpModal,
   addRecentTransaction,
@@ -104,7 +106,9 @@ function StakeModuleWidgetWrapped({
     calldata,
     setCalldata,
     skyToLock,
+    skyToFree,
     usdsToWipe,
+    usdsToBorrow,
     generateAllCalldata,
     currentStep,
     setCurrentStep,
@@ -114,6 +118,7 @@ function StakeModuleWidgetWrapped({
     setSelectedDelegate,
     selectedDelegate,
     setSelectedRewardContract,
+    selectedRewardContract,
     setSkyToFree,
     setUsdsToWipe,
     activeUrn,
@@ -121,6 +126,7 @@ function StakeModuleWidgetWrapped({
     setIndexToClaim,
     rewardContractsToClaim,
     setRewardContractsToClaim,
+    rewardClaimAmounts,
     wipeAll,
     wantsToDelegate,
     setWantsToDelegate,
@@ -189,7 +195,7 @@ function StakeModuleWidgetWrapped({
   const needsAllowance = needsLockAllowance || needsUsdsAllowance;
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
-  const { batchMulticall, claimRewards, claimAllRewards } = useStakeTransactions({
+  const { batchMulticall, claimRewards, claimAllRewards, stakeData } = useStakeTransactions({
     lockAmount: effectiveLockAmount,
     usdsAmount: debouncedUsdsAmount,
     calldata,
@@ -205,7 +211,21 @@ function StakeModuleWidgetWrapped({
     mutateStakeUsdsAllowance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent,
+    needsAllowance,
+    flow: widgetState.flow as StakeFlow,
+    urnIndex: activeUrn?.urnIndex,
+    skyToLock,
+    skyToFree,
+    usdsToWipe,
+    usdsToBorrow,
+    selectedRewardContract,
+    wantsToDelegate,
+    selectedDelegate,
+    restakeSkyRewards,
+    restakeSkyAmount,
+    rewardClaimAmounts
   });
 
   const shouldOpenFromWidgetButton =
@@ -602,14 +622,22 @@ function StakeModuleWidgetWrapped({
 
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
-    setCurrentStep(getNextStep(currentStep, !wantsToDelegate));
+    const nextStep = getNextStep(currentStep, !wantsToDelegate);
+    setCurrentStep(nextStep);
 
-    // setWidgetState((prev: WidgetState) => ({
-    //   ...prev,
-    //   screen: StakeScreen.ACTION
-    // }));
-
-    // TODO: Handle all states to determine the next action, this is only to test navigation in the wizard
+    // Fire REVIEW_VIEWED when navigating to the summary/review step
+    if (nextStep === StakeStep.SUMMARY) {
+      try {
+        onAnalyticsEvent?.({
+          event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+          action: 'multicall',
+          flow: widgetState.flow as StakeFlow,
+          data: stakeData
+        });
+      } catch {
+        /* Analytics must never break functionality */
+      }
+    }
   };
 
   const onClickBack = () => {
@@ -622,6 +650,7 @@ function StakeModuleWidgetWrapped({
         setHasNoChanges(false);
       }
     } else {
+      batchMulticall.reset?.();
       if (widgetState.action === StakeAction.CLAIM) {
         setIndexToClaim(undefined);
         setRewardContractsToClaim(undefined);

@@ -25,7 +25,10 @@ const TOOLTIP_ID_MAP = {
   delegate: 'choose-your-delegate',
   liquidation: 'liquidation-price',
   stusds: 'stusds-rate',
+  morpho: 'vault-rate',
+  expert: 'stusds-rate',
   stusdsLiquidity: 'available-liquidity',
+  morphoLiquidity: 'morpho-liquidity',
   totalStakingDebt: 'total-staking-engine-debt',
   delayedUpgradePenalty: 'delayed-upgrade-penalty',
   remainingCapacity: 'remaining-capacity',
@@ -33,11 +36,21 @@ const TOOLTIP_ID_MAP = {
   maximumCapacity: 'maximum-capacity'
 } as const;
 
+type TooltipContent = {
+  title: string;
+  description: React.ReactElement;
+};
+
+type TooltipOverride = {
+  title?: string;
+  description?: string;
+};
+
 // Helper to create tooltip content with consistent styling
 const createTooltipContent = (
   tooltipId: string,
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
-) => {
+): TooltipContent => {
   const tooltip = getTooltipById(tooltipId);
   return {
     title: tooltip?.title || '',
@@ -55,7 +68,7 @@ const getContent = (onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorEleme
       acc[key as keyof typeof TOOLTIP_ID_MAP] = createTooltipContent(tooltipId, onExternalLinkClicked);
       return acc;
     },
-    {} as Record<keyof typeof TOOLTIP_ID_MAP, { title: string; description: React.ReactElement }>
+    {} as Record<keyof typeof TOOLTIP_ID_MAP, TooltipContent>
   );
 };
 
@@ -68,6 +81,7 @@ export type PopoverTooltipType = keyof typeof TOOLTIP_ID_MAP;
 export const PopoverRateInfo = ({
   type,
   onExternalLinkClicked,
+  tooltipOverride,
   iconClassName,
   width = 16,
   height = 15,
@@ -75,6 +89,7 @@ export const PopoverRateInfo = ({
 }: {
   type: PopoverTooltipType;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  tooltipOverride?: TooltipOverride;
   iconClassName?: string;
   width?: number;
   height?: number;
@@ -83,6 +98,16 @@ export const PopoverRateInfo = ({
   const content = getContent(onExternalLinkClicked);
 
   if (!(type in content)) return null;
+
+  const defaultContent = content[type];
+  const resolvedTitle = tooltipOverride?.title ?? defaultContent.title;
+  const resolvedDescription = tooltipOverride?.description ? (
+    <Text variant="small" className="leading-5 text-white/80">
+      {parseMarkdownLinks(tooltipOverride.description, onExternalLinkClicked)}
+    </Text>
+  ) : (
+    defaultContent.description
+  );
 
   return (
     <Popover>
@@ -97,7 +122,7 @@ export const PopoverRateInfo = ({
         className={cn('bg-containerDark w-80 rounded-xl backdrop-blur-[50px]', popoverClassName)}
       >
         <Heading variant="small" className="text-[16px] leading-6">
-          {content[type].title}
+          {resolvedTitle}
         </Heading>
         <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
           <Close className="h-5 w-5 cursor-pointer text-white" />
@@ -113,7 +138,7 @@ export const PopoverRateInfo = ({
             e.stopPropagation();
           }}
         >
-          {content[type].description}
+          {resolvedDescription}
         </div>
         <PopoverArrow />
       </PopoverContent>

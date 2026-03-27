@@ -19,6 +19,7 @@ type AuthData = {
 
 type VpnData = {
   isConnectedToVpn?: boolean;
+  isRestrictedRegion?: boolean;
   vpnIsLoading?: boolean;
   vpnError?: Error;
   countryCode?: string | null;
@@ -95,12 +96,31 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
   useEffect(() => {
     if (blockedTrackedRef.current || authData.authIsLoading || vpnData.vpnIsLoading) return;
     blockedTrackedRef.current = true;
-    let blockReason: BlockReason = 'network_error';
-    if (vpnData.isConnectedToVpn) blockReason = 'vpn_detected';
-    else if (vpnData.vpnError || authData.authError) blockReason = 'network_error';
-    else blockReason = 'restricted_region';
+
+    const blockReason: BlockReason = vpnData.isConnectedToVpn
+      ? 'vpn_detected'
+      : vpnData.vpnError
+        ? 'network_error'
+        : authData.authError
+          ? 'auth_error'
+          : vpnData.isRestrictedRegion
+            ? 'restricted_region'
+            : authData.addressAllowed === false
+              ? 'address_restricted'
+              : 'unknown';
+
     trackVpnBlockedPageView({ blockReason, countryCode: vpnData.countryCode ?? null });
-  }, [authData.authIsLoading, vpnData.vpnIsLoading]);
+  }, [
+    authData.authIsLoading,
+    authData.authError,
+    authData.addressAllowed,
+    vpnData.vpnIsLoading,
+    vpnData.isConnectedToVpn,
+    vpnData.isRestrictedRegion,
+    vpnData.vpnError,
+    vpnData.countryCode,
+    trackVpnBlockedPageView
+  ]);
 
   let termsLink: any[] = [];
   try {

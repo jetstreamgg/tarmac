@@ -444,9 +444,20 @@ export default async function globalSetup() {
   console.log('=== Global Setup for Parallel Tests ===');
 
   try {
-    // Detect if we're running alternate VNet tests based on command or project filter
+    // Detect if we're running alternate VNet tests based on env var OR project filter
+    // USE_ALTERNATE_VNET may already be set by the command (e.g., pnpm e2e:parallel:alternate:fork)
     const projectArg = process.argv.find(arg => arg.includes('--project'));
-    const isAlternateProject = projectArg?.includes('chromium-alternate');
+    const isAlternateFromProjectArg = projectArg?.includes('chromium-alternate');
+    const isAlternateFromEnv = process.env.USE_ALTERNATE_VNET === 'true';
+    const isAlternateProject = isAlternateFromProjectArg || isAlternateFromEnv;
+
+    // Debug logging for alternate detection
+    console.log('🔍 Alternate detection:');
+    console.log(`   - process.argv: ${process.argv.join(' ')}`);
+    console.log(`   - projectArg: ${projectArg}`);
+    console.log(`   - isAlternateFromProjectArg: ${isAlternateFromProjectArg}`);
+    console.log(`   - isAlternateFromEnv: ${isAlternateFromEnv}`);
+    console.log(`   - isAlternateProject (final): ${isAlternateProject}`);
 
     // Set environment variable for alternate VNet selection
     if (isAlternateProject) {

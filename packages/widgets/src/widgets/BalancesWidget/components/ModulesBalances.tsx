@@ -2,21 +2,23 @@ import {
   TOKENS,
   useAvailableTokenRewardContracts,
   useMultiChainSavingsBalances,
-  usePrices,
   useRewardsSuppliedBalance,
   useStUsdsData,
   useTotalUserSealed,
-  useTotalUserStaked
+  useTotalUserStaked,
+  useAllMorphoVaultsUserAssets,
+  usePrices
 } from '@jetstreamgg/sky-hooks';
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
 import { StakeBalanceCard } from './StakeBalanceCard';
-import { StUSDSBalanceCard } from './StUSDSBalanceCard';
-import { isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { ExpertBalanceCard } from './ExpertBalanceCard';
+import { VaultsBalanceCard } from './VaultsBalanceCard';
+import { chainId, isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { useChainId, useConnection } from 'wagmi';
-import { useMemo } from 'react';
-import { formatUnits } from 'viem';
+import { useEffect, useMemo } from 'react';
+import { SuppliedFundsEmptyState } from './SuppliedFundsEmptyState';
 
 export enum ModuleCardVariant {
   default = 'default',
@@ -37,6 +39,7 @@ export interface CardProps {
 }
 
 interface ModulesBalancesProps {
+  hideModuleBalances?: boolean;
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
@@ -44,12 +47,16 @@ interface ModulesBalancesProps {
   chainIds?: number[];
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
+  vaultsCardUrl?: string;
   variant?: ModuleCardVariant;
   hideZeroBalances?: boolean;
   showAllNetworks?: boolean;
+  hideRestrictedModules?: boolean;
+  onAllFundsEmpty?: (isEmpty: boolean) => void;
 }
 
 export const ModulesBalances = ({
+  hideModuleBalances: hideModuleBalancesProp,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
@@ -57,13 +64,16 @@ export const ModulesBalances = ({
   chainIds,
   stakeCardUrl,
   stusdsCardUrl,
+  vaultsCardUrl,
   variant = ModuleCardVariant.default,
   hideZeroBalances = false,
-  showAllNetworks = true
+  showAllNetworks = true,
+  hideRestrictedModules = false,
+  onAllFundsEmpty
 }: ModulesBalancesProps): React.ReactElement => {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const mainnetChainId = isTestnetId(currentChainId) ? 314310 : 1;
+  const mainnetChainId = isTestnetId(currentChainId) ? chainId.tenderly : chainId.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
 
   const usdsSkyRewardContract = rewardContracts.find(
@@ -128,6 +138,20 @@ export const ModulesBalances = ({
 
   const { data: stUsdsData, isLoading: stUsdsLoading, error: stUsdsError } = useStUsdsData();
 
+  // Get aggregate Morpho vault data across all vaults
+  const {
+    data: morphoAssetsData,
+    isLoading: morphoLoading,
+    error: morphoError
+  } = useAllMorphoVaultsUserAssets();
+  const totalMorphoUserAssets = morphoAssetsData.total;
+
+  // Expert balance = total across expert modules (stUSDS only for now)
+  const totalExpertSavingsBalance = stUsdsData?.userSuppliedUsds || 0n;
+  const expertLoading = stUsdsLoading;
+
+  const { data: pricesData, isLoading: pricesLoading } = usePrices();
+
   const {
     data: multichainSavingsBalances,
     isLoading: savingsLoading,
@@ -155,7 +179,8 @@ export const ModulesBalances = ({
   );
 
   const hideRewards = Boolean(
-    suppliedBalanceError ||
+    hideRestrictedModules ||
+      suppliedBalanceError ||
       (totalUserRewardsSupplied === 0n && hideZeroBalances) ||
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
@@ -172,80 +197,142 @@ export const ModulesBalances = ({
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
-  const hideStUSDS = Boolean(
-    !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
+  const hideExpert = Boolean(
+    hideRestrictedModules ||
+      !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
       stUsdsError ||
-      stUsdsData?.userSuppliedUsds === 0n || //always hide zero balances for expert modules
+      (totalExpertSavingsBalance === 0n && hideZeroBalances) ||
+      (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  const hideVaults = Boolean(
+    morphoError ||
+      (totalMorphoUserAssets === 0n && hideZeroBalances) ||
       (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const hideSavings = Boolean(
-    multichainSavingsBalancesError || (totalSavingsBalance === 0n && hideZeroBalances)
+    hideRestrictedModules || multichainSavingsBalancesError || (totalSavingsBalance === 0n && hideZeroBalances)
   );
 
-  const hideModuleBalances = hideSavings && hideRewards && hideSeal;
+  const hideModuleBalancesLocal = hideSavings && hideRewards && hideSeal;
+  const hideModuleBalances = hideModuleBalancesProp || hideModuleBalancesLocal;
 
-  // Fetch prices for USD value calculation
-  const { data: pricesData } = usePrices();
-
-  // Calculate USD value helper
-  const calculateUsdValue = (amount: bigint, decimals: number, price: string | undefined): number => {
-    if (!price || amount === 0n) return 0;
-    return parseFloat(formatUnits(amount, decimals)) * parseFloat(price);
+  // Fallback display order used while prices are loading to prevent layout shifts
+  const fallbackOrder: Record<string, number> = {
+    rewards: 0,
+    savings: 1,
+    staking: 2,
+    vaults: 3,
+    stusds: 4,
+    seal: 5
   };
 
-  // Create sorted modules array based on USD value
-  const sortedModules = useMemo(() => {
-    const modules: Array<{
-      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal';
-      usdValue: number;
-      hidden: boolean;
-    }> = [
-      {
-        id: 'rewards',
-        usdValue: calculateUsdValue(totalUserRewardsSupplied, 18, pricesData?.USDS?.price),
-        hidden: hideModuleBalances || hideRewards
-      },
-      {
-        id: 'savings',
-        usdValue: calculateUsdValue(totalSavingsBalance ?? 0n, 18, pricesData?.USDS?.price),
-        hidden: hideModuleBalances || hideSavings
-      },
-      {
-        id: 'stusds',
-        usdValue: calculateUsdValue(stUsdsData?.userSuppliedUsds ?? 0n, 18, pricesData?.USDS?.price),
-        hidden: hideModuleBalances || hideStUSDS
-      },
-      {
-        id: 'staking',
-        usdValue: calculateUsdValue(totalUserStaked ?? 0n, 18, pricesData?.SKY?.price),
-        hidden: hideStake
-      },
-      {
-        id: 'seal',
-        usdValue: calculateUsdValue(totalUserSealed ?? 0n, 18, pricesData?.MKR?.price),
-        hidden: hideSeal
-      }
-    ];
+  // Compute USD value for each module to sort by value descending
+  const bigintToUsd = (balance: bigint, priceStr: string) =>
+    parseFloat((Number(balance) / 1e18).toString()) * parseFloat(priceStr);
 
-    return modules.filter(m => !m.hidden).sort((a, b) => b.usdValue - a.usdValue);
+  const anyBalanceLoading =
+    rewardsLoading || savingsLoading || stakeLoading || expertLoading || morphoLoading || sealLoading;
+  const canSortByValue = !anyBalanceLoading && !pricesLoading && !!pricesData;
+
+  const moduleUsdValues = useMemo(() => {
+    if (!canSortByValue || !pricesData) return {};
+
+    const values: Record<string, number> = {};
+    values.rewards =
+      totalUserRewardsSupplied && pricesData.USDS
+        ? bigintToUsd(totalUserRewardsSupplied, pricesData.USDS.price)
+        : 0;
+    values.savings =
+      totalSavingsBalance && pricesData.USDS
+        ? bigintToUsd(totalSavingsBalance, pricesData.USDS.price)
+        : 0;
+    values.staking =
+      totalUserStaked && pricesData.SKY ? bigintToUsd(totalUserStaked, pricesData.SKY.price) : 0;
+    values.vaults =
+      totalMorphoUserAssets && pricesData.USDS
+        ? bigintToUsd(totalMorphoUserAssets, pricesData.USDS.price)
+        : 0;
+    values.stusds =
+      totalExpertSavingsBalance && pricesData.USDS
+        ? bigintToUsd(totalExpertSavingsBalance, pricesData.USDS.price)
+        : 0;
+    values.seal =
+      totalUserSealed && pricesData.MKR ? bigintToUsd(totalUserSealed, pricesData.MKR.price) : 0;
+
+    return values;
   }, [
+    canSortByValue,
+    pricesData,
     totalUserRewardsSupplied,
     totalSavingsBalance,
-    stUsdsData?.userSuppliedUsds,
     totalUserStaked,
-    totalUserSealed,
-    pricesData,
+    totalMorphoUserAssets,
+    totalExpertSavingsBalance,
+    totalUserSealed
+  ]);
+
+  const sortedModules = useMemo(() => {
+    const modules: Array<{
+      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults';
+      hidden: boolean;
+    }> = [
+      { id: 'rewards', hidden: hideModuleBalances || hideRewards },
+      { id: 'savings', hidden: hideModuleBalances || hideSavings },
+      { id: 'staking', hidden: hideStake },
+      { id: 'vaults', hidden: hideVaults },
+      { id: 'stusds', hidden: hideModuleBalances || hideExpert },
+      { id: 'seal', hidden: hideSeal }
+    ];
+
+    const visible = modules.filter(m => !m.hidden);
+
+    if (canSortByValue) {
+      // Sort by USD value descending, fall back to default order for ties
+      return visible.sort((a, b) => {
+        const diff = (moduleUsdValues[b.id] ?? 0) - (moduleUsdValues[a.id] ?? 0);
+        return diff !== 0 ? diff : fallbackOrder[a.id] - fallbackOrder[b.id];
+      });
+    }
+
+    // While loading, use stable fallback order to prevent layout shifts
+    return visible.sort((a, b) => fallbackOrder[a.id] - fallbackOrder[b.id]);
+  }, [
     hideModuleBalances,
     hideRewards,
     hideSavings,
-    hideStUSDS,
+    hideExpert,
     hideStake,
-    hideSeal
+    hideSeal,
+    hideVaults,
+    canSortByValue,
+    moduleUsdValues
   ]);
 
+  // Check if all supplied funds are zero (before any filtering)
+  const totalRawSavingsBalance = sortedSavingsBalances.reduce((acc, { balance }) => acc + balance, 0n);
+  const isAllLoaded =
+    !rewardsLoading && !savingsLoading && !sealLoading && !stakeLoading && !expertLoading && !morphoLoading;
+  const allFundsEmpty =
+    isAllLoaded &&
+    (hideRestrictedModules || totalUserRewardsSupplied === 0n) &&
+    (hideRestrictedModules || totalRawSavingsBalance === 0n) &&
+    (totalUserSealed ?? 0n) === 0n &&
+    (totalUserStaked ?? 0n) === 0n &&
+    (hideRestrictedModules || totalExpertSavingsBalance === 0n) &&
+    totalMorphoUserAssets === 0n;
+
+  useEffect(() => {
+    onAllFundsEmpty?.(allFundsEmpty);
+  }, [allFundsEmpty, onAllFundsEmpty]);
+
+  if (allFundsEmpty) {
+    return <SuppliedFundsEmptyState />;
+  }
+
   // Render functions for each module type
-  const renderModule = (moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal') => {
+  const renderModule = (moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults') => {
     switch (moduleId) {
       case 'rewards':
         return (
@@ -271,11 +358,11 @@ export const ModulesBalances = ({
         );
       case 'stusds':
         return (
-          <StUSDSBalanceCard
+          <ExpertBalanceCard
             key="stusds"
             url={stusdsCardUrl}
             onExternalLinkClicked={onExternalLinkClicked}
-            loading={stUsdsLoading}
+            loading={expertLoading}
             variant={variant}
           />
         );
@@ -299,6 +386,16 @@ export const ModulesBalances = ({
             loading={sealLoading}
             sealBalance={totalUserSealed}
             variant={variant}
+          />
+        );
+      case 'vaults':
+        return (
+          <VaultsBalanceCard
+            key="vaults"
+            url={vaultsCardUrl}
+            onExternalLinkClicked={onExternalLinkClicked}
+            variant={variant}
+            hideZeroBalances={hideZeroBalances}
           />
         );
     }

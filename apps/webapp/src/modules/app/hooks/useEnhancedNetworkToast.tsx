@@ -42,6 +42,10 @@ const getWidgetName = (intent: Intent): string => {
       return 'Expert';
     case Intent.SEAL_INTENT:
       return 'Seal';
+    case Intent.VAULTS_INTENT:
+      return 'Vaults';
+    case Intent.CONVERT_INTENT:
+      return 'Convert';
     default:
       return 'this widget';
   }

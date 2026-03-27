@@ -23,11 +23,20 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
     setSelectedExpertOption(expertIntent);
   };
 
+  const renderSelectedWidget = () => {
+    switch (selectedExpertOption) {
+      case ExpertIntent.STUSDS_INTENT:
+        return <StUSDSWidgetPane {...sharedProps} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <AnimatePresence mode="popLayout" initial={false}>
       <CardAnimationWrapper key={selectedExpertOption} className="h-full">
-        {selectedExpertOption === ExpertIntent.STUSDS_INTENT ? (
-          <StUSDSWidgetPane {...sharedProps} />
+        {selectedExpertOption ? (
+          renderSelectedWidget()
         ) : (
           <WidgetContainer
             header={
@@ -54,7 +63,6 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
                         disabled={!expertRiskDisclaimerShown}
                       />
                     );
-                  // Add more cases here for future contracts
                   default:
                     return null;
                 }

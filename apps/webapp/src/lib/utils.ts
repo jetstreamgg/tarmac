@@ -5,12 +5,12 @@ import {
   ALLOWED_EXTERNAL_DOMAINS,
   CHAIN_WIDGET_MAP,
   ExpertIntentMapping,
+  VaultsIntentMapping,
   IntentMapping,
   mapIntentToQueryParam,
-  QueryParams,
-  RESTRICTED_INTENTS
+  QueryParams
 } from './constants';
-import { ExpertIntent, Intent } from './enums';
+import { ExpertIntent, Intent, VaultsIntent } from './enums';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { Chain } from 'viem';
@@ -36,17 +36,30 @@ export function getFooterLinks(): FooterLink[] {
   return footerLinks;
 }
 
-export function filterActionsByIntent(actions: LinkedAction[], intent: string) {
-  // For expert module intents (like 'stusds'), also include actions with la='expert'
-  const isExpertModuleIntent = ['stusds'].includes(intent);
+const MODULE_PARENT_LINKED_ACTION_BY_INTENT: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.values(ExpertIntentMapping).map(moduleIntent => [
+      moduleIntent,
+      IntentMapping[Intent.EXPERT_INTENT]
+    ])
+  ),
+  ...Object.fromEntries(
+    Object.values(VaultsIntentMapping).map(moduleIntent => [
+      moduleIntent,
+      IntentMapping[Intent.VAULTS_INTENT]
+    ])
+  )
+};
+
+export function filterActionsByIntent(actions: LinkedAction[], intent: string): LinkedAction[] {
+  const parentLinkedAction = MODULE_PARENT_LINKED_ACTION_BY_INTENT[intent];
 
   return actions.filter(x => {
     // Direct match on intent or linked action
     if (x.intent === intent || (x as LinkedAction)?.la === intent) {
       return true;
     }
-    // For advanced module pages (stusds), show actions that lead to advanced modules
-    if (isExpertModuleIntent && (x as LinkedAction)?.la === IntentMapping[Intent.EXPERT_INTENT]) {
+    if (parentLinkedAction && (x as LinkedAction)?.la === parentLinkedAction) {
       return true;
     }
     return false;
@@ -93,17 +106,7 @@ export function sanitizeUrl(url: string | undefined) {
 }
 
 export function isIntentAllowed(intent: Intent, chainId: number) {
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-  const isRestrictedMiCa = import.meta.env.VITE_RESTRICTED_BUILD_MICA === 'true';
-  const isRestricted = isRestrictedBuild || isRestrictedMiCa;
-
-  // First check if restricted build
-  if (isRestricted && RESTRICTED_INTENTS.includes(intent)) {
-    return false;
-  }
-  // Then check if widget is supported on current chain
   const supportedIntents = CHAIN_WIDGET_MAP[chainId] || [];
-
   return supportedIntents.includes(intent);
 }
 
@@ -141,5 +144,25 @@ export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
 export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`,
+    searchParams
+  );
+export const getMorphoVaultUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}&vault_module=${VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]}`,
+    searchParams
+  );
+export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}`,
+    searchParams
+  );
+export const getVaultsOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}`,
+    searchParams
+  );
+export const getConvertUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.CONVERT_INTENT)}`,
     searchParams
   );

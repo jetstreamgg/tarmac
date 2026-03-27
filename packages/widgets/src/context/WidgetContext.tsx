@@ -62,8 +62,8 @@ export interface WidgetContextProps {
   dataTestIdPrefix: string;
   setDataTestIdPrefix: (id: string) => void;
 
-  step: 1 | 2;
-  setStep: (step: 1 | 2) => void;
+  step: number;
+  setStep: (step: number) => void;
 
   stepTwoTitle: string;
   setStepTwoTitle: (title: string) => void;
@@ -168,7 +168,7 @@ export const WidgetProvider = ({
   const [targetToken, setTargetToken] = useState<Token | undefined>();
   const [targetAmount, setTargetAmount] = useState<bigint | undefined>();
   const [externalLink, setExternalLink] = useState<string | undefined>();
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<number>(1);
   const [stepTwoTitle, setStepTwoTitle] = useState<string>('');
   const [showStepIndicator, setShowStepIndicator] = useState<boolean>(true);
 

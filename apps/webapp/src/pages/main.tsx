@@ -1,10 +1,14 @@
+import { initSentry } from '../modules/sentry/init';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { ConfigProvider } from '../modules/config/context/ConfigProvider';
 import { App } from './App';
 import { ErrorBoundary } from '../modules/layout/components/ErrorBoundary';
 
+import '../modules/analytics/gtag';
 import '../globals.css';
+
+initSentry();
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

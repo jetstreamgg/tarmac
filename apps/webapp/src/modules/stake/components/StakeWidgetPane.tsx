@@ -18,7 +18,7 @@ import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useChainId } from 'wagmi';
 
 export function StakeWidgetPane(sharedProps: SharedProps) {
@@ -35,7 +35,7 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   const chainId = useChainId();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { wrapStateChange } = useWidgetFlowTracking('stake', chainId);
+  const onAnalyticsEvent = useWidgetAnalytics('stake', chainId);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Use ref to always access the latest searchParams without causing re-renders
@@ -196,7 +196,8 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
         {...sharedProps}
         disclaimer={<StakingSpkRewardsDisclaimer />}
         onStakeUrnChange={onStakeUrnChange}
-        onWidgetStateChange={wrapStateChange(onStakeWidgetStateChange)}
+        onWidgetStateChange={onStakeWidgetStateChange}
+        onAnalyticsEvent={onAnalyticsEvent}
         onShowHelpModal={() => {
           setShowHelpModal(true);
         }}

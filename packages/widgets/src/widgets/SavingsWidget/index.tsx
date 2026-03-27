@@ -8,6 +8,7 @@ import {
   useTokenBalance
 } from '@jetstreamgg/sky-hooks';
 import { isTestnetId, useDebounce } from '@jetstreamgg/sky-utils';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { SavingsFlow, SavingsAction, SavingsScreen } from './lib/constants';
@@ -47,6 +48,7 @@ const SavingsWidgetWrapped = ({
   onStateValidated,
   onNotification,
   onWidgetStateChange,
+  onAnalyticsEvent,
   onExternalLinkClicked,
   enabled = true,
   legalBatchTxUrl,
@@ -126,18 +128,27 @@ const SavingsWidgetWrapped = ({
     (isUpgradeSupplyFlow || needsAllowance) &&
     widgetState.flow === SavingsFlow.SUPPLY;
 
+  const assetDecimals = getTokenDecimals(originToken, chainId);
+  const assetSymbol = originToken.symbol;
+  const assetAddress = originToken.address[chainId] as `0x${string}`;
+
   const { batchSavingsSupply, batchUpgradeAndSupply, savingsWithdraw } = useSavingsTransactions({
     amount: debouncedAmount,
     max,
     referralCode,
     originToken,
     shouldUseBatch,
+    assetDecimals,
+    assetSymbol,
+    assetAddress,
+    needsAllowance,
     mutateAllowance,
     mutateSavings,
     mutateOriginBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
 
   useEffect(() => {
@@ -254,9 +265,24 @@ const SavingsWidgetWrapped = ({
       ...prev,
       screen: SavingsScreen.REVIEW
     }));
+
+    try {
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedAmount, assetDecimals)),
+        assetSymbol,
+        data: { module: 'savings', assetAddress, assetSymbol }
+      });
+    } catch {
+      // Analytics must never break functionality
+    }
   };
 
   const onClickBack = () => {
+    batchSavingsSupply.reset?.();
+    batchUpgradeAndSupply.reset?.();
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({
       ...prev,

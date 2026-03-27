@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from 'react';
 import { TradeConfigMenu } from './TradeConfigMenu';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
+import { CoW } from '@widgets/shared/components/icons/CoW';
 
 type PropTypes = {
   slippage: string;
@@ -47,15 +48,19 @@ export const TradePoweredBy = ({
 }: {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 }) => (
-  <Text className="text-text mb-4 text-sm font-normal leading-none">
-    Powered by{' '}
-    <ExternalLink
-      href="https://cow.fi/"
-      showIcon={false}
-      className="underline"
-      onExternalLinkClicked={onExternalLinkClicked}
-    >
-      CoW Protocol
-    </ExternalLink>
-  </Text>
+  <div className="mb-4 flex items-center gap-1.5">
+    <Text className="text-text text-sm leading-none font-normal">
+      Powered by{' '}
+      <ExternalLink
+        href="https://cow.fi/"
+        showIcon={true}
+        iconSize={12}
+        wrapperClassName="gap-1"
+        onExternalLinkClicked={onExternalLinkClicked}
+      >
+        CoW Protocol
+      </ExternalLink>
+    </Text>
+    <CoW className="rounded-[0.25rem]" />
+  </div>
 );

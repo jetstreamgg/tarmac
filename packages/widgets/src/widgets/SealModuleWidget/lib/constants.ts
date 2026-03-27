@@ -40,6 +40,7 @@ export enum SealStep {
 
 export enum SealScreen {
   ACTION = 'action',
+  REVIEW = 'review',
   TRANSACTION = 'transaction'
 }
 

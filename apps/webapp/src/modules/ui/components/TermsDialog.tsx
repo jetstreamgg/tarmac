@@ -77,9 +77,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
     </DialogContent>
   ) : (
     <DialogContent className="bg-containerDark max-h-[95dvh] overflow-y-auto">
-      <DialogTitle asChild>
-        <Text className="text-text text-center text-[26px] sm:text-[28px] md:text-[32px]">{title}</Text>
-      </DialogTitle>
+      <DialogTitle className="sr-only">{title}</DialogTitle>
       {termsVersion && (
         <Text className="text-center text-xs text-white/50">
           <Trans>Terms version: {termsVersion}</Trans>

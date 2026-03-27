@@ -24,18 +24,18 @@ export const BalancesFilter = ({
   return (
     <div className="mb-4 mt-3 flex justify-between">
       <div className="flex items-center gap-2">
-        <span className="text-textSecondary text-sm">Network:</span>
+        <span className="text-textSecondary text-xs">Network:</span>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowAllNetworks(true)}
-            className={`text-sm ${showAllNetworks ? 'text-text' : 'text-textSecondary'}`}
+            className={`text-xs ${showAllNetworks ? 'text-text' : 'text-textSecondary'}`}
           >
             All
           </button>
-          <span className="text-sm">|</span>
+          <span className="text-xs">|</span>
           <button
             onClick={() => setShowAllNetworks(false)}
-            className={`text-sm ${!showAllNetworks ? 'text-text' : 'text-textSecondary'}`}
+            className={`text-xs ${!showAllNetworks ? 'text-text' : 'text-textSecondary'}`}
           >
             {chainName || 'Active'}
           </button>
@@ -45,7 +45,7 @@ export const BalancesFilter = ({
       {showBalanceFilter && (
         <div className="flex items-center gap-1.5">
           <Checkbox id="all-balances" checked={hideZeroBalances} onCheckedChange={setHideZeroBalances} />
-          <label htmlFor="all-balances" className="text-textSecondary cursor-pointer select-none text-sm">
+          <label htmlFor="all-balances" className="text-textSecondary cursor-pointer select-none text-xs">
             Hide 0 balances
           </label>
         </div>

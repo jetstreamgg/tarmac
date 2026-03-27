@@ -13,7 +13,6 @@ import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
 import { filterActionsByIntent } from '@/lib/utils';
-
 export function RewardsOverview() {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { linkedActionConfig } = useConfigContext();

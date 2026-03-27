@@ -1,9 +1,14 @@
 import React, { useState, useEffect, forwardRef } from 'react';
-import { ExpertIntent, Intent } from '@/lib/enums';
+import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { TradeDetails } from '@/modules/trade/components/TradeDetails';
 import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
 import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
+import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
+import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { QueryParams } from '@/lib/constants';
+import { useChainId } from 'wagmi';
+import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -16,6 +21,7 @@ import { FooterLinks } from '@/modules/layout/components/FooterLinks';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { StakeDetailsPane } from '@/modules/stake/components/StakeDetailsPane';
 import { ExpertDetailsPane } from '@/modules/expert/components/ExpertDetailsPane';
+import { VaultsDetailsPane } from '@/modules/vaults/components/VaultsDetailsPane';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
 
@@ -42,17 +48,27 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
-  const { selectedExpertOption } = useConfigContext();
+  const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
+  const chainId = useChainId();
+  const [searchParams] = useSearchParams();
+
+  // Get the selected vault address from URL params (for multi-vault support)
+  const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
+
+  // Find the selected vault config, default to first vault if not specified
+  const selectedVault =
+    MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
+    MORPHO_VAULTS[0];
 
   useEffect(() => {
     setIntentState(prevIntentState => {
       if (prevIntentState !== intent) {
         // By giving the keys a new value, we force the motion component to animate the new component in, even if it's
         // the same component as before. This prevents the component from being re-added before being removed
-        setKeys(prevKeys => prevKeys.map(key => key + 8));
+        setKeys(prevKeys => prevKeys.map(key => key + 15));
       }
 
       return intent || defaultDetail;
@@ -119,6 +135,46 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   return (
                     <MotionDetailsWrapper key={keys[6]}>
                       <ExpertDetailsPane />
+                    </MotionDetailsWrapper>
+                  );
+              }
+            case Intent.VAULTS_INTENT:
+              switch (selectedVaultsOption) {
+                case VaultsIntent.MORPHO_VAULT_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[10]}>
+                      <MorphoVaultDetails
+                        vaultAddress={selectedVault.vaultAddress[chainId]}
+                        assetToken={selectedVault.assetToken}
+                        vaultName={selectedVault.name}
+                      />
+                    </MotionDetailsWrapper>
+                  );
+                default:
+                  return (
+                    <MotionDetailsWrapper key={keys[11]}>
+                      <VaultsDetailsPane />
+                    </MotionDetailsWrapper>
+                  );
+              }
+            case Intent.CONVERT_INTENT:
+              switch (selectedConvertOption) {
+                case ConvertIntent.UPGRADE_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[12]}>
+                      <UpgradeDetails />
+                    </MotionDetailsWrapper>
+                  );
+                case ConvertIntent.TRADE_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[13]}>
+                      <TradeDetails />
+                    </MotionDetailsWrapper>
+                  );
+                default:
+                  return (
+                    <MotionDetailsWrapper key={keys[14]}>
+                      <BalancesDetails />
                     </MotionDetailsWrapper>
                   );
               }

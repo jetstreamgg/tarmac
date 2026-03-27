@@ -1,11 +1,13 @@
 import {
   IntentMapping,
   ExpertIntentMapping,
+  VaultsIntentMapping,
+  ConvertIntentMapping,
   QueryParams,
-  CHAIN_WIDGET_MAP,
-  RESTRICTED_INTENTS
+  CHAIN_WIDGET_MAP
 } from '@/lib/constants';
-import { Intent } from '@/lib/enums';
+import { useGeoConfig } from '@/modules/geo-config';
+import { Intent, ConvertIntent } from '@/lib/enums';
 import {
   useTokens,
   useTokenBalances,
@@ -27,6 +29,8 @@ export type LinkedAction = SuggestedAction & {
   stepOne: string;
   stepTwo: string;
   la: string;
+  expertModule?: string;
+  vaultModule?: string;
 };
 
 type SuggestedAction = {
@@ -49,7 +53,11 @@ type TokenBalance = {
   chainId: number;
 };
 
-const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Network } = QueryParams;
+const { LinkedAction, InputAmount, SourceToken, TargetToken, Widget, Network, ConvertModule, VaultModule } =
+  QueryParams;
+const CONVERT = IntentMapping[Intent.CONVERT_INTENT];
+const CONVERT_TRADE = ConvertIntentMapping[ConvertIntent.TRADE_INTENT];
+const CONVERT_UPGRADE = ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT];
 
 // Helper function to add network parameter to URL
 const addNetworkParam = (url: string, chainId: number, chains?: readonly any[]): string => {
@@ -66,7 +74,9 @@ const fetchUserSuggestedActions = (
   tokenBalances?: TokenBalance[],
   rewardContracts?: RewardContract[],
   currentRewardContract?: RewardContract,
-  chains?: readonly any[]
+  currentExpertModule?: string,
+  chains?: readonly any[],
+  restrictedIntentStrings?: string[]
 ): {
   suggestedActions: SuggestedAction[];
   linkedActions: LinkedAction[];
@@ -76,11 +86,11 @@ const fetchUserSuggestedActions = (
   const {
     REWARDS_INTENT: REWARDS,
     SAVINGS_INTENT: SAVINGS,
-    UPGRADE_INTENT: UPGRADE,
-    TRADE_INTENT: TRADE,
-    EXPERT_INTENT: EXPERT
+    EXPERT_INTENT: EXPERT,
+    VAULTS_INTENT: VAULTS
   } = IntentMapping;
   const { STUSDS_INTENT: STUSDS } = ExpertIntentMapping;
+  const { MORPHO_VAULT_INTENT: MORPHO } = VaultsIntentMapping;
   // Filter out deprecated reward contracts
   const activeRewardContracts = filterDeprecatedRewardContracts(rewardContracts || [], chainId);
 
@@ -114,7 +124,7 @@ const fetchUserSuggestedActions = (
         balance: daiBalance.formatted,
         stepOne: t`Upgrade DAI to USDS`,
         stepTwo: t`Earn with USDS`,
-        url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${SAVINGS}&${SourceToken}=DAI`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${SAVINGS}&${SourceToken}=DAI`,
         intent: IntentMapping.UPGRADE_INTENT,
         la: IntentMapping.SAVINGS_INTENT,
         // note: weights are arbitrary for now but can give us a way to sort the most relevant actions to the front
@@ -125,14 +135,30 @@ const fetchUserSuggestedActions = (
       linkedActions.push({
         primaryToken: 'DAI',
         secondaryToken: 'USDS',
-        title: t`Upgrade and access Expert rewards`,
+        title: t`Upgrade and access stUSDS`,
         balance: daiBalance.formatted,
         stepOne: t`Upgrade DAI to USDS`,
         stepTwo: t`Access stUSDS rewards`,
-        url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
         intent: IntentMapping.UPGRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
-        weight: 5,
+        expertModule: STUSDS,
+        weight: currentExpertModule === STUSDS ? 8 : currentExpertModule === MORPHO ? 4 : 5,
+        type: 'linked'
+      });
+      linkedActions.push({
+        primaryToken: 'DAI',
+        secondaryToken: 'USDS',
+        title: t`Upgrade and access Morpho vault`,
+        balance: daiBalance.formatted,
+        stepOne: t`Upgrade DAI to USDS`,
+        stepTwo: t`Access Morpho vault rewards`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${VAULTS}&${VaultModule}=${MORPHO}`,
+        intent: IntentMapping.UPGRADE_INTENT,
+        la: IntentMapping.VAULTS_INTENT,
+        expertModule: MORPHO,
+        vaultModule: MORPHO,
+        weight: currentExpertModule === MORPHO ? 8 : currentExpertModule === STUSDS ? 4 : 5,
         type: 'linked'
       });
       // Create contextual reward action based on current page
@@ -147,7 +173,7 @@ const fetchUserSuggestedActions = (
           balance: daiBalance.formatted,
           stepOne: t`Upgrade DAI to USDS`,
           stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
-          url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}&${SourceToken}=DAI`,
+          url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}&${SourceToken}=DAI`,
           intent: IntentMapping.UPGRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
           weight: isCleContext ? 12 : isSpkContext ? 11 : 10, // Higher weight for current context
@@ -172,7 +198,7 @@ const fetchUserSuggestedActions = (
               balance: daiBalance.formatted,
               stepOne: t`Upgrade DAI to USDS`,
               stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
-              url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}&${SourceToken}=DAI`,
+              url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}&${SourceToken}=DAI`,
               intent: IntentMapping.UPGRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
               weight: 9 - index, // Decreasing weight for alternatives
@@ -186,7 +212,7 @@ const fetchUserSuggestedActions = (
         secondaryToken: 'USDS',
         balance: daiBalance.formatted,
         title: t`Upgrade DAI to USDS`,
-        url: `/?${Widget}=${UPGRADE}&${InputAmount}=${daiBalance.formatted}&${SourceToken}=DAI`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${daiBalance.formatted}&${SourceToken}=DAI`,
         intent: IntentMapping.UPGRADE_INTENT,
         weight: 8,
         type: 'suggested'
@@ -202,7 +228,7 @@ const fetchUserSuggestedActions = (
         balance: mkrBalance.formatted,
         title: t`Upgrade MKR to SKY`,
         // TODO we need to handle input currency
-        url: `/?${Widget}=${UPGRADE}&${InputAmount}=${mkrBalance.formatted}&${SourceToken}=MKR`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_UPGRADE}&${InputAmount}=${mkrBalance.formatted}&${SourceToken}=MKR`,
         intent: IntentMapping.UPGRADE_INTENT,
         weight: 7,
         type: 'suggested'
@@ -220,24 +246,40 @@ const fetchUserSuggestedActions = (
         title: t`Trade and start saving`,
         stepOne: t`Trade USDC for USDS`,
         stepTwo: t`Access Sky Savings Rate with USDS`,
-        url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${SAVINGS}`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${SAVINGS}`,
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.SAVINGS_INTENT,
         weight: 6,
         type: 'linked'
       });
-      // Add stUSDS linked action for USDC
+      // Add stUSDS linked action for USDC (context-aware weights like rewards)
       linkedActions.push({
         balance: usdcBalance.formatted,
         primaryToken: 'USDC',
         secondaryToken: 'USDS',
-        title: t`Trade and access Expert rewards`,
+        title: t`Trade and access stUSDS`,
         stepOne: t`Trade USDC for USDS`,
         stepTwo: t`Access stUSDS rewards`,
-        url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
-        weight: 4,
+        expertModule: STUSDS,
+        weight: currentExpertModule === STUSDS ? 7 : currentExpertModule === MORPHO ? 3 : 4,
+        type: 'linked'
+      });
+      linkedActions.push({
+        balance: usdcBalance.formatted,
+        primaryToken: 'USDC',
+        secondaryToken: 'USDS',
+        title: t`Trade and access Morpho vault`,
+        stepOne: t`Trade USDC for USDS`,
+        stepTwo: t`Access Morpho vault rewards`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${VAULTS}&${VaultModule}=${MORPHO}`,
+        intent: IntentMapping.TRADE_INTENT,
+        la: IntentMapping.VAULTS_INTENT,
+        expertModule: MORPHO,
+        vaultModule: MORPHO,
+        weight: currentExpertModule === MORPHO ? 7 : currentExpertModule === STUSDS ? 3 : 4,
         type: 'linked'
       });
       // Create contextual reward action for USDC
@@ -252,7 +294,7 @@ const fetchUserSuggestedActions = (
           title: t`Trade and get rewards`,
           stepOne: t`Trade USDC for USDS`,
           stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
-          url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
+          url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
           intent: IntentMapping.TRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
           weight: isCleContext ? 9 : isSpkContext ? 8 : 7, // Higher weight for current context
@@ -277,7 +319,7 @@ const fetchUserSuggestedActions = (
               title: t`Trade and get rewards`,
               stepOne: t`Trade USDC for USDS`,
               stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
-              url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
+              url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.TRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
               weight: 6 - index, // Decreasing weight for alternatives
@@ -291,7 +333,7 @@ const fetchUserSuggestedActions = (
         secondaryToken: 'USDS',
         balance: usdcBalance.formatted,
         title: t`Trade USDC for USDS`,
-        url: `/?${Widget}=${TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDC&${InputAmount}=${usdcBalance.formatted}&${TargetToken}=USDS`,
         intent: IntentMapping.TRADE_INTENT,
         weight: 5,
         type: 'suggested'
@@ -308,24 +350,40 @@ const fetchUserSuggestedActions = (
         title: t`Trade and start saving`,
         stepOne: t`Trade USDT for USDS`,
         stepTwo: t`Access Sky Savings Rate with USDS`,
-        url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${SAVINGS}`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${SAVINGS}`,
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.SAVINGS_INTENT,
         weight: 6,
         type: 'linked'
       });
-      // Add stUSDS linked action for USDT
+      // Add stUSDS linked action for USDT (context-aware weights like rewards)
       linkedActions.push({
         balance: usdtBalance.formatted,
         primaryToken: 'USDT',
         secondaryToken: 'USDS',
-        title: t`Trade and access Expert rewards`,
+        title: t`Trade and access stUSDS`,
         stepOne: t`Trade USDT for USDS`,
         stepTwo: t`Access stUSDS rewards`,
-        url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${EXPERT}&expert_module=${STUSDS}`,
         intent: IntentMapping.TRADE_INTENT,
         la: IntentMapping.EXPERT_INTENT,
-        weight: 4,
+        expertModule: STUSDS,
+        weight: currentExpertModule === STUSDS ? 7 : currentExpertModule === MORPHO ? 3 : 4,
+        type: 'linked'
+      });
+      linkedActions.push({
+        balance: usdtBalance.formatted,
+        primaryToken: 'USDT',
+        secondaryToken: 'USDS',
+        title: t`Trade and access Morpho vault`,
+        stepOne: t`Trade USDT for USDS`,
+        stepTwo: t`Access Morpho vault rewards`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${VAULTS}&${VaultModule}=${MORPHO}`,
+        intent: IntentMapping.TRADE_INTENT,
+        la: IntentMapping.VAULTS_INTENT,
+        expertModule: MORPHO,
+        vaultModule: MORPHO,
+        weight: currentExpertModule === MORPHO ? 7 : currentExpertModule === STUSDS ? 3 : 4,
         type: 'linked'
       });
       // Create contextual reward action for USDT
@@ -340,7 +398,7 @@ const fetchUserSuggestedActions = (
           balance: usdtBalance.formatted,
           stepOne: t`Trade USDT for USDS`,
           stepTwo: isCleContext ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
-          url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
+          url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${prioritizedRewardContract.contractAddress}`,
           intent: IntentMapping.TRADE_INTENT,
           la: IntentMapping.REWARDS_INTENT,
           weight: isCleContext ? 8 : isSpkContext ? 7 : 6, // Higher weight for current context
@@ -365,7 +423,7 @@ const fetchUserSuggestedActions = (
               balance: usdtBalance.formatted,
               stepOne: t`Trade USDT for USDS`,
               stepTwo: isAltCle ? t`Get Chronicle Points with USDS` : t`Get SPK rewards with USDS`,
-              url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
+              url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS&${LinkedAction}=${REWARDS}&reward=${alternativeContract.contractAddress}`,
               intent: IntentMapping.TRADE_INTENT,
               la: IntentMapping.REWARDS_INTENT,
               weight: 5 - index, // Decreasing weight for alternatives
@@ -379,7 +437,7 @@ const fetchUserSuggestedActions = (
         secondaryToken: 'USDS',
         title: t`Trade USDT for USDS`,
         balance: usdtBalance.formatted,
-        url: `/?${Widget}=${TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS`,
+        url: `/?${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${SourceToken}=USDT&${InputAmount}=${usdtBalance.formatted}&${TargetToken}=USDS`,
         intent: IntentMapping.TRADE_INTENT,
         weight: 5,
         type: 'suggested'
@@ -407,6 +465,16 @@ const fetchUserSuggestedActions = (
         balance: usdsBalance.formatted,
         url: `/?${Widget}=${EXPERT}&expert_module=${STUSDS}&${InputAmount}=${usdsBalance.formatted}`,
         intent: IntentMapping.EXPERT_INTENT,
+        weight: 4,
+        type: 'suggested'
+      });
+      suggestedActions.push({
+        primaryToken: 'USDS',
+        secondaryToken: 'USDS',
+        title: t`Access Morpho vault rewards`,
+        balance: usdsBalance.formatted,
+        url: `/?${Widget}=${VAULTS}&${VaultModule}=${MORPHO}&${InputAmount}=${usdsBalance.formatted}`,
+        intent: IntentMapping.VAULTS_INTENT,
         weight: 4,
         type: 'suggested'
       });
@@ -463,8 +531,7 @@ const fetchUserSuggestedActions = (
     action.url = addNetworkParam(action.url, chainId, chains);
   });
 
-  // Convert Intent enums to their string mappings for comparison
-  const restrictedIntentStrings = RESTRICTED_INTENTS.map(intent => IntentMapping[intent]);
+  const restricted = restrictedIntentStrings || [];
 
   const supportedIntents = CHAIN_WIDGET_MAP[chainId] || [];
 
@@ -477,12 +544,12 @@ const fetchUserSuggestedActions = (
   };
 
   const filteredSuggestedActions = suggestedActions.filter(action => {
-    if (restrictedIntentStrings.includes(action.intent)) return false;
+    if (restricted.includes(action.intent)) return false;
     return isIntentSupported(action.intent);
   });
 
   const filteredLinkedActions = linkedActions.filter(action => {
-    if (restrictedIntentStrings.includes(action.intent) || restrictedIntentStrings.includes(action.la))
+    if (restricted.includes(action.intent) || restricted.includes(action.la))
       return false;
     return isIntentSupported(action.intent) && isIntentSupported(action.la);
   });
@@ -493,10 +560,20 @@ const fetchUserSuggestedActions = (
   };
 };
 
-export const useUserSuggestedActions = (currentRewardContract?: RewardContract) => {
+export const useUserSuggestedActions = (
+  currentRewardContract?: RewardContract,
+  currentExpertModule?: string
+) => {
   const { address } = useConnection();
   const chainId = useChainId();
   const chains = useChains();
+  const { isModuleEnabled } = useGeoConfig();
+
+  // Build restricted intent strings from geo-config
+  const geoRestrictedIntents: string[] = [];
+  if (!isModuleEnabled('savings')) geoRestrictedIntents.push(IntentMapping[Intent.SAVINGS_INTENT]);
+  if (!isModuleEnabled('rewards')) geoRestrictedIntents.push(IntentMapping[Intent.REWARDS_INTENT]);
+  if (!isModuleEnabled('expert')) geoRestrictedIntents.push(IntentMapping[Intent.EXPERT_INTENT]);
   const tokens = useTokens(chainId);
   const [data, setData] = useState<
     { suggestedActions: SuggestedAction[]; linkedActions: LinkedAction[] } | undefined
@@ -539,7 +616,9 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
             tokenBalances,
             rewardContracts,
             currentRewardContract,
-            chains
+            currentExpertModule,
+            chains,
+            geoRestrictedIntents
           );
           setData(result);
           setError(undefined);
@@ -560,8 +639,10 @@ export const useUserSuggestedActions = (currentRewardContract?: RewardContract) 
     tokenBalancesIsLoading,
     tokenBalanceError,
     currentRewardContract,
+    currentExpertModule,
     chainId,
-    chains
+    chains,
+    geoRestrictedIntents.join(',')
   ]);
 
   return { data, isLoading: isLoading || tokenBalancesIsLoading, error: error || tokenBalanceError };

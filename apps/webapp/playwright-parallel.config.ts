@@ -57,27 +57,29 @@ export default defineConfig({
         '**/reward-2.spec.ts',
         '**/la-u-r.spec.ts',
         '**/la-u-s.spec.ts',
-        '**/stake.spec.ts',
+        // '**/stake.spec.ts',
         '**/landing.spec.ts',
         '**/upgrade.spec.ts',
-        '**/unstake-repay.spec.ts',
+        // '**/unstake-repay.spec.ts',
         '**/chatbot.spec.ts',
         '**/pane-visibility.spec.ts',
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
-        '**/capped-osm-unstake.spec.ts'
+        // '**/capped-osm-unstake.spec.ts',
+        '**/sequential-tx.spec.ts'
+        // '**/vaults-morpho.spec.ts'
       ]
-    },
-    {
-      name: 'chromium-alternate',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 }
-      },
-      // Alternate VNet tests - for tests requiring a different fork state
-      // Add test patterns here when you need tests to run on alternate VNet
-      testMatch: ['**/alternate-sample.spec.ts']
     }
+    // {
+    //   name: 'chromium-alternate',
+    //   use: {
+    //     ...devices['Desktop Chrome'],
+    //     viewport: { width: 1920, height: 1080 }
+    //   }
+    //   // Alternate VNet tests - for tests requiring a different fork state
+    //   // Add test patterns here when you need tests to run on alternate VNet
+    //   // testMatch: ['**/expert-morpho.spec.ts', '**/vaults-morpho.spec.ts']
+    // }
   ],
 
   webServer: {

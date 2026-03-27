@@ -1,5 +1,11 @@
 import { formatUnits, parseUnits, stringToHex } from 'viem';
-import { mcdSpotAddress, mcdVatAddress, useReadMcdSpot, useReadMcdVat } from '../generated';
+import {
+  mcdSpotAddress,
+  mcdVatAddress,
+  useReadMcdSpot,
+  useReadMcdSpotIlks,
+  useReadMcdVatIlks
+} from '../generated';
 import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { Vault, VaultRaw } from './vault';
@@ -36,9 +42,8 @@ export function useSimulatedVault(
     isLoading: isLoadingVatIlk,
     error: errorVatIlk,
     refetch: mutateVatIlk
-  } = useReadMcdVat({
+  } = useReadMcdVatIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `vat-ilk-${ilkName}`
   });
@@ -62,9 +67,8 @@ export function useSimulatedVault(
     isLoading: isLoadingSpotIlk,
     error: errorSpotIlk,
     refetch: mutateSpotIlk
-  } = useReadMcdSpot({
+  } = useReadMcdSpotIlks({
     chainId: chainId as any,
-    functionName: 'ilks',
     args: [ilkHex],
     scopeKey: `spot-ilks-${ilkName}`
   });

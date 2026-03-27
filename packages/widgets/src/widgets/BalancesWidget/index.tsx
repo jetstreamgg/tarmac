@@ -2,65 +2,60 @@ import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { WidgetContext, WidgetProvider } from '@widgets/context/WidgetContext';
+import { WidgetProvider } from '@widgets/context/WidgetContext';
 import { WidgetProps, WidgetStateChangeParams } from '@widgets/shared/types/widgetState';
 import { useConnection } from 'wagmi';
 import { BalancesHeader } from './components/BalancesHeader';
 import { BalancesContent } from './components/BalancesContent';
-import { getValidatedState } from '@widgets/lib/utils';
 import { LoadingButton } from '@widgets/shared/components/ui/LoadingButton';
 import { ConnectWalletCopy } from '@widgets/shared/components/ui/ConnectWalletCopy';
+import { NoFundsCopy } from '@widgets/shared/components/ui/NoFundsCopy';
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { TokenForChain } from '@jetstreamgg/sky-hooks';
-import { BalancesFlow } from './constants';
+import { useCallback, useMemo, useState } from 'react';
 
 export type BalancesWidgetProps = WidgetProps & {
-  customTokenMap?: { [chainId: number]: TokenForChain[] };
   chainIds?: number[];
   hideModuleBalances?: boolean;
-  actionForToken?: (
-    symbol: string,
-    balance: string,
-    tokenChainId: number
-  ) => { label: string; actionUrl: string; image: string } | undefined;
+  hideRestrictedModules?: boolean;
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
   sealCardUrl?: string;
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
+  vaultsCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   showAllNetworks?: boolean;
   setShowAllNetworks?: (showAllNetworks: boolean) => void;
   hideZeroBalances?: boolean;
   setHideZeroBalances?: (hideZeroBalances: boolean) => void;
+  onExploreVaults?: () => void;
+  hideWalletCard?: boolean;
 };
 
 export const BalancesWidget = ({
   onConnect,
   locale,
   rightHeaderComponent,
-  externalWidgetState,
-  onStateValidated,
   hideModuleBalances = false,
+  hideRestrictedModules = false,
   enabled = true,
-  actionForToken,
   onExternalLinkClicked,
-  onWidgetStateChange,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
-  customTokenMap,
+  vaultsCardUrl,
   chainIds,
   showAllNetworks,
   hideZeroBalances,
   setShowAllNetworks,
-  setHideZeroBalances
+  setHideZeroBalances,
+  onExploreVaults,
+  hideWalletCard
 }: BalancesWidgetProps) => {
   return (
     <ErrorBoundary componentName="BalancesWidget">
@@ -68,24 +63,23 @@ export const BalancesWidget = ({
         <BalancesWidgetWrapped
           onConnect={onConnect}
           rightHeaderComponent={rightHeaderComponent}
-          externalWidgetState={externalWidgetState}
-          onStateValidated={onStateValidated}
           hideModuleBalances={hideModuleBalances}
+          hideRestrictedModules={hideRestrictedModules}
           enabled={enabled}
-          actionForToken={actionForToken}
-          customTokenMap={customTokenMap}
           chainIds={chainIds}
           rewardsCardUrl={rewardsCardUrl}
           savingsCardUrlMap={savingsCardUrlMap}
           sealCardUrl={sealCardUrl}
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
+          vaultsCardUrl={vaultsCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
-          onWidgetStateChange={onWidgetStateChange}
           showAllNetworks={showAllNetworks}
           hideZeroBalances={hideZeroBalances}
           setShowAllNetworks={setShowAllNetworks}
           setHideZeroBalances={setHideZeroBalances}
+          onExploreVaults={onExploreVaults}
+          hideWalletCard={hideWalletCard}
         />
       </WidgetProvider>
     </ErrorBoundary>
@@ -95,49 +89,28 @@ export const BalancesWidget = ({
 const BalancesWidgetWrapped = ({
   onConnect,
   rightHeaderComponent,
-  externalWidgetState,
-  onStateValidated,
   hideModuleBalances = false,
+  hideRestrictedModules = false,
   enabled = true,
-  actionForToken,
   onExternalLinkClicked,
-  onWidgetStateChange,
-  customTokenMap,
   chainIds,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
+  vaultsCardUrl,
   showAllNetworks,
   hideZeroBalances,
   setShowAllNetworks,
-  setHideZeroBalances
+  setHideZeroBalances,
+  onExploreVaults,
+  hideWalletCard
 }: BalancesWidgetProps) => {
   const { isConnected, isConnecting } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
-  const validatedExternalState = getValidatedState(externalWidgetState);
-  const { txStatus, widgetState, setWidgetState } = useContext(WidgetContext);
-  const initialTabIndex = validatedExternalState?.flow === BalancesFlow.TX_HISTORY ? 1 : 0;
-  const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
-
-  useEffect(() => {
-    onStateValidated?.(validatedExternalState);
-  }, [onStateValidated, validatedExternalState]);
-
-  useEffect(() => {
-    setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
-
-  const onToggle = (number: 0 | 1) => {
-    setTabIndex(number);
-    const flow = number === 0 ? BalancesFlow.FUNDS : BalancesFlow.TX_HISTORY;
-    setWidgetState({
-      ...widgetState,
-      flow
-    });
-    onWidgetStateChange?.({ widgetState: { ...widgetState, flow }, txStatus });
-  };
+  const [allFundsEmpty, setAllFundsEmpty] = useState(false);
+  const handleAllFundsEmpty = useCallback((isEmpty: boolean) => setAllFundsEmpty(isEmpty), []);
 
   return (
     <WidgetContainer
@@ -164,6 +137,16 @@ const BalancesWidgetWrapped = ({
               className="disabled:text-textMuted font-circle h-full w-full px-6 py-4 text-base"
             />
           </div>
+        ) : allFundsEmpty ? (
+          <div className="flex w-full flex-col items-stretch gap-5">
+            <NoFundsCopy />
+            <LoadingButton
+              onClick={onExploreVaults}
+              buttonText={t`Explore new Vaults and start earning`}
+              variant="primaryAlt"
+              className="font-circle h-full w-full px-6 py-4 text-base"
+            />
+          </div>
         ) : undefined
       }
     >
@@ -172,37 +155,33 @@ const BalancesWidgetWrapped = ({
           <CardAnimationWrapper key="widget-not-connected">
             <BalancesHeader
               isConnectedAndEnabled={isConnectedAndEnabled}
-              tabIndex={tabIndex}
               onExternalLinkClicked={onExternalLinkClicked}
-              onToggle={onToggle}
             />
           </CardAnimationWrapper>
         ) : (
           <CardAnimationWrapper key="widget-connected" className="flex flex-col gap-4">
-            <BalancesHeader
-              isConnectedAndEnabled={isConnectedAndEnabled}
-              tabIndex={tabIndex}
-              onExternalLinkClicked={onExternalLinkClicked}
-              onToggle={onToggle}
-            />
+            {!hideWalletCard && (
+              <BalancesHeader
+                isConnectedAndEnabled={isConnectedAndEnabled}
+                onExternalLinkClicked={onExternalLinkClicked}
+              />
+            )}
             <BalancesContent
-              tabIndex={tabIndex}
-              validatedExternalState={validatedExternalState}
-              customTokenMap={customTokenMap}
               hideModuleBalances={hideModuleBalances}
-              actionForToken={actionForToken}
+              hideRestrictedModules={hideRestrictedModules}
               rewardsCardUrl={rewardsCardUrl}
               savingsCardUrlMap={savingsCardUrlMap}
               sealCardUrl={sealCardUrl}
               stakeCardUrl={stakeCardUrl}
               stusdsCardUrl={stusdsCardUrl}
+              vaultsCardUrl={vaultsCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
-              onToggle={onToggle}
               chainIds={chainIds}
               showAllNetworks={showAllNetworks}
               hideZeroBalances={hideZeroBalances}
               setShowAllNetworks={setShowAllNetworks}
               setHideZeroBalances={setHideZeroBalances}
+              onAllFundsEmpty={handleAllFundsEmpty}
             />
           </CardAnimationWrapper>
         )}

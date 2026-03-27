@@ -42,6 +42,8 @@ import { CurveSavingsWithdraw } from './CurveSavingsWithdraw';
 import { Liquidated } from './Liquidated';
 import { Repaid } from './Repaid';
 import { SelectRewards } from './SelectRewards';
+import { Vaults } from './Vaults';
+import { Convert } from './Convert';
 
 export {
   ArrowDown,
@@ -87,5 +89,7 @@ export {
   CurveSavingsWithdraw,
   Liquidated,
   Repaid,
-  SelectRewards
+  SelectRewards,
+  Vaults,
+  Convert
 };

@@ -14,7 +14,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 });
 
 test('An approval error redirects to the error screen', async ({ isolatedPage }) => {
@@ -39,7 +39,7 @@ test('A supply error redirects to the error screen', async ({ isolatedPage }) =>
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   await isolatedPage.getByTestId('supply-input-rewards').fill('1');
   await performAction(isolatedPage, 'Supply', { reject: true });
@@ -175,7 +175,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   // First, supply some tokens
   await isolatedPage.getByTestId('supply-input-rewards').click();
@@ -205,7 +205,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   await isolatedPage.waitForLoadState('domcontentloaded');
   await isolatedPage.waitForTimeout(5000);
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
-  await isolatedPage.getByText('With: USDS Get: SKY').first().click();
+  await isolatedPage.getByText('With: USDS Get: SPK').first().click();
   await expect(
     isolatedPage.getByTestId('widget-container').getByRole('button', { name: 'Claim' })
   ).toBeVisible();

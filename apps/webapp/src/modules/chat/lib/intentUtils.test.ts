@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hasPreFillParameters } from './intentUtils';
+import { hasPreFillParameters, rewriteChatbotTradeUpgradeIntent } from './intentUtils';
 import { ChatIntent } from '../types/Chat';
 import { QueryParams } from '@/lib/constants';
 
@@ -601,6 +601,128 @@ describe('hasPreFillParameters', () => {
         priority: 1
       };
       expect(hasPreFillParameters(intent)).toBe(false);
+    });
+  });
+});
+
+describe('rewriteChatbotTradeUpgradeIntent', () => {
+  const makeIntent = (overrides: Partial<ChatIntent>): ChatIntent => ({
+    title: 'Test',
+    url: '?widget=trade',
+    intent_id: 'trade',
+    widget: 'trade',
+    priority: 1,
+    ...overrides
+  });
+
+  describe('redirects trade and upgrade intents to convert', () => {
+    it('transforms widget=trade to widget=convert&convert_module=trade', () => {
+      const intent = makeIntent({ url: '?widget=trade', widget: 'trade' });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      expect(result.widget).toBe('convert');
+      const params = new URLSearchParams(result.url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('trade');
+    });
+
+    it('transforms widget=upgrade to widget=convert&convert_module=upgrade', () => {
+      const intent = makeIntent({ url: '?widget=upgrade', widget: 'upgrade', intent_id: 'upgrade' });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      expect(result.widget).toBe('convert');
+      const params = new URLSearchParams(result.url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('upgrade');
+    });
+
+    it('leaves upgrade intents targeting an L2 unchanged', () => {
+      const intent = makeIntent({
+        url: '?widget=upgrade&network=base',
+        widget: 'upgrade',
+        intent_id: 'upgrade'
+      });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      expect(result).toBe(intent);
+    });
+  });
+
+  describe('preserves other query params', () => {
+    it('preserves network, tokens, and amounts', () => {
+      const intent = makeIntent({
+        url: '?widget=trade&network=ethereum&source_token=DAI&target_token=USDS&input_amount=100',
+        widget: 'trade'
+      });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      const params = new URLSearchParams(result.url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('trade');
+      expect(params.get('network')).toBe('ethereum');
+      expect(params.get('source_token')).toBe('DAI');
+      expect(params.get('target_token')).toBe('USDS');
+      expect(params.get('input_amount')).toBe('100');
+    });
+
+    it('preserves chat and reset params', () => {
+      const intent = makeIntent({
+        url: '?widget=upgrade&chat=true&reset=true',
+        widget: 'upgrade'
+      });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      const params = new URLSearchParams(result.url.split('?')[1]);
+      expect(params.get('chat')).toBe('true');
+      expect(params.get('reset')).toBe('true');
+    });
+  });
+
+  describe('leaves non-trade/upgrade widgets unchanged', () => {
+    it.each(['savings', 'rewards', 'balances', 'stake', 'expert'])('does not redirect widget=%s', widget => {
+      const intent = makeIntent({ url: `?widget=${widget}`, widget, intent_id: widget });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      expect(result).toBe(intent); // same reference — untouched
+    });
+
+    it('leaves widget=convert unchanged (forward-compatible)', () => {
+      const intent = makeIntent({
+        url: '?widget=convert&convert_module=trade',
+        widget: 'convert',
+        intent_id: 'convert'
+      });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      expect(result).toBe(intent);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles full URLs with protocol and host', () => {
+      const intent = makeIntent({
+        url: 'https://app.sky.money?widget=trade&network=base',
+        widget: 'trade'
+      });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      const url = new URL(result.url, 'http://temp');
+      expect(url.searchParams.get('widget')).toBe('convert');
+      expect(url.searchParams.get('convert_module')).toBe('trade');
+      expect(url.searchParams.get('network')).toBe('base');
+    });
+
+    it('does not duplicate widget param', () => {
+      const intent = makeIntent({ url: '?widget=trade', widget: 'trade' });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      const params = new URLSearchParams(result.url.split('?')[1]);
+      const widgetValues = params.getAll('widget');
+      expect(widgetValues).toHaveLength(1);
+      expect(widgetValues[0]).toBe('convert');
+    });
+
+    it('handles URL-encoded parameter values', () => {
+      const intent = makeIntent({
+        url: '?widget=trade&source_token=DAI%2FUSDS',
+        widget: 'trade'
+      });
+      const result = rewriteChatbotTradeUpgradeIntent(intent);
+      const params = new URLSearchParams(result.url.split('?')[1]);
+      expect(params.get('widget')).toBe('convert');
+      expect(params.get('convert_module')).toBe('trade');
+      expect(params.get('source_token')).toBe('DAI/USDS');
     });
   });
 });

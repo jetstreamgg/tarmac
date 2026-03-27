@@ -1,0 +1,413 @@
+import { useMorphoVaultMarketApiData, useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { Text } from '@/modules/layout/components/Typography';
+import { Trans } from '@lingui/react/macro';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipArrow,
+  TooltipContent,
+  TooltipPortal,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { useChainId } from 'wagmi';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { InfoTooltip } from '@/components/InfoTooltip';
+
+/** Small SVG ring that fills clockwise based on a 0-1 value */
+function CapUtilizationRing({ value, size = 18 }: { value: number; size?: number }) {
+  const strokeWidth = 6;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const filled = Math.min(Math.max(value, 0), 1);
+  const offset = circumference * (1 - filled);
+
+  return (
+    <svg width={size} height={size} className="shrink-0 -rotate-90">
+      {/* Background ring */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        strokeWidth={strokeWidth}
+        className="stroke-text/5"
+      />
+      {/* Filled arc */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        className="stroke-primary-bright-start"
+      />
+    </svg>
+  );
+}
+
+type MorphoVaultAllocationsDetailsProps = {
+  vaultAddress: `0x${string}`;
+};
+
+export function MorphoVaultAllocationsDetails({ vaultAddress }: MorphoVaultAllocationsDetailsProps) {
+  const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
+  const allocationsData = marketData?.market;
+  const chainId = useChainId();
+  const { data: overallSkyData } = useOverallSkyData();
+
+  if (isLoading) {
+    return (
+      <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+        <TableHeader>
+          <TableRow>
+            <TableHead>
+              <Skeleton className="h-4 w-24" />
+            </TableHead>
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-16" />
+            </TableHead>
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
+            </TableHead>
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
+            </TableHead>
+            <TableHead className="text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow className="select-none has-[td]:hover:bg-transparent has-[td]:active:bg-transparent">
+            <TableCell colSpan={5} className="h-auto px-4 py-2">
+              <Skeleton className="h-3 w-16" />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="h-auto py-4 pl-6">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center">
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+          </TableRow>
+          <TableRow className="select-none has-[td]:hover:bg-transparent has-[td]:active:bg-transparent">
+            <TableCell colSpan={5} className="h-auto px-4 py-2">
+              <Skeleton className="h-3 w-16" />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="h-auto py-4 pl-6">
+              <div className="flex items-center gap-1.5">
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-14" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+            <TableCell className="h-auto py-4 text-right">
+              <Skeleton className="ml-auto h-4 w-12" />
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    );
+  }
+
+  if (
+    !allocationsData ||
+    (allocationsData.v1Vaults.length === 0 &&
+      allocationsData.markets.length === 0 &&
+      allocationsData.idleLiquidity.length === 0)
+  ) {
+    return (
+      <Text className="text-textSecondary">
+        <Trans>No allocations found</Trans>
+      </Text>
+    );
+  }
+
+  return (
+    <Table wrapperClassName="overflow-x-auto scrollbar-thin-always">
+      {/* Table Header */}
+      <TableHeader>
+        <TableRow>
+          <TableHead>
+            <Text variant="small">
+              <Trans>Vaults / Markets</Trans>
+            </Text>
+          </TableHead>
+          <TableHead className="text-right">
+            <Text variant="small">
+              <Trans>Allocation ({allocationsData.assetSymbol})</Trans>
+            </Text>
+          </TableHead>
+          <TableHead className="text-right">
+            <Text variant="small">
+              <Trans>Absolute Cap</Trans>
+            </Text>
+          </TableHead>
+          <TableHead className="text-right">
+            <Text variant="small">
+              <Trans>Relative Cap</Trans>
+            </Text>
+          </TableHead>
+          <TableHead className="text-right">
+            <Text variant="small">
+              <Trans>Net Rate</Trans>
+            </Text>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {/* V1 Vaults Section */}
+        {allocationsData.v1Vaults.length > 0 && (
+          <>
+            <TableRow className="select-none has-[td]:hover:bg-transparent has-[td]:active:bg-transparent">
+              <TableCell colSpan={5} className="h-auto px-4 py-2">
+                <Text className="text-textSecondary text-xs">
+                  <Trans>Vaults V1</Trans>
+                </Text>
+              </TableCell>
+            </TableRow>
+            {allocationsData.v1Vaults.map(v1Vault => (
+              <TableRow key={v1Vault.vaultAddress}>
+                <TableCell className="h-auto py-4 pl-6">
+                  <div className="flex items-center gap-1.5">
+                    <TokenIcon token={{ symbol: allocationsData.assetSymbol }} className="h-5 w-5" />
+                    <Text className="text-sm">{v1Vault.vaultName}</Text>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <ExternalLink
+                          href={`https://app.morpho.org/ethereum/vault/${v1Vault.vaultAddress}`}
+                          showIcon={true}
+                          iconClassName="h-[13px] w-[13px]"
+                        />
+                      </TooltipTrigger>
+                      <TooltipPortal>
+                        <TooltipContent>
+                          <Text className="text-sm">View vault on Morpho</Text>
+                        </TooltipContent>
+                      </TooltipPortal>
+                    </Tooltip>
+                  </div>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Tooltip>
+                    <TooltipTrigger className="cursor-default">
+                      <Text className="text-text text-sm">{v1Vault.formattedAssets}</Text>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <Text className="text-sm">{v1Vault.formattedAssetsUsd}</Text>
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Text className="text-textSecondary text-sm">-</Text>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Text className="text-textSecondary text-sm">-</Text>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Text className="text-sm">{v1Vault.formattedNetApy}</Text>
+                </TableCell>
+              </TableRow>
+            ))}
+          </>
+        )}
+
+        {/* Markets Section */}
+        {allocationsData.markets.length > 0 && (
+          <>
+            <TableRow className="select-none has-[td]:hover:bg-transparent has-[td]:active:bg-transparent">
+              <TableCell colSpan={5} className="h-auto px-4 py-2">
+                <Text className="text-textSecondary text-xs">
+                  <Trans>Markets</Trans>
+                </Text>
+              </TableCell>
+            </TableRow>
+            {allocationsData.markets.map(market => (
+              <TableRow key={market.marketId}>
+                <TableCell className="h-auto py-4 pl-6">
+                  <div className="flex items-center gap-1.5">
+                    <div className="shrink-0">
+                      <PairTokenIcons
+                        leftToken={market.collateralAsset}
+                        rightToken={market.loanAsset}
+                        chainId={chainId}
+                      />
+                    </div>
+                    <Text className="text-text text-sm">
+                      {market.collateralAsset} / {market.loanAsset}
+                    </Text>
+                    <Tooltip>
+                      <TooltipTrigger asChild className="cursor-default">
+                        <div className="bg-textSecondary/15 rounded-sm px-1 py-0.5">
+                          <Text className="text-xs">{market.formattedLltv}</Text>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <Text className="text-sm">Liquidation Loan-To-Value (LLTV)</Text>
+                        <TooltipArrow width={12} height={8} />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <ExternalLink
+                          href={`https://app.morpho.org/ethereum/market/${market.marketId}`}
+                          showIcon={true}
+                          iconClassName="h-[13px] w-[13px]"
+                        />
+                      </TooltipTrigger>
+                      <TooltipPortal>
+                        <TooltipContent>
+                          <Text className="text-sm">View market on Morpho</Text>
+                        </TooltipContent>
+                      </TooltipPortal>
+                    </Tooltip>
+                  </div>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Tooltip>
+                    <TooltipTrigger asChild className="cursor-default">
+                      <Text className="text-text text-sm">{market.formattedAssets}</Text>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <Text className="text-sm">{market.formattedAssetsUsd}</Text>
+                      <TooltipArrow width={12} height={8} />
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  {market.formattedAbsoluteCap === 'Unlimited' ? (
+                    <Text className="text-text text-sm">{market.formattedAbsoluteCap}</Text>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild className="cursor-default">
+                        <div className="inline-flex items-center gap-1.5">
+                          <Text className="text-text text-sm">{market.formattedAbsoluteCap}</Text>
+                          <CapUtilizationRing value={market.absoluteCapUtilization} />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <Text className="text-sm">
+                          {(market.absoluteCapUtilization * 100).toFixed(2)}% filled
+                        </Text>
+                        <TooltipArrow width={12} height={8} />
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Tooltip>
+                    <TooltipTrigger asChild className="cursor-default">
+                      <div className="inline-flex items-center gap-1.5">
+                        <Text className="text-text text-sm">{market.formattedRelativeCap}</Text>
+                        <CapUtilizationRing value={market.relativeCapUtilization} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <Text className="text-sm">
+                        {(market.relativeCapUtilization * 100).toFixed(2)}% filled
+                      </Text>
+                      <TooltipArrow width={12} height={8} />
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Text className="text-sm">{market.formattedNetApy}</Text>
+                </TableCell>
+              </TableRow>
+            ))}
+          </>
+        )}
+
+        {/* Idle Liquidity Section */}
+        {allocationsData.idleLiquidity.length > 0 && (
+          <>
+            <TableRow className="select-none has-[td]:hover:bg-transparent has-[td]:active:bg-transparent">
+              <TableCell colSpan={5} className="h-auto px-4 py-2">
+                <Text className="text-textSecondary text-xs">
+                  <Trans>Idle liquidity</Trans>
+                </Text>
+              </TableCell>
+            </TableRow>
+            {allocationsData.idleLiquidity.map(idle => (
+              <TableRow key={idle.assetSymbol}>
+                <TableCell className="h-auto py-4 pl-6">
+                  <div className="flex items-center gap-1.5">
+                    <TokenIcon token={{ symbol: idle.assetSymbol }} className="h-5 w-5" />
+                    <Text className="text-text text-sm">{idle.assetSymbol}</Text>
+                  </div>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Tooltip>
+                    <TooltipTrigger className="cursor-default">
+                      <Text className="text-text text-sm">{idle.formattedAssets}</Text>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <Text className="text-sm">{idle.formattedAssetsUsd}</Text>
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Text className="text-textSecondary text-sm">-</Text>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  <Text className="text-textSecondary text-sm">-</Text>
+                </TableCell>
+                <TableCell className="h-auto py-4 text-right">
+                  {idle.assetSymbol === 'USDS' &&
+                  idle.idleAssetsUsd > 0 &&
+                  overallSkyData?.skySavingsRatecRate ? (
+                    <div className="flex items-center justify-end gap-1">
+                      <Text className="text-sm">
+                        {formatDecimalPercentage(parseFloat(overallSkyData.skySavingsRatecRate))}
+                      </Text>
+                      <InfoTooltip
+                        content={
+                          <Trans>Earns the full Sky Savings Rate. Distributed via Merkl.</Trans>
+                        }
+                      />
+                    </div>
+                  ) : (
+                    <Text className="text-textSecondary text-sm">-</Text>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </>
+        )}
+      </TableBody>
+    </Table>
+  );
+}

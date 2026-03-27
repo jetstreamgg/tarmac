@@ -66,15 +66,9 @@ export function SuppliedFundsSavingsRow({
       >
         <TableCell className="h-auto px-4 py-3">
           <div className="flex items-center gap-2">
-            <TokenIcon className="h-6 w-6" token={{ symbol: 'sUSDS', name: 'sUSDS' }} showChainIcon={false} />
-            <Text>sUSDS</Text>
-          </div>
-        </TableCell>
-        <TableCell className="h-auto px-4 py-3">
-          <div className="flex items-center gap-2">
             <img src="/images/savings_icon_large.svg" alt="Savings" className="h-5 w-5 flex-shrink-0" />
             <Text className="truncate">
-              <Trans>Savings</Trans>
+              <Trans>Supplied to Savings</Trans>
             </Text>
           </div>
         </TableCell>
@@ -156,7 +150,7 @@ export function SuppliedFundsSavingsRow({
               </div>
             </button>
           </TableCell>
-          <TableCell className="h-auto px-4 pt-0 pb-3" colSpan={2}>
+          <TableCell className="h-auto px-4 pt-0 pb-3">
             <button className="flex w-full items-center justify-end gap-1" onClick={() => setIsOpen(!isOpen)}>
               <Text variant="small" className="text-textSecondary whitespace-nowrap">
                 <Trans>Funds by network</Trans>
@@ -193,7 +187,7 @@ export function SuppliedFundsSavingsRow({
               key={chainId}
               className={cn('hover:bg-surface/50 border-0', isLast && 'border-b-selectBorder border-b')}
             >
-              <TableCell className="h-auto py-2 pr-0 pl-8" colSpan={2}>
+              <TableCell className="h-auto py-2 pr-0 pl-8">
                 <div className="flex items-center gap-2">
                   <TokenIcon className="h-5 w-5" token={{ symbol: 'USDS', name: 'USDS' }} chainId={chainId} />
                   <Text className="text-[14px] whitespace-nowrap">{networkName}</Text>

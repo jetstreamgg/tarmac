@@ -81,6 +81,7 @@ export const ChatInput = ({ sendMessage }: { sendMessage: (message: string) => v
       <div>
         <HStack className="bg-card items-end justify-between rounded-xl p-4 hover:brightness-125">
           <textarea
+            data-ph-no-capture
             ref={inputRef}
             placeholder={placeholder}
             className="ring-offset-background scrollbar-thin max-h-[120px] min-h-[20px] min-w-0 grow resize-none overflow-y-auto bg-transparent text-sm leading-5 text-white placeholder:text-violet-200/50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:placeholder:text-violet-200/20"

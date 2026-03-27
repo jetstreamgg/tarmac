@@ -37,7 +37,7 @@ jobs:
       - name: Build
         run: pnpm build:packages
         env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
+          NODE_OPTIONS: "--max-old-space-size=8192"
       - name: Cache node_modules and dist
         uses: actions/cache/save@v4
         with:

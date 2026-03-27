@@ -1,7 +1,7 @@
 import React from 'react';
 import { Intent } from '@/lib/enums';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPortal } from '@/components/ui/tooltip';
-import { getChainIcon } from '@jetstreamgg/sky-utils';
+import { getChainIcon, isMainnetId } from '@jetstreamgg/sky-utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
@@ -10,6 +10,7 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { WidgetSubItem } from '@/modules/app/types/Widgets';
 
 interface WidgetMenuItemTooltipProps {
   description?: string;
@@ -19,6 +20,7 @@ interface WidgetMenuItemTooltipProps {
   isMobile: boolean;
   disabled?: boolean;
   isCurrentWidget?: boolean;
+  subItems?: WidgetSubItem[];
   children: React.ReactNode;
 }
 
@@ -35,11 +37,40 @@ export function WidgetMenuItemTooltip({
   isMobile,
   disabled = false,
   isCurrentWidget = false,
+  subItems,
   children
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
   const [, setSearchParams] = useSearchParams();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
+
+  const getMainnetChainId = (supportedChainIds: number[]) =>
+    supportedChainIds.find(isMainnetId) || supportedChainIds[0];
+
+  const handleSubItemClick = (subItem: WidgetSubItem) => {
+    if (!currentChainId) return;
+
+    const supportedChainIds = getSupportedChainIds(currentChainId);
+
+    // Use subItem's intent if specified, otherwise fall back to parent widget's intent
+    const targetIntent = subItem.intent ?? widgetIntent;
+    // For multichain intents, use current network; for mainnet-only, use mainnet
+    const targetChainId = isMultichain(targetIntent) ? currentChainId : getMainnetChainId(supportedChainIds);
+
+    const targetChain = chains.find(c => c.id === targetChainId);
+    if (!targetChain) return;
+
+    setIsSwitchingNetwork(currentChainId !== targetChainId);
+    setSearchParams(prevParams => {
+      const searchParams = deleteSearchParams(prevParams);
+      searchParams.set(QueryParams.Network, normalizeUrlParam(targetChain.name));
+      searchParams.set(QueryParams.Widget, mapIntentToQueryParam(widgetIntent));
+      Object.entries(subItem.params).forEach(([key, value]) => {
+        searchParams.set(key, value);
+      });
+      return searchParams;
+    });
+  };
 
   const handleNetworkSwitch = (chainId: number) => {
     // Navigate to widget on selected network
@@ -93,11 +124,7 @@ export function WidgetMenuItemTooltip({
       });
     } else {
       // Show only Ethereum mainnet for mainnet-only widgets
-      const mainnetId =
-        supportedChainIds.find(id => {
-          const chain = chains.find(c => c.id === id);
-          return chain && (chain.name === 'Ethereum' || chain.name.includes('mainnet'));
-        }) || supportedChainIds[0];
+      const mainnetId = getMainnetChainId(supportedChainIds);
 
       const chain = chains.find(c => c.id === mainnetId);
       if (!chain) return null;
@@ -129,11 +156,34 @@ export function WidgetMenuItemTooltip({
 
   return (
     <Tooltip delayDuration={150}>
-      <TooltipTrigger disabled={disabled}>{children}</TooltipTrigger>
+      <TooltipTrigger asChild disabled={disabled}>
+        {children}
+      </TooltipTrigger>
       {description && !isMobile && (
         <TooltipPortal>
           <TooltipContent side="right" className="max-w-xs">
             <p className="text-sm">{description}</p>
+            {subItems && subItems.length > 0 && (
+              <>
+                <p className="mt-2 text-xs text-gray-400">Quick access:</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {subItems.map(subItem => (
+                    <button
+                      key={subItem.label}
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSubItemClick(subItem);
+                      }}
+                      className="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-0.5 text-xs transition-colors hover:bg-white/20"
+                    >
+                      {subItem.icon}
+                      {subItem.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             {currentChainId && widgetIntent !== Intent.BALANCES_INTENT && (
               <>
                 <p className="mt-2 text-xs text-gray-400">Supported on:</p>

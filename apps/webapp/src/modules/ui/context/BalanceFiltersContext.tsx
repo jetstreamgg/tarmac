@@ -16,7 +16,7 @@ const BalanceFiltersContext = createContext<BalanceFiltersContextType>({
 
 export const BalanceFiltersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [showAllNetworks, setShowAllNetworks] = useState(true);
-  const [hideZeroBalances, setHideZeroBalances] = useState(false);
+  const [hideZeroBalances, setHideZeroBalances] = useState(true);
 
   return (
     <BalanceFiltersContext.Provider

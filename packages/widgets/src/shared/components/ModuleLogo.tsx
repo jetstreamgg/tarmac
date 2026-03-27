@@ -30,6 +30,11 @@ const logoMetadata = [
     name: 'expert',
     src: '/images/expert_icon_large.svg',
     alt: 'Expert logo'
+  },
+  {
+    name: 'vaults',
+    src: '/images/vaults_icon_large.svg',
+    alt: 'Vaults logo'
   }
 ] as const;
 

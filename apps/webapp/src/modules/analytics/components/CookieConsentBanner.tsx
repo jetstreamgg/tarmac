@@ -2,34 +2,40 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCookieConsent } from '../context/CookieConsentContext';
 import { applyPostHogConsent } from '../PostHogProvider';
+import { applyGtagConsent } from '../gtag';
 import { Text } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { getFooterLinks } from '@/lib/utils';
 import { type ServiceConsent } from '../consentStorage';
 
 export function CookieConsentBanner() {
-  const { consent, bannerVisible, bannerView, setBannerView, setConsent } = useCookieConsent();
+  const { consent, bannerVisible, bannerView, setBannerView, setConsent, setBannerHeight } = useCookieConsent();
+  const bannerRef = useRef<HTMLDivElement>(null);
   const [delayComplete, setDelayComplete] = useState(false);
 
   // Local toggle state for the manage view
   const [posthogEnabled, setPosthogEnabled] = useState(() => consent?.posthog ?? true);
+  const [gaEnabled, setGaEnabled] = useState(() => consent?.google_analytics ?? true);
 
   // Sync toggle when banner reopens OR consent changes while banner is open
   // (e.g. user changed consent on another subdomain and switched back to this tab)
   const prevVisibleRef = useRef(bannerVisible);
-  const prevConsentPosRef = useRef(consent?.posthog);
+  const prevConsentRef = useRef(consent);
 
   const bannerJustOpened = bannerVisible && !prevVisibleRef.current;
-  const consentChangedWhileOpen = bannerVisible && consent?.posthog !== prevConsentPosRef.current;
+  const consentChangedWhileOpen =
+    bannerVisible &&
+    (consent?.posthog !== prevConsentRef.current?.posthog ||
+      consent?.google_analytics !== prevConsentRef.current?.google_analytics);
 
   if (bannerJustOpened || consentChangedWhileOpen) {
-    const synced = consent?.posthog ?? true;
-    if (synced !== posthogEnabled) {
-      setPosthogEnabled(synced);
-    }
+    const syncedPosthog = consent?.posthog ?? true;
+    const syncedGa = consent?.google_analytics ?? true;
+    if (syncedPosthog !== posthogEnabled) setPosthogEnabled(syncedPosthog);
+    if (syncedGa !== gaEnabled) setGaEnabled(syncedGa);
   }
   prevVisibleRef.current = bannerVisible;
-  prevConsentPosRef.current = consent?.posthog;
+  prevConsentRef.current = consent;
 
   useEffect(() => {
     const timer = setTimeout(() => setDelayComplete(true), 3_500);
@@ -38,16 +44,20 @@ export function CookieConsentBanner() {
 
   const applyConsent = useCallback(
     (newConsent: ServiceConsent) => {
-      applyPostHogConsent(newConsent.posthog);
+      if (newConsent.posthog !== undefined) applyPostHogConsent(newConsent.posthog);
+      if (newConsent.google_analytics !== undefined) applyGtagConsent(newConsent.google_analytics);
       setConsent(newConsent);
     },
     [setConsent]
   );
 
-  const handleAcceptAll = useCallback(() => applyConsent({ posthog: true }), [applyConsent]);
+  const handleAcceptAll = useCallback(
+    () => applyConsent({ posthog: true, google_analytics: true }),
+    [applyConsent]
+  );
   const handleSave = useCallback(
-    () => applyConsent({ posthog: posthogEnabled }),
-    [applyConsent, posthogEnabled]
+    () => applyConsent({ posthog: posthogEnabled, google_analytics: gaEnabled }),
+    [applyConsent, posthogEnabled, gaEnabled]
   );
 
   const privacyLink = useMemo(() => {
@@ -56,17 +66,34 @@ export function CookieConsentBanner() {
 
   const visible = bannerVisible && (consent !== null || delayComplete);
 
+  // Report banner height to context so toasts can stack above it
+  useEffect(() => {
+    if (!visible) {
+      setBannerHeight(0);
+      return;
+    }
+    const el = bannerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => {
+      setBannerHeight(el.offsetHeight);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visible, setBannerHeight]);
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={bannerRef}
           role="region"
           aria-label="Cookie consent"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed right-3 bottom-4 z-[999] max-w-[400px] min-w-[300px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:right-5 lg:right-10"
+          className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:left-auto md:right-6 md:mx-0 md:min-w-[420px] md:z-[999]"
         >
           <AnimatePresence mode="wait" initial={false}>
             {bannerView === 'default' ? (
@@ -78,8 +105,8 @@ export function CookieConsentBanner() {
                 transition={{ duration: 0.15 }}
               >
                 <Text variant="captionSm" className="text-white/60">
-                  We use analytics cookies to understand how this app is used and to improve it. No personal
-                  data is collected.
+                  We collect anonymous usage analytics to understand how this app is used and to improve it. No
+                  personal data is collected. Accepting enables persistent cookies for better insights.
                   {privacyLink && (
                     <>
                       {' '}
@@ -128,7 +155,7 @@ export function CookieConsentBanner() {
                 <Text variant="captionSm" className="mt-2 text-white/40">
                   Choose which analytics services you allow. You can update these at any time.
                 </Text>
-                <div className="mt-4">
+                <div className="mt-4 space-y-3">
                   <label className="flex items-center justify-between">
                     <div>
                       <Text variant="captionSm" className="font-medium text-white/80">
@@ -143,6 +170,23 @@ export function CookieConsentBanner() {
                       className="peer sr-only"
                       checked={posthogEnabled}
                       onChange={() => setPosthogEnabled(prev => !prev)}
+                    />
+                    <div className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full bg-white/10 transition-colors peer-checked:bg-[#5116CC] peer-focus-visible:ring-2 peer-focus-visible:ring-white/50 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white/40 after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-white" />
+                  </label>
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <Text variant="captionSm" className="font-medium text-white/80">
+                        Google Analytics
+                      </Text>
+                      <Text variant="captionSm" className="text-white/40">
+                        Traffic analytics
+                      </Text>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="peer sr-only"
+                      checked={gaEnabled}
+                      onChange={() => setGaEnabled(prev => !prev)}
                     />
                     <div className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full bg-white/10 transition-colors peer-checked:bg-[#5116CC] peer-focus-visible:ring-2 peer-focus-visible:ring-white/50 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white/40 after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-white" />
                   </label>

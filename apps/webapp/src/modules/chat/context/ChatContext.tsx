@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { ChatHistory, ChatIntent } from '../types/Chat';
-import { generateUUID } from '../lib/generateUUID';
+import { generateUUID } from '@/lib/generateUUID';
 import { t } from '@lingui/core/macro';
 import { MessageType, UserType } from '../constants';
 import { intentModifiesState } from '../lib/intentUtils';

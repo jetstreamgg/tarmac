@@ -11,7 +11,7 @@ import {
   UpgradeScreen,
   upgradeTokens
 } from '@jetstreamgg/sky-widgets';
-import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -22,9 +22,9 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useEffect, useState } from 'react';
-import { Intent } from '@/lib/enums';
+import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -35,7 +35,8 @@ const targetTokenFromSourceToken = (sourceToken?: string) => {
 export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
   const subgraphUrl = useSubgraphUrl();
-  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode } = useConfigContext();
+  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedConvertOption } =
+    useConfigContext();
   const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
 
   const wagmiConfig = useWagmiConfig();
@@ -51,7 +52,18 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { wrapStateChange } = useWidgetFlowTracking('upgrade', chainId);
+  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
+
+  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
+  const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
+
+  const handleBackToConvert = () => {
+    setSearchParams(params => {
+      params.delete(QueryParams.ConvertModule);
+      return params;
+    });
+    setSelectedConvertOption(undefined);
+  };
 
   // Set initial currentToken from sourceToken
   useEffect(() => {
@@ -83,7 +95,14 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     originAmount
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.UPGRADE_INTENT]) {
+    const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
+    const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
+    const isUpgradeContext =
+      widgetParam === IntentMapping[Intent.UPGRADE_INTENT] ||
+      (widgetParam === IntentMapping[Intent.CONVERT_INTENT] &&
+        convertModuleParam === ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]);
+
+    if (!isUpgradeContext) {
       return;
     }
 
@@ -170,8 +189,17 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       linkedActionConfig?.linkedAction &&
       linkedActionConfig.step === LinkedActionSteps.SUCCESS_FUTURE
     ) {
+      const rewardParam = linkedActionConfig.rewardContract
+        ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}`
+        : '';
+      const moduleParam = linkedActionConfig.expertModule
+        ? linkedActionConfig.linkedAction === IntentMapping[Intent.VAULTS_INTENT]
+          ? `&${QueryParams.VaultModule}=${linkedActionConfig.expertModule}`
+          : `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}`
+        : '';
+
       setCustomHref(
-        `/?${QueryParams.Widget}=${linkedActionConfig.linkedAction}&${QueryParams.InputAmount}=${linkedActionConfig?.inputAmount}&${QueryParams.LinkedAction}=${linkedActionConfig.linkedAction}${linkedActionConfig.rewardContract ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}` : ''}${linkedActionConfig.expertModule ? `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}` : ''}`
+        `/?${QueryParams.Widget}=${linkedActionConfig.linkedAction}&${QueryParams.InputAmount}=${linkedActionConfig?.inputAmount}&${QueryParams.LinkedAction}=${linkedActionConfig.linkedAction}${rewardParam}${moduleParam}`
       );
       setCustomNavLabel(`Go to ${capitalizeFirstLetter(linkedActionConfig.linkedAction)}`);
     } else {
@@ -238,7 +266,8 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
             ? (linkedActionConfig.sourceToken.toUpperCase() as keyof typeof upgradeTokens)
             : undefined) as keyof typeof upgradeTokens | undefined
       }}
-      onWidgetStateChange={wrapStateChange(onUpgradeWidgetStateChange)}
+      onWidgetStateChange={onUpgradeWidgetStateChange}
+      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={
@@ -249,6 +278,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       disallowedFlow={disallowedFlow}
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
+      onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />
   );
 }

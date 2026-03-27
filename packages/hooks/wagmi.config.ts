@@ -51,16 +51,19 @@ export default defineConfig(() => {
         }
       }),
       // The etherscan plugin fetches ABIs for contracts which have a mainnet deployment
+      // cacheDuration set to 30 days since ABIs are immutable once deployed
       etherscan({
         apiKey: env.ETHERSCAN_V2_API_KEY,
         chainId: mainnet.id,
-        contracts
+        contracts,
+        cacheDuration: 2_592_000_000
       }),
       // This etherscan plugin fetches ABIs for L2 contracts which have a base deployment
       etherscan({
         apiKey: env.ETHERSCAN_V2_API_KEY,
         chainId: base.id,
-        contracts: l2Contracts
+        contracts: l2Contracts,
+        cacheDuration: 2_592_000_000
       })
       // // This fetch plugin fetches ABIs for contracts deployed on the tenderly testnet
       // fetchPlugin({

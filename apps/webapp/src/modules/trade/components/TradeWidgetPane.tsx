@@ -6,8 +6,9 @@ import {
   L2TradeWidget
 } from '@jetstreamgg/sky-widgets';
 import { defaultConfig } from '../../config/default-config';
+import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
-import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -19,15 +20,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
 import { useChatContext } from '@/modules/chat/context/ChatContext';
-import { Intent } from '@/lib/enums';
+import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetFlowTracking } from '@/modules/analytics/hooks/useWidgetFlowTracking';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
 
   const queryClient = useQueryClient();
-  const { linkedActionConfig, updateLinkedActionConfig } = useConfigContext();
+  const { linkedActionConfig, updateLinkedActionConfig, setSelectedConvertOption } = useConfigContext();
 
   const wagmiConfig = useWagmiConfig();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,7 +39,22 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { setShouldDisableActionButtons } = useChatContext();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const { wrapStateChange } = useWidgetFlowTracking('trade', chainId);
+  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
+  const { isRegionRestricted } = useGeoConfig();
+  const tradeTokenList = isRegionRestricted
+    ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
+    : defaultConfig.tradeTokenList[chainId];
+
+  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
+  const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
+
+  const handleBackToConvert = () => {
+    setSearchParams(params => {
+      params.delete(QueryParams.ConvertModule);
+      return params;
+    });
+    setSelectedConvertOption(undefined);
+  };
 
   const onTradeWidgetStateChange = ({
     hash,
@@ -49,7 +66,14 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     originAmount
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.TRADE_INTENT]) {
+    const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
+    const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
+    const isTradeContext =
+      widgetParam === IntentMapping[Intent.TRADE_INTENT] ||
+      (widgetParam === IntentMapping[Intent.CONVERT_INTENT] &&
+        convertModuleParam === ConvertIntentMapping[ConvertIntent.TRADE_INTENT]);
+
+    if (!isTradeContext) {
       return;
     }
 
@@ -159,11 +183,13 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       const reward = linkedActionConfig.rewardContract
         ? `&${QueryParams.Reward}=${linkedActionConfig.rewardContract}`
         : '';
-      const expertModule = linkedActionConfig.expertModule
-        ? `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}`
+      const moduleParam = linkedActionConfig.expertModule
+        ? linkedActionConfig.linkedAction === IntentMapping[Intent.VAULTS_INTENT]
+          ? `&${QueryParams.VaultModule}=${linkedActionConfig.expertModule}`
+          : `&${QueryParams.ExpertModule}=${linkedActionConfig.expertModule}`
         : '';
       setCustomHref(
-        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}${expertModule}`
+        `/?${QueryParams.Widget}=${widget}&${QueryParams.InputAmount}=${executedBuyAmount}&${QueryParams.LinkedAction}=${widget}${reward}${moduleParam}`
       );
       setCustomNavLabel(`Go to ${capitalizeFirstLetter(linkedActionConfig.linkedAction)}`);
     } else {
@@ -193,8 +219,9 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       key={externalWidgetState.timestamp}
       {...sharedProps}
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
-      customTokenList={defaultConfig.tradeTokenList[chainId]}
-      onWidgetStateChange={wrapStateChange(onTradeWidgetStateChange)}
+      customTokenList={tradeTokenList}
+      onWidgetStateChange={onTradeWidgetStateChange}
+      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       externalWidgetState={externalWidgetState}
@@ -211,6 +238,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
       tokensLocked={shouldLockTokens}
+      onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />
   );
 }

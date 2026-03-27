@@ -84,8 +84,8 @@ export const RewardsBalanceCard = ({
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
-      title={t`USDS supplied to Rewards`}
-      tokenSymbol="USDS"
+      title={t`Supplied to Rewards`}
+      icon={<img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-full w-full" />}
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />
@@ -139,8 +139,8 @@ export const RewardsBalanceCard = ({
     />
   ) : (
     <InteractiveStatsCardAlt
-      title={t`USDS supplied to Rewards`}
-      tokenSymbol="USDS"
+      title={t`Supplied to Rewards`}
+      icon={<img src="/images/rewards_icon_large.svg" alt="Rewards" className="h-full w-full" />}
       url={url}
       logoName="rewards"
       content={

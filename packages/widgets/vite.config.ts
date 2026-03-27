@@ -53,11 +53,12 @@ export default defineConfig({
     }
   },
   plugins: [
-    dts({
-      insertTypesEntry: true,
-      exclude: ['src/locales', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
-      copyDtsFiles: true
-    }),
+    !process.env.VERCEL &&
+      dts({
+        insertTypesEntry: true,
+        exclude: ['src/locales', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+        copyDtsFiles: true
+      }),
     react({
       plugins: [['@lingui/swc-plugin', {}]]
     }),
@@ -65,7 +66,10 @@ export default defineConfig({
     lingui(),
     visualizer(),
     viteStaticCopy({
-      targets: [{ src: 'src/public/fonts/*', dest: 'fonts' }]
+      targets: [
+        { src: 'src/public/fonts/*', dest: 'fonts' },
+        { src: 'src/public/images/*', dest: 'images' }
+      ]
     })
   ]
 });

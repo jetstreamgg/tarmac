@@ -9,7 +9,7 @@ import { useAppAnalytics } from './useAppAnalytics';
  * Skips the initial state on mount — only tracks transitions that happen
  * while the component is mounted (or auto-reconnect on page load).
  *
- * Call once in a component that's always mounted (e.g. DualSwitcher).
+ * Call once in a component that's always mounted (e.g. Layout).
  */
 export function useWalletAnalytics() {
   const { isConnected, connector } = useConnection();
@@ -36,5 +36,5 @@ export function useWalletAnalytics() {
     }
 
     prevRef.current = { connected: isConnected, walletName };
-  }, [isConnected, walletName]);  
+  }, [isConnected, walletName, trackWalletConnected, trackWalletDisconnected]);
 }

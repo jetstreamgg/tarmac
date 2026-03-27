@@ -116,6 +116,20 @@ export const legacyTooltips: Tooltip[] = [
     tooltip:
       'Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Currently, all Staking Rewards take the form of USDS. Staking Reward rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting.'
   },
+
+  // Morpho tooltips
+  {
+    id: 'morpho-utilization',
+    title: 'Utilization',
+    tooltip: 'Utilization is the percentage of funds in the Morpho market that are currently borrowed.'
+  },
+  {
+    id: 'morpho-liquidity',
+    title: 'Available liquidity',
+    tooltip:
+      'The amount of USDS currently idle in the Morpho market and available for immediate withdrawal or new borrowing.'
+  },
+  // StUSDS tooltips
   {
     id: 'supply-capacity-reached',
     title: 'Capacity temporarily full',

@@ -1,6 +1,7 @@
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { linkedActionMetadata } from '@/lib/constants';
+import { ExpertIntentMapping, VaultsIntentMapping, IntentMapping, linkedActionMetadata } from '@/lib/constants';
 import { ArrowStepIndicator } from './ArrowStepIndicator';
+import { ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 
 export const LinkedActionWrapper = () => {
   const { linkedActionConfig } = useConfigContext();
@@ -15,15 +16,31 @@ export const LinkedActionWrapper = () => {
     ? linkedActionMetadata[linkedActionConfig.initialAction]?.icon
     : null;
 
-  const secondStepText = linkedActionConfig.linkedAction
-    ? linkedActionMetadata[linkedActionConfig.linkedAction]?.text
-    : '';
+  const isExpertLinkedAction = linkedActionConfig.linkedAction === IntentMapping[Intent.EXPERT_INTENT];
+  const isVaultsLinkedAction = linkedActionConfig.linkedAction === IntentMapping[Intent.VAULTS_INTENT];
+
+  const getModuleText = () => {
+    if (linkedActionConfig.expertModule === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]) {
+      return 'stUSDS';
+    }
+    if (linkedActionConfig.expertModule === VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]) {
+      return 'Vault';
+    }
+    return linkedActionMetadata[linkedActionConfig.linkedAction!]?.text || '';
+  };
+
+  const secondStepText =
+    isExpertLinkedAction || isVaultsLinkedAction
+      ? getModuleText()
+      : linkedActionConfig.linkedAction
+        ? linkedActionMetadata[linkedActionConfig.linkedAction]?.text
+        : '';
   const secondStepIcon = linkedActionConfig.linkedAction
     ? linkedActionMetadata[linkedActionConfig.linkedAction]?.icon
     : null;
 
   return (
-    <div className="mb-1 mt-4 flex w-full justify-between px-4 md:mb-0 md:mt-2 md:pl-1.5 md:pr-2.5 lg:mt-0 lg:pl-3 lg:pr-1.5">
+    <div className="mt-4 mb-1 flex w-full justify-between px-4 md:mt-2 md:mb-0 md:pr-2.5 md:pl-1.5 lg:mt-0 lg:pr-1.5 lg:pl-3">
       <ArrowStepIndicator
         text={firstStepText}
         position={0}

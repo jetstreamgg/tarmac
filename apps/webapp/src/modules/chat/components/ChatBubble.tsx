@@ -20,7 +20,11 @@ import { useChatContext } from '../context/ChatContext';
 import { Button } from '@/components/ui/button';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useChatAnalytics } from '../hooks/useChatAnalytics';
+
+// Module-level flag so suggested questions impression fires exactly once per page load.
+let suggestedQuestionsTracked = false;
 
 type ChatBubbleProps = {
   user: UserType;
@@ -89,6 +93,7 @@ export const ChatBubble = ({
   const [searchParams] = useSearchParams();
   const { bpi } = useBreakpointIndex();
   const { setShowTermsModal, termsAccepted } = useChatContext();
+  const { trackSuggestedQuestionsShown, trackSuggestedQuestionClicked } = useChatAnalytics();
   const shouldUseLargeAvatar = bpi >= BP.xl && searchParams.get(QueryParams.Details) !== 'true';
   const isError = type === MessageType.error;
   const isLoading = type === MessageType.loading;
@@ -119,7 +124,16 @@ export const ChatBubble = ({
     return DEFAULT_SUGGESTED_QUESTIONS;
   }, []);
 
-  const handleQuestionClick = (question: string) => {
+  // Fire suggested questions shown event once per page load
+  useEffect(() => {
+    if (isOnlyMessage && suggestedQuestions.length > 0 && !suggestedQuestionsTracked) {
+      suggestedQuestionsTracked = true;
+      trackSuggestedQuestionsShown({ question_count: suggestedQuestions.length });
+    }
+  }, [isOnlyMessage, suggestedQuestions.length, trackSuggestedQuestionsShown]);
+
+  const handleQuestionClick = (question: string, index: number) => {
+    trackSuggestedQuestionClicked({ question_index: index });
     sendMessage(question);
   };
 
@@ -187,7 +201,7 @@ export const ChatBubble = ({
               {(isError || (isAuthError && !termsAccepted)) && (
                 <ChatError className="mb-3 h-4 w-4 shrink-0" />
               )}
-              <div className="min-w-0 break-words text-white/75">
+              <div data-ph-no-capture className="min-w-0 break-words text-white/75">
                 {isFeedback && user === UserType.user ? (
                   <Accordion type="single" collapsible className="w-full overflow-hidden">
                     <AccordionItem value="feedback" className="border-none p-0">
@@ -284,7 +298,7 @@ export const ChatBubble = ({
                           key={`${question}-${index}`}
                           variant="outline"
                           size="sm"
-                          onClick={() => handleQuestionClick(question)}
+                          onClick={() => handleQuestionClick(question, index)}
                           className="h-auto px-3 py-2 text-left whitespace-normal"
                         >
                           {question}

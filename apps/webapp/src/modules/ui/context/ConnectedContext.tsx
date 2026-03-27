@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import * as Sentry from '@sentry/react';
 import { useChainId, useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { sanitizeUrl } from '@/lib/utils';
@@ -18,6 +19,7 @@ interface ConnectedContextType {
   };
   vpnData: {
     isConnectedToVpn?: boolean;
+    isRestrictedRegion?: boolean;
     vpnIsLoading: boolean;
     vpnError?: Error;
     countryCode?: string | null;
@@ -46,7 +48,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const skipAuthCheck = !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
 
-  const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
+  const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.jetstream.gg';
   const {
     data: authData,
     isLoading: authIsLoading,
@@ -58,51 +60,22 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
   const vpnTrackedRef = useRef(false);
+
   useEffect(() => {
-    if (vpnIsLoading || vpnTrackedRef.current) return;
-    if (!vpnData && !vpnError) return;
-    vpnTrackedRef.current = true;
-    const result = vpnError
-      ? 'error'
-      : vpnData?.isConnectedToVpn
-        ? 'vpn_blocked'
-        : vpnData?.isRestrictedRegion
-          ? 'region_blocked'
-          : 'allowed';
-    trackVpnCheckCompleted({
-      isVpn: vpnData?.isConnectedToVpn ?? null,
-      isRestrictedRegion: vpnData?.isRestrictedRegion ?? null,
-      countryCode: vpnData?.countryCode ?? null,
-      result
-    });
-  }, [vpnIsLoading, vpnData, vpnError]);
+    if (vpnError) {
+      Sentry.captureException(vpnError, { tags: { endpoint: 'ip-status' } });
+    }
+  }, [vpnError]);
+
+  useEffect(() => {
+    if (authError) {
+      Sentry.captureException(authError, { tags: { endpoint: 'address-status' } });
+    }
+  }, [authError]);
 
   useEffect(() => {
     setEnabled(!!address);
   }, [address]);
-
-  // Check whether the user is in a restricted region,
-  // but only flag to reload if the current build is unrestricted
-  const isRestrictedRegion = useMemo(
-    () =>
-      !vpnIsLoading &&
-      (import.meta.env.VITE_RESTRICTED_BUILD !== 'true' || import.meta.env.VITE_RESTRICTED_MICA !== 'true') &&
-      vpnData?.isRestrictedRegion,
-    [vpnIsLoading, vpnData?.isRestrictedRegion]
-  );
-
-  // Reload page if build should be restricted, but isn't.
-  // Since the user now appears to be in a restricted region, reloading
-  // the page should serve them the correct build
-  useEffect(() => {
-    if (isRestrictedRegion) {
-      // Add a slight delay to show message before reloading
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isRestrictedRegion]);
 
   // Terms acceptance check
   const checkTermsAcceptance = async (address: string) => {
@@ -158,6 +131,27 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const isAuthorized = isAllowed || skipAuthCheck;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
 
+  useEffect(() => {
+    if (vpnIsLoading || vpnTrackedRef.current) return;
+    if (!vpnData && !vpnError) return;
+    vpnTrackedRef.current = true;
+    const result = vpnError
+      ? 'error'
+      : vpnData?.isConnectedToVpn
+        ? 'vpn_blocked'
+        : vpnData?.isRestrictedRegion
+          ? 'region_blocked'
+          : isAllowed
+            ? 'allowed'
+            : 'unknown';
+    trackVpnCheckCompleted({
+      isVpn: vpnData?.isConnectedToVpn ?? null,
+      isRestrictedRegion: vpnData?.isRestrictedRegion ?? null,
+      countryCode: vpnData?.countryCode ?? null,
+      result
+    });
+  }, [vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
+
   return (
     <ConnectedContext.Provider
       value={{
@@ -173,6 +167,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         },
         vpnData: {
           isConnectedToVpn: vpnData?.isConnectedToVpn,
+          isRestrictedRegion: vpnData?.isRestrictedRegion,
           vpnIsLoading,
           vpnError,
           countryCode: vpnData?.countryCode ?? null

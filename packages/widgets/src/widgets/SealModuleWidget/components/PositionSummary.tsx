@@ -1,7 +1,7 @@
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { JSX, useContext, useMemo } from 'react';
+import { JSX, useContext, useEffect, useMemo } from 'react';
 import { SealModuleWidgetContext } from '../context/context';
 import {
   TOKENS,
@@ -33,6 +33,9 @@ import { ArrowDown } from '@widgets/shared/components/icons/ArrowDown';
 import { JazziconComponent } from './Jazzicon';
 import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
 import { getTooltipById } from '../../../data/tooltips';
+import { SealScreen } from '../lib/constants';
+import { WidgetContext } from '@widgets/context/WidgetContext';
+import { WidgetState } from '@widgets/index';
 
 const { usds, mkr } = TOKENS;
 
@@ -65,7 +68,7 @@ const LineItem = ({
         <Text className={'text-textSecondary flex items-center text-sm'}>
           {label}
           {label === 'Rate' && (
-            <span className="ml-2 mt-1">
+            <span className="mt-1 ml-2">
               <PopoverRateInfo type="ssr" />
             </span>
           )}
@@ -109,6 +112,12 @@ const LineItem = ({
 
 export const PositionSummary = () => {
   const ilkName = getIlkName(1);
+  const { setWidgetState } = useContext(WidgetContext);
+
+  // Update widgetState on mount to REVIEW
+  useEffect(() => {
+    setWidgetState((prev: WidgetState) => ({ ...prev, screen: SealScreen.REVIEW }));
+  }, []);
 
   const { activeUrn, mkrToFree, usdsToWipe, selectedDelegate, selectedRewardContract } =
     useContext(SealModuleWidgetContext);
@@ -299,18 +308,18 @@ export const PositionSummary = () => {
           isUpdatedValue(existingRewardContract?.toLowerCase(), selectedRewardContract?.toLowerCase()) ? (
             [
               isRewardContractTokensLoading ? (
-                <Skeleton className="w-30 h-5" />
+                <Skeleton className="h-5 w-30" />
               ) : existingRewardContractTokens ? (
                 <TokenIcon token={existingRewardContractTokens?.rewardsToken} className="h-5 w-5" />
               ) : null,
               isSelectedContractTokensLoading ? (
-                <Skeleton className="w-30 h-5" />
+                <Skeleton className="h-5 w-30" />
               ) : selectedRewardContractTokens ? (
                 <TokenIcon token={selectedRewardContractTokens?.rewardsToken} className="h-5 w-5" />
               ) : null
             ]
           ) : isRewardContractTokensLoading ? (
-            <Skeleton className="w-30 h-5" />
+            <Skeleton className="h-5 w-30" />
           ) : rewardsTokensToDisplay ? (
             <TokenIcon token={rewardsTokensToDisplay?.rewardsToken} className="h-5 w-5" />
           ) : null
@@ -348,18 +357,18 @@ export const PositionSummary = () => {
           existingSelectedVoteDelegate?.toLowerCase() !== selectedDelegate.toLowerCase() ? (
             [
               loadingExistingDelegateOwner ? (
-                <Skeleton className="w-30 h-5" />
+                <Skeleton className="h-5 w-30" />
               ) : existingDelegateOwner ? (
                 <JazziconComponent address={existingDelegateOwner} diameter={20} />
               ) : null,
               loadingSelectedDelegateOwner ? (
-                <Skeleton className="w-30 h-5" />
+                <Skeleton className="h-5 w-30" />
               ) : selectedDelegateOwner ? (
                 <JazziconComponent address={selectedDelegateOwner} diameter={20} />
               ) : null
             ]
           ) : isDelegateLoading ? (
-            <Skeleton className="w-30 h-5" />
+            <Skeleton className="h-5 w-30" />
           ) : delegateOwnerToDisplay ? (
             <JazziconComponent address={delegateOwnerToDisplay} diameter={20} />
           ) : null

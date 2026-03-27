@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { usePostHog } from 'posthog-js/react';
-import { useChains } from 'wagmi';
+import { useChains, useConnection } from 'wagmi';
 import {
   AppEvents,
   safeCapture,
@@ -8,12 +9,18 @@ import {
   type TxStatus,
   type ErrorContext
 } from '../constants';
+import { useAnalyticsFlow } from '../context/AnalyticsFlowContext';
 
 export function useAppAnalytics() {
   const posthog = usePostHog();
+  const { address } = useConnection();
   const chains = useChains();
+  const { getFlowId } = useAnalyticsFlow();
 
-  const getChainName = (chainId: number) => chains.find(c => c.id === chainId)?.name ?? `unknown_${chainId}`;
+  const getChainName = useCallback(
+    (chainId: number) => chains.find(c => c.id === chainId)?.name ?? `unknown_${chainId}`,
+    [chains]
+  );
 
   const trackWidgetSelected = ({
     widgetName,
@@ -32,39 +39,91 @@ export function useAppAnalytics() {
       selection_method: selectionMethod,
       chain_id: chainId,
       chain_name: getChainName(chainId),
-      viewport: getViewport()
+      viewport: getViewport(),
+      flow_id: getFlowId()
     });
   };
 
-  const trackWidgetFlowStarted = ({ widgetName, chainId }: { widgetName: string; chainId: number }) => {
-    safeCapture(posthog, AppEvents.WIDGET_FLOW_STARTED, {
-      widget_name: widgetName,
-      chain_id: chainId,
-      chain_name: getChainName(chainId),
-      viewport: getViewport()
-    });
-  };
+  const trackTransactionStarted = useCallback(
+    ({
+      widgetName,
+      chainId,
+      action,
+      flow,
+      data
+    }: {
+      widgetName: string;
+      chainId: number;
+      action?: string;
+      flow?: string;
+      data?: Record<string, unknown>;
+    }) => {
+      safeCapture(posthog, AppEvents.TRANSACTION_STARTED, {
+        widget_name: widgetName,
+        chain_id: chainId,
+        chain_name: getChainName(chainId),
+        viewport: getViewport(),
+        flow_id: getFlowId(),
+        ...(action && { action }),
+        ...(flow && { flow }),
+        ...data
+      });
+    },
+    [posthog, getChainName, getFlowId]
+  );
 
-  const trackWidgetFlowCompleted = ({
-    widgetName,
-    chainId,
-    txStatus,
-    errorContext
-  }: {
-    widgetName: string;
-    chainId: number;
-    txStatus: TxStatus;
-    errorContext?: ErrorContext;
-  }) => {
-    safeCapture(posthog, AppEvents.WIDGET_FLOW_COMPLETED, {
-      widget_name: widgetName,
-      chain_id: chainId,
-      chain_name: getChainName(chainId),
-      tx_status: txStatus,
-      ...(errorContext && { error_context: errorContext }),
-      viewport: getViewport()
-    });
-  };
+  const trackTransactionCompleted = useCallback(
+    ({
+      widgetName,
+      chainId,
+      txStatus,
+      txHash,
+      errorContext,
+      action,
+      flow,
+      data
+    }: {
+      widgetName: string;
+      chainId: number;
+      txStatus: TxStatus;
+      txHash?: string;
+      errorContext?: ErrorContext;
+      action?: string;
+      flow?: string;
+      data?: Record<string, unknown>;
+    }) => {
+      safeCapture(posthog, AppEvents.TRANSACTION_COMPLETED, {
+        widget_name: widgetName,
+        chain_id: chainId,
+        chain_name: getChainName(chainId),
+        tx_status: txStatus,
+        wallet_address: address,
+        ...(txHash && { tx_hash: txHash }),
+        ...(errorContext && { error_context: errorContext }),
+        ...(action && { action }),
+        ...(flow && { flow }),
+        ...data,
+        viewport: getViewport(),
+        flow_id: getFlowId()
+      });
+    },
+    [posthog, address, getChainName, getFlowId]
+  );
+
+  const trackWidgetReviewViewed = useCallback(
+    ({ widgetName, chainId, flow }: { widgetName: string; chainId: number; flow: string }) => {
+      safeCapture(posthog, AppEvents.WIDGET_REVIEW_VIEWED, {
+        widget_name: widgetName,
+        chain_id: chainId,
+        chain_name: getChainName(chainId),
+        flow,
+        wallet_address: address,
+        viewport: getViewport(),
+        flow_id: getFlowId()
+      });
+    },
+    [posthog, address, getChainName, getFlowId]
+  );
 
   const trackDetailsPaneToggled = ({
     toggleAction,
@@ -100,24 +159,31 @@ export function useAppAnalytics() {
     });
   };
 
-  const trackWalletConnected = ({ walletName }: { walletName: string }) => {
-    safeCapture(posthog, AppEvents.WALLET_CONNECTED, {
-      wallet_name: walletName,
-      viewport: getViewport()
-    });
-  };
+  const trackWalletConnected = useCallback(
+    ({ walletName }: { walletName: string }) => {
+      safeCapture(posthog, AppEvents.WALLET_CONNECTED, {
+        wallet_name: walletName,
+        viewport: getViewport()
+      });
+    },
+    [posthog]
+  );
 
-  const trackWalletDisconnected = ({ walletName }: { walletName: string }) => {
-    safeCapture(posthog, AppEvents.WALLET_DISCONNECTED, {
-      wallet_name: walletName,
-      viewport: getViewport()
-    });
-  };
+  const trackWalletDisconnected = useCallback(
+    ({ walletName }: { walletName: string }) => {
+      safeCapture(posthog, AppEvents.WALLET_DISCONNECTED, {
+        wallet_name: walletName,
+        viewport: getViewport()
+      });
+    },
+    [posthog]
+  );
 
   return {
     trackWidgetSelected,
-    trackWidgetFlowStarted,
-    trackWidgetFlowCompleted,
+    trackTransactionStarted,
+    trackTransactionCompleted,
+    trackWidgetReviewViewed,
     trackDetailsPaneToggled,
     trackChatPaneToggled,
     trackWalletConnected,

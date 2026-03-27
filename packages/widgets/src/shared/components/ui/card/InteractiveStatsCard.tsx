@@ -10,24 +10,30 @@ export const InteractiveStatsCard = ({
   footerRightContent,
   tokenSymbol,
   url,
-  chainId
+  chainId,
+  icon
 }: {
   title: React.ReactElement | string;
   headerRightContent: React.ReactElement | string;
   footer: React.ReactElement | string;
   footerRightContent?: React.ReactElement | string;
-  tokenSymbol: string;
+  tokenSymbol?: string;
   url?: string;
   chainId?: number;
+  icon?: React.ReactNode;
 }): React.ReactElement => {
   return (
     <Card variant={url ? 'statsInteractive' : 'stats'} className="relative p-4 lg:p-5">
       <div className="flex items-center gap-2">
-        <TokenIcon
-          className="h-8 w-8"
-          token={{ symbol: tokenSymbol, name: tokenSymbol }}
-          chainId={chainId ?? 1}
-        />{' '}
+        {icon ? (
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center">{icon}</div>
+        ) : tokenSymbol ? (
+          <TokenIcon
+            className="h-8 w-8"
+            token={{ symbol: tokenSymbol, name: tokenSymbol }}
+            chainId={chainId ?? 1}
+          />
+        ) : null}{' '}
         <div className="grow">
           <CardContent className="flex items-center justify-between gap-4">
             <Text>{title}</Text>

@@ -5,7 +5,7 @@ import React from 'react';
 
 interface RateLineWithArrowProps {
   rateText: string;
-  popoverType: 'ssr' | 'srr' | 'str' | 'stusds';
+  popoverType: 'ssr' | 'srr' | 'str' | 'stusds' | 'expert' | 'morpho';
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   showArrow?: boolean;
 }

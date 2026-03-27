@@ -12,8 +12,10 @@ import {
   sUsdsL2Address,
   usdcL2Address,
   usdsL2Address,
-  stUsdsAddress,
-  spkConfig
+  stUsdsConfig,
+  spkConfig,
+  cbBtcConfig,
+  wstEthConfig
 } from '../generated';
 import { TokenMapping, Token, TokenForChain } from './types';
 import { TENDERLY_CHAIN_ID } from '../constants';
@@ -170,10 +172,24 @@ export const TOKENS: TokenMapping = {
     decimals: 18
   },
   stusds: {
-    address: stUsdsAddress, // TODO: no stUsdsConfig for now as it comes from the wagmi etherscan plugin
+    address: stUsdsConfig.address,
     name: 'stUSDS',
     symbol: 'stUSDS',
     color: '#EB5EDF',
+    decimals: 18
+  },
+  cbbtc: {
+    address: cbBtcConfig.address,
+    name: 'cbBTC',
+    symbol: 'cbBTC',
+    color: '#0052FF',
+    decimals: 8
+  },
+  wsteth: {
+    address: wstEthConfig.address,
+    name: 'wstETH',
+    symbol: 'wstETH',
+    color: '#00A2FF',
     decimals: 18
   }
 };

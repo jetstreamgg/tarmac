@@ -1,6 +1,6 @@
 import { UserType, MessageType } from '../constants';
 import { ChatIntent } from '../types/Chat';
-import { generateUUID } from './generateUUID';
+import { generateUUID } from '@/lib/generateUUID';
 
 export const intentSelectedMessage = (intent: ChatIntent) => {
   return {

@@ -6,9 +6,9 @@ import { fadeAnimations } from '@/modules/ui/animation/presets';
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement> & { className?: string }
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-hidden">
+  React.HTMLAttributes<HTMLTableElement> & { className?: string; wrapperClassName?: string }
+>(({ className, wrapperClassName, ...props }, ref) => (
+  <div className={cn('relative w-full overflow-hidden', wrapperClassName)}>
     <table ref={ref} className={cn('w-full caption-bottom text-sm', className)} {...props} />
   </div>
 ));
@@ -42,8 +42,9 @@ const TableRow = React.forwardRef<HTMLTableRowElement, HTMLMotionProps<'tr'>>(
   ({ className, ...props }, ref) => (
     <motion.tr
       ref={ref}
+      initial={false}
       className={cn(
-        'border-brandLight/20 has-[td]:hover:bg-brandLight/20 has-[td]:focus:border-brandLight/40 has-[td]:active:bg-brandLight/10 data-[state=selected]:bg-brandLight/10 border-t transition-colors last:border-b has-[th]:border-0 has-[td]:focus:border-y-2',
+        'border-brandLight/20 has-[td]:hover:bg-brandLight/20 has-[td]:focus:border-brandLight/40 has-[td]:active:bg-brandLight/10 data-[state=selected]:bg-brandLight/10 border-t transition-colors last:border-b has-[td]:focus:border-y-2 has-[th]:border-0',
         className
       )}
       variants={fadeAnimations}
@@ -60,7 +61,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'text-selectActive h-4 px-4 py-2 text-left align-middle text-[13px] font-normal leading-none [&:has([role=checkbox])]:pr-0',
+      'text-selectActive h-4 px-4 py-2 text-left align-middle text-[13px] leading-none font-normal [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
@@ -75,7 +76,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      'text-text h-14 p-4 align-middle text-base font-normal leading-normal [&:has([role=checkbox])]:pr-0',
+      'text-text h-14 p-4 align-middle text-base leading-normal font-normal [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}

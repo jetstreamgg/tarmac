@@ -10,6 +10,7 @@ import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/c
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { TxStatus, NotificationType } from '../constants';
 import { SealFlow } from '@widgets/widgets/SealModuleWidget/lib/constants';
+import { WidgetAnalyticsEvent } from './analyticsEvents';
 
 export type WidgetState = {
   flow:
@@ -22,7 +23,14 @@ export type WidgetState = {
     | StakeFlow
     | SealFlow;
   action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction;
-  screen: InitialScreen | SavingsScreen | UpgradeScreen | RewardsScreen | TradeScreen;
+  screen:
+    | InitialScreen
+    | SavingsScreen
+    | UpgradeScreen
+    | RewardsScreen
+    | TradeScreen
+    | StakeScreen
+    | SealScreen;
 };
 
 type Amount = {
@@ -102,6 +110,7 @@ export type WidgetProps = {
   onStateValidated?: (state: State) => void;
   onNotification?: (message: WidgetMessage) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
+  onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
   onCustomNavigation?: () => void;
   customNavigationLabel?: string;
   enabled?: boolean;

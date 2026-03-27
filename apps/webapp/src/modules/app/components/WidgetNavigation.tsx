@@ -12,12 +12,12 @@ import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper';
 import { cn } from '@/lib/utils';
-import { Menu, ChevronDown } from 'lucide-react';
+import { Menu, ChevronDown, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { DualSwitcher } from '@/components/DualSwitcher';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
-import { useChains } from 'wagmi';
+import { useChains, useAccount } from 'wagmi';
 import { useEnhancedNetworkToast } from '@/modules/app/hooks/useEnhancedNetworkToast';
 import { useNetworkAutoSwitch } from '@/modules/app/hooks/useNetworkAutoSwitch';
 import { WidgetMenuItemTooltip } from '@/modules/app/components/WidgetMenuItemTooltip';
@@ -25,6 +25,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { useScrollHint } from '@/modules/app/hooks/useScrollHint';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { type SelectionMethod } from '@/modules/analytics/constants';
+import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 
 interface WidgetNavigationProps {
   widgetContent: WidgetContent;
@@ -75,8 +76,9 @@ export function WidgetNavigation({
     };
   }, [intent, showDrawerMenu]);
 
-  const { setIsSwitchingNetwork } = useNetworkSwitch();
+  const { isSwitchingNetwork, setIsSwitchingNetwork } = useNetworkSwitch();
   const chains = useChains();
+  const { isConnected } = useAccount();
   const { showNetworkToast } = useEnhancedNetworkToast();
   const [previousChainId, setPreviousChainId] = useState<number | undefined>(currentChainId);
 
@@ -87,10 +89,12 @@ export function WidgetNavigation({
   });
 
   const { trackWidgetSelected } = useAppAnalytics();
+  const { startNewFlow } = useAnalyticsFlow();
 
   const handleWidgetChange = (value: string, method?: SelectionMethod) => {
     // Skip tracking if the widget didn't actually change (e.g. Tabs re-firing during URL param updates)
     if (value !== intent) {
+      startNewFlow();
       trackWidgetSelected({
         widgetName: IntentMapping[value as Intent] || value,
         previousWidget: IntentMapping[intent as Intent] || 'balances',
@@ -101,6 +105,13 @@ export function WidgetNavigation({
     const targetIntent = value as Intent;
     handleWidgetNavigation(targetIntent);
   };
+
+  // Reset switching state when wallet disconnects
+  useEffect(() => {
+    if (!isConnected && isSwitchingNetwork) {
+      setIsSwitchingNetwork(false);
+    }
+  }, [isConnected, isSwitchingNetwork, setIsSwitchingNetwork]);
 
   // Track network changes and show enhanced toast
   useEffect(() => {
@@ -278,7 +289,7 @@ export function WidgetNavigation({
                 >
                   {widgetContent.map((group, groupIndex) => (
                     <React.Fragment key={group.id}>
-                      {group.items.map(([widgetIntent, label, icon, , comingSoon, options, description]) => (
+                      {group.items.map(([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
                         <div
                           key={widgetIntent}
                           className="flex grow basis-[15%] justify-center md:w-full md:basis-auto md:justify-start"
@@ -291,6 +302,7 @@ export function WidgetNavigation({
                             isMobile={isMobile}
                             disabled={options?.disabled || false}
                             isCurrentWidget={intent === widgetIntent}
+                            subItems={subItems}
                           >
                             <TabsTrigger
                               ref={intent === widgetIntent ? activeTabRef : null}
@@ -355,40 +367,54 @@ export function WidgetNavigation({
           </div>
           <div className="md:max-w-[440px] md:min-w-[352px] lg:flex lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:flex-col lg:overflow-hidden">
             <LinkedActionWrapper />
-            <AnimatePresence initial={false} mode="popLayout">
-              {widgetContent.map(group =>
-                group.items.map(
-                  ([int, , , content]) =>
-                    intent === int && (
-                      <TabsContent
-                        key={int}
-                        value={int}
-                        className={cn(tabContentClasses, 'flex flex-col')}
-                        style={style}
-                        asChild
-                      >
-                        <motion.div
-                          variants={cardAnimations}
-                          initial={AnimationLabels.initial}
-                          animate={AnimationLabels.animate}
-                          exit={AnimationLabels.exit}
-                          className={cn(
-                            'flex-1 overflow-y-auto md:pr-0 lg:overflow-hidden',
-                            isMobile
-                              ? showLinkedAction
-                                ? 'scroll-mt-[148px]'
-                                : 'scroll-mt-[87px]'
-                              : 'scroll-mt-[0px]'
-                          )}
+            {isSwitchingNetwork ? (
+              <div
+                className={cn(tabContentClasses, 'flex flex-1 flex-col items-center justify-center')}
+                style={style}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 className="text-textSecondary h-8 w-8 animate-spin" />
+                  <Text variant="medium" className="text-textSecondary">
+                    <Trans>Switching network...</Trans>
+                  </Text>
+                </div>
+              </div>
+            ) : (
+              <AnimatePresence initial={false} mode="popLayout">
+                {widgetContent.map(group =>
+                  group.items.map(
+                    ([int, , , content]) =>
+                      intent === int && (
+                        <TabsContent
+                          key={int}
+                          value={int}
+                          className={cn(tabContentClasses, 'flex flex-col')}
+                          style={style}
+                          asChild
                         >
-                          {content}
-                        </motion.div>
-                      </TabsContent>
-                    )
-                )
-              )}
-              {children}
-            </AnimatePresence>
+                          <motion.div
+                            variants={cardAnimations}
+                            initial={AnimationLabels.initial}
+                            animate={AnimationLabels.animate}
+                            exit={AnimationLabels.exit}
+                            className={cn(
+                              'flex-1 overflow-y-auto md:pr-0 lg:overflow-hidden',
+                              isMobile
+                                ? showLinkedAction
+                                  ? 'scroll-mt-[148px]'
+                                  : 'scroll-mt-[87px]'
+                                : 'scroll-mt-[0px]'
+                            )}
+                          >
+                            {content}
+                          </motion.div>
+                        </TabsContent>
+                      )
+                  )
+                )}
+                {children}
+              </AnimatePresence>
+            )}
           </div>
         </motion.div>
       </Tabs>

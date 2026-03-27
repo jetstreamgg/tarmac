@@ -1,7 +1,7 @@
 const CONSENT_COOKIE_NAME = 'sky_consent';
 const LEGACY_STORAGE_KEY = 'cookie_consent';
 
-export type ServiceConsent = { posthog: boolean };
+export type ServiceConsent = { posthog?: boolean; google_analytics?: boolean };
 
 /**
  * Determine the top-level domain for cross-subdomain cookies.
@@ -54,8 +54,11 @@ export function getStoredConsent(): ServiceConsent | null {
   if (raw) {
     try {
       const data = JSON.parse(decodeURIComponent(raw));
-      if (typeof data === 'object' && data !== null && typeof data.posthog === 'boolean') {
-        return { posthog: data.posthog };
+      if (typeof data === 'object' && data !== null) {
+        const result: ServiceConsent = {};
+        if (typeof data.posthog === 'boolean') result.posthog = data.posthog;
+        if (typeof data.google_analytics === 'boolean') result.google_analytics = data.google_analytics;
+        if (Object.keys(result).length > 0) return result;
       }
     } catch {
       // Corrupted cookie — treat as no consent
@@ -69,9 +72,11 @@ export function getStoredConsent(): ServiceConsent | null {
       if (legacy) {
         const parsed = JSON.parse(legacy);
         if (typeof parsed === 'object' && parsed !== null && typeof parsed.posthog === 'boolean') {
-          saveConsent({ posthog: parsed.posthog });
+          const migrated: ServiceConsent = { posthog: parsed.posthog };
+          if (typeof parsed.google_analytics === 'boolean') migrated.google_analytics = parsed.google_analytics;
+          saveConsent(migrated);
           localStorage.removeItem(LEGACY_STORAGE_KEY);
-          return { posthog: parsed.posthog };
+          return migrated;
         }
         localStorage.removeItem(LEGACY_STORAGE_KEY);
       }

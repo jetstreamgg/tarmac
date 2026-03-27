@@ -129,6 +129,7 @@ export const ConversationFeedbackModal = ({
                   <Trans>Additional comments (optional):</Trans>
                 </Text>
                 <textarea
+                  data-ph-no-capture
                   ref={textareaRef}
                   value={comment}
                   onChange={e => setComment(e.target.value)}

@@ -143,3 +143,8 @@ pnpm messages        # Extract and compile translations
   - `VITE_RPC_PROVIDER_*` - RPC endpoints
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection
   - `VITE_USE_MOCK_WALLET` - Testing mode
+
+## Git Commit Guidelines
+
+- Do not include "Co-Authored-By" or any AI attribution in commit messages
+- Keep commit messages concise and focused on what changed

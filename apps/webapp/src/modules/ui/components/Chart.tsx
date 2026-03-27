@@ -184,6 +184,7 @@ export type Data = {
   date: Date;
   isMin?: boolean;
   isMax?: boolean;
+  tooltipLabel?: string;
 };
 
 interface ChartProps {
@@ -191,10 +192,13 @@ interface ChartProps {
   symbol?: string;
   prefix?: string;
   isPercentage?: boolean;
+  hidePercentChange?: boolean;
   onTimeFrameChange?: (tf: TimeFrame) => void;
   isLoading?: boolean;
   error?: Error | null;
   dataTestId?: string;
+  displayValue?: number;
+  tooltipLabel?: string;
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
@@ -214,7 +218,9 @@ function CardTitleContent({
   percentage,
   formattedPercentage,
   isZeroPercentage,
-  isLoading
+  isLoading,
+  hidePercentChange,
+  displayValue
 }: {
   data: Data[];
   isLarge: boolean;
@@ -225,6 +231,8 @@ function CardTitleContent({
   formattedPercentage: string;
   isZeroPercentage: boolean;
   isLoading: boolean;
+  hidePercentChange?: boolean;
+  displayValue?: number;
 }) {
   return (
     <LoadingErrorWrapper
@@ -253,19 +261,29 @@ function CardTitleContent({
           <HStack gap={2} className="h-8 items-end justify-start p-0">
             <Text className="text-xl lg:text-2xl">
               {prefix || ''}
-              {`${formatNumber(data[data.length - 1]?.value || 0, {
+              {`${formatNumber(displayValue ?? data[data.length - 1]?.value ?? 0, {
                 maxDecimals: 2,
                 compact: true
               })}${isLarge && !isPercentage && symbol ? ` ${symbol}` : ''}${isPercentage ? '%' : ''}`}
             </Text>
-            <HStack
-              gap={1}
-              className={`items-center justify-center overflow-clip lg:max-w-none ${isZeroPercentage ? '' : percentage >= 0 ? 'text-bullish' : 'text-error'}`}
-            >
-              <Text className="max-w-28 text-ellipsis text-base lg:max-w-none lg:text-lg">
-                {percentage > 0 && !isZeroPercentage ? `+${formattedPercentage}` : formattedPercentage}
-              </Text>
-            </HStack>
+            {!hidePercentChange && (
+              <HStack
+                gap={1}
+                className={`items-center justify-center overflow-clip lg:max-w-none ${isZeroPercentage ? '' : percentage >= 0 ? 'text-bullish' : 'text-error'}`}
+              >
+                <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
+                  {percentage > 10000 ? (
+                    <><span className="align-middle text-[0.6em]">▲</span> 10,000+%</>
+                  ) : percentage > 0 && !isZeroPercentage ? (
+                    <><span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}</>
+                  ) : percentage < 0 && !isZeroPercentage ? (
+                    <><span className="align-middle text-[0.6em]">▼</span> {formattedPercentage.replace('-', '')}</>
+                  ) : (
+                    formattedPercentage
+                  )}
+                </Text>
+              </HStack>
+            )}
           </HStack>
         </motion.div>
       </AnimatePresence>
@@ -281,7 +299,8 @@ function ChartContent({
   isPercentage,
   activeTimeframe,
   isLoading,
-  error
+  error,
+  tooltipLabel
 }: {
   data: Data[];
   isLarge: boolean;
@@ -291,6 +310,7 @@ function ChartContent({
   isLoading: boolean;
   activeTimeframe: TimeFrame;
   error?: Error | null;
+  tooltipLabel?: string;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
@@ -331,6 +351,7 @@ function ChartContent({
                 isPercentage={isPercentage}
                 labelFormatter={date => formatDate(date, activeTimeframe)}
                 prefix={prefix}
+                tooltipLabel={tooltipLabel}
               />
             }
           />
@@ -356,9 +377,12 @@ export function Chart({
   prefix,
   onTimeFrameChange,
   isPercentage = false,
+  hidePercentChange = false,
   isLoading = false,
   error,
-  dataTestId
+  dataTestId,
+  displayValue,
+  tooltipLabel
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { bpi } = useBreakpointIndex();
@@ -420,6 +444,8 @@ export function Chart({
                 formattedPercentage={formattedPercentage}
                 isZeroPercentage={isZeroPercentage}
                 isLoading={isLoading}
+                hidePercentChange={hidePercentChange}
+                displayValue={displayValue}
               />
               <Text variant="chartSecondary">{format(new Date(), "EEE, MMM d 'at' h:mm a")}</Text>
             </CardTitle>
@@ -441,6 +467,7 @@ export function Chart({
           activeTimeframe={activeTimeframe}
           isLoading={isLoading}
           error={error}
+          tooltipLabel={tooltipLabel}
         />
       </Card>
       <HStack className="mt-3 justify-between">

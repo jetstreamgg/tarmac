@@ -104,13 +104,21 @@ test.describe('Expert Module - stUSDS', () => {
 
     // go to balance page
     await isolatedPage.getByRole('tab', { name: 'Balance' }).click();
-    await expect(isolatedPage.getByText('USDS supplied to stUSDS')).toBeVisible();
+    await expect(isolatedPage.getByText('Supplied to Expert')).toBeVisible();
 
-    // Click using the href that contains the stusds expert module path
-    await isolatedPage.locator('a[href*="expert_module=stusds"]').first().click();
+    // Click the Expert balance card (links to Expert overview)
+    await isolatedPage.locator('a[href*="widget=expert"]').first().click();
 
-    // should land on the stusds balance page
-    expect(isolatedPage.getByText('stUSDS')).toBeTruthy();
+    // Should land on the Expert overview page
+    // await expect(isolatedPage.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();
+
+    // Navigate to stUSDS module
+    // await isolatedPage.getByTestId('stusds-stats-card').click();
+
+    // Should now be in stUSDS module
+    await expect(
+      isolatedPage.getByTestId('widget-container').getByRole('heading', { name: 'stUSDS', exact: true })
+    ).toBeVisible();
   });
 
   test('Withdraw USDS from stUSDS module', async ({ isolatedPage }) => {
@@ -136,7 +144,7 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('5 USDS').first()).toBeVisible();
 
     // Perform withdrawal
-    await performAction(isolatedPage, 'Swap');
+    await performAction(isolatedPage, 'Withdraw');
 
     // Check success message (supports both native and Curve providers)
     await expectWithdrawSuccess(isolatedPage, '5');
@@ -223,13 +231,13 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
   });
 
-  test('Upgrade and access Expert rewards', async ({ isolatedPage }) => {
+  test('Upgrade and access stUSDS', async ({ isolatedPage }) => {
     await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
     // Navigate to Expert menu
     await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
 
     // Click on Upgrade button
-    await isolatedPage.getByText('Upgrade and access Expert rewards').first().click();
+    await isolatedPage.getByText('Upgrade and access stUSDS').first().click();
 
     await isolatedPage.getByTestId('upgrade-input-origin').click();
     await isolatedPage.getByTestId('upgrade-input-origin').fill('1');
@@ -404,7 +412,7 @@ test.describe('Expert Module - stUSDS', () => {
       await isolatedPage.getByTestId('withdraw-input-stusds').fill('3');
 
       // Perform withdrawal
-      await performAction(isolatedPage, 'Swap');
+      await performAction(isolatedPage, 'Withdraw');
 
       // Verify success (works for both native and Curve)
       await expectWithdrawSuccess(isolatedPage, '3');

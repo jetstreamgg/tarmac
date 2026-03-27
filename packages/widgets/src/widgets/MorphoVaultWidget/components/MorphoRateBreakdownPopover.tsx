@@ -1,0 +1,129 @@
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { BarChart } from '@widgets/shared/components/icons/BarChart';
+import { ChartPaper } from '@widgets/shared/components/icons/ChartPaper';
+import { TextPaper } from '@widgets/shared/components/icons/TextPaper';
+import { Sparkles } from '@widgets/shared/components/icons/Sparkles';
+import { Text } from '@widgets/shared/components/ui/Typography';
+import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
+import { useMorphoVaultMarketApiData } from '@jetstreamgg/sky-hooks';
+import { Trans } from '@lingui/react/macro';
+import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
+import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
+
+export function MorphoRateBreakdownPopover({
+  vaultAddress,
+  tooltipIconClassName
+}: {
+  vaultAddress: `0x${string}`;
+  tooltipIconClassName?: string;
+}) {
+  const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
+  const rateData = marketData?.rate;
+
+  if (isLoading) return <Skeleton className="h-4 w-20" />;
+  if (!rateData) return null;
+
+  const hasExtraIncentive = rateData.rewards.length > 0;
+  const displayedRate = hasExtraIncentive ? rateData.formattedNetRate : rateData.formattedRate;
+
+  return (
+    <div className="flex items-center gap-2">
+      <InfoTooltip
+        trigger={
+          <div className="flex items-center gap-1">
+            {hasExtraIncentive && <Sparkles className="h-4 w-4" />}
+            <Text variant="large" className={hasExtraIncentive ? 'text-bullish' : 'text-text'}>
+              {displayedRate}
+            </Text>
+          </div>
+        }
+        contentClassname="bg-container backdrop-blur-[50px]"
+        content={
+          <div className="flex min-w-[220px] flex-col gap-2 p-1">
+            {/* Native Rate */}
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <BarChart className="text-textSecondary h-4 w-4" />
+                <Text className="text-textSecondary text-sm">
+                  <Trans>Native Rate</Trans>
+                </Text>
+              </div>
+              <Text className="text-text text-sm">{rateData.formattedRate}</Text>
+            </div>
+
+            {/* Rewards */}
+            {rateData.rewards.length > 0 &&
+              rateData.rewards.map(reward => (
+                <div key={reward.symbol} className="flex items-center justify-between gap-8">
+                  <div className="flex items-center gap-2">
+                    <TokenIcon token={{ symbol: reward.symbol }} className="h-4 w-4" />
+                    <Text className="text-textSecondary text-sm">{reward.symbol} incentive</Text>
+                  </div>
+                  <Text className="text-bullish text-sm">{reward.formattedApy}</Text>
+                </div>
+              ))}
+
+            {/* Performance Fee */}
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <ChartPaper className="text-textSecondary h-4 w-4" />
+                <Text className="text-textSecondary text-sm">
+                  <Trans>Performance Fee</Trans>
+                </Text>
+                <span className="bg-textSecondary/15 text-textSecondary rounded px-1.5 py-0.5 text-xs">
+                  {rateData.formattedPerformanceFee}
+                </span>
+              </div>
+              <Text className="text-text text-sm">
+                {rateData.performanceFee
+                  ? `-${(rateData.rate * rateData.performanceFee * 100).toFixed(2)}%`
+                  : '0.00%'}
+              </Text>
+            </div>
+
+            {/* Management Fee */}
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                <TextPaper className="text-textSecondary h-4 w-4" />
+                <Text className="text-textSecondary text-sm">
+                  <Trans>Management Fee</Trans>
+                </Text>
+                <span className="bg-textSecondary/15 text-textSecondary rounded px-1.5 py-0.5 text-xs">
+                  {rateData.formattedManagementFee}
+                </span>
+              </div>
+              <Text className="text-text text-sm">
+                {rateData.managementFee ? `-${(rateData.managementFee * 100).toFixed(2)}%` : '0.00%'}
+              </Text>
+            </div>
+
+            {/* Divider */}
+            <div className="border-cardSecondary my-1 border-t" />
+
+            {/* Net Rate */}
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center gap-2">
+                {hasExtraIncentive && <Sparkles className="h-4 w-4" />}
+                <Text
+                  className={
+                    hasExtraIncentive ? 'text-bullish text-sm font-medium' : 'text-text text-sm font-medium'
+                  }
+                >
+                  <Trans>Net Rate</Trans>
+                </Text>
+              </div>
+              <Text
+                className={
+                  hasExtraIncentive ? 'text-bullish text-sm font-medium' : 'text-text text-sm font-medium'
+                }
+              >
+                ={rateData.formattedNetRate}
+              </Text>
+            </div>
+          </div>
+        }
+      />
+      <PopoverRateInfo type="morpho" iconClassName={tooltipIconClassName} />
+    </div>
+  );
+}

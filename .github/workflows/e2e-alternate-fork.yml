@@ -5,6 +5,10 @@ permissions:
 
 on:
   workflow_dispatch:
+  # pull_request:
+  # push:
+  #   branches:
+  #     - main
 
 concurrency:
   group: alternate-e2e-${{ github.head_ref || github.ref_name }}
@@ -162,7 +166,7 @@ jobs:
         run: |
           echo "🧪 Running Alternate VNet tests..."
           cd apps/webapp
-          pnpm e2e:parallel:alternate
+          pnpm e2e:parallel:alternate:fork
         env:
           TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
           USE_ALTERNATE_VNET: 'true'

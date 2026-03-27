@@ -31,7 +31,9 @@ export function MainApp() {
     updateLinkedActionConfig,
     setSelectedRewardContract,
     setSelectedExpertOption,
-    expertRiskDisclaimerShown
+    expertRiskDisclaimerShown,
+    setSelectedVaultsOption,
+    setSelectedConvertOption
   } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -92,14 +94,16 @@ export function MainApp() {
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const rewardContract = searchParams.get(QueryParams.Reward) || undefined;
   const expertModule = searchParams.get(QueryParams.ExpertModule) || undefined;
+  const vaultModule = searchParams.get(QueryParams.VaultModule) || undefined;
   const sourceToken = searchParams.get(QueryParams.SourceToken) || undefined;
   const targetToken = searchParams.get(QueryParams.TargetToken) || undefined;
   const linkedAction = searchParams.get(QueryParams.LinkedAction) || undefined;
   const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
+  const chatPanelEnabled = CHATBOT_ENABLED;
   const chatParam =
-    CHATBOT_ENABLED &&
+    chatPanelEnabled &&
     (bpi >= BP['3xl']
       ? !(searchParams.get(QueryParams.Chat) === 'false')
       : searchParams.get(QueryParams.Chat) === 'true');
@@ -151,7 +155,9 @@ export function MainApp() {
           newChainId,
           chains,
           setSelectedExpertOption,
-          expertRiskDisclaimerShown
+          expertRiskDisclaimerShown,
+          setSelectedVaultsOption,
+          setSelectedConvertOption
         );
         // Runs second validation for linked-action-specific criteria
         const validatedLinkedActionParams = validateLinkedActionSearchParams(validatedParams);
@@ -165,7 +171,9 @@ export function MainApp() {
     setSelectedRewardContract,
     widgetParam,
     setSelectedExpertOption,
-    expertRiskDisclaimerShown
+    expertRiskDisclaimerShown,
+    setSelectedVaultsOption,
+    setSelectedConvertOption
   ]);
 
   useEffect(() => {
@@ -229,7 +237,7 @@ export function MainApp() {
       linkedAction,
       inputAmount,
       rewardContract,
-      expertModule,
+      expertModule: expertModule || vaultModule,
       step,
       showLinkedAction: !!linkedAction,
       timestamp
@@ -241,6 +249,7 @@ export function MainApp() {
     inputAmount,
     rewardContract,
     expertModule,
+    vaultModule,
     step,
     widgetParam,
     linkedActionConfig.initialAction

@@ -20,7 +20,13 @@ import { useChainId } from 'wagmi';
 const secondaryTagline: Record<string, string> = {
   [IntentMapping.SAVINGS_INTENT]: 'to get the Sky Savings Rate',
   [IntentMapping.REWARDS_INTENT]: 'to get rewards',
-  [IntentMapping.EXPERT_INTENT]: 'to access Expert modules'
+  [IntentMapping.EXPERT_INTENT]: 'to access Expert modules',
+  [IntentMapping.VAULTS_INTENT]: 'to access Vaults'
+};
+
+const expertModuleTagline: Record<string, string> = {
+  stusds: 'to access stUSDS',
+  morpho: 'to access Morpho vault'
 };
 
 export const LinkedActionCard = ({
@@ -53,7 +59,8 @@ export const LinkedActionCard = ({
   // Extract reward contract address and advanced module
   const urlObj = new URL(urlWithRetainedParams, window.location.origin);
   const rewardContractAddress = urlObj.searchParams.get(QueryParams.Reward);
-  const expertModule = urlObj.searchParams.get(QueryParams.ExpertModule);
+  const linkedModule =
+    urlObj.searchParams.get(QueryParams.ExpertModule) || urlObj.searchParams.get(QueryParams.VaultModule);
   const selectedRewardContract = rewardContracts.find(
     contract => contract.contractAddress?.toLowerCase() === rewardContractAddress?.toLowerCase()
   );
@@ -63,7 +70,7 @@ export const LinkedActionCard = ({
     updateLinkedActionConfig({
       step: LinkedActionSteps.CURRENT_FUTURE
     });
-    const modifiedUrl = `${urlWithRetainedParams}${urlWithRetainedParams.includes('widget=trade') ? `&${QueryParams.Timestamp}=${new Date().getTime()}` : ''}`;
+    const modifiedUrl = `${urlWithRetainedParams}${urlWithRetainedParams.includes('convert_module=trade') ? `&${QueryParams.Timestamp}=${new Date().getTime()}` : ''}`;
     navigate(modifiedUrl);
   };
 
@@ -83,21 +90,23 @@ export const LinkedActionCard = ({
               <span className="text-textEmphasis">{`${formatNumber(parseInt(balance))} ${primaryToken} `}</span>
               {' to '}
               <span className="text-textEmphasis">{`${secondaryToken} `}</span>
-              {secondaryTagline[la]}
+              {linkedModule && expertModuleTagline[linkedModule]
+                ? expertModuleTagline[linkedModule]
+                : secondaryTagline[la]}
             </Trans>
           </Heading>
           <VStack className="space-between gap-4">
             {la === IntentMapping.REWARDS_INTENT ? (
               <RewardsRate token={secondaryToken} currentRewardContract={selectedRewardContract} />
-            ) : la === IntentMapping.EXPERT_INTENT ? (
-              <AdvancedRate expertModule={expertModule || undefined} />
+            ) : la === IntentMapping.EXPERT_INTENT || la === IntentMapping.VAULTS_INTENT ? (
+              <AdvancedRate expertModule={linkedModule || undefined} />
             ) : (
               <SavingsRate />
             )}
             <Link to={urlWithRetainedParams} onClick={handleClick} className="w-fit">
               <Button
                 variant="light"
-                className="h-auto min-h-10 w-fit max-w-full whitespace-normal text-balance px-5"
+                className="h-auto min-h-10 w-fit max-w-full px-5 text-balance whitespace-normal"
               >
                 {buttonText}
               </Button>

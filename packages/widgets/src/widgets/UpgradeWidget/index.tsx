@@ -16,6 +16,9 @@ import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetCont
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@widgets/components/ui/button';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useConnection, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -40,6 +43,7 @@ import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState
 import { UpgradeTransactionReview } from './components/UpgradeTransactionReview';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { useUpgradeTransactions } from './hooks/useUpgradeTransactions';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import {
   calculateOriginOptions,
   calculateTargetOptions,
@@ -52,6 +56,7 @@ export type UpgradeWidgetProps = WidgetProps & {
   upgradeOptions?: Token[];
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
+  onBackToConvert?: () => void;
 };
 
 export function UpgradeWidgetWrapped({
@@ -65,12 +70,14 @@ export function UpgradeWidgetWrapped({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
+  onAnalyticsEvent,
   upgradeOptions = defaultUpgradeOptions,
   batchEnabled,
   setBatchEnabled,
   legalBatchTxUrl,
   enabled = true,
-  disallowedFlow
+  disallowedFlow,
+  onBackToConvert
 }: UpgradeWidgetProps): React.ReactElement {
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);
@@ -213,6 +220,7 @@ export function UpgradeWidgetWrapped({
     originToken,
     targetToken,
     originAmount,
+    needsAllowance: !hasAllowance,
     shouldUseBatch,
     tabIndex,
     shouldAllowExternalUpdate,
@@ -221,7 +229,8 @@ export function UpgradeWidgetWrapped({
     mutateTargetBalance,
     addRecentTransaction,
     onWidgetStateChange,
-    onNotification
+    onNotification,
+    onAnalyticsEvent
   });
 
   useEffect(() => {
@@ -311,6 +320,25 @@ export function UpgradeWidgetWrapped({
       ...prev,
       screen: UpgradeScreen.REVIEW
     }));
+    try {
+      const decimals = getTokenDecimals(originToken, chainId);
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: widgetState.action,
+        flow: widgetState.flow,
+        amount: Number(formatUnits(debouncedOriginAmount, decimals)),
+        assetSymbol: originToken.symbol,
+        data: {
+          module: 'upgrade',
+          assetAddress: originToken.address[chainId],
+          assetSymbol: originToken.symbol,
+          targetSymbol: targetToken.symbol,
+          targetAddress: targetToken.address[chainId]
+        }
+      });
+    } catch {
+      /* Analytics must never break functionality */
+    }
   };
 
   const onClickAction = !isConnectedAndEnabled
@@ -328,6 +356,7 @@ export function UpgradeWidgetWrapped({
               : undefined;
 
   const onClickBack = () => {
+    batchActionManager.reset?.();
     shouldAllowExternalUpdate.current = true;
     setTxStatus(TxStatus.IDLE);
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: UpgradeScreen.ACTION }));
@@ -429,9 +458,21 @@ export function UpgradeWidgetWrapped({
   return (
     <WidgetContainer
       header={
-        <Heading variant="x-large">
-          <Trans>Upgrade</Trans>
-        </Heading>
+        <div>
+          {onBackToConvert && (
+            <Button variant="link" onClick={onBackToConvert} className="mb-2 p-0">
+              <HStack className="space-x-2">
+                <ArrowLeft className="self-center" />
+                <Heading tag="h3" variant="small" className="text-textSecondary">
+                  Back to Convert
+                </Heading>
+              </HStack>
+            </Button>
+          )}
+          <Heading variant="x-large">
+            <Trans>Upgrade</Trans>
+          </Heading>
+        </div>
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">

@@ -11,15 +11,17 @@ export const InteractiveStatsCardAlt = ({
   logoName,
   chainId,
   noChain,
-  content
+  content,
+  icon
 }: {
   title: React.ReactElement | string;
-  tokenSymbol: string;
+  tokenSymbol?: string;
   url?: string;
   logoName: LogoName;
   chainId?: number;
   noChain?: boolean;
   content: React.ReactElement;
+  icon?: React.ReactNode;
 }): React.ReactElement => {
   return (
     <Card variant={url ? 'statsInteractive' : 'stats'} className="relative p-4 lg:p-5">
@@ -27,12 +29,16 @@ export const InteractiveStatsCardAlt = ({
         <div className="flex flex-col gap-2">
           <Text className="text-textSecondary text-sm leading-4">{title}</Text>
           <div className="flex items-center gap-2">
-            <TokenIcon
-              className="h-6 w-6"
-              token={{ symbol: tokenSymbol, name: tokenSymbol }}
-              chainId={chainId ?? 1}
-              noChain={noChain}
-            />
+            {icon ? (
+              <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">{icon}</div>
+            ) : tokenSymbol ? (
+              <TokenIcon
+                className="h-6 w-6"
+                token={{ symbol: tokenSymbol, name: tokenSymbol }}
+                chainId={chainId ?? 1}
+                noChain={noChain}
+              />
+            ) : null}
             {content}
           </div>
         </div>

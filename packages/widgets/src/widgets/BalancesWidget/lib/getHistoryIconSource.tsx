@@ -11,6 +11,7 @@ export const getHistoryIconSource = ({
   switch (module) {
     case ModuleEnum.SAVINGS:
     case ModuleEnum.STUSDS:
+    case ModuleEnum.MORPHO:
       return type === TransactionTypeEnum.SUPPLY ? src + 'savings-supply.svg' : src + 'savings-withdraw.svg';
     case ModuleEnum.UPGRADE:
       return type === TransactionTypeEnum.DAI_TO_USDS || type === TransactionTypeEnum.MKR_TO_SKY

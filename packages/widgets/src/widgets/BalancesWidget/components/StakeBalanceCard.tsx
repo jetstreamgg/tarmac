@@ -57,6 +57,16 @@ export const StakeBalanceCard = ({
 
   const highestRateData = useHighestRateFromChartData(stakeRewardsChartsInfoData || []);
 
+  // Only count contracts that have actual rate data > 0
+  const contractsWithRates = (stakeRewardsChartsInfoData || []).filter(chartData => {
+    if (!chartData || chartData.length === 0) return false;
+    const mostRecent = chartData.reduce((latest, current) =>
+      current.blockTimestamp > latest.blockTimestamp ? current : latest
+    );
+    return parseFloat(mostRecent?.rate || '0') > 0;
+  });
+  const hasMultipleRates = contractsWithRates.length > 1;
+
   const totalStakedValue =
     stakeBalance && pricesData?.SKY
       ? parseFloat(formatUnits(stakeBalance, 18)) * parseFloat(pricesData.SKY.price)
@@ -70,8 +80,8 @@ export const StakeBalanceCard = ({
 
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
-      title={t`SKY supplied to Staking Engine`}
-      tokenSymbol="SKY"
+      title={t`Supplied to Staking Engine`}
+      icon={<img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />}
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />
@@ -82,7 +92,11 @@ export const StakeBalanceCard = ({
       footer={
         <div className="flex flex-col gap-1">
           <RateLineWithArrow
-            rateText={`Rates up to: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`}
+            rateText={
+              hasMultipleRates
+                ? `Rates up to: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
+                : `Rate: ${formatDecimalPercentage(parseFloat(highestRateData?.rate || '0'))}`
+            }
             popoverType="srr"
             onExternalLinkClicked={onExternalLinkClicked}
           />
@@ -114,8 +128,8 @@ export const StakeBalanceCard = ({
     />
   ) : (
     <InteractiveStatsCardAlt
-      title={t`SKY supplied to Staking Engine`}
-      tokenSymbol="SKY"
+      title={t`Supplied to Staking Engine`}
+      icon={<img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />}
       url={url}
       logoName="staking"
       content={

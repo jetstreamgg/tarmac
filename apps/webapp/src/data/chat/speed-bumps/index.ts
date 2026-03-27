@@ -5,6 +5,7 @@ import { upgradeSpeedBump } from './upgrade';
 import { tradeSpeedBump } from './trade';
 import { expertModulesSpeedBump } from './expert-modules';
 import { stakingEngineSpeedBump } from './staking-engine';
+import { vaultsSpeedBump } from './vaults';
 
 export { skyTokenRewardsSpeedBump } from './sky-token-rewards';
 export { skySavingsRateSpeedBump } from './sky-savings-rate';
@@ -12,6 +13,7 @@ export { upgradeSpeedBump } from './upgrade';
 export { tradeSpeedBump } from './trade';
 export { expertModulesSpeedBump } from './expert-modules';
 export { stakingEngineSpeedBump } from './staking-engine';
+export { vaultsSpeedBump } from './vaults';
 
 export const speedBumps: SpeedBumpContent[] = [
   skyTokenRewardsSpeedBump,
@@ -19,5 +21,6 @@ export const speedBumps: SpeedBumpContent[] = [
   upgradeSpeedBump,
   tradeSpeedBump,
   expertModulesSpeedBump,
-  stakingEngineSpeedBump
+  stakingEngineSpeedBump,
+  vaultsSpeedBump
 ];

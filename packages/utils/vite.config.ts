@@ -34,11 +34,12 @@ export default defineConfig({
     }
   },
   plugins: [
-    dts({
-      insertTypesEntry: true,
-      copyDtsFiles: true,
-      exclude: ['src/**/*.stories.ts, src/**/*.test.ts, src/**/*.test.tsx']
-    }),
+    !process.env.VERCEL &&
+      dts({
+        insertTypesEntry: true,
+        copyDtsFiles: true,
+        exclude: ['src/**/*.stories.ts, src/**/*.test.ts, src/**/*.test.tsx']
+      }),
     visualizer()
   ]
 });

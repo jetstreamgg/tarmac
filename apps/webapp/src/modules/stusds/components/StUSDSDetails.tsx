@@ -17,12 +17,11 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { filterActionsByIntent } from '@/lib/utils';
 import { AboutUsds } from '@/modules/ui/components/AboutUsds';
-
 export function StUSDSDetails(): React.ReactElement {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { linkedActionConfig } = useConfigContext();
-  const { data: actionData } = useUserSuggestedActions();
   const widget = ExpertIntentMapping[ExpertIntent.STUSDS_INTENT];
+  const { data: actionData } = useUserSuggestedActions(undefined, widget);
 
   return (
     <DetailSectionWrapper>
@@ -48,7 +47,7 @@ export function StUSDSDetails(): React.ReactElement {
         (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
           <DetailSection title={t`Combined actions`}>
             <DetailSectionRow>
-              <ActionsShowcase widget={widget} />
+              <ActionsShowcase widget={widget} currentExpertModule={widget} />
             </DetailSectionRow>
           </DetailSection>
         )}

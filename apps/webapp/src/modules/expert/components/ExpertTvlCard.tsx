@@ -1,25 +1,20 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
+import { formatNumber } from '@jetstreamgg/sky-utils';
+import { Text } from '@/modules/layout/components/Typography';
 
 export function ExpertTvlCard(): React.ReactElement {
-  const { data, isLoading, error } = useStUsdsData();
+  const { data: stUsdsData, isLoading, error } = useStUsdsData();
 
-  // Currently only stUSDS TVL, will aggregate all expert modules TVL in the future
-  const totalTvl = data?.totalAssets || 0n;
+  // stUSDS totalAssets is denominated in USDS (18 decimals), which is pegged to $1
+  const stUsdsTvlUsd = stUsdsData ? Number(stUsdsData.totalAssets) / 1e18 : 0;
 
   return (
     <StatsCard
+      className="h-full"
       title={t`Total TVL`}
-      content={
-        <TokenIconWithBalance
-          className="mt-2"
-          token={{ symbol: 'USDS', name: 'usds' }}
-          balance={formatBigInt(totalTvl, { unit: 18 })}
-        />
-      }
+      content={<Text className="mt-2">${formatNumber(stUsdsTvlUsd)}</Text>}
       isLoading={isLoading}
       error={error}
     />

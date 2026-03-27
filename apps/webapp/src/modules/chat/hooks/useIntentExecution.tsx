@@ -5,10 +5,12 @@ import { ChatIntent } from '../types/Chat';
 import { intentModifiesState, hasPreFillParameters } from '../lib/intentUtils';
 import { intentSelectedMessage } from '../lib/intentSelectedMessage';
 import { useChatbotPrefillNotification } from '@/modules/app/hooks/useChatbotPrefillNotification';
+import { useChatAnalytics } from './useChatAnalytics';
 
 export const useIntentExecution = () => {
   const { setConfirmationWarningOpened, setSelectedIntent, setChatHistory, hasShownIntent } =
     useChatContext();
+  const { trackIntentClicked } = useChatAnalytics();
   const navigate = useNavigate();
   const { showPrefillNotification } = useChatbotPrefillNotification();
 
@@ -16,6 +18,7 @@ export const useIntentExecution = () => {
     (intent: ChatIntent, targetUrl: string) => {
       const modifiesState = intentModifiesState(intent);
 
+      trackIntentClicked({ intent_title: intent.title, intent_widget: intent.widget });
       setConfirmationWarningOpened(false);
 
       if (!hasShownIntent(intent) && modifiesState) {
@@ -36,7 +39,8 @@ export const useIntentExecution = () => {
       setChatHistory,
       hasShownIntent,
       navigate,
-      showPrefillNotification
+      showPrefillNotification,
+      trackIntentClicked
     ]
   );
 

@@ -81,6 +81,56 @@ export type {
   StUsdsProviderSelectionResult
 } from './stusds';
 
+// Morpho Vaults
+export {
+  useBatchMorphoVaultDeposit,
+  useMorphoVaultWithdraw,
+  useMorphoVaultRedeem,
+  useMorphoVaultOnChainData,
+  useMorphoVaultRateApiData,
+  useMorphoVaultMultipleRateApiData,
+  useMorphoVaultAllocations,
+  useMorphoVaultMarketApiData,
+  fetchMorphoVaultMarketData,
+  useMorphoVaultRewards,
+  useMerklClaimRewards,
+  useMorphoVaultHistory,
+  useMorphoVaultChartInfo,
+  useMorphoVaultMultipleChartInfo,
+  useMorphoVaultSupplierAddresses,
+  useMorphoVaultsCombinedTvl,
+  useAllMorphoVaultsUserAssets,
+  useMerklRewards,
+  MORPHO_VAULTS
+} from './morpho';
+export type {
+  MorphoVaultRateData,
+  MorphoVaultRateHook,
+  MorphoVaultMultipleRateHook,
+  MorphoRewardData,
+  MorphoMarketAllocation,
+  MorphoV1VaultAllocation,
+  MorphoIdleLiquidityAllocation,
+  MorphoVaultAllocationsData,
+  MorphoVaultAllocationsHook,
+  MorphoVaultMarketData,
+  MorphoVaultMarketDataHook,
+  MorphoVaultReward,
+  MorphoVaultRewardsData,
+  MorphoVaultRewardsHook,
+  MerklTokenReward,
+  MerklRewardSource,
+  MerklRewardsData,
+  MerklRewardsHook,
+  MorphoVaultChartDataPoint,
+  MorphoVaultChartInfoHook,
+  MorphoVaultMultipleChartInfoHook,
+  MorphoVaultSupplierAddressesHook,
+  MorphoVaultsCombinedTvl,
+  MorphoVaultBalance,
+  AllMorphoVaultsUserAssetsData
+} from './morpho';
+
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';
@@ -259,8 +309,7 @@ export {
   ModuleEnum,
   TransactionTypeEnum,
   TRUST_LEVELS,
-  URL_MAKER_SUBGRAPH_MAINNET,
-  URL_MAKER_SUBGRAPH_TENDERLY,
+  URL_SKY_SUBGRAPH,
   ZERO_ADDRESS,
   ZERO_BYTES32
 } from './constants';
@@ -350,6 +399,7 @@ export {
   lsSkyUsdsRewardAddress,
   lsSkySpkRewardAddress,
   lsSkySkyRewardAddress,
+  usdsRiskCapitalVaultAddress,
   useReadClipperDue
 } from './generated';
 export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';

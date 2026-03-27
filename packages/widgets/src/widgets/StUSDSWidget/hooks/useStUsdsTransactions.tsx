@@ -12,10 +12,11 @@ import { StUSDSAction } from '../lib/constants';
 import { useStUsdsTransactionCallbacks } from './useStUsdsTransactionCallbacks';
 
 interface UseStUsdsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
   amount: bigint;
   referralCode: number | undefined;
   max: boolean;
+  needsAllowance: boolean;
   shouldUseBatch: boolean;
   mutateNativeSupplyAllowance: () => void;
   mutateStUsds: () => void;
@@ -35,6 +36,7 @@ export const useStUsdsTransactions = ({
   amount,
   referralCode,
   max,
+  needsAllowance,
   shouldUseBatch,
   mutateNativeSupplyAllowance,
   mutateStUsds,
@@ -43,6 +45,7 @@ export const useStUsdsTransactions = ({
   addRecentTransaction,
   onWidgetStateChange,
   onNotification,
+  onAnalyticsEvent,
   selectedProvider,
   expectedOutput,
   stUsdsAmount
@@ -50,9 +53,12 @@ export const useStUsdsTransactions = ({
   const { widgetState } = useContext(WidgetContext);
   const { supplyTransactionCallbacks, withdrawTransactionCallbacks } = useStUsdsTransactionCallbacks({
     amount,
+    needsAllowance,
+    shouldUseBatch,
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
     mutateNativeSupplyAllowance,
     mutateStUsds,
     mutateCurveUsdsAllowance,

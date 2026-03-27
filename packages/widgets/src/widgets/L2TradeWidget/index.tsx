@@ -30,6 +30,9 @@ import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
 import { AnimatePresence } from 'framer-motion';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@widgets/components/ui/button';
+import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { L2TradeTransactionStatus } from './components/L2TradeTransactionStatus';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';
 import { L2TradeTransactionReview } from './components/L2TradeTransactionReview';
@@ -40,6 +43,8 @@ import { useMaxInForWithdraw } from './hooks/useMaxInForWithdraw';
 import { useMaxOutForDeposit } from './hooks/useMaxOutForDeposit';
 import { Trans } from '@lingui/react/macro';
 import { getTooltipById } from '../../data/tooltips';
+import { useTradeAnalytics } from '../TradeWidget/hooks/useTradeAnalytics';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -49,6 +54,7 @@ export type TradeWidgetProps = WidgetProps & {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   tokensLocked?: boolean;
+  onBackToConvert?: () => void;
 };
 
 function TradeWidgetWrapped({
@@ -65,13 +71,15 @@ function TradeWidgetWrapped({
   onCustomNavigation,
   customNavigationLabel,
   onExternalLinkClicked,
+  onAnalyticsEvent,
   enabled = true,
   legalBatchTxUrl,
   referralCode,
   widgetTitle,
   batchEnabled,
   setBatchEnabled,
-  tokensLocked = false
+  tokensLocked = false,
+  onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
@@ -210,6 +218,18 @@ function TradeWidgetWrapped({
 
   const needsAllowance = !!(!allowance || allowance < debouncedOriginAmount);
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
+
+  const { fireAnalytics, swapData } = useTradeAnalytics({
+    onAnalyticsEvent,
+    swapProvider: 'psm',
+    originToken,
+    targetToken,
+    debouncedOriginAmount,
+    targetAmount,
+    quoteKind: lastUpdated === TradeSide.IN ? 'sell' : 'buy',
+    batchEnabled: !!batchEnabled
+  });
+
   useEffect(() => {
     if (txStatus === TxStatus.IDLE) {
       setShowStepIndicator(needsAllowance);
@@ -517,6 +537,8 @@ function TradeWidgetWrapped({
     addRecentTransaction,
     onWidgetStateChange,
     onNotification,
+    onAnalyticsEvent,
+    swapData,
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
@@ -658,6 +680,12 @@ function TradeWidgetWrapped({
   }, [chainId]);
 
   const tradeOnClick = () => {
+    fireAnalytics({
+      event: WidgetAnalyticsEventType.TRANSACTION_STARTED,
+      action: 'trade',
+      flow: 'trade',
+      data: swapData
+    });
     const executeFunction = lastUpdated === TradeSide.OUT ? batchTradeOut.execute : batchTrade.execute;
     executeFunction();
   };
@@ -694,6 +722,12 @@ function TradeWidgetWrapped({
   };
 
   const reviewOnClick = () => {
+    fireAnalytics({
+      event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+      action: 'trade',
+      flow: 'trade',
+      data: swapData
+    });
     setWidgetState((prev: WidgetState) => ({
       ...prev,
       screen: TradeScreen.REVIEW
@@ -706,6 +740,8 @@ function TradeWidgetWrapped({
       setBackButtonText(t`Back`);
       nextOnClick();
     } else {
+      batchTrade.reset?.();
+      batchTradeOut.reset?.();
       setTxStatus(TxStatus.IDLE);
       setWidgetState((prev: WidgetState) => ({
         ...prev,
@@ -788,7 +824,21 @@ function TradeWidgetWrapped({
 
   return (
     <WidgetContainer
-      header={<Heading variant="x-large">{widgetTitle || 'Trade'}</Heading>}
+      header={
+        <div>
+          {onBackToConvert && (
+            <Button variant="link" onClick={onBackToConvert} className="mb-2 p-0">
+              <HStack className="space-x-2">
+                <ArrowLeft className="self-center" />
+                <Heading tag="h3" variant="small" className="text-textSecondary">
+                  Back to Convert
+                </Heading>
+              </HStack>
+            </Button>
+          )}
+          <Heading variant="x-large">{widgetTitle || 'Trade'}</Heading>
+        </div>
+      }
       subHeader={
         <Text className="text-textSecondary" variant="small">
           <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>

@@ -190,67 +190,44 @@ export const setStorageAt = async (
   await backOffRetry(() => setStorageAtRequest(contractAddress, slot, value, network), 3, 1);
 };
 
-// MakerDAO Vat contract address
 const VAT_ADDRESS = '0x35D1b3F3D7966A1DFe207aa4514C12a259A0492B';
-
-// Vat contract storage layout for ilks mapping:
-// mapping(bytes32 => Ilk) public ilks;  // slot 2
-// struct Ilk {
-//   uint256 Art;   // Total debt (offset 0)
-//   uint256 rate;  // Debt multiplier (offset 1)
-//   uint256 spot;  // Price with safety margin (offset 2)
-//   uint256 line;  // Debt ceiling (offset 3)
-//   uint256 dust;  // Debt floor (offset 4)
-// }
-
 const ILK_NAME = 'LSEV2-SKY-A';
 const ILKS_MAPPING_SLOT = 2;
 
-// Calculate storage slots for LSEV2-SKY-A ilk fields
-// These are dynamically calculated to ensure correctness and maintainability
-const LSEV2_SKY_A_LINE_SLOT = calculateIlkStorageSlot(ILK_NAME, ILKS_MAPPING_SLOT, 3); // line field
-// Calculated value: 0x0b2fb9dcfebfeb5c8f6985ea98125a38a1adb70b7194dc26531c5e9ab986e536
-
-// Very high debt ceiling value (1e60 in RAD)
+const LSEV2_SKY_A_LINE_SLOT = calculateIlkStorageSlot(ILK_NAME, ILKS_MAPPING_SLOT, 3);
 const HIGH_DEBT_CEILING = '0x000000000000009f4f2726179a224501d762422c946590d91000000000000000';
 
-/**
- * Set high debt ceiling for the Stake module's SKY ilk (LSEV2-SKY-A).
- * This is needed because the fork may have a low or zero debt ceiling.
- */
 export const setStakeModuleDebtCeiling = async () => {
   await setStorageAt(VAT_ADDRESS, LSEV2_SKY_A_LINE_SLOT, HIGH_DEBT_CEILING);
 };
 
-// stUSDS contract address
 const STUSDS_ADDRESS = '0x99CD4Ec3f88A45940936F469E4bB72A2A701EEB9';
-
-// Storage slot for stUSDS cap (slot 7 in the implementation)
 const STUSDS_CAP_SLOT = '0x0000000000000000000000000000000000000000000000000000000000000007';
-
-// Very high cap value (1e30)
 const HIGH_STUSDS_CAP = '0x000000000000000000000000000000000000000c9f2c9cd04674edea40000000';
 
-/**
- * Set high supply cap for stUSDS.
- * This is needed because the fork may have reached its supply cap.
- */
 export const setStUsdsCap = async () => {
   await setStorageAt(STUSDS_ADDRESS, STUSDS_CAP_SLOT, HIGH_STUSDS_CAP);
 };
 
-const LSEV2_SKY_A_ART_SLOT = calculateIlkStorageSlot(ILK_NAME, ILKS_MAPPING_SLOT, 0); // Art field
-// Calculated value: 0x0b2fb9dcfebfeb5c8f6985ea98125a38a1adb70b7194dc26531c5e9ab986e533
+const LSEV2_SKY_A_SPOT_SLOT = calculateIlkStorageSlot(ILK_NAME, ILKS_MAPPING_SLOT, 2);
+const HIGH_SPOT = '0x0000000000000000000000000000000000000000033b2e3c9fd0803ce8000000';
 
-// Moderate debt value (1e24 in WAD) - leaves plenty of liquidity for stUSDS withdrawals
-// while still maintaining some debt for stake module tests
+export const setStakeModuleSpot = async () => {
+  await setStorageAt(VAT_ADDRESS, LSEV2_SKY_A_SPOT_SLOT, HIGH_SPOT);
+};
+
+const LSEV2_SKY_A_ART_SLOT = calculateIlkStorageSlot(ILK_NAME, ILKS_MAPPING_SLOT, 0);
 const MODERATE_DEBT = '0x00000000000000000000000000000000000000000000d3c21bcecceda1000000';
 
-/**
- * Set moderate debt for the Stake module's SKY ilk (LSEV2-SKY-A).
- * This ensures stUSDS vault has available liquidity for withdrawals while maintaining
- * enough debt for stake module tests to function properly.
- */
 export const reduceStakeModuleDebt = async () => {
   await setStorageAt(VAT_ADDRESS, LSEV2_SKY_A_ART_SLOT, MODERATE_DEBT);
+};
+
+const SPOTTER_ADDRESS = '0x65C79fcB50Ca1594B025960e539eD7A9a6D434A3';
+const SPOTTER_ILKS_MAPPING_SLOT = 1;
+const LSEV2_SKY_A_MAT_SLOT = calculateIlkStorageSlot(ILK_NAME, SPOTTER_ILKS_MAPPING_SLOT, 1);
+const LSEV2_SKY_A_MAT = '0x000000000000000000000000000000000000000009b18ab5df7180b6b8000000';
+
+export const setStakeModuleMat = async () => {
+  await setStorageAt(SPOTTER_ADDRESS, LSEV2_SKY_A_MAT_SLOT, LSEV2_SKY_A_MAT);
 };
