@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPane';
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
@@ -18,6 +19,7 @@ import { Upgrade, Trade } from '@/modules/icons';
 import { useChainId, useChains, useSwitchChain } from 'wagmi';
 import { isL2ChainId, isMainnetId, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
@@ -31,7 +33,20 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const mainnetChainId = supportedChainIds.find(isMainnetId) ?? supportedChainIds[0];
   const mainnetChain = chains.find(chain => chain.id === mainnetChainId);
   const { switchChain, isPending } = useSwitchChain();
+  const { isModuleEnabled } = useGeoConfig();
+  const isTradeEnabled = isModuleEnabled('trade');
   const shouldShowUpgradeOption = !isL2 || !isSafeWallet;
+
+  // If Trade is disabled by geo-config but selected (e.g. via deeplink), clear it
+  useEffect(() => {
+    if (!isTradeEnabled && selectedConvertOption === ConvertIntent.TRADE_INTENT) {
+      setSelectedConvertOption(undefined);
+      setSearchParams(params => {
+        params.delete(QueryParams.ConvertModule);
+        return params;
+      });
+    }
+  }, [isTradeEnabled, selectedConvertOption, setSelectedConvertOption, setSearchParams]);
   const cardInteractionClass = isPending ? 'pointer-events-none cursor-not-allowed opacity-60' : 'cursor-pointer';
 
   const handleSelectOption = (convertIntent: ConvertIntent) => {
@@ -84,7 +99,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
       case ConvertIntent.UPGRADE_INTENT:
         return <UpgradeWidgetPane {...sharedProps} />;
       case ConvertIntent.TRADE_INTENT:
-        return <TradeWidgetPane {...sharedProps} />;
+        return isTradeEnabled ? <TradeWidgetPane {...sharedProps} /> : null;
       default:
         return null;
     }
@@ -140,33 +155,35 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 </Card>
               )}
 
-              <Card
-                role="button"
-                tabIndex={isPending ? -1 : 0}
-                aria-disabled={isPending}
-                className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
-                onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleSelectOption(ConvertIntent.TRADE_INTENT);
-                  }
-                }}
-              >
-                <CardHeader className="flex flex-row items-center space-y-0">
-                  <HStack className="items-center gap-3">
-                    <Trade color="inherit" />
-                    <div>
-                      <Text>
-                        <Trans>Trade</Trans>
-                      </Text>
-                      <Text className="text-textSecondary" variant="small">
-                        <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
-                      </Text>
-                    </div>
-                  </HStack>
-                </CardHeader>
-              </Card>
+              {isTradeEnabled && (
+                <Card
+                  role="button"
+                  tabIndex={isPending ? -1 : 0}
+                  aria-disabled={isPending}
+                  className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                  onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectOption(ConvertIntent.TRADE_INTENT);
+                    }
+                  }}
+                >
+                  <CardHeader className="flex flex-row items-center space-y-0">
+                    <HStack className="items-center gap-3">
+                      <Trade color="inherit" />
+                      <div>
+                        <Text>
+                          <Trans>Trade</Trans>
+                        </Text>
+                        <Text className="text-textSecondary" variant="small">
+                          <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+                        </Text>
+                      </div>
+                    </HStack>
+                  </CardHeader>
+                </Card>
+              )}
             </CardAnimationWrapper>
           </WidgetContainer>
         )}
