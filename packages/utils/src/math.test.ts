@@ -326,6 +326,13 @@ it('Can convert decimal places between 18 (wad) and 6 (USDC)', () => {
   expect(convertedWad).toBe(usdcAmount);
 });
 
+it('convertWadtoUSDC truncates instead of rounding to prevent insufficient-balance reverts', () => {
+  const wadAmount = 1500000999999999999n;
+  const result = math.convertWadtoUSDC(wadAmount);
+
+  expect(result).toBe(1500000n);
+});
+
 // ... existing imports and tests ...
 
 describe('USDC rounding functions', () => {
