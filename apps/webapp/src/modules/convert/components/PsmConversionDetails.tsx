@@ -3,7 +3,6 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { t } from '@lingui/core/macro';
 import { PsmConversionFaq } from './PsmConversionFaq';
-import { AboutUsds } from '@/modules/ui/components/AboutUsds';
 import { AboutPsmConversion } from '@/modules/ui/components/AboutPsmConversion';
 
 export function PsmConversionDetails() {
