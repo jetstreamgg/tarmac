@@ -293,7 +293,7 @@ export function WidgetNavigation({
                   )}
                   data-testid="widget-navigation"
                 >
-                  {widgetContent.map((group, groupIndex) => (
+                  {widgetContent.map(group => (
                     <React.Fragment key={group.id}>
                       {group.items.map(
                         ([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
