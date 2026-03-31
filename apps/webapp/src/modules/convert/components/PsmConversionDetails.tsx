@@ -13,7 +13,6 @@ export function PsmConversionDetails() {
         <DetailSectionRow>
           <div>
             <AboutPsmConversion />
-            <AboutUsds />
           </div>
         </DetailSectionRow>
       </DetailSection>
