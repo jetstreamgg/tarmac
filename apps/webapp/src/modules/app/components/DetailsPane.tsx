@@ -91,9 +91,11 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
       animate={{ opacity: 1 }}
       transition={{ layout: { duration: 0 }, opacity: { duration: 0.5, ease: easeOutExpo } }}
     >
-      {intentState !== Intent.BALANCES_INTENT && !isConnectedAndAcceptedTerms && (
-        <ConnectCard intent={intent} convertOption={activeConvertOption} />
-      )}
+      {intentState !== Intent.BALANCES_INTENT &&
+        !isConnectedAndAcceptedTerms &&
+        !(intent === Intent.CONVERT_INTENT && activeConvertOption === ConvertIntent.PSM_INTENT) && (
+          <ConnectCard intent={intent} convertOption={activeConvertOption} />
+        )}
       <AnimatePresence mode="popLayout">
         {(() => {
           switch (intentState) {
