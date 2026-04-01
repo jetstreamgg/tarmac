@@ -31,8 +31,17 @@ export function TransactionReview({
   legalBatchTxUrl?: string;
   isBatchFlowSupported?: boolean;
 }) {
-  const { txTitle, txSubtitle, stepTwoTitle, showStepIndicator } = useContext(WidgetContext);
+  const { txTitle, txSubtitle, stepTwoTitle, showStepIndicator, txStatus } = useContext(WidgetContext);
   const { data: batchSupported } = useIsBatchSupported();
+
+  // Don't render the batch toggle once a transaction has started to avoid
+  // re-render issues with the Switch component during AnimatePresence exit
+  const showBatchToggle =
+    batchEnabled !== undefined &&
+    !!setBatchEnabled &&
+    !!batchSupported &&
+    showStepIndicator &&
+    txStatus === TxStatus.IDLE;
 
   return (
     <motion.div variants={positionAnimations} className="my-3 w-full">
@@ -71,7 +80,7 @@ export function TransactionReview({
             ))}
           {transactionDetail ?? <TransactionDetail />}
         </CardContent>
-        {batchEnabled !== undefined && !!setBatchEnabled && !!batchSupported && showStepIndicator && (
+        {showBatchToggle && (
           <motion.div variants={positionAnimations}>
             <CardFooter className="border-selectActive border-t pt-5">
               <div>

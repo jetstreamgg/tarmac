@@ -366,10 +366,11 @@ export const convertUSDCtoWad = (usdcAmount: bigint) => {
 };
 
 export const convertWadtoUSDC = (wadAmount: bigint) => {
-  const wadFixed = FixedNumber.fromValue(wadAmount, WAD_PRECISION);
-  const usdcWad = wadFixed.round(USDC_PRECISION).toFormat(USDC_FORMAT);
-
-  return usdcWad.value;
+  // Truncate (floor) instead of rounding to avoid producing a USDC amount
+  // that, when converted back to WAD by the PSM contract, exceeds the
+  // original WAD balance (causes "Usds/insufficient-balance" on max-amount conversions).
+  const precisionDiff = BigInt(10) ** BigInt(WAD_PRECISION - USDC_PRECISION);
+  return wadAmount / precisionDiff;
 };
 
 //zero out the last 12 digits (18 - 6)

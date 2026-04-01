@@ -15,15 +15,17 @@ import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardHeader } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
-import { Upgrade, Trade } from '@/modules/icons';
+import { Convert, Upgrade, Trade } from '@/modules/icons';
 import { useChainId, useChains, useSwitchChain } from 'wagmi';
 import { isL2ChainId, isMainnetId, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { PsmConversionWidgetPane } from './PsmConversionWidgetPane';
+import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { info, error } = useToast();
   const chainId = useChainId();
   const chains = useChains();
@@ -36,6 +38,21 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { isModuleEnabled } = useGeoConfig();
   const isTradeEnabled = isModuleEnabled('trade');
   const shouldShowUpgradeOption = !isL2 || !isSafeWallet;
+  const { trackConvertModuleSelected } = useAppAnalytics();
+
+  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
+    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
+  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
+
+  const trackModuleSelection = (convertIntent: ConvertIntent) => {
+    trackConvertModuleSelected({
+      convertModule: ConvertIntentMapping[convertIntent],
+      previousConvertModule: activeConvertOption ? ConvertIntentMapping[activeConvertOption] : undefined,
+      selectionMethod: 'card',
+      entrySurface: 'convert_landing',
+      chainId
+    });
+  };
 
   // If Trade is disabled by geo-config but selected (e.g. via deeplink), clear it
   useEffect(() => {
@@ -47,7 +64,9 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
       });
     }
   }, [isTradeEnabled, selectedConvertOption, setSelectedConvertOption, setSearchParams]);
-  const cardInteractionClass = isPending ? 'pointer-events-none cursor-not-allowed opacity-60' : 'cursor-pointer';
+  const cardInteractionClass = isPending
+    ? 'pointer-events-none cursor-not-allowed opacity-60'
+    : 'cursor-pointer';
 
   const handleSelectOption = (convertIntent: ConvertIntent) => {
     if (isPending) {
@@ -65,6 +84,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
         { chainId: mainnetChain.id },
         {
           onSuccess: () => {
+            trackModuleSelection(convertIntent);
             setSearchParams(params => {
               params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);
               params.set(QueryParams.Network, normalizeUrlParam(mainnetChain.name));
@@ -87,6 +107,8 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
       return;
     }
 
+    trackModuleSelection(convertIntent);
+
     setSearchParams(params => {
       params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);
       return params;
@@ -95,7 +117,9 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   };
 
   const renderSelectedWidget = () => {
-    switch (selectedConvertOption) {
+    switch (activeConvertOption) {
+      case ConvertIntent.PSM_INTENT:
+        return <PsmConversionWidgetPane {...sharedProps} />;
       case ConvertIntent.UPGRADE_INTENT:
         return <UpgradeWidgetPane {...sharedProps} />;
       case ConvertIntent.TRADE_INTENT:
@@ -107,8 +131,8 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
 
   return (
     <AnimatePresence mode="popLayout" initial={false}>
-      <CardAnimationWrapper key={selectedConvertOption} className="h-full">
-        {selectedConvertOption ? (
+      <CardAnimationWrapper key={activeConvertOption} className="h-full">
+        {activeConvertOption ? (
           renderSelectedWidget()
         ) : (
           <WidgetContainer
@@ -119,48 +143,46 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
             }
             subHeader={
               <Text className="text-textSecondary" variant="small">
-                <Trans>Upgrade legacy tokens or trade for Sky ecosystem tokens</Trans>
+                <Trans>Get Sky ecosystem tokens with best possible rates</Trans>
               </Text>
             }
             rightHeader={sharedProps.rightHeaderComponent}
           >
             <CardAnimationWrapper className="flex flex-col gap-4">
-              {shouldShowUpgradeOption && (
-                <Card
-                  role="button"
-                  tabIndex={isPending ? -1 : 0}
-                  aria-disabled={isPending}
-                  className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
-                  onClick={() => handleSelectOption(ConvertIntent.UPGRADE_INTENT)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleSelectOption(ConvertIntent.UPGRADE_INTENT);
-                    }
-                  }}
-                >
-                  <CardHeader className="flex flex-row items-center space-y-0">
-                    <HStack className="items-center gap-3">
-                      <Upgrade color="inherit" />
-                      <div>
-                        <Text>
-                          <Trans>Upgrade</Trans>
-                        </Text>
-                        <Text className="text-textSecondary" variant="small">
-                          <Trans>Upgrade your DAI to USDS and MKR to SKY</Trans>
-                        </Text>
-                      </div>
-                    </HStack>
-                  </CardHeader>
-                </Card>
-              )}
+              <Card
+                role="button"
+                tabIndex={isPending ? -1 : 0}
+                aria-disabled={isPending}
+                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start hover:to-primary-end border-primary-start/30 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                onClick={() => handleSelectOption(ConvertIntent.PSM_INTENT)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectOption(ConvertIntent.PSM_INTENT);
+                  }
+                }}
+              >
+                <CardHeader className="flex flex-row items-center space-y-0">
+                  <HStack className="items-center gap-3">
+                    <Convert className="shrink-0" color="inherit" />
+                    <div>
+                      <Text>
+                        <Trans>1:1 Conversion</Trans>
+                      </Text>
+                      <Text className="text-textSecondary" variant="small">
+                        <Trans>Convert USDC to USDS with 1:1 rate, with no swap fees and no slippage</Trans>
+                      </Text>
+                    </div>
+                  </HStack>
+                </CardHeader>
+              </Card>
 
               {isTradeEnabled && (
                 <Card
                   role="button"
                   tabIndex={isPending ? -1 : 0}
                   aria-disabled={isPending}
-                  className={`from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                   onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -171,13 +193,44 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 >
                   <CardHeader className="flex flex-row items-center space-y-0">
                     <HStack className="items-center gap-3">
-                      <Trade color="inherit" />
+                      <Trade className="shrink-0" color="inherit" />
                       <div>
                         <Text>
                           <Trans>Trade</Trans>
                         </Text>
                         <Text className="text-textSecondary" variant="small">
                           <Trans>Trade popular tokens for Sky Ecosystem tokens</Trans>
+                        </Text>
+                      </div>
+                    </HStack>
+                  </CardHeader>
+                </Card>
+              )}
+
+              {shouldShowUpgradeOption && (
+                <Card
+                  role="button"
+                  tabIndex={isPending ? -1 : 0}
+                  aria-disabled={isPending}
+                  data-testid="convert-upgrade-card"
+                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                  onClick={() => handleSelectOption(ConvertIntent.UPGRADE_INTENT)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectOption(ConvertIntent.UPGRADE_INTENT);
+                    }
+                  }}
+                >
+                  <CardHeader className="flex flex-row items-center space-y-0">
+                    <HStack className="items-center gap-3">
+                      <Upgrade className="shrink-0" color="inherit" />
+                      <div>
+                        <Text>
+                          <Trans>Upgrade</Trans>
+                        </Text>
+                        <Text className="text-textSecondary" variant="small">
+                          <Trans>Upgrade your DAI to USDS and MKR to SKY</Trans>
                         </Text>
                       </div>
                     </HStack>
