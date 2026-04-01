@@ -5,6 +5,7 @@ import {
   useBatchUsdsPsmWrapperBuyGem,
   useBatchUsdsPsmWrapperSellGem,
   useIsBatchSupported,
+  usePsmLiquidity,
   usePsmPocketBalance,
   useTokenAllowance,
   useUsdsPsmWrapperHalted,
@@ -110,17 +111,34 @@ export function usePsmConversion({
     refetch: refetchPocketBalance
   } = usePsmPocketBalance({ chainIdOverride: chainId });
 
+  const { data: l2Liquidity, mutate: mutateL2Liquidity } = usePsmLiquidity();
+
   const feeWad = isL2 ? 0n : direction === 'USDC_TO_USDS' ? tin : tout;
   const hasNonZeroFee = !isL2 && feeWad !== undefined && feeWad > 0n;
   const isDirectionHalted = !isL2 && getPsmDirectionHalted({ direction, feeWad, haltedValue });
   const isLive = isL2 ? true : live !== undefined ? live === 1n : undefined;
   const pocketBalance = pocketBalanceData?.value;
-  const hasSufficientLiquidity =
-    direction === 'USDC_TO_USDS' || isL2
-      ? true
-      : pocketBalance !== undefined
-        ? pocketBalance >= execution.mainnetGemAmt
-        : undefined;
+
+  // Determine liquidity sufficiency based on chain and direction
+  const hasSufficientLiquidity = useMemo(() => {
+    if (isL2) {
+      // L2: Check the output token's balance in the pocket
+      const outputBalance =
+        direction === 'USDC_TO_USDS' ? l2Liquidity?.usds?.value : l2Liquidity?.usdc?.value;
+      if (outputBalance === undefined) {
+        return undefined;
+      }
+      return outputBalance >= execution.l2MinAmountOut;
+    }
+    // Mainnet: USDC_TO_USDS doesn't need liquidity check, USDS_TO_USDC checks pocket balance
+    if (direction === 'USDC_TO_USDS') {
+      return true;
+    }
+    if (pocketBalance === undefined) {
+      return undefined;
+    }
+    return pocketBalance >= execution.mainnetGemAmt;
+  }, [isL2, direction, l2Liquidity, pocketBalance, execution.l2MinAmountOut, execution.mainnetGemAmt]);
 
   const disabledReason = getPsmDisabledReason({
     chainId,
@@ -209,6 +227,7 @@ export function usePsmConversion({
       refetchTout();
       refetchHalted();
       refetchPocketBalance();
+      mutateL2Liquidity();
     },
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
