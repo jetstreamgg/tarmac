@@ -26,6 +26,7 @@ import { useScrollHint } from '@/modules/app/hooks/useScrollHint';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { type SelectionMethod } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
+import { useGeoConfig } from '@/modules/geo-config';
 
 interface WidgetNavigationProps {
   widgetContent: WidgetContent;
@@ -54,6 +55,7 @@ export function WidgetNavigation({
   const {
     linkedActionConfig: { showLinkedAction }
   } = useConfigContext();
+  const { isModuleEnabled } = useGeoConfig();
 
   // Scroll hint for vertical menu
   const { shouldShowHint, isOverflowing } = useScrollHint(tabsListRef, {
@@ -310,6 +312,9 @@ export function WidgetNavigation({
                               disabled={options?.disabled || false}
                               isCurrentWidget={intent === widgetIntent}
                               subItems={subItems}
+                              forceMainnet={
+                                widgetIntent === Intent.CONVERT_INTENT && !isModuleEnabled('trade')
+                              }
                             >
                               <TabsTrigger
                                 ref={intent === widgetIntent ? activeTabRef : null}
