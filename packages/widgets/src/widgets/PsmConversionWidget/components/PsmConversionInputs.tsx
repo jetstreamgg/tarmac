@@ -18,7 +18,8 @@ export function PsmConversionInputs({
   isBalanceError,
   isConnectedAndEnabled,
   onOriginAmountChange,
-  onSwitchDirection
+  onSwitchDirection,
+  error
 }: {
   originToken: TokenForChain;
   targetToken: TokenForChain;
@@ -30,6 +31,7 @@ export function PsmConversionInputs({
   isConnectedAndEnabled: boolean;
   onOriginAmountChange: (value: bigint) => void;
   onSwitchDirection: () => void;
+  error?: string;
 }) {
   const chainId = useChainId();
   const originTokenForInput = tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId);
@@ -48,7 +50,7 @@ export function PsmConversionInputs({
           onChange={value => onOriginAmountChange(value)}
           value={originAmount}
           dataTestId="psm-conversion-origin"
-          error={isBalanceError ? t`Insufficient funds` : undefined}
+          error={isBalanceError ? t`Insufficient funds` : error}
           variant="top"
           extraPadding
           showPercentageButtons={isConnectedAndEnabled}
