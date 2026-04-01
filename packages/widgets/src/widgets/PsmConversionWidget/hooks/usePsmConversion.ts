@@ -120,6 +120,32 @@ export function usePsmConversion({
   const pocketBalance = pocketBalanceData?.value;
 
   // Determine liquidity sufficiency based on chain and direction
+  // Get available liquidity in origin token units (what the user can input)
+  const availableLiquidity = useMemo(() => {
+    if (isL2) {
+      const outputBalance =
+        direction === 'USDC_TO_USDS' ? l2Liquidity?.usds?.value : l2Liquidity?.usdc?.value;
+      if (outputBalance === undefined) {
+        return undefined;
+      }
+      // Convert output liquidity to origin token units (1:1 rate but different decimals)
+      // USDC_TO_USDS: USDS liquidity (18 decimals) -> USDC units (6 decimals)
+      // USDS_TO_USDC: USDC liquidity (6 decimals) -> USDS units (18 decimals)
+      return direction === 'USDC_TO_USDS'
+        ? outputBalance / 10n ** 12n
+        : outputBalance * 10n ** 12n;
+    }
+    // Mainnet: USDC_TO_USDS has unlimited liquidity, USDS_TO_USDC checks pocket balance
+    if (direction === 'USDC_TO_USDS') {
+      return undefined; // No limit
+    }
+    if (pocketBalance === undefined) {
+      return undefined;
+    }
+    // Convert USDC pocket balance (6 decimals) to USDS units (18 decimals)
+    return pocketBalance * 10n ** 12n;
+  }, [isL2, direction, l2Liquidity, pocketBalance]);
+
   const hasSufficientLiquidity = useMemo(() => {
     if (isL2) {
       // L2: Check the output token's balance in the pocket
@@ -218,6 +244,7 @@ export function usePsmConversion({
     batchSupported,
     shouldUseBatch: effectiveShouldUseBatch,
     pocketBalance,
+    availableLiquidity,
     hasSufficientLiquidity,
     mutateAllowance,
     mutatePocketBalance: () => {

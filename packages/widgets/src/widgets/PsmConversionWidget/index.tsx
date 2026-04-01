@@ -688,6 +688,7 @@ function PsmConversionWidgetWrapped({
                 targetAmount={conversion.targetAmount}
                 originBalance={originBalance?.value}
                 targetBalance={targetBalance?.value}
+                availableLiquidity={conversion.availableLiquidity}
                 isBalanceError={isBalanceError}
                 isConnectedAndEnabled={isConnectedAndEnabled}
                 onOriginAmountChange={setOriginAmount}
