@@ -1,4 +1,4 @@
-import { usdsL2Address, usdcL2Address, sUsdsL2Address } from '../generated';
+import { usdsL2Address, usdcL2Address, sUsdsL2Address, psm3L2Address } from '../generated';
 import { useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
 import { useReadPsm3L2Pocket } from '../generated';
@@ -9,14 +9,15 @@ export type PsmLiquidityHookResponse = ReadHook & {
   data?: { usdc: TokenBalance | undefined; usds: TokenBalance | undefined; susds: TokenBalance | undefined };
 };
 
-export function usePsmLiquidity(): PsmLiquidityHookResponse {
-  const chainId = useChainId();
+export function usePsmLiquidity(chainId?: number): PsmLiquidityHookResponse {
+  const connectedChainId = useChainId();
+  chainId = chainId ?? connectedChainId;
   const {
     data: pocketAddress,
     isLoading: pocketLoading,
     error: pocketError,
     refetch: mutatePocket
-  } = useReadPsm3L2Pocket();
+  } = useReadPsm3L2Pocket({ chainId: chainId as keyof typeof psm3L2Address });
   const {
     data: usdcBalance,
     isLoading: usdcLoading,

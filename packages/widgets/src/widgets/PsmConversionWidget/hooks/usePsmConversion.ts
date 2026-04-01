@@ -112,7 +112,7 @@ export function usePsmConversion({
     refetch: refetchPocketBalance
   } = usePsmPocketBalance({ chainIdOverride: chainId });
 
-  const { data: l2Liquidity, mutate: mutateL2Liquidity } = usePsmLiquidity();
+  const { data: l2Liquidity, mutate: mutateL2Liquidity } = usePsmLiquidity(chainId);
 
   const feeWad = isL2 ? 0n : direction === 'USDC_TO_USDS' ? tin : tout;
   const hasNonZeroFee = !isL2 && feeWad !== undefined && feeWad > 0n;
