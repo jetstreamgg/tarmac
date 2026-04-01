@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 catalog:
-  '@base-org/account': ~2.5.2
+  '@base-org/account': ~2.4.2
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@changesets/cli': ^2.30.0
   '@coinbase/wallet-sdk': ~4.3.6
@@ -51,7 +51,7 @@ catalog:
   '@vitejs/plugin-react-swc': ^4.2.3
   '@vitest/coverage-v8': ^3.2.4
   '@wagmi/cli': ^2.10.0
-  '@wagmi/core': ^3.4.0
+  '@wagmi/core': ^3.4.1
   '@walletconnect/ethereum-provider': ~2.23.7
   class-variance-authority: ^0.7.1
   clsx: ^2.1.0
@@ -93,7 +93,7 @@ catalog:
   tailwindcss-animate: ^1.0.7
   tiny-invariant: ^1.3.1
   typescript: 5.9.3
-  viem: ^2.46.3
+  viem: ^2.47.6
   vite: ^7.3.1
   vite-plugin-dts: ^4.5.4
   vite-plugin-node-polyfills: ^0.25.0
@@ -101,7 +101,7 @@ catalog:
   vite-plugin-static-copy: ^3.2.0
   vitest: ^3.2.4
   vitest-canvas-mock: ^0.3.3
-  wagmi: ^3.5.0
+  wagmi: ^3.6.0
   zod: ^4.1.11
 
 catalogMode: strict
