@@ -12,7 +12,7 @@ export function ConnectWalletCopy({
 }) {
   return (
     <div className={className}>
-      <div className="flex items-center gap-3 py-1 pl-5 pr-3">
+      <div className="flex items-center gap-3 py-1 pr-3 pl-5">
         <div className="px-3 py-1.5">
           <ConnectWallet />
         </div>
@@ -21,7 +21,7 @@ export function ConnectWalletCopy({
             <Trans>Connect to explore Sky Protocol features</Trans>
           </Heading>
           <ExternalLink
-            href="https://sky.money/features"
+            href="https://sky.money/"
             iconSize={16}
             className="text-textEmphasis"
             onExternalLinkClicked={onExternalLinkClicked}
