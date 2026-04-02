@@ -12,7 +12,7 @@ async function fetchRewardContractInfo(
 ): Promise<RewardContractInfo | null> {
   const query = gql`
     {
-      reward: Reward_by_pk(id: "${chainId}-${rewardContractId}") {
+      reward: Reward_by_pk(id: "${chainId}-${rewardContractId.toLowerCase()}") {
         totalSupplied
         totalRewardsClaimed
         supplyInstances {

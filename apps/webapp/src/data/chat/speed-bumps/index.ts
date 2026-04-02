@@ -6,6 +6,7 @@ import { tradeSpeedBump } from './trade';
 import { expertModulesSpeedBump } from './expert-modules';
 import { stakingEngineSpeedBump } from './staking-engine';
 import { vaultsSpeedBump } from './vaults';
+import { psmConversionSpeedBump } from './psm-conversion';
 
 export { skyTokenRewardsSpeedBump } from './sky-token-rewards';
 export { skySavingsRateSpeedBump } from './sky-savings-rate';
@@ -14,6 +15,7 @@ export { tradeSpeedBump } from './trade';
 export { expertModulesSpeedBump } from './expert-modules';
 export { stakingEngineSpeedBump } from './staking-engine';
 export { vaultsSpeedBump } from './vaults';
+export { psmConversionSpeedBump } from './psm-conversion';
 
 export const speedBumps: SpeedBumpContent[] = [
   skyTokenRewardsSpeedBump,
@@ -22,5 +24,6 @@ export const speedBumps: SpeedBumpContent[] = [
   tradeSpeedBump,
   expertModulesSpeedBump,
   stakingEngineSpeedBump,
+  psmConversionSpeedBump,
   vaultsSpeedBump
 ];

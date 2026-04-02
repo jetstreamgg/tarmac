@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { Trans } from '@lingui/react/macro';
 import { GradientShapeCard } from '@/modules/ui/components/GradientShapeCard';
-import { Intent } from '@/lib/enums';
+import { ConvertIntent, Intent } from '@/lib/enums';
 import { useChainId } from 'wagmi';
 import { getBannerById } from '@/data/banners/banners';
 import { parseBannerContent } from '@/utils/bannerContentParser';
@@ -16,7 +16,13 @@ type BannerConfig = {
   allL2s?: string;
 };
 
-export function ConnectCard({ intent, className }: { intent: Intent; className?: string }) {
+type ConnectCardProps = {
+  intent: Intent;
+  className?: string;
+  convertOption?: ConvertIntent;
+};
+
+export function ConnectCard({ intent, className, convertOption }: ConnectCardProps) {
   const connect = useCustomConnectModal();
   const chainId = useChainId();
 
@@ -31,7 +37,14 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
     [Intent.STAKE_INTENT]: { default: 'about-the-staking-engine' },
     [Intent.EXPERT_INTENT]: { default: 'about-expert-modules' },
     [Intent.VAULTS_INTENT]: { default: 'vaults' },
-    [Intent.CONVERT_INTENT]: { default: 'ready-to-upgrade-and-explore' }
+    [Intent.CONVERT_INTENT]: { default: 'about-convert' }
+  };
+
+  // Map convert sub-options to banner IDs
+  const convertBannerIdMap: Record<ConvertIntent, BannerConfig> = {
+    [ConvertIntent.PSM_INTENT]: { default: 'about-11-conversion' },
+    [ConvertIntent.UPGRADE_INTENT]: { default: 'ready-to-upgrade-and-explore' },
+    [ConvertIntent.TRADE_INTENT]: { allL2s: 'trade', default: 'about-trade' }
   };
 
   // Helper function to get the appropriate banner based on context
@@ -53,7 +66,11 @@ export function ConnectCard({ intent, className }: { intent: Intent; className?:
   };
 
   // Get banner content if available - bannerConfig is guaranteed to exist due to Record<Intent, BannerConfig>
-  const bannerConfig = bannerIdMap[intent];
+  // For CONVERT_INTENT, use the convert sub-option banner if available
+  const bannerConfig =
+    intent === Intent.CONVERT_INTENT && convertOption
+      ? convertBannerIdMap[convertOption]
+      : bannerIdMap[intent];
   const banner = getBannerForContext(bannerConfig);
 
   // Use banner title

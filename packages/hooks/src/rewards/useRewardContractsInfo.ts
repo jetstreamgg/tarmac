@@ -15,7 +15,7 @@ async function fetchRewardContractsInfo(
   rewardContracts: RewardContract[],
   chainId: number
 ): Promise<RewardContractInfo[] | undefined> {
-  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress}"`);
+  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress.toLowerCase()}"`);
   const query = gql`
     {
       rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
@@ -54,6 +54,7 @@ async function fetchRewardContractsInfo(
   `;
 
   const response = (await request(urlSubgraph, query)) as any;
+
   const parsedRewards = response.rewards as RewardContractInfoRaw[];
   if (!parsedRewards) {
     return undefined;

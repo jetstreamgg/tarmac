@@ -40,6 +40,7 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_GEO_CONFIG_URL`: (Optional) URL for the geo-config endpoint that provides runtime region-based restrictions. Falls back to staging URL if not set
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
+- `VITE_GEO_BYPASS`: Boolean flag to bypass geo-restriction checks during development (assumes no restricted regions and enables all modules)
 - `VITE_SKIP_CHAT_AUTH_CHECK`: Boolean flag to bypass chatbot terms acceptance check during testing (only works in non-production environments)
 - `TENDERLY_API_KEY`: API key for Tenderly (used for forking and managing virtual networks for testing)
 - `VITE_USE_MOCK_WALLET`: Boolean flag to enable the use of a mock wallet for testing purposes

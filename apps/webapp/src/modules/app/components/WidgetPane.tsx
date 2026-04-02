@@ -243,8 +243,13 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<ConvertWidgetPane {...sharedProps} />),
       false,
       undefined,
-      'Upgrade legacy tokens or trade for Sky ecosystem tokens',
+      'Get Sky ecosystem tokens with best possible rates',
       [
+        {
+          label: '1:1 Conversion',
+          icon: <Convert className="h-3 w-3" />,
+          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.PSM_INTENT] }
+        },
         {
           label: 'Upgrade',
           icon: <Upgrade className="h-3 w-3" />,

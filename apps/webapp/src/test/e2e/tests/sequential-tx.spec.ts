@@ -217,7 +217,7 @@ test.describe('Sequential transactions — Upgrade DAI', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
-    await isolatedPage.getByText('Upgrade your DAI to USDS and MKR to SKY').click();
+    await isolatedPage.getByTestId('convert-upgrade-card').click();
   });
 
   test('Sequential: upgrade DAI completes successfully in two steps', async ({ isolatedPage }) => {

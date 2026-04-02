@@ -56,6 +56,7 @@ export const VaultsIntentMapping: Record<VaultsIntent, string> = {
 };
 
 export const ConvertIntentMapping: Record<ConvertIntent, string> = {
+  [ConvertIntent.PSM_INTENT]: 'psm',
   [ConvertIntent.UPGRADE_INTENT]: 'upgrade',
   [ConvertIntent.TRADE_INTENT]: 'trade'
 };
@@ -97,6 +98,7 @@ export const COMING_SOON_MAP: Record<number, Intent[]> = {
 };
 
 export const intentTxt: Record<string, MessageDescriptor> = {
+  psm: msg`1:1 conversion`,
   trade: msg`trade`,
   upgrade: msg`upgrade`,
   savings: msg`savings`,
