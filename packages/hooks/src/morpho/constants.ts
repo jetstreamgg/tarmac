@@ -180,7 +180,7 @@ export const MARKET_DATA_QUERY = `
         supplyAssets
         borrowAssets
         utilization
-        avgNetSupplyApy
+        netSupplyApy
       }
     }
   }
@@ -298,8 +298,8 @@ export const VAULT_V2_POSITIONS_QUERY = `
 export const VAULT_MARKET_DATA_QUERY = `
   query VaultMarketData($address: String!, $chainId: Int!) {
     vaultV2ByAddress(address: $address, chainId: $chainId) {
-      avgApy
-      avgNetApy
+      apy
+      netApy
       performanceFee
       managementFee
       rewards {
@@ -333,7 +333,7 @@ export const VAULT_MARKET_DATA_QUERY = `
                   supplyAssets
                   borrowAssets
                   utilization
-                  avgNetSupplyApy
+                  netSupplyApy
                 }
               }
             }
