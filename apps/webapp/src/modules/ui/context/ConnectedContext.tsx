@@ -111,8 +111,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
     if (isConnected && address) {
-      checkTermsAcceptance(address).then(({ termsAccepted }) => {
-        setHasAcceptedTerms(termsAccepted);
+      checkTermsAcceptance(address).then(res => {
+        setHasAcceptedTerms(res?.termsAccepted ?? false);
       });
     } else {
       setHasAcceptedTerms(false);
