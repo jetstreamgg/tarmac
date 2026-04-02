@@ -124,7 +124,7 @@ On Optimism and Unichain, converting between tokens is made possible through a P
     question:
       "Why do I see activity in my Trade transaction history in the Sky.money web app if I've never used the Trade feature?",
     answer:
-      "If you've accessed the [Sky Savings Rate](#tooltip-sky-savings-rate) on a supported Layer 2 (L2) network, a conversion from USDS or USDC to sUSDS would have been automatically triggered via the Peg Stability Module [(PSM)](#tooltip-psm). Therefore, you will see such activity in your Trade transaction history, despite not having traded.",
+      "If you've accessed the [Sky Savings Rate](#tooltip-sky-savings-rate) or used 1:1 Conversion on a supported Layer 2 (L2) network, a conversion via the Peg Stability Module [(PSM)](#tooltip-psm) would have been triggered. Therefore, you will see such activity in your Trade transaction history, despite not having traded.",
     index: 2
   }
 ];
