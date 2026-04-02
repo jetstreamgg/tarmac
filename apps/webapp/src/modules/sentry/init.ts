@@ -39,6 +39,10 @@ export function initSentry(): void {
     // use 100% sampling so instrumentation can be verified end-to-end.
     tracesSampleRate: !shouldSendDevEvents ? 0 : isProd ? 0.1 : 1.0,
     integrations: [
+      Sentry.thirdPartyErrorFilterIntegration({
+        filterKeys: ['sky-webapp'],
+        behaviour: 'drop-error-if-exclusively-contains-third-party-frames'
+      }),
       Sentry.browserTracingIntegration(),
       Sentry.reactRouterV6BrowserTracingIntegration({
         useEffect,
@@ -50,12 +54,6 @@ export function initSentry(): void {
     ],
     beforeSend(event) {
       if (!shouldSendDevEvents) {
-        return null;
-      }
-
-      const stack = event.exception?.values?.[0]?.stacktrace?.frames || [];
-
-      if (stack.some(frame => /^(chrome|moz)-extension:\/\//.test(frame.filename || ''))) {
         return null;
       }
 
