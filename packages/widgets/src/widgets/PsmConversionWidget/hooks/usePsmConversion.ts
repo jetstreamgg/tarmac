@@ -14,7 +14,8 @@ import {
   useUsdsPsmWrapperTout
 } from '@jetstreamgg/sky-hooks';
 import type { BatchWriteHookParams } from '@jetstreamgg/sky-hooks';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, math } from '@jetstreamgg/sky-utils';
+import { getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import {
@@ -136,16 +137,16 @@ export function usePsmConversion({
     }
 
     const requiredAmount = isL2 ? execution.l2MinAmountOut : execution.mainnetGemAmt;
-    // Convert to origin token units (1:1 rate, different decimals)
-    const liquidity = direction === 'USDC_TO_USDS'
-      ? outputBalance / 10n ** 12n  // USDS (18) -> USDC (6)
-      : outputBalance * 10n ** 12n; // USDC (6) -> USDS (18)
+    // Convert output token liquidity to origin token units
+    const originDecimals = getTokenDecimals(originToken, chainId);
+    const targetDecimals = getTokenDecimals(targetToken, chainId);
+    const liquidity = math.scaleToBaseDecimals(outputBalance, targetDecimals, originDecimals);
 
     return {
       availableLiquidity: liquidity,
       hasSufficientLiquidity: outputBalance >= requiredAmount
     };
-  }, [isL2, direction, l2Liquidity, pocketBalance, execution.l2MinAmountOut, execution.mainnetGemAmt]);
+  }, [isL2, direction, l2Liquidity, pocketBalance, execution.l2MinAmountOut, execution.mainnetGemAmt, originToken, targetToken, chainId]);
 
   const disabledReason = getPsmDisabledReason({
     chainId,
