@@ -226,8 +226,15 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           startNewFlow();
         }
 
-        if (shouldCaptureTransactionError(error)) {
-          Sentry.captureException(error, {
+        const normalizedError =
+          error instanceof Error
+            ? error
+            : Object.assign(new Error(String((error as any).message ?? error)), {
+                ...(typeof error === 'object' && error !== null ? error : {})
+              });
+
+        if (shouldCaptureTransactionError(normalizedError)) {
+          Sentry.captureException(normalizedError, {
             tags: {
               type: 'transaction_error',
               flow: analytics?.flow ?? 'unknown',
