@@ -16,9 +16,12 @@ export function isRevertedError(
 export function toError(value: unknown): Error {
   if (value instanceof Error) return value;
   if (typeof value === 'object' && value !== null && 'message' in value) {
-    const err = new Error(String((value as { message: unknown }).message));
-    if ('code' in value) (err as any).code = (value as { code: unknown }).code;
-    if ('name' in value) err.name = String((value as { name: unknown }).name);
+    const source = value as Record<string, unknown>;
+    const err = new Error(String(source.message));
+    // Preserve all enumerable properties (code, cause, etc.) so downstream
+    // consumers like shouldCaptureTransactionError can inspect nested metadata.
+    Object.assign(err, source);
+    if ('name' in source) err.name = String(source.name);
     return err;
   }
   return new Error(String(value));

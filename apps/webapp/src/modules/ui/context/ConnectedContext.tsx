@@ -111,9 +111,16 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
     if (isConnected && address) {
+      // Guard against stale responses when the address changes mid-flight
+      let active = true;
       checkTermsAcceptance(address).then(res => {
-        setHasAcceptedTerms(res?.termsAccepted ?? false);
+        if (active) {
+          setHasAcceptedTerms(res?.termsAccepted ?? false);
+        }
       });
+      return () => {
+        active = false;
+      };
     } else {
       setHasAcceptedTerms(false);
     }
