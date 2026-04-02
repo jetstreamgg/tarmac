@@ -7,6 +7,7 @@ catalog:
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@changesets/cli': ^2.30.0
   '@coinbase/wallet-sdk': ~4.3.6
+  '@graphql-inspector/cli': ^6.0.7
   '@eslint/eslintrc': ^3.3.4
   '@eslint/js': ^9.39.3
   '@lingui/cli': ^5.9.2

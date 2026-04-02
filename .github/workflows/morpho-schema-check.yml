@@ -1,0 +1,171 @@
+name: Morpho API Deprecation Check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9am UTC
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: read
+
+env:
+  MORPHO_QUERY_FILES: >-
+    packages/hooks/src/morpho/constants.ts
+    packages/hooks/src/morpho/useMorphoVaultRateApiData.ts
+
+jobs:
+  check-deprecations:
+    name: Check for deprecated Morpho API fields
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.17.0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Introspect Morpho schema
+        run: pnpm exec graphql-inspector introspect https://api.morpho.org/graphql --write schema.graphql
+
+      - name: Extract GraphQL queries from TypeScript
+        run: |
+          node -e "
+          const fs = require('fs');
+
+          const files = process.env.MORPHO_QUERY_FILES.trim().split(/\s+/);
+          const queryRegex = /\`\\s*(query\\s+\\w[\\s\\S]*?)\\s*\`/g;
+          let queryIndex = 0;
+
+          for (const file of files) {
+            const content = fs.readFileSync(file, 'utf-8');
+            let match;
+            while ((match = queryRegex.exec(content)) !== null) {
+              const queryContent = match[1];
+              fs.writeFileSync(
+                \`extracted-query-\${queryIndex++}.graphql\`,
+                queryContent
+              );
+            }
+          }
+
+          if (queryIndex === 0) {
+            console.error('No GraphQL queries found — check file paths and regex');
+            process.exit(1);
+          }
+
+          console.log(\`Extracted \${queryIndex} queries\`);
+          "
+
+      - name: Validate queries against schema
+        id: validate
+        run: |
+          set +e
+          pnpm exec graphql-inspector validate './extracted-query-*.graphql' schema.graphql --deprecated > deprecations.txt 2>&1
+          VALIDATE_EXIT=$?
+          set -e
+
+          cat deprecations.txt
+
+          if grep -qi 'deprecated' deprecations.txt; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report to Linear
+        if: steps.validate.outputs.found == 'true'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ vars.LINEAR_TEAM_ID }}
+          LINEAR_LABEL_ID: ${{ vars.LINEAR_MORPHO_LABEL_ID }}
+          LINEAR_PROJECT_ID: ${{ vars.LINEAR_MORPHO_PROJECT_ID }}
+        run: |
+          linear_api() {
+            local RESPONSE HTTP_CODE
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.linear.app/graphql \
+              -H "Content-Type: application/json" \
+              -H "Authorization: $LINEAR_API_KEY" \
+              -d @-)
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+            if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+              echo "Linear API request failed (HTTP $HTTP_CODE): $BODY" >&2
+              return 1
+            fi
+            echo "$BODY"
+          }
+
+          ISSUE_TITLE="Deprecated Morpho API fields detected"
+          TODAY=$(date +%Y-%m-%d)
+          QUERY_FILES=$(echo "$MORPHO_QUERY_FILES" | xargs -n1 printf '- \`%s\`\\n')
+
+          # Search for an existing open issue with this title
+          EXISTING_ISSUE=$(jq -n \
+            --arg title "$ISSUE_TITLE" \
+            --arg teamId "$LINEAR_TEAM_ID" \
+            '{
+              query: "query($filter: IssueFilter) { issues(filter: $filter, first: 1) { nodes { id url } } }",
+              variables: {
+                filter: {
+                  title: { eq: $title },
+                  team: { id: { eq: $teamId } },
+                  state: { type: { nin: ["canceled", "completed"] } }
+                }
+              }
+            }' | linear_api)
+
+          ISSUE_ID=$(echo "$EXISTING_ISSUE" | jq -r '.data.issues.nodes[0].id // empty')
+
+          if [ -n "$ISSUE_ID" ]; then
+            echo "Existing issue found ($ISSUE_ID), adding comment..."
+            jq -n \
+              --arg issueId "$ISSUE_ID" \
+              --arg date "$TODAY" \
+              --rawfile deprecations deprecations.txt \
+              '{
+                query: "mutation($input: CommentCreateInput!) { commentCreate(input: $input) { comment { id } } }",
+                variables: {
+                  input: {
+                    issueId: $issueId,
+                    body: "**Deprecation scan — \($date)**\n\nThe weekly schema check found the following deprecated fields still in use:\n\n```\n\($deprecations)\n```"
+                  }
+                }
+              }' | linear_api
+          else
+            echo "No existing issue found, creating new issue..."
+
+            INPUT=$(jq -n \
+              --arg title "$ISSUE_TITLE" \
+              --arg teamId "$LINEAR_TEAM_ID" \
+              --arg date "$TODAY" \
+              --arg queryFiles "$QUERY_FILES" \
+              --rawfile deprecations deprecations.txt \
+              '{
+                title: $title,
+                description: "**Deprecation scan — \($date)**\n\nThe weekly Morpho API schema check found deprecated fields in our queries.\n\n```\n\($deprecations)\n```\n\n**Files to check:**\n\($queryFiles)\n\nRefer to the [Morpho API docs](https://docs.morpho.org) for replacement fields.",
+                teamId: $teamId,
+                priority: 3
+              }')
+
+            if [ -n "$LINEAR_LABEL_ID" ]; then
+              INPUT=$(echo "$INPUT" | jq --arg id "$LINEAR_LABEL_ID" '.labelIds = [$id]')
+            fi
+
+            if [ -n "$LINEAR_PROJECT_ID" ]; then
+              INPUT=$(echo "$INPUT" | jq --arg id "$LINEAR_PROJECT_ID" '.projectId = $id')
+            fi
+
+            jq -n --argjson input "$INPUT" \
+              '{
+                query: "mutation($input: IssueCreateInput!) { issueCreate(input: $input) { issue { id url } } }",
+                variables: { input: $input }
+              }' | linear_api
+          fi
