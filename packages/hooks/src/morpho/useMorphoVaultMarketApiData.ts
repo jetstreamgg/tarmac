@@ -26,7 +26,7 @@ type CapItem = {
         supplyAssets: string;
         borrowAssets: string;
         utilization: number;
-        avgNetSupplyApy: number;
+        netSupplyApy: number;
       };
     };
   };
@@ -228,7 +228,7 @@ export async function fetchMorphoVaultMarketData(
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
-      formattedNetApy: `${(market.state.avgNetSupplyApy * 100).toFixed(2)}%`,
+      formattedNetApy: `${(market.state.netSupplyApy * 100).toFixed(2)}%`,
       totalSupplyAssets,
       totalBorrowAssets,
       liquidity,

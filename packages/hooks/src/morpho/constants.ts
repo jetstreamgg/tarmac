@@ -180,7 +180,7 @@ export const MARKET_DATA_QUERY = `
         supplyAssets
         borrowAssets
         utilization
-        avgNetSupplyApy
+        netSupplyApy
       }
     }
   }
@@ -333,7 +333,7 @@ export const VAULT_MARKET_DATA_QUERY = `
                   supplyAssets
                   borrowAssets
                   utilization
-                  avgNetSupplyApy
+                  netSupplyApy
                 }
               }
             }
