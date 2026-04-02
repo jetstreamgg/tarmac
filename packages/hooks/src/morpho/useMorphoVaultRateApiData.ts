@@ -167,8 +167,8 @@ export function useMorphoVaultRateApiData({
     queryKey: ['morpho-vault-rate', vaultAddress, chainId],
     queryFn: () => fetchMorphoVaultRate(vaultAddress!, chainId),
     enabled: !!vaultAddress,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30_000, // 30 seconds
+    gcTime: 60_000 // 1 minute
   });
 
   return {
@@ -218,8 +218,8 @@ export function useMorphoVaultMultipleRateApiData({
         results.filter((r): r is MorphoVaultRateData => r !== undefined)
       ),
     enabled: vaultAddresses.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30_000, // 30 seconds
+    gcTime: 60_000 // 1 minute
   });
 
   return {
