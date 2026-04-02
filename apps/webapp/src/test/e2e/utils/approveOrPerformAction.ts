@@ -16,7 +16,8 @@ export type Action =
   | 'Continue to migrate'
   | 'Open a position'
   | 'Change Position'
-  | 'Confirm your position';
+  | 'Confirm your position'
+  | 'Convert';
 
 type approveOrPerformActionOptions = {
   reject?: boolean;
