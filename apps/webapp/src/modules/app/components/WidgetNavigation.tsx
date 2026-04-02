@@ -282,7 +282,9 @@ export function WidgetNavigation({
           <div className="relative lg:h-full">
             <TooltipProvider>
               {/* Outer container with overflow-visible for tooltips */}
-              <div className={cn('overflow-visible lg:h-full', hideTabs && 'hidden', showDrawerMenu && 'hidden')}>
+              <div
+                className={cn('overflow-visible lg:h-full', hideTabs && 'hidden', showDrawerMenu && 'hidden')}
+              >
                 {/* Inner scrollable container */}
                 <TabsList
                   ref={tabsListRef}
@@ -291,59 +293,58 @@ export function WidgetNavigation({
                   )}
                   data-testid="widget-navigation"
                 >
-                  {widgetContent.map((group, groupIndex) => (
+                  {widgetContent.map(group => (
                     <React.Fragment key={group.id}>
-                      {group.items.map(([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
-                        <div
-                          key={widgetIntent}
-                          className="flex grow basis-[15%] justify-center md:w-full md:basis-auto md:justify-start"
-                        >
-                          <WidgetMenuItemTooltip
-                            description={description}
-                            widgetIntent={widgetIntent}
-                            currentChainId={currentChainId}
-                            label={label as string}
-                            isMobile={isMobile}
-                            disabled={options?.disabled || false}
-                            isCurrentWidget={intent === widgetIntent}
-                            subItems={subItems}
+                      {group.items.map(
+                        ([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
+                          <div
+                            key={widgetIntent}
+                            className="flex grow basis-[15%] justify-center md:w-full md:basis-auto md:justify-start"
                           >
-                            <TabsTrigger
-                              ref={intent === widgetIntent ? activeTabRef : null}
-                              variant="icons"
-                              value={widgetIntent}
-                              className={cn(
-                                'text-textSecondary data-[state=active]:text-text relative h-[78px] w-full px-1',
-                                'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',
-                                'lg:data-[state=active]:text-text lg:data-[state=active]:bg-transparent',
-                                'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)]',
-                                !showDrawerMenu && intent === widgetIntent && verticalTabGlowClasses,
-                                showDrawerMenu &&
-                                  intent === widgetIntent &&
-                                  'before:opacity-100 hover:before:opacity-100'
-                              )}
+                            <WidgetMenuItemTooltip
+                              description={description}
+                              widgetIntent={widgetIntent}
+                              currentChainId={currentChainId}
+                              label={label as string}
+                              isMobile={isMobile}
                               disabled={options?.disabled || false}
+                              isCurrentWidget={intent === widgetIntent}
+                              subItems={subItems}
                             >
-                              <div className="flex h-full flex-col items-center justify-center gap-1">
-                                {!isMobile && icon({ color: 'inherit' })}
-                                <Text variant="small" className="leading-4 text-inherit">
-                                  <Trans>{label}</Trans>
-                                </Text>
-                              </div>
-                              {comingSoon && (
-                                <Text
-                                  variant="small"
-                                  className="from-primary-start/100 to-primary-end/100 text-textSecondary absolute top-0 left-1/2 -mt-2 rounded-full bg-radial-(--gradient-position) px-1.5 py-0 lg:static lg:px-1.5 lg:py-0.5 lg:text-[10px]"
-                                >
-                                  <Trans>Soon</Trans>
-                                </Text>
-                              )}
-                            </TabsTrigger>
-                          </WidgetMenuItemTooltip>
-                        </div>
-                      ))}
-                      {groupIndex < widgetContent.length - 1 && !showDrawerMenu && (
-                        <div className="hidden lg:my-2 lg:block lg:h-px lg:w-full lg:border-b-1" />
+                              <TabsTrigger
+                                ref={intent === widgetIntent ? activeTabRef : null}
+                                variant="icons"
+                                value={widgetIntent}
+                                className={cn(
+                                  'text-textSecondary data-[state=active]:text-text relative h-[78px] w-full px-1',
+                                  'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',
+                                  'lg:data-[state=active]:text-text lg:data-[state=active]:bg-transparent',
+                                  'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)]',
+                                  !showDrawerMenu && intent === widgetIntent && verticalTabGlowClasses,
+                                  showDrawerMenu &&
+                                    intent === widgetIntent &&
+                                    'before:opacity-100 hover:before:opacity-100'
+                                )}
+                                disabled={options?.disabled || false}
+                              >
+                                <div className="flex h-full flex-col items-center justify-center gap-1">
+                                  {!isMobile && icon({ color: 'inherit' })}
+                                  <Text variant="small" className="leading-4 text-inherit">
+                                    <Trans>{label}</Trans>
+                                  </Text>
+                                </div>
+                                {comingSoon && (
+                                  <Text
+                                    variant="small"
+                                    className="from-primary-start/100 to-primary-end/100 text-textSecondary absolute top-0 left-1/2 -mt-2 rounded-full bg-radial-(--gradient-position) px-1.5 py-0 lg:static lg:px-1.5 lg:py-0.5 lg:text-[10px]"
+                                  >
+                                    <Trans>Soon</Trans>
+                                  </Text>
+                                )}
+                              </TabsTrigger>
+                            </WidgetMenuItemTooltip>
+                          </div>
+                        )
                       )}
                     </React.Fragment>
                   ))}

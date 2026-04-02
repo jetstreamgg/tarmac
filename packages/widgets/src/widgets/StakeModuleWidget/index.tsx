@@ -728,8 +728,11 @@ function StakeModuleWidgetWrapped({
               : undefined;
 
   const [stepIndex, totalSteps] = useMemo(
-    () => [getStepIndex(currentStep, widgetState.flow) + 1, getTotalSteps(widgetState.flow)],
-    [widgetState.flow, currentStep]
+    () => [
+      getStepIndex(currentStep, widgetState.flow, !wantsToDelegate) + 1,
+      getTotalSteps(widgetState.flow, !wantsToDelegate)
+    ],
+    [widgetState.flow, currentStep, wantsToDelegate]
   );
 
   const showSecondaryButton = useMemo(() => {
