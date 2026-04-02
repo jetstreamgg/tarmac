@@ -18,7 +18,6 @@ import { WALLET_ICONS } from '@/lib/constants';
 import { ConnectWallet } from '@jetstreamgg/sky-widgets';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { ConnectWalletAlt } from '@/modules/icons/ConnectWalletAlt';
 
 interface ConnectModalProps {
   open: boolean;
@@ -210,7 +209,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
               <Trans>Connect to explore Sky Protocol features</Trans>
             </Text>
             <ExternalLink
-              href="https://sky.money/features"
+              href="https://sky.money/"
               iconSize={12}
               iconColor="#d298ff"
               contentClassName="items-center gap-1 text-textEmphasis"
@@ -242,22 +241,6 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         {(connect.error || switchConnection.error) && (
           <Text className="text-sm text-red-500">{t`Failed to connect. Please try again.`}</Text>
         )}
-
-        <div className="border-borderPrimary border-t" />
-
-        <div className="flex items-center justify-between px-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center">
-              <ConnectWalletAlt />
-            </div>
-            <Text className="text-text">{t`Still not using a crypto wallet?`}</Text>
-          </div>
-          <Button variant="pill" size="xs">
-            <ExternalLink href="https://sky.money/faq" showIcon={false}>
-              Learn more
-            </ExternalLink>
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
