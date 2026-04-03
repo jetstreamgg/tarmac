@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { checkTermsWithRetry } from './checkTermsWithRetry';
+import { checkTermsWithRetry, TermsCheckError } from './checkTermsWithRetry';
 
 const TEST_ADDRESS = '0x1234567890123456789012345678901234567890';
 
@@ -11,13 +11,14 @@ vi.mock('@/lib/utils', () => ({
 describe('checkTermsWithRetry', () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.stubGlobal('import', { meta: { env: { VITE_TERMS_ENDPOINT: 'https://api.example.com/terms' } } });
+    vi.stubEnv('VITE_TERMS_ENDPOINT', 'https://api.example.com/terms');
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('returns termsAccepted on successful response', async () => {
@@ -91,7 +92,7 @@ describe('checkTermsWithRetry', () => {
 
     expect(result.error).toBe(true);
     expect(result.termsAccepted).toBe(false);
-    expect(result.lastError).toBe(networkError);
+    expect((result as TermsCheckError).lastError).toBe(networkError);
     expect(fetch).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
   });
 
@@ -105,8 +106,8 @@ describe('checkTermsWithRetry', () => {
 
     expect(result.error).toBe(true);
     expect(result.termsAccepted).toBe(false);
-    expect(result.lastError).toBeInstanceOf(Error);
-    expect((result.lastError as Error).message).toContain('500');
+    expect((result as TermsCheckError).lastError).toBeInstanceOf(Error);
+    expect(((result as TermsCheckError).lastError as Error).message).toContain('500');
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 
@@ -141,7 +142,7 @@ describe('checkTermsWithRetry', () => {
     const result = await promise;
 
     expect(result.error).toBe(true);
-    expect((result.lastError as Error).message).toBe('Connection refused');
+    expect(((result as TermsCheckError).lastError as Error).message).toBe('Connection refused');
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 });

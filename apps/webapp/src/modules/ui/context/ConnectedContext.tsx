@@ -82,12 +82,19 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setEnabled(!!address);
   }, [address]);
 
+  // Guard against stale responses when the address changes mid-flight
+  const activeAddressRef = useRef<string | null>(null);
+
   // Terms acceptance check with retry
   const checkTermsAcceptance = useCallback(async (addr: string) => {
+    activeAddressRef.current = addr;
     setIsCheckingTerms(true);
     setTermsCheckError(false);
 
     const result = await checkTermsWithRetry(addr);
+
+    // Discard result if the address changed while the check was in flight
+    if (activeAddressRef.current !== addr) return;
 
     setIsCheckingTerms(false);
 
@@ -116,6 +123,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       checkTermsAcceptance(address);
     } else {
       setHasAcceptedTerms(false);
+      setTermsCheckError(false);
     }
   }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
 

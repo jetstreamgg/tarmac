@@ -81,6 +81,9 @@ export function TermsModal() {
       setSignStatus('idle');
       setIsChecked(false);
       setHasScrolledToEnd(false);
+      if (termsCheckError) {
+        disconnect();
+      }
       closeModal();
     }
   };
@@ -168,12 +171,17 @@ export function TermsModal() {
           <Trans>Retry</Trans>
         </Text>
       </Button>
+      <Button variant="outline" onClick={handleReject}>
+        <Text>
+          <Trans>Disconnect Wallet</Trans>
+        </Text>
+      </Button>
     </div>
   );
 
   const triggerButton = (
     <Button variant="connect" onClick={termsCheckError ? retryTermsCheck : openModal}>
-      <Trans>{termsCheckError ? 'Retry' : 'Connect Wallet'}</Trans>
+      <Trans>Connect Wallet</Trans>
     </Button>
   );
 

@@ -17,11 +17,16 @@ export interface TermsCheckError {
 export type TermsCheckOutcome = TermsCheckResult | TermsCheckError;
 
 export async function checkTermsWithRetry(address: string): Promise<TermsCheckOutcome> {
+  const url = sanitizeUrl(`${import.meta.env.VITE_TERMS_ENDPOINT}/check`);
+  if (!url) {
+    return { termsAccepted: false, error: true, lastError: new Error('Invalid or missing VITE_TERMS_ENDPOINT') };
+  }
+
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await fetch(sanitizeUrl(`${import.meta.env.VITE_TERMS_ENDPOINT}/check`) || '', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

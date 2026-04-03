@@ -27,6 +27,12 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
     }
   }, [isConnectedAndAcceptedTerms]);
 
+  useEffect(() => {
+    if (termsCheckError) {
+      setIsModalOpen(true);
+    }
+  }, [termsCheckError]);
+
   const openModal = () => {
     if (!isConnectedAndAcceptedTerms && openConnectModal) {
       openConnectModal();
