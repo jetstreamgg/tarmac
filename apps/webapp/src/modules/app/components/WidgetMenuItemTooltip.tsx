@@ -21,6 +21,8 @@ interface WidgetMenuItemTooltipProps {
   disabled?: boolean;
   isCurrentWidget?: boolean;
   subItems?: WidgetSubItem[];
+  /** Override multichain detection — show only mainnet in supported networks */
+  forceMainnet?: boolean;
   children: React.ReactNode;
 }
 
@@ -38,6 +40,7 @@ export function WidgetMenuItemTooltip({
   disabled = false,
   isCurrentWidget = false,
   subItems,
+  forceMainnet = false,
   children
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
@@ -93,7 +96,7 @@ export function WidgetMenuItemTooltip({
 
     const supportedChainIds = getSupportedChainIds(currentChainId);
 
-    if (isMultichain(widgetIntent)) {
+    if (!forceMainnet && isMultichain(widgetIntent)) {
       // Show all supported chains for multichain widgets (excluding Balances)
       return supportedChainIds.map(chainId => {
         const chain = chains.find(c => c.id === chainId);
