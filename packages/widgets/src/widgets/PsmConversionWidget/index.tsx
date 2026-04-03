@@ -51,7 +51,7 @@ const supportedTokens = ['USDC', 'USDS'];
 const getDirectionForToken = (symbol?: string): PsmConversionDirection =>
   symbol?.toUpperCase() === 'USDS' ? 'USDS_TO_USDC' : 'USDC_TO_USDS';
 
-const getDisabledReasonText = (reason?: PsmConversionDisabledReason) => {
+const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetTokenSymbol?: string) => {
   switch (reason) {
     case 'unsupported_chain':
       return t`This conversion is not available on the current network.`;
@@ -64,7 +64,7 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason) => {
     case 'non_zero_fee':
       return t`Mainnet wrapper fees are active right now, so this flow is temporarily disabled.`;
     case 'insufficient_liquidity':
-      return t`There is not enough USDC liquidity available for this conversion.`;
+      return t`Insufficient ${targetTokenSymbol || ''} liquidity`;
     default:
       return undefined;
   }
@@ -351,7 +351,7 @@ function PsmConversionWidgetWrapped({
       originAmount > originBalance.value &&
       originAmount !== 0n
   );
-  const disabledReasonText = getDisabledReasonText(conversion.disabledReason);
+  const disabledReasonText = getDisabledReasonText(conversion.disabledReason, conversion.targetToken?.symbol);
   const reviewDisabled =
     originAmount === 0n ||
     isBalanceError ||
@@ -688,15 +688,17 @@ function PsmConversionWidgetWrapped({
                 targetAmount={conversion.targetAmount}
                 originBalance={originBalance?.value}
                 targetBalance={targetBalance?.value}
+                availableLiquidity={conversion.availableLiquidity}
                 isBalanceError={isBalanceError}
                 isConnectedAndEnabled={isConnectedAndEnabled}
                 onOriginAmountChange={setOriginAmount}
                 onSwitchDirection={onSwitchDirection}
+                error={conversion.disabledReason === 'insufficient_liquidity' ? disabledReasonText : undefined}
               />
 
-              {(disabledReasonText || conversion.error) && (
+              {((disabledReasonText && conversion.disabledReason !== 'insufficient_liquidity') || conversion.error) && (
                 <Text className="text-sm text-error">
-                  {disabledReasonText || conversion.error?.message}
+                  {(conversion.disabledReason !== 'insufficient_liquidity' && disabledReasonText) || conversion.error?.message}
                 </Text>
               )}
 
