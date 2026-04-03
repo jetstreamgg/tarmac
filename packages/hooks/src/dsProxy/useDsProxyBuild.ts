@@ -4,7 +4,7 @@ import { WriteHookParams, WriteHook } from '../hooks';
 import { useDsProxyData } from './useDsProxyData';
 import { ZERO_ADDRESS } from '../constants';
 import { useEffect } from 'react';
-import { isRevertedError } from '../helpers';
+import { isRevertedError, toError } from '../helpers';
 
 export function useDsProxyBuild({
   onSuccess = () => null,
@@ -65,7 +65,7 @@ export function useDsProxyBuild({
       } else if (miningError) {
         onError(miningError, data);
       } else if (failureReason && txReverted) {
-        onError(failureReason, data);
+        onError(toError(failureReason), data);
       }
     }
   }, [isSuccess, miningError, failureReason]);

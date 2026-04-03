@@ -1,16 +1,18 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
 import * as Sentry from '@sentry/react';
 import { useChainId, useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
-import { sanitizeUrl } from '@/lib/utils';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
+import { checkTermsWithRetry } from '@/modules/ui/lib/checkTermsWithRetry';
 
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
   isAuthorized: boolean;
   setHasAcceptedTerms: (value: boolean) => void;
   isCheckingTerms: boolean;
+  termsCheckError: boolean;
+  retryTermsCheck: () => void;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -31,6 +33,8 @@ const ConnectedContext = createContext<ConnectedContextType>({
   isAuthorized: false,
   setHasAcceptedTerms: () => {},
   isCheckingTerms: false,
+  termsCheckError: false,
+  retryTermsCheck: () => {},
   authData: {
     authIsLoading: false
   },
@@ -44,6 +48,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const chainId = useChainId();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
+  const [termsCheckError, setTermsCheckError] = useState(false);
   const [enabled, setEnabled] = useState(false);
 
   const skipAuthCheck = !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
@@ -77,33 +82,37 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setEnabled(!!address);
   }, [address]);
 
-  // Terms acceptance check
-  const checkTermsAcceptance = async (address: string) => {
-    setIsCheckingTerms(true);
-    try {
-      const response = await fetch(sanitizeUrl(`${import.meta.env.VITE_TERMS_ENDPOINT}/check`) || '', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ address })
-      });
+  // Guard against stale responses when the address changes mid-flight
+  const activeAddressRef = useRef<string | null>(null);
 
-      if (response.ok) {
-        const res = await response.json();
-        setIsCheckingTerms(false);
-        return res;
-      } else {
-        console.error('Failed to send signature');
-        setIsCheckingTerms(false);
-        // Handle error (e.g., show error message to user)
-      }
-    } catch (error) {
-      console.error('Error sending signature:', error);
-      setIsCheckingTerms(false);
-      // Handle error (e.g., show error message to user)
+  // Terms acceptance check with retry
+  const checkTermsAcceptance = useCallback(async (addr: string) => {
+    activeAddressRef.current = addr;
+    setIsCheckingTerms(true);
+    setTermsCheckError(false);
+
+    const result = await checkTermsWithRetry(addr);
+
+    // Discard result if the address changed while the check was in flight
+    if (activeAddressRef.current !== addr) return;
+
+    setIsCheckingTerms(false);
+
+    if (result.error) {
+      Sentry.captureException(result.lastError ?? new Error('Terms check failed after retries'), {
+        tags: { endpoint: 'terms-check' }
+      });
+      setTermsCheckError(true);
+    } else {
+      setHasAcceptedTerms(result.termsAccepted);
     }
-  };
+  }, []);
+
+  const retryTermsCheck = useCallback(() => {
+    if (isConnected && address) {
+      checkTermsAcceptance(address);
+    }
+  }, [isConnected, address, checkTermsAcceptance]);
 
   useEffect(() => {
     if (skipAuthCheck) {
@@ -111,13 +120,12 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
     if (isConnected && address) {
-      checkTermsAcceptance(address).then(({ termsAccepted }) => {
-        setHasAcceptedTerms(termsAccepted);
-      });
+      checkTermsAcceptance(address);
     } else {
       setHasAcceptedTerms(false);
+      setTermsCheckError(false);
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
 
   const isAllowed = useMemo(
     () =>
@@ -159,6 +167,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isAuthorized,
         setHasAcceptedTerms,
         isCheckingTerms,
+        termsCheckError,
+        retryTermsCheck,
         authData: {
           addressAllowed: authData?.addressAllowed,
           authIsLoading,

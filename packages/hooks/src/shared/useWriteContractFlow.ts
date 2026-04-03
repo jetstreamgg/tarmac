@@ -5,7 +5,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract
 } from 'wagmi';
-import { isRevertedError } from '../helpers';
+import { isRevertedError, toError } from '../helpers';
 import { useEffect, useMemo } from 'react';
 import { Config, ResolvedRegister } from '@wagmi/core';
 import { SAFE_CONNECTOR_ID } from './constants';
@@ -97,7 +97,7 @@ export function useWriteContractFlow<
       } else if (miningError) {
         onError(miningError, txHash);
       } else if (failureReason && txReverted) {
-        onError(failureReason, txHash);
+        onError(toError(failureReason), txHash);
       }
     }
   }, [isSuccess, miningError, failureReason, txHash, txReverted]);

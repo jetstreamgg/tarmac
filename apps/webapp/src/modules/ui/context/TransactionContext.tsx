@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { TxStatus } from '@jetstreamgg/sky-widgets';
+import { toError } from '@jetstreamgg/sky-hooks';
 import { getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
@@ -226,8 +227,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           startNewFlow();
         }
 
-        if (shouldCaptureTransactionError(error)) {
-          Sentry.captureException(error, {
+        const normalizedError = toError(error);
+
+        if (shouldCaptureTransactionError(normalizedError)) {
+          Sentry.captureException(normalizedError, {
             tags: {
               type: 'transaction_error',
               flow: analytics?.flow ?? 'unknown',
