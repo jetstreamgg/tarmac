@@ -251,15 +251,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.PSM_INTENT] }
         },
         {
+          label: 'Trade',
+          icon: <Trade className="h-3 w-3" />,
+          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] }
+        },
+        {
           label: 'Upgrade',
           icon: <Upgrade className="h-3 w-3" />,
           params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT] },
           intent: Intent.UPGRADE_INTENT
-        },
-        {
-          label: 'Trade',
-          icon: <Trade className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] }
         }
       ]
     ]

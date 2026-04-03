@@ -5,6 +5,7 @@ import {
   useBatchUsdsPsmWrapperBuyGem,
   useBatchUsdsPsmWrapperSellGem,
   useIsBatchSupported,
+  usePsmLiquidity,
   usePsmPocketBalance,
   useTokenAllowance,
   useUsdsPsmWrapperHalted,
@@ -13,7 +14,8 @@ import {
   useUsdsPsmWrapperTout
 } from '@jetstreamgg/sky-hooks';
 import type { BatchWriteHookParams } from '@jetstreamgg/sky-hooks';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, math } from '@jetstreamgg/sky-utils';
+import { getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import {
@@ -53,6 +55,7 @@ export interface UsePsmConversionResult {
   batchSupported?: boolean;
   shouldUseBatch: boolean;
   pocketBalance?: bigint;
+  availableLiquidity?: bigint;
   hasSufficientLiquidity?: boolean;
   mutateAllowance: () => void;
   mutatePocketBalance: () => void;
@@ -110,17 +113,40 @@ export function usePsmConversion({
     refetch: refetchPocketBalance
   } = usePsmPocketBalance({ chainIdOverride: chainId });
 
+  const { data: l2Liquidity, mutate: mutateL2Liquidity } = usePsmLiquidity(chainId);
+
   const feeWad = isL2 ? 0n : direction === 'USDC_TO_USDS' ? tin : tout;
   const hasNonZeroFee = !isL2 && feeWad !== undefined && feeWad > 0n;
   const isDirectionHalted = !isL2 && getPsmDirectionHalted({ direction, feeWad, haltedValue });
   const isLive = isL2 ? true : live !== undefined ? live === 1n : undefined;
   const pocketBalance = pocketBalanceData?.value;
-  const hasSufficientLiquidity =
-    direction === 'USDC_TO_USDS' || isL2
-      ? true
-      : pocketBalance !== undefined
-        ? pocketBalance >= execution.mainnetGemAmt
-        : undefined;
+
+  // Get output token liquidity and convert to origin token units
+  const { availableLiquidity, hasSufficientLiquidity } = useMemo(() => {
+    // Mainnet USDC_TO_USDS has unlimited liquidity
+    if (!isL2 && direction === 'USDC_TO_USDS') {
+      return { availableLiquidity: undefined, hasSufficientLiquidity: true };
+    }
+
+    const outputBalance = isL2
+      ? (direction === 'USDC_TO_USDS' ? l2Liquidity?.usds?.value : l2Liquidity?.usdc?.value)
+      : pocketBalance;
+
+    if (outputBalance === undefined) {
+      return { availableLiquidity: undefined, hasSufficientLiquidity: undefined };
+    }
+
+    const requiredAmount = isL2 ? execution.l2MinAmountOut : execution.mainnetGemAmt;
+    // Convert output token liquidity to origin token units
+    const originDecimals = getTokenDecimals(originToken, chainId);
+    const targetDecimals = getTokenDecimals(targetToken, chainId);
+    const liquidity = math.scaleToBaseDecimals(outputBalance, targetDecimals, originDecimals);
+
+    return {
+      availableLiquidity: liquidity,
+      hasSufficientLiquidity: outputBalance >= requiredAmount
+    };
+  }, [isL2, direction, l2Liquidity, pocketBalance, execution.l2MinAmountOut, execution.mainnetGemAmt, originToken, targetToken, chainId]);
 
   const disabledReason = getPsmDisabledReason({
     chainId,
@@ -200,6 +226,7 @@ export function usePsmConversion({
     batchSupported,
     shouldUseBatch: effectiveShouldUseBatch,
     pocketBalance,
+    availableLiquidity,
     hasSufficientLiquidity,
     mutateAllowance,
     mutatePocketBalance: () => {
@@ -209,6 +236,7 @@ export function usePsmConversion({
       refetchTout();
       refetchHalted();
       refetchPocketBalance();
+      mutateL2Liquidity();
     },
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
