@@ -160,7 +160,7 @@ export function TermsModal() {
       </DialogTitle>
       <Text className="text-error text-center text-sm leading-none md:leading-tight">
         <Trans>
-          We couldn't verify your terms acceptance. Please check your connection and try again.
+          We couldn&apos;t verify your terms acceptance. Please check your connection and try again.
         </Trans>
       </Text>
       <Button variant="primary" onClick={retryTermsCheck}>
