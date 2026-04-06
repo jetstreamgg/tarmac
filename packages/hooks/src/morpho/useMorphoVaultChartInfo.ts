@@ -152,8 +152,8 @@ export function useMorphoVaultChartInfo({
   } = useQuery({
     queryKey: ['morpho-vault-chart', vaultAddress, chainId, useHourlyInterval, hourlyWindow],
     queryFn: () => fetchMorphoVaultChartInfo(vaultAddress, chainId, useHourlyInterval, hourlyWindow),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30_000, // 30 seconds
+    gcTime: 60_000 // 1 minute
   });
 
   return {
@@ -201,8 +201,8 @@ export function useMorphoVaultMultipleChartInfo({
       queryKey: ['morpho-vault-chart', addr, chainId, useHourlyInterval, hourlyWindow] as const,
       queryFn: () => fetchMorphoVaultChartInfo(addr, chainId, useHourlyInterval, hourlyWindow),
       enabled: vaultAddresses.length > 0,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000 // 10 minutes
+      staleTime: 30_000, // 30 seconds
+      gcTime: 60_000 // 1 minute
     }))
   });
 

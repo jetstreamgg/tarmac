@@ -59,6 +59,42 @@ describe('usePsmConversion helpers', () => {
     ).toBeUndefined();
   });
 
+  it('disables L2 flow when liquidity is insufficient', () => {
+    expect(
+      getPsmDisabledReason({
+        chainId: base.id,
+        amount: 1_000_000n,
+        mainnetGemAmt: 1_000_000n,
+        hasSufficientLiquidity: false
+      })
+    ).toBe('insufficient_liquidity');
+  });
+
+  it('allows L2 flow when liquidity is sufficient', () => {
+    expect(
+      getPsmDisabledReason({
+        chainId: base.id,
+        amount: 1_000_000n,
+        mainnetGemAmt: 1_000_000n,
+        hasSufficientLiquidity: true
+      })
+    ).toBeUndefined();
+  });
+
+  it('disables mainnet USDS_TO_USDC when pocket liquidity is insufficient', () => {
+    expect(
+      getPsmDisabledReason({
+        chainId: mainnet.id,
+        amount: 1_000_000_000_000_000_000n,
+        mainnetGemAmt: 1_000_000n,
+        isLive: true,
+        isDirectionHalted: false,
+        hasNonZeroFee: false,
+        hasSufficientLiquidity: false
+      })
+    ).toBe('insufficient_liquidity');
+  });
+
   it('returns the correct source decimals for each direction', () => {
     expect(getPsmDecimalsForDirection('USDC_TO_USDS')).toBe(6);
     expect(getPsmDecimalsForDirection('USDS_TO_USDC')).toBe(18);
