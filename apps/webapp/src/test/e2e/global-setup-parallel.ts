@@ -415,8 +415,8 @@ async function standardSetup(accountCount: number): Promise<void> {
 async function shardedSetup(addresses: string[], shardIndex: number, totalShards: number): Promise<void> {
   console.log(`\n2. Running in SHARD MODE (Shard ${shardIndex + 1}/${totalShards})`);
 
-  // Calculate account partition for this shard
-  const totalAccounts = TEST_WALLET_COUNT;
+  // Partition the same address set global setup just built (respects ACCOUNT_COUNT vs default pool size).
+  const totalAccounts = addresses.length;
   const basePerShard = Math.floor(totalAccounts / totalShards);
   const remainder = totalAccounts % totalShards;
   const extra = shardIndex < remainder ? 1 : 0;
@@ -425,7 +425,7 @@ async function shardedSetup(addresses: string[], shardIndex: number, totalShards
 
   if (partitionSize === 0) {
     throw new Error(
-      `Shard ${shardIndex + 1}/${totalShards} has no account allocation. Increase TEST_WALLET_COUNT or reduce total shards.`
+      `Shard ${shardIndex + 1}/${totalShards} has no account allocation. Increase the account pool size or reduce total shards.`
     );
   }
 
