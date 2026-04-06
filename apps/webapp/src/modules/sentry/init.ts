@@ -38,6 +38,8 @@ export function initSentry(): void {
     // Local/dev stays fully off unless debug is explicitly enabled. When debug is on,
     // use 100% sampling so instrumentation can be verified end-to-end.
     tracesSampleRate: !shouldSendDevEvents ? 0 : isProd ? 0.1 : 1.0,
+    // Errors thrown by wallet browser extensions / in-app browsers, not by our code.
+    ignoreErrors: [/not found rainbowkit/i],
     integrations: [
       Sentry.thirdPartyErrorFilterIntegration({
         filterKeys: ['sky-webapp'],
