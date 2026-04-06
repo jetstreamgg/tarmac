@@ -7,8 +7,8 @@ catalog:
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@changesets/cli': ^2.30.0
   '@coinbase/wallet-sdk': ~4.3.6
-  '@eslint/eslintrc': ^3.3.4
-  '@eslint/js': ^9.39.3
+  '@eslint/eslintrc': ^3.3.5
+  '@eslint/js': ^9.39.4
   '@lingui/cli': ^5.9.2
   '@lingui/conf': ^5.9.2
   '@lingui/core': ^5.9.2
@@ -60,19 +60,19 @@ catalog:
   embla-carousel-autoplay: ^8.6.0
   embla-carousel-fade: ^8.6.0
   embla-carousel-react: ^8.6.0
-  eslint: ^9.39.3
+  eslint: ^9.39.4
   eslint-plugin-react: ^7.37.5
-  eslint-plugin-testing-library: ^7.16.0
+  eslint-plugin-testing-library: ^7.16.2
   ethers: ^6.16.0
   framer-motion: ^11.18.2
   globals: ^15.15.0
-  graphql: ^16.13.0
+  graphql: ^16.13.2
   graphql-request: ^7.4.0
   happy-dom: ^20.8.9
   husky: ^9.0.11
-  knip: ^5.85.0
+  knip: ^5.88.1
   lint-staged: ^15.5.1
-  lucide-react: ^0.575.0
+  lucide-react: ^0.577.0
   openapi-fetch: ^0.17.0
   porto: ~0.2.37
   posthog-js: ^1.359.1
@@ -102,7 +102,7 @@ catalog:
   vitest: ^3.2.4
   vitest-canvas-mock: ^0.3.3
   wagmi: ^3.6.0
-  zod: ^4.1.11
+  zod: ^4.3.6
 
 catalogMode: strict
 
