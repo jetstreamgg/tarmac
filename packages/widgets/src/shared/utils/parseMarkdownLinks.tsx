@@ -44,31 +44,32 @@ export function parseMarkdownLinks(
 ): React.ReactNode {
   if (!text) return '';
 
-  // Regex to match markdown links: [text](url)
-  const linkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
-
-  // If no links found, return the text as is
-  if (!linkPattern.test(text)) {
-    return text;
-  }
-
-  // Reset regex after test
-  linkPattern.lastIndex = 0;
-
   const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match;
+  let i = 0;
   let keyIndex = 0;
 
-  while ((match = linkPattern.exec(text)) !== null) {
-    // Add text before the link
-    if (match.index > lastIndex) {
-      parts.push(text.substring(lastIndex, match.index));
+  while (i < text.length) {
+    const openBracket = text.indexOf('[', i);
+    if (openBracket === -1) break;
+
+    const closeBracket = text.indexOf(']', openBracket + 1);
+    if (closeBracket === -1) break;
+
+    if (text[closeBracket + 1] !== '(') {
+      i = closeBracket + 1;
+      continue;
     }
 
-    // Add the link component
-    const linkText = match[1];
-    const url = match[2];
+    const closeParen = text.indexOf(')', closeBracket + 2);
+    if (closeParen === -1) break;
+
+    // Add text before the link
+    if (openBracket > i) {
+      parts.push(text.substring(i, openBracket));
+    }
+
+    const linkText = text.substring(openBracket + 1, closeBracket);
+    const url = text.substring(closeBracket + 2, closeParen);
 
     // Check if the URL has a safe scheme
     if (!isSafeUrlScheme(url)) {
@@ -96,12 +97,17 @@ export function parseMarkdownLinks(
       );
     }
 
-    lastIndex = match.index + match[0].length;
+    i = closeParen + 1;
+  }
+
+  // If no links found, return the text as is
+  if (parts.length === 0) {
+    return text;
   }
 
   // Add any remaining text after the last link
-  if (lastIndex < text.length) {
-    parts.push(text.substring(lastIndex));
+  if (i < text.length) {
+    parts.push(text.substring(i));
   }
 
   return <>{parts}</>;
