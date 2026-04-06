@@ -149,10 +149,10 @@ export function getPsmDisabledReason({
     if (hasNonZeroFee) {
       return 'non_zero_fee';
     }
+  }
 
-    if (hasSufficientLiquidity === false) {
-      return 'insufficient_liquidity';
-    }
+  if (hasSufficientLiquidity === false) {
+    return 'insufficient_liquidity';
   }
 
   return undefined;

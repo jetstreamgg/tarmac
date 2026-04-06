@@ -328,6 +328,7 @@ export {
 
 export { SupportedCollateralTypes } from './vaults/vaults.constants';
 export { getIlkName } from './vaults/helpers';
+export { toError } from './helpers';
 
 export { OrderQuoteSideKind, gpv2VaultRelayerAddress } from './trade/constants';
 
