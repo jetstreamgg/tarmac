@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 catalog:
-  '@base-org/account': ~2.4.2
+  '@base-org/account': ~2.5.2
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@changesets/cli': ^2.30.0
   '@coinbase/wallet-sdk': ~4.3.6
