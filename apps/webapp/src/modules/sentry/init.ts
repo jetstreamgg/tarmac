@@ -1,11 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
-import {
-  createRoutesFromChildren,
-  matchRoutes,
-  useLocation,
-  useNavigationType
-} from 'react-router-dom';
+import { createRoutesFromChildren, matchRoutes, useLocation, useNavigationType } from 'react-router-dom';
 
 // Fall back to the app-wide env name so Sentry still gets a meaningful environment
 // even before dedicated VITE_SENTRY_* values are populated everywhere.
@@ -54,6 +49,21 @@ export function initSentry(): void {
     ],
     beforeSend(event) {
       if (!shouldSendDevEvents) {
+        return null;
+      }
+
+      // Drop unhandled wallet provider rejections (EIP-1193 code 4001).
+      // These are plain-object rejections from wallet connectors during Wagmi's
+      // auto-reconnect on page load — not actionable on our side (WEBAPP-B).
+      const extraData = (event.extra as Record<string, unknown> | undefined)?.__serialized__ as
+        | Record<string, unknown>
+        | undefined;
+      if (
+        event.exception?.values?.some(v =>
+          v.value?.includes('Object captured as promise rejection with keys')
+        ) &&
+        extraData?.code === 4001
+      ) {
         return null;
       }
 
