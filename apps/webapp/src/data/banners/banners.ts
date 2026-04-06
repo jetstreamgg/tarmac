@@ -183,19 +183,11 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
-    id: 'about-convert',
-    title: 'About Convert',
-    module: 'convert-banners',
-    description:
-      'Convert USDC to USDS at a fixed 1:1 rate, trade popular tokens for Sky Ecosystem tokens, or upgrade your DAI to USDS and MKR to SKY.',
-    display: ['disconnected']
-  },
-  {
-    id: 'about-11-conversion',
-    title: 'About 1:1 Conversion',
+    id: 'about-11-conversions',
+    title: 'About 1:1 Conversions',
     module: 'one-to-one-conversion-banners',
     description:
-      '1:1 Conversion uses contracts deployed by Sky Protocol that enable swapping USDC and USDS at a fixed rate through the Peg Stability Module [(PSM)](#tooltip-psm). This means that unlike market trades, PSM conversions are not exposed to slippage and MEV risks, enabling seamless swapping between supported stablecoins.',
+      '1:1 Conversion uses contracts deployed by Sky Protocol, that enables to swap USDC and USDS at a fixed rate through the Peg Stability Module [(PSM)](#tooltip-psm). This means that unlike the market trades, PSM conversions are not exposed to slippage and MEV risks, enabling to seamlessly swap between supported stablecoins.',
     display: ['connected', 'disconnected']
   },
   {
@@ -308,14 +300,6 @@ export const banners: Banner[] = [
     module: 'vaults-banners',
     description:
       'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDC lending market, where borrowers post stUSDS, the higher-yield Expert risk capital token, as collateral to borrow USDC at an 86% LTV ratio.',
-    display: ['connected', 'disconnected']
-  },
-  {
-    id: 'usds-savings-vault',
-    title: 'USDS Savings Vault',
-    module: 'vaults-banners',
-    description:
-      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDS lending market, where borrowers post sUSDS, the native stablecoin earning the Sky Savings Rate, as collateral to borrow USDS at a 96.5% LTV ratio.',
     display: ['connected', 'disconnected']
   },
   {
