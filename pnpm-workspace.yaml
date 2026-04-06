@@ -72,7 +72,7 @@ catalog:
   husky: ^9.0.11
   knip: ^5.85.0
   lint-staged: ^15.5.1
-  lucide-react: ^0.575.0
+  lucide-react: ^0.577.0
   openapi-fetch: ^0.17.0
   porto: ~0.2.37
   posthog-js: ^1.359.1
