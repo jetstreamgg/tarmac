@@ -56,6 +56,8 @@ export function parseMarkdownLinks(
     if (closeBracket === -1) break;
 
     if (text[closeBracket + 1] !== '(') {
+      // Not a valid markdown link - preserve text up through ']' as plain text
+      parts.push(text.substring(i, closeBracket + 1));
       i = closeBracket + 1;
       continue;
     }
