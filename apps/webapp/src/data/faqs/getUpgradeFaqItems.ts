@@ -2,15 +2,15 @@ export const getUpgradeFaqItems = () => {
   const items = [
     {
       question: 'How do I upgrade my MKR to SKY?',
-      answer: `Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app, or they may choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.sky.money). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
+      answer: `Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app, or they may choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.skyeco.com). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
-For upgrade details and step-by-step upgrade instructions, visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 0
     },
     {
       question: 'Where can I find the MKR to SKY Upgrade Guide and Upgrade FAQs?',
       answer:
-        'For upgrade FAQs and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). For a more technical overview, see the [Upgrade Guide](https://developers.sky.money/guides/sky/token-governance-upgrade/overview/) in the [Developer Documentation](https://developers.sky.money/).',
+        'For upgrade FAQs and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com). For a more technical overview, see the [Upgrade Guide](https://developers.skyeco.com/guides/sky/token-governance-upgrade/overview/) in the [Developer Documentation](https://developers.skyeco.com/).',
       index: 1
     },
     {
@@ -19,7 +19,7 @@ For upgrade details and step-by-step upgrade instructions, visit the [MKR to SKY
 
 SKY holders can use the token to vote directly on Sky Ecosystem Governance proposals and/or to transfer the voting power of their SKY tokens to a recognized delegate or a contract that they own, just as they once could with MKR. SKY also enables users to access Staking Rewards via the Sky.money web app. When users supply SKY to the Staking Engine of the Sky Protocol, they can access those rewards and may also choose to create one or more positions, including positions that enable them to generate and [borrow](#tooltip-borrow) USDS against their supplied SKY, and to delegate the voting power their supplied SKY tokens provide.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 2
     },
     {
@@ -30,7 +30,7 @@ The Delayed Upgrade Penalty is a time-based penalty [approved by Sky Ecosystem G
 
 The penalty, which took effect in September 2025, reduces the amount of SKY received per MKR upgraded by a rate of 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 3
     },
     {
@@ -51,7 +51,7 @@ Here are some examples:
 
 Please note that blockchain fees for using the Ethereum network apply when upgrading. Blockchain transaction fees are neither controlled, imposed nor received by Sky.money or the Sky Protocol.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 4
     },
     {
@@ -64,25 +64,25 @@ SKY holders can use the token to vote directly on Sky Ecosystem Governance propo
 
 SKY also enables users to access Staking Rewards via the Sky.money web app. When users supply SKY to the Staking Engine of the Sky Protocol, they can access those rewards and may also choose to create one or more positions, including positions that enable them to generate and borrow USDS against their supplied SKY, and to delegate the voting power their supplied SKY tokens provide.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 5
     },
     {
       question: 'Will my MKR automatically upgrade to SKY, or do I need to manually convert?',
       answer: `MKR will not automatically upgrade to SKY.
 
-Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.sky.money/). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
+Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.skyeco.com/). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
 If you have one or more positions in the Seal Engine, you will need to manually exit and, if you choose, upgrade your MKR to SKY, and then supply your SKY to the Staking Engine. The process via the Sky.money web app makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 6
     },
     {
       question: 'Do I have to upgrade my MKR to SKY?',
       answer: `All MKR holders are encouraged to upgrade to SKY promptly to maintain the ability to participate in key decisions shaping the Sky Protocol. Upgrading in a timely fashion ensures reduced governance complexity and a more effective, efficient and resilient ecosystem for all. Please note that while MKR will continue to exist, users cannot revert back to MKR from SKY via the Sky Protocol.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 7
     },
     {
@@ -106,7 +106,7 @@ The Delayed Upgrade Penalty is a time-based penalty [approved by Sky Ecosystem G
 
 The penalty, which took effect in September 2025, reduces the amount of SKY received per MKR upgraded by a rate of 1%. The reduction will increase by an additional 1% every three months thereafter, until it reaches 100% in 25 years.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 10
     },
     {
@@ -138,7 +138,7 @@ Delegates granted voting power can never directly access any SKY tokens delegate
 
 SKY is the technical and functional evolution of MKR, inheriting and extending the governance functionalities previously held by MKR. It reflects the community's desire to streamline governance, increase voter participation, and support the ecosystem's long-term growth and scalability.
 
-MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,000 SKY). For upgrade details, see the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money). For the most current information on all things Sky, join the community conversations in the [Sky Forum](https://forum.sky.money/) and [Sky Discord](https://discord.com/invite/skyecosystem).`,
+MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,000 SKY). For upgrade details, see the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com). For the most current information on all things Sky, join the community conversations in the [Sky Forum](https://forum.skyeco.com/) and [Sky Discord](https://discord.com/invite/skyecosystem).`,
       index: 14
     },
     {
@@ -149,9 +149,9 @@ MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,
     },
     {
       question: 'Will the exchange I use automatically upgrade all of my MKR to SKY?',
-      answer: `MKR will not automatically upgrade to SKY. Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.sky.money). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
+      answer: `MKR will not automatically upgrade to SKY. Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.skyeco.com). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
-For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.sky.money).`,
+For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 16
     },
     {
@@ -168,7 +168,7 @@ USDS is freely transferable and can be used in connection with any software prot
 
 The Sky Protocol is governed by a community of broad and diversified individuals and entities from around the world, who hold Sky governance tokens and support Sky Ecosystem by participating in a system of decentralized onchain voting.
 
-USDS is also currently available on networks other than Ethereum Mainnet, including Solana, Base and Arbitrum. You can follow the health of USDS and all Sky Protocol tokens using the [Sky Ecosystem Dashboard](https://info.sky.money/).`,
+USDS is also currently available on networks other than Ethereum Mainnet, including Solana, Base and Arbitrum. You can follow the health of USDS and all Sky Protocol tokens using the [Sky Ecosystem Dashboard](https://info.skyeco.com/).`,
       index: 18
     },
     {
@@ -187,7 +187,7 @@ Through PSMs, USDS or DAI is obtained via predictable-rate conversion (typically
 
 The Surplus Buffer is where all the USDS revenue earned by the Sky Protocol from fees collected from users are accrued. Using the excess USDS in this way balances its supply with its demand, which stabilizes its price.
 
-Importantly, the [Sky Ecosystem Dashboard](https://info.sky.money/), designed by [Block Analitica](https://blockanalitica.com/), allows anyone to examine the health of the decentralized Sky Protocol in real time. Users can view the total value locked (TVL) in the Protocol, TVL in the Sky Savings Rate module, TVL in the Sky Token Rewards module, the total collateral backing the system, estimated annual profits, and much more. For more on the Dashboard, see this [Substack post](https://blockanalitica.substack.com/p/the-sky-risk-and-analytics-dashboard) by Block Analitica.
+Importantly, the [Sky Ecosystem Dashboard](https://info.skyeco.com/), designed by [Block Analitica](https://blockanalitica.com/), allows anyone to examine the health of the decentralized Sky Protocol in real time. Users can view the total value locked (TVL) in the Protocol, TVL in the Sky Savings Rate module, TVL in the Sky Token Rewards module, the total collateral backing the system, estimated annual profits, and much more. For more on the Dashboard, see this [Substack post](https://blockanalitica.substack.com/p/the-sky-risk-and-analytics-dashboard) by Block Analitica.
 
 For details on the risks associated with soft-pegged stablecoins, review the [User Risk Documentation](https://docs.sky.money/user-risks).`,
       index: 19
