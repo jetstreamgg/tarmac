@@ -34,6 +34,8 @@ export function initSentry(): void {
     // use 100% sampling so instrumentation can be verified end-to-end.
     tracesSampleRate: !shouldSendDevEvents ? 0 : isProd ? 0.1 : 1.0,
     ignoreErrors: [
+      // Errors thrown by wallet browser extensions / in-app browsers, not by our code.
+      /not found rainbowkit/i,
       // DOM mutation errors caused by browser extensions modifying nodes outside
       // React's control. These surface as React reconciliation failures and are
       // not actionable.
