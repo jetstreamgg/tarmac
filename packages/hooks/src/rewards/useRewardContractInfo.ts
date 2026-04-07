@@ -1,5 +1,5 @@
 import { request, gql } from 'graphql-request';
-import { RewardContractChangeRaw, RewardContractInfo, RewardContractInfoRaw } from './rewards';
+import { RewardContractInfo, RewardContractInfoRaw } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
@@ -15,33 +15,6 @@ async function fetchRewardContractInfo(
       reward: Reward_by_pk(id: "${chainId}-${rewardContractId.toLowerCase()}") {
         totalSupplied
         totalRewardsClaimed
-        supplyInstances {
-          id
-          blockTimestamp
-          transactionHash
-          amount
-        }
-        withdrawals {
-          id
-          blockTimestamp
-          transactionHash
-          amount
-        }
-        rewardClaims {
-          id
-          amount
-          transactionHash
-          blockTimestamp
-        }
-        tvl {
-          id
-          amount
-          transactionHash
-          blockTimestamp
-        }
-        suppliers {
-          user
-        }
       }
     }
   `;
@@ -53,49 +26,13 @@ async function fetchRewardContractInfo(
   if (!reward) {
     return {
       totalSupplied: BigInt(0),
-      totalRewardsClaimed: BigInt(0),
-      supplyInstances: [],
-      withdrawals: [],
-      rewardClaims: [],
-      tvl: [],
-      suppliers: []
+      totalRewardsClaimed: BigInt(0)
     };
   }
 
   return {
     totalSupplied: BigInt(reward.totalSupplied),
-    totalRewardsClaimed: BigInt(reward.totalRewardsClaimed),
-    supplyInstances: reward.supplyInstances.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      blockTimestamp: parseInt(d.blockTimestamp, 10),
-      transactionHash: d.transactionHash,
-      amount: BigInt(d.amount)
-    })),
-    withdrawals: reward.withdrawals.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      blockTimestamp: parseInt(d.blockTimestamp, 10),
-      transactionHash: d.transactionHash,
-      amount: BigInt(d.amount)
-    })),
-    rewardClaims: reward.rewardClaims.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      amount: BigInt(d.amount),
-      transactionHash: d.transactionHash,
-      blockTimestamp: parseInt(d.blockTimestamp, 10)
-    })),
-    tvl: reward.tvl.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      amount: BigInt(d.amount),
-      transactionHash: d.transactionHash,
-      blockTimestamp: parseInt(d.blockTimestamp, 10)
-    })),
-    suppliers: reward.suppliers.reduce((acc: { user: string }[], d: any) => {
-      const userLower = d.user.toLowerCase();
-      if (!acc.some(accUser => accUser.user.toLowerCase() === userLower)) {
-        acc.push({ user: d.user });
-      }
-      return acc;
-    }, [])
+    totalRewardsClaimed: BigInt(reward.totalRewardsClaimed)
   };
 }
 
