@@ -46,7 +46,7 @@
     "@lingui/detect-locale": "catalog:",
     "@lingui/macro": "catalog:",
     "@lingui/react": "catalog:",
-    "@metamask/sdk": "catalog:",
+    "@metamask/connect-evm": "catalog:",
     "@radix-ui/react-accordion": "catalog:",
     "@radix-ui/react-avatar": "catalog:",
     "@radix-ui/react-checkbox": "catalog:",
