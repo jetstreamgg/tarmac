@@ -34,15 +34,7 @@ vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
       return {
         data: {
           totalSupplied: 1000000n,
-          totalRewardsClaimed: 500000n,
-          supplyInstances: [
-            { id: '1', blockTimestamp: 1622548800, transactionHash: '0xabc', amount: 100000n },
-            { id: '2', blockTimestamp: 1625130800, transactionHash: '0xdef', amount: 200000n }
-          ],
-          withdrawals: [{ id: '3', blockTimestamp: 1627819200, transactionHash: '0xghi', amount: 50000n }],
-          rewardClaims: [{ id: '4', blockTimestamp: 1630507600, transactionHash: '0xjkl', amount: 150000n }],
-          tvl: [{ id: '5', blockTimestamp: 1633196000, transactionHash: '0xmnop', amount: 750000n }],
-          suppliers: [{ user: '0x123' }, { user: '0x456' }]
+          totalRewardsClaimed: 500000n
         },
         isLoading: false,
         error: null

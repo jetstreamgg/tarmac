@@ -38,7 +38,7 @@ export const MorphoVaultStatsCard = ({
     vaultAddress: currentVaultAddress
   });
 
-  const totalAssets = marketData?.totalAssets ?? 0n;
+  const totalAssets = marketData?.totalAssets;
 
   if (!currentVaultAddress) {
     return null;
@@ -88,10 +88,12 @@ export const MorphoVaultStatsCard = ({
               <div className="flex justify-end">
                 <Skeleton className="h-4 w-30" />
               </div>
-            ) : (
+            ) : totalAssets !== undefined ? (
               <Text dataTestId="morpho-vault-tvl">
                 {formatBigInt(totalAssets, { unit: assetDecimals, compact: true })} {assetToken.symbol}
               </Text>
+            ) : (
+              <Text dataTestId="morpho-vault-tvl">—</Text>
             )}
           </VStack>
         </HStack>
