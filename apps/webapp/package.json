@@ -13,7 +13,7 @@
     "lint-no-files": "eslint --fix --ext .tsx,.ts,.js,.jsx",
     "lint": "pnpm lint-no-files src",
     "test": "vitest run",
-    "e2e": "ACCOUNT_COUNT=20 playwright test --config playwright-parallel.config.ts --workers=1 --trace on",
+    "e2e": "ACCOUNT_COUNT=50 playwright test --config playwright-parallel.config.ts --workers=1 --trace on",
     "e2e:ui": "ACCOUNT_COUNT=10 playwright test --config playwright-parallel.config.ts --workers=1 --ui",
     "e2e:parallel": "playwright test --config playwright-parallel.config.ts",
     "e2e:parallel:alternate:fork": "FUND_NETWORKS=mainnet USE_ALTERNATE_VNET=true playwright test --config playwright-parallel.config.ts --project=chromium",

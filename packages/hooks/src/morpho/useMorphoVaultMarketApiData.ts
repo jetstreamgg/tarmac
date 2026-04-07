@@ -18,7 +18,7 @@ type CapItem = {
   type: string;
   data: {
     market?: {
-      uniqueKey: string;
+      marketId: string;
       lltv: string;
       loanAsset: { symbol: string };
       collateralAsset: { symbol: string };
@@ -222,8 +222,8 @@ export async function fetchMorphoVaultMarketData(
         : 0;
 
     markets.push({
-      marketId: market.uniqueKey,
-      marketUniqueKey: market.uniqueKey,
+      marketId: market.marketId,
+      marketUniqueKey: market.marketId,
       loanAsset: market.loanAsset.symbol,
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
@@ -247,8 +247,8 @@ export async function fetchMorphoVaultMarketData(
 
   // Sort markets by allocation (highest first)
   markets.sort((a, b) => {
-    const aCap = marketV1Caps.find(c => c.data.market!.uniqueKey === a.marketId);
-    const bCap = marketV1Caps.find(c => c.data.market!.uniqueKey === b.marketId);
+    const aCap = marketV1Caps.find(c => c.data.market!.marketId === a.marketId);
+    const bCap = marketV1Caps.find(c => c.data.market!.marketId === b.marketId);
     return Number(BigInt(bCap?.allocation ?? 0) - BigInt(aCap?.allocation ?? 0));
   });
 

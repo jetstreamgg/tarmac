@@ -37,6 +37,16 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const TOKEN_BALANCE_BATCH_SIZE = 10;
+const TOKEN_BALANCE_REQUEST_TIMEOUT_MS = 20000;
+
+function chunkAddresses(addresses: string[], chunkSize: number): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < addresses.length; i += chunkSize) {
+    chunks.push(addresses.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
 
 /**
  * Set ETH balances for multiple accounts using Tenderly's bulk API
@@ -81,28 +91,47 @@ async function setTokenBalancesInBulk(
   decimals: number
 ): Promise<void> {
   const balance = '0x' + parseUnits(amount, decimals).toString(16);
+  const runRequest = async (targetAddresses: string[]): Promise<void> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TOKEN_BALANCE_REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: 1,
+          jsonrpc: '2.0',
+          method: 'tenderly_setErc20Balance',
+          params: [tokenAddress, targetAddresses, balance]
+        }),
+        signal: controller.signal
+      });
 
-  const response = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      id: 1,
-      jsonrpc: '2.0',
-      method: 'tenderly_setErc20Balance',
-      params: [tokenAddress, addresses, balance]
-    })
-  });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to set token balances for ${tokenAddress}: ${response.statusText} - ${text}`);
+      }
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Failed to set token balances for ${tokenAddress}: ${response.statusText} - ${text}`);
-  }
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(`RPC error setting token ${tokenAddress}: ${result.error.message}`);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
 
-  const result = await response.json();
-  if (result.error) {
-    throw new Error(`RPC error setting token ${tokenAddress}: ${result.error.message}`);
+  try {
+    // Fast path: one bulk request is much faster when Tenderly accepts it.
+    await runRequest(addresses);
+  } catch {
+    // Fallback for RPCs that time out on large lists (observed on Arbitrum).
+    const addressChunks = chunkAddresses(addresses, TOKEN_BALANCE_BATCH_SIZE);
+    for (const chunk of addressChunks) {
+      await runRequest(chunk);
+    }
   }
 }
 
@@ -374,6 +403,7 @@ async function main() {
 
   // Detect if we're using alternate VNet
   const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
+  const useExistingSnapshots = process.env.USE_EXISTING_SNAPSHOTS === 'true';
   if (useAlternateVnet) {
     console.log('🔵 Funding alternate VNets\n');
   } else {
@@ -381,6 +411,25 @@ async function main() {
   }
 
   try {
+    // Fast-path: if snapshots are already present and healthy, do not mutate VNets by funding again.
+    // This is intended for CI flows that provide `tenderlyTestnetData.json` + `persistent-vnet-snapshots*.json`.
+    if (useExistingSnapshots) {
+      console.log('🧊 Using existing snapshots mode (no funding)');
+      console.log('1. Validating VNets + snapshot revert + balances...');
+      const validationResult = await validateVnets({
+        skipBalanceCheck: false,
+        skipSnapshotCheck: false
+      });
+
+      if (validationResult.healthy) {
+        console.log('✅ Existing snapshots are healthy; skipping funding and snapshot creation.');
+        console.log('=== Funding Skipped ===');
+        process.exit(0);
+      }
+
+      console.log('⚠️ Existing snapshots are not healthy; falling back to funding.\n');
+    }
+
     // Step 1: Validate VNets (skip balance check since we're about to fund them)
     console.log('1. Validating VNets (checking connectivity, not balances)...');
     const validationResult = await validateVnets({
