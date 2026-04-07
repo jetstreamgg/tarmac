@@ -25,6 +25,11 @@ type approveOrPerformActionOptions = {
   review?: boolean;
 };
 
+const getStepIndicatorExpectation = (action: Action): string | RegExp => {
+  // Some supply flows render "Swap" as the final step label depending on provider path.
+  return action === 'Supply' ? /^(Supply|Swap)$/ : action;
+};
+
 export const approveOrPerformAction = async (
   page: Page,
   action: Action,
@@ -49,7 +54,7 @@ export const approveOrPerformAction = async (
   const isStepIndicatorVisible = await stepIndicator.isVisible();
   // Some flows that don't require approval like rewards withdraw and mainnet savings withdraw don't show the step indicator
   if (isStepIndicatorVisible) {
-    await expect(stepIndicator).toHaveText(action);
+    await expect(stepIndicator).toHaveText(getStepIndicatorExpectation(action));
   }
 };
 
@@ -82,7 +87,7 @@ export const performAction = async (page: Page, action: Action, options?: approv
   const isStepIndicatorVisible = await stepIndicator.isVisible();
   // Some flows that don't require approval like rewards withdraw and mainnet savings withdraw don't show the step indicator
   if (isStepIndicatorVisible) {
-    await expect(stepIndicator).toHaveText(action);
+    await expect(stepIndicator).toHaveText(getStepIndicatorExpectation(action));
   }
 };
 
