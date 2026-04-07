@@ -16,7 +16,7 @@ export function MorphoVaultTvlCard({ vaultAddress, assetToken }: MorphoVaultTvlC
   const chainId = useChainId();
   const { data: marketData, isLoading } = useMorphoVaultMarketApiData({ vaultAddress });
 
-  const totalAssets = marketData?.totalAssets || 0n;
+  const totalAssets = marketData?.totalAssets;
   const assetDecimals =
     typeof assetToken.decimals === 'number'
       ? assetToken.decimals
@@ -31,7 +31,7 @@ export function MorphoVaultTvlCard({ vaultAddress, assetToken }: MorphoVaultTvlC
         <TokenIconWithBalance
           className="mt-2"
           token={{ symbol: assetToken.symbol, name: assetToken.name }}
-          balance={formatBigInt(totalAssets, { unit: assetDecimals })}
+          balance={totalAssets !== undefined ? formatBigInt(totalAssets, { unit: assetDecimals }) : '--'}
         />
       }
     />

@@ -39,7 +39,7 @@ export const useGovernanceMigrationToast = (isAuthorized: boolean) => {
               Upgrade Penalty.
             </Text>
             <Button className="place-self-start" variant="pill" size="xs">
-              <ExternalLink href="https://upgrademkrtosky.sky.money" showIcon={false}>
+              <ExternalLink href="https://upgrademkrtosky.skyeco.com" showIcon={false}>
                 Visit MKR to SKY Upgrade Hub
               </ExternalLink>
             </Button>
