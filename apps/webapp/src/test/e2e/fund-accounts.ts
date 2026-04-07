@@ -374,6 +374,7 @@ async function main() {
 
   // Detect if we're using alternate VNet
   const useAlternateVnet = process.env.USE_ALTERNATE_VNET === 'true';
+  const useExistingSnapshots = process.env.USE_EXISTING_SNAPSHOTS === 'true';
   if (useAlternateVnet) {
     console.log('🔵 Funding alternate VNets\n');
   } else {
@@ -381,6 +382,25 @@ async function main() {
   }
 
   try {
+    // Fast-path: if snapshots are already present and healthy, do not mutate VNets by funding again.
+    // This is intended for CI flows that provide `tenderlyTestnetData.json` + `persistent-vnet-snapshots*.json`.
+    if (useExistingSnapshots) {
+      console.log('🧊 Using existing snapshots mode (no funding)');
+      console.log('1. Validating VNets + snapshot revert + balances...');
+      const validationResult = await validateVnets({
+        skipBalanceCheck: false,
+        skipSnapshotCheck: false
+      });
+
+      if (validationResult.healthy) {
+        console.log('✅ Existing snapshots are healthy; skipping funding and snapshot creation.');
+        console.log('=== Funding Skipped ===');
+        process.exit(0);
+      }
+
+      console.log('⚠️ Existing snapshots are not healthy; falling back to funding.\n');
+    }
+
     // Step 1: Validate VNets (skip balance check since we're about to fund them)
     console.log('1. Validating VNets (checking connectivity, not balances)...');
     const validationResult = await validateVnets({
