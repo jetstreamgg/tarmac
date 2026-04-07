@@ -71,8 +71,8 @@ export async function readMarketIdsFromAdapter(
  */
 type MorphoMarketDataApiResponse = {
   data: {
-    marketByUniqueKey: {
-      uniqueKey: string;
+    marketById: {
+      marketId: string;
       lltv: string;
       loanAsset: {
         symbol: string;
@@ -125,7 +125,7 @@ export async function fetchV1VaultBasicData(
 export async function fetchMarketData(
   marketId: string,
   chainId: number
-): Promise<MorphoMarketDataApiResponse['data']['marketByUniqueKey']> {
+): Promise<MorphoMarketDataApiResponse['data']['marketById']> {
   const response = await fetch(MORPHO_API_URL, {
     method: 'POST',
     headers: {
@@ -145,5 +145,5 @@ export async function fetchMarketData(
   }
 
   const result: MorphoMarketDataApiResponse = await response.json();
-  return result.data.marketByUniqueKey;
+  return result.data.marketById;
 }
