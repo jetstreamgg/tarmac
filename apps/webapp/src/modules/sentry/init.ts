@@ -33,6 +33,14 @@ export function initSentry(): void {
     // Local/dev stays fully off unless debug is explicitly enabled. When debug is on,
     // use 100% sampling so instrumentation can be verified end-to-end.
     tracesSampleRate: !shouldSendDevEvents ? 0 : isProd ? 0.1 : 1.0,
+    ignoreErrors: [
+      // DOM mutation errors caused by browser extensions modifying nodes outside
+      // React's control. These surface as React reconciliation failures and are
+      // not actionable.
+      /Failed to execute 'removeChild' on 'Node'/,
+      /Failed to execute 'insertBefore' on 'Node'/,
+      /The object can not be found here/
+    ],
     integrations: [
       Sentry.thirdPartyErrorFilterIntegration({
         filterKeys: ['sky-webapp'],
