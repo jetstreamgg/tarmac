@@ -56,7 +56,7 @@ If you have shied away from the Ethereum blockchain due to the high price of gas
 
 The Sky Savings Rate percentage is variable, determined by Sky Ecosystem Governance through a process of decentralized onchain voting. It is calculated based on various risk parameters evaluated and monitored by the Sky Risk Management Team. Through the voting process, Sky Ecosystem Governance is able, at any time, at its sole discretion, and without notice, to adapt the Sky Savings Rate and other relevant Sky Protocol parameters based on market conditions, the Surplus Buffer of the Sky Protocol, and other factors.
 
-The Sky Savings Rate is one of the most impactful Sky Ecosystem Governance-controlled parameters related to USDS demand. The Risk Management Team analyzes systemic decentralized finance (DeFi) risks, uses risk models and other tools to evaluate and monitor the Sky project's effectiveness, and performs regular market research. Based on its findings, the team might propose a change to the Sky Savings Rate percentage. Any such proposal is first debated in the [Sky Forum](https://forum.sky.money/), and later voted on by Sky Ecosystem Governance.`,
+The Sky Savings Rate is one of the most impactful Sky Ecosystem Governance-controlled parameters related to USDS demand. The Risk Management Team analyzes systemic decentralized finance (DeFi) risks, uses risk models and other tools to evaluate and monitor the Sky project's effectiveness, and performs regular market research. Based on its findings, the team might propose a change to the Sky Savings Rate percentage. Any such proposal is first debated in the [Sky Forum](https://forum.skyeco.com/), and later voted on by Sky Ecosystem Governance.`,
     index: 2
   },
   {
@@ -73,7 +73,7 @@ USDS is freely transferable and can be used in connection with any software prot
 
 The Sky Protocol is governed by a community of broad and diversified individuals and entities from around the world, who hold Sky governance tokens and support Sky Ecosystem by participating in a system of decentralized onchain voting.
 
-USDS is also currently available on networks other than Ethereum Mainnet, including Solana, Base and Arbitrum. You can follow the growth of USDS and all Sky Protocol tokens using the [Sky Ecosystem Dashboard](https://info.sky.money/).`,
+USDS is also currently available on networks other than Ethereum Mainnet, including Solana, Base and Arbitrum. You can follow the growth of USDS and all Sky Protocol tokens using the [Sky Ecosystem Dashboard](https://info.skyeco.com/).`,
     index: 4
   },
   {
