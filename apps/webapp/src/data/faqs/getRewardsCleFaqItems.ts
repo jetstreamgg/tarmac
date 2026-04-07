@@ -22,7 +22,7 @@ Chronicle Points might ultimately become claimable for Chronicle tokens (CLE) at
     {
       question: 'Where can I see the current total distribution of Chronicle Points?',
       answer:
-        'You can view the current distribution of Chronicle Points on the [Sky Ecosystem Dashboard](https://info.sky.money/rewards/0x10ab606b067c9c461d8893c47c7512472e19e2ce).',
+        'You can view the current distribution of Chronicle Points on the [Sky Ecosystem Dashboard](https://info.skyeco.com/rewards/0x10ab606b067c9c461d8893c47c7512472e19e2ce).',
       index: 3
     }
   ];

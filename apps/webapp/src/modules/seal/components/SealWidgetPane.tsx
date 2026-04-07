@@ -195,7 +195,7 @@ export function SealWidgetPane(sharedProps: SharedProps) {
         flow
       }}
       termsLink={Array.isArray(termsLink) && termsLink.length > 0 ? termsLink[0] : undefined}
-      mkrSkyUpgradeUrl="https://upgrademkrtosky.sky.money"
+      mkrSkyUpgradeUrl="https://upgrademkrtosky.skyeco.com"
     />
   );
 }
