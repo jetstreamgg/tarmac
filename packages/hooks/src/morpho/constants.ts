@@ -167,8 +167,8 @@ export const VAULT_V1_BASIC_DATA_QUERY = `
  */
 export const MARKET_DATA_QUERY = `
   query MarketData($marketId: String!, $chainId: Int!) {
-    marketByUniqueKey(uniqueKey: $marketId, chainId: $chainId) {
-      uniqueKey
+    marketById(marketId: $marketId, chainId: $chainId) {
+      marketId
       lltv
       loanAsset {
         symbol
@@ -325,7 +325,7 @@ export const VAULT_MARKET_DATA_QUERY = `
           data {
             ... on MarketV1CapData {
               market {
-                uniqueKey
+                marketId
                 lltv
                 loanAsset { symbol }
                 collateralAsset { symbol }
