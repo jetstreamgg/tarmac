@@ -67,7 +67,12 @@ export default defineConfig({
         '**/stusds-provider-switching.spec.ts',
         // '**/capped-osm-unstake.spec.ts',
         '**/sequential-tx.spec.ts',
-        '**/vaults-morpho.spec.ts'
+        '**/vaults-morpho.spec.ts',
+        '**/mainnet-psm.spec.ts',
+        '**/base-psm.spec.ts',
+        '**/arbitrum-psm.spec.ts',
+        '**/optimism-psm.spec.ts',
+        '**/unichain-psm.spec.ts'
       ]
     }
     // {
