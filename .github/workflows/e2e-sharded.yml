@@ -85,7 +85,7 @@ jobs:
         run: |
           echo "💰 Funding all 150 test accounts on all networks..."
           cd apps/webapp
-          pnpm e2e:fund
+          USE_EXISTING_SNAPSHOTS=true pnpm e2e:fund
 
           # Verify snapshots were created
           if [ ! -f "src/test/e2e/persistent-vnet-snapshots.json" ]; then
