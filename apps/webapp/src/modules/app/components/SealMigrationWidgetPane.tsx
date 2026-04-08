@@ -180,7 +180,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
               {...sharedProps}
               onWidgetStateChange={onSealWidgetStateChange}
               termsLink={termsLink[0]}
-              mkrSkyUpgradeUrl="https://upgrademkrtosky.sky.money"
+              mkrSkyUpgradeUrl="https://upgrademkrtosky.skyeco.com"
             />
           )}
         </>

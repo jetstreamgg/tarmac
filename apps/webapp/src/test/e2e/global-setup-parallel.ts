@@ -24,6 +24,16 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const TOKEN_BALANCE_BATCH_SIZE = 10;
+const TOKEN_BALANCE_REQUEST_TIMEOUT_MS = 20000;
+
+function chunkAddresses(addresses: string[], chunkSize: number): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < addresses.length; i += chunkSize) {
+    chunks.push(addresses.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
 
 /**
  * Global setup for parallel test execution.
@@ -74,29 +84,47 @@ async function setTokenBalancesInBulk(
 ): Promise<void> {
   // Convert amount to wei/smallest unit
   const balance = '0x' + parseUnits(amount, decimals).toString(16);
+  const runRequest = async (targetAddresses: string[]): Promise<void> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TOKEN_BALANCE_REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: 1,
+          jsonrpc: '2.0',
+          method: 'tenderly_setErc20Balance',
+          params: [tokenAddress, targetAddresses, balance]
+        }),
+        signal: controller.signal
+      });
 
-  // Tenderly supports bulk token balance setting
-  const response = await fetch(rpcUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      id: 1,
-      jsonrpc: '2.0',
-      method: 'tenderly_setErc20Balance',
-      params: [tokenAddress, addresses, balance]
-    })
-  });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Failed to set token balances for ${tokenAddress}: ${response.statusText} - ${text}`);
+      }
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Failed to set token balances for ${tokenAddress}: ${response.statusText} - ${text}`);
-  }
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(`RPC error setting token ${tokenAddress}: ${result.error.message}`);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
 
-  const result = await response.json();
-  if (result.error) {
-    throw new Error(`RPC error setting token ${tokenAddress}: ${result.error.message}`);
+  try {
+    // Fast path: one bulk request is much faster when Tenderly accepts it.
+    await runRequest(addresses);
+  } catch {
+    // Fallback for RPCs that time out on large lists (observed on Arbitrum).
+    const addressChunks = chunkAddresses(addresses, TOKEN_BALANCE_BATCH_SIZE);
+    for (const chunk of addressChunks) {
+      await runRequest(chunk);
+    }
   }
 }
 
@@ -415,8 +443,8 @@ async function standardSetup(accountCount: number): Promise<void> {
 async function shardedSetup(addresses: string[], shardIndex: number, totalShards: number): Promise<void> {
   console.log(`\n2. Running in SHARD MODE (Shard ${shardIndex + 1}/${totalShards})`);
 
-  // Calculate account partition for this shard
-  const totalAccounts = TEST_WALLET_COUNT;
+  // Partition the same address set global setup just built (respects ACCOUNT_COUNT vs default pool size).
+  const totalAccounts = addresses.length;
   const basePerShard = Math.floor(totalAccounts / totalShards);
   const remainder = totalAccounts % totalShards;
   const extra = shardIndex < remainder ? 1 : 0;
@@ -425,7 +453,7 @@ async function shardedSetup(addresses: string[], shardIndex: number, totalShards
 
   if (partitionSize === 0) {
     throw new Error(
-      `Shard ${shardIndex + 1}/${totalShards} has no account allocation. Increase TEST_WALLET_COUNT or reduce total shards.`
+      `Shard ${shardIndex + 1}/${totalShards} has no account allocation. Increase the account pool size or reduce total shards.`
     );
   }
 

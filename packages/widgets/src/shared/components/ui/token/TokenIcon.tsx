@@ -22,7 +22,7 @@ export function TokenIcon({
   noChain?: boolean;
 }): React.ReactElement {
   const tokenImageSrc = useTokenImage(token.symbol);
-  const chainImageSrc = noChain ? undefined : useChainImage(chainId);
+  const chainImageSrc = useChainImage(chainId);
 
   if (!tokenImageSrc) return <></>;
 
@@ -32,7 +32,7 @@ export function TokenIcon({
       <AvatarFallback className={cn('bg-slate-200 text-xs', fallbackClassName)} delayMs={fallbackDelay}>
         {token.symbol.toUpperCase()}
       </AvatarFallback>
-      {chainImageSrc && (
+      {!noChain && chainImageSrc && (
         <Avatar className={cn('absolute -right-px bottom-0 h-1/2 w-1/2')}>
           <AvatarImage src={chainImageSrc} className="h-full w-full" />
         </Avatar>

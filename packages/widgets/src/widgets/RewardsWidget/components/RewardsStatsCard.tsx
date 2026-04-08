@@ -172,7 +172,7 @@ export const RewardsStatsCard = ({
                   </HStack>
                 )
               ) : // Show Suppliers for non-user contracts
-              chartData ? (
+              chartData?.length ? (
                 <Text>{formatNumber(chartData[0].suppliers, { maxDecimals: 0 })}</Text>
               ) : isLoadingChart ? (
                 <Skeleton className="bg-textSecondary h-5 w-10" />

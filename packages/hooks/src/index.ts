@@ -352,7 +352,7 @@ export type {
   BatchWriteHookParams
 } from './hooks';
 export type { PaginationOption } from './filters';
-export type { RewardContract, RewardContractInfo, RewardContractChange } from './rewards/rewards';
+export type { RewardContract, RewardContractInfo } from './rewards/rewards';
 export type { SavingsHistory } from './savings/savings';
 export type { UpgradeHistory, UpgradeHistoryRow } from './upgrade/upgrade';
 export type { TradeRecord, OrderQuoteResponse } from './trade/trade';
