@@ -14,6 +14,8 @@ export function CookieConsentBanner() {
     useCookieConsent();
   const { isCookieBannerRequired } = useGeoConfig();
   const autoAcceptedRef = useRef(false);
+  const prevBannerVisibleRef = useRef(bannerVisible);
+  const [manuallyOpened, setManuallyOpened] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
   const [delayComplete, setDelayComplete] = useState(false);
 
@@ -78,7 +80,16 @@ export function CookieConsentBanner() {
     return getFooterLinks().find(l => /privacy/i.test(l.name));
   }, []);
 
-  const visible = isCookieBannerRequired && bannerVisible && (consent !== null || delayComplete);
+  // Detect manual open: bannerVisible went from false → true (user clicked "Cookie Settings")
+  if (bannerVisible && !prevBannerVisibleRef.current) {
+    setManuallyOpened(true);
+  } else if (!bannerVisible && prevBannerVisibleRef.current) {
+    setManuallyOpened(false);
+  }
+  prevBannerVisibleRef.current = bannerVisible;
+
+  // Auto-show only when geo requires it; always allow manual open from footer link
+  const visible = (isCookieBannerRequired || manuallyOpened) && bannerVisible && (consent !== null || delayComplete);
 
   // Report banner height to context so toasts can stack above it
   useEffect(() => {
