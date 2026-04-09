@@ -8,8 +8,8 @@ type MorphoVaultApiResponse = {
   data: {
     vaultV2ByAddress: {
       address: string;
-      avgApy: number;
-      avgNetApy: number;
+      apy: number;
+      netApy: number;
       performanceFee: number;
       managementFee: number;
       rewards: {
@@ -66,8 +66,8 @@ const VAULT_RATE_QUERY = `
   query VaultRate($address: String!, $chainId: Int!) {
     vaultV2ByAddress(address: $address, chainId: $chainId) {
       address
-      avgApy
-      avgNetApy
+      apy
+      netApy
       performanceFee
       managementFee
       rewards {
@@ -109,7 +109,7 @@ async function fetchMorphoVaultRate(
     return undefined;
   }
 
-  const { address, avgApy, avgNetApy, managementFee, performanceFee, rewards } = result.data.vaultV2ByAddress;
+  const { address, apy, netApy, managementFee, performanceFee, rewards } = result.data.vaultV2ByAddress;
 
   // Transform rewards data (supplyApr is already a decimal, e.g., 0.0026 for 0.26%)
   // Aggregate rewards by symbol and filter out 0% APY rewards
@@ -137,12 +137,12 @@ async function fetchMorphoVaultRate(
 
   return {
     address,
-    rate: avgApy,
-    netRate: avgNetApy,
+    rate: apy,
+    netRate: netApy,
     managementFee,
     performanceFee,
-    formattedRate: `${(avgApy * 100).toFixed(2)}%`,
-    formattedNetRate: `${(avgNetApy * 100).toFixed(2)}%`,
+    formattedRate: `${(apy * 100).toFixed(2)}%`,
+    formattedNetRate: `${(netApy * 100).toFixed(2)}%`,
     formattedManagementFee: `${(managementFee * 100).toFixed(0)}%`,
     formattedPerformanceFee: `${(performanceFee * 100).toFixed(0)}%`,
     rewards: rewardsData
@@ -167,8 +167,8 @@ export function useMorphoVaultRateApiData({
     queryKey: ['morpho-vault-rate', vaultAddress, chainId],
     queryFn: () => fetchMorphoVaultRate(vaultAddress!, chainId),
     enabled: !!vaultAddress,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30_000, // 30 seconds
+    gcTime: 60_000 // 1 minute
   });
 
   return {
@@ -218,8 +218,8 @@ export function useMorphoVaultMultipleRateApiData({
         results.filter((r): r is MorphoVaultRateData => r !== undefined)
       ),
     enabled: vaultAddresses.length > 0,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000 // 10 minutes
+    staleTime: 30_000, // 30 seconds
+    gcTime: 60_000 // 1 minute
   });
 
   return {

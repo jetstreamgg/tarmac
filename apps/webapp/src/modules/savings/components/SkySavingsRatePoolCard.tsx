@@ -11,10 +11,10 @@ export function SkySavingsRatePoolCard(): React.ReactElement {
 
   return (
     <StatsCard
-      title={t`Sky Savings Rate Pool`}
+      title={t`Sky Savings Rate TVL`}
       content={
         <div className="mt-2 flex items-center">
-          <PairTokenIcons leftToken="USDS" rightToken="DAI" />
+          <PairTokenIcons leftToken="USDS" rightToken="DAI" noChain />
           <Text className="ml-2" variant="large">
             {tvl} USDS/DAI
           </Text>

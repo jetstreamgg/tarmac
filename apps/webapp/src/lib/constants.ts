@@ -168,7 +168,7 @@ export const ALLOWED_EXTERNAL_DOMAINS = [
   'app.sky.money',
   'docs.sky.money',
   'vote.sky.money',
-  'upgrademkrtosky.sky.money',
+  'upgrademkrtosky.skyeco.com',
   'jobs.ashbyhq.com'
 ];
 

@@ -15,7 +15,8 @@ import { ReadHook } from '../hooks';
 import { calculateCollateralRiskParams } from './calculateCollateralRiskParams';
 import { CollateralRiskParameters, VaultRaw } from './vault';
 import { SupportedCollateralTypes } from './vaults.constants';
-import { useChainId, useSimulateContract } from 'wagmi';
+import { useChainId, usePublicClient } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
 import { rawVaultInfo } from './calculateVaultInfo';
 import { getIlkName } from './helpers';
 import { mcdJugAbi } from '../generated';
@@ -74,20 +75,27 @@ export function useCollateralData(
 
   const [duty] = jugIlkData || [];
 
-  //simulate drip to get updated rate
+  //simulate drip to get updated rate using public client so it works without a connected wallet
+  const publicClient = usePublicClient({ chainId });
+  const jugAddress = mcdJugAddress[chainId as keyof typeof mcdJugAddress];
   const {
-    data: dripSimulation,
+    data: newRate,
     error: dripError,
     isLoading: isLoadingDrip
-  } = useSimulateContract({
-    address: mcdJugAddress[chainId as keyof typeof mcdJugAddress],
-    abi: mcdJugAbi,
-    functionName: 'drip',
-    args: [ilkHex],
-    account: '0x0000000000000000000000000000000000000000'
+  } = useQuery({
+    queryKey: ['simulateDrip', ilkHex, chainId],
+    queryFn: async () => {
+      const { result } = await publicClient!.simulateContract({
+        address: jugAddress,
+        abi: mcdJugAbi,
+        functionName: 'drip',
+        args: [ilkHex],
+        account: '0x0000000000000000000000000000000000000000'
+      });
+      return result;
+    },
+    enabled: !!publicClient && !!jugAddress
   });
-
-  const newRate = dripSimulation?.result;
 
   // Mcd Spot
   // We get the par from the MCD Spot contract
