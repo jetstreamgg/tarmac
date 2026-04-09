@@ -331,6 +331,7 @@ export { getIlkName } from './vaults/helpers';
 export { toError } from './helpers';
 
 export { OrderQuoteSideKind, gpv2VaultRelayerAddress } from './trade/constants';
+export { getAutoSlippage } from './trade/helpers';
 
 export {
   TOKENS,

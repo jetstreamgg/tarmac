@@ -108,7 +108,9 @@ export const useQuoteTrade = ({
   isEthFlow = false,
   isSmartContractWallet,
   slippage: paramSlippage,
-  enabled: paramEnabled = true
+  enabled: paramEnabled = true,
+  originSymbol,
+  targetSymbol
 }: {
   sellToken: `0x${string}` | undefined;
   buyToken: `0x${string}` | undefined;
@@ -118,6 +120,8 @@ export const useQuoteTrade = ({
   isSmartContractWallet: boolean;
   slippage: string;
   enabled?: boolean;
+  originSymbol?: string;
+  targetSymbol?: string;
 }): ReadHook & { data: OrderQuoteResponse | undefined | null } => {
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
@@ -127,7 +131,9 @@ export const useQuoteTrade = ({
   const { slippage, ttl } = verifySlippageAndDeadline({
     slippage: paramSlippage,
     isEthFlow,
-    isL2
+    isL2,
+    originSymbol,
+    targetSymbol
   });
 
   const {
