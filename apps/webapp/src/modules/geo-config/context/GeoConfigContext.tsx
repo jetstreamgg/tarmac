@@ -11,7 +11,7 @@ export const defaultGeoConfigContext: GeoConfigContextValue = {
   isRegionRestricted: true,
   isChatbotEnabled: false,
   chatbotRestrictionMessage: undefined,
-  isCookieBannerRequired: false
+  isCookieBannerRequired: true
 };
 
 export const GeoConfigContext = createContext<GeoConfigContextValue>(defaultGeoConfigContext);

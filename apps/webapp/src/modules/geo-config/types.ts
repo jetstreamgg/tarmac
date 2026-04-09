@@ -16,7 +16,7 @@ export interface GeoConfig {
     enabled: boolean;
     restrictionMessage?: string;
   };
-  cookieBannerEnabled: boolean;
+  isCookiesBannerRequired: boolean;
 }
 
 export interface GeoConfigContextValue {
