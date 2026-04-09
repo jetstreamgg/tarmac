@@ -25,7 +25,7 @@ const FALLBACK_CONFIG: GeoConfig = {
     seal: { enabled: true }
   },
   chatbot: { enabled: false, restrictionMessage: 'Unable to verify region' },
-  isCookiesBannerRequired: false
+  isCookiesBannerRequired: true
 };
 
 async function fetchGeoConfig(): Promise<GeoConfig> {
@@ -90,7 +90,7 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
       isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (config?.isRegionRestricted ?? true),
       isChatbotEnabled: config?.chatbot.enabled ?? false,
       chatbotRestrictionMessage: config?.chatbot.restrictionMessage,
-      isCookieBannerRequired: isLoading ? true : (config?.isCookiesBannerRequired ?? false)
+      isCookieBannerRequired: isLoading ? true : (config?.isCookiesBannerRequired ?? true)
     }),
     [config, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
   );
