@@ -10,12 +10,12 @@ const TermsModalContext = React.createContext({
 
 export function TermsModalProvider({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
+  const { isConnectedAndAcceptedTerms, termsCheckError } = useConnectedContext();
   const { openConnectModal } = useConnectModal();
 
   useConnectionEffect({
     onConnect: () => {
-      if (!isModalOpen && !isConnectedAndAcceptedTerms) {
+      if (!isModalOpen && !isConnectedAndAcceptedTerms && !termsCheckError) {
         setIsModalOpen(true);
       }
     }
@@ -26,6 +26,12 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
       closeModal();
     }
   }, [isConnectedAndAcceptedTerms]);
+
+  useEffect(() => {
+    if (termsCheckError) {
+      setIsModalOpen(true);
+    }
+  }, [termsCheckError]);
 
   const openModal = () => {
     if (!isConnectedAndAcceptedTerms && openConnectModal) {

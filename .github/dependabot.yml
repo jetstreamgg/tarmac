@@ -27,7 +27,7 @@ updates:
           - "ethers"
           - "@base-org/account"
           - "@coinbase/wallet-sdk"
-          - "@metamask/sdk"
+          - "@metamask/connect-evm"
           - "@safe-global/safe-apps-provider"
           - "@safe-global/safe-apps-sdk"
           - "@walletconnect/ethereum-provider"
@@ -104,7 +104,7 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "@coinbase/wallet-sdk"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: "@metamask/sdk"
+      - dependency-name: "@metamask/connect-evm"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "@safe-global/safe-apps-provider"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
