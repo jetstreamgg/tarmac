@@ -1,4 +1,5 @@
-import { QueryParams } from '@/lib/constants';
+import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
+import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
 
 export const deleteSearchParams = (searchParams: URLSearchParams): URLSearchParams => {
   const keysToDelete: string[] = [];
@@ -9,7 +10,8 @@ export const deleteSearchParams = (searchParams: URLSearchParams): URLSearchPara
       QueryParams.Details !== key &&
       QueryParams.Widget !== key &&
       QueryParams.Network !== key &&
-      QueryParams.Chat !== key
+      QueryParams.Chat !== key &&
+      !(!IS_PRODUCTION_ENV && GEO_OVERRIDE_PARAMS.includes(key))
     ) {
       keysToDelete.push(key);
     }
