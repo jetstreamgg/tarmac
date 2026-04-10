@@ -1,9 +1,10 @@
-import { ReactElement, ReactNode, useCallback, useMemo } from 'react';
+import { ReactElement, ReactNode, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { GeoConfigContext } from './GeoConfigContext';
 import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
 import { FALLBACK_CONFIG } from '../constants';
 import { applyGeoOverrides } from '../applyGeoOverrides';
+import { router } from '@/pages/router';
 
 // When true, bypass geo-restrictions entirely (for local development)
 const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true';
@@ -33,6 +34,10 @@ async function fetchGeoConfig(): Promise<GeoConfig> {
   }
 }
 
+function getGeoOverrideSearch(): string {
+  return router.state.location.search || (typeof window !== 'undefined' ? window.location.search : '');
+}
+
 export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const {
     data: config,
@@ -47,9 +52,15 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)
   });
 
+  const locationSearch = useSyncExternalStore(
+    onStoreChange => router.subscribe(() => onStoreChange()),
+    getGeoOverrideSearch,
+    getGeoOverrideSearch
+  );
+
   const effectiveConfig = useMemo(
-    () => (config ? applyGeoOverrides(config) : undefined),
-    [config]
+    () => (config ? applyGeoOverrides(config, locationSearch) : undefined),
+    [config, locationSearch]
   );
 
   const isModuleEnabled = useCallback(
