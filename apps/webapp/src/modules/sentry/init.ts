@@ -36,6 +36,9 @@ export function initSentry(): void {
     ignoreErrors: [
       // Errors thrown by wallet browser extensions / in-app browsers, not by our code.
       /not found rainbowkit/i,
+      // WebSocket race condition in MetaMask mobile wallet SDK (centrifuge lib).
+      // Not actionable on our side (WEBAPP-2F).
+      /null is not an object \(evaluating 'this\._transport\.close'\)/,
       // DOM mutation errors caused by browser extensions modifying nodes outside
       // React's control. These surface as React reconciliation failures and are
       // not actionable.
