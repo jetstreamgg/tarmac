@@ -136,6 +136,7 @@ describe('applyGeoOverrides', () => {
 
 describe('applyGeoOverrides (production)', () => {
   it('returns config unchanged in production', async () => {
+    vi.resetModules();
     vi.doMock('@/lib/constants', () => ({
       IS_PRODUCTION_ENV: true
     }));
@@ -144,9 +145,6 @@ describe('applyGeoOverrides (production)', () => {
     const result = prodApply(mockConfig, '?geo_mode=full');
     expect(result).toBe(mockConfig);
 
-    // Restore non-production mock
-    vi.doMock('@/lib/constants', () => ({
-      IS_PRODUCTION_ENV: false
-    }));
+    vi.resetModules();
   });
 });
