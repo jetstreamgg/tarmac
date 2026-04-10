@@ -12,7 +12,7 @@ import {
   ConvertIntentMapping,
   IS_PRODUCTION_ENV
 } from '@/lib/constants';
-import { GEO_OVERRIDE_PARAMS } from '@/modules/geo-config/applyGeoOverrides';
+import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
 import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
@@ -71,9 +71,13 @@ export const validateSearchParams = (
   const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
 
   searchParams.forEach((value, key) => {
-    // removes any query param not found in QueryParams (preserve geo override params in non-production)
+    // removes any query param not found in QueryParams (preserve valid geo override params in non-production)
     if (!Object.values(QueryParams).includes(key as QueryParams)) {
-      if (!(!IS_PRODUCTION_ENV && GEO_OVERRIDE_PARAMS.includes(key))) {
+      if (!IS_PRODUCTION_ENV && GEO_OVERRIDE_PARAMS.includes(key)) {
+        if (!isValidGeoParam(key, value)) {
+          searchParams.delete(key);
+        }
+      } else {
         searchParams.delete(key);
       }
     }

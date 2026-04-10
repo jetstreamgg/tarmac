@@ -4,10 +4,16 @@ import { IS_PRODUCTION_ENV } from '@/lib/constants';
 
 const MODULE_IDS: ModuleId[] = ['savings', 'rewards', 'expert', 'trade', 'upgrade', 'seal'];
 
-export const GEO_OVERRIDE_PARAMS: string[] = [
-  'geo_mode',
-  ...MODULE_IDS.map(id => `geo_module_${id}`)
-];
+const VALID_GEO_VALUES: Record<string, string[]> = {
+  geo_mode: ['full', 'restricted'],
+  ...Object.fromEntries(MODULE_IDS.map(id => [`geo_module_${id}`, ['true', 'false']]))
+};
+
+export const GEO_OVERRIDE_PARAMS: string[] = Object.keys(VALID_GEO_VALUES);
+
+export function isValidGeoParam(key: string, value: string): boolean {
+  return VALID_GEO_VALUES[key]?.includes(value) ?? false;
+}
 
 export function applyGeoOverrides(config: GeoConfig, search?: string): GeoConfig {
   if (IS_PRODUCTION_ENV) return config;
