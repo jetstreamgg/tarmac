@@ -2,30 +2,14 @@ import { ReactElement, ReactNode, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { GeoConfigContext } from './GeoConfigContext';
 import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
+import { FALLBACK_CONFIG } from '../constants';
+import { applyGeoOverrides } from '../applyGeoOverrides';
 
 // When true, bypass geo-restrictions entirely (for local development)
 const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true';
 
 // Endpoint URL - use staging for now, will be configured via env var
 const GEO_CONFIG_URL = import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.sky.money/geo-config';
-
-// Restrictive fallback config - block everything that might be restricted
-const FALLBACK_CONFIG: GeoConfig = {
-  version: '0.0.0',
-  countryCode: 'XX',
-  generatedAt: new Date().toISOString(),
-  cacheTtl: 60,
-  isRegionRestricted: true,
-  modules: {
-    savings: { enabled: false, restrictionReason: 'Unable to verify region' },
-    rewards: { enabled: false, restrictionReason: 'Unable to verify region' },
-    expert: { enabled: false, restrictionReason: 'Unable to verify region' },
-    trade: { enabled: true }, // Trade is not restricted
-    upgrade: { enabled: true },
-    seal: { enabled: true }
-  },
-  chatbot: { enabled: false, restrictionMessage: 'Unable to verify region' }
-};
 
 async function fetchGeoConfig(): Promise<GeoConfig> {
   const controller = new AbortController();
@@ -63,34 +47,39 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)
   });
 
+  const effectiveConfig = useMemo(
+    () => (config ? applyGeoOverrides(config) : undefined),
+    [config]
+  );
+
   const isModuleEnabled = useCallback(
     (moduleId: ModuleId): boolean => {
       if (isLoading) return false; // Restrictive while loading
-      return config?.modules[moduleId]?.enabled ?? false;
+      return effectiveConfig?.modules[moduleId]?.enabled ?? false;
     },
-    [config, isLoading]
+    [effectiveConfig, isLoading]
   );
 
   const getModuleRestrictionReason = useCallback(
     (moduleId: ModuleId): string | undefined => {
       if (isLoading) return 'Loading...';
-      return config?.modules[moduleId]?.restrictionReason;
+      return effectiveConfig?.modules[moduleId]?.restrictionReason;
     },
-    [config, isLoading]
+    [effectiveConfig, isLoading]
   );
 
   const value: GeoConfigContextValue = useMemo(
     () => ({
-      config,
+      config: effectiveConfig,
       isLoading,
       error: error as Error | null,
       isModuleEnabled: GEO_BYPASS ? () => true : isModuleEnabled,
       getModuleRestrictionReason: GEO_BYPASS ? () => undefined : getModuleRestrictionReason,
-      isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (config?.isRegionRestricted ?? true),
-      isChatbotEnabled: config?.chatbot.enabled ?? false,
-      chatbotRestrictionMessage: config?.chatbot.restrictionMessage
+      isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (effectiveConfig?.isRegionRestricted ?? true),
+      isChatbotEnabled: effectiveConfig?.chatbot.enabled ?? false,
+      chatbotRestrictionMessage: effectiveConfig?.chatbot.restrictionMessage
     }),
-    [config, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
+    [effectiveConfig, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
   );
 
   return <GeoConfigContext.Provider value={value}>{children}</GeoConfigContext.Provider>;
