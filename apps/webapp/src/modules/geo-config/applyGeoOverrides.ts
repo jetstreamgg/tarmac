@@ -4,12 +4,17 @@ import { IS_PRODUCTION_ENV } from '@/lib/constants';
 
 const MODULE_IDS: ModuleId[] = ['savings', 'rewards', 'expert', 'trade', 'upgrade', 'seal'];
 
+export const GEO_OVERRIDE_PARAMS: string[] = [
+  'geo_mode',
+  ...MODULE_IDS.map(id => `geo_module_${id}`)
+];
+
 export function applyGeoOverrides(config: GeoConfig, search?: string): GeoConfig {
   if (IS_PRODUCTION_ENV) return config;
 
   const params = new URLSearchParams(search ?? window.location.search);
 
-  const hasGeoParams = Array.from(params.keys()).some(k => k.startsWith('geo_'));
+  const hasGeoParams = Array.from(params.keys()).some(k => GEO_OVERRIDE_PARAMS.includes(k));
   if (!hasGeoParams) return config;
 
   const result: GeoConfig = {
