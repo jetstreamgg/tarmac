@@ -167,7 +167,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(
         <BalancesWidgetPane
           {...sharedProps}
-          hideModuleBalances={isRegionRestricted}
+          hideRestrictedModules={isRegionRestricted}
           rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
           savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}
           sealCardUrl={sealUrl}
