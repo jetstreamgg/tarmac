@@ -16,6 +16,7 @@ export interface GeoConfig {
     enabled: boolean;
     restrictionMessage?: string;
   };
+  isCookiesBannerRequired: boolean;
 }
 
 export interface GeoConfigContextValue {
@@ -27,4 +28,5 @@ export interface GeoConfigContextValue {
   isRegionRestricted: boolean;
   isChatbotEnabled: boolean;
   chatbotRestrictionMessage: string | undefined;
+  isCookieBannerRequired: boolean;
 }
