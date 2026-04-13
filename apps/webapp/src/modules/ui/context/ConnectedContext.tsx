@@ -103,6 +103,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         tags: { endpoint: 'terms-check' }
       });
       setTermsCheckError(true);
+    } else if (result.accessDenied) {
+      // 403 is an intentional access denial (VPN/region or sanctioned address).
+      // The VPN/address hooks handle the blocked UI — just mark terms as not accepted.
+      setHasAcceptedTerms(false);
     } else {
       setHasAcceptedTerms(result.termsAccepted);
     }
@@ -130,10 +134,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const isAllowed = useMemo(
     () =>
       !vpnData?.isConnectedToVpn &&
+      !vpnData?.isRestrictedRegion &&
       (!enabled || (enabled && authData?.addressAllowed)) &&
       !authError &&
       !vpnError,
-    [vpnData?.isConnectedToVpn, enabled, authData?.addressAllowed, authError, vpnError]
+    [vpnData?.isConnectedToVpn, vpnData?.isRestrictedRegion, enabled, authData?.addressAllowed, authError, vpnError]
   );
 
   const isAuthorized = isAllowed || skipAuthCheck;
