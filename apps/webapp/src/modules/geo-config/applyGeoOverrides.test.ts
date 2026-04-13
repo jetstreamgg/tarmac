@@ -15,7 +15,8 @@ const mockConfig: GeoConfig = {
     upgrade: { enabled: true },
     seal: { enabled: true }
   },
-  chatbot: { enabled: true }
+  chatbot: { enabled: true },
+  isCookiesBannerRequired: false
 };
 
 // Mock IS_PRODUCTION_ENV before importing applyGeoOverrides
