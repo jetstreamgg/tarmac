@@ -143,7 +143,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
             }
             subHeader={
               <Text className="text-textSecondary" variant="small">
-                <Trans>Get Sky ecosystem tokens with best possible rates</Trans>
+                <Trans>Get Sky Ecosystem tokens with best possible rates</Trans>
               </Text>
             }
             rightHeader={sharedProps.rightHeaderComponent}
