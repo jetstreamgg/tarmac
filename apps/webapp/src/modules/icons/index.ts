@@ -26,9 +26,6 @@ import { Close } from './Close';
 import { Seal } from './Seal';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
-import { Chat } from './Chat';
-import { ChatError } from './ChatError';
-import { ChatbotSend } from './ChatbotSend';
 import { ArbitrumChain } from './ArbitrumChain';
 import { UnichainChain } from './UnichainChain';
 import { OptimismChain } from './OptimismChain';
@@ -74,9 +71,6 @@ export {
   Seal,
   BaseChain,
   MainnetChain,
-  Chat,
-  ChatError,
-  ChatbotSend,
   ArbitrumChain,
   OptimismChain,
   UnichainChain,

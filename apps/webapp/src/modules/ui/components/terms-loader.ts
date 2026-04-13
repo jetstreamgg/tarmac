@@ -3,12 +3,6 @@
 
 // Default terms (always available as fallback)
 import defaultTerms from '@/content/terms.md?raw';
-import chatbotDefaultTerms from '@/content/chatbot_terms.md?raw';
-
-export enum TermsType {
-  App = 'app',
-  Chatbot = 'chatbot'
-}
 
 // Import all potential terms files that might be used
 // Add more imports here as needed for different environments
@@ -18,18 +12,11 @@ const termsModules = import.meta.glob('@/content/*.md', {
   eager: true
 }) as Record<string, string>;
 
-// Function to get terms content based on environment variable and type
-export function getTermsContent(termsType: TermsType = TermsType.App): string {
-  const termsFileName =
-    termsType === TermsType.App
-      ? import.meta.env.VITE_TERMS_MARKDOWN_FILE
-      : import.meta.env.VITE_CHATBOT_TERMS_MARKDOWN_FILE;
-
-  const defaultTermsContent = termsType === TermsType.App ? defaultTerms : chatbotDefaultTerms;
+export function getTermsContent(): string {
+  const termsFileName = import.meta.env.VITE_TERMS_MARKDOWN_FILE;
 
   if (!termsFileName) {
-    // No custom file specified, use appropriate default
-    return defaultTermsContent;
+    return defaultTerms;
   }
 
   // Extract just the filename if a full path was provided
@@ -50,11 +37,10 @@ export function getTermsContent(termsType: TermsType = TermsType.App): string {
   );
 
   if (matchedKey) {
-    // console.log(`Using custom terms file: ${fileName} (matched key: ${matchedKey})`);
     return termsModules[matchedKey];
   }
 
-  console.warn(`Terms file not found: ${fileName}, falling back to ${termsType} default`);
+  console.warn(`Terms file not found: ${fileName}, falling back to default`);
   console.warn('Available files:', Object.keys(termsModules));
-  return defaultTermsContent;
+  return defaultTerms;
 }
