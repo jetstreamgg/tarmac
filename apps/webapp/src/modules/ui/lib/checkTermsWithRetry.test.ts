@@ -129,6 +129,25 @@ describe('checkTermsWithRetry', () => {
     );
   });
 
+  it('returns accessDenied immediately on 403 without retrying', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 403 });
+
+    const result = await checkTermsWithRetry(TEST_ADDRESS);
+
+    expect(result).toEqual({ termsAccepted: false, error: false, accessDenied: true });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns error immediately on 400 without retrying', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({ ok: false, status: 400 });
+
+    const result = await checkTermsWithRetry(TEST_ADDRESS);
+
+    expect(result.error).toBe(true);
+    expect(result.termsAccepted).toBe(false);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('handles mixed failure types across retries', async () => {
     global.fetch = vi
       .fn()
