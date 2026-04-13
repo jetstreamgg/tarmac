@@ -81,8 +81,8 @@ export const App = () => (
                     <AppContent />
                   </ConnectModalProvider>
                 </AnalyticsFlowProvider>
+                {POSTHOG_ENABLED && <CookieConsentBanner />}
               </GeoConfigProvider>
-              {POSTHOG_ENABLED && <CookieConsentBanner />}
             </PostHogProvider>
           </CookieConsentProvider>
         </AnalyticsErrorBoundary>
