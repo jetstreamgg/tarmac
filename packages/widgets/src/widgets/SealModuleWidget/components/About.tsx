@@ -27,7 +27,7 @@ export const About = () => {
               <br />
               <Text>
                 The exit fee is a risk parameter managed and determined (regardless of position duration) by
-                Sky ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that
+                Sky Ecosystem governance. The exit fee applies at unsealing, not at sealing, which means that
                 it is determined the moment you unseal your MKR.
               </Text>
               <br />
@@ -36,7 +36,7 @@ export const About = () => {
           contentClassname="max-w-[400px]"
         />{' '}
         <Trans>
-          in order to provide access to Seal Rewards and encourage a deeper commitment to Sky ecosystem
+          in order to provide access to Seal Rewards and encourage a deeper commitment to Sky Ecosystem
           governance.
         </Trans>
       </Text>

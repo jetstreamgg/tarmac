@@ -88,7 +88,8 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
       getModuleRestrictionReason: GEO_BYPASS ? () => undefined : getModuleRestrictionReason,
       isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (effectiveConfig?.isRegionRestricted ?? true),
       isChatbotEnabled: effectiveConfig?.chatbot.enabled ?? false,
-      chatbotRestrictionMessage: effectiveConfig?.chatbot.restrictionMessage
+      chatbotRestrictionMessage: effectiveConfig?.chatbot.restrictionMessage,
+      isCookieBannerRequired: isLoading ? true : (effectiveConfig?.isCookiesBannerRequired ?? true)
     }),
     [effectiveConfig, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
   );

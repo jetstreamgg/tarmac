@@ -1,6 +1,6 @@
 # useOverallSkyData
 
-Hook for fetching overall Sky ecosystem data.
+Hook for fetching overall Sky Ecosystem data.
 
 ## Import
 
@@ -8,7 +8,7 @@ Import the hook from '@jetstreamgg/sky-hooks'.
 
 ## Usage
 
-Use this hook in your React components to fetch and display overall Sky ecosystem data. The hook provides data, error, and loading states.
+Use this hook in your React components to fetch and display overall Sky Ecosystem data. The hook provides data, error, and loading states.
 
 ```tsx
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
@@ -38,7 +38,7 @@ This hook doesn't accept any parameters.
 Returns an object extending ReadHook and containing:
 
 - data: OverallSkyData | undefined
-  - The fetched overall Sky ecosystem data.
+  - The fetched overall Sky Ecosystem data.
 - error: Error | undefined
   - Any error that occurred during the fetch.
 - isLoading: boolean
@@ -67,7 +67,7 @@ The OverallSkyData type includes the following properties:
 ## Notes
 
 - This hook fetches data from the BA Labs API.
-- The data includes various metrics related to the Sky ecosystem, including savings rates, TVL, wallet counts, and token prices.
+- The data includes various metrics related to the Sky Ecosystem, including savings rates, TVL, wallet counts, and token prices.
 - The hook automatically handles API URL construction based on the current chain ID.
 - Data is fetched using React Query, providing caching and automatic refetching capabilities.
 - The trust level for this data source is set to TRUST_LEVELS[TrustLevelEnum.TWO].

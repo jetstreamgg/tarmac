@@ -28,7 +28,7 @@ export const legacyTooltips: Tooltip[] = [
     id: 'debt-ceiling',
     title: 'Debt ceiling',
     tooltip:
-      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky ecosystem governance through a process of decentralized onchain voting.'
+      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky Ecosystem governance through a process of decentralized onchain voting.'
   },
   {
     id: 'borrow-rate',
@@ -102,7 +102,7 @@ export const legacyTooltips: Tooltip[] = [
     id: 'debt-ceiling-seal',
     title: 'Debt ceiling',
     tooltip:
-      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky ecosystem governance through a process of decentralized onchain voting.'
+      'If the debt ceiling utilization reaches 100%, no new USDS can be borrowed. The debt ceiling is a parameter determined by Sky Ecosystem governance through a process of decentralized onchain voting.'
   },
   {
     id: 'borrow-rate-seal',
