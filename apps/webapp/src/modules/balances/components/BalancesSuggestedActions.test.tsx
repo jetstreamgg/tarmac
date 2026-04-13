@@ -61,7 +61,7 @@ vi.mock('@jetstreamgg/sky-widgets', () => ({
 
 describe('BalancesSuggestedActions', () => {
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams('lang=en&details=false&chat=true');
+    mockSearchParams = new URLSearchParams('lang=en&details=false');
     setSearchParamsMock.mockClear();
     setIsSwitchingNetworkMock.mockClear();
   });
@@ -87,6 +87,5 @@ describe('BalancesSuggestedActions', () => {
     expect(mockSearchParams.get('network')).toBe('ethereum');
     expect(mockSearchParams.get('lang')).toBe('en');
     expect(mockSearchParams.get('details')).toBe('false');
-    expect(mockSearchParams.get('chat')).toBe('true');
   });
 });
