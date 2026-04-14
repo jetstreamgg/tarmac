@@ -85,7 +85,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://api.sky.money
       https://info-sky.blockanalitica.com
       https://sky-tenderly.blockanalitica.com
-      https://api.cow.fi/
       https://api.morpho.org/
       https://api.merkl.xyz/
       wss://relay.walletconnect.com
