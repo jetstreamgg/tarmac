@@ -120,7 +120,7 @@ export function useCowswapTradeHistory({
     dataSources: [
       {
         title: 'CoW Protocol API',
-        href: 'https://docs.cow.fi/category/apis',
+        href: 'https://docs.cow.finance/category/apis',
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
       }
