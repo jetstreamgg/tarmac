@@ -179,7 +179,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'upgrade-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
+      'SKY is a native governance token of the decentralised Sky Ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
     display: ['connected', 'disconnected']
   },
   {

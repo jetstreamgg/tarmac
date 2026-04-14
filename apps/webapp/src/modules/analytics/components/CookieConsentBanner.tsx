@@ -3,13 +3,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCookieConsent } from '../context/CookieConsentContext';
 import { applyPostHogConsent } from '../PostHogProvider';
 import { applyGtagConsent } from '../gtag';
+import { useGeoConfig } from '@/modules/geo-config/hooks/useGeoConfig';
 import { Text } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { getFooterLinks } from '@/lib/utils';
 import { type ServiceConsent } from '../consentStorage';
 
 export function CookieConsentBanner() {
-  const { consent, bannerVisible, bannerView, setBannerView, setConsent, setBannerHeight } = useCookieConsent();
+  const { consent, bannerVisible, bannerView, setBannerView, setConsent, setBannerHeight } =
+    useCookieConsent();
+  const { isCookieBannerRequired } = useGeoConfig();
+  const autoAcceptedRef = useRef(false);
+  const prevBannerVisibleRef = useRef(bannerVisible);
+  const [manuallyOpened, setManuallyOpened] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
   const [delayComplete, setDelayComplete] = useState(false);
 
@@ -42,6 +48,16 @@ export function CookieConsentBanner() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Auto-accept all consent when banner is disabled for this geography
+  useEffect(() => {
+    if (!isCookieBannerRequired && consent === null && !autoAcceptedRef.current) {
+      autoAcceptedRef.current = true;
+      applyPostHogConsent(true);
+      applyGtagConsent(true);
+      setConsent({ posthog: true, google_analytics: true });
+    }
+  }, [isCookieBannerRequired, consent, setConsent]);
+
   const applyConsent = useCallback(
     (newConsent: ServiceConsent) => {
       if (newConsent.posthog !== undefined) applyPostHogConsent(newConsent.posthog);
@@ -64,7 +80,16 @@ export function CookieConsentBanner() {
     return getFooterLinks().find(l => /privacy/i.test(l.name));
   }, []);
 
-  const visible = bannerVisible && (consent !== null || delayComplete);
+  // Detect manual open: bannerVisible went from false → true (user clicked "Cookie Settings")
+  if (bannerVisible && !prevBannerVisibleRef.current) {
+    setManuallyOpened(true);
+  } else if (!bannerVisible && prevBannerVisibleRef.current) {
+    setManuallyOpened(false);
+  }
+  prevBannerVisibleRef.current = bannerVisible;
+
+  // Auto-show only when geo requires it; always allow manual open from footer link
+  const visible = (isCookieBannerRequired || manuallyOpened) && bannerVisible && (consent !== null || delayComplete);
 
   // Report banner height to context so toasts can stack above it
   useEffect(() => {
@@ -93,7 +118,7 @@ export function CookieConsentBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:left-auto md:right-6 md:mx-0 md:min-w-[420px] md:z-[999]"
+          className="fixed right-4 bottom-4 left-4 z-40 mx-auto max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:right-6 md:left-auto md:z-[999] md:mx-0 md:min-w-[420px]"
         >
           <AnimatePresence mode="wait" initial={false}>
             {bannerView === 'default' ? (
@@ -105,8 +130,8 @@ export function CookieConsentBanner() {
                 transition={{ duration: 0.15 }}
               >
                 <Text variant="captionSm" className="text-white/60">
-                  We collect anonymous usage analytics to understand how this app is used and to improve it. No
-                  personal data is collected. Accepting enables persistent cookies for better insights.
+                  We collect anonymous usage analytics to understand how this app is used and to improve it.
+                  No personal data is collected. Accepting enables persistent cookies for better insights.
                   {privacyLink && (
                     <>
                       {' '}
