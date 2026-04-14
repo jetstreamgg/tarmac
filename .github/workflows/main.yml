@@ -13,6 +13,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint-workflows:
+    name: Lint Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Ensure third-party actions are pinned to a commit SHA
+        run: |
+          bad=$(grep -hnE '^\s*(-\s*)?uses:\s*[^./][^@]+@[^ ]+' .github/workflows/*.yml \
+                | grep -vE '@[0-9a-f]{40}(\s|$)' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Third-party actions must be pinned to a full 40-char commit SHA (with version in a trailing comment)."
+            echo "Offending lines:"
+            echo "$bad"
+            exit 1
+          fi
+
   install:
     name: Install
     runs-on: ubuntu-latest
