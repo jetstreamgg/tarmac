@@ -74,7 +74,7 @@ export function TradeCard() {
         chainId === mainnet.id ? (
           <Text className="text-textSecondary">
             Trades are powered by{' '}
-            <ExternalLink href="https://cow.fi/" showIcon={false} className="text-textSecondary underline">
+            <ExternalLink href="https://cow.finance/" showIcon={false} className="text-textSecondary underline">
               CoW Protocol
             </ExternalLink>
             .

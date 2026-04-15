@@ -175,7 +175,7 @@ export const useTradeCosts = ({
   const mutate = baPricesError ? mutateCowPrices : mutateBaPrices;
   const title = baPricesError ? 'CoW Protocol Order book API' : 'BA Labs API';
   const href = baPricesError
-    ? 'https://docs.cow.fi/cow-protocol/reference/apis/orderbook'
+    ? 'https://docs.cow.finance/cow-protocol/reference/apis/orderbook'
     : 'https://blockanalitica.com/';
 
   return {
