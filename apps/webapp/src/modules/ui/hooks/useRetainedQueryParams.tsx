@@ -35,12 +35,7 @@ export const getRetainedQueryParams = (
 
 export const useRetainedQueryParams = (
   url: string,
-  retainedParams: QueryParams[] = [
-    QueryParams.Locale,
-    QueryParams.Details,
-    QueryParams.Network,
-    QueryParams.Chat
-  ]
+  retainedParams: QueryParams[] = [QueryParams.Locale, QueryParams.Details, QueryParams.Network]
 ) => {
   const [searchParams] = useSearchParams();
 

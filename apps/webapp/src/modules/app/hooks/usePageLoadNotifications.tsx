@@ -3,8 +3,6 @@ import { useConnection, useChainId } from 'wagmi';
 import { useTokenBalance, TOKENS } from '@jetstreamgg/sky-hooks';
 import { parseEther } from 'viem';
 import {
-  CHATBOT_ENABLED,
-  CHAT_NOTIFICATION_KEY,
   GOVERNANCE_MIGRATION_NOTIFICATION_KEY,
   SPK_STAKING_NOTIFICATION_KEY,
   USDS_SKY_REWARDS_NOTIFICATION_KEY
@@ -21,7 +19,6 @@ import { useHasUsdsSkyRewardsPosition } from './useHasUsdsSkyRewardsPosition';
  * 1. Governance Migration (requires MKR balance)
  * 2. SPK Staking Rewards (requires staking positions with SPK reward)
  * 3. USDS-SKY Rewards (requires position in deprecated USDS-SKY rewards)
- * 4. Chat Notification
  */
 export const usePageLoadNotifications = (): NotificationConfig[] => {
   const { address, isConnected } = useConnection();
@@ -75,12 +72,6 @@ export const usePageLoadNotifications = (): NotificationConfig[] => {
         isReady: () => usdsSkyPositionReady, // Wait for rewards balance to load
         checkConditions: () => isConnected && hasUsdsSkyPosition,
         hasBeenShown: () => localStorage.getItem(USDS_SKY_REWARDS_NOTIFICATION_KEY) === 'true'
-      },
-      {
-        id: 'chat',
-        priority: 4,
-        checkConditions: () => CHATBOT_ENABLED,
-        hasBeenShown: () => localStorage.getItem(CHAT_NOTIFICATION_KEY) === 'true'
       }
     ],
     [

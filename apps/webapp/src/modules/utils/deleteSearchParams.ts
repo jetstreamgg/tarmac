@@ -10,7 +10,6 @@ export const deleteSearchParams = (searchParams: URLSearchParams): URLSearchPara
       QueryParams.Details !== key &&
       QueryParams.Widget !== key &&
       QueryParams.Network !== key &&
-      QueryParams.Chat !== key &&
       !(!IS_PRODUCTION_ENV && GEO_OVERRIDE_PARAMS.includes(key))
     ) {
       keysToDelete.push(key);

@@ -15,7 +15,6 @@ const mockConfig: GeoConfig = {
     upgrade: { enabled: true },
     seal: { enabled: true }
   },
-  chatbot: { enabled: true },
   isCookiesBannerRequired: false
 };
 

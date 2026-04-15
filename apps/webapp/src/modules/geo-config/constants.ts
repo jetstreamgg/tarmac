@@ -15,6 +15,5 @@ export const FALLBACK_CONFIG: GeoConfig = {
     upgrade: { enabled: true },
     seal: { enabled: true }
   },
-  chatbot: { enabled: false, restrictionMessage: 'Unable to verify region' },
   isCookiesBannerRequired: true
 };

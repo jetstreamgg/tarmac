@@ -19,7 +19,6 @@ import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTra
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -36,7 +35,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isCowSupported = isCowSupportedChainId(chainId);
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
@@ -76,8 +74,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     if (!isTradeContext) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update search params
     if (originAmount && originAmount !== '0') {
