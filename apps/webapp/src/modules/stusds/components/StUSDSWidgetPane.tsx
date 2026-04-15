@@ -13,7 +13,6 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { ExpertIntent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -25,7 +24,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     useConfigContext();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const chainId = useChainId();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
@@ -44,8 +42,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     if (searchParams.get(QueryParams.ExpertModule) !== ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update amount in URL if provided and not zero
     if (originAmount && originAmount !== '0') {

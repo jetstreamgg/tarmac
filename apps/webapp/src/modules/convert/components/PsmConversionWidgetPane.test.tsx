@@ -19,15 +19,10 @@ const setSearchParamsMock = vi.fn(
 const setSelectedConvertOptionMock = vi.fn();
 const setBatchEnabledMock = vi.fn();
 const onAnalyticsEventMock = vi.fn();
-const setShouldDisableActionButtonsMock = vi.fn();
 
 let capturedWidgetProps: Record<string, any> | undefined;
 
 vi.mock('@jetstreamgg/sky-widgets', () => ({
-  TxStatus: {
-    INITIALIZED: 'initialized',
-    IDLE: 'idle'
-  },
   PsmConversionWidget: (props: Record<string, any>) => {
     capturedWidgetProps = props;
     return <div data-testid="psm-conversion-widget" />;
@@ -46,12 +41,6 @@ vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
 
 vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
   useWidgetAnalytics: () => onAnalyticsEventMock
-}));
-
-vi.mock('@/modules/chat/context/ChatContext', () => ({
-  useChatContext: () => ({
-    setShouldDisableActionButtons: setShouldDisableActionButtonsMock
-  })
 }));
 
 vi.mock('wagmi', () => ({
@@ -82,7 +71,6 @@ describe('PsmConversionWidgetPane', () => {
     setSelectedConvertOptionMock.mockClear();
     setBatchEnabledMock.mockClear();
     onAnalyticsEventMock.mockClear();
-    setShouldDisableActionButtonsMock.mockClear();
   });
 
   it('passes URL-derived external state into the widget', () => {
@@ -101,12 +89,10 @@ describe('PsmConversionWidgetPane', () => {
     render(<PsmConversionWidgetPane {...sharedProps} />);
 
     capturedWidgetProps?.onWidgetStateChange({
-      txStatus: 'initialized',
       originToken: 'USDS',
       originAmount: '25'
     });
 
-    expect(setShouldDisableActionButtonsMock).toHaveBeenCalledWith(true);
     expect(mockSearchParams.get('source_token')).toBe('USDS');
     expect(mockSearchParams.get('input_amount')).toBe('25');
     expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
@@ -116,13 +102,11 @@ describe('PsmConversionWidgetPane', () => {
     render(<PsmConversionWidgetPane {...sharedProps} />);
 
     capturedWidgetProps?.onWidgetStateChange({
-      txStatus: 'idle',
       originToken: 'USDC',
       originAmount: '10'
     });
 
     expect(setSearchParamsMock).not.toHaveBeenCalled();
-    expect(setShouldDisableActionButtonsMock).toHaveBeenCalledWith(false);
   });
 
   it('ignores widget state changes outside psm convert context', () => {
@@ -131,13 +115,11 @@ describe('PsmConversionWidgetPane', () => {
     render(<PsmConversionWidgetPane {...sharedProps} />);
 
     capturedWidgetProps?.onWidgetStateChange({
-      txStatus: 'initialized',
       originToken: 'USDS',
       originAmount: '15'
     });
 
     expect(setSearchParamsMock).not.toHaveBeenCalled();
-    expect(setShouldDisableActionButtonsMock).not.toHaveBeenCalled();
   });
 
   it('clears convert_module and input_amount when navigating back to convert landing', () => {
@@ -148,14 +130,5 @@ describe('PsmConversionWidgetPane', () => {
     expect(mockSearchParams.get('convert_module')).toBeNull();
     expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(setSelectedConvertOptionMock).toHaveBeenCalledWith(undefined);
-    expect(setShouldDisableActionButtonsMock).toHaveBeenCalledWith(false);
-  });
-
-  it('re-enables chat action buttons when the pane unmounts', () => {
-    const { unmount } = render(<PsmConversionWidgetPane {...sharedProps} />);
-
-    unmount();
-
-    expect(setShouldDisableActionButtonsMock).toHaveBeenCalledWith(false);
   });
 });
