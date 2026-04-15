@@ -7,9 +7,6 @@ import { OrderQuoteResponse, OrderQuoteSide } from './trade';
 import { verifySlippageAndDeadline } from './helpers';
 import { isL2ChainId } from '@jetstreamgg/sky-utils';
 
-const COW_QUOTES_TEMPORARILY_DISABLED = true;
-const COW_QUOTES_TEMPORARILY_DISABLED_ERROR = 'CowQuotesTemporarilyDisabled';
-
 type GetTradeQuoteParams = {
   chainId: number;
   sellToken: `0x${string}`;
@@ -35,10 +32,6 @@ const getTradeQuote = async ({
   isEthFlow,
   isSmartContractWallet
 }: GetTradeQuoteParams) => {
-  if (COW_QUOTES_TEMPORARILY_DISABLED) {
-    throw new Error(COW_QUOTES_TEMPORARILY_DISABLED_ERROR);
-  }
-
   const side: OrderQuoteSide =
     kind === OrderQuoteSideKind.BUY
       ? { kind: OrderQuoteSideKind.BUY, buyAmountAfterFee: amount.toString() }
@@ -173,10 +166,7 @@ export const useQuoteTrade = ({
     gcTime: 2 * 60 * 1000,
     retry: (failureCount: number, error: Error) => {
       //don't retry if the error is because the sell amount does not cover the fee
-      if (
-        error.message?.includes('SellAmountDoesNotCoverFee') ||
-        error.message?.includes(COW_QUOTES_TEMPORARILY_DISABLED_ERROR)
-      ) {
+      if (error.message?.includes('SellAmountDoesNotCoverFee')) {
         return false;
       }
       return failureCount < 2;
@@ -191,7 +181,7 @@ export const useQuoteTrade = ({
     dataSources: [
       {
         title: 'CoW Protocol Order book API',
-        href: 'https://docs.cow.fi/cow-protocol/reference/apis/orderbook',
+        href: 'https://docs.cow.finance/cow-protocol/reference/apis/orderbook',
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
       }
