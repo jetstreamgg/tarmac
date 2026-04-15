@@ -42,7 +42,6 @@ export const useActionForToken = () => {
         Locale,
         Details,
         Network,
-        Chat,
         Flow,
         ConvertModule
       } = QueryParams;
@@ -54,7 +53,7 @@ export const useActionForToken = () => {
       } = IntentMapping;
       const CONVERT_TRADE = ConvertIntentMapping[ConvertIntent.TRADE_INTENT];
       const CONVERT_UPGRADE = ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT];
-      const retainedParams = [Locale, Details, Chat];
+      const retainedParams = [Locale, Details];
 
       const rewardContracts = getRewardContracts(tokenChainId);
 

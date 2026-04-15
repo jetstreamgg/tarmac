@@ -43,12 +43,12 @@ export const runCowTradeTests = async ({ networkName }: { networkName: NetworkNa
 
   test('Trade is blocked if costs exceed the traded amount', async ({ isolatedPage }) => {
     await isolatedPage.getByTestId('undefined-menu-button').first().click();
-    await isolatedPage.getByRole('button', { name: 'USDC USDC USDC' }).click();
+    await isolatedPage.getByRole('button', { name: 'DAI DAI DAI' }).click();
     await isolatedPage.getByRole('button', { name: 'Select token' }).click();
     await isolatedPage.getByRole('button', { name: 'USDS USDS USDS' }).click();
 
     await isolatedPage.getByTestId('trade-input-origin').click();
-    await isolatedPage.getByTestId('trade-input-origin').fill('0.0001');
+    await isolatedPage.getByTestId('trade-input-origin').fill('0.0002');
 
     await expect(isolatedPage.getByText('Fetching price')).toBeVisible();
     await expect(isolatedPage.getByText('Fetching price')).not.toBeVisible();

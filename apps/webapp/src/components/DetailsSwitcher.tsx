@@ -1,7 +1,7 @@
 import { Toggle } from '@/components/ui/toggle';
 import { Metrics } from '@/modules/icons';
-import { useMatch, useSearchParams } from 'react-router-dom';
-import { CHATBOT_ENABLED, QueryParams } from '@/lib/constants';
+import { useSearchParams } from 'react-router-dom';
+import { QueryParams } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import {
   Tooltip,
@@ -11,26 +11,20 @@ import {
   TooltipPortal
 } from '@/components/ui/tooltip';
 import { t } from '@lingui/core/macro';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { JSX } from 'react';
 
 export function DetailsSwitcher(): JSX.Element {
-  const isSealEngine = useMatch('/seal-engine');
-  const { bpi } = useBreakpointIndex();
   const [searchParams, setSearchParams] = useSearchParams();
   const { trackDetailsPaneToggled } = useAppAnalytics();
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const handleSwitch = (pressed: boolean) => {
     trackDetailsPaneToggled({
       toggleAction: pressed ? 'open' : 'close',
-      activeWidget: searchParams.get(QueryParams.Widget) || 'balances',
-      chatWasOpen: searchParams.get(QueryParams.Chat) === 'true'
+      activeWidget: searchParams.get(QueryParams.Widget) || 'balances'
     });
     const queryParam = pressed ? 'true' : 'false';
     searchParams.set(QueryParams.Details, queryParam);
-    if ([BP.md, BP.lg, BP.xl, BP['2xl']].includes(bpi) && queryParam)
-      searchParams.set(QueryParams.Chat, 'false');
     setSearchParams(searchParams);
   };
 
@@ -42,7 +36,7 @@ export function DetailsSwitcher(): JSX.Element {
         <div>
           <Toggle
             variant="singleSwitcher"
-            className={`hidden h-10 w-10 rounded-xl md:flex ${CHATBOT_ENABLED && !isSealEngine ? 'md:rounded-r-none' : ''} `}
+            className="hidden h-10 w-10 rounded-xl md:flex"
             pressed={detailsParam}
             onPressedChange={handleSwitch}
             aria-label="Toggle details"
