@@ -20,7 +20,7 @@ export const AboutSealModule = ({ height }: { height?: number | undefined }) => 
         <Trans>
           Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engine of the decentralised,
           non-custodial Sky Protocol. Currently, all Seal Rewards take the form of USDS. Eventually, subject
-          to Sky ecosystem governance approval, Seal Rewards may also be available in the form of Sky Star
+          to Sky Ecosystem governance approval, Seal Rewards may also be available in the form of Sky Star
           tokens.
         </Trans>
       }

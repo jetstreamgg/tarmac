@@ -113,7 +113,7 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
       await expect(
         isolatedPage
           .getByTestId('widget-container')
-          .getByText('Get Sky ecosystem tokens with best possible rates')
+          .getByText('Get Sky Ecosystem tokens with best possible rates')
       ).toBeVisible();
     });
 

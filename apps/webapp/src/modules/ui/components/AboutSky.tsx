@@ -18,9 +18,9 @@ export const AboutSky = ({ height }: { height?: number | undefined }) => {
       tokenSymbol="SKY"
       description={
         <Trans>
-          SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR.
+          SKY is a native governance token of the decentralised Sky Ecosystem and the upgraded version of MKR.
           You can upgrade your MKR to SKY at the rate of 1:24,000, trade SKY for USDS and, soon, use it to
-          accumulate Activation Token Rewards and participate in Sky ecosystem governance.
+          accumulate Activation Token Rewards and participate in Sky Ecosystem governance.
         </Trans>
       }
       linkHref={skyEtherscanLink}
