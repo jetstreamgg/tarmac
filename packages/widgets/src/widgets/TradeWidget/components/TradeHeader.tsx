@@ -52,7 +52,7 @@ export const TradePoweredBy = ({
     <Text className="text-text text-sm leading-none font-normal">
       Powered by{' '}
       <ExternalLink
-        href="https://cow.fi/"
+        href="https://cow.finance/"
         showIcon={true}
         iconSize={12}
         wrapperClassName="gap-1"
