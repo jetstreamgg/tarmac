@@ -20,7 +20,6 @@ import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTra
 import { capitalizeFirstLetter } from '@/lib/helpers/string/capitalizeFirstLetter';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -41,7 +40,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
 
   const wagmiConfig = useWagmiConfig();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as UpgradeFlow | undefined;
   const [currentToken, setCurrentToken] = useState<string | undefined>();
@@ -105,8 +103,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     if (!isUpgradeContext) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow
     if (widgetState.flow) {

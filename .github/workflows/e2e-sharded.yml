@@ -46,8 +46,6 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
-      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
-      VITE_CHATBOT_ENABLED: 'true'
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
     steps:
@@ -135,8 +133,6 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
-      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
-      VITE_CHATBOT_ENABLED: 'true'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
       PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '6' }}
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '1' }}
