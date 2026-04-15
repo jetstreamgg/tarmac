@@ -100,7 +100,7 @@ export const SupplyWithdraw = ({
   });
 
   const { data: sUsdsWithdrawAmount } = useReadSavingsUsds({
-    functionName: 'previewRedeem',
+    functionName: 'previewWithdraw',
     args: [amount],
     chainId: chainId as keyof typeof sUsdsAddress,
     query: {
