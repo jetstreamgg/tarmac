@@ -68,7 +68,7 @@ export function AboutTokensCarousel() {
     // Calculate on mount and after a brief delay to ensure content is rendered
     const timer = setTimeout(calculateHeight, 100);
 
-    // Use ResizeObserver to watch for container size changes (e.g., chat pane open/close)
+    // Use ResizeObserver to watch for container size changes
     const resizeObserver = new ResizeObserver(() => {
       calculateHeight();
     });
