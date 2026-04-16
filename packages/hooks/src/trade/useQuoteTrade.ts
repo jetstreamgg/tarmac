@@ -181,7 +181,7 @@ export const useQuoteTrade = ({
     dataSources: [
       {
         title: 'CoW Protocol Order book API',
-        href: 'https://docs.cow.finance/cow-protocol/reference/apis/orderbook',
+        href: 'https://docs.cow.fi/cow-protocol/reference/apis/orderbook',
         onChain: false,
         trustLevel: TRUST_LEVELS[TrustLevelEnum.TWO]
       }
