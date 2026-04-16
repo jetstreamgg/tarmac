@@ -51,7 +51,7 @@ export const TradeConfigMenu = ({
       ? l2EthFlowSlippageConfig
       : ethFlowSlippageConfig
     : ercFlowSlippageConfig;
-  const autoSlippage = isEthFlow ? slippageConfig.default : getAutoSlippage(originSymbol, targetSymbol);
+  const defaultSlippage = isEthFlow ? slippageConfig.default : getAutoSlippage(originSymbol, targetSymbol);
   const SLIPPAGE_STORAGE_KEY = isEthFlow
     ? isChainL2
       ? L2_ETH_SLIPPAGE_STORAGE_KEY
@@ -94,7 +94,7 @@ export const TradeConfigMenu = ({
               className="w-full"
               defaultValue={slippage ? SlippageType.CUSTOM : SlippageType.AUTO}
               onValueChange={value => {
-                const newSlippageValue = value === SlippageType.AUTO ? '' : autoSlippage.toString();
+                const newSlippageValue = value === SlippageType.AUTO ? '' : defaultSlippage.toString();
                 handleSlippageChange(newSlippageValue);
               }}
             >
@@ -115,7 +115,7 @@ export const TradeConfigMenu = ({
               <TabsContent value="auto">
                 <div className="flex h-[60px] w-full items-center justify-between p-2">
                   <Text className="text-text">Max slippage:</Text>
-                  <Text className="text-text ml-2">{autoSlippage}%</Text>
+                  <Text className="text-text ml-2">{defaultSlippage}%</Text>
                 </div>
               </TabsContent>
               <TabsContent value="custom">
