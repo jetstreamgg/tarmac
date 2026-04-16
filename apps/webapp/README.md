@@ -37,10 +37,10 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `VITE_RPC_PROVIDER_UNICHAIN`: URL for the Unichain provider
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production
 - `VITE_AUTH_URL`: Base URL for the authentication service
-- `VITE_RESTRICTED_BUILD`: Boolean flag to enable certain restrictions
+- `VITE_GEO_CONFIG_URL`: (Optional) URL for the geo-config endpoint that provides runtime region-based restrictions. Falls back to staging URL if not set
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
-- `VITE_SKIP_CHAT_AUTH_CHECK`: Boolean flag to bypass chatbot terms acceptance check during testing (only works in non-production environments)
+- `VITE_GEO_BYPASS`: Boolean flag to bypass geo-restriction checks during development (assumes no restricted regions and enables all modules)
 - `TENDERLY_API_KEY`: API key for Tenderly (used for forking and managing virtual networks for testing)
 - `VITE_USE_MOCK_WALLET`: Boolean flag to enable the use of a mock wallet for testing purposes
 - `VITE_TERMS_ENDPOINT`: URL endpoint for submitting and checking terms acceptance
@@ -60,22 +60,6 @@ Create a `.env` file in the root directory of the project. You can use the `.env
 - `SENTRY_PROJECT`: (Optional) Sentry project slug used by the Vite plugin for source map uploads during build
 - `SENTRY_AUTH_TOKEN`: (Optional) Build-time auth token for Sentry source map uploads. If omitted, the app still builds and runtime Sentry can still report events, but source maps are not uploaded
 - `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
-- `VITE_CHATBOT_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom chatbot terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-chatbot-terms.md`). If not specified, uses the default `chatbot_terms.md` file. This allows external teams to provide their own chatbot-specific terms file
-- `VITE_CHATBOT_ENABLED`: If set to `'true'`, enables the chatbot functionality
-- `VITE_CHATBOT_FEEDBACK_ENABLED`: If set to `'true'`, enables the chatbot feedback functionality
-- `VITE_CHATBOT_USE_TESTNET_NETWORK_NAME`: If set to `'true'` replaces network names for their testnet counterpart. Only in development or staging.
-- `VITE_CHATBOT_SUGGESTIONS_ENABLED`: Chat suggestions are enabled by default. Set to `'false'` to disable
-- `VITE_CHATBOT_NAME`: The name of the chatbot
-- `VITE_CHATBOT_DOMAIN`: The base URL for the chatbot backend API
-- `VITE_CHATBOT_MAX_HISTORY`: Maximum number of previous messages to include in chat context.
-- `VITE_CHATBOT_MAX_MESSAGE_LENGTH`: Maximum character length for user input messages.
-- `VITE_CHATBOT_CF_ACCESS_CLIENT_ID`: (Optional) Cloudflare Access client ID for authentication headers in development/staging environments
-- `VITE_CHATBOT_CF_ACCESS_CLIENT_SECRET`: (Optional) Cloudflare Access client secret for authentication headers in development/staging environments
-- `VITE_CHATBOT_SUGGESTED_QUESTIONS`: (Optional) Array of suggested questions displayed when the chatbot first loads (e.g., `'["Question 1", "Question 2"]'`). If not provided, default questions will be shown
-- `VITE_CHATBOT_CHECKBOX_LABEL`: (Optional) Additional instructional text displayed above the terms acceptance checkboxes in the chatbot terms modal.
-- `VITE_CHATBOT_CHECKBOX_TERMS_LABEL`: (Optional) Custom label for the terms checkbox in the chatbot terms modal. Supports markdown formatting.
-- `VITE_CHATBOT_CHECKBOX_PRIVACY_LABEL`: (Optional) Custom label for the privacy checkbox in the chatbot terms modal. Supports markdown formatting.
-- `VITE_CHATBOT_PREFILL_FILTERING_ENABLED`: Controls whether chatbot intents with pre-filled amounts/tokens are filtered. Filtering is enabled by default unless explicitly set to `'false'`.
 
 ## Running the App
 

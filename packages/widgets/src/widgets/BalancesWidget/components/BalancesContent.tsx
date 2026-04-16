@@ -9,7 +9,6 @@ import { useCallback, useState } from 'react';
 import { useChainId } from 'wagmi';
 
 interface BalancesContentProps {
-  hideModuleBalances?: boolean;
   hideRestrictedModules?: boolean;
   chainIds?: number[];
   rewardsCardUrl?: string;
@@ -27,7 +26,6 @@ interface BalancesContentProps {
 }
 
 export const BalancesContent = ({
-  hideModuleBalances,
   hideRestrictedModules,
   onExternalLinkClicked,
   chainIds,
@@ -75,11 +73,9 @@ export const BalancesContent = ({
               setHideZeroBalances={setHideZeroBalances}
               chainId={chainId}
             />
-            {!hideModuleBalances && (
-              <Heading variant="small" className="mb-3 leading-6">
-                <Trans>Supplied funds</Trans>
-              </Heading>
-            )}
+            <Heading variant="small" className="mb-3 leading-6">
+              <Trans>Supplied funds</Trans>
+            </Heading>
           </>
         )}
         <ModulesBalances

@@ -19,11 +19,12 @@ import { ConvertIntent } from '@/lib/enums';
 import { t } from '@lingui/core/macro';
 import { base, mainnet, arbitrum, optimism, unichain } from 'viem/chains';
 import { useChains, useChainId } from 'wagmi';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export const useActionForToken = () => {
   const chainId = useChainId();
   const [searchParams] = useSearchParams();
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isRegionRestricted } = useGeoConfig();
 
   const getRewardContracts = useAvailableTokenRewardContractsForChains();
   const { data: totalUserStaked } = useTotalUserStaked();
@@ -41,7 +42,6 @@ export const useActionForToken = () => {
         Locale,
         Details,
         Network,
-        Chat,
         Flow,
         ConvertModule
       } = QueryParams;
@@ -53,7 +53,7 @@ export const useActionForToken = () => {
       } = IntentMapping;
       const CONVERT_TRADE = ConvertIntentMapping[ConvertIntent.TRADE_INTENT];
       const CONVERT_UPGRADE = ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT];
-      const retainedParams = [Locale, Details, Chat];
+      const retainedParams = [Locale, Details];
 
       const rewardContracts = getRewardContracts(tokenChainId);
 
@@ -87,7 +87,7 @@ export const useActionForToken = () => {
       switch (lowerSymbol) {
         case 'dai':
           action = {
-            [mainnet.id]: isRestrictedBuild
+            [mainnet.id]: isRegionRestricted
               ? {
                   label: t`Upgrade your ${formattedBalance} ${upperSymbol} to USDS ${isDifferentChain ? 'on Mainnet' : ''}`,
                   actionUrl: getQueryParams(
@@ -145,14 +145,14 @@ export const useActionForToken = () => {
         }
         case 'usds':
           action = {
-            [mainnet.id]: isRestrictedBuild
+            [mainnet.id]: isRegionRestricted
               ? undefined
               : {
                   label: t`View rewards options for your ${upperSymbol} ${isDifferentChain ? 'on Mainnet' : ''}`,
                   actionUrl: getQueryParams(`?${Network}=${networkName}&${Widget}=${REWARD}`),
                   image
                 },
-            [base.id]: isRestrictedBuild
+            [base.id]: isRegionRestricted
               ? undefined
               : {
                   label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
@@ -161,7 +161,7 @@ export const useActionForToken = () => {
                   ),
                   image
                 },
-            [arbitrum.id]: isRestrictedBuild
+            [arbitrum.id]: isRegionRestricted
               ? undefined
               : {
                   label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Arbitrum' : ''}`,
@@ -170,7 +170,7 @@ export const useActionForToken = () => {
                   ),
                   image
                 },
-            [optimism.id]: isRestrictedBuild
+            [optimism.id]: isRegionRestricted
               ? undefined
               : {
                   label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Optimism' : ''}`,
@@ -179,7 +179,7 @@ export const useActionForToken = () => {
                   ),
                   image
                 },
-            [unichain.id]: isRestrictedBuild
+            [unichain.id]: isRegionRestricted
               ? undefined
               : {
                   label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Unichain' : ''}`,
@@ -197,8 +197,8 @@ export const useActionForToken = () => {
         case 'usdc':
         case 'usdt':
           action = {
-            [mainnet.id]: isRestrictedBuild
-              ? {
+            [mainnet.id]: isRegionRestricted
+                ? {
                     label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Mainnet' : ''}`,
                     // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
                     actionUrl: getQueryParams(
@@ -217,25 +217,25 @@ export const useActionForToken = () => {
             [base.id]:
               lowerSymbol === 'usdt'
                 ? undefined
-                : isRestrictedBuild
-                  ? {
-                      label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Base' : ''}`,
-                      actionUrl: getQueryParams(
-                        `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
-                      ),
-                      image
-                    }
-                  : {
-                      label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
-                      actionUrl: getQueryParams(
-                        `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
-                      ),
-                      image
-                    },
+                : isRegionRestricted
+                    ? {
+                        label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Base' : ''}`,
+                        actionUrl: getQueryParams(
+                          `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                        ),
+                        image
+                      }
+                    : {
+                        label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
+                        actionUrl: getQueryParams(
+                          `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                        ),
+                        image
+                      },
             [arbitrum.id]:
               lowerSymbol === 'usdt'
                 ? undefined
-                : isRestrictedBuild
+                : isRegionRestricted
                   ? {
                       label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Arbitrum' : ''}`,
                       actionUrl: getQueryParams(
@@ -253,7 +253,7 @@ export const useActionForToken = () => {
             [optimism.id]:
               lowerSymbol === 'usdt'
                 ? undefined
-                : isRestrictedBuild
+                : isRegionRestricted
                   ? {
                       label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Optimism' : ''}`,
                       actionUrl: getQueryParams(
@@ -271,7 +271,7 @@ export const useActionForToken = () => {
             [unichain.id]:
               lowerSymbol === 'usdt'
                 ? undefined
-                : isRestrictedBuild
+                : isRegionRestricted
                   ? {
                       label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Unichain' : ''}`,
                       actionUrl: getQueryParams(
@@ -298,7 +298,7 @@ export const useActionForToken = () => {
       if (isUnichainChainAction) return action?.[unichain.id];
       return action?.[mainnet.id];
     },
-    [getRewardContracts, searchParams, isRestrictedBuild, chainId, chains, totalUserStaked]
+    [getRewardContracts, searchParams, isRegionRestricted, chainId, chains, totalUserStaked]
   );
 
   return actionForToken;

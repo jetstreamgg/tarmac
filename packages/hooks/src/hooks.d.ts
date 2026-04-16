@@ -74,7 +74,7 @@ export type BatchWriteHook = {
 
 export type BatchWriteHookParams = {
   onMutate?: () => void;
-  onStart?: () => void;
+  onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
   shouldUseBatch?: boolean;
@@ -89,7 +89,7 @@ export type UseSendBatchTransactionFlowParameters<
 > = SendCallsParameters<config, chainId, calls> & {
   enabled?: boolean;
   onMutate?: () => void;
-  onStart?: () => void;
+  onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
 };
@@ -118,7 +118,7 @@ export type UseTransactionFlowParameters = {
   shouldUseBatch?: boolean;
   enabled?: boolean;
   onMutate?: () => void;
-  onStart?: () => void;
+  onStart?: (hash: string | undefined) => void;
   onSuccess?: (hash: string | undefined) => void;
   onError?: (error: Error, hash: string | undefined) => void;
   gcTime?: number;

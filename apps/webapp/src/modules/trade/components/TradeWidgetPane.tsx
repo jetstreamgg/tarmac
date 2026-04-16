@@ -6,6 +6,7 @@ import {
   L2TradeWidget
 } from '@jetstreamgg/sky-widgets';
 import { defaultConfig } from '../../config/default-config';
+import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
 import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
@@ -18,10 +19,10 @@ import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTra
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
@@ -34,10 +35,13 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isCowSupported = isCowSupportedChainId(chainId);
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
+  const { isRegionRestricted } = useGeoConfig();
+  const tradeTokenList = isRegionRestricted
+    ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
+    : defaultConfig.tradeTokenList[chainId];
 
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
@@ -70,8 +74,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     if (!isTradeContext) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update search params
     if (originAmount && originAmount !== '0') {
@@ -213,7 +215,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       key={externalWidgetState.timestamp}
       {...sharedProps}
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
-      customTokenList={defaultConfig.tradeTokenList[chainId]}
+      customTokenList={tradeTokenList}
       onWidgetStateChange={onTradeWidgetStateChange}
       onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}

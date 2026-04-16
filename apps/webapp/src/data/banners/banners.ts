@@ -179,7 +179,31 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'upgrade-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
+      'SKY is a native governance token of the decentralised Sky Ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'about-convert',
+    title: 'About Convert',
+    module: 'convert-banners',
+    description:
+      'Convert USDC to USDS at a fixed 1:1 rate, trade popular tokens for Sky Ecosystem tokens, or upgrade your DAI to USDS and MKR to SKY.',
+    display: ['disconnected']
+  },
+  {
+    id: 'about-11-conversion',
+    title: 'About 1:1 Conversion',
+    module: 'one-to-one-conversion-banners',
+    description:
+      '1:1 Conversion uses contracts deployed by Sky Protocol that enable swapping USDC and USDS at a fixed rate through the Peg Stability Module [(PSM)](#tooltip-psm). This means that unlike market trades, PSM conversions are not exposed to slippage and MEV risks, enabling seamless swapping between supported stablecoins.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'usds',
+    title: 'USDS',
+    module: 'one-to-one-conversion-banners',
+    description:
+      'USDS is the stablecoin of the decentralized Sky Protocol. It can be used in several ways, including to participate in the [Sky Savings Rate](#tooltip-sky-savings-rate) and get Sky Token Rewards without giving up control. It is the upgraded version of DAI.',
     display: ['connected', 'disconnected']
   },
   {
@@ -284,14 +308,6 @@ export const banners: Banner[] = [
     module: 'vaults-banners',
     description:
       'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDC lending market, where borrowers post stUSDS, the higher-yield Expert risk capital token, as collateral to borrow USDC at an 86% LTV ratio.',
-    display: ['connected', 'disconnected']
-  },
-  {
-    id: 'usds-savings-vault',
-    title: 'USDS Savings Vault',
-    module: 'vaults-banners',
-    description:
-      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDS lending market, where borrowers post sUSDS, the native stablecoin earning the Sky Savings Rate, as collateral to borrow USDS at a 96.5% LTV ratio.',
     display: ['connected', 'disconnected']
   },
   {

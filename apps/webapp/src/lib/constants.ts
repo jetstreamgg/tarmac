@@ -17,7 +17,6 @@ export enum QueryParams {
   InputAmount = 'input_amount',
   Timestamp = 'timestamp',
   Network = 'network',
-  Chat = 'chat',
   Reset = 'reset',
   Flow = 'flow',
   StakeTab = 'stake_tab',
@@ -33,15 +32,6 @@ export enum Environment {
   Staging = 'staging',
   Development = 'development'
 }
-
-const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
-
-export const RESTRICTED_INTENTS: Intent[] = (() => {
-  if (isRestrictedBuild) {
-    return [Intent.SAVINGS_INTENT, Intent.REWARDS_INTENT, Intent.EXPERT_INTENT];
-  }
-  return [];
-})();
 
 export const IntentMapping = {
   [Intent.BALANCES_INTENT]: 'balances',
@@ -65,6 +55,7 @@ export const VaultsIntentMapping: Record<VaultsIntent, string> = {
 };
 
 export const ConvertIntentMapping: Record<ConvertIntent, string> = {
+  [ConvertIntent.PSM_INTENT]: 'psm',
   [ConvertIntent.UPGRADE_INTENT]: 'upgrade',
   [ConvertIntent.TRADE_INTENT]: 'trade'
 };
@@ -106,6 +97,7 @@ export const COMING_SOON_MAP: Record<number, Intent[]> = {
 };
 
 export const intentTxt: Record<string, MessageDescriptor> = {
+  psm: msg`1:1 conversion`,
   trade: msg`trade`,
   upgrade: msg`upgrade`,
   savings: msg`savings`,
@@ -145,24 +137,13 @@ export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.VAULTS_INTENT]
 ];
 
-const AvailableIntentMapping = Object.entries(IntentMapping).reduce(
-  (acc, [key, value]) => {
-    const isRestricted = isRestrictedBuild;
-    if (!isRestricted || !RESTRICTED_INTENTS.includes(key as Intent)) {
-      acc[key as Intent] = value;
-    }
-    return acc;
-  },
-  {} as typeof IntentMapping
-);
-
 export function mapIntentToQueryParam(intent: Intent): string {
-  return AvailableIntentMapping[intent] || '';
+  return IntentMapping[intent] || '';
 }
 
 export function mapQueryParamToIntent(queryParam?: string | null): Intent {
-  const intent = Object.keys(AvailableIntentMapping).find(
-    key => AvailableIntentMapping[key as keyof typeof AvailableIntentMapping] === queryParam
+  const intent = Object.keys(IntentMapping).find(
+    key => IntentMapping[key as keyof typeof IntentMapping] === queryParam
   );
   return (intent as Intent) || Intent.BALANCES_INTENT;
 }
@@ -186,7 +167,7 @@ export const ALLOWED_EXTERNAL_DOMAINS = [
   'app.sky.money',
   'docs.sky.money',
   'vote.sky.money',
-  'upgrademkrtosky.sky.money',
+  'upgrademkrtosky.skyeco.com',
   'jobs.ashbyhq.com'
 ];
 
@@ -194,59 +175,20 @@ export const IS_PRODUCTION_ENV = import.meta.env.VITE_ENV_NAME === Environment.P
 export const IS_STAGING_ENV = import.meta.env.VITE_ENV_NAME === Environment.Staging;
 export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.Development;
 
-export const PROD_URL_SKY_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const STAGING_URL_SKY_SUBGRAPH_MAINNET =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const STAGING_URL_SKY_SUBGRAPH_TESTNET =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-testnet';
-export const PROD_URL_SKY_SUBGRAPH_BASE =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const STAGING_URL_SKY_SUBGRAPH_BASE =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-export const PROD_URL_SKY_SUBGRAPH_ARBITRUM =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const STAGING_URL_SKY_SUBGRAPH_ARBITRUM =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-export const PROD_URL_SKY_SUBGRAPH_OPTIMISM =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-export const PROD_URL_SKY_SUBGRAPH_UNICHAIN =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
-export const STAGING_URL_SKY_SUBGRAPH_OPTIMISM =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-export const STAGING_URL_SKY_SUBGRAPH_UNICHAIN =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
-
-export const MAX_HISTORY_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_HISTORY || 8) - 1;
-export const MAX_MESSAGE_LENGTH = parseInt(import.meta.env.VITE_CHATBOT_MAX_MESSAGE_LENGTH || '500');
-export const CHAT_SUGGESTIONS_ENABLED = import.meta.env.VITE_CHATBOT_SUGGESTIONS_ENABLED !== 'false'; // Default true
-
-export const CHATBOT_ENABLED = import.meta.env.VITE_CHATBOT_ENABLED === 'true';
-export const CHATBOT_FEEDBACK_ENABLED = import.meta.env.VITE_CHATBOT_FEEDBACK_ENABLED === 'true';
-export const CHATBOT_DOMAIN = import.meta.env.VITE_CHATBOT_DOMAIN || 'https://staging-api.sky.money';
-export const CHATBOT_USE_TESTNET_NETWORK_NAME =
-  import.meta.env.VITE_CHATBOT_USE_TESTNET_NETWORK_NAME === 'true' && (IS_STAGING_ENV || IS_DEVELOPMENT_ENV);
-// Feature flag to enable chatbot pre-fill filtering
-// Enabled by default unless explicitly set to 'false'
-export const CHATBOT_PREFILL_FILTERING_ENABLED =
-  import.meta.env.VITE_CHATBOT_PREFILL_FILTERING_ENABLED !== 'false';
+export const PROD_URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
+export const STAGING_URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
 
-// Skip chatbot auth check for testing (only works in non-production environments)
-export const SKIP_CHAT_AUTH_CHECK =
-  !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_CHAT_AUTH_CHECK === 'true';
 export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 
 // LocalStorage keys
 export const USER_SETTINGS_KEY = 'user-settings';
-export const CHAT_NOTIFICATION_KEY = 'chat-notification-suggested';
 export const GOVERNANCE_MIGRATION_NOTIFICATION_KEY = 'governance-migration-notice-shown';
 export const SPK_STAKING_NOTIFICATION_KEY = 'spk-staking-rewards-notice-shown';
 export const USDS_SKY_REWARDS_NOTIFICATION_KEY = 'usds-sky-rewards-notice-shown';
-export const CHAT_WALLET_ASSOCIATION_KEY = 'chat-wallet-associations';
 
 export const WALLET_ICONS = {
   metaMaskSDK: '/wallets/metamask.svg',
@@ -258,4 +200,3 @@ export const WALLET_ICONS = {
   'wallet.binance.com': '/wallets/binance.svg',
   'com.binance.wallet': '/wallets/binance.svg'
 };
-export const CHAT_NOTIFICATION_TOAST_ID = 'chat-notification-toast';

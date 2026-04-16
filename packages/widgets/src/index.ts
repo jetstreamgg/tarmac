@@ -10,6 +10,7 @@ export { TradeWidget } from './widgets/TradeWidget';
 export { L2TradeWidget as BaseTradeWidget } from './widgets/L2TradeWidget';
 export { L2TradeWidget as ArbitrumTradeWidget } from './widgets/L2TradeWidget';
 export { L2TradeWidget } from './widgets/L2TradeWidget';
+export { PsmConversionWidget } from './widgets/PsmConversionWidget';
 export { BalancesWidget } from './widgets/BalancesWidget';
 export { SealModuleWidget } from './widgets/SealModuleWidget/index';
 export type { BalancesWidgetProps } from './widgets/BalancesWidget';

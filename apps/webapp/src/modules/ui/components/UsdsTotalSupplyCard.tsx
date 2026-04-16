@@ -21,6 +21,7 @@ export function UsdsTotalSupplyCard(): React.ReactElement {
           className="mt-2"
           token={{ symbol: 'USDS', name: 'usds' }}
           balance={usdsTotalSupply || '0'}
+          showChainIcon={false}
         />
       }
       isLoading={isLoading}

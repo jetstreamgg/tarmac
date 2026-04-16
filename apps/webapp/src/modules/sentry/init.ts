@@ -1,11 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
-import {
-  createRoutesFromChildren,
-  matchRoutes,
-  useLocation,
-  useNavigationType
-} from 'react-router-dom';
+import { createRoutesFromChildren, matchRoutes, useLocation, useNavigationType } from 'react-router-dom';
 
 // Fall back to the app-wide env name so Sentry still gets a meaningful environment
 // even before dedicated VITE_SENTRY_* values are populated everywhere.
@@ -38,7 +33,24 @@ export function initSentry(): void {
     // Local/dev stays fully off unless debug is explicitly enabled. When debug is on,
     // use 100% sampling so instrumentation can be verified end-to-end.
     tracesSampleRate: !shouldSendDevEvents ? 0 : isProd ? 0.1 : 1.0,
+    ignoreErrors: [
+      // Errors thrown by wallet browser extensions / in-app browsers, not by our code.
+      /not found rainbowkit/i,
+      // WebSocket race condition in MetaMask mobile wallet SDK (centrifuge lib).
+      // Not actionable on our side (WEBAPP-2F).
+      /null is not an object \(evaluating 'this\._transport\.close'\)/,
+      // DOM mutation errors caused by browser extensions modifying nodes outside
+      // React's control. These surface as React reconciliation failures and are
+      // not actionable.
+      /Failed to execute 'removeChild' on 'Node'/,
+      /Failed to execute 'insertBefore' on 'Node'/,
+      /The object can not be found here/
+    ],
     integrations: [
+      Sentry.thirdPartyErrorFilterIntegration({
+        filterKeys: ['sky-webapp'],
+        behaviour: 'drop-error-if-exclusively-contains-third-party-frames'
+      }),
       Sentry.browserTracingIntegration(),
       Sentry.reactRouterV6BrowserTracingIntegration({
         useEffect,
@@ -53,21 +65,35 @@ export function initSentry(): void {
         return null;
       }
 
-      const message = event.exception?.values?.[0]?.value || event.message || '';
-      const stack = event.exception?.values?.[0]?.stacktrace?.frames || [];
-
-      if (stack.some(frame => /^(chrome|moz)-extension:\/\//.test(frame.filename || ''))) {
+      // Drop WalletConnect relay WebSocket errors caused by client clock skew.
+      // These are unactionable — the relay server rejects JWTs when the user's
+      // system clock drifts beyond the leeway, triggering a reconnect storm.
+      // We scope the filter to WalletConnect frames + "not yet valid" to avoid
+      // masking genuine JWT issues from other parts of the stack.
+      const firstException = event.exception?.values?.[0];
+      const message = firstException?.value ?? '';
+      const frames = firstException?.stacktrace?.frames ?? [];
+      const isWalletConnectOrigin = frames.some(f => f.filename?.includes('@walletconnect/'));
+      if (
+        isWalletConnectOrigin &&
+        message.includes('WebSocket connection closed abnormally') &&
+        message.includes('JWT Token is not yet valid')
+      ) {
         return null;
       }
 
-      const ignorePatterns = [
-        'Network Error',
-        'Failed to fetch',
-        'AbortError',
-        'The operation was aborted'
-      ];
-
-      if (ignorePatterns.some(pattern => message.includes(pattern))) {
+      // Drop unhandled wallet provider rejections (EIP-1193 code 4001).
+      // These are plain-object rejections from wallet connectors during Wagmi's
+      // auto-reconnect on page load — not actionable on our side (WEBAPP-B).
+      const extraData = (event.extra as Record<string, unknown> | undefined)?.__serialized__ as
+        | Record<string, unknown>
+        | undefined;
+      if (
+        event.exception?.values?.some(v =>
+          v.value?.includes('Object captured as promise rejection with keys')
+        ) &&
+        extraData?.code === 4001
+      ) {
         return null;
       }
 

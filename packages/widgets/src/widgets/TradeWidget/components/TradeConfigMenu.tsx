@@ -10,6 +10,7 @@ import {
   l2EthFlowSlippageConfig,
   L2_ETH_SLIPPAGE_STORAGE_KEY
 } from '../lib/constants';
+import { getAutoSlippage } from '@jetstreamgg/sky-hooks';
 import { Settings as SettingsIcon } from '@widgets/shared/components/icons/Icons';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
@@ -31,12 +32,16 @@ type PropTypes = {
   isEthFlow?: boolean;
   ttl: string;
   setTtl: Dispatch<SetStateAction<string>>;
+  originSymbol?: string;
+  targetSymbol?: string;
 };
 
 export const TradeConfigMenu = ({
   slippage,
   setSlippage,
-  isEthFlow
+  isEthFlow,
+  originSymbol,
+  targetSymbol
 }: PropTypes): React.ReactElement | null => {
   const { widgetState } = useContext(WidgetContext);
   const chainId = useChainId();
@@ -46,6 +51,7 @@ export const TradeConfigMenu = ({
       ? l2EthFlowSlippageConfig
       : ethFlowSlippageConfig
     : ercFlowSlippageConfig;
+  const defaultSlippage = isEthFlow ? slippageConfig.default : getAutoSlippage(originSymbol, targetSymbol);
   const SLIPPAGE_STORAGE_KEY = isEthFlow
     ? isChainL2
       ? L2_ETH_SLIPPAGE_STORAGE_KEY
@@ -88,7 +94,7 @@ export const TradeConfigMenu = ({
               className="w-full"
               defaultValue={slippage ? SlippageType.CUSTOM : SlippageType.AUTO}
               onValueChange={value => {
-                const newSlippageValue = value === SlippageType.AUTO ? '' : slippageConfig.default.toString();
+                const newSlippageValue = value === SlippageType.AUTO ? '' : defaultSlippage.toString();
                 handleSlippageChange(newSlippageValue);
               }}
             >
@@ -109,7 +115,7 @@ export const TradeConfigMenu = ({
               <TabsContent value="auto">
                 <div className="flex h-[60px] w-full items-center justify-between p-2">
                   <Text className="text-text">Max slippage:</Text>
-                  <Text className="text-text ml-2">{slippageConfig.default}%</Text>
+                  <Text className="text-text ml-2">{defaultSlippage}%</Text>
                 </div>
               </TabsContent>
               <TabsContent value="custom">

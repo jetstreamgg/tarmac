@@ -337,6 +337,8 @@ function TradeWidgetWrapped({
     isEthFlow: originToken?.isNative,
     isSmartContractWallet,
     slippage,
+    originSymbol: originToken?.symbol,
+    targetSymbol: targetToken?.symbol,
     enabled:
       (lastUpdated === TradeSide.IN
         ? debouncedOriginAmount === originAmount
@@ -1530,6 +1532,8 @@ function TradeWidgetWrapped({
                   isEthFlow={originToken?.isNative}
                   ttl={ttl}
                   setTtl={setTtl}
+                  originSymbol={originToken?.symbol}
+                  targetSymbol={targetToken?.symbol}
                 />
               </div>
               <Heading variant="x-large">

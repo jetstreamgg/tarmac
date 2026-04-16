@@ -30,14 +30,16 @@ export function getNextStep(step: StakeStep, skipDelegate?: boolean, skipRewards
   return StakeStep.SUMMARY; // or handle the case when there's no next action
 }
 
-export function getStepIndex(step: StakeStep, flow: StakeFlow): number {
-  const sequence = flow === StakeFlow.OPEN ? openFlowSequence : manageFlowSequence;
+export function getStepIndex(step: StakeStep, flow: StakeFlow, skipDelegate?: boolean): number {
+  let sequence = flow === StakeFlow.OPEN ? [...openFlowSequence] : [...manageFlowSequence];
+  if (skipDelegate) sequence = sequence.filter(s => s !== StakeStep.DELEGATE);
   const index = sequence.indexOf(step);
   return index !== -1 ? index : 0;
 }
 
-export function getTotalSteps(flow: StakeFlow): number {
-  const sequence = flow === StakeFlow.OPEN ? openFlowSequence : manageFlowSequence;
+export function getTotalSteps(flow: StakeFlow, skipDelegate?: boolean): number {
+  let sequence = flow === StakeFlow.OPEN ? [...openFlowSequence] : [...manageFlowSequence];
+  if (skipDelegate) sequence = sequence.filter(s => s !== StakeStep.DELEGATE);
   return sequence.length;
 }
 

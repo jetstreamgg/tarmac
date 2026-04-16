@@ -26,6 +26,7 @@ import { useScrollHint } from '@/modules/app/hooks/useScrollHint';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { type SelectionMethod } from '@/modules/analytics/constants';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
+import { useGeoConfig } from '@/modules/geo-config';
 
 interface WidgetNavigationProps {
   widgetContent: WidgetContent;
@@ -54,6 +55,7 @@ export function WidgetNavigation({
   const {
     linkedActionConfig: { showLinkedAction }
   } = useConfigContext();
+  const { isModuleEnabled } = useGeoConfig();
 
   // Scroll hint for vertical menu
   const { shouldShowHint, isOverflowing } = useScrollHint(tabsListRef, {
@@ -273,73 +275,81 @@ export function WidgetNavigation({
         asChild
         activationMode="manual"
       >
-        <motion.div layout transition={{ layout: { duration: 0 } }} className="lg:flex lg:w-full lg:flex-row">
+        <motion.div
+          layout
+          transition={{ layout: { duration: 0 } }}
+          className="lg:flex lg:h-full lg:w-full lg:flex-row"
+        >
           {/* Desktop vertical tabs, hidden on mobile and tablet */}
-          <div className="relative">
+          <div className="relative lg:h-full">
             <TooltipProvider>
               {/* Outer container with overflow-visible for tooltips */}
-              <div className={cn('overflow-visible', hideTabs && 'hidden', showDrawerMenu && 'hidden')}>
+              <div
+                className={cn('overflow-visible lg:h-full', hideTabs && 'hidden', showDrawerMenu && 'hidden')}
+              >
                 {/* Inner scrollable container */}
                 <TabsList
                   ref={tabsListRef}
                   className={cn(
-                    `scrollbar-hidden flex h-fit max-h-[calc(100vh-120px)] flex-col justify-start gap-2 py-1 pr-[10px] pl-1 ${isOverflowing ? 'overflow-y-scroll' : 'overflow-y-clip'}`
+                    `scrollbar-hidden flex h-fit max-h-full flex-col justify-start gap-2 py-1 pr-[10px] pl-1 ${isOverflowing ? 'overflow-y-scroll' : 'overflow-y-clip'}`
                   )}
                   data-testid="widget-navigation"
                 >
-                  {widgetContent.map((group, groupIndex) => (
+                  {widgetContent.map(group => (
                     <React.Fragment key={group.id}>
-                      {group.items.map(([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
-                        <div
-                          key={widgetIntent}
-                          className="flex grow basis-[15%] justify-center md:w-full md:basis-auto md:justify-start"
-                        >
-                          <WidgetMenuItemTooltip
-                            description={description}
-                            widgetIntent={widgetIntent}
-                            currentChainId={currentChainId}
-                            label={label as string}
-                            isMobile={isMobile}
-                            disabled={options?.disabled || false}
-                            isCurrentWidget={intent === widgetIntent}
-                            subItems={subItems}
+                      {group.items.map(
+                        ([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
+                          <div
+                            key={widgetIntent}
+                            className="flex grow basis-[15%] justify-center md:w-full md:basis-auto md:justify-start"
                           >
-                            <TabsTrigger
-                              ref={intent === widgetIntent ? activeTabRef : null}
-                              variant="icons"
-                              value={widgetIntent}
-                              className={cn(
-                                'text-textSecondary data-[state=active]:text-text relative h-[78px] w-full px-1',
-                                'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',
-                                'lg:data-[state=active]:text-text lg:data-[state=active]:bg-transparent',
-                                'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)]',
-                                !showDrawerMenu && intent === widgetIntent && verticalTabGlowClasses,
-                                showDrawerMenu &&
-                                  intent === widgetIntent &&
-                                  'before:opacity-100 hover:before:opacity-100'
-                              )}
+                            <WidgetMenuItemTooltip
+                              description={description}
+                              widgetIntent={widgetIntent}
+                              currentChainId={currentChainId}
+                              label={label as string}
+                              isMobile={isMobile}
                               disabled={options?.disabled || false}
+                              isCurrentWidget={intent === widgetIntent}
+                              subItems={subItems}
+                              forceMainnet={
+                                widgetIntent === Intent.CONVERT_INTENT && !isModuleEnabled('trade')
+                              }
                             >
-                              <div className="flex h-full flex-col items-center justify-center gap-1">
-                                {!isMobile && icon({ color: 'inherit' })}
-                                <Text variant="small" className="leading-4 text-inherit">
-                                  <Trans>{label}</Trans>
-                                </Text>
-                              </div>
-                              {comingSoon && (
-                                <Text
-                                  variant="small"
-                                  className="from-primary-start/100 to-primary-end/100 text-textSecondary absolute top-0 left-1/2 -mt-2 rounded-full bg-radial-(--gradient-position) px-1.5 py-0 lg:static lg:px-1.5 lg:py-0.5 lg:text-[10px]"
-                                >
-                                  <Trans>Soon</Trans>
-                                </Text>
-                              )}
-                            </TabsTrigger>
-                          </WidgetMenuItemTooltip>
-                        </div>
-                      ))}
-                      {groupIndex < widgetContent.length - 1 && !showDrawerMenu && (
-                        <div className="hidden lg:my-2 lg:block lg:h-px lg:w-full lg:border-b-1" />
+                              <TabsTrigger
+                                ref={intent === widgetIntent ? activeTabRef : null}
+                                variant="icons"
+                                value={widgetIntent}
+                                className={cn(
+                                  'text-textSecondary data-[state=active]:text-text relative h-[78px] w-full px-1',
+                                  'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',
+                                  'lg:data-[state=active]:text-text lg:data-[state=active]:bg-transparent',
+                                  'disabled:cursor-not-allowed disabled:text-[rgba(198,194,255,0.4)]',
+                                  !showDrawerMenu && intent === widgetIntent && verticalTabGlowClasses,
+                                  showDrawerMenu &&
+                                    intent === widgetIntent &&
+                                    'before:opacity-100 hover:before:opacity-100'
+                                )}
+                                disabled={options?.disabled || false}
+                              >
+                                <div className="flex h-full flex-col items-center justify-center gap-1">
+                                  {!isMobile && icon({ color: 'inherit' })}
+                                  <Text variant="small" className="leading-4 text-inherit">
+                                    <Trans>{label}</Trans>
+                                  </Text>
+                                </div>
+                                {comingSoon && (
+                                  <Text
+                                    variant="small"
+                                    className="from-primary-start/100 to-primary-end/100 text-textSecondary absolute top-0 left-1/2 -mt-2 rounded-full bg-radial-(--gradient-position) px-1.5 py-0 lg:static lg:px-1.5 lg:py-0.5 lg:text-[10px]"
+                                  >
+                                    <Trans>Soon</Trans>
+                                  </Text>
+                                )}
+                              </TabsTrigger>
+                            </WidgetMenuItemTooltip>
+                          </div>
+                        )
                       )}
                     </React.Fragment>
                   ))}

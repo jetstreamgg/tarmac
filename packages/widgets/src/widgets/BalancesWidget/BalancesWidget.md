@@ -23,7 +23,6 @@ function BalancesPage() {
         rightHeaderComponent={<CustomButton />}
         externalWidgetState={/* initial state */}
         onStateValidated={onStateValidated}
-        hideModuleBalances={false}
         enabled={true}
         actionForToken={actionForToken}
         rewardsCardUrl={rewardsCardUrl}
@@ -40,8 +39,6 @@ In addition to `WidgetProps`, `BalancesWidget` component also accepts the follow
 
 - `customTokenMap?: { [chainId: number]: TokenForChain[]; }`
   - A map of custom tokens to be used in the widget. If provided, this map will override the default list.
-- `hideModuleBalances?: boolean;`
-  - A boolean to hide or show module balances.
 - `actionForToken?: (symbol: string, balance: string, tokenChainId: number) => { label: string; actionUrl: string; image: string } | undefined;`
   - A function to define actions for a specific token.
 - `rewardsCardUrl?: string;`

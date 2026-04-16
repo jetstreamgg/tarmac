@@ -303,22 +303,35 @@ export { usePsmTradeHistory } from './psm/usePsmTradeHistory';
 export { usePsmLiquidity } from './psm/usePsmLiquidity';
 export { usePreviewSwapExactIn } from './psm/usePreviewSwapExactIn';
 export { usePreviewSwapExactOut } from './psm/usePreviewSwapExactOut';
+export { usdsPsmWrapperAbi, usdsPsmWrapperAddress, psmPocketAddress } from './psm/usdsPsmWrapper';
+export { useUsdsPsmWrapperSellGem } from './psm/useUsdsPsmWrapperSellGem';
+export { useUsdsPsmWrapperBuyGem } from './psm/useUsdsPsmWrapperBuyGem';
+export { useBatchUsdsPsmWrapperSellGem } from './psm/useBatchUsdsPsmWrapperSellGem';
+export { useBatchUsdsPsmWrapperBuyGem } from './psm/useBatchUsdsPsmWrapperBuyGem';
+export {
+  useUsdsPsmWrapperTin,
+  useUsdsPsmWrapperTout,
+  useUsdsPsmWrapperLive,
+  useUsdsPsmWrapperHalted
+} from './psm/useUsdsPsmWrapperReads';
+export { usePsmPocketBalance } from './psm/usePsmPocketBalance';
 
 export {
   TrustLevelEnum,
   ModuleEnum,
   TransactionTypeEnum,
   TRUST_LEVELS,
-  URL_MAKER_SUBGRAPH_MAINNET,
-  URL_MAKER_SUBGRAPH_TENDERLY,
+  URL_SKY_SUBGRAPH,
   ZERO_ADDRESS,
   ZERO_BYTES32
 } from './constants';
 
 export { SupportedCollateralTypes } from './vaults/vaults.constants';
 export { getIlkName } from './vaults/helpers';
+export { toError } from './helpers';
 
 export { OrderQuoteSideKind, gpv2VaultRelayerAddress } from './trade/constants';
+export { getAutoSlippage } from './trade/helpers';
 
 export {
   TOKENS,
@@ -340,7 +353,7 @@ export type {
   BatchWriteHookParams
 } from './hooks';
 export type { PaginationOption } from './filters';
-export type { RewardContract, RewardContractInfo, RewardContractChange } from './rewards/rewards';
+export type { RewardContract, RewardContractInfo } from './rewards/rewards';
 export type { SavingsHistory } from './savings/savings';
 export type { UpgradeHistory, UpgradeHistoryRow } from './upgrade/upgrade';
 export type { TradeRecord, OrderQuoteResponse } from './trade/trade';

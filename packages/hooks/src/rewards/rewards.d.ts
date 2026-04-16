@@ -9,6 +9,7 @@ export type RewardUserHistoryItem = HistoryItem & {
 
 export type RewardHistory = {
   id: string;
+  address: string;
   supplyInstances: {
     blockTimestamp: string;
     transactionHash: string;
@@ -34,42 +35,14 @@ export type AllRewardsUserHistoryResponse = {
   rewards: RewardHistory[];
 };
 
-type RewardContractChangeRaw = {
-  id: string;
-  blockTimestamp: string;
-  transactionHash: string;
-  amount: bigint;
-};
-
-export type RewardContractChange = {
-  id: string;
-  blockTimestamp: number;
-  transactionHash: string;
-  amount: bigint;
-};
-
 export type RewardContractInfoRaw = {
   totalSupplied: string;
   totalRewardsClaimed: string;
-  supplyInstances: RewardContractChangeRaw[];
-  withdrawals: RewardContractChangeRaw[];
-  rewardClaims: RewardContractChangeRaw[];
-  tvl: RewardContractChangeRaw[];
-  suppliers: {
-    user: string;
-  }[];
 };
-// parse the raw data from the subgraph into a more usable format
+
 export type RewardContractInfo = {
   totalSupplied: bigint;
   totalRewardsClaimed: bigint;
-  supplyInstances: RewardContractChange[];
-  withdrawals: RewardContractChange[];
-  rewardClaims: RewardContractChange[];
-  tvl: RewardContractChange[];
-  suppliers: {
-    user: string;
-  }[];
 };
 
 export type RewardContract = {

@@ -23,7 +23,7 @@ function makeBidirectional(
 }
 
 const targetTokensSort = (a: TokenForChain, b: TokenForChain): number => {
-  const order = ['USDS', 'sUSDS', 'SKY', 'stUSDS', 'SPK', 'DAI', 'MKR'];
+  const order = ['USDS', 'sUSDS', 'SKY', 'stUSDS', 'SPK', 'DAI'];
   const aIndex = order.indexOf(a.symbol);
   const bIndex = order.indexOf(b.symbol);
 
@@ -59,6 +59,8 @@ export function getAllowedTargetTokens(
 
 export function getQuoteErrorForType(errorType: HandledQuoteErrorTypes | string) {
   switch (errorType) {
+    case 'CowQuotesTemporarilyDisabled':
+      return 'Trades via CoW are temporarily disabled';
     case HandledQuoteErrorTypes.NoLiquidity:
       return 'Request declined. Either you’ve entered an amount that does not meet the minimum required to trade, or there is insufficient liquidity available to process the amount you’ve entered.';
     case HandledQuoteErrorTypes.SellAmountDoesNotCoverFee:
