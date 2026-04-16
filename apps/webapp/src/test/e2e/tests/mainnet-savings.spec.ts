@@ -28,6 +28,41 @@ const getSuppliedBalance = async (page: Page): Promise<number> => {
   return parseBalanceText(balanceText);
 };
 
+// Read the value side of a row in the widget's transaction overview, e.g. for
+// label "You will supply" on the withdraw tab, returns the numeric sUSDS amount
+// displayed. Tolerates compact formatting like "1.23K" / "4.56M".
+//
+// sUSDS rows load asynchronously from an on-chain `previewDeposit` / `previewWithdraw`
+// call and render a <Skeleton /> placeholder until the result lands, so we use
+// Playwright's `toContainText` to wait for the real value before parsing.
+const getOverviewRowAmount = async (
+  page: Page,
+  label: string,
+  tokenSymbol: 'USDS' | 'sUSDS'
+): Promise<number> => {
+  const row = page.locator('div.flex.justify-between', { hasText: label }).first();
+  // Wait until the token symbol appears on the value side. For sUSDS this waits
+  // out the preview RPC; for USDS it's essentially instant. We match a digit + symbol
+  // (rather than just the symbol) so that "Your Savings USDS balance" style rows
+  // with two USDS values still parse correctly once loaded.
+  await expect(row).toContainText(new RegExp(`\\d\\s*[KMB]?\\s*${tokenSymbol}(?!\\w)`), {
+    timeout: 10_000
+  });
+  const text = await row.innerText();
+  const match = text.match(
+    new RegExp(`([\\d,.]+)\\s*([KMB])?\\s*${tokenSymbol}(?!\\w)`)
+  );
+  if (!match) {
+    throw new Error(`Could not parse ${tokenSymbol} amount for row "${label}" (got: ${text})`);
+  }
+  let value = parseFloat(match[1].replace(/,/g, ''));
+  const suffix = match[2];
+  if (suffix === 'K') value *= 1e3;
+  else if (suffix === 'M') value *= 1e6;
+  else if (suffix === 'B') value *= 1e9;
+  return value;
+};
+
 test('Supply and withdraw from Savings', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
@@ -57,6 +92,78 @@ test('Supply and withdraw from Savings', async ({ isolatedPage }) => {
     isolatedPage.getByText("You've withdrawn 0.01 USDS from the Sky Savings Rate module")
   ).toBeVisible();
   //TODO: why is the finish button disabled?
+  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+});
+
+// Regression test for PR #946: the Savings withdraw tab was calling
+// `previewRedeem(amount)` — which interprets `amount` as sUSDS shares and
+// returns `assets * chi` — instead of `previewWithdraw(amount)` which takes
+// USDS assets and returns shares. This caused the "You will supply: X sUSDS"
+// row in the transaction overview to be inflated by a factor of chi² relative
+// to the correct value. Display-only bug; the actual `sUsds.withdraw(amount)`
+// call was unaffected. The invariant `displayed sUSDS < displayed USDS` is
+// exactly what fails under the bug, because the bug multiplies instead of
+// divides by chi (which is always > 1 under positive SSR).
+//
+// Amounts chosen so that correct vs buggy values render as visibly different
+// strings under the widget's `formatBigInt({ maxDecimals: 2 })` formatting.
+// At chi ≈ 1.09, 10 USDS supply renders as ~9.17 (correct) vs ~10.93 (buggy);
+// 5 USDS withdraw renders as ~4.58 (correct) vs ~5.47 (buggy).
+test('Savings transaction overview shows correct sUSDS preview values', async ({
+  isolatedPage
+}) => {
+  await isolatedPage.goto('/');
+  await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
+  await isolatedPage.waitForTimeout(1000);
+  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+
+  // Supply tab: enter 10 USDS and verify both rows of the transaction overview.
+  await isolatedPage.getByTestId('supply-input-savings').click();
+  await isolatedPage.getByTestId('supply-input-savings').fill('10');
+  await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+
+  const supplyUsds = await getOverviewRowAmount(isolatedPage, 'You will supply', 'USDS');
+  const supplySusds = await getOverviewRowAmount(isolatedPage, 'You will receive', 'sUSDS');
+  expect(supplyUsds).toBeCloseTo(10, 1);
+  // Core invariant: depositing N USDS must yield fewer than N sUSDS at any
+  // positive accumulated rate (chi > 1). Calling `previewMint` instead of
+  // `previewDeposit` on the ERC-4626 vault would flip this.
+  expect(supplySusds).toBeLessThan(supplyUsds);
+  // Sanity bound — at current SSR levels chi is ~1.09, so shares should be
+  // within roughly 30% of assets. Guards against "0" or absurd values.
+  expect(supplySusds).toBeGreaterThan(supplyUsds * 0.7);
+
+  // Execute the supply so the withdraw tab has a savings balance to draw from.
+  await performAction(isolatedPage, 'Supply');
+  await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
+
+  // Withdraw tab: enter 5 USDS and verify both rows. This is the exact
+  // scenario regressed by PR #946.
+  await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
+  await isolatedPage.getByTestId('withdraw-input-savings').click();
+  await isolatedPage.getByTestId('withdraw-input-savings').fill('5');
+  await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
+
+  const withdrawUsds = await getOverviewRowAmount(isolatedPage, 'You will withdraw', 'USDS');
+  const withdrawSusds = await getOverviewRowAmount(isolatedPage, 'You will supply', 'sUSDS');
+  expect(withdrawUsds).toBeCloseTo(5, 1);
+  // Same invariant on the withdraw side: burning shares for N USDS of assets
+  // requires fewer than N sUSDS at chi > 1. `previewRedeem(amount)` would
+  // return `amount * chi`, flipping this.
+  expect(withdrawSusds).toBeLessThan(withdrawUsds);
+  expect(withdrawSusds).toBeGreaterThan(withdrawUsds * 0.7);
+
+  // Execute the withdraw at the same 5 USDS we just asserted on so the test
+  // finishes the flow it started rather than leaving the widget mid-operation.
+  // We deliberately avoid the 100% button here: we can't assume the account
+  // started with a zero savings balance, and 100% would drain any pre-existing
+  // position on top of what this test supplied. We also avoid trying to
+  // withdraw exactly what we supplied (10) — ERC-4626 deposit rounds shares
+  // down, so savingsBalance-in-USDS after a 10 USDS deposit is often a few wei
+  // short of 10 and would fail the widget's balance check. Following the
+  // pattern used by `Supply and withdraw from Savings` and other tests in this
+  // file, we withdraw less than we supplied.
+  await performAction(isolatedPage, 'Withdraw');
   await isolatedPage.getByRole('button', { name: 'Back to Savings' }).click();
 });
 

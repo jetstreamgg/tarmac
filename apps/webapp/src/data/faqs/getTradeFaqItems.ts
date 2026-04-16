@@ -34,7 +34,7 @@ const generalFaqItems = [
     question: 'What is a trade?',
     answer: `A trade is the direct exchange of one cryptocurrency token for another. Trading can occur on decentralized exchanges (DEXs) and centralized exchanges (CEXs).
 
-Eligible Sky.money web app users can trade tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.finance/#/1/swap/WETH). The exact trade route is determined by CoW Swap and is not influenced by Sky.money or the Sky Protocol. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
+Eligible Sky.money web app users can trade tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.fi/#/1/swap/WETH). The exact trade route is determined by CoW Swap and is not influenced by Sky.money or the Sky Protocol. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
 Note that price slippage—a change in price between the time of the trade order and its execution on the blockchain—can occur due to market dynamics. When you trade via the Sky.money web app, you can set your slippage tolerance level.`,
     index: 0
@@ -53,7 +53,7 @@ Depending on your location and other criteria, you can use the Sky.money web app
   },
   {
     question: 'Is trading using Sky.money free?',
-    answer: `Accessing the Sky.money web app is free. Trading, however, may involve a fee imposed by the third-party decentralized exchange (i.e., [CoW Swap](https://swap.cow.finance/#/1/swap/WETH)) integrated with the non-custodial Sky Protocol that is used to make the trade. In addition, you will likely pay a blockchain network transaction fee called a [gas fee](#tooltip-gas-fee), which is neither controlled, imposed nor received by Sky.money or the Sky Protocol. This fee is calculated based on current Ethereum network demand and the amount of gas required to process your transaction.
+    answer: `Accessing the Sky.money web app is free. Trading, however, may involve a fee imposed by the third-party decentralized exchange (i.e., [CoW Swap](https://swap.cow.fi/#/1/swap/WETH)) integrated with the non-custodial Sky Protocol that is used to make the trade. In addition, you will likely pay a blockchain network transaction fee called a [gas fee](#tooltip-gas-fee), which is neither controlled, imposed nor received by Sky.money or the Sky Protocol. This fee is calculated based on current Ethereum network demand and the amount of gas required to process your transaction.
 
 Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.`,
     index: 2
@@ -115,7 +115,7 @@ Available tokens may evolve over time as new trading pairs are added. Please see
   },
   {
     question: 'How does trading on supported L2s differ from trading on Ethereum?',
-    answer: `On Ethereum Mainnet, Base, and Arbitrum, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.finance/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
+    answer: `On Ethereum Mainnet, Base, and Arbitrum, the Sky.money web app features a native integration of [CoW Swap](https://swap.cow.fi/#/1/swap/WETH), a third-party decentralized exchange (DEX) aggregator. Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
 On Optimism and Unichain, converting between tokens is made possible through a Peg Stability Module [(PSM)](#tooltip-psm).`,
     index: 1

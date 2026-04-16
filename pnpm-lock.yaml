@@ -311,7 +311,7 @@ overrides:
   esbuild@<=0.24.2: ^0.25.0
   '@babel/runtime@7.26.7': 7.26.10
   axios@>=1.0.0 <1.15.0: 1.15.0
-  axios@0.30.4: 0.21.4
+  '@json-rpc-tools/provider>axios@^0.21.0': 1.15.0
 
 importers:
 
@@ -611,7 +611,7 @@ importers:
         version: link:../utils
       '@wagmi/core':
         specifier: '>=2.12.0'
-        version: 3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
+        version: 3.4.1(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
       graphql:
         specifier: 'catalog:'
         version: 16.13.2
@@ -3848,21 +3848,6 @@ packages:
       typescript:
         optional: true
 
-  '@wagmi/core@3.4.0':
-    resolution: {integrity: sha512-EU5gDsUp5t7+cuLv12/L8hfyWfCIKsBNiiBqpOqxZJxvAcAiQk4xFe2jMgaQPqApc3Omvxrk032M8AQ4N0cQeg==}
-    peerDependencies:
-      '@tanstack/query-core': '>=5.0.0'
-      ox: '>=0.11.1'
-      typescript: '>=5.7.3'
-      viem: 2.x
-    peerDependenciesMeta:
-      '@tanstack/query-core':
-        optional: true
-      ox:
-        optional: true
-      typescript:
-        optional: true
-
   '@wagmi/core@3.4.1':
     resolution: {integrity: sha512-sEiwTERUmmxYwcvTEmKfN8ERDftt7JwutSAwa8RRAjmtJblUNBJp5VcPEzgQ+NPfnSO9Kq05OBSKSiocLNhhOQ==}
     peerDependencies:
@@ -4166,9 +4151,6 @@ packages:
     resolution: {integrity: sha512-aR99oXhpEDGo0UuAlYcn2iGRds30k366Zfa05XWScR9QaQD4JYiP3/1Qt1u7YlefUOK+cn0CcwoL1oefavQUlQ==}
     peerDependencies:
       axios: 1.15.0
-
-  axios@0.21.4:
-    resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
 
   axios@1.15.0:
     resolution: {integrity: sha512-wWyJDlAatxk30ZJer+GeCWS209sA42X+N5jU2jy6oHTp7ufw8uzUTVFBX9+wTfAlhiJXGS0Bq7X6efruWjuK9Q==}
@@ -5334,8 +5316,8 @@ packages:
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
-  hono@4.10.4:
-    resolution: {integrity: sha512-YG/fo7zlU3KwrBL5vDpWKisLYiM+nVstBQqfr7gCPbSYURnNEP9BDxEMz8KfsDR9JX0lJWDRNc6nXX31v7ZEyg==}
+  hono@4.12.12:
+    resolution: {integrity: sha512-p1JfQMKaceuCbpJKAPKVqyqviZdS0eUxH9v82oWo1kb9xjQ5wA6iP3FNVAPDFlz5/p7d45lO+BpSk1tuSZMF4Q==}
     engines: {node: '>=16.9.0'}
 
   html-escaper@2.0.2:
@@ -8809,7 +8791,7 @@ snapshots:
   '@json-rpc-tools/provider@1.7.6(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
       '@json-rpc-tools/utils': 1.7.6
-      axios: 0.21.4
+      axios: 1.15.0
       safe-json-utils: 1.1.1
       ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
@@ -11625,22 +11607,6 @@ snapshots:
       porto: 0.2.37(@tanstack/react-query@5.90.21(react@19.2.4))(@types/react@19.2.7)(@wagmi/core@3.4.1(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)))(immer@9.0.21)(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(wagmi@3.6.0)
       typescript: 5.9.3
 
-  '@wagmi/core@3.4.0(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
-    dependencies:
-      eventemitter3: 5.0.1
-      mipd: 0.0.7(typescript@5.9.3)
-      viem: 2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)
-      zustand: 5.0.0(@types/react@19.2.7)(immer@9.0.21)(react@19.2.4)(use-sync-external-store@1.5.0(react@19.2.4))
-    optionalDependencies:
-      '@tanstack/query-core': 5.90.20
-      ox: 0.14.7(typescript@5.9.3)(zod@4.3.6)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - '@types/react'
-      - immer
-      - react
-      - use-sync-external-store
-
   '@wagmi/core@3.4.1(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.4.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))':
     dependencies:
       eventemitter3: 5.0.1
@@ -12431,12 +12397,6 @@ snapshots:
     dependencies:
       axios: 1.15.0
       is-retry-allowed: 2.2.0
-
-  axios@0.21.4:
-    dependencies:
-      follow-redirects: 1.15.11
-    transitivePeerDependencies:
-      - debug
 
   axios@1.15.0:
     dependencies:
@@ -13823,7 +13783,7 @@ snapshots:
       minimalistic-assert: 1.0.1
       minimalistic-crypto-utils: 1.0.1
 
-  hono@4.10.4: {}
+  hono@4.12.12: {}
 
   html-escaper@2.0.2: {}
 
@@ -15208,7 +15168,7 @@ snapshots:
   porto@0.2.37(@tanstack/react-query@5.90.21(react@19.2.4))(@types/react@19.2.7)(@wagmi/core@3.4.1(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)))(immer@9.0.21)(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(wagmi@3.6.0):
     dependencies:
       '@wagmi/core': 3.4.1(@tanstack/query-core@5.90.20)(@types/react@19.2.7)(immer@9.0.21)(ox@0.14.7(typescript@5.9.3)(zod@4.3.6))(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.4))(viem@2.47.6(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))
-      hono: 4.10.4
+      hono: 4.12.12
       idb-keyval: 6.2.2
       mipd: 0.0.7(typescript@5.9.3)
       ox: 0.9.6(typescript@5.9.3)(zod@4.3.6)

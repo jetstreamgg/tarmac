@@ -90,7 +90,7 @@ USDS is also currently available on networks other than Ethereum Mainnet, includ
   },
   {
     question: 'Can I trade sUSDS on the open market?',
-    answer: `Yes, eligible sUSDS holders can access the Sky.money web app to trade the tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.finance/#/1/swap/WETH). sUSDS holders are also free to access any other protocol or exchange that supports sUSDS trading; however, users do so at their own risk. Sky.money is not responsible for any losses or damages incurred while using such third-party platforms.
+    answer: `Yes, eligible sUSDS holders can access the Sky.money web app to trade the tokens via an API integration with the third-party decentralized exchange [CoW Swap](https://swap.cow.fi/#/1/swap/WETH). sUSDS holders are also free to access any other protocol or exchange that supports sUSDS trading; however, users do so at their own risk. Sky.money is not responsible for any losses or damages incurred while using such third-party platforms.
 
 Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.`,
     index: 7
