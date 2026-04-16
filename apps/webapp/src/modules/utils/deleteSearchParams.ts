@@ -5,12 +5,7 @@ export const deleteSearchParams = (searchParams: URLSearchParams): URLSearchPara
 
   searchParams.forEach((_, key) => {
     // Collect keys to delete after iteration to avoid potential issues during modification
-    if (
-      QueryParams.Details !== key &&
-      QueryParams.Widget !== key &&
-      QueryParams.Network !== key &&
-      QueryParams.Chat !== key
-    ) {
+    if (QueryParams.Details !== key && QueryParams.Widget !== key && QueryParams.Network !== key) {
       keysToDelete.push(key);
     }
   });

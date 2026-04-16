@@ -2,7 +2,6 @@ import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -22,7 +21,6 @@ import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
-  const { setShouldDisableActionButtons } = useChatContext();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const {
     selectedRewardContract,
@@ -72,8 +70,6 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow
     if (widgetState.flow) {
