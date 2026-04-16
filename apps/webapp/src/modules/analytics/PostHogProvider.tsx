@@ -84,6 +84,13 @@ export function initializePostHogIfNeeded(forceAccepted = false) {
 
   posthog.init(POSTHOG_KEY, {
     api_host: POSTHOG_HOST,
+
+    // PERSON PROFILES
+    // Accepted users: 'always' creates person profiles with browser/OS properties.
+    // Pending users: 'identified_only' defers profile creation until consent is granted.
+    // Upgraded to 'always' at runtime in applyPostHogConsent() when user accepts.
+    person_profiles: hasAccepted ? 'always' : 'identified_only',
+
     capture_pageview: 'history_change',
     capture_pageleave: true,
     persistence: hasAccepted ? 'localStorage+cookie' : 'memory',
@@ -128,7 +135,7 @@ export function applyPostHogConsent(enabled: boolean) {
     initializePostHogIfNeeded(true);
     // Upgrade from memory to persistent storage and opt in.
     // The existing in-memory distinct_id carries over so the session continues seamlessly.
-    posthog.set_config({ persistence: 'localStorage+cookie' });
+    posthog.set_config({ persistence: 'localStorage+cookie', person_profiles: 'always' });
     posthog.opt_in_capturing();
     posthog.register({ app_name: 'app' });
   } else {
@@ -138,7 +145,7 @@ export function applyPostHogConsent(enabled: boolean) {
     // reset() clears all stored data and generates a fresh anonymous distinct_id.
     posthog.reset();
     // Switch to memory persistence — no cookies, localStorage, or sessionStorage.
-    posthog.set_config({ persistence: 'memory' });
+    posthog.set_config({ persistence: 'memory', person_profiles: 'identified_only' });
     posthog.opt_in_capturing();
     posthog.register({ app_name: 'app' });
     // Clear bootstrap sessionStorage so rejected users aren't re-bootstrapped on refresh
