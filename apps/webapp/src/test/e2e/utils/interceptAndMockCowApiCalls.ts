@@ -1,6 +1,6 @@
 import { Page, Route, Request } from '@playwright/test';
 
-const BASE_URL = 'https://api.cow.finance/**/api/v1';
+const BASE_URL = 'https://api.cow.fi/**/api/v1';
 
 export const interceptAndMockCowApiCalls = async (page: Page) => {
   await page.route(BASE_URL + '/quote', mockCowQuoteApiResponses);

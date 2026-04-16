@@ -9,8 +9,7 @@ export const defaultGeoConfigContext: GeoConfigContextValue = {
   isModuleEnabled: () => false,
   getModuleRestrictionReason: () => 'Loading...',
   isRegionRestricted: true,
-  isChatbotEnabled: false,
-  chatbotRestrictionMessage: undefined
+  isCookieBannerRequired: true
 };
 
 export const GeoConfigContext = createContext<GeoConfigContextValue>(defaultGeoConfigContext);

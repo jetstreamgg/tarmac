@@ -16,7 +16,6 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -27,7 +26,6 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('savings', chainId);
@@ -46,8 +44,6 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SAVINGS_INTENT]) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update amount in URL if provided and not zero
     if (originAmount && originAmount !== '0') {

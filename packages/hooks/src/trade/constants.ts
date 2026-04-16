@@ -9,9 +9,9 @@ export enum TradeSide {
 }
 
 const COW_API_ENDPOINT = {
-  [mainnet.id]: 'https://api.cow.finance/mainnet',
-  [base.id]: 'https://api.cow.finance/base',
-  [arbitrum.id]: 'https://api.cow.finance/arbitrum_one'
+  [mainnet.id]: 'https://api.cow.fi/mainnet',
+  [base.id]: 'https://api.cow.fi/base',
+  [arbitrum.id]: 'https://api.cow.fi/arbitrum_one'
 } as const;
 
 export enum OrderQuoteSideKind {

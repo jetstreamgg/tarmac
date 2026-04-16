@@ -8,11 +8,11 @@ export function getCowExplorerLink(chainId: number, orderId: string) {
 function getCowPrefix(id: number) {
   switch (id) {
     case chainId.base:
-      return 'explorer.cow.finance/base';
+      return 'explorer.cow.fi/base';
     case chainId.arbitrum:
-      return 'explorer.cow.finance/arb1';
+      return 'explorer.cow.fi/arb1';
     case chainId.mainnet:
     default:
-      return 'explorer.cow.finance';
+      return 'explorer.cow.fi';
   }
 }

@@ -61,7 +61,6 @@ export default defineConfig({
         '**/landing.spec.ts',
         '**/upgrade.spec.ts',
         // '**/unstake-repay.spec.ts',
-        '**/chatbot.spec.ts',
         '**/pane-visibility.spec.ts',
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
