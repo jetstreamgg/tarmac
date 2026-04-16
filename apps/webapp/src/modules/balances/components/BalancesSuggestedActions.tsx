@@ -347,7 +347,7 @@ export function BalancesSuggestedActions({
 
       setSearchParams(prev => {
         const next = new URLSearchParams();
-        [QueryParams.Locale, QueryParams.Details, QueryParams.Chat].forEach(param => {
+        [QueryParams.Locale, QueryParams.Details].forEach(param => {
           const value = prev.get(param);
           if (value !== null) next.set(param, value);
         });

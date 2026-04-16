@@ -41,11 +41,13 @@ import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
 ### Props
 
 ```ts
-type Props = ReadHookParams<VpnResponse> & { authUrl: string };
+type Props = ReadHookParams<VpnResponse> & { authUrl: string; skip?: boolean };
 ```
 
 - `authUrl`: `string`
   - The URL to use for authentication.
+- `skip`: `boolean` (optional)
+  - When `true`, disables the VPN check entirely. Defaults to `false`.
 - `refetchInterval`: `number`
   - Interval in milliseconds to refetch the VPN status. Defaults to 60000 (60 seconds).
 - `options`: `ReadHookParams<VpnResponse>`
