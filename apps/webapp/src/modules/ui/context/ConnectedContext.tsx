@@ -52,8 +52,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [termsCheckError, setTermsCheckError] = useState(false);
   const [enabled, setEnabled] = useState(false);
 
-  const skipAuthCheck =
-    (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
+  const fullAuthBypass = !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
+  const skipVpnCheck = fullAuthBypass || isPrivateDeployment();
 
   const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
   const {
@@ -66,7 +66,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     data: vpnData,
     isLoading: vpnIsLoading,
     error: vpnError
-  } = useVpnCheck({ authUrl, skip: skipAuthCheck });
+  } = useVpnCheck({ authUrl, skip: skipVpnCheck });
 
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
@@ -125,7 +125,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [isConnected, address, checkTermsAcceptance]);
 
   useEffect(() => {
-    if (skipAuthCheck) {
+    if (fullAuthBypass) {
       setHasAcceptedTerms(true);
       return;
     }
@@ -135,7 +135,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setHasAcceptedTerms(false);
       setTermsCheckError(false);
     }
-  }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
+  }, [isConnected, address, fullAuthBypass, checkTermsAcceptance]);
 
   const isAllowed = useMemo(
     () =>
@@ -154,11 +154,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     ]
   );
 
-  const isAuthorized = isAllowed || skipAuthCheck;
+  const isAuthorized = isAllowed || fullAuthBypass;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
 
   useEffect(() => {
-    if (skipAuthCheck || vpnIsLoading || vpnTrackedRef.current) return;
+    if (skipVpnCheck || vpnIsLoading || vpnTrackedRef.current) return;
     if (!vpnData && !vpnError) return;
     vpnTrackedRef.current = true;
     const result = vpnError
@@ -176,7 +176,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       countryCode: vpnData?.countryCode ?? null,
       result
     });
-  }, [skipAuthCheck, vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
+  }, [skipVpnCheck, vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
 
   return (
     <ConnectedContext.Provider
