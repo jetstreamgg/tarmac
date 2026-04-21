@@ -73,17 +73,12 @@ export function initSentry(): void {
       }
 
       // Drop WalletConnect relay WebSocket errors caused by client clock skew.
-      // These are unactionable — the relay server rejects JWTs when the user's
-      // system clock drifts beyond the leeway, triggering a reconnect storm.
-      // We scope the filter to WalletConnect frames + "not yet valid" to avoid
-      // masking genuine JWT issues from other parts of the stack.
+      // The relay server rejects JWTs when the user's system clock drifts
+      // beyond the leeway, triggering a reconnect storm — not actionable.
       const firstException = event.exception?.values?.[0];
       const message = firstException?.value ?? '';
-      const frames = firstException?.stacktrace?.frames ?? [];
-      const isWalletConnectOrigin = frames.some(f => f.filename?.includes('@walletconnect/'));
       if (
-        isWalletConnectOrigin &&
-        message.includes('WebSocket connection closed abnormally') &&
+        message.includes('WebSocket connection closed abnormally with code: 3000') &&
         message.includes('JWT Token is not yet valid')
       ) {
         return null;
