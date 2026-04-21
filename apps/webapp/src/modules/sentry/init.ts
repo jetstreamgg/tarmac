@@ -44,7 +44,14 @@ export function initSentry(): void {
       // not actionable.
       /Failed to execute 'removeChild' on 'Node'/,
       /Failed to execute 'insertBefore' on 'Node'/,
-      /The object can not be found here/
+      /The object can not be found here/,
+      // WalletConnect persists sessions to IndexedDB (a browser storage API)
+      // via the idb-keyval library. Some iOS in-app WebViews (Twitter, Apple
+      // Mail, etc.) don't expose the IndexedDB global, so init throws an
+      // unhandled rejection. Safe to drop — WalletConnect can't reliably
+      // deep-link to wallets from those WebViews anyway (WEBAPP-1Z).
+      /Can't find variable: indexedDB/,
+      /indexedDB is not defined/
     ],
     integrations: [
       Sentry.thirdPartyErrorFilterIntegration({
