@@ -34,7 +34,6 @@ export default ({ mode }: { mode: modeEnum }) => {
     process.env.SENTRY_PROJECT
   );
 
-  const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
@@ -49,7 +48,8 @@ export default ({ mode }: { mode: modeEnum }) => {
     img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com https://e.sky.money;
     font-src 'self';
     connect-src 'self'
-      ${PROXY_ORIGIN}
+      https://proxy.sky.money
+      https://staging-proxy.sky.money
       ${RPC_PROVIDER_TENDERLY}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
