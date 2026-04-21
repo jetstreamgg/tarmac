@@ -30,7 +30,7 @@ export enum TrustLevelEnum {
   TWO
 }
 
-export const URL_SKY_SUBGRAPH = 'https://indexer.hyperindex.xyz/e2d9944/v1/graphql';
+export const URL_SKY_SUBGRAPH = 'https://proxy.sky.money/indexer';
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;

@@ -1,10 +1,3 @@
-import {
-  STAGING_URL_SKY_SUBGRAPH,
-  PROD_URL_SKY_SUBGRAPH,
-  IS_STAGING_ENV,
-  IS_DEVELOPMENT_ENV
-} from '@/lib/constants';
-
 export function useSubgraphUrl() {
-  return IS_STAGING_ENV || IS_DEVELOPMENT_ENV ? STAGING_URL_SKY_SUBGRAPH : PROD_URL_SKY_SUBGRAPH;
+  return `${import.meta.env.VITE_PROXY_ORIGIN || ''}/indexer`;
 }
