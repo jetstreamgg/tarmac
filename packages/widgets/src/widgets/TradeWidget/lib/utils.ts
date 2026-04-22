@@ -42,7 +42,7 @@ export function getAllowedTargetTokens(
   targetTokenList: TokenForChain[],
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>
 ) {
-  const sortedTargetTokenList = targetTokenList.toSorted(targetTokensSort);
+  const sortedTargetTokenList = [...targetTokenList].sort(targetTokensSort);
 
   if (!disallowedPairs || !inputTokenSymbol) return sortedTargetTokenList;
 

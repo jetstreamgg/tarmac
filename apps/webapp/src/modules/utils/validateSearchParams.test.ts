@@ -113,3 +113,22 @@ describe('validateSearchParams for convert psm', () => {
     expect(params.has('target_token')).toBe(false);
   });
 });
+
+describe('validateSearchParams geo overrides (non-production)', () => {
+  it('preserves valid geo override params and strips unrelated unknown params', () => {
+    const params = validateParams('geo_mode=restricted&geo_module_savings=true&foo=bar');
+    expect(params.get('geo_mode')).toBe('restricted');
+    expect(params.get('geo_module_savings')).toBe('true');
+    expect(params.has('foo')).toBe(false);
+  });
+
+  it('strips geo_mode with an invalid value', () => {
+    const params = validateParams('geo_mode=invalid');
+    expect(params.has('geo_mode')).toBe(false);
+  });
+
+  it('strips geo_module_* with an invalid value', () => {
+    const params = validateParams('geo_module_savings=maybe');
+    expect(params.has('geo_module_savings')).toBe(false);
+  });
+});
