@@ -5,9 +5,11 @@ import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
 import { FALLBACK_CONFIG } from '../constants';
 import { applyGeoOverrides } from '../applyGeoOverrides';
 import { router } from '@/pages/router';
+import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 
-// When true, bypass geo-restrictions entirely (for local development)
-const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true';
+// When true, bypass geo-restrictions entirely (for local development or
+// Cloudflare Access-gated private deployments like app-private.sky.money)
+const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true' || isPrivateDeployment();
 
 // Endpoint URL - use staging for now, will be configured via env var
 const GEO_CONFIG_URL = import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.sky.money/geo-config';
@@ -46,6 +48,7 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
   } = useQuery<GeoConfig>({
     queryKey: ['geo-config'],
     queryFn: fetchGeoConfig,
+    enabled: !GEO_BYPASS,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
@@ -86,7 +89,11 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
       error: error as Error | null,
       isModuleEnabled: GEO_BYPASS ? () => true : isModuleEnabled,
       getModuleRestrictionReason: GEO_BYPASS ? () => undefined : getModuleRestrictionReason,
-      isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (effectiveConfig?.isRegionRestricted ?? true),
+      isRegionRestricted: GEO_BYPASS
+        ? false
+        : isLoading
+          ? true
+          : (effectiveConfig?.isRegionRestricted ?? true),
       isCookieBannerRequired: isLoading ? true : (effectiveConfig?.isCookiesBannerRequired ?? true)
     }),
     [effectiveConfig, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
