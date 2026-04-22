@@ -104,18 +104,22 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
+  "//pnpm.overrides": [
+    "Conventions for entries below:",
+    "1. Prefer range-scoped selectors (pkg@<patched) so the override self-expires once upstreams publish clean versions.",
+    "2. On the replacement side, use a tilde range (~X.Y.Z) pinned to the same minor whenever multiple majors of the package may coexist in the tree - an unbounded >=X.Y.Z can silently bump older-major consumers to a newer major via pnpm's dedup (see picomatch/bn.js/glob)."
+  ],
   "pnpm": {
     "overrides": {
       "esbuild@<=0.24.2": "^0.25.0",
       "@babel/runtime@7.26.7": "7.26.10",
       "axios@>=1.0.0 <1.15.0": "1.15.0",
       "@json-rpc-tools/provider>axios@^0.21.0": "1.15.0",
-      "protobufjs@<7.5.5": "^7.5.5",
-      "dompurify@<3.4.0": ">=3.4.0",
-      "lodash@<4.18.0": ">=4.18.0",
-      "defu@<6.1.5": ">=6.1.5",
-      "h3@<1.15.9": ">=1.15.9",
-      "vite@>=7.0.0 <7.3.2": "^7.3.2"
+      "protobufjs@<7.5.5": "~7.5.5",
+      "dompurify@<3.4.0": "~3.4.0",
+      "lodash@<4.18.0": "~4.18.0",
+      "defu@<6.1.5": "~6.1.5",
+      "h3@<1.15.9": "~1.15.9"
     }
   },
   "packageManager": "pnpm@10.17.0"
