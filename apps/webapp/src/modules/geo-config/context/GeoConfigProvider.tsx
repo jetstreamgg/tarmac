@@ -1,7 +1,10 @@
-import { ReactElement, ReactNode, useCallback, useMemo } from 'react';
+import { ReactElement, ReactNode, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { GeoConfigContext } from './GeoConfigContext';
 import { GeoConfig, GeoConfigContextValue, ModuleId } from '../types';
+import { FALLBACK_CONFIG } from '../constants';
+import { applyGeoOverrides } from '../applyGeoOverrides';
+import { router } from '@/pages/router';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 
 // When true, bypass geo-restrictions entirely (for local development or
@@ -10,24 +13,6 @@ const GEO_BYPASS = import.meta.env.VITE_GEO_BYPASS === 'true' || isPrivateDeploy
 
 // Endpoint URL - use staging for now, will be configured via env var
 const GEO_CONFIG_URL = import.meta.env.VITE_GEO_CONFIG_URL || 'https://staging-api.sky.money/geo-config';
-
-// Restrictive fallback config - block everything that might be restricted
-const FALLBACK_CONFIG: GeoConfig = {
-  version: '0.0.0',
-  countryCode: 'XX',
-  generatedAt: new Date().toISOString(),
-  cacheTtl: 60,
-  isRegionRestricted: true,
-  modules: {
-    savings: { enabled: false, restrictionReason: 'Unable to verify region' },
-    rewards: { enabled: false, restrictionReason: 'Unable to verify region' },
-    expert: { enabled: false, restrictionReason: 'Unable to verify region' },
-    trade: { enabled: true }, // Trade is not restricted
-    upgrade: { enabled: true },
-    seal: { enabled: true }
-  },
-  isCookiesBannerRequired: true
-};
 
 async function fetchGeoConfig(): Promise<GeoConfig> {
   const controller = new AbortController();
@@ -51,6 +36,10 @@ async function fetchGeoConfig(): Promise<GeoConfig> {
   }
 }
 
+function getGeoOverrideSearch(): string {
+  return router.state.location.search || (typeof window !== 'undefined' ? window.location.search : '');
+}
+
 export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const {
     data: config,
@@ -66,33 +55,48 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)
   });
 
+  const locationSearch = useSyncExternalStore(
+    onStoreChange => router.subscribe(() => onStoreChange()),
+    getGeoOverrideSearch,
+    getGeoOverrideSearch
+  );
+
+  const effectiveConfig = useMemo(
+    () => (config ? applyGeoOverrides(config, locationSearch) : undefined),
+    [config, locationSearch]
+  );
+
   const isModuleEnabled = useCallback(
     (moduleId: ModuleId): boolean => {
       if (isLoading) return false; // Restrictive while loading
-      return config?.modules[moduleId]?.enabled ?? false;
+      return effectiveConfig?.modules[moduleId]?.enabled ?? false;
     },
-    [config, isLoading]
+    [effectiveConfig, isLoading]
   );
 
   const getModuleRestrictionReason = useCallback(
     (moduleId: ModuleId): string | undefined => {
       if (isLoading) return 'Loading...';
-      return config?.modules[moduleId]?.restrictionReason;
+      return effectiveConfig?.modules[moduleId]?.restrictionReason;
     },
-    [config, isLoading]
+    [effectiveConfig, isLoading]
   );
 
   const value: GeoConfigContextValue = useMemo(
     () => ({
-      config,
+      config: effectiveConfig,
       isLoading,
       error: error as Error | null,
       isModuleEnabled: GEO_BYPASS ? () => true : isModuleEnabled,
       getModuleRestrictionReason: GEO_BYPASS ? () => undefined : getModuleRestrictionReason,
-      isRegionRestricted: GEO_BYPASS ? false : isLoading ? true : (config?.isRegionRestricted ?? true),
-      isCookieBannerRequired: isLoading ? true : (config?.isCookiesBannerRequired ?? true)
+      isRegionRestricted: GEO_BYPASS
+        ? false
+        : isLoading
+          ? true
+          : (effectiveConfig?.isRegionRestricted ?? true),
+      isCookieBannerRequired: isLoading ? true : (effectiveConfig?.isCookiesBannerRequired ?? true)
     }),
-    [config, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
+    [effectiveConfig, isLoading, error, isModuleEnabled, getModuleRestrictionReason]
   );
 
   return <GeoConfigContext.Provider value={value}>{children}</GeoConfigContext.Provider>;

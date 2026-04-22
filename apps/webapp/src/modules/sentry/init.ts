@@ -82,9 +82,13 @@ export function initSentry(): void {
         return null;
       }
 
-      // Drop unhandled wallet provider rejections (EIP-1193 code 4001).
-      // These are plain-object rejections from wallet connectors during Wagmi's
-      // auto-reconnect on page load — not actionable on our side (WEBAPP-B).
+      // Drop unhandled wallet provider rejections from EIP-1193 providers.
+      // These are plain-object rejections we can't prevent from our side:
+      //   - 4001: user rejected request during Wagmi auto-reconnect (WEBAPP-B).
+      //   - -32601: JSON-RPC "Method not found" — wagmi/viem/RainbowKit
+      //     speculatively probe optional methods (EIP-5792 capabilities,
+      //     wallet_watchAsset, etc.) and wallets that don't implement them
+      //     reject with this code.
       const extraData = (event.extra as Record<string, unknown> | undefined)?.__serialized__ as
         | Record<string, unknown>
         | undefined;
@@ -92,7 +96,7 @@ export function initSentry(): void {
         event.exception?.values?.some(v =>
           v.value?.includes('Object captured as promise rejection with keys')
         ) &&
-        extraData?.code === 4001
+        (extraData?.code === 4001 || extraData?.code === -32601)
       ) {
         return null;
       }
