@@ -43,7 +43,7 @@ import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
-import { WidgetContent, WidgetItem } from '../types/Widgets';
+import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { isL2ChainId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
@@ -84,7 +84,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
     [Intent.SAVINGS_INTENT]: 'savings',
     [Intent.REWARDS_INTENT]: 'rewards',
-    [Intent.EXPERT_INTENT]: 'expert'
+    [Intent.EXPERT_INTENT]: 'expert',
+    [Intent.TRADE_INTENT]: 'trade'
   };
 
   // If the intent maps to a restricted module, fall back to Balances
@@ -138,7 +139,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     .map(contract => ({
       label: `${contract.rewardToken.symbol} Rewards`,
       icon: (
-        <TokenIcon token={{ symbol: contract.rewardToken.symbol }} className="h-3 w-3" showChainIcon={false} />
+        <TokenIcon
+          token={{ symbol: contract.rewardToken.symbol }}
+          className="h-3 w-3"
+          showChainIcon={false}
+        />
       ),
       params: { [QueryParams.Reward]: contract.contractAddress }
     }));
@@ -162,7 +167,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(
         <BalancesWidgetPane
           {...sharedProps}
-          hideModuleBalances={isRegionRestricted}
+          hideRestrictedModules={isRegionRestricted}
           rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
           savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}
           sealCardUrl={sealUrl}
@@ -217,7 +222,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<VaultsWidgetPane {...sharedProps} />),
       false,
       undefined,
-      'Third-party vault integrations with Sky ecosystem tokens',
+      'Third-party vault integrations with Sky Ecosystem tokens',
       vaultSubItems
     ],
     [
@@ -243,7 +248,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<ConvertWidgetPane {...sharedProps} />),
       false,
       undefined,
-      'Get Sky ecosystem tokens with best possible rates',
+      'Get Sky Ecosystem tokens with best possible rates',
       [
         {
           label: '1:1 Conversion',
@@ -251,15 +256,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.PSM_INTENT] }
         },
         {
+          label: 'Trade',
+          icon: <Trade className="h-3 w-3" />,
+          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] },
+          intent: Intent.TRADE_INTENT
+        },
+        {
           label: 'Upgrade',
           icon: <Upgrade className="h-3 w-3" />,
           params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT] },
           intent: Intent.UPGRADE_INTENT
-        },
-        {
-          label: 'Trade',
-          icon: <Trade className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] }
         }
       ]
     ]
@@ -270,6 +276,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     })
     .map(([intent, label, icon, component, , , description, subItems]) => {
       const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
+      const filteredSubItems = (subItems as WidgetSubItem[] | undefined)?.filter(sub => {
+        if (!sub.intent) return true;
+        const subModuleId = intentToModule[sub.intent];
+        return !subModuleId || isModuleEnabled(subModuleId);
+      });
       return [
         intent as Intent,
         label as string,
@@ -278,7 +289,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         comingSoon,
         comingSoon ? { disabled: true } : undefined,
         description as string,
-        subItems
+        filteredSubItems
       ];
     }) as WidgetItem[];
 

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { QueryParams } from '@/lib/constants';
+import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
+import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
 
 export const getRetainedQueryParams = (
   url: string,
@@ -14,6 +15,16 @@ export const getRetainedQueryParams = (
     }
   });
 
+  // Preserve valid geo override params in non-production
+  if (!IS_PRODUCTION_ENV) {
+    GEO_OVERRIDE_PARAMS.forEach(param => {
+      const value = searchParams.get(param);
+      if (value && isValidGeoParam(param, value)) {
+        retainedQueryParams.set(param, value);
+      }
+    });
+  }
+
   const urlObj = new URL(url, window.location.origin);
   retainedQueryParams.forEach((value, key) => {
     urlObj.searchParams.set(key, value);
@@ -24,12 +35,7 @@ export const getRetainedQueryParams = (
 
 export const useRetainedQueryParams = (
   url: string,
-  retainedParams: QueryParams[] = [
-    QueryParams.Locale,
-    QueryParams.Details,
-    QueryParams.Network,
-    QueryParams.Chat
-  ]
+  retainedParams: QueryParams[] = [QueryParams.Locale, QueryParams.Details, QueryParams.Network]
 ) => {
   const [searchParams] = useSearchParams();
 

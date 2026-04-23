@@ -5,6 +5,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChainId } from 'wagmi';
 import { useModuleUrls } from '@/modules/app/hooks/useModuleUrls';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useGeoConfig } from '@/modules/geo-config';
 
 enum ConnectedModalTabsEnum {
   SUPPLIED_FUNDS = 'supplied_funds',
@@ -14,7 +15,7 @@ enum ConnectedModalTabsEnum {
 export function ConnectedModalTabs() {
   const chainId = useChainId();
   const { onExternalLinkClicked } = useConfigContext();
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isRegionRestricted } = useGeoConfig();
 
   const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, vaultsUrl } = useModuleUrls();
 
@@ -41,7 +42,7 @@ export function ConnectedModalTabs() {
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={expertOverviewUrl}
           vaultsCardUrl={vaultsUrl}
-          hideRestrictedModules={isRestrictedBuild}
+          hideRestrictedModules={isRegionRestricted}
           onExternalLinkClicked={onExternalLinkClicked}
         />
       </TabsContent>

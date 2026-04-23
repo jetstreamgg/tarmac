@@ -179,7 +179,7 @@ export const banners: Banner[] = [
     title: 'SKY',
     module: 'upgrade-banners',
     description:
-      'SKY is a native governance token of the decentralised Sky ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
+      'SKY is a native governance token of the decentralised Sky Ecosystem and the upgraded version of MKR. You can trade SKY for USDS, depending on your location and other criteria, and use SKY to access Staking Rewards and participate in Sky Ecosystem Governance.',
     display: ['connected', 'disconnected']
   },
   {
@@ -308,14 +308,6 @@ export const banners: Banner[] = [
     module: 'vaults-banners',
     description:
       'Curated by Sky on Morpho, allocates deposits exclusively into a single stUSDS/USDC lending market, where borrowers post stUSDS, the higher-yield Expert risk capital token, as collateral to borrow USDC at an 86% LTV ratio.',
-    display: ['connected', 'disconnected']
-  },
-  {
-    id: 'usds-savings-vault',
-    title: 'USDS Savings Vault',
-    module: 'vaults-banners',
-    description:
-      'Curated by Sky on Morpho, allocates deposits exclusively into a single sUSDS/USDS lending market, where borrowers post sUSDS, the native stablecoin earning the Sky Savings Rate, as collateral to borrow USDS at a 96.5% LTV ratio.',
     display: ['connected', 'disconnected']
   },
   {

@@ -14,7 +14,6 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@jetstreamgg/sky-hooks';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
@@ -31,7 +30,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   } = useConfigContext();
   const { mutate: refreshStakeHistory } = useStakeHistory();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setShouldDisableActionButtons } = useChatContext();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   const chainId = useChainId();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
@@ -100,8 +98,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.STAKE_INTENT]) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow
     if (widgetState.flow) {

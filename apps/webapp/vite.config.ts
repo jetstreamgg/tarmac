@@ -47,9 +47,9 @@ export default ({ mode }: { mode: modeEnum }) => {
     script-src 'self'
       https://static.cloudflareinsights.com
       https://challenges.cloudflare.com
-      https://*.posthog.com;
-    style-src 'self' 'unsafe-inline' https://*.posthog.com;
-    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com;
+      https://*.posthog.com https://e.sky.money;
+    style-src 'self' 'unsafe-inline' https://*.posthog.com https://e.sky.money;
+    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com https://e.sky.money;
     font-src 'self';
     connect-src 'self'
       ${RPC_PROVIDER_MAINNET}
@@ -104,6 +104,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
       https://*.posthog.com
+      https://e.sky.money
       https://*.sentry.io
       https://*.ingest.sentry.io;
     frame-src 'self'
@@ -196,6 +197,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       tailwindcss(),
       lingui(),
       sentryVitePlugin({
+        applicationKey: 'sky-webapp',
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
         authToken: process.env.SENTRY_AUTH_TOKEN,

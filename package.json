@@ -9,6 +9,7 @@
   "scripts": {
     "preinstall": "pnpm dlx only-allow pnpm",
     "prettier": "prettier --write --cache .",
+    "prettier:check": "prettier --check --cache .",
     "lint": "eslint --cache",
     "build": "pnpm messages && pnpm -r run build",
     "build:packages": "pnpm -r --filter='./packages/**' build",
@@ -107,8 +108,14 @@
     "overrides": {
       "esbuild@<=0.24.2": "^0.25.0",
       "@babel/runtime@7.26.7": "7.26.10",
-      "axios@1.14.1": "1.13.2",
-      "axios@0.30.4": "0.21.4"
+      "axios@>=1.0.0 <1.15.0": "1.15.0",
+      "@json-rpc-tools/provider>axios@^0.21.0": "1.15.0",
+      "protobufjs@<7.5.5": "^7.5.5",
+      "dompurify@<3.4.0": ">=3.4.0",
+      "lodash@<4.18.0": ">=4.18.0",
+      "defu@<6.1.5": ">=6.1.5",
+      "h3@<1.15.9": ">=1.15.9",
+      "vite@>=7.0.0 <7.3.2": "^7.3.2"
     }
   },
   "packageManager": "pnpm@10.17.0"

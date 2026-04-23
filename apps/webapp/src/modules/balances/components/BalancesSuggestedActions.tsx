@@ -25,6 +25,8 @@ import { Savings, Upgrade, RewardsModule, Stake, Expert, Vaults, Trade, Convert 
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
 import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@jetstreamgg/sky-widgets';
+import { useGeoConfig } from '@/modules/geo-config';
+import type { ModuleId } from '@/modules/geo-config';
 
 type BalancesAction = {
   label: string;
@@ -307,13 +309,24 @@ export function BalancesSuggestedActions({
     [networkName, chains, mainnetChainId]
   );
 
+  const { isModuleEnabled } = useGeoConfig();
+
+  // Map action module names to geo-config ModuleId where applicable
+  const actionModuleToGeoModule: Partial<Record<BalancesAction['module'], ModuleId>> = {
+    trade: 'trade'
+  };
+
   const actions = useMemo(() => {
     let result = widget === 'stables' ? STABLE_ACTIONS : widget === 'sky' ? SKY_ACTIONS : TOKEN_ACTIONS;
     if (restrictedModules) {
       result = result.filter(action => restrictedModules.includes(action.module));
     }
+    result = result.filter(action => {
+      const geoModuleId = actionModuleToGeoModule[action.module];
+      return !geoModuleId || isModuleEnabled(geoModuleId);
+    });
     return result;
-  }, [widget, restrictedModules]);
+  }, [widget, restrictedModules, isModuleEnabled]);
 
   const { rates: rateMap, loading: rateLoading } = useActionRates(actions, chainId);
 
@@ -334,7 +347,7 @@ export function BalancesSuggestedActions({
 
       setSearchParams(prev => {
         const next = new URLSearchParams();
-        [QueryParams.Locale, QueryParams.Details, QueryParams.Chat].forEach(param => {
+        [QueryParams.Locale, QueryParams.Details].forEach(param => {
           const value = prev.get(param);
           if (value !== null) next.set(param, value);
         });

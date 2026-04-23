@@ -12,10 +12,7 @@ export interface GeoConfig {
   cacheTtl: number;
   isRegionRestricted: boolean;
   modules: Record<ModuleId, ModuleConfig>;
-  chatbot: {
-    enabled: boolean;
-    restrictionMessage?: string;
-  };
+  isCookiesBannerRequired: boolean;
 }
 
 export interface GeoConfigContextValue {
@@ -25,6 +22,5 @@ export interface GeoConfigContextValue {
   isModuleEnabled: (moduleId: ModuleId) => boolean;
   getModuleRestrictionReason: (moduleId: ModuleId) => string | undefined;
   isRegionRestricted: boolean;
-  isChatbotEnabled: boolean;
-  chatbotRestrictionMessage: string | undefined;
+  isCookieBannerRequired: boolean;
 }

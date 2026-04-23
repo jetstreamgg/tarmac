@@ -16,7 +16,7 @@ async function fetchRewardsUserHistory(
   if (!rewardContractAddress || !userAddress) return [];
   const query = gql`
     {
-      reward: Reward_by_pk(id: "${chainId}-${rewardContractAddress}") {
+      reward: Reward_by_pk(id: "${chainId}-${rewardContractAddress.toLowerCase()}") {
         supplyInstances(where: { user: { _ilike: "${userAddress}" } }) {
           blockTimestamp
           transactionHash

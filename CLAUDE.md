@@ -32,7 +32,12 @@ pnpm e2e:ui         # Run E2E tests with UI (interactive)
 ```bash
 pnpm lint            # Run ESLint
 pnpm typecheck       # Run TypeScript type checking
-pnpm prettier        # Format code
+pnpm prettier        # Format (writes) every file in the repo. Appended path args are ignored — it always targets "."
+pnpm prettier:check  # Check formatting without writing. Same caveat: always checks "."
+
+# To check/write a narrow path, bypass the script and hit the binary directly:
+# pnpm exec prettier --check <path>
+# pnpm exec prettier --write <path>
 ```
 
 ### Build

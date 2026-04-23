@@ -108,7 +108,9 @@ const MorphoVaultWidgetWrapped = ({
     ? userAssets < availableLiquidity
       ? userAssets
       : availableLiquidity
-    : undefined;
+    : isLiquidityDataUnavailable
+      ? userAssets // Fallback: let user attempt full balance, contract enforces limits
+      : undefined;
   const isLiquidityConstrained = hasLiquidityData && userAssets > 0n && availableLiquidity < userAssets;
 
   // User's underlying asset balance (e.g., USDC balance)
@@ -259,7 +261,6 @@ const MorphoVaultWidgetWrapped = ({
   const withdrawDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isWithdrawBalanceError ||
-    isLiquidityDataUnavailable ||
     !(max ? morphoVaultRedeem.prepared : morphoVaultWithdraw.prepared) ||
     isAmountWaitingForDebounce;
 
@@ -380,12 +381,6 @@ const MorphoVaultWidgetWrapped = ({
         setButtonText(t`Back to ${vaultName}`);
       } else if (txStatus === TxStatus.ERROR) {
         setButtonText(t`Retry`);
-      } else if (
-        widgetState.screen === MorphoVaultScreen.ACTION &&
-        widgetState.flow === MorphoVaultFlow.WITHDRAW &&
-        isLiquidityDataUnavailable
-      ) {
-        setButtonText(t`Withdrawals unavailable`);
       } else if (widgetState.screen === MorphoVaultScreen.ACTION && amount === 0n) {
         setButtonText(t`Enter amount`);
       } else if (widgetState.screen === MorphoVaultScreen.ACTION) {
@@ -412,7 +407,6 @@ const MorphoVaultWidgetWrapped = ({
     linguiCtx,
     amount,
     isConnectedAndEnabled,
-    isLiquidityDataUnavailable,
     shouldUseBatch,
     needsAllowance,
     vaultName

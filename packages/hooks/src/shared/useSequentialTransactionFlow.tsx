@@ -4,7 +4,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract
 } from 'wagmi';
-import { isRevertedError } from '../helpers';
+import { isRevertedError, toError } from '../helpers';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { SAFE_CONNECTOR_ID } from './constants';
 import { useWaitForSafeTxHash } from './useWaitForSafeTxHash';
@@ -181,8 +181,7 @@ export function useSequentialTransactionFlow(
     ) {
       lastProcessedTxHash.current = txHash;
       // Transaction failed
-      const error = miningError || failureReason;
-      onError(error as Error, txHash);
+      onError(toError(miningError || failureReason), txHash);
       setIsExecuting(false);
     }
   }, [

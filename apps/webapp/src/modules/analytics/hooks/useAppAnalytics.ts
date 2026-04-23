@@ -156,34 +156,14 @@ export function useAppAnalytics() {
 
   const trackDetailsPaneToggled = ({
     toggleAction,
-    activeWidget,
-    chatWasOpen
+    activeWidget
   }: {
     toggleAction: 'open' | 'close';
     activeWidget: string;
-    chatWasOpen: boolean;
   }) => {
     safeCapture(posthog, AppEvents.DETAILS_PANE_TOGGLED, {
       toggle_action: toggleAction,
       active_widget: activeWidget,
-      chat_was_open: chatWasOpen,
-      viewport: getViewport()
-    });
-  };
-
-  const trackChatPaneToggled = ({
-    toggleAction,
-    activeWidget,
-    detailsWasOpen
-  }: {
-    toggleAction: 'open' | 'close';
-    activeWidget: string;
-    detailsWasOpen: boolean;
-  }) => {
-    safeCapture(posthog, AppEvents.CHAT_PANE_TOGGLED, {
-      toggle_action: toggleAction,
-      active_widget: activeWidget,
-      details_was_open: detailsWasOpen,
       viewport: getViewport()
     });
   };
@@ -215,7 +195,6 @@ export function useAppAnalytics() {
     trackTransactionCompleted,
     trackWidgetReviewViewed,
     trackDetailsPaneToggled,
-    trackChatPaneToggled,
     trackWalletConnected,
     trackWalletDisconnected
   };

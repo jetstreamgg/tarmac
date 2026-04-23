@@ -328,8 +328,10 @@ export {
 
 export { SupportedCollateralTypes } from './vaults/vaults.constants';
 export { getIlkName } from './vaults/helpers';
+export { toError } from './helpers';
 
 export { OrderQuoteSideKind, gpv2VaultRelayerAddress } from './trade/constants';
+export { getAutoSlippage } from './trade/helpers';
 
 export {
   TOKENS,
@@ -351,7 +353,7 @@ export type {
   BatchWriteHookParams
 } from './hooks';
 export type { PaginationOption } from './filters';
-export type { RewardContract, RewardContractInfo, RewardContractChange } from './rewards/rewards';
+export type { RewardContract, RewardContractInfo } from './rewards/rewards';
 export type { SavingsHistory } from './savings/savings';
 export type { UpgradeHistory, UpgradeHistoryRow } from './upgrade/upgrade';
 export type { TradeRecord, OrderQuoteResponse } from './trade/trade';
