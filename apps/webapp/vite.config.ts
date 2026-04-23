@@ -35,6 +35,7 @@ export default ({ mode }: { mode: modeEnum }) => {
   );
 
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
+  const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
   const CONTENT_SECURITY_POLICY = `
@@ -49,6 +50,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     connect-src 'self'
       https://proxy.sky.money
       https://staging-proxy.sky.money
+      ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co

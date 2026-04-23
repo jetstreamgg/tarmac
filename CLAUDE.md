@@ -145,7 +145,8 @@ pnpm messages        # Extract and compile translations
 - pnpm v10.17.0+ required
 - Key environment variables:
   - `TENDERLY_API_KEY` - For test network forking
-  - `VITE_RPC_PROVIDER_*` - RPC endpoints
+  - `VITE_PROXY_ORIGIN` - Origin of the Sky RPC/indexer proxy (RPC URLs are built as `${VITE_PROXY_ORIGIN}/rpc/<chainId>`)
+  - `VITE_RPC_PROVIDER_TENDERLY` - Tenderly virtual network RPC used as the dev-mode chain across all modules
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection
   - `VITE_USE_MOCK_WALLET` - Testing mode
 
