@@ -40,7 +40,6 @@ export default ({ mode }: { mode: modeEnum }) => {
   const CONTENT_SECURITY_POLICY = `
     default-src 'self';
     script-src 'self'
-      'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
       https://static.cloudflareinsights.com
       https://challenges.cloudflare.com
       https://*.posthog.com https://e.sky.money;
@@ -130,7 +129,8 @@ export default ({ mode }: { mode: modeEnum }) => {
     build: {
       sourcemap: shouldUploadSourcemaps,
       outDir: '../dist',
-      emptyOutDir: true
+      emptyOutDir: true,
+      modulePreload: { polyfill: false }
     },
     test: {
       exclude: [...configDefaults.exclude],
