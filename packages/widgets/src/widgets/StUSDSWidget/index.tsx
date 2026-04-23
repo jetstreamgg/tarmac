@@ -285,6 +285,7 @@ const StUSDSWidgetWrapped = ({
   const withdrawDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isWithdrawBalanceError ||
+    providerSelection.isLoading ||
     (txStatus === TxStatus.IDLE && !stUsdsWithdraw.prepared) ||
     isAmountWaitingForDebounce ||
     debouncedAmount === 0n;
@@ -292,6 +293,7 @@ const StUSDSWidgetWrapped = ({
   const batchSupplyDisabled =
     [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     isSupplyBalanceError ||
+    providerSelection.isLoading ||
     !batchStUsdsDeposit.prepared ||
     batchStUsdsDeposit.isLoading ||
     isAmountWaitingForDebounce ||
