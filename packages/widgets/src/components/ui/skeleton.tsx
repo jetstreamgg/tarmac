@@ -1,6 +1,6 @@
 import { cn } from '@widgets/lib/utils';
 import { skeletonTransition } from '@widgets/shared/animation/presets';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (

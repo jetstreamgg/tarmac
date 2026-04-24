@@ -8,7 +8,7 @@ import {
 import { useClipboard } from '@widgets/shared/hooks/useClipboard';
 import { Text } from './Typography';
 import { Copy } from '@widgets/shared/components/icons/Icons';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { iconAnimations } from '@widgets/shared/animation/presets';
 import { AnimationLabels } from '@widgets/shared/animation/constants';
 

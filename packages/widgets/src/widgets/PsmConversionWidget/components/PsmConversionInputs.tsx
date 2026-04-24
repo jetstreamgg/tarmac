@@ -6,7 +6,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Button } from '@widgets/components/ui/button';
 import { ShiftArrow } from '@widgets/shared/components/icons/Icons';
 import { positionAnimations } from '@widgets/shared/animation/presets';

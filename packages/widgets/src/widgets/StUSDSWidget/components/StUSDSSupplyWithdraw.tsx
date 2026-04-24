@@ -22,7 +22,7 @@ import { StUSDSStatsCard } from './StUSDSStatsCard';
 import { ProviderIndicator } from './ProviderIndicator';
 import { PriceImpactWarning } from './PriceImpactWarning';
 import { useConnection, useChainId } from 'wagmi';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { Text } from '@widgets/shared/components/ui/Typography';

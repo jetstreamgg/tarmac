@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { easeInOutExpo } from '../animation/timingFunctions';
 
 export const LoadingSpinner = ({ className }: { className?: string }) => {

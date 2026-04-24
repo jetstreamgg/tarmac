@@ -64,7 +64,7 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>
 }));
 

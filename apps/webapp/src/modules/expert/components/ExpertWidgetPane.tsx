@@ -4,7 +4,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ExpertIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
 import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';

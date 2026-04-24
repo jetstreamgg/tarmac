@@ -5,7 +5,7 @@ import { Card } from '@widgets/components/ui/card';
 import { PriceData } from '@jetstreamgg/sky-hooks';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { formatUnits } from 'viem';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';

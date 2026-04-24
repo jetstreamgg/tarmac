@@ -8,7 +8,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPane';
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';

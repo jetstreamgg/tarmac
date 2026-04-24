@@ -62,7 +62,7 @@ import { getValidatedState } from '@widgets/lib/utils';
 import { TradeSummary } from './components/TradeSummary';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { useTokenImage } from '@widgets/shared/hooks/useTokenImage';

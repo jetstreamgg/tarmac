@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCookieConsent } from '../context/CookieConsentContext';
 import { applyPostHogConsent } from '../PostHogProvider';

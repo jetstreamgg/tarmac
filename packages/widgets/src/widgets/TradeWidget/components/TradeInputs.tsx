@@ -9,7 +9,7 @@ import { TokenInput, TokenInputProps } from '@widgets/shared/components/ui/token
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { Button } from '@widgets/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { CostWarning } from './CostWarning';
 import { getQuoteErrorForType } from '../lib/utils';

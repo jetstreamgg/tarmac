@@ -16,7 +16,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import { Trans } from '@lingui/react/macro';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { JSX } from 'react';
 import { useChainId } from 'wagmi';
 

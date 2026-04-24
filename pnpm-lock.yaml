@@ -189,9 +189,6 @@ catalogs:
     ethers:
       specifier: ^6.16.0
       version: 6.16.0
-    framer-motion:
-      specifier: ^11.18.2
-      version: 11.18.2
     globals:
       specifier: ^15.15.0
       version: 15.15.0
@@ -216,6 +213,9 @@ catalogs:
     lucide-react:
       specifier: ^0.577.0
       version: 0.577.0
+    motion:
+      specifier: ^12.38.0
+      version: 12.38.0
     openapi-fetch:
       specifier: ^0.17.0
       version: 0.17.0
@@ -525,12 +525,12 @@ importers:
       embla-carousel-react:
         specifier: 'catalog:'
         version: 8.6.0(react@19.2.5)
-      framer-motion:
-        specifier: 'catalog:'
-        version: 11.18.2(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       lucide-react:
         specifier: 'catalog:'
         version: 0.577.0(react@19.2.5)
+      motion:
+        specifier: 'catalog:'
+        version: 12.38.0(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       porto:
         specifier: 'catalog:'
         version: 0.2.37(@tanstack/react-query@5.99.0(react@19.2.5))(@types/react@19.2.14)(@wagmi/core@3.4.4(@tanstack/query-core@5.99.0)(@types/react@19.2.14)(immer@9.0.21)(ox@0.14.17(typescript@5.9.3)(zod@4.3.6))(react@19.2.5)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.5))(viem@2.48.1(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6)))(immer@9.0.21)(react@19.2.5)(typescript@5.9.3)(use-sync-external-store@1.5.0(react@19.2.5))(viem@2.48.1(bufferutil@4.0.9)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.6))(wagmi@3.6.3)
@@ -795,12 +795,12 @@ importers:
       clsx:
         specifier: 'catalog:'
         version: 2.1.1
-      framer-motion:
-        specifier: '>=11.0.0'
-        version: 11.18.2(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       lucide-react:
         specifier: 'catalog:'
         version: 0.577.0(react@19.2.5)
+      motion:
+        specifier: '>=12.0.0'
+        version: 12.38.0(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react-jazzicon:
         specifier: 'catalog:'
         version: 1.0.4(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -5314,8 +5314,8 @@ packages:
     engines: {node: '>=18.3.0'}
     hasBin: true
 
-  framer-motion@11.18.2:
-    resolution: {integrity: sha512-5F5Och7wrvtLVElIpclDT0CBzMVg3dL22B64aZwHtsIY8RB4mXICLrkajK4G9R+ieSAGcgrLeae2SeUTg2pr6w==}
+  framer-motion@12.38.0:
+    resolution: {integrity: sha512-rFYkY/pigbcswl1XQSb7q424kSTQ8q6eAC+YUsSKooHQYuLdzdHjrt6uxUC+PRAO++q5IS7+TamgIw1AphxR+g==}
     peerDependencies:
       '@emotion/is-prop-valid': '*'
       react: ^18.0.0 || ^19.0.0
@@ -6292,11 +6292,25 @@ packages:
   moo@0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}
 
-  motion-dom@11.18.1:
-    resolution: {integrity: sha512-g76KvA001z+atjfxczdRtw/RXOM3OMSdd1f4DL77qCTF/+avrRJiawSG4yDibEQ215sr9kpinSlX2pCTJ9zbhw==}
+  motion-dom@12.38.0:
+    resolution: {integrity: sha512-pdkHLD8QYRp8VfiNLb8xIBJis1byQ9gPT3Jnh2jqfFtAsWUA3dEepDlsWe/xMpO8McV+VdpKVcp+E+TGJEtOoA==}
 
-  motion-utils@11.18.1:
-    resolution: {integrity: sha512-49Kt+HKjtbJKLtgO/LKj9Ld+6vw9BjH5d9sc40R/kVyH8GLAXgT42M2NnuPcJNuA3s9ZfZBUcwIgpmZWGEE+hA==}
+  motion-utils@12.36.0:
+    resolution: {integrity: sha512-eHWisygbiwVvf6PZ1vhaHCLamvkSbPIeAYxWUuL3a2PD/TROgE7FvfHWTIH4vMl798QLfMw15nRqIaRDXTlYRg==}
+
+  motion@12.38.0:
+    resolution: {integrity: sha512-uYfXzeHlgThchzwz5Te47dlv5JOUC7OB4rjJ/7XTUgtBZD8CchMN8qEJ4ZVsUmTyYA44zjV0fBwsiktRuFnn+w==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
 
   mri@1.2.0:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
@@ -13801,10 +13815,10 @@ snapshots:
     dependencies:
       fd-package-json: 2.0.0
 
-  framer-motion@11.18.2(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+  framer-motion@12.38.0(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
-      motion-dom: 11.18.1
-      motion-utils: 11.18.1
+      motion-dom: 12.38.0
+      motion-utils: 12.36.0
       tslib: 2.8.1
     optionalDependencies:
       '@emotion/is-prop-valid': 1.3.1
@@ -14910,11 +14924,20 @@ snapshots:
 
   moo@0.5.2: {}
 
-  motion-dom@11.18.1:
+  motion-dom@12.38.0:
     dependencies:
-      motion-utils: 11.18.1
+      motion-utils: 12.36.0
 
-  motion-utils@11.18.1: {}
+  motion-utils@12.36.0: {}
+
+  motion@12.38.0(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+    dependencies:
+      framer-motion: 12.38.0(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      tslib: 2.8.1
+    optionalDependencies:
+      '@emotion/is-prop-valid': 1.3.1
+      react: 19.2.5
+      react-dom: 19.2.5(react@19.2.5)
 
   mri@1.2.0: {}
 
