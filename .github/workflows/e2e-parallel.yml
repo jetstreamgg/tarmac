@@ -46,6 +46,7 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       # Parallel test configuration
       TEST_WORKERS: ${{ github.event.inputs.workers || '3' }}
       SKIP_FUNDING: ${{ github.event.inputs.skip_funding || 'false' }}
