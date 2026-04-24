@@ -1,8 +1,12 @@
 import React, { useMemo } from 'react';
 import { useConnection } from 'wagmi';
 import { Text } from '@widgets/shared/components/ui/Typography';
-import Jazzicon, { jsNumberForAddress } from 'react-jazzicon';
+import JazziconDefault, { jsNumberForAddress } from 'react-jazzicon';
 import { Card } from '@widgets/components/ui/card';
+
+// Vite 8 / Rolldown exposes a CJS module's default import as the whole exports object,
+// so we unwrap to reach the component.
+const Jazzicon = (JazziconDefault as unknown as { default: typeof JazziconDefault }).default;
 import { CopyToClipboard } from '@widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';

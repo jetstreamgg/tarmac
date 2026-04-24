@@ -1,6 +1,10 @@
-import Jazzicon, { jsNumberForAddress } from 'react-jazzicon';
+import JazziconDefault, { jsNumberForAddress } from 'react-jazzicon';
 import { useMemo } from 'react';
 import { cn } from '@widgets/lib/utils';
+
+// Vite 8 / Rolldown exposes a CJS module's default import as the whole exports object,
+// so we unwrap to reach the component.
+const Jazzicon = (JazziconDefault as unknown as { default: typeof JazziconDefault }).default;
 
 export const JazziconComponent = ({
   address,
