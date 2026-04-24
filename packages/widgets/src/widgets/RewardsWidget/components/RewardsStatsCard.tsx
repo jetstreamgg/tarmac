@@ -97,7 +97,7 @@ export const RewardsStatsCard = ({
       rewardContract={rewardContract}
       onClick={onClick}
       isConnectedAndEnabled={isConnectedAndEnabled}
-      className="from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 active:from-primary-start/100 active:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image,opacity]"
+      className="bg-transparent from-card to-card hover:from-primary-start/100 hover:to-primary-end/100 active:from-primary-start/100 active:to-primary-end/100 bg-radial-(--gradient-position) transition-[background-color,background-image,opacity]"
       content={
         <VStack gap={0}>
           <HStack className="mt-5 justify-between" gap={2}>
