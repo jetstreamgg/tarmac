@@ -1,5 +1,22 @@
-import { describe, it, expect } from 'vitest';
-import { rewriteLegacyWidgetParams } from './validateSearchParams';
+import { describe, it, expect, vi } from 'vitest';
+import { validateSearchParams, rewriteLegacyWidgetParams } from './validateSearchParams';
+import { mainnet } from 'wagmi/chains';
+
+const validateParams = (query: string) => {
+  const params = new URLSearchParams(query);
+  return validateSearchParams(
+    params,
+    [],
+    'convert',
+    vi.fn(),
+    mainnet.id,
+    [mainnet] as [typeof mainnet],
+    vi.fn(),
+    true,
+    vi.fn(),
+    vi.fn()
+  );
+};
 
 describe('rewriteLegacyWidgetParams', () => {
   it('rewrites widget=trade to widget=convert&convert_module=trade', () => {
@@ -68,5 +85,50 @@ describe('rewriteLegacyWidgetParams', () => {
     rewriteLegacyWidgetParams(params);
     expect(params.get('widget')).toBe('convert');
     expect(params.get('convert_module')).toBe('trade');
+  });
+});
+
+describe('validateSearchParams for convert psm', () => {
+  it('keeps USDC source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=USDC');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.get('source_token')).toBe('USDC');
+  });
+
+  it('keeps USDS source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=USDS');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.get('source_token')).toBe('USDS');
+  });
+
+  it('removes unsupported source token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&source_token=DAI');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.has('source_token')).toBe(false);
+  });
+
+  it('removes target token for convert_module=psm', () => {
+    const params = validateParams('widget=convert&convert_module=psm&target_token=USDS');
+    expect(params.get('convert_module')).toBe('psm');
+    expect(params.has('target_token')).toBe(false);
+  });
+});
+
+describe('validateSearchParams geo overrides (non-production)', () => {
+  it('preserves valid geo override params and strips unrelated unknown params', () => {
+    const params = validateParams('geo_mode=restricted&geo_module_savings=true&foo=bar');
+    expect(params.get('geo_mode')).toBe('restricted');
+    expect(params.get('geo_module_savings')).toBe('true');
+    expect(params.has('foo')).toBe(false);
+  });
+
+  it('strips geo_mode with an invalid value', () => {
+    const params = validateParams('geo_mode=invalid');
+    expect(params.has('geo_mode')).toBe(false);
+  });
+
+  it('strips geo_module_* with an invalid value', () => {
+    const params = validateParams('geo_module_savings=maybe');
+    expect(params.has('geo_module_savings')).toBe(false);
   });
 });

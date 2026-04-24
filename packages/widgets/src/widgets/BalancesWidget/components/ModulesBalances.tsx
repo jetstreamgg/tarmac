@@ -213,8 +213,6 @@ export const ModulesBalances = ({
     hideRestrictedModules || multichainSavingsBalancesError || (totalSavingsBalance === 0n && hideZeroBalances)
   );
 
-  const hideModuleBalances = hideSavings && hideRewards && hideSeal;
-
   // Fallback display order used while prices are loading to prevent layout shifts
   const fallbackOrder: Record<string, number> = {
     rewards: 0,
@@ -275,11 +273,11 @@ export const ModulesBalances = ({
       id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults';
       hidden: boolean;
     }> = [
-      { id: 'rewards', hidden: hideModuleBalances || hideRewards },
-      { id: 'savings', hidden: hideModuleBalances || hideSavings },
+      { id: 'rewards', hidden: hideRewards },
+      { id: 'savings', hidden: hideSavings },
       { id: 'staking', hidden: hideStake },
       { id: 'vaults', hidden: hideVaults },
-      { id: 'stusds', hidden: hideModuleBalances || hideExpert },
+      { id: 'stusds', hidden: hideExpert },
       { id: 'seal', hidden: hideSeal }
     ];
 
@@ -296,7 +294,6 @@ export const ModulesBalances = ({
     // While loading, use stable fallback order to prevent layout shifts
     return visible.sort((a, b) => fallbackOrder[a.id] - fallbackOrder[b.id]);
   }, [
-    hideModuleBalances,
     hideRewards,
     hideSavings,
     hideExpert,

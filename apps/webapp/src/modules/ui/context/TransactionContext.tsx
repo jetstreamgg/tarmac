@@ -1,10 +1,27 @@
+import * as Sentry from '@sentry/react';
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { TxStatus } from '@jetstreamgg/sky-widgets';
+import { toError } from '@jetstreamgg/sky-hooks';
 import { getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
+
+function shouldCaptureTransactionError(error: Error): boolean {
+  const candidate = error as Error & { code?: number | string; cause?: { code?: number | string } };
+  const errorCodes = [candidate.code, candidate.cause?.code].filter(Boolean).map(String);
+  const errorName = candidate.name || '';
+  const errorMessage = candidate.message || '';
+  const combinedText = `${errorName} ${errorMessage}`;
+
+  if (errorCodes.includes('4001')) return false;
+  if (errorCodes.includes('ACTION_REJECTED')) return false;
+  if (combinedText.includes('UserRejectedRequestError')) return false;
+  if (/user rejected|rejected the request|user denied/i.test(combinedText)) return false;
+
+  return true;
+}
 
 /** Analytics metadata passed by consumers to attribute events correctly */
 export type TransactionAnalytics = {
@@ -208,6 +225,25 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             data: analytics.data
           });
           startNewFlow();
+        }
+
+        const normalizedError = toError(error);
+
+        if (shouldCaptureTransactionError(normalizedError)) {
+          Sentry.captureException(normalizedError, {
+            tags: {
+              type: 'transaction_error',
+              flow: analytics?.flow ?? 'unknown',
+              action: analytics?.action ?? 'unknown',
+              widget: analytics?.widgetName ?? 'unknown'
+            },
+            extra: {
+              chainId,
+              txHash: hash,
+              isSafeWallet,
+              analyticsData: analytics?.data
+            }
+          });
         }
 
         console.error('[TransactionContext] Transaction error:', error);

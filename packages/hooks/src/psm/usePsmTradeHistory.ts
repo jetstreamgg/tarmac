@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getL2SubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
 import { HistoryItem } from '../shared/shared';
@@ -36,26 +36,26 @@ async function fetchPsmTradeHistory(
 
   const sUsdsAddressForChain = TOKENS.susds.address[chainId];
 
-  let whereClause = `{
-    sender: "${address}",
-    receiver: "${address}"`;
+  const whereConditions: Record<string, any> = {
+    sender: { _ilike: address },
+    receiver: { _ilike: address },
+    chainId: { _eq: chainId }
+  };
 
   if (excludeSUsds) {
-    whereClause += `,
-    assetIn_not: "${sUsdsAddressForChain.toLowerCase()}",
-    assetOut_not: "${sUsdsAddressForChain.toLowerCase()}"`;
+    whereConditions.assetIn = { _neq: sUsdsAddressForChain.toLowerCase() };
+    whereConditions.assetOut = { _neq: sUsdsAddressForChain.toLowerCase() };
   }
 
   if (maxBlockTimestamp) {
-    whereClause += `,
-    blockTimestamp_lte: "${maxBlockTimestamp}"`;
+    whereConditions.blockTimestamp = { _lte: String(maxBlockTimestamp) };
   }
 
-  whereClause += '}';
+  const whereClause = JSON.stringify(whereConditions).replace(/"([^"]+)":/g, '$1:');
 
   const query = gql`
   {
-    swaps(where: ${whereClause}) {
+    swaps: Swap(where: ${whereClause}) {
       id
       transactionHash
       assetIn
@@ -127,7 +127,7 @@ export function usePsmTradeHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getL2SubgraphUrl(chainIdToUse) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
   const {

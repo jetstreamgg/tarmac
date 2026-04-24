@@ -10,14 +10,14 @@ THE SOURCE CODE MADE AVAILABLE VIA THIS REPOSITORY IS OFFERED ON AN “AS-IS,”
 
 The materials in this repository may include references to our trademarks as well as trademarks owned by other persons. No rights are granted to you to use any trade names, trademarks, service marks, or product names, whether owned by us or by others, except solely as necessary for reasonable and customary use in describing the origin of the source materials. All trademark rights are expressly reserved by the respective owners.
 
-# Phase One App
+# Tarmac Webapp
 
-This is a guide to help you set up the Phase One App project on your local machine.
+This is a guide to help you set up the Tarmac webapp on your local machine.
 
 ## Prerequisites
 
-- Node.js (v18 or later)
-- pnpm (install with `npm install -g pnpm`)
+- Node.js (v20.19 or later)
+- pnpm (v10.17 or later, install with `npm install -g pnpm`)
 
 ## Setup
 
@@ -29,46 +29,64 @@ This is a guide to help you set up the Phase One App project on your local machi
 
 Create a `.env` file in the root directory of the project. You can use the `.env.example` file as a reference for the required environment variables. Fill in the necessary values.
 
-- `VITE_RPC_PROVIDER_MAINNET`: URL for the Ethereum mainnet RPC provider
-- `VITE_RPC_PROVIDER_TENDERLY`: URL for the Tenderly RPC provider (used for testing and development)
-- `VITE_RPC_PROVIDER_BASE`: URL for the Base RPC provider
-- `VITE_RPC_PROVIDER_ARBITRUM`: URL for the Arbitrum RPC provider
-- `VITE_RPC_PROVIDER_OPTIMISM`: URL for the Optimism RPC provider
-- `VITE_RPC_PROVIDER_UNICHAIN`: URL for the Unichain provider
+#### RPC and network
+
+- `VITE_PROXY_ORIGIN`: Origin of the Sky RPC/indexer proxy. The app constructs RPC URLs as `${VITE_PROXY_ORIGIN}/rpc/<chainId>` for every supported chain. If you point this at a custom origin, remember to add it to the CSP `connect-src` in `vite.config.ts`
+- `VITE_RPC_PROVIDER_TENDERLY`: URL for a Tenderly virtual network RPC endpoint. Used as the dev-mode chain across all modules to test flows and perform free transactions against a forked state
 - `VITE_TESTNET_CONFIG`: Boolean flag to determine network config to use, should be `false` in production
+
+#### Authentication and wallet
+
 - `VITE_AUTH_URL`: Base URL for the authentication service
-- `VITE_RESTRICTED_BUILD`: Boolean flag to enable certain restrictions
 - `VITE_WALLETCONNECT_PROJECT_ID`: Project ID for WalletConnect integration
 - `VITE_SKIP_AUTH_CHECK`: Boolean flag to bypass authentication checks during development
-- `VITE_SKIP_CHAT_AUTH_CHECK`: Boolean flag to bypass chatbot terms acceptance check during testing (only works in non-production environments)
-- `TENDERLY_API_KEY`: API key for Tenderly (used for forking and managing virtual networks for testing)
+
+#### Geo-restrictions and deployment scoping
+
+- `VITE_GEO_CONFIG_URL`: (Optional) URL for the geo-config endpoint that provides runtime region-based restrictions. Falls back to staging URL if not set
+- `VITE_GEO_BYPASS`: Boolean flag to bypass geo-restriction checks during development (assumes no restricted regions and enables all modules)
+- `VITE_PRIVATE_HOSTNAMES`: (Optional) Comma-separated list of hostnames treated as private Cloudflare Access-gated deployments
+
+#### Testing
+
+- `TENDERLY_API_KEY`: API key for Tenderly (used for forking and managing virtual networks during e2e tests)
 - `VITE_USE_MOCK_WALLET`: Boolean flag to enable the use of a mock wallet for testing purposes
+
+#### Terms of use
+
 - `VITE_TERMS_ENDPOINT`: URL endpoint for submitting and checking terms acceptance
 - `VITE_TERMS_LINK`: Array containing links to terms of use
 - `VITE_FOOTER_LINKS`: Array containing footer links with their URLs and names
 - `VITE_TERMS_MESSAGE_TO_SIGN`: Message that users need to sign to accept the terms and conditions
 - `VITE_TERMS_CHECKBOX_TEXT`: The text displayed next to the checkbox in the terms acceptance modal
 - `VITE_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-terms.md`). If not specified, uses the default `terms.md` file. This allows external teams to provide their own terms file that will be bundled into the application
+
+#### Feature flags
+
 - `VITE_BATCH_TX_ENABLED`: Boolean flag to enable the use of EIP-7702 batch transactions in widgets
+- `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
+
+#### Environment metadata
+
 - `VITE_ENV_NAME`: (Optional) Environment name (e.g., 'development', 'staging', 'production')
 - `VITE_CF_PAGES_COMMIT_SHA`: (Optional) Git commit hash of the current build
-- `VITE_REFERRAL_CODE`: (Optional) Referral code for the app
-- `VITE_CHATBOT_TERMS_MARKDOWN_FILE`: (Optional) Name of a custom chatbot terms markdown file in the `/src/content/` directory (e.g., `/src/content/custom-chatbot-terms.md`). If not specified, uses the default `chatbot_terms.md` file. This allows external teams to provide their own chatbot-specific terms file
-- `VITE_CHATBOT_ENABLED`: If set to `'true'`, enables the chatbot functionality
-- `VITE_CHATBOT_FEEDBACK_ENABLED`: If set to `'true'`, enables the chatbot feedback functionality
-- `VITE_CHATBOT_USE_TESTNET_NETWORK_NAME`: If set to `'true'` replaces network names for their testnet counterpart. Only in development or staging.
-- `VITE_CHATBOT_SUGGESTIONS_ENABLED`: Chat suggestions are enabled by default. Set to `'false'` to disable
-- `VITE_CHATBOT_NAME`: The name of the chatbot
-- `VITE_CHATBOT_DOMAIN`: The base URL for the chatbot backend API
-- `VITE_CHATBOT_MAX_HISTORY`: Maximum number of previous messages to include in chat context.
-- `VITE_CHATBOT_MAX_MESSAGE_LENGTH`: Maximum character length for user input messages.
-- `VITE_CHATBOT_CF_ACCESS_CLIENT_ID`: (Optional) Cloudflare Access client ID for authentication headers in development/staging environments
-- `VITE_CHATBOT_CF_ACCESS_CLIENT_SECRET`: (Optional) Cloudflare Access client secret for authentication headers in development/staging environments
-- `VITE_CHATBOT_SUGGESTED_QUESTIONS`: (Optional) Array of suggested questions displayed when the chatbot first loads (e.g., `'["Question 1", "Question 2"]'`). If not provided, default questions will be shown
-- `VITE_CHATBOT_CHECKBOX_LABEL`: (Optional) Additional instructional text displayed above the terms acceptance checkboxes in the chatbot terms modal.
-- `VITE_CHATBOT_CHECKBOX_TERMS_LABEL`: (Optional) Custom label for the terms checkbox in the chatbot terms modal. Supports markdown formatting.
-- `VITE_CHATBOT_CHECKBOX_PRIVACY_LABEL`: (Optional) Custom label for the privacy checkbox in the chatbot terms modal. Supports markdown formatting.
-- `VITE_CHATBOT_PREFILL_FILTERING_ENABLED`: Controls whether chatbot intents with pre-filled amounts/tokens are filtered. Filtering is enabled by default unless explicitly set to `'false'`.
+
+#### Sentry
+
+- `VITE_SENTRY_DSN`: (Optional) Public Sentry DSN for browser-side error and performance reporting
+- `VITE_SENTRY_ENVIRONMENT`: (Optional) Sentry environment name. If omitted, the app falls back to `VITE_ENV_NAME`, then `development`
+- `VITE_SENTRY_RELEASE`: (Optional) Explicit Sentry release identifier. If omitted, the app falls back to `VITE_CF_PAGES_COMMIT_SHA`, then `<package-version>-<environment>`
+- `VITE_SENTRY_DEBUG`: (Optional) Set to `'true'` to enable Sentry debug mode and full trace sampling in non-production environments
+- `SENTRY_ORG`: (Optional) Sentry organization slug used by the Vite plugin for source map uploads during build
+- `SENTRY_PROJECT`: (Optional) Sentry project slug used by the Vite plugin for source map uploads during build
+- `SENTRY_AUTH_TOKEN`: (Optional) Build-time auth token for Sentry source map uploads. If omitted, the app still builds and runtime Sentry can still report events, but source maps are not uploaded
+
+#### Analytics
+
+- `VITE_POSTHOG_KEY`: (Optional) PostHog project API key
+- `VITE_POSTHOG_HOST`: (Optional) PostHog ingestion host
+- `VITE_POSTHOG_ENABLED`: (Optional) Set to `'true'` to enable PostHog analytics
+- `VITE_GA_MEASUREMENT_ID`: (Optional) Google Analytics measurement ID
 
 ## Running the App
 
@@ -101,6 +119,8 @@ You will need to have the `TEST_CHAIN` env var set. You can set it locally by en
 ## Building the App
 
 To build the application for production, run `pnpm build`.
+
+If `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` are set at build time, the Vite build will also upload source maps to Sentry. The current initial Sentry integration covers browser errors and router tracing; Session Replay is not enabled in this app.
 
 ## Linting and Formatting
 

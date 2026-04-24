@@ -16,12 +16,13 @@ import {
   BATCH_TX_LEGAL_NOTICE_URL,
   COMING_SOON_MAP,
   QueryParams,
-  RESTRICTED_INTENTS,
   IntentMapping,
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping
 } from '@/lib/constants';
+import { useGeoConfig } from '@/modules/geo-config';
+import { ModuleId } from '@/modules/geo-config/types';
 import { ExpertIntent, VaultsIntent, ConvertIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
@@ -42,7 +43,7 @@ import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
-import { WidgetContent, WidgetItem } from '../types/Widgets';
+import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { isL2ChainId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
@@ -76,8 +77,21 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
   const locale = i18n.locale;
 
-  const isRestrictedBuild = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
+
+  // Map Intent → ModuleId for geo-config filtering
+  const intentToModule: Partial<Record<Intent, ModuleId>> = {
+    [Intent.SAVINGS_INTENT]: 'savings',
+    [Intent.REWARDS_INTENT]: 'rewards',
+    [Intent.EXPERT_INTENT]: 'expert',
+    [Intent.TRADE_INTENT]: 'trade'
+  };
+
+  // If the intent maps to a restricted module, fall back to Balances
+  const restrictedModuleId = intentToModule[intent];
+  const effectiveIntent =
+    restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
@@ -102,11 +116,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // Deeplink detection: fire app_widget_selected when initial intent ≠ default (balances)
   // Uses module-level guard (not useRef) so it survives React StrictMode remounts and key-driven remounts
   useEffect(() => {
-    if (intent && intent !== Intent.BALANCES_INTENT && intent !== lastDeeplinkTracked) {
-      lastDeeplinkTracked = intent;
+    if (
+      effectiveIntent &&
+      effectiveIntent !== Intent.BALANCES_INTENT &&
+      effectiveIntent !== lastDeeplinkTracked
+    ) {
+      lastDeeplinkTracked = effectiveIntent;
       startNewFlow();
       trackWidgetSelected({
-        widgetName: IntentMapping[intent] || intent,
+        widgetName: IntentMapping[effectiveIntent] || effectiveIntent,
         previousWidget: IntentMapping[Intent.BALANCES_INTENT],
         selectionMethod: 'deeplink',
         chainId
@@ -121,7 +139,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     .map(contract => ({
       label: `${contract.rewardToken.symbol} Rewards`,
       icon: (
-        <TokenIcon token={{ symbol: contract.rewardToken.symbol }} className="h-3 w-3" showChainIcon={false} />
+        <TokenIcon
+          token={{ symbol: contract.rewardToken.symbol }}
+          className="h-3 w-3"
+          showChainIcon={false}
+        />
       ),
       params: { [QueryParams.Reward]: contract.contractAddress }
     }));
@@ -145,12 +167,12 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(
         <BalancesWidgetPane
           {...sharedProps}
-          hideRestrictedModules={isRestrictedBuild}
-          rewardsCardUrl={rewardsUrl}
-          savingsCardUrlMap={savingsUrlMap}
+          hideRestrictedModules={isRegionRestricted}
+          rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
+          savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}
           sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
-          stusdsCardUrl={stusdsUrl}
+          stusdsCardUrl={isRegionRestricted ? undefined : stusdsUrl}
           vaultsCardUrl={vaultsUrl}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
@@ -200,7 +222,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<VaultsWidgetPane {...sharedProps} />),
       false,
       undefined,
-      'Third-party vault integrations with Sky ecosystem tokens',
+      'Third-party vault integrations with Sky Ecosystem tokens',
       vaultSubItems
     ],
     [
@@ -226,25 +248,39 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       withErrorBoundary(<ConvertWidgetPane {...sharedProps} />),
       false,
       undefined,
-      'Upgrade legacy tokens or trade for Sky ecosystem tokens',
+      'Get Sky Ecosystem tokens with best possible rates',
       [
+        {
+          label: '1:1 Conversion',
+          icon: <Convert className="h-3 w-3" />,
+          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.PSM_INTENT] }
+        },
+        {
+          label: 'Trade',
+          icon: <Trade className="h-3 w-3" />,
+          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] },
+          intent: Intent.TRADE_INTENT
+        },
         {
           label: 'Upgrade',
           icon: <Upgrade className="h-3 w-3" />,
           params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT] },
           intent: Intent.UPGRADE_INTENT
-        },
-        {
-          label: 'Trade',
-          icon: <Trade className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] }
         }
       ]
     ]
   ]
-    .filter(([intent]) => !RESTRICTED_INTENTS.includes(intent as Intent))
+    .filter(([intent]) => {
+      const moduleId = intentToModule[intent as Intent];
+      return !moduleId || isModuleEnabled(moduleId);
+    })
     .map(([intent, label, icon, component, , , description, subItems]) => {
       const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
+      const filteredSubItems = (subItems as WidgetSubItem[] | undefined)?.filter(sub => {
+        if (!sub.intent) return true;
+        const subModuleId = intentToModule[sub.intent];
+        return !subModuleId || isModuleEnabled(subModuleId);
+      });
       return [
         intent as Intent,
         label as string,
@@ -253,7 +289,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         comingSoon,
         comingSoon ? { disabled: true } : undefined,
         description as string,
-        subItems
+        filteredSubItems
       ];
     }) as WidgetItem[];
 
@@ -304,7 +340,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
   return (
-    <WidgetNavigation widgetContent={filteredWidgetContent} intent={intent} currentChainId={chainId}>
+    <WidgetNavigation widgetContent={filteredWidgetContent} intent={effectiveIntent} currentChainId={chainId}>
       {children}
     </WidgetNavigation>
   );

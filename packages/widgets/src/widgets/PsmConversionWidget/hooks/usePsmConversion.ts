@@ -1,0 +1,254 @@
+import {
+  psm3L2Address,
+  usdsPsmWrapperAddress,
+  useBatchPsmSwapExactIn,
+  useBatchUsdsPsmWrapperBuyGem,
+  useBatchUsdsPsmWrapperSellGem,
+  useIsBatchSupported,
+  usePsmLiquidity,
+  usePsmPocketBalance,
+  useTokenAllowance,
+  useUsdsPsmWrapperHalted,
+  useUsdsPsmWrapperLive,
+  useUsdsPsmWrapperTin,
+  useUsdsPsmWrapperTout
+} from '@jetstreamgg/sky-hooks';
+import type { BatchWriteHookParams } from '@jetstreamgg/sky-hooks';
+import { isL2ChainId, math } from '@jetstreamgg/sky-utils';
+import { getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import { useMemo } from 'react';
+import { useChainId, useConnection } from 'wagmi';
+import {
+  getPsmConversionTokens,
+  getPsmDisabledReason,
+  getPsmDirectionHalted,
+  getPsmExecutionAmounts,
+  type PsmConversionDirection,
+  type PsmConversionDisabledReason
+} from './usePsmConversion.helpers';
+
+export interface UsePsmConversionParams extends BatchWriteHookParams {
+  direction: PsmConversionDirection;
+  amount: bigint;
+  referralCode?: number;
+  chainIdOverride?: number;
+}
+
+export interface UsePsmConversionResult {
+  direction: PsmConversionDirection;
+  chainId: number;
+  isL2: boolean;
+  isMainnetWrapper: boolean;
+  originToken?: ReturnType<typeof getPsmConversionTokens>['originToken'];
+  targetToken?: ReturnType<typeof getPsmConversionTokens>['targetToken'];
+  originAmount: bigint;
+  targetAmount: bigint;
+  feeWad?: bigint;
+  hasNonZeroFee: boolean;
+  haltedValue?: bigint;
+  isDirectionHalted: boolean;
+  isLive?: boolean;
+  disabledReason?: PsmConversionDisabledReason;
+  spender?: `0x${string}`;
+  allowance?: bigint;
+  needsAllowance: boolean;
+  batchSupported?: boolean;
+  shouldUseBatch: boolean;
+  pocketBalance?: bigint;
+  availableLiquidity?: bigint;
+  hasSufficientLiquidity?: boolean;
+  mutateAllowance: () => void;
+  mutatePocketBalance: () => void;
+  prepared: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  execute: () => void;
+  currentCallIndex: number;
+  reset: () => void;
+  execution: {
+    l2AmountIn: bigint;
+    l2MinAmountOut: bigint;
+    mainnetGemAmt: bigint;
+    mainnetUsdsAmountInWad: bigint;
+  };
+}
+
+export function usePsmConversion({
+  direction,
+  amount,
+  referralCode,
+  chainIdOverride,
+  enabled: paramEnabled = true,
+  shouldUseBatch = true,
+  onMutate = () => null,
+  onSuccess = () => null,
+  onError = () => null,
+  onStart = () => null
+}: UsePsmConversionParams): UsePsmConversionResult {
+  const connectedChainId = useChainId();
+  const chainId = chainIdOverride ?? connectedChainId;
+  const isL2 = isL2ChainId(chainId);
+  const { address } = useConnection();
+  const { originToken, targetToken } = useMemo(() => getPsmConversionTokens(chainId, direction), [chainId, direction]);
+  const execution = useMemo(() => getPsmExecutionAmounts(direction, amount), [direction, amount]);
+
+  const spender = isL2
+    ? psm3L2Address[chainId as keyof typeof psm3L2Address]
+    : usdsPsmWrapperAddress[chainId as keyof typeof usdsPsmWrapperAddress];
+
+  const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
+    chainId,
+    contractAddress: originToken?.address,
+    owner: address,
+    spender
+  });
+
+  const { data: batchSupported } = useIsBatchSupported();
+  const { data: live, refetch: refetchLive } = useUsdsPsmWrapperLive({ chainIdOverride: chainId });
+  const { data: tin, refetch: refetchTin } = useUsdsPsmWrapperTin({ chainIdOverride: chainId });
+  const { data: tout, refetch: refetchTout } = useUsdsPsmWrapperTout({ chainIdOverride: chainId });
+  const { data: haltedValue, refetch: refetchHalted } = useUsdsPsmWrapperHalted({ chainIdOverride: chainId });
+  const {
+    data: pocketBalanceData,
+    refetch: refetchPocketBalance
+  } = usePsmPocketBalance({ chainIdOverride: chainId });
+
+  const { data: l2Liquidity, mutate: mutateL2Liquidity } = usePsmLiquidity(chainId);
+
+  const feeWad = isL2 ? 0n : direction === 'USDC_TO_USDS' ? tin : tout;
+  const hasNonZeroFee = !isL2 && feeWad !== undefined && feeWad > 0n;
+  const isDirectionHalted = !isL2 && getPsmDirectionHalted({ direction, feeWad, haltedValue });
+  const isLive = isL2 ? true : live !== undefined ? live === 1n : undefined;
+  const pocketBalance = pocketBalanceData?.value;
+
+  // Get output token liquidity and convert to origin token units
+  const { availableLiquidity, hasSufficientLiquidity } = useMemo(() => {
+    // Mainnet USDC_TO_USDS has unlimited liquidity
+    if (!isL2 && direction === 'USDC_TO_USDS') {
+      return { availableLiquidity: undefined, hasSufficientLiquidity: true };
+    }
+
+    const outputBalance = isL2
+      ? (direction === 'USDC_TO_USDS' ? l2Liquidity?.usds?.value : l2Liquidity?.usdc?.value)
+      : pocketBalance;
+
+    if (outputBalance === undefined) {
+      return { availableLiquidity: undefined, hasSufficientLiquidity: undefined };
+    }
+
+    const requiredAmount = isL2 ? execution.l2MinAmountOut : execution.mainnetGemAmt;
+    // Convert output token liquidity to origin token units
+    const originDecimals = getTokenDecimals(originToken, chainId);
+    const targetDecimals = getTokenDecimals(targetToken, chainId);
+    const liquidity = math.scaleToBaseDecimals(outputBalance, targetDecimals, originDecimals);
+
+    return {
+      availableLiquidity: liquidity,
+      hasSufficientLiquidity: outputBalance >= requiredAmount
+    };
+  }, [isL2, direction, l2Liquidity, pocketBalance, execution.l2MinAmountOut, execution.mainnetGemAmt, originToken, targetToken, chainId]);
+
+  const disabledReason = getPsmDisabledReason({
+    chainId,
+    amount,
+    mainnetGemAmt: execution.mainnetGemAmt,
+    isLive,
+    isDirectionHalted,
+    hasNonZeroFee,
+    hasSufficientLiquidity
+  });
+
+  const needsAllowance = !!originToken?.address && amount > 0n && (!allowance || allowance < amount);
+  const effectiveShouldUseBatch = !!shouldUseBatch && !!batchSupported && needsAllowance;
+  const hookEnabled = paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;
+
+  const l2SwapExactIn = useBatchPsmSwapExactIn({
+    amountIn: execution.l2AmountIn,
+    assetIn: originToken?.address as `0x${string}`,
+    assetOut: targetToken?.address as `0x${string}`,
+    minAmountOut: execution.l2MinAmountOut,
+    referralCode: referralCode ? BigInt(referralCode) : undefined,
+    shouldUseBatch: effectiveShouldUseBatch,
+    enabled: hookEnabled && isL2,
+    onMutate,
+    onSuccess,
+    onError,
+    onStart
+  });
+
+  const mainnetSellGem = useBatchUsdsPsmWrapperSellGem({
+    gemAmt: execution.mainnetGemAmt,
+    chainIdOverride: chainId,
+    shouldUseBatch: effectiveShouldUseBatch,
+    enabled: hookEnabled && !isL2 && direction === 'USDC_TO_USDS',
+    onMutate,
+    onSuccess,
+    onError,
+    onStart
+  });
+
+  const mainnetBuyGem = useBatchUsdsPsmWrapperBuyGem({
+    gemAmt: execution.mainnetGemAmt,
+    usdsAmountInWad: execution.mainnetUsdsAmountInWad,
+    chainIdOverride: chainId,
+    shouldUseBatch: effectiveShouldUseBatch,
+    enabled: hookEnabled && !isL2 && direction === 'USDS_TO_USDC',
+    onMutate,
+    onSuccess,
+    onError,
+    onStart
+  });
+
+  const activeHook = isL2
+    ? l2SwapExactIn
+    : direction === 'USDC_TO_USDS'
+      ? mainnetSellGem
+      : mainnetBuyGem;
+
+  return {
+    direction,
+    chainId,
+    isL2,
+    isMainnetWrapper: !isL2,
+    originToken,
+    targetToken,
+    originAmount: amount,
+    targetAmount: execution.targetAmount,
+    feeWad,
+    hasNonZeroFee,
+    haltedValue,
+    isDirectionHalted,
+    isLive,
+    disabledReason,
+    spender,
+    allowance,
+    needsAllowance,
+    batchSupported,
+    shouldUseBatch: effectiveShouldUseBatch,
+    pocketBalance,
+    availableLiquidity,
+    hasSufficientLiquidity,
+    mutateAllowance,
+    mutatePocketBalance: () => {
+      mutateAllowance();
+      refetchLive();
+      refetchTin();
+      refetchTout();
+      refetchHalted();
+      refetchPocketBalance();
+      mutateL2Liquidity();
+    },
+    prepared: activeHook.prepared,
+    isLoading: activeHook.isLoading,
+    error: activeHook.error,
+    execute: activeHook.execute,
+    currentCallIndex: activeHook.currentCallIndex,
+    reset: activeHook.reset,
+    execution: {
+      l2AmountIn: execution.l2AmountIn,
+      l2MinAmountOut: execution.l2MinAmountOut,
+      mainnetGemAmt: execution.mainnetGemAmt,
+      mainnetUsdsAmountInWad: execution.mainnetUsdsAmountInWad
+    }
+  };
+}

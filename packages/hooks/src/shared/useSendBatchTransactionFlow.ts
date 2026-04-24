@@ -1,7 +1,7 @@
 import { useSendCalls, useWaitForCallsStatus } from 'wagmi';
 import { BatchWriteHook, UseSendBatchTransactionFlowParameters } from '../hooks';
 import { useEffect } from 'react';
-import { isRevertedError } from '../helpers';
+import { isRevertedError, toError } from '../helpers';
 import { Config } from '@wagmi/core';
 import { useIsBatchSupported } from './useIsBatchSupported';
 
@@ -35,7 +35,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       onMutate,
       onSuccess: () => {
         if (onStart) {
-          onStart();
+          onStart(undefined);
         }
       },
       onError: (err: Error) => {
@@ -68,7 +68,7 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
       } else if (miningError) {
         onError(miningError, data?.receipts?.[0].transactionHash);
       } else if (failureReason && txReverted) {
-        onError(failureReason, data?.receipts?.[0].transactionHash);
+        onError(toError(failureReason), data?.receipts?.[0].transactionHash);
       }
     }
   }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data]);

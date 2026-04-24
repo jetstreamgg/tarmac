@@ -17,11 +17,11 @@ import { TransactionProvider } from '@/modules/ui/context/TransactionContext';
 import { ConnectModalProvider } from '@/modules/ui/context/ConnectModalContext';
 import { NetworkSwitchProvider } from '@/modules/ui/context/NetworkSwitchContext';
 import { ExternalLinkModal } from '@/modules/layout/components/ExternalLinkModal';
-import { ChatProvider } from '@/modules/chat/context/ChatContext';
 import { AnalyticsErrorBoundary } from '@/modules/analytics/AnalyticsErrorBoundary';
 import { CookieConsentProvider } from '@/modules/analytics/context/CookieConsentContext';
 import { PostHogProvider, POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
 import { CookieConsentBanner } from '@/modules/analytics/components/CookieConsentBanner';
+import { GeoConfigProvider } from '@/modules/geo-config';
 import { AnalyticsFlowProvider } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { CORPUS_VERSION, CORPUS_BRANCH } from '@/data/version';
 
@@ -45,24 +45,22 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   return (
     <ConnectedProvider>
-      <ChatProvider>
-        <TermsModalProvider>
-          <BalanceFiltersProvider>
-            <TooltipProvider delayDuration={300}>
-              <ChainModalProvider>
-                <NetworkSwitchProvider>
-                  <TransactionProvider>
-                    <ExternalLinkModal />
-                    <Toaster />
-                    <ToastCloseAll />
-                    <RouterProvider router={router} />
-                  </TransactionProvider>
-                </NetworkSwitchProvider>
-              </ChainModalProvider>
-            </TooltipProvider>
-          </BalanceFiltersProvider>
-        </TermsModalProvider>
-      </ChatProvider>
+      <TermsModalProvider>
+        <BalanceFiltersProvider>
+          <TooltipProvider delayDuration={300}>
+            <ChainModalProvider>
+              <NetworkSwitchProvider>
+                <TransactionProvider>
+                  <ExternalLinkModal />
+                  <Toaster />
+                  <ToastCloseAll />
+                  <RouterProvider router={router} />
+                </TransactionProvider>
+              </NetworkSwitchProvider>
+            </ChainModalProvider>
+          </TooltipProvider>
+        </BalanceFiltersProvider>
+      </TermsModalProvider>
     </ConnectedProvider>
   );
 };
@@ -74,12 +72,14 @@ export const App = () => (
         <AnalyticsErrorBoundary>
           <CookieConsentProvider>
             <PostHogProvider>
-              <AnalyticsFlowProvider>
-                <ConnectModalProvider>
-                  <AppContent />
-                </ConnectModalProvider>
-              </AnalyticsFlowProvider>
-              {POSTHOG_ENABLED && <CookieConsentBanner />}
+              <GeoConfigProvider>
+                <AnalyticsFlowProvider>
+                  <ConnectModalProvider>
+                    <AppContent />
+                  </ConnectModalProvider>
+                </AnalyticsFlowProvider>
+                {POSTHOG_ENABLED && <CookieConsentBanner />}
+              </GeoConfigProvider>
             </PostHogProvider>
           </CookieConsentProvider>
         </AnalyticsErrorBoundary>

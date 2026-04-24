@@ -94,7 +94,7 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
             }
             subHeader={
               <Text className="text-textSecondary" variant="small">
-                <Trans>Third-party vault integrations with Sky ecosystem tokens</Trans>
+                <Trans>Third-party vault integrations with Sky Ecosystem tokens</Trans>
               </Text>
             }
             rightHeader={sharedProps.rightHeaderComponent}

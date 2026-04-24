@@ -4,7 +4,7 @@ import { StUsdsHistoryItem } from './stusds.d';
 import { request, gql } from 'graphql-request';
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
@@ -16,12 +16,12 @@ import { StUsdsProviderType } from './providers/types';
 async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, address: string) {
   const query = gql`
     {
-      stusdsDeposits(where: {owner: "${address}"}) {
+      stusdsDeposits: StusdsDeposit(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         assets
         blockTimestamp
         transactionHash
       }
-      stusdsWithdraws(where: {owner: "${address}"}) {
+      stusdsWithdraws: StusdsWithdraw(where: { owner: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         assets
         blockTimestamp
         transactionHash
@@ -60,7 +60,7 @@ async function fetchNativeStusdsHistory(urlSubgraph: string, chainId: number, ad
 async function fetchCurveStusdsHistory(urlSubgraph: string, chainId: number, address: string) {
   const query = gql`
     {
-      curveTokenExchanges(where: {buyer: "${address}"}) {
+      curveTokenExchanges: CurveTokenExchange(where: { buyer: { _ilike: "${address}" }, chainId: { _eq: ${chainId} } }) {
         soldId
         amountSold
         boughtId
@@ -131,7 +131,7 @@ export function useStUsdsHistory({
 } = {}): StUsdsHistoryHook {
   const { address } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 
   const {

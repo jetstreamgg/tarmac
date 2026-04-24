@@ -1,15 +1,19 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
+import * as Sentry from '@sentry/react';
 import { useChainId, useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
-import { sanitizeUrl } from '@/lib/utils';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
+import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
+import { checkTermsWithRetry } from '@/modules/ui/lib/checkTermsWithRetry';
 
 interface ConnectedContextType {
   isConnectedAndAcceptedTerms: boolean;
   isAuthorized: boolean;
   setHasAcceptedTerms: (value: boolean) => void;
   isCheckingTerms: boolean;
+  termsCheckError: boolean;
+  retryTermsCheck: () => void;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -30,6 +34,8 @@ const ConnectedContext = createContext<ConnectedContextType>({
   isAuthorized: false,
   setHasAcceptedTerms: () => {},
   isCheckingTerms: false,
+  termsCheckError: false,
+  retryTermsCheck: () => {},
   authData: {
     authIsLoading: false
   },
@@ -43,9 +49,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const chainId = useChainId();
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
+  const [termsCheckError, setTermsCheckError] = useState(false);
   const [enabled, setEnabled] = useState(false);
 
-  const skipAuthCheck = !IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true';
+  const skipAuthCheck =
+    (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
 
   const authUrl = import.meta.env.VITE_AUTH_URL || 'https://staging-api.sky.money';
   const {
@@ -54,66 +62,67 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     error: authError
   } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
 
-  const { data: vpnData, isLoading: vpnIsLoading, error: vpnError } = useVpnCheck({ authUrl });
+  const {
+    data: vpnData,
+    isLoading: vpnIsLoading,
+    error: vpnError
+  } = useVpnCheck({ authUrl, skip: skipAuthCheck });
 
   // Track VPN check result once when data or error resolves
   const { trackVpnCheckCompleted } = useVpnAnalytics();
   const vpnTrackedRef = useRef(false);
 
   useEffect(() => {
+    if (vpnError) {
+      Sentry.captureException(vpnError, { tags: { endpoint: 'ip-status' } });
+    }
+  }, [vpnError]);
+
+  useEffect(() => {
+    if (authError) {
+      Sentry.captureException(authError, { tags: { endpoint: 'address-status' } });
+    }
+  }, [authError]);
+
+  useEffect(() => {
     setEnabled(!!address);
   }, [address]);
 
-  // Check whether the user is in a restricted region,
-  // but only flag to reload if the current build is unrestricted
-  const isRestrictedRegion = useMemo(
-    () =>
-      !vpnIsLoading &&
-      import.meta.env.VITE_RESTRICTED_BUILD !== 'true' &&
-      vpnData?.isRestrictedRegion,
-    [vpnIsLoading, vpnData?.isRestrictedRegion]
-  );
+  // Guard against stale responses when the address changes mid-flight
+  const activeAddressRef = useRef<string | null>(null);
 
-  // Reload page if build should be restricted, but isn't.
-  // Since the user now appears to be in a restricted region, reloading
-  // the page should serve them the correct build
-  useEffect(() => {
-    if (isRestrictedRegion) {
-      // Add a slight delay to show message before reloading
-      const timer = setTimeout(() => {
-        window.location.reload();
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [isRestrictedRegion]);
-
-  // Terms acceptance check
-  const checkTermsAcceptance = async (address: string) => {
+  // Terms acceptance check with retry
+  const checkTermsAcceptance = useCallback(async (addr: string) => {
+    activeAddressRef.current = addr;
     setIsCheckingTerms(true);
-    try {
-      const response = await fetch(sanitizeUrl(`${import.meta.env.VITE_TERMS_ENDPOINT}/check`) || '', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ address })
-      });
+    setTermsCheckError(false);
 
-      if (response.ok) {
-        const res = await response.json();
-        setIsCheckingTerms(false);
-        return res;
-      } else {
-        console.error('Failed to send signature');
-        setIsCheckingTerms(false);
-        // Handle error (e.g., show error message to user)
-      }
-    } catch (error) {
-      console.error('Error sending signature:', error);
-      setIsCheckingTerms(false);
-      // Handle error (e.g., show error message to user)
+    const result = await checkTermsWithRetry(addr);
+
+    // Discard result if the address changed while the check was in flight
+    if (activeAddressRef.current !== addr) return;
+
+    setIsCheckingTerms(false);
+
+    if (result.error) {
+      Sentry.captureException(result.lastError ?? new Error('Terms check failed after retries'), {
+        tags: { endpoint: 'terms-check' }
+      });
+      setTermsCheckError(true);
+    } else if (result.accessDenied) {
+      // 403 is an intentional access denial (VPN/region or sanctioned address).
+      // The VPN/address hooks handle the blocked UI — just mark terms as not accepted.
+      setHasAcceptedTerms(false);
+    } else {
+      setHasAcceptedTerms(result.termsAccepted);
     }
-  };
+  }, []);
+
+  const retryTermsCheck = useCallback(() => {
+    if (isConnected && address) {
+      checkTermsAcceptance(address);
+    }
+  }, [isConnected, address, checkTermsAcceptance]);
 
   useEffect(() => {
     if (skipAuthCheck) {
@@ -121,28 +130,35 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
     if (isConnected && address) {
-      checkTermsAcceptance(address).then(({ termsAccepted }) => {
-        setHasAcceptedTerms(termsAccepted);
-      });
+      checkTermsAcceptance(address);
     } else {
       setHasAcceptedTerms(false);
+      setTermsCheckError(false);
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
 
   const isAllowed = useMemo(
     () =>
       !vpnData?.isConnectedToVpn &&
+      !vpnData?.isRestrictedRegion &&
       (!enabled || (enabled && authData?.addressAllowed)) &&
       !authError &&
       !vpnError,
-    [vpnData?.isConnectedToVpn, enabled, authData?.addressAllowed, authError, vpnError]
+    [
+      vpnData?.isConnectedToVpn,
+      vpnData?.isRestrictedRegion,
+      enabled,
+      authData?.addressAllowed,
+      authError,
+      vpnError
+    ]
   );
 
   const isAuthorized = isAllowed || skipAuthCheck;
   const isConnectedAndAcceptedTerms = isConnected && hasAcceptedTerms;
 
   useEffect(() => {
-    if (vpnIsLoading || vpnTrackedRef.current) return;
+    if (skipAuthCheck || vpnIsLoading || vpnTrackedRef.current) return;
     if (!vpnData && !vpnError) return;
     vpnTrackedRef.current = true;
     const result = vpnError
@@ -160,7 +176,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       countryCode: vpnData?.countryCode ?? null,
       result
     });
-  }, [vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
+  }, [skipAuthCheck, vpnIsLoading, vpnData, vpnError, isAllowed, trackVpnCheckCompleted]);
 
   return (
     <ConnectedContext.Provider
@@ -169,6 +185,8 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isAuthorized,
         setHasAcceptedTerms,
         isCheckingTerms,
+        termsCheckError,
+        retryTermsCheck,
         authData: {
           addressAllowed: authData?.addressAllowed,
           authIsLoading,

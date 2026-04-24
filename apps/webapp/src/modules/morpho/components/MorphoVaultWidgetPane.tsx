@@ -12,7 +12,6 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 import { VaultsIntent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -37,7 +36,6 @@ export function MorphoVaultWidgetPane({
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedVaultsOption } =
     useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const onAnalyticsEvent = useWidgetAnalytics('vaults', chainId);
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
@@ -57,8 +55,6 @@ export function MorphoVaultWidgetPane({
     if (searchParams.get(QueryParams.VaultModule) !== VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Update amount in URL if provided and not zero
     if (originAmount && originAmount !== '0') {

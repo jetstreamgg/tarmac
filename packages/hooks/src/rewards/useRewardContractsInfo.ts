@@ -1,58 +1,28 @@
 import { request, gql } from 'graphql-request';
-import {
-  RewardContract,
-  RewardContractChangeRaw,
-  RewardContractInfo,
-  RewardContractInfoRaw
-} from './rewards';
+import { RewardContract, RewardContractInfo, RewardContractInfoRaw } from './rewards';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 
 async function fetchRewardContractsInfo(
   urlSubgraph: string,
-  rewardContracts: RewardContract[]
+  rewardContracts: RewardContract[],
+  chainId: number
 ): Promise<RewardContractInfo[] | undefined> {
-  const rewardContractAddress = rewardContracts.map(f => `"${f.contractAddress}"`);
+  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress.toLowerCase()}"`);
   const query = gql`
-  {
-    rewards(where: {id_in: [${rewardContractAddress}]}) {
-      id
-      totalSupplied,
-      totalRewardsClaimed
-      supplyInstances {
+    {
+      rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
         id
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      withdrawals  {
-        id
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      rewardClaims {
-        id
-        amount
-        transactionHash
-        blockTimestamp
-      }
-      tvl {
-        id
-        amount
-        transactionHash
-        blockTimestamp
-      }
-      suppliers {
-        user
+        totalSupplied
+        totalRewardsClaimed
       }
     }
-  }
-`;
+  `;
 
   const response = (await request(urlSubgraph, query)) as any;
+
   const parsedRewards = response.rewards as RewardContractInfoRaw[];
   if (!parsedRewards) {
     return undefined;
@@ -60,38 +30,7 @@ async function fetchRewardContractsInfo(
 
   return parsedRewards.map(reward => ({
     totalSupplied: BigInt(reward.totalSupplied),
-    totalRewardsClaimed: BigInt(reward.totalRewardsClaimed),
-    supplyInstances: reward.supplyInstances.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      blockTimestamp: parseInt(d.blockTimestamp, 10),
-      transactionHash: d.transactionHash,
-      amount: BigInt(d.amount)
-    })),
-    withdrawals: reward.withdrawals.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      blockTimestamp: parseInt(d.blockTimestamp, 10),
-      transactionHash: d.transactionHash,
-      amount: BigInt(d.amount)
-    })),
-    rewardClaims: reward.rewardClaims.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      amount: BigInt(d.amount),
-      transactionHash: d.transactionHash,
-      blockTimestamp: parseInt(d.blockTimestamp, 10)
-    })),
-    tvl: reward.tvl.map((d: RewardContractChangeRaw) => ({
-      id: d.id,
-      amount: BigInt(d.amount),
-      transactionHash: d.transactionHash,
-      blockTimestamp: parseInt(d.blockTimestamp, 10)
-    })),
-    suppliers: reward.suppliers.reduce((acc: { user: string }[], d: any) => {
-      const userLower = d.user.toLowerCase();
-      if (!acc.some(accUser => accUser.user.toLowerCase() === userLower)) {
-        acc.push({ user: d.user });
-      }
-      return acc;
-    }, [])
+    totalRewardsClaimed: BigInt(reward.totalRewardsClaimed)
   }));
 }
 
@@ -104,7 +43,7 @@ export function useRewardContractsInfo({
   chainId: number;
   rewardContracts: RewardContract[];
 }): ReadHook & { data?: RewardContractInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -113,8 +52,8 @@ export function useRewardContractsInfo({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph && rewardContracts.length > 0),
-    queryKey: ['reward-contracts-info', urlSubgraph, rewardContracts],
-    queryFn: () => fetchRewardContractsInfo(urlSubgraph, rewardContracts)
+    queryKey: ['reward-contracts-info', urlSubgraph, rewardContracts, chainId],
+    queryFn: () => fetchRewardContractsInfo(urlSubgraph, rewardContracts, chainId)
   });
 
   return {

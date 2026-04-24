@@ -5,9 +5,10 @@ import { SavingsRateCard } from '@/modules/savings/components/SavingsRateCard';
 import { SkySavingsRatePoolCard } from '@/modules/savings/components/SkySavingsRatePoolCard';
 import { UsdsTotalSupplyCard } from '@/modules/ui/components/UsdsTotalSupplyCard';
 import { SavingsSuppliersCard } from '@/modules/savings/components/SavingsSuppliersCard';
+import { useGeoConfig } from '@/modules/geo-config';
 
 export function BalancesSkyStatsOverview(): React.ReactElement {
-  const isRestricted = import.meta.env.VITE_RESTRICTED_BUILD === 'true';
+  const { isRegionRestricted: isRestricted } = useGeoConfig();
 
   return (
     <div className="flex w-full flex-wrap justify-between gap-3">

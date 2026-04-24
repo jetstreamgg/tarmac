@@ -1,10 +1,14 @@
+import React from 'react';
 import { describe, expect, it, vi, Mock, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { WagmiWrapper } from '../../test';
 import { useDelegates } from './useDelegates';
 import { TENDERLY_CHAIN_ID } from '../constants';
 import { request } from 'graphql-request';
 import { useUserDelegates } from './useUserDelegates';
+import { createConfig, WagmiProvider, http } from 'wagmi';
+import { mainnet } from 'viem/chains';
+import { mock } from 'wagmi/connectors';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 
 // Mock the request function from graphql-request
 vi.mock('graphql-request', () => ({
@@ -14,7 +18,29 @@ vi.mock('graphql-request', () => ({
   })
 }));
 
-const wrapper = WagmiWrapper;
+// Mock useDelegateMetadataMapping to avoid network calls
+vi.mock('./useDelegateMetadataMapping', () => ({
+  useDelegateMetadataMapping: () => ({ data: undefined })
+}));
+
+// Lightweight wrapper that doesn't depend on Tenderly
+const config = createConfig({
+  chains: [mainnet],
+  connectors: [mock({ accounts: ['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'] })],
+  transports: { [mainnet.id]: http() }
+});
+const queryClient = new QueryClient();
+
+function TestWrapper({ children }: { children?: React.ReactNode }) {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </WagmiProvider>
+  );
+}
+
+const wrapper = TestWrapper;
+
 describe('useDelegates', async () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,9 +83,9 @@ describe('useDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     // Check that the query string is correct
-    expect(query).toContain('delegates');
-    expect(query).toContain('first: 5');
-    expect(query).toContain('skip: 5');
+    expect(query).toContain('Delegate');
+    expect(query).toContain('limit: 5');
+    expect(query).toContain('offset: 5');
   });
 
   it('Should build the correct query with search parameter', async () => {
@@ -83,8 +109,8 @@ describe('useDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     // Check that the query string contains the search parameter
-    expect(query).toContain('{id_contains_nocase: "delegate"}');
-    checkDefaultQueryParameters(query);
+    expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('Should build the correct query with exclude parameter', async () => {
@@ -108,8 +134,8 @@ describe('useDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     // Check that the query string contains the exclude parameter
-    expect(query).toContain('id_not_in: ["0x123", "0x456"]');
-    checkDefaultQueryParameters(query);
+    expect(query).toContain('{ address: { _nin: ["0x123", "0x456"] } }');
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('Should build the correct query with random order parameters', async () => {
@@ -132,10 +158,9 @@ describe('useDelegates', async () => {
     // Extract the query string from the request call
     const [[, query]] = (request as Mock).mock.calls;
 
-    // Check that the query string contains orderBy and orderDirection parameters
-    expect(query).toContain('orderBy:');
-    expect(query).toContain('orderDirection:');
-    checkDefaultQueryParameters(query);
+    // Check that the query string contains order_by parameter
+    expect(query).toContain('order_by:');
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('Should build the correct query without order parameters when random is false', async () => {
@@ -158,10 +183,9 @@ describe('useDelegates', async () => {
     // Extract the query string from the request call
     const [[, query]] = (request as Mock).mock.calls;
 
-    // Check that the query string does not contain orderBy and orderDirection parameters
-    expect(query).not.toContain('orderBy:');
-    expect(query).not.toContain('orderDirection:');
-    checkDefaultQueryParameters(query);
+    // Check that the query string does not contain order_by parameter
+    expect(query).not.toContain('order_by:');
+    checkDefaultQueryParameters(query, 10);
   });
 
   it('should handle zero page size correctly', async () => {
@@ -184,9 +208,9 @@ describe('useDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     // Check that the query string is correct
-    expect(query).toContain('delegates');
-    expect(query).toContain('first: 0');
-    expect(query).toContain('skip: 0');
+    expect(query).toContain('Delegate');
+    expect(query).toContain('limit: 0');
+    expect(query).toContain('offset: 0');
   });
 
   it('Should build the correct query with all parameters', async () => {
@@ -212,16 +236,15 @@ describe('useDelegates', async () => {
     const [[, query]] = (request as Mock).mock.calls;
 
     // Check that the query string contains the correct where clause
-    expect(query).toContain('id_not_in: ["0x123", "0x456"]');
-    expect(query).toContain('{id_contains_nocase: "delegate"}');
+    expect(query).toContain('{ address: { _nin: ["0x123", "0x456"] } }');
+    expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
 
     // Check that the query string contains the correct pagination clause
-    expect(query).toContain('first: 5');
-    expect(query).toContain('skip: 5');
+    expect(query).toContain('limit: 5');
+    expect(query).toContain('offset: 5');
 
-    // Check that the query string contains the correct orderBy and orderDirection parameters
-    expect(query).toContain('orderBy:');
-    expect(query).toContain('orderDirection:');
+    // Check that the query string contains order_by parameter
+    expect(query).toContain('order_by:');
   });
 });
 
@@ -240,12 +263,10 @@ describe('useUserDelegates', async () => {
     expect(request).toHaveBeenCalled();
     const [[, query]] = (request as Mock).mock.calls;
 
-    expect(query).toContain('delegations_: {delegator_contains_nocase: "0xabc", amount_gt: 0}');
-    expect(query).toContain(`
-        delegations(
-          first: 1000
-          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
-        ) {`);
+    expect(query).toContain('{ delegations: { delegator: { _ilike: "%0xabc%" }, amount: { _gt: "0" } } }');
+    expect(query).toContain(`delegations(
+          limit: 1
+          where: { delegator: { _ilike: "%0xabc%" } }`);
   });
 
   it('Should build the correct query with search parameter', async () => {
@@ -262,18 +283,16 @@ describe('useUserDelegates', async () => {
 
     const [[, query]] = (request as Mock).mock.calls;
 
-    expect(query).toContain('{id_contains_nocase: "delegate"}');
-    expect(query).toContain('delegations_: {delegator_contains_nocase: "0xabc", amount_gt: 0}');
-    expect(query).toContain(`
-        delegations(
-          first: 1000
-          where: {delegator_not_in: ["0xce01c90de7fd1bcfa39e237fe6d8d9f569e8a6a3", "0xb1fc11f03b084fff8dae95fa08e8d69ad2547ec1"]}
-        ) {`);
+    expect(query).toContain('{ address: { _ilike: "%delegate%" } }');
+    expect(query).toContain('{ delegations: { delegator: { _ilike: "%0xabc%" }, amount: { _gt: "0" } } }');
+    expect(query).toContain(`delegations(
+          limit: 1
+          where: { delegator: { _ilike: "%0xabc%" } }`);
   });
 });
 
-const checkDefaultQueryParameters = (query: string) => {
-  expect(query).toContain('delegates');
-  expect(query).toContain('first: 10');
-  expect(query).toContain('skip: 0');
+const checkDefaultQueryParameters = (query: string, expectedLimit = 100) => {
+  expect(query).toContain('Delegate');
+  expect(query).toContain(`limit: ${expectedLimit}`);
+  expect(query).toContain('offset: 0');
 };

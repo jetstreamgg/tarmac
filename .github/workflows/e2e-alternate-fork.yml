@@ -28,22 +28,21 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
-      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
-      VITE_CHATBOT_ENABLED: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       USE_ALTERNATE_VNET: 'true'
       FUND_NETWORKS: 'mainnet'
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: 10.17.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -81,7 +80,7 @@ jobs:
           USE_ALTERNATE_VNET: 'true'
 
       - name: Upload Alternate VNet data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: alternate-vnet-data
           path: |
@@ -113,8 +112,7 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
-      VITE_SKIP_CHAT_AUTH_CHECK: 'true'
-      VITE_CHATBOT_ENABLED: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       USE_ALTERNATE_VNET: 'true'
       VITE_USE_ALTERNATE_VNET: 'true'
       FUND_NETWORKS: 'mainnet'
@@ -122,15 +120,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: 10.17.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -147,7 +145,7 @@ jobs:
         run: pnpm -F webapp exec playwright install --with-deps chromium
 
       - name: Download Alternate VNet data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: alternate-vnet-data
 
@@ -174,7 +172,7 @@ jobs:
 
       - name: Upload test results (if failed)
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: alternate-test-results-${{ github.run_id }}
           path: |
@@ -185,7 +183,7 @@ jobs:
 
       - name: Upload test traces (if failed)
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: alternate-test-traces-${{ github.run_id }}
           path: apps/webapp/test-results/
@@ -198,15 +196,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
           version: 10.17.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -215,7 +213,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download Alternate VNet data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: alternate-vnet-data
         continue-on-error: true

@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, RewardUserHistoryResponse } from './rewards';
 import { useConnection, useChainId } from 'wagmi';
@@ -16,23 +16,23 @@ async function fetchRewardsUserHistory(
   if (!rewardContractAddress || !userAddress) return [];
   const query = gql`
     {
-        reward(id:"${rewardContractAddress}"){
-            supplyInstances(where: {user: "${userAddress}"}) {
-            blockTimestamp,
-            transactionHash
-            amount
-            }
-            withdrawals(where: {user: "${userAddress}"})  { 
-            blockTimestamp,
-            transactionHash
-            amount
-            }
-            rewardClaims(where: {user: "${userAddress}"}) {
-            blockTimestamp
-            transactionHash
-            amount
-            }
+      reward: Reward_by_pk(id: "${chainId}-${rewardContractAddress.toLowerCase()}") {
+        supplyInstances(where: { user: { _ilike: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
         }
+        withdrawals(where: { user: { _ilike: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        rewardClaims(where: { user: { _ilike: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+      }
     }
   `;
 
@@ -84,7 +84,7 @@ export function useRewardsUserHistory({
 }): ReadHook & { data?: RewardUserHistoryItem[] } {
   const currentChainId = useChainId();
   const { address: userAddress } = useConnection();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   //this hook is only used for mainnet, update this if this ever changes
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 

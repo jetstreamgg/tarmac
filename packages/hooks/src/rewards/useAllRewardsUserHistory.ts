@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum, ModuleEnum, TransactionTypeEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { RewardUserHistoryItem, AllRewardsUserHistoryResponse, RewardContract } from './rewards';
 import { useAvailableTokenRewardContracts } from './useAvailableTokenRewardContracts';
@@ -14,30 +14,30 @@ async function fetchAllRewardsUserHistory(
   rewardContracts: RewardContract[],
   chainId: number
 ): Promise<RewardUserHistoryItem[] | undefined> {
-  const rewardContractAddresses = rewardContracts.map(f => `"${f.contractAddress}"`);
+  const rewardContractAddresses = rewardContracts.map(f => `"${chainId}-${f.contractAddress.toLowerCase()}"`);
 
   const query = gql`
-  {
-    rewards(where: {id_in: [${rewardContractAddresses}]}) {
-      id
-      supplyInstances(where: {user: "${userAddress}"}) {
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      withdrawals(where: {user: "${userAddress}"})  { 
-        blockTimestamp,
-        transactionHash
-        amount
-      }
-      rewardClaims(where: {user: "${userAddress}"}) {
-        blockTimestamp
-        transactionHash
-        amount
+    {
+      rewards: Reward(where: { id: { _in: [${rewardContractAddresses}] }, chainId: { _eq: ${chainId} } }) {
+        address
+        supplyInstances(where: { user: { _ilike: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        withdrawals(where: { user: { _ilike: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
+        rewardClaims(where: { user: { _ilike: "${userAddress}" } }) {
+          blockTimestamp
+          transactionHash
+          amount
+        }
       }
     }
-  }
-`;
+  `;
 
   const response = (await request(urlSubgraph, query)) as AllRewardsUserHistoryResponse;
 
@@ -55,7 +55,7 @@ async function fetchAllRewardsUserHistory(
       rewardsClaim: false,
       module: ModuleEnum.REWARDS,
       type: TransactionTypeEnum.SUPPLY,
-      rewardContractAddress: f.id,
+      rewardContractAddress: f.address,
       chainId
     }));
     const withdrawals = f.withdrawals.map(e => ({
@@ -65,7 +65,7 @@ async function fetchAllRewardsUserHistory(
       rewardsClaim: false,
       module: ModuleEnum.REWARDS,
       type: TransactionTypeEnum.WITHDRAW,
-      rewardContractAddress: f.id,
+      rewardContractAddress: f.address,
       chainId
     }));
     const rewardClaims = f.rewardClaims.map(e => ({
@@ -75,7 +75,7 @@ async function fetchAllRewardsUserHistory(
       rewardsClaim: true,
       module: ModuleEnum.REWARDS,
       type: TransactionTypeEnum.REWARD,
-      rewardContractAddress: f.id,
+      rewardContractAddress: f.address,
       chainId
     }));
 
@@ -95,7 +95,7 @@ export function useAllRewardsUserHistory({
 } = {}): ReadHook & { data?: RewardUserHistoryItem[] } {
   const { address: userAddress } = useConnection();
   const currentChainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(currentChainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
   //this hook is only used for mainnet, update this if this ever changes
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
   const rewardContracts = useAvailableTokenRewardContracts(chainIdToUse);

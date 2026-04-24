@@ -32,7 +32,12 @@ pnpm e2e:ui         # Run E2E tests with UI (interactive)
 ```bash
 pnpm lint            # Run ESLint
 pnpm typecheck       # Run TypeScript type checking
-pnpm prettier        # Format code
+pnpm prettier        # Format (writes) every file in the repo. Appended path args are ignored — it always targets "."
+pnpm prettier:check  # Check formatting without writing. Same caveat: always checks "."
+
+# To check/write a narrow path, bypass the script and hit the binary directly:
+# pnpm exec prettier --check <path>
+# pnpm exec prettier --write <path>
 ```
 
 ### Build
@@ -41,6 +46,14 @@ pnpm prettier        # Format code
 pnpm build           # Build all packages and webapp
 pnpm build:packages  # Build packages only
 ```
+
+### Security audit
+
+```bash
+pnpm audit --prod --audit-level high   # Audit runtime deps; fails on high/critical
+```
+
+`pnpm audit`'s `dev` flag is unreliable in workspaces. CI uses `pnpm audit --prod --audit-level high` to audit only the runtime dependency trees.
 
 ### i18n
 
@@ -140,7 +153,8 @@ pnpm messages        # Extract and compile translations
 - pnpm v10.17.0+ required
 - Key environment variables:
   - `TENDERLY_API_KEY` - For test network forking
-  - `VITE_RPC_PROVIDER_*` - RPC endpoints
+  - `VITE_PROXY_ORIGIN` - Origin of the Sky RPC/indexer proxy (RPC URLs are built as `${VITE_PROXY_ORIGIN}/rpc/<chainId>`)
+  - `VITE_RPC_PROVIDER_TENDERLY` - Tenderly virtual network RPC used as the dev-mode chain across all modules
   - `VITE_WALLETCONNECT_PROJECT_ID` - Wallet connection
   - `VITE_USE_MOCK_WALLET` - Testing mode
 

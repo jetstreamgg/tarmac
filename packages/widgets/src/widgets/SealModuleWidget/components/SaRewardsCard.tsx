@@ -103,16 +103,6 @@ export const SaRewardsCard = ({
               <Warning boxSize={16} viewBox="0 0 16 16" />
             ) : null}
           </MotionVStack>
-          <MotionVStack className="items-end justify-between" gap={2} variants={positionAnimations}>
-            <Text className="text-textSecondary text-sm leading-4">{t`Suppliers`}</Text>
-            {rewardContractInfo ? (
-              <Text>{rewardContractInfo.suppliers.length}</Text>
-            ) : isRewardContractInfoLoading ? (
-              <Skeleton className="bg-textSecondary h-5 w-10" />
-            ) : rewardContractInfoError ? (
-              <Warning boxSize={16} viewBox="0 0 16 16" />
-            ) : null}
-          </MotionVStack>
         </HStack>
       }
       onClick={handleSelectRewardContract}

@@ -32,7 +32,7 @@ export const ExternalLinkModal: React.FC = () => {
 
   const handleConfirm = useCallback(() => {
     setExternalLinkModalOpened(false);
-    window.open(externalLinkModalUrl, '_blank');
+    window.open(externalLinkModalUrl, '_blank', 'noopener,noreferrer');
   }, [externalLinkModalUrl, setExternalLinkModalOpened]);
 
   let termsLink: any[] = [];

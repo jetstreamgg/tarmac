@@ -1,7 +1,7 @@
 import { request, gql } from 'graphql-request';
 import { ReadHook } from '../hooks';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { getMakerSubgraphUrl } from '../helpers/getSubgraphUrl';
+import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { Bark, SealPosition } from './sealModule';
 import { useQuery } from '@tanstack/react-query';
 import { useConnection, useChainId } from 'wagmi';
@@ -11,10 +11,10 @@ type SealPositionResponse = {
     mkrLocked: string;
     usdsDebt: string;
     voteDelegate: {
-      id: string;
+      address: string;
     } | null;
     reward: {
-      id: string;
+      address: string;
     } | null;
     barks: Bark[];
   }[];
@@ -23,22 +23,22 @@ type SealPositionResponse = {
 async function fetchSealPosition(
   urlSubgraph: string,
   urnIndex: number,
+  chainId: number,
   address?: string
 ): Promise<SealPosition | undefined> {
   if (!address) return;
   const query = gql`
     {
-      sealUrns(where: {owner: "${address}", index: "${urnIndex}"}) {
+      sealUrns: SealUrn(where: { owner: { _ilike: "${address}" }, index: { _eq: "${urnIndex}" }, chainId: { _eq: ${chainId} } }) {
         mkrLocked
         usdsDebt
         voteDelegate {
-          id
+          address
         }
         reward {
-          id
+          address
         }
         barks {
-          id
           ilk
           clipperId
         }
@@ -56,8 +56,8 @@ async function fetchSealPosition(
     index: urnIndex,
     mkrLocked: BigInt(mkrLocked),
     usdsDebt: BigInt(usdsDebt),
-    selectedDelegate: voteDelegate?.id,
-    selectedReward: reward?.id,
+    selectedDelegate: voteDelegate?.address,
+    selectedReward: reward?.address,
     barks: response.sealUrns[0].barks
   };
 }
@@ -71,7 +71,7 @@ export function useSealPosition({
 }): ReadHook & { data?: SealPosition } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getMakerSubgraphUrl(chainId) || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
   const {
     data,
@@ -80,8 +80,8 @@ export function useSealPosition({
     isLoading
   } = useQuery({
     enabled: Boolean(urlSubgraph),
-    queryKey: ['seal-position-details', urlSubgraph, address, urnIndex],
-    queryFn: () => fetchSealPosition(urlSubgraph, urnIndex, address)
+    queryKey: ['seal-position-details', urlSubgraph, address, urnIndex, chainId],
+    queryFn: () => fetchSealPosition(urlSubgraph, urnIndex, chainId, address)
   });
 
   return {

@@ -3,7 +3,7 @@ import { WidgetPane } from './WidgetPane';
 import { DetailsPane } from './DetailsPane';
 import { AppContainer } from './AppContainer';
 import { useSearchParams } from 'react-router-dom';
-import { CHATBOT_ENABLED, QueryParams, mapQueryParamToIntent } from '@/lib/constants';
+import { QueryParams, mapQueryParamToIntent } from '@/lib/constants';
 
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateLinkedActionSearchParams, validateSearchParams } from '@/modules/utils/validateSearchParams';
@@ -11,10 +11,6 @@ import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
 import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
-import { useSendMessage } from '@/modules/chat/hooks/useSendMessage';
-import { ChatWithTerms } from '@/modules/chat/components/ChatWithTerms';
-import { useWalletTermsAssociation } from '@/modules/chat/hooks/useWalletTermsAssociation';
-import { useChatNotification } from '../hooks/useChatNotification';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
 import { useSpkStakingRewardsToast } from '../hooks/useSpkStakingRewardsToast';
@@ -88,8 +84,6 @@ export function MainApp() {
     }
   });
 
-  const { sendMessage } = useSendMessage();
-
   const widgetParam = searchParams.get(QueryParams.Widget);
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const rewardContract = searchParams.get(QueryParams.Reward) || undefined;
@@ -101,12 +95,6 @@ export function MainApp() {
   const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
   const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
-  const chatPanelEnabled = CHATBOT_ENABLED;
-  const chatParam =
-    chatPanelEnabled &&
-    (bpi >= BP['3xl']
-      ? !(searchParams.get(QueryParams.Chat) === 'false')
-      : searchParams.get(QueryParams.Chat) === 'true');
 
   const newChainId = network
     ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
@@ -128,19 +116,14 @@ export function MainApp() {
   // 1. Governance Migration (for connected wallets with MKR ≥ 0.05)
   // 2. SPK Staking Rewards (for users with staking positions using SPK rewards)
   // 3. USDS-SKY Rewards (for users with position in deprecated USDS-SKY rewards)
-  // 4. Chat Notification (lowest priority)
 
   // Display notifications based on queue priority
   useGovernanceMigrationToast(isAuthorized && shouldShowNotification('governance-migration'));
   useSpkStakingRewardsToast(isAuthorized && shouldShowNotification('spk-staking-rewards'));
   useUsdsSkyRewardsToast(isAuthorized && shouldShowNotification('usds-sky-rewards'));
-  useChatNotification(isAuthorized && shouldShowNotification('chat'));
 
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
-
-  // Associate wallet address with chatbot terms acceptance (if CHATBOT_ENABLED)
-  useWalletTermsAssociation();
 
   // Run validation on search params whenever search params change
   useEffect(() => {
@@ -257,13 +240,10 @@ export function MainApp() {
 
   return (
     <AppContainer>
-      {(bpi > BP.sm || !chatParam) && (
-        <WidgetPane key={`widget-pane-${bpi}`} intent={intent}>
-          {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
-        </WidgetPane>
-      )}
-      {(bpi >= BP.xl || (bpi > BP.sm && !chatParam)) && detailsParam && <DetailsPane intent={intent} />}
-      {chatParam && <ChatWithTerms sendMessage={sendMessage} />}
+      <WidgetPane key={`widget-pane-${bpi}`} intent={intent}>
+        {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
+      </WidgetPane>
+      {bpi > BP.sm && detailsParam && <DetailsPane intent={intent} />}
     </AppContainer>
   );
 }

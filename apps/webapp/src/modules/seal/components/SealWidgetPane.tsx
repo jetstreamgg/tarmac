@@ -13,7 +13,6 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useEffect } from 'react';
-import { useChatContext } from '@/modules/chat/context/ChatContext';
 
 import { Error } from '@/modules/layout/components/Error';
 export function SealWidgetPane(sharedProps: SharedProps) {
@@ -37,7 +36,6 @@ export function SealWidgetPane(sharedProps: SharedProps) {
   const refreshSealHistory = () => {};
   // const { mutate: refreshSealHistory } = useSealHistory();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { setShouldDisableActionButtons } = useChatContext();
 
   const onSealUrnChange = (urn?: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined }) => {
     // Prevent race conditions
@@ -85,8 +83,6 @@ export function SealWidgetPane(sharedProps: SharedProps) {
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SEAL_INTENT]) {
       return;
     }
-
-    setShouldDisableActionButtons(txStatus === TxStatus.INITIALIZED);
 
     // Set flow search param based on widgetState.flow
     if (widgetState.flow) {
@@ -195,7 +191,7 @@ export function SealWidgetPane(sharedProps: SharedProps) {
         flow
       }}
       termsLink={Array.isArray(termsLink) && termsLink.length > 0 ? termsLink[0] : undefined}
-      mkrSkyUpgradeUrl="https://upgrademkrtosky.sky.money"
+      mkrSkyUpgradeUrl="https://upgrademkrtosky.skyeco.com"
     />
   );
 }

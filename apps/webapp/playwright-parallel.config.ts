@@ -25,7 +25,7 @@ export default defineConfig({
 
   use: {
     baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
+    trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
     video: process.env.RECORD_VIDEO ? 'on' : 'off',
     // Add explicit viewport for all tests
     viewport: { width: 1920, height: 1080 },
@@ -61,13 +61,17 @@ export default defineConfig({
         '**/landing.spec.ts',
         '**/upgrade.spec.ts',
         // '**/unstake-repay.spec.ts',
-        '**/chatbot.spec.ts',
         '**/pane-visibility.spec.ts',
         '**/expert-stusds.spec.ts',
         '**/stusds-provider-switching.spec.ts',
         // '**/capped-osm-unstake.spec.ts',
-        '**/sequential-tx.spec.ts'
-        // '**/vaults-morpho.spec.ts'
+        '**/sequential-tx.spec.ts',
+        '**/vaults-morpho.spec.ts',
+        '**/mainnet-psm.spec.ts',
+        '**/base-psm.spec.ts',
+        '**/arbitrum-psm.spec.ts',
+        '**/optimism-psm.spec.ts',
+        '**/unichain-psm.spec.ts'
       ]
     }
     // {

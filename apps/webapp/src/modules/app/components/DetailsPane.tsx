@@ -6,7 +6,7 @@ import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
 import { MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
-import { QueryParams } from '@/lib/constants';
+import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
 import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
@@ -24,6 +24,8 @@ import { ExpertDetailsPane } from '@/modules/expert/components/ExpertDetailsPane
 import { VaultsDetailsPane } from '@/modules/vaults/components/VaultsDetailsPane';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
+import { PsmConversionDetails } from '@/modules/convert/components/PsmConversionDetails';
+import { ConvertOverviewDetails } from '@/modules/convert/components/ConvertOverviewDetails';
 
 type DetailsPaneProps = {
   intent: Intent;
@@ -48,12 +50,15 @@ const MotionDetailsWrapper = forwardRef<
 export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const defaultDetail = Intent.BALANCES_INTENT;
   const [intentState, setIntentState] = useState<Intent>(intent || defaultDetail);
-  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
   const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
   const chainId = useChainId();
   const [searchParams] = useSearchParams();
+  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
+    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
+  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
 
   // Get the selected vault address from URL params (for multi-vault support)
   const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
@@ -68,7 +73,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
       if (prevIntentState !== intent) {
         // By giving the keys a new value, we force the motion component to animate the new component in, even if it's
         // the same component as before. This prevents the component from being re-added before being removed
-        setKeys(prevKeys => prevKeys.map(key => key + 15));
+        setKeys(prevKeys => prevKeys.map(key => key + prevKeys.length));
       }
 
       return intent || defaultDetail;
@@ -79,16 +84,18 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
     // The remaining padding in the right is added by the scrollbar
     // `details-pane` class is used by the AppContainer component to make the container full width if the details pane is visible
     <motion.div
-      className="scrollbar-thin-always details-pane bg-panel flex w-full flex-col gap-4 p-3 group-has-[.chat-pane]:w-[calc(100%-764px)] md:overflow-auto md:rounded-3xl md:p-6 md:pr-3.5 xl:p-8 xl:pr-[22px]"
+      className="scrollbar-thin-always details-pane bg-panel flex w-full flex-col gap-4 p-3 md:overflow-auto md:rounded-3xl md:p-6 md:pr-3.5 xl:p-8 xl:pr-[22px]"
       layout
       key="details-pane"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ layout: { duration: 0 }, opacity: { duration: 0.5, ease: easeOutExpo } }}
     >
-      {intentState !== Intent.BALANCES_INTENT && !isConnectedAndAcceptedTerms && (
-        <ConnectCard intent={intent} />
-      )}
+      {intentState !== Intent.BALANCES_INTENT &&
+        !isConnectedAndAcceptedTerms &&
+        !(intent === Intent.CONVERT_INTENT && activeConvertOption === ConvertIntent.PSM_INTENT) && (
+          <ConnectCard intent={intent} convertOption={activeConvertOption} />
+        )}
       <AnimatePresence mode="popLayout">
         {(() => {
           switch (intentState) {
@@ -158,23 +165,29 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   );
               }
             case Intent.CONVERT_INTENT:
-              switch (selectedConvertOption) {
-                case ConvertIntent.UPGRADE_INTENT:
+              switch (activeConvertOption) {
+                case ConvertIntent.PSM_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[12]}>
+                      <PsmConversionDetails />
+                    </MotionDetailsWrapper>
+                  );
+                case ConvertIntent.UPGRADE_INTENT:
+                  return (
+                    <MotionDetailsWrapper key={keys[13]}>
                       <UpgradeDetails />
                     </MotionDetailsWrapper>
                   );
                 case ConvertIntent.TRADE_INTENT:
                   return (
-                    <MotionDetailsWrapper key={keys[13]}>
+                    <MotionDetailsWrapper key={keys[14]}>
                       <TradeDetails />
                     </MotionDetailsWrapper>
                   );
                 default:
                   return (
-                    <MotionDetailsWrapper key={keys[14]}>
-                      <BalancesDetails />
+                    <MotionDetailsWrapper key={keys[15]}>
+                      <ConvertOverviewDetails />
                     </MotionDetailsWrapper>
                   );
               }

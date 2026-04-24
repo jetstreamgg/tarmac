@@ -10,12 +10,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CheckedState } from '@radix-ui/react-checkbox';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { sanitizeUrl } from '@/lib/utils';
+import { DialogTitle } from '@/components/ui/dialog';
 import { TermsDialog } from './TermsDialog';
 import { getTermsContent } from './terms-loader';
 
 export function TermsModal() {
   const { closeModal, isModalOpen, openModal } = useTermsModal();
-  const { isCheckingTerms, setHasAcceptedTerms } = useConnectedContext();
+  const { isCheckingTerms, termsCheckError, retryTermsCheck, setHasAcceptedTerms } = useConnectedContext();
   const [isChecked, setIsChecked] = useState(false);
   const [signStatus, setSignStatus] = useState<'idle' | 'loading' | 'signing' | 'error'>('idle');
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
@@ -80,6 +81,9 @@ export function TermsModal() {
       setSignStatus('idle');
       setIsChecked(false);
       setHasScrolledToEnd(false);
+      if (termsCheckError) {
+        disconnect();
+      }
       closeModal();
     }
   };
@@ -150,8 +154,33 @@ export function TermsModal() {
     </Text>
   );
 
+  const termsCheckErrorContent = (
+    <div className="flex flex-col items-center gap-4 p-4">
+      <DialogTitle asChild>
+        <Text className="text-text text-center">
+          <Trans>Something went wrong</Trans>
+        </Text>
+      </DialogTitle>
+      <Text className="text-error text-center text-sm leading-none md:leading-tight">
+        <Trans>
+          We couldn&apos;t verify your terms acceptance. Please check your connection and try again.
+        </Trans>
+      </Text>
+      <Button variant="primary" onClick={retryTermsCheck}>
+        <Text>
+          <Trans>Retry</Trans>
+        </Text>
+      </Button>
+      <Button variant="outline" onClick={handleReject}>
+        <Text>
+          <Trans>Disconnect Wallet</Trans>
+        </Text>
+      </Button>
+    </div>
+  );
+
   const triggerButton = (
-    <Button variant="connect" onClick={openModal}>
+    <Button variant="connect" onClick={termsCheckError ? retryTermsCheck : openModal}>
       <Trans>Connect Wallet</Trans>
     </Button>
   );
@@ -173,7 +202,8 @@ export function TermsModal() {
       showScrollInstruction={false}
       hideScrollTracking={false}
       triggerButton={triggerButton}
-      showLoadingState={isCheckingTerms || signStatus === 'loading'}
+      showLoadingState={isCheckingTerms || signStatus === 'loading' || termsCheckError}
+      loadingContent={termsCheckError ? termsCheckErrorContent : undefined}
     />
   );
 }

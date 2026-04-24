@@ -1,8 +1,12 @@
+import { readFileSync } from 'fs';
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
+
+const { version: APP_VERSION } = JSON.parse(readFileSync('./package.json', 'utf-8'));
 import react from '@vitejs/plugin-react-swc';
 import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
@@ -14,33 +18,40 @@ enum modeEnum {
 
 // https://vitejs.dev/config/
 export default ({ mode }: { mode: modeEnum }) => {
-  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+  process.env = { ...process.env, ...loadEnv(mode, process.cwd(), ['VITE_', 'SENTRY_']) };
 
-  const RPC_PROVIDER_MAINNET = process.env.VITE_RPC_PROVIDER_MAINNET || '';
+  // Must match the release format in src/modules/sentry/init.ts
+  const sentryEnvironment = process.env.VITE_SENTRY_ENVIRONMENT || process.env.VITE_ENV_NAME || 'development';
+  const sentryRelease =
+    process.env.VITE_SENTRY_RELEASE ||
+    process.env.VITE_CF_PAGES_COMMIT_SHA ||
+    `${APP_VERSION}-${sentryEnvironment}`;
+
+  // Only generate and upload sourcemaps when all Sentry credentials are present
+  const shouldUploadSourcemaps = !!(
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.SENTRY_ORG &&
+    process.env.SENTRY_PROJECT
+  );
+
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
-  const RPC_PROVIDER_BASE = process.env.VITE_RPC_PROVIDER_BASE || '';
-  const RPC_PROVIDER_ARBITRUM = process.env.VITE_RPC_PROVIDER_ARBITRUM || '';
-  const RPC_PROVIDER_OPTIMISM = process.env.VITE_RPC_PROVIDER_OPTIMISM || '';
-  const RPC_PROVIDER_UNICHAIN = process.env.VITE_RPC_PROVIDER_UNICHAIN || '';
+  const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
   const CONTENT_SECURITY_POLICY = `
     default-src 'self';
     script-src 'self'
-      'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
       https://static.cloudflareinsights.com
       https://challenges.cloudflare.com
-      https://*.posthog.com;
-    style-src 'self' 'unsafe-inline' https://*.posthog.com;
-    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com;
+      https://*.posthog.com https://e.sky.money;
+    style-src 'self' 'unsafe-inline' https://*.posthog.com https://e.sky.money;
+    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com https://e.sky.money;
     font-src 'self';
     connect-src 'self'
-      ${RPC_PROVIDER_MAINNET}
+      https://proxy.sky.money
+      https://staging-proxy.sky.money
+      ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
-      ${RPC_PROVIDER_BASE}
-      ${RPC_PROVIDER_ARBITRUM}
-      ${RPC_PROVIDER_OPTIMISM}
-      ${RPC_PROVIDER_UNICHAIN}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
@@ -62,10 +73,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
       https://vote.sky.money
-      https://query-subgraph-testnet.sky.money
-      https://query-subgraph-staging.sky.money
-      https://query-subgraph.sky.money
-      https://api.thegraph.com
       https://staging-api.sky.money
       https://api.sky.money
       https://info-sky.blockanalitica.com
@@ -87,8 +94,12 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://a.markfi.xyz
       wss://metamask-sdk.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
+      https://*.jetstream-account.workers.dev
       cloudflareinsights.com
-      https://*.posthog.com;
+      https://*.posthog.com
+      https://e.sky.money
+      https://*.sentry.io
+      https://*.ingest.sentry.io;
     frame-src 'self'
       https://verify.walletconnect.com
       https://verify.walletconnect.org
@@ -114,14 +125,20 @@ export default ({ mode }: { mode: modeEnum }) => {
     },
     root: 'src',
     envDir: '../',
+    define: {
+      __APP_VERSION__: JSON.stringify(APP_VERSION)
+    },
     build: {
+      sourcemap: shouldUploadSourcemaps,
       outDir: '../dist',
-      emptyOutDir: true
+      emptyOutDir: true,
+      modulePreload: { polyfill: false }
     },
     test: {
       exclude: [...configDefaults.exclude],
       globals: true,
-      environment: 'happy-dom'
+      environment: 'happy-dom',
+      setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')]
     },
     resolve: {
       alias: {
@@ -171,7 +188,18 @@ export default ({ mode }: { mode: modeEnum }) => {
         plugins: [['@lingui/swc-plugin', {}]]
       }),
       tailwindcss(),
-      lingui()
+      lingui(),
+      sentryVitePlugin({
+        applicationKey: 'sky-webapp',
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        release: { name: sentryRelease },
+        disable: !shouldUploadSourcemaps,
+        sourcemaps: {
+          filesToDeleteAfterUpload: ['**/*.map']
+        }
+      })
     ]
   });
 };

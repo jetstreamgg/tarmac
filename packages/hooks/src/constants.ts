@@ -30,25 +30,7 @@ export enum TrustLevelEnum {
   TWO
 }
 
-export const URL_MAKER_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-mainnet';
-export const URL_MAKER_SUBGRAPH_TENDERLY =
-  'https://query-subgraph-staging.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-testnet';
-
-export const URL_BASE_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-base';
-
-export const URL_ARBITRUM_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-arbitrum';
-
-export const URL_OPTIMISM_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-optimism';
-
-export const URL_UNICHAIN_SUBGRAPH_MAINNET =
-  'https://query-subgraph.sky.money/subgraphs/name/jetstreamgg/sky-subgraph-unichain';
-
-export const URL_BLOCKS_SUBGRAPH_MAINNET =
-  'https://gateway-arbitrum.network.thegraph.com/api/937ce273344a610ea828ebe9702f6b65/subgraphs/id/9A6bkprqEG2XsZUYJ5B2XXp6ymz9fNcn4tVPxMWDztYC';
+export const URL_SKY_SUBGRAPH = 'https://proxy.sky.money/indexer';
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;

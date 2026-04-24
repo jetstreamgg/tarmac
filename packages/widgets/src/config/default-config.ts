@@ -90,7 +90,6 @@ export const defaultConfig: WidgetsConfig = {
       { ...eth, address: eth.address[mainnet.id] },
       { ...weth, address: wethAddress[mainnet.id] },
       { ...dai, address: mcdDaiAddress[mainnet.id] },
-      { ...mkr, address: mkrAddress[mainnet.id] },
       { ...usds, address: usdsAddress[mainnet.id] },
       { ...susds, address: sUsdsAddress[mainnet.id] },
       { ...sky, address: skyAddress[mainnet.id] },
@@ -103,7 +102,6 @@ export const defaultConfig: WidgetsConfig = {
       { ...eth, address: eth.address[TENDERLY_CHAIN_ID] },
       { ...weth, address: wethAddress[TENDERLY_CHAIN_ID] },
       { ...dai, address: mcdDaiAddress[TENDERLY_CHAIN_ID] },
-      { ...mkr, address: mkrAddress[TENDERLY_CHAIN_ID] },
       { ...usds, address: usdsAddress[TENDERLY_CHAIN_ID] },
       { ...susds, address: sUsdsAddress[TENDERLY_CHAIN_ID] },
       { ...sky, address: skyAddress[TENDERLY_CHAIN_ID] }
@@ -138,7 +136,6 @@ export const defaultConfig: WidgetsConfig = {
     ]
   },
   tradeDisallowedPairs: {
-    ETH: [weth.symbol as SUPPORTED_TOKEN_SYMBOLS],
-    MKR: [sky.symbol as SUPPORTED_TOKEN_SYMBOLS]
+    ETH: [weth.symbol as SUPPORTED_TOKEN_SYMBOLS]
   }
 };
