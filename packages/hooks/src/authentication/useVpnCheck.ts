@@ -12,10 +12,6 @@ const checkVpn = async (authUrl: string): Promise<VpnResponse> => {
     throw new Error('Missing auth URL');
   }
 
-  let isConnectedToVpn = false;
-  let isRestrictedRegion = false;
-  let countryCode = '';
-
   const vpnRes = await fetch(`${authUrl}/ip/status`);
   if (!vpnRes.ok) {
     throw new Error('Could not fetch VPN status');
@@ -23,11 +19,11 @@ const checkVpn = async (authUrl: string): Promise<VpnResponse> => {
 
   const { country_code, is_vpn, is_restricted_region } = await vpnRes.json();
 
-  countryCode = country_code;
-  isConnectedToVpn = is_vpn;
-  isRestrictedRegion = is_restricted_region;
-
-  return { countryCode, isConnectedToVpn, isRestrictedRegion };
+  return {
+    countryCode: country_code,
+    isConnectedToVpn: is_vpn,
+    isRestrictedRegion: is_restricted_region
+  };
 };
 
 type Props = ReadHookParams<VpnResponse> & { authUrl: string; skip?: boolean };

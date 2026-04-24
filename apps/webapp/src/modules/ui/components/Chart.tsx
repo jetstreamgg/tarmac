@@ -155,12 +155,10 @@ const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
   if (!data.length) {
     return [];
   }
-  let filteredData = [...data];
-
   const steps = bpi < BP.lg ? 4 : 7;
   const stepSize = (data.length - 1) / (steps - 1);
 
-  filteredData = [data[0]]; // Always include the first element
+  const filteredData = [data[0]]; // Always include the first element
 
   // Generate indices for intermediate steps
   for (let i = 1; i < steps - 1; i++) {
