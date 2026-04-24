@@ -44,8 +44,9 @@ jobs:
       VITE_TERMS_LINK: '[{"url":"https://legal-terms","name":"Terms of Use"}]'
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
-      VITE_SKIP_AUTH_CHECK: 'true' 
+      VITE_SKIP_AUTH_CHECK: 'true'
       VITE_GEO_BYPASS: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       FUND_NETWORKS: ${{ github.event.inputs.networks || 'mainnet,base,arbitrum,optimism,unichain' }}
 
     steps:
@@ -180,6 +181,7 @@ jobs:
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
       VITE_GEO_BYPASS: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
       PLAYWRIGHT_SHARD_TOTAL: ${{ github.event.inputs.shards || '8' }}
       TEST_WORKERS: ${{ github.event.inputs.workers_per_shard || '2' }}
