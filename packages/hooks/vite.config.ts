@@ -42,8 +42,7 @@ export default defineConfig({
     setupFiles: ['./test/setup.ts'],
     globalSetup: ['./test/globalSetup.ts'],
     pool: 'forks',
-    maxWorkers: 1,
-    isolate: false
+    maxWorkers: 1
   },
   plugins: [
     !process.env.VERCEL &&
