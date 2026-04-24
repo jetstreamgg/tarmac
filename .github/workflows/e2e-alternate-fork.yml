@@ -28,6 +28,7 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       USE_ALTERNATE_VNET: 'true'
       FUND_NETWORKS: 'mainnet'
 
@@ -111,6 +112,7 @@ jobs:
       VITE_BATCH_TX_ENABLED: 'true'
       VITE_USE_MOCK_WALLET: 'true'
       VITE_SKIP_AUTH_CHECK: 'true'
+      VITE_PROXY_ORIGIN: 'https://staging-proxy.sky.money'
       USE_ALTERNATE_VNET: 'true'
       VITE_USE_ALTERNATE_VNET: 'true'
       FUND_NETWORKS: 'mainnet'

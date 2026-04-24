@@ -63,7 +63,7 @@ Note: Never commit your actual API key to version control. Always keep it secure
 
 #### Global dependencies
 
-This repository uses [pnpm workspaces](https://pnpm.io/workspaces) to manage multiple projects. You need to install **Node.js v18 or higher** and **pnpm v8 or higher**.
+This repository uses [pnpm workspaces](https://pnpm.io/workspaces) to manage multiple projects. You need to install **Node.js v20.19 or higher** and **pnpm v10.17 or higher**.
 
 #### Node.js and pnpm
 
