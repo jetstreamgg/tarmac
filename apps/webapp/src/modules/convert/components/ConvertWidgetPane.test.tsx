@@ -32,24 +32,28 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
-vi.mock('@jetstreamgg/sky-widgets', () => ({
-  CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>,
-  WidgetContainer: ({
-    children,
-    header,
-    subHeader
-  }: {
-    children: ReactNode;
-    header?: ReactNode;
-    subHeader?: ReactNode;
-  }) => (
-    <div>
-      {header}
-      {subHeader}
-      {children}
-    </div>
-  )
-}));
+vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+  return {
+    ...actual,
+    CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>,
+    WidgetContainer: ({
+      children,
+      header,
+      subHeader
+    }: {
+      children: ReactNode;
+      header?: ReactNode;
+      subHeader?: ReactNode;
+    }) => (
+      <div>
+        {header}
+        {subHeader}
+        {children}
+      </div>
+    )
+  };
+});
 
 vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({
@@ -58,9 +62,13 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   })
 }));
 
-vi.mock('react-router-dom', () => ({
-  useSearchParams: () => [mockSearchParams, setSearchParamsMock]
-}));
+vi.mock('react-router-dom', async importOriginal => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return {
+    ...actual,
+    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+  };
+});
 
 vi.mock('@/components/ui/use-toast', () => ({
   useToast: () => ({
@@ -86,11 +94,15 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-utils', () => ({
-  isL2ChainId: (chainId: number) => chainId !== 1,
-  isMainnetId: (chainId: number) => chainId === 1,
-  useIsSafeWallet: () => false
-}));
+vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+  return {
+    ...actual,
+    isL2ChainId: (chainId: number) => chainId !== 1,
+    isMainnetId: (chainId: number) => chainId === 1,
+    useIsSafeWallet: () => false
+  };
+});
 
 vi.mock('@/data/wagmi/config/config.default', () => ({
   getSupportedChainIds: () => [1, 8453],
@@ -145,20 +157,28 @@ vi.mock('@/modules/layout/components/Typography', () => ({
   Text: ({ children }: { children: ReactNode }) => <div>{children}</div>
 }));
 
-vi.mock('@/modules/icons', () => ({
-  Convert: () => <span>convert-icon</span>,
-  Expert: () => <span>expert-icon</span>,
-  RewardsModule: () => <span>rewards-icon</span>,
-  Savings: () => <span>savings-icon</span>,
-  Seal: () => <span>seal-icon</span>,
-  Upgrade: () => <span>upgrade-icon</span>,
-  Trade: () => <span>trade-icon</span>,
-  Vaults: () => <span>vaults-icon</span>
-}));
+vi.mock('@/modules/icons', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/modules/icons')>();
+  return {
+    ...actual,
+    Convert: () => <span>convert-icon</span>,
+    Expert: () => <span>expert-icon</span>,
+    RewardsModule: () => <span>rewards-icon</span>,
+    Savings: () => <span>savings-icon</span>,
+    Seal: () => <span>seal-icon</span>,
+    Upgrade: () => <span>upgrade-icon</span>,
+    Trade: () => <span>trade-icon</span>,
+    Vaults: () => <span>vaults-icon</span>
+  };
+});
 
-vi.mock('framer-motion', () => ({
-  AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>
-}));
+vi.mock('framer-motion', async importOriginal => {
+  const actual = await importOriginal<typeof import('framer-motion')>();
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>
+  };
+});
 
 function renderComponent(ui: ReactNode) {
   const container = document.createElement('div');
