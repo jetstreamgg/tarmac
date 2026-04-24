@@ -87,9 +87,7 @@ export const VaultsBalanceCard = ({
   // Build vault balances for accordion and calculate weighted average rate
   const { vaultBalances, weightedAverageRate } = useMemo(() => {
     // Build a map of vault address -> rate data
-    const ratesByAddress = new Map(
-      (morphoRatesData || []).map(r => [r.address.toLowerCase(), r])
-    );
+    const ratesByAddress = new Map((morphoRatesData || []).map(r => [r.address.toLowerCase(), r]));
 
     let totalWeightedRate = 0n;
     let totalBalance = 0n;
@@ -98,7 +96,7 @@ export const VaultsBalanceCard = ({
       const assetDecimals =
         typeof vaultBalance.assetToken.decimals === 'number'
           ? vaultBalance.assetToken.decimals
-          : vaultBalance.assetToken.decimals[vaultChainId] ?? 18;
+          : (vaultBalance.assetToken.decimals[vaultChainId] ?? 18);
 
       // Find rate for this vault by address
       const rateData = ratesByAddress.get(vaultBalance.vaultAddress?.toLowerCase());
@@ -157,11 +155,7 @@ export const VaultsBalanceCard = ({
       title={t`Supplied to Vaults`}
       icon={vaultsIcon}
       headerRightContent={
-        isBalanceLoading ? (
-          <Skeleton className="w-32" />
-        ) : (
-          <Text>{formatBigInt(morphoSupplied)}</Text>
-        )
+        isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(morphoSupplied)}</Text>
       }
       footer={
         <div className="flex flex-col gap-1">
@@ -238,13 +232,7 @@ export const VaultsBalanceCard = ({
       icon={vaultsIcon}
       url={url}
       logoName="vaults"
-      content={
-        isBalanceLoading ? (
-          <Skeleton className="w-32" />
-        ) : (
-          <Text>{formatBigInt(morphoSupplied)}</Text>
-        )
-      }
+      content={isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(morphoSupplied)}</Text>}
     />
   );
 };

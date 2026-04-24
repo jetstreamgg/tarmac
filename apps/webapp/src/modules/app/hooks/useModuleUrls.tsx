@@ -30,5 +30,14 @@ export const useModuleUrls = () => {
   const vaultsUrl = getVaultsOverviewUrl(searchParams, chainId);
   const convertUrl = getConvertUrl(searchParams, chainId);
 
-  return { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, stusdsUrl, vaultsUrl, convertUrl };
+  return {
+    rewardsUrl,
+    savingsUrlMap,
+    sealUrl,
+    stakeUrl,
+    expertOverviewUrl,
+    stusdsUrl,
+    vaultsUrl,
+    convertUrl
+  };
 };

@@ -6,9 +6,7 @@ let mockSearchParams = new URLSearchParams();
 
 const setSearchParamsMock = vi.fn(
   (
-    next:
-      | URLSearchParams
-      | ((params: URLSearchParams) => URLSearchParams),
+    next: URLSearchParams | ((params: URLSearchParams) => URLSearchParams),
     _options?: { replace?: boolean } // eslint-disable-line @typescript-eslint/no-unused-vars
   ) => {
     mockSearchParams =
@@ -73,7 +71,9 @@ describe('PsmConversionWidgetPane', () => {
   };
 
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams('widget=convert&convert_module=psm&source_token=USDC&input_amount=10');
+    mockSearchParams = new URLSearchParams(
+      'widget=convert&convert_module=psm&source_token=USDC&input_amount=10'
+    );
     capturedWidgetProps = undefined;
     setSearchParamsMock.mockClear();
     setSelectedConvertOptionMock.mockClear();

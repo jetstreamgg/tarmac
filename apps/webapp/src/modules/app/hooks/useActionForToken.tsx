@@ -198,40 +198,40 @@ export const useActionForToken = () => {
         case 'usdt':
           action = {
             [mainnet.id]: isRegionRestricted
-                ? {
-                    label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Mainnet' : ''}`,
-                    // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
-                    actionUrl: getQueryParams(
-                      `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
-                    ),
-                    image
-                  }
-                : {
-                    label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS to get rewards ${isDifferentChain ? 'on Mainnet' : ''}`,
-                    // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
-                    actionUrl: getQueryParams(
-                      `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS&${LinkedAction}=${REWARD}${spkRewardContract ? `&reward=${spkRewardContract.contractAddress}` : ''}`
-                    ),
-                    image
-                  },
+              ? {
+                  label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Mainnet' : ''}`,
+                  // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
+                  actionUrl: getQueryParams(
+                    `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                  ),
+                  image
+                }
+              : {
+                  label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS to get rewards ${isDifferentChain ? 'on Mainnet' : ''}`,
+                  // TODO: Some of these trades are not supported by the trade widget (eth - usds, weth - usds)
+                  actionUrl: getQueryParams(
+                    `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS&${LinkedAction}=${REWARD}${spkRewardContract ? `&reward=${spkRewardContract.contractAddress}` : ''}`
+                  ),
+                  image
+                },
             [base.id]:
               lowerSymbol === 'usdt'
                 ? undefined
                 : isRegionRestricted
-                    ? {
-                        label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Base' : ''}`,
-                        actionUrl: getQueryParams(
-                          `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
-                        ),
-                        image
-                      }
-                    : {
-                        label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
-                        actionUrl: getQueryParams(
-                          `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
-                        ),
-                        image
-                      },
+                  ? {
+                      label: t`Trade your ${formattedBalance} ${upperSymbol} for USDS ${isDifferentChain ? 'on Base' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${CONVERT}&${ConvertModule}=${CONVERT_TRADE}&${InputAmount}=${balance}&${SourceToken}=${symbol}&${TargetToken}=USDS`
+                      ),
+                      image
+                    }
+                  : {
+                      label: t`Start saving with your ${formattedBalance} ${upperSymbol} ${isDifferentChain ? 'on Base' : ''}`,
+                      actionUrl: getQueryParams(
+                        `?${Network}=${networkName}&${Widget}=${SAVINGS}&${InputAmount}=${balance}&${SourceToken}=${symbol}`
+                      ),
+                      image
+                    },
             [arbitrum.id]:
               lowerSymbol === 'usdt'
                 ? undefined

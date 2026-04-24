@@ -242,7 +242,10 @@ export const SupplyWithdraw = ({
               <div className="mt-2 ml-3 flex items-start text-white">
                 <PopoverRateInfo type="morphoLiquidity" iconClassName="mt-1 shrink-0 text-white" />
                 <Text variant="small" className="ml-2 flex gap-2">
-                  <Trans>Liquidity data is temporarily unavailable. Withdrawals may be limited by available liquidity.</Trans>
+                  <Trans>
+                    Liquidity data is temporarily unavailable. Withdrawals may be limited by available
+                    liquidity.
+                  </Trans>
                 </Text>
               </div>
             )}

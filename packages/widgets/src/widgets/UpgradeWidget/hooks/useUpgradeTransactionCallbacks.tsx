@@ -9,8 +9,10 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/
 import { useMemo, useRef } from 'react';
 import { UpgradeAction, UpgradeFlow } from '../lib/constants';
 
-interface UseUpgradeTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseUpgradeTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   originAmount: bigint;
   originToken: Token;
   targetToken: Token;

@@ -6,8 +6,10 @@ import { useContext } from 'react';
 import { useChainId } from 'wagmi';
 import { useL2SavingsTransactionCallbacks } from './useL2SavingsTransactionCallbacks';
 
-interface UseL2SavingsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseL2SavingsTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   originToken: Token;
   amount: bigint;
   isMaxWithdraw: boolean;

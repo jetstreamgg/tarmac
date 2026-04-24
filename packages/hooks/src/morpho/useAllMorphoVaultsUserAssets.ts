@@ -49,9 +49,7 @@ export function useAllMorphoVaultsUserAssets(): ReadHook & { data: AllMorphoVaul
       MORPHO_VAULTS.map(vault => ({
         vault,
         address: vault.vaultAddress[chainIdToUse]
-      })).filter(
-        (v): v is { vault: (typeof MORPHO_VAULTS)[number]; address: `0x${string}` } => !!v.address
-      ),
+      })).filter((v): v is { vault: (typeof MORPHO_VAULTS)[number]; address: `0x${string}` } => !!v.address),
     [chainIdToUse]
   );
 
@@ -106,8 +104,7 @@ export function useAllMorphoVaultsUserAssets(): ReadHook & { data: AllMorphoVaul
 
         // Normalize to 18 decimals
         const assetDecimals = getTokenDecimals(vault.assetToken.decimals, chainIdToUse);
-        const normalized =
-          assetDecimals < 18 ? userAssets * 10n ** BigInt(18 - assetDecimals) : userAssets;
+        const normalized = assetDecimals < 18 ? userAssets * 10n ** BigInt(18 - assetDecimals) : userAssets;
 
         total += normalized;
 

@@ -307,9 +307,9 @@ function TradeWidgetWrapped({
 
   const isBalanceError = Boolean(
     txStatus === TxStatus.IDLE &&
-      originBalance &&
-      debouncedOriginAmount > originBalance.value &&
-      originAmount !== 0n
+    originBalance &&
+    debouncedOriginAmount > originBalance.value &&
+    originAmount !== 0n
   );
 
   const { data: targetBalance, refetch: refetchTargetBalance } = useTokenBalance({

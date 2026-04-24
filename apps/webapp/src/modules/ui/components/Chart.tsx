@@ -273,11 +273,18 @@ function CardTitleContent({
               >
                 <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
                   {percentage > 10000 ? (
-                    <><span className="align-middle text-[0.6em]">▲</span> 10,000+%</>
+                    <>
+                      <span className="align-middle text-[0.6em]">▲</span> 10,000+%
+                    </>
                   ) : percentage > 0 && !isZeroPercentage ? (
-                    <><span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}</>
+                    <>
+                      <span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}
+                    </>
                   ) : percentage < 0 && !isZeroPercentage ? (
-                    <><span className="align-middle text-[0.6em]">▼</span> {formattedPercentage.replace('-', '')}</>
+                    <>
+                      <span className="align-middle text-[0.6em]">▼</span>{' '}
+                      {formattedPercentage.replace('-', '')}
+                    </>
                   ) : (
                     formattedPercentage
                   )}

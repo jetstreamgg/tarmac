@@ -107,17 +107,17 @@ export function SuppliedFundsExpertRow({
                       style={{ zIndex: arr.length - index }}
                       className={cn('transition-opacity duration-200', isOpen && 'opacity-0')}
                     >
-                        {isMorpho ? (
-                          <MorphoVaultBadge />
-                        ) : (
-                          <TokenIcon
-                            className="h-4 w-4"
-                            token={{ symbol: 'stUSDS', name: 'stUSDS' }}
-                            showChainIcon={false}
-                          />
-                        )}
-                      </div>
-                    ))}
+                      {isMorpho ? (
+                        <MorphoVaultBadge />
+                      ) : (
+                        <TokenIcon
+                          className="h-4 w-4"
+                          token={{ symbol: 'stUSDS', name: 'stUSDS' }}
+                          showChainIcon={false}
+                        />
+                      )}
+                    </div>
+                  ))}
                 </div>
                 <Text variant="small" className="text-textSecondary whitespace-nowrap">
                   <Trans>Funds by product</Trans>
@@ -151,22 +151,22 @@ export function SuppliedFundsExpertRow({
             <button className="flex w-full items-center justify-between" onClick={() => setIsOpen(!isOpen)}>
               <div className="flex items-center -space-x-1">
                 {nonZeroBalancesByProduct.map(({ productName, isMorpho }, index, arr) => (
-                    <div
-                      key={productName}
-                      style={{ zIndex: arr.length - index }}
-                      className={cn('transition-opacity duration-200', isOpen && 'opacity-0')}
-                    >
-                      {isMorpho ? (
-                        <MorphoVaultBadge />
-                      ) : (
-                        <TokenIcon
-                          className="h-4 w-4"
-                          token={{ symbol: 'stUSDS', name: 'stUSDS' }}
-                          showChainIcon={false}
-                        />
-                      )}
-                    </div>
-                  ))}
+                  <div
+                    key={productName}
+                    style={{ zIndex: arr.length - index }}
+                    className={cn('transition-opacity duration-200', isOpen && 'opacity-0')}
+                  >
+                    {isMorpho ? (
+                      <MorphoVaultBadge />
+                    ) : (
+                      <TokenIcon
+                        className="h-4 w-4"
+                        token={{ symbol: 'stUSDS', name: 'stUSDS' }}
+                        showChainIcon={false}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
             </button>
           </TableCell>
@@ -189,53 +189,53 @@ export function SuppliedFundsExpertRow({
       {/* Expandable product rows */}
       {isOpen &&
         nonZeroBalancesByProduct.map(({ productName, balance, rate, isMorpho }, index, filteredArray) => {
-            const productUsdValue = usdPrice
-              ? formatNumber(parseFloat(formatUnits(balance, 18)) * parseFloat(usdPrice), {
-                  maxDecimals: 2,
-                  compact: true
-                })
-              : '--';
-            const productAmount = formatNumber(parseFloat(formatUnits(balance, 18)), {
-              maxDecimals: 2,
-              compact: true
-            });
-            const isLast = index === filteredArray.length - 1;
+          const productUsdValue = usdPrice
+            ? formatNumber(parseFloat(formatUnits(balance, 18)) * parseFloat(usdPrice), {
+                maxDecimals: 2,
+                compact: true
+              })
+            : '--';
+          const productAmount = formatNumber(parseFloat(formatUnits(balance, 18)), {
+            maxDecimals: 2,
+            compact: true
+          });
+          const isLast = index === filteredArray.length - 1;
 
-            return (
-              <TableRow
-                key={productName}
-                className={cn('hover:bg-surface/50 border-0', isLast && 'border-b-selectBorder border-b')}
-              >
-                <TableCell className="h-auto py-2 pr-0 pl-8">
-                  <div className="flex items-center gap-2">
-                    {isMorpho ? (
-                      <MorphoVaultBadge />
-                    ) : (
-                      <TokenIcon
-                        className="h-5 w-5"
-                        token={{ symbol: 'stUSDS', name: 'stUSDS' }}
-                        showChainIcon={false}
-                      />
-                    )}
-                    <Text className="text-[14px] whitespace-nowrap">{productName}</Text>
-                  </div>
-                </TableCell>
-                <TableCell className="h-auto px-4 py-2">
-                  <Text className="text-[14px]">{productAmount}</Text>
-                </TableCell>
-                <TableCell className="h-auto px-4 py-2 [@container(width<750px)]:hidden">
-                  <Text className="text-textSecondary text-[13px]">${productUsdValue}</Text>
-                </TableCell>
-                <TableCell className="h-auto px-4 py-2 [@container(width<750px)]:hidden">
-                  {rate && (
-                    <Text variant="small" className="text-bullish whitespace-nowrap">
-                      {rate}
-                    </Text>
+          return (
+            <TableRow
+              key={productName}
+              className={cn('hover:bg-surface/50 border-0', isLast && 'border-b-selectBorder border-b')}
+            >
+              <TableCell className="h-auto py-2 pr-0 pl-8">
+                <div className="flex items-center gap-2">
+                  {isMorpho ? (
+                    <MorphoVaultBadge />
+                  ) : (
+                    <TokenIcon
+                      className="h-5 w-5"
+                      token={{ symbol: 'stUSDS', name: 'stUSDS' }}
+                      showChainIcon={false}
+                    />
                   )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
+                  <Text className="text-[14px] whitespace-nowrap">{productName}</Text>
+                </div>
+              </TableCell>
+              <TableCell className="h-auto px-4 py-2">
+                <Text className="text-[14px]">{productAmount}</Text>
+              </TableCell>
+              <TableCell className="h-auto px-4 py-2 [@container(width<750px)]:hidden">
+                <Text className="text-textSecondary text-[13px]">${productUsdValue}</Text>
+              </TableCell>
+              <TableCell className="h-auto px-4 py-2 [@container(width<750px)]:hidden">
+                {rate && (
+                  <Text variant="small" className="text-bullish whitespace-nowrap">
+                    {rate}
+                  </Text>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
     </>
   );
 }

@@ -73,13 +73,7 @@ vi.mock('@widgets/shared/animation/Wrappers', () => ({
 }));
 
 vi.mock('@widgets/shared/components/ui/widget/WidgetContainer', () => ({
-  WidgetContainer: ({
-    children,
-    footer
-  }: {
-    children: React.ReactNode;
-    footer?: React.ReactNode;
-  }) => (
+  WidgetContainer: ({ children, footer }: { children: React.ReactNode; footer?: React.ReactNode }) => (
     <div>
       {children}
       {footer}

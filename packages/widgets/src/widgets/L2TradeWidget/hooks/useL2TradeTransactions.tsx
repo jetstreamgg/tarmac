@@ -6,8 +6,10 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { TradeAction } from '@widgets/widgets/TradeWidget/lib/constants';
 import { WidgetAnalyticsEvent } from '@widgets/shared/types/analyticsEvents';
 
-interface UseL2TradeTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+interface UseL2TradeTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'
+> {
   originAmount: bigint;
   originToken: TokenForChain | undefined;
   targetAmount: bigint;

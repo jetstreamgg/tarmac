@@ -5,11 +5,7 @@ import { BalancesSuggestedActions } from './BalancesSuggestedActions';
 let mockSearchParams = new URLSearchParams();
 
 const setSearchParamsMock = vi.fn(
-  (
-    next:
-      | URLSearchParams
-      | ((params: URLSearchParams) => URLSearchParams)
-  ) => {
+  (next: URLSearchParams | ((params: URLSearchParams) => URLSearchParams)) => {
     mockSearchParams =
       typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
   }

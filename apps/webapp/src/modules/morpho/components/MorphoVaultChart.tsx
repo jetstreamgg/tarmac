@@ -26,14 +26,24 @@ export function MorphoVaultChart({ vaultAddress, assetToken }: MorphoVaultChartP
   const useHourlyInterval = timeFrame === 'w' || timeFrame === 'm';
   const hourlyWindow = timeFrame === 'w' || timeFrame === 'm' ? timeFrame : undefined;
 
-  const { data: chartInfo, isLoading, error } = useMorphoVaultChartInfo({
+  const {
+    data: chartInfo,
+    isLoading,
+    error
+  } = useMorphoVaultChartInfo({
     vaultAddress,
     useHourlyInterval,
     hourlyWindow
   });
   const { data: marketData } = useMorphoVaultMarketApiData({ vaultAddress });
-  const decimals = typeof assetToken.decimals === 'number' ? assetToken.decimals : assetToken.decimals[chainId];
-  const parsedChartData = useParseMorphoVaultChartData(timeFrame, chartInfo || [], decimals, useHourlyInterval);
+  const decimals =
+    typeof assetToken.decimals === 'number' ? assetToken.decimals : assetToken.decimals[chainId];
+  const parsedChartData = useParseMorphoVaultChartData(
+    timeFrame,
+    chartInfo || [],
+    decimals,
+    useHourlyInterval
+  );
 
   const displayValue = useMemo(() => {
     if (!marketData) return undefined;

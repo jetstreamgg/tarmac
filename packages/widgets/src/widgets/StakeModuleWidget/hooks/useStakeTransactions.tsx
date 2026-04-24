@@ -10,8 +10,10 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeAction, StakeFlow } from '../lib/constants';
 import { useConnection } from 'wagmi';
 
-interface UseStakeTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseStakeTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   lockAmount: bigint;
   usdsAmount: bigint;
   calldata: `0x${string}`[];
@@ -79,33 +81,34 @@ export const useStakeTransactions = ({
 }: UseStakeTransactionsParameters) => {
   const { address } = useConnection();
   const { widgetState } = useContext(WidgetContext);
-  const { multicallTransactionCallbacks, claimTransactionCallbacks, stakeData } = useStakeTransactionCallbacks({
-    lockAmount,
-    setIndexToClaim,
-    setRewardContractsToClaim,
-    setRestakeSkyRewards,
-    setRestakeSkyAmount,
-    mutateStakeSkyAllowance,
-    mutateStakeUsdsAllowance,
-    addRecentTransaction,
-    onWidgetStateChange,
-    onNotification,
-    onAnalyticsEvent,
-    needsAllowance,
-    shouldUseBatch,
-    flow,
-    urnIndex,
-    skyToLock,
-    skyToFree,
-    usdsToWipe,
-    usdsToBorrow,
-    selectedRewardContract,
-    wantsToDelegate,
-    selectedDelegate,
-    restakeSkyRewards,
-    restakeSkyAmount,
-    rewardClaimAmounts
-  });
+  const { multicallTransactionCallbacks, claimTransactionCallbacks, stakeData } =
+    useStakeTransactionCallbacks({
+      lockAmount,
+      setIndexToClaim,
+      setRewardContractsToClaim,
+      setRestakeSkyRewards,
+      setRestakeSkyAmount,
+      mutateStakeSkyAllowance,
+      mutateStakeUsdsAllowance,
+      addRecentTransaction,
+      onWidgetStateChange,
+      onNotification,
+      onAnalyticsEvent,
+      needsAllowance,
+      shouldUseBatch,
+      flow,
+      urnIndex,
+      skyToLock,
+      skyToFree,
+      usdsToWipe,
+      usdsToBorrow,
+      selectedRewardContract,
+      wantsToDelegate,
+      selectedDelegate,
+      restakeSkyRewards,
+      restakeSkyAmount,
+      rewardClaimAmounts
+    });
 
   const batchMulticall = useBatchStakeMulticall({
     calldata,
