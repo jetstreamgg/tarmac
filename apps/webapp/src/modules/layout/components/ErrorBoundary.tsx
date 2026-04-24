@@ -1,6 +1,6 @@
-import * as Sentry from '@sentry/react';
 import React from 'react';
 import { Error as ErrorView } from './Error';
+import { reportError } from '@/modules/sentry/reportError';
 interface Props {
   componentName?: string;
   children: React.ReactNode;
@@ -28,19 +28,16 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    Sentry.captureException(error, {
-      tags: {
+    reportError(error, {
+      module: 'ui',
+      flow: 'render',
+      action: 'boundary-catch',
+      type: 'error-boundary',
+      extra: {
         boundary: this.componentName,
-        type: 'react_error_boundary'
-      },
-      contexts: {
-        react: {
-          componentStack: errorInfo.componentStack
-        }
+        componentStack: errorInfo.componentStack
       }
     });
-
-    console.error({ error, errorInfo });
   }
 
   render() {

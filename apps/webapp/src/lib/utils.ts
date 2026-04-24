@@ -13,6 +13,7 @@ import {
 import { ExpertIntent, Intent, VaultsIntent } from './enums';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
+import { reportError } from '@/modules/sentry/reportError';
 import { Chain } from 'viem';
 
 export function cn(...inputs: ClassValue[]) {
@@ -31,7 +32,12 @@ export function getFooterLinks(): FooterLink[] {
     const footerLinksVar = import.meta.env.VITE_FOOTER_LINKS;
     if (footerLinksVar) footerLinks = JSON.parse(footerLinksVar);
   } catch (error) {
-    console.error('Error parsing FOOTER_LINKS:', error);
+    reportError(error, {
+      module: 'config',
+      flow: 'footer-links',
+      action: 'parse',
+      type: 'env_parse_error'
+    });
   }
   return footerLinks;
 }
@@ -85,7 +91,7 @@ export function sanitizeUrl(url: string | undefined) {
         domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith(`.${domain}`)
       )
     ) {
-      console.log(`"${parsedUrl.hostname}" not found in allow list, returning undefined`);
+      console.info(`"${parsedUrl.hostname}" not found in allow list, returning undefined`);
       return undefined;
     }
 
@@ -100,7 +106,12 @@ export function sanitizeUrl(url: string | undefined) {
 
     return encodedUrl;
   } catch (error) {
-    console.error('Error parsing url: ', error);
+    reportError(error, {
+      module: 'ui',
+      flow: 'sanitize-url',
+      action: 'parse',
+      type: 'url_parse_error'
+    });
     return undefined;
   }
 }
