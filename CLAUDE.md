@@ -47,6 +47,14 @@ pnpm build           # Build all packages and webapp
 pnpm build:packages  # Build packages only
 ```
 
+### Security audit
+
+```bash
+pnpm audit --prod --audit-level high   # Audit runtime deps; fails on high/critical
+```
+
+`pnpm audit`'s `dev` flag is unreliable in workspaces. CI uses `pnpm audit --prod --audit-level high` to audit only the runtime dependency trees.
+
 ### i18n
 
 ```bash
