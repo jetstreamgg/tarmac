@@ -110,6 +110,10 @@
     "2. On the replacement side, use a tilde range (~X.Y.Z) pinned to the same minor whenever multiple majors of the package may coexist in the tree - an unbounded >=X.Y.Z can silently bump older-major consumers to a newer major via pnpm's dedup (see picomatch/bn.js/glob).",
     "3. When only one major is in play, caret (^X.Y.Z) is fine and lets pnpm pull in bug-fix minors naturally."
   ],
+  "//pnpm.overrides.watchlist": [
+    "Open Dependabot alerts we intentionally do NOT override here, with rationale:",
+    "- elliptic <=6.6.1 (GHSA-848j-6mx2-7j84, alert #53, low): no patched version published upstream as of 2026-04-22, so there is no target range to pin to. Transitive-only via vite-plugin-node-polyfills -> node-stdlib-browser -> crypto-browserify -> browserify-sign/create-ecdh (dev/bundler polyfill path). No direct imports in this repo (confirmed via grep). Action: revisit when upstream ships a fix; if we ever add a direct call site, migrate to @noble/curves instead. Tracked in APP-201."
+  ],
   "pnpm": {
     "overrides": {
       "esbuild@<=0.24.2": "^0.25.0",
