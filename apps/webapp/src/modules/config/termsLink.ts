@@ -13,7 +13,8 @@ type TermsLinkConfig = {
 
 let cachedTermsLinkConfig: TermsLinkConfig | undefined;
 
-const reportedTermsLinkErrors = new Set<string>();
+const reportedTermsLinkConfigErrors = new Set<string>();
+const reportedMissingTermsLinkErrors = new Set<string>();
 
 function getReportKey(ctx: ReportContext): string {
   return [ctx.module, ctx.flow, ctx.action, ctx.type].filter(Boolean).join(':');
@@ -25,6 +26,7 @@ export function getTermsLinkConfig(): TermsLinkConfig {
   }
 
   try {
+    // VITE_TERMS_LINK is build-time config, so a module-level cache is sufficient.
     const parsedTermsLink = JSON.parse(import.meta.env.VITE_TERMS_LINK);
     const termsLinks = Array.isArray(parsedTermsLink) ? parsedTermsLink : [];
 
@@ -51,9 +53,9 @@ export function reportTermsLinkConfigErrorOnce(ctx: ReportContext): void {
   if (!parseError) return;
 
   const reportKey = getReportKey(ctx);
-  if (reportedTermsLinkErrors.has(reportKey)) return;
+  if (reportedTermsLinkConfigErrors.has(reportKey)) return;
 
-  reportedTermsLinkErrors.add(reportKey);
+  reportedTermsLinkConfigErrors.add(reportKey);
   reportError(parseError, ctx);
 }
 
@@ -62,8 +64,8 @@ export function reportMissingTermsLinkOnce(ctx: ReportContext): void {
   if (primaryTermsLink) return;
 
   const reportKey = getReportKey(ctx);
-  if (reportedTermsLinkErrors.has(reportKey)) return;
+  if (reportedMissingTermsLinkErrors.has(reportKey)) return;
 
-  reportedTermsLinkErrors.add(reportKey);
-  reportError(new globalThis.Error('No terms link found'), ctx);
+  reportedMissingTermsLinkErrors.add(reportKey);
+  reportError(new Error('No terms link found'), ctx);
 }

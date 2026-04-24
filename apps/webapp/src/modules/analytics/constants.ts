@@ -67,8 +67,7 @@ export function reportAnalyticsError(context: string, error: unknown): void {
     flow: 'safe-capture',
     action: context,
     type: 'analytics_error',
-    level: 'warning',
-    extra: { context }
+    level: 'warning'
   });
 }
 

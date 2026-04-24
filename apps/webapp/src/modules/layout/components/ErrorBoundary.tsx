@@ -34,8 +34,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
       action: 'boundary-catch',
       type: 'error-boundary',
       extra: {
-        boundary: this.componentName,
-        componentStack: errorInfo.componentStack
+        boundary: this.componentName
+      },
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack
+        }
       }
     });
   }

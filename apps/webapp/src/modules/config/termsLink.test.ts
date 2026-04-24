@@ -61,4 +61,21 @@ describe('termsLink config helpers', () => {
     expect(reportError).toHaveBeenCalledTimes(1);
     expect(reportError.mock.calls[0]?.[0]).toBeInstanceOf(Error);
   });
+
+  it('deduplicates config and missing-link reports independently', async () => {
+    vi.stubEnv('VITE_TERMS_LINK', 'not-json');
+
+    const { reportMissingTermsLinkOnce, reportTermsLinkConfigErrorOnce } = await import('./termsLink');
+    const ctx = {
+      module: 'widgets',
+      flow: 'seal',
+      action: 'terms-link-error',
+      type: 'config_error'
+    } as const;
+
+    reportTermsLinkConfigErrorOnce(ctx);
+    reportMissingTermsLinkOnce(ctx);
+
+    expect(reportError).toHaveBeenCalledTimes(2);
+  });
 });

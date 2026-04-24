@@ -9,6 +9,7 @@ export type ReportContext = {
   type?: string;
   level?: Sentry.SeverityLevel;
   extra?: Record<string, unknown>;
+  contexts?: Record<string, Record<string, unknown>>;
 };
 
 export function reportError(error: unknown, ctx: ReportContext): void {
@@ -41,11 +42,16 @@ export function reportError(error: unknown, ctx: ReportContext): void {
       scope.setExtras(ctx.extra);
     }
 
+    if (ctx.contexts) {
+      Object.entries(ctx.contexts).forEach(([key, value]) => {
+        scope.setContext(key, value);
+      });
+    }
+
     Sentry.captureException(normalizedError);
   });
 
   if (import.meta.env.DEV) {
-     
     console.error(normalizedError, ctx);
   }
 }
