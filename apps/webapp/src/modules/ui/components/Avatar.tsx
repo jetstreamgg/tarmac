@@ -1,8 +1,10 @@
 import JazziconDefault, { jsNumberForAddress } from 'react-jazzicon';
 
-// Vite 8 / Rolldown exposes a CJS module's default import as the whole exports object,
-// so we unwrap to reach the component.
-const Jazzicon = (JazziconDefault as unknown as { default: typeof JazziconDefault }).default;
+// react-jazzicon is CJS-only. Vite 8's dev dep-optimizer exposes the whole module.exports
+// as the default, while the prod bundler auto-unwraps to module.exports.default. Fall back
+// to handle both.
+const Jazzicon =
+  (JazziconDefault as unknown as { default?: typeof JazziconDefault }).default ?? JazziconDefault;
 
 export const CustomAvatar = ({ address, size }: { address: string; size: number }) => {
   return address ? <Jazzicon diameter={size} seed={jsNumberForAddress(address)} /> : null;

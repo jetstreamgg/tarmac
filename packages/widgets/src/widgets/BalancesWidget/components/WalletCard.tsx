@@ -4,9 +4,11 @@ import { Text } from '@widgets/shared/components/ui/Typography';
 import JazziconDefault, { jsNumberForAddress } from 'react-jazzicon';
 import { Card } from '@widgets/components/ui/card';
 
-// Vite 8 / Rolldown exposes a CJS module's default import as the whole exports object,
-// so we unwrap to reach the component.
-const Jazzicon = (JazziconDefault as unknown as { default: typeof JazziconDefault }).default;
+// react-jazzicon is CJS-only. Vite 8's dev dep-optimizer exposes the whole module.exports
+// as the default, while the prod bundler auto-unwraps to module.exports.default. Fall back
+// to handle both.
+const Jazzicon =
+  (JazziconDefault as unknown as { default?: typeof JazziconDefault }).default ?? JazziconDefault;
 import { CopyToClipboard } from '@widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
