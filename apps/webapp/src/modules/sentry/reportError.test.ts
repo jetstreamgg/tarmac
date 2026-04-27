@@ -1,6 +1,13 @@
 import * as Sentry from '@sentry/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
 import { reportError } from './reportError';
+
+type WithScopeCallback = (scope: {
+  setTag: (key: string, value: string) => void;
+  setLevel: (level: string) => void;
+  setExtras: (extras: Record<string, unknown>) => void;
+  setContext: (name: string, context: Record<string, unknown>) => void;
+}) => void;
 
 describe('reportError', () => {
   const setTag = vi.fn();
@@ -12,13 +19,16 @@ describe('reportError', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.mocked(Sentry.withScope).mockImplementation(callback => {
+    const withScopeMock = vi.mocked(Sentry.withScope) as unknown as MockedFunction<
+      (callback: WithScopeCallback) => void
+    >;
+    withScopeMock.mockImplementation(callback => {
       callback({
         setTag,
         setLevel,
         setExtras,
         setContext
-      } as never);
+      });
     });
   });
 
