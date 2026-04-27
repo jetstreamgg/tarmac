@@ -135,7 +135,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       modulePreload: { polyfill: false }
     },
     test: {
-      exclude: [...configDefaults.exclude],
+      exclude: [...configDefaults.exclude, '**/test/e2e/**'],
       globals: true,
       environment: 'happy-dom',
       setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')]
