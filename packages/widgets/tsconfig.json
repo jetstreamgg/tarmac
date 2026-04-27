@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "include": ["src"],
   "compilerOptions": {
-    "baseUrl": ".",
+    "rootDir": "../",
     "paths": {
       "@widgets/*": ["./src/*"],
       "@jetstreamgg/sky-*": ["../../packages/*/src"]
