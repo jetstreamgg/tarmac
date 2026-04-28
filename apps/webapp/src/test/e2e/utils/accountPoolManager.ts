@@ -167,7 +167,7 @@ export class AccountPoolManager {
 
         // Retry on any error
         if (attempt === this.maxRetries - 1) {
-          throw new Error(`Failed to claim account after ${this.maxRetries} attempts: ${error}`);
+          throw new Error(`Failed to claim account after ${this.maxRetries} attempts`, { cause: error });
         }
         await this.delay(this.retryDelay);
       }

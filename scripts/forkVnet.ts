@@ -188,7 +188,7 @@ const forkVnets = async chainType => {
   }
 
   // Read existing data if file exists
-  let existingData = [];
+  let existingData;
   try {
     const existingFile = await readFile('./tenderlyTestnetData.json', 'utf-8');
     existingData = JSON.parse(existingFile);

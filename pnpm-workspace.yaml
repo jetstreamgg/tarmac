@@ -8,7 +8,7 @@ catalog:
   '@changesets/cli': ^2.30.0
   '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/eslintrc': ^3.3.5
-  '@eslint/js': ^9.39.4
+  '@eslint/js': ^10.0.1
   '@lingui/cli': ^5.9.5
   '@lingui/conf': ^5.9.5
   '@lingui/core': ^5.9.5
@@ -60,11 +60,11 @@ catalog:
   embla-carousel-autoplay: ^8.6.0
   embla-carousel-fade: ^8.6.0
   embla-carousel-react: ^8.6.0
-  eslint: ^9.39.4
+  eslint: ^10.2.0
   eslint-plugin-react: ^7.37.5
   eslint-plugin-testing-library: ^7.16.2
   ethers: ^6.16.0
-  globals: ^15.15.0
+  globals: ^17.5.0
   graphql: ^16.13.2
   graphql-request: ^7.4.0
   happy-dom: ^20.9.0

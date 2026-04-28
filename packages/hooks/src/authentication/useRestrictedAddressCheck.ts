@@ -20,7 +20,6 @@ const checkAddress = async (address?: string, authUrl?: string): Promise<AuthRes
       const data = await res.json();
       addressAllowed = data.addressAllowed;
     } else {
-      addressAllowed = false;
       throw new Error('non 200 response received');
     }
   }

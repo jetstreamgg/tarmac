@@ -24,14 +24,11 @@ export const test = playwrightTest.extend<TestFixtures>({
     // Generate a unique holder ID for debugging
     const holderId = `${testInfo.workerIndex}-${testInfo.testId?.substring(0, 8) || 'unknown'}`;
 
-    let accountIndex: number | null = null;
-    let account: `0x${string}` | null = null;
-
     try {
       // Claim an account from the pool - NEVER RELEASE IT
       // With 150 accounts and ~108 tests, we have buffer for retries
-      accountIndex = await accountPool.claimAccount(holderId);
-      account = accountPool.getAccountAddress(accountIndex);
+      const accountIndex = await accountPool.claimAccount(holderId);
+      const account = accountPool.getAccountAddress(accountIndex);
 
       console.log(`Test "${testInfo.title}" permanently claimed account ${accountIndex}: ${account}`);
 
