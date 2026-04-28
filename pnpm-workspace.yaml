@@ -9,15 +9,15 @@ catalog:
   '@coinbase/wallet-sdk': ~4.3.6
   '@eslint/eslintrc': ^3.3.5
   '@eslint/js': ^9.39.4
-  '@lingui/cli': ^5.9.2
-  '@lingui/conf': ^5.9.2
-  '@lingui/core': ^5.9.2
-  '@lingui/detect-locale': ^5.9.2
-  '@lingui/format-po': ^5.9.2
-  '@lingui/macro': ^5.9.2
-  '@lingui/react': ^5.9.2
+  '@lingui/cli': ^5.9.5
+  '@lingui/conf': ^5.9.5
+  '@lingui/core': ^5.9.5
+  '@lingui/detect-locale': ^5.9.5
+  '@lingui/format-po': ^5.9.5
+  '@lingui/macro': ^5.9.5
+  '@lingui/react': ^5.9.5
   '@lingui/swc-plugin': ^5.11.0
-  '@lingui/vite-plugin': ^5.9.2
+  '@lingui/vite-plugin': ^5.9.5
   '@metamask/connect-evm': ^0.9.1
   '@playwright/test': ^1.58.2
   '@radix-ui/react-accordion': ^1.2.12
@@ -38,8 +38,8 @@ catalog:
   '@safe-global/safe-apps-provider': ~0.18.6
   '@safe-global/safe-apps-sdk': ~9.1.0
   '@sentry/react': ^10.35.0
-  '@sentry/vite-plugin': ^3.2.0
-  '@tailwindcss/vite': ^4.2.1
+  '@sentry/vite-plugin': ^5.2.0
+  '@tailwindcss/vite': ^4.2.2
   '@tanstack/eslint-plugin-query': ^5.91.4
   '@tanstack/react-query': ^5.90.21
   '@testing-library/dom': ^10.4.1
@@ -48,7 +48,7 @@ catalog:
   '@types/react-dom': ^19.2.3
   '@typescript-eslint/eslint-plugin': ^8.56.1
   '@typescript-eslint/parser': ^8.56.1
-  '@vitejs/plugin-react-swc': ^4.2.3
+  '@vitejs/plugin-react-swc': ^4.3.0
   '@vitest/coverage-v8': ^4.0.0
   '@wagmi/cli': ^2.10.0
   '@wagmi/core': ^3.4.1
@@ -94,11 +94,11 @@ catalog:
   tiny-invariant: ^1.3.1
   typescript: 5.9.3
   viem: ^2.47.6
-  vite: ^7.3.2
+  vite: ^8.0.8
   vite-plugin-dts: ^4.5.4
   vite-plugin-node-polyfills: ^0.26.0
   vite-plugin-simple-html: ^1.1.0
-  vite-plugin-static-copy: ^3.2.0
+  vite-plugin-static-copy: ^4.0.1
   vitest: ^4.0.0
   vitest-canvas-mock: ^1.1.4
   wagmi: ^3.6.0
