@@ -365,6 +365,7 @@ export type { TokenChartInfoParsed } from './tokens/useTokenChartInfo';
 export type { RewardsChartInfoParsed } from './rewards/useRewardsChartInfo';
 export type { Vault, CollateralRiskParameters } from './vaults/vault';
 export type { SealHistoryKick } from './seal/sealModule';
+export type { StakeHistoryItem } from './stake/stakeModule';
 export type { DelegateInfo } from './delegates/delegate';
 export type { BorrowCapacityData, BorrowCapacityDataHook } from './stake/useBorrowCapacityData';
 
@@ -395,6 +396,8 @@ export {
   sealModuleAddress,
   stakeModuleAddress,
   stakeModuleAbi,
+  mcdVatAbi,
+  mcdVatAddress,
   usdcL2Address,
   usdsL2Address,
   stUsdsAddress,
