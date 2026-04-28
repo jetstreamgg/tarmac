@@ -178,39 +178,41 @@ export const ModulesBalances = ({
 
   const hideRewards = Boolean(
     hideRestrictedModules ||
-      suppliedBalanceError ||
-      (totalUserRewardsSupplied === 0n && hideZeroBalances) ||
-      (!showAllNetworks && !isMainnetId(currentChainId))
+    suppliedBalanceError ||
+    (totalUserRewardsSupplied === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const hideSeal = Boolean(
     totalUserSealedError ||
-      (totalUserSealed === 0n && hideZeroBalances) ||
-      (!showAllNetworks && !isMainnetId(currentChainId))
+    (totalUserSealed === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const hideStake = Boolean(
     totalUserStakedError ||
-      (totalUserStaked === 0n && hideZeroBalances) ||
-      (!showAllNetworks && !isMainnetId(currentChainId))
+    (totalUserStaked === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const hideExpert = Boolean(
     hideRestrictedModules ||
-      !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
-      stUsdsError ||
-      (totalExpertSavingsBalance === 0n && hideZeroBalances) ||
-      (!showAllNetworks && !isMainnetId(currentChainId))
+    !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
+    stUsdsError ||
+    (totalExpertSavingsBalance === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const hideVaults = Boolean(
     morphoError ||
-      (totalMorphoUserAssets === 0n && hideZeroBalances) ||
-      (!showAllNetworks && !isMainnetId(currentChainId))
+    (totalMorphoUserAssets === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
   const hideSavings = Boolean(
-    hideRestrictedModules || multichainSavingsBalancesError || (totalSavingsBalance === 0n && hideZeroBalances)
+    hideRestrictedModules ||
+    multichainSavingsBalancesError ||
+    (totalSavingsBalance === 0n && hideZeroBalances)
   );
 
   // Fallback display order used while prices are loading to prevent layout shifts
@@ -240,9 +242,7 @@ export const ModulesBalances = ({
         ? bigintToUsd(totalUserRewardsSupplied, pricesData.USDS.price)
         : 0;
     values.savings =
-      totalSavingsBalance && pricesData.USDS
-        ? bigintToUsd(totalSavingsBalance, pricesData.USDS.price)
-        : 0;
+      totalSavingsBalance && pricesData.USDS ? bigintToUsd(totalSavingsBalance, pricesData.USDS.price) : 0;
     values.staking =
       totalUserStaked && pricesData.SKY ? bigintToUsd(totalUserStaked, pricesData.SKY.price) : 0;
     values.vaults =
@@ -253,8 +253,7 @@ export const ModulesBalances = ({
       totalExpertSavingsBalance && pricesData.USDS
         ? bigintToUsd(totalExpertSavingsBalance, pricesData.USDS.price)
         : 0;
-    values.seal =
-      totalUserSealed && pricesData.MKR ? bigintToUsd(totalUserSealed, pricesData.MKR.price) : 0;
+    values.seal = totalUserSealed && pricesData.MKR ? bigintToUsd(totalUserSealed, pricesData.MKR.price) : 0;
 
     return values;
   }, [

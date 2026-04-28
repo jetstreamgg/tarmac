@@ -61,11 +61,7 @@ export const InteractiveStatsCardWithAccordion = ({
       {icon ? (
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center">{icon}</div>
       ) : tokenSymbol ? (
-        <TokenIcon
-          className="h-8 w-8"
-          token={{ symbol: tokenSymbol, name: tokenSymbol }}
-          noChain={true}
-        />
+        <TokenIcon className="h-8 w-8" token={{ symbol: tokenSymbol, name: tokenSymbol }} noChain={true} />
       ) : null}
       <div className="grow">
         <CardContent className="flex items-center justify-between gap-4">
@@ -85,45 +81,52 @@ export const InteractiveStatsCardWithAccordion = ({
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="details" className="accordion-item border-0">
-        <Card variant="stats" className="w-full !px-0 transition-colors has-[.header-link:hover]:bg-radial-(--gradient-position) has-[.header-link:hover]:from-primary-start/100 has-[.header-link:hover]:to-primary-end/100">
-          <div className="group/header-link relative -mt-3 px-4 pb-1 pt-3 lg:-mt-5 lg:px-5 lg:pt-5">
-            <div>
-              {headerContent}
-            </div>
-            {url && <Link to={url} aria-label={typeof title === 'string' ? title : undefined} className="header-link absolute inset-0 z-0 h-full w-full" />}
+        <Card
+          variant="stats"
+          className="has-[.header-link:hover]:from-primary-start/100 has-[.header-link:hover]:to-primary-end/100 w-full !px-0 transition-colors has-[.header-link:hover]:bg-radial-(--gradient-position)"
+        >
+          <div className="group/header-link relative -mt-3 px-4 pt-3 pb-1 lg:-mt-5 lg:px-5 lg:pt-5">
+            <div>{headerContent}</div>
+            {url && (
+              <Link
+                to={url}
+                aria-label={typeof title === 'string' ? title : undefined}
+                className="header-link absolute inset-0 z-0 h-full w-full"
+              />
+            )}
           </div>
           <AccordionTrigger className="-mb-3 w-full px-4 pb-5 hover:no-underline lg:-mb-5 lg:px-5 lg:pb-5 [&>svg]:hidden">
-              <HStack className="pt-1.5 w-full justify-between">
-                <HStack className="items-center -space-x-0.5 opacity-100 transition-opacity duration-200 [.accordion-item[data-state=open]_&]:opacity-0">
-                  {balancesByChain.map(({ chainId }, index) => (
-                    <div key={chainId} style={{ zIndex: balancesByChain.length - index }}>
-                      {getChainIcon(chainId, 'h-[17px] w-[17px]')}
-                    </div>
-                  ))}
-                </HStack>
-                <HStack className="text-textSecondary w-full items-center justify-end gap-0.5">
-                  <Text variant="small" className="leading-none">
-                    Funds by network
-                  </Text>
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="chevron transition-transform duration-200 [.accordion-item[data-state=open]_&]:rotate-180"
-                  >
-                    <path
-                      d="M2 4L6 8L10 4"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </HStack>
+            <HStack className="w-full justify-between pt-1.5">
+              <HStack className="items-center -space-x-0.5 opacity-100 transition-opacity duration-200 [.accordion-item[data-state=open]_&]:opacity-0">
+                {balancesByChain.map(({ chainId }, index) => (
+                  <div key={chainId} style={{ zIndex: balancesByChain.length - index }}>
+                    {getChainIcon(chainId, 'h-[17px] w-[17px]')}
+                  </div>
+                ))}
               </HStack>
-            </AccordionTrigger>
+              <HStack className="text-textSecondary w-full items-center justify-end gap-0.5">
+                <Text variant="small" className="leading-none">
+                  Funds by network
+                </Text>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="chevron transition-transform duration-200 [.accordion-item[data-state=open]_&]:rotate-180"
+                >
+                  <path
+                    d="M2 4L6 8L10 4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </HStack>
+            </HStack>
+          </AccordionTrigger>
           <AccordionContent className="mt-2 p-0">
             {balancesByChain.map(({ chainId, balance }) => {
               const networkName = chains.find(c => c.id === chainId)?.name;

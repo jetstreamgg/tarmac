@@ -181,26 +181,25 @@ const MorphoVaultWidgetWrapped = ({
     !!batchEnabled && !!batchSupported && needsAllowance && widgetState.flow === MorphoVaultFlow.SUPPLY;
 
   // Transaction hooks
-  const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem } =
-    useMorphoVaultTransactions({
-      amount: debouncedAmount,
-      shares: vaultData?.userShares ?? 0n,
-      max,
-      vaultAddress,
-      assetAddress,
-      assetDecimals,
-      assetSymbol: assetToken.symbol,
-      vaultName,
-      needsAllowance,
-      shouldUseBatch,
-      mutateAllowance,
-      mutateVaultData,
-      mutateAssetBalance,
-      addRecentTransaction,
-      onWidgetStateChange,
-      onNotification,
-      onAnalyticsEvent
-    });
+  const { morphoVaultDeposit, morphoVaultWithdraw, morphoVaultRedeem } = useMorphoVaultTransactions({
+    amount: debouncedAmount,
+    shares: vaultData?.userShares ?? 0n,
+    max,
+    vaultAddress,
+    assetAddress,
+    assetDecimals,
+    assetSymbol: assetToken.symbol,
+    vaultName,
+    needsAllowance,
+    shouldUseBatch,
+    mutateAllowance,
+    mutateVaultData,
+    mutateAssetBalance,
+    addRecentTransaction,
+    onWidgetStateChange,
+    onNotification,
+    onAnalyticsEvent
+  });
 
   // Derive current call index based on active flow (for multi-step tracking)
   const currentCallIndex =
@@ -320,7 +319,13 @@ const MorphoVaultWidgetWrapped = ({
         flow: widgetState.flow,
         amount: Number(formatUnits(debouncedAmount, assetDecimals)),
         assetSymbol: assetToken.symbol,
-        data: { module: 'morpho', product: vaultName, productAddress: vaultAddress, assetAddress, assetSymbol: assetToken.symbol }
+        data: {
+          module: 'morpho',
+          product: vaultName,
+          productAddress: vaultAddress,
+          assetAddress,
+          assetSymbol: assetToken.symbol
+        }
       });
     } catch {
       // Analytics must never break functionality

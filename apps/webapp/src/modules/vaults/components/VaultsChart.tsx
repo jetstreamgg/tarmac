@@ -1,4 +1,8 @@
-import { MORPHO_VAULTS, useMorphoVaultMultipleChartInfo, useMorphoVaultsCombinedTvl } from '@jetstreamgg/sky-hooks';
+import {
+  MORPHO_VAULTS,
+  useMorphoVaultMultipleChartInfo,
+  useMorphoVaultsCombinedTvl
+} from '@jetstreamgg/sky-hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -77,7 +81,11 @@ export function VaultsChart() {
   const intervalOverride = useHourlyInterval ? 3600 : undefined;
 
   const { data: vaultsChartData, isLoading, error } = useVaultsChartInfo(useHourlyInterval, hourlyWindow);
-  const { totalAssetsUsd, isLoading: isCombinedTvlLoading, error: combinedTvlError } = useMorphoVaultsCombinedTvl();
+  const {
+    totalAssetsUsd,
+    isLoading: isCombinedTvlLoading,
+    error: combinedTvlError
+  } = useMorphoVaultsCombinedTvl();
 
   const parsedChartData = useParseTvlChartData(timeFrame, vaultsChartData, undefined, intervalOverride);
 

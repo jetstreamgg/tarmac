@@ -35,7 +35,12 @@ export function useUsdsPsmWrapperSellGem({
   });
 
   const enabled =
-    paramEnabled && isConnected && allowance !== undefined && gemAmt !== 0n && allowance >= gemAmt && !!recipient;
+    paramEnabled &&
+    isConnected &&
+    allowance !== undefined &&
+    gemAmt !== 0n &&
+    allowance >= gemAmt &&
+    !!recipient;
 
   const writeContractFlowResults = useWriteContractFlow({
     address: wrapperAddress,

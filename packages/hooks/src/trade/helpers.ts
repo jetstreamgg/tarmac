@@ -43,11 +43,7 @@ export const verifySlippageAndDeadline = ({
   // for slippage and between 1 and 180 minutes (default 30 minutes) for the transaction deadline
   const minSlippage = isEthFlow ? (isL2 ? 0.5 : 2) : 0;
   const maxSlippage = 50;
-  const defaultSlippage = isEthFlow
-    ? isL2
-      ? 0.5
-      : 2
-    : getAutoSlippage(originSymbol, targetSymbol);
+  const defaultSlippage = isEthFlow ? (isL2 ? 0.5 : 2) : getAutoSlippage(originSymbol, targetSymbol);
 
   const validatedSlippage =
     !Number.isNaN(parsedSlippage) && parsedSlippage >= minSlippage && parsedSlippage <= maxSlippage

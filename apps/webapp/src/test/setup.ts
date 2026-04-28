@@ -5,7 +5,8 @@ vi.mock('@sentry/react', async () => {
   const React = await import('react');
 
   return {
-    ErrorBoundary: ({ children }: { children: ReactNode }) => React.createElement(React.Fragment, null, children),
+    ErrorBoundary: ({ children }: { children: ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
     browserTracingIntegration: vi.fn(() => ({})),
     captureException: vi.fn(),
     captureMessage: vi.fn(),

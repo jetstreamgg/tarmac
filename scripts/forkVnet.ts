@@ -38,7 +38,7 @@ const UNICHAIN_CONFIG = {
   forkBlock: '18140271'
 };
 
-const forkVnets = async (chainType) => {
+const forkVnets = async chainType => {
   const currentTime = Date.now();
 
   const chainsToFork = chainType ?? ['mainnet', 'base', 'arbitrum', 'optimism', 'unichain']; // Re-enable when we add tests for these chains
@@ -199,12 +199,12 @@ const forkVnets = async (chainType) => {
   }
 
   // Update or add new chain data
-  const updatedData = existingData.filter((item) => !chainsToFork.includes(item.NETWORK));
+  const updatedData = existingData.filter(item => !chainsToFork.includes(item.NETWORK));
 
   // Add the newly forked chains
   chainsToFork.forEach((chain, index) => {
     const testnetData = testnetsData[index];
-    const adminEndpoint = testnetData.rpcs.find((x) => x.name === 'Admin RPC');
+    const adminEndpoint = testnetData.rpcs.find(x => x.name === 'Admin RPC');
 
     updatedData.push({
       NETWORK: chain,

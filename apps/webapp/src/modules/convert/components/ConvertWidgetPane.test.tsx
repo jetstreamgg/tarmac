@@ -22,11 +22,7 @@ const analyticsMocks = vi.hoisted(() => ({
 let mockSearchParams = new URLSearchParams();
 
 const setSearchParamsMock = vi.fn(
-  (
-    next:
-      | URLSearchParams
-      | ((params: URLSearchParams) => URLSearchParams)
-  ) => {
+  (next: URLSearchParams | ((params: URLSearchParams) => URLSearchParams)) => {
     mockSearchParams =
       typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
   }
@@ -201,7 +197,9 @@ function renderComponent(ui: ReactNode) {
 }
 
 function clickButtonByText(container: HTMLElement, matcher: RegExp) {
-  const button = Array.from(container.querySelectorAll('button')).find(node => matcher.test(node.textContent || ''));
+  const button = Array.from(container.querySelectorAll('button')).find(node =>
+    matcher.test(node.textContent || '')
+  );
 
   if (!button) {
     throw new Error(`Could not find button matching ${matcher}`);
@@ -229,7 +227,9 @@ describe('ConvertWidgetPane', () => {
   });
 
   it('tracks convert-module selection when the Trade card is chosen', () => {
-    const { container } = renderComponent(<ConvertWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />);
+    const { container } = renderComponent(
+      <ConvertWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
+    );
 
     clickButtonByText(container, /Trade/i);
 
@@ -245,7 +245,9 @@ describe('ConvertWidgetPane', () => {
   it('tracks convert-module selection when Upgrade is chosen after an L2 switch', () => {
     analyticsMocks.chainId = 8453;
 
-    const { container } = renderComponent(<ConvertWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />);
+    const { container } = renderComponent(
+      <ConvertWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
+    );
 
     clickButtonByText(container, /Upgrade/i);
 

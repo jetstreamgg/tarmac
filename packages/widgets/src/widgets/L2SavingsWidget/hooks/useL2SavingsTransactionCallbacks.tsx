@@ -11,8 +11,10 @@ import { useMemo, useRef } from 'react';
 import { useChainId } from 'wagmi';
 import { SavingsAction, SavingsFlow } from '@widgets/widgets/SavingsWidget/lib/constants';
 
-interface UseL2SavingsTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseL2SavingsTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   amount: bigint;
   originToken: Token;
   needsAllowance: boolean;

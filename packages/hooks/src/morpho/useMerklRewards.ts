@@ -227,7 +227,11 @@ async function fetchMerklRewards(
       tokenPrice: token.price,
       totalAmount,
       claimed,
-      formattedTotalAmount: formatBigInt(totalPending, { unit: token.decimals, compact: false, maxDecimals: 2 }),
+      formattedTotalAmount: formatBigInt(totalPending, {
+        unit: token.decimals,
+        compact: false,
+        maxDecimals: 2
+      }),
       totalAmountUsd,
       sources,
       proofs,
@@ -285,8 +289,7 @@ export function useMerklRewards(): MerklRewardsHook {
   const claimedContracts = useMemo(
     () =>
       (apiData?.rewards ?? []).map(reward => ({
-        address:
-          morphoMerklDistributorAddress[chainId as keyof typeof morphoMerklDistributorAddress],
+        address: morphoMerklDistributorAddress[chainId as keyof typeof morphoMerklDistributorAddress],
         abi: morphoMerklDistributorImplementationAbi,
         functionName: 'claimed' as const,
         args: [userAddress!, reward.tokenAddress] as const

@@ -48,4 +48,3 @@ export type ParsedIntent = {
   delegateAddress?: string;
   stakingRewardFarm?: StakingRewardFarmId;
 };
-

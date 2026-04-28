@@ -20,7 +20,11 @@ export type TermsCheckOutcome = TermsCheckResult | TermsCheckError;
 export async function checkTermsWithRetry(address: string): Promise<TermsCheckOutcome> {
   const url = sanitizeUrl(`${import.meta.env.VITE_TERMS_ENDPOINT}/check`);
   if (!url) {
-    return { termsAccepted: false, error: true, lastError: new Error('Invalid or missing VITE_TERMS_ENDPOINT') };
+    return {
+      termsAccepted: false,
+      error: true,
+      lastError: new Error('Invalid or missing VITE_TERMS_ENDPOINT')
+    };
   }
 
   let lastError: unknown;
@@ -47,7 +51,11 @@ export async function checkTermsWithRetry(address: string): Promise<TermsCheckOu
 
       // Other 4xx are deterministic client errors — don't retry
       if (response.status >= 400 && response.status < 500) {
-        return { termsAccepted: false, error: true, lastError: new Error(`Terms check failed with status ${response.status}`) };
+        return {
+          termsAccepted: false,
+          error: true,
+          lastError: new Error(`Terms check failed with status ${response.status}`)
+        };
       }
 
       // 5xx are server errors — worth retrying

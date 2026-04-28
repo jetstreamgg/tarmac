@@ -187,12 +187,14 @@ export function WidgetMenuItemTooltip({
                 </div>
               </>
             )}
-            {currentChainId && widgetIntent !== Intent.BALANCES_INTENT && widgetIntent !== Intent.CONVERT_INTENT && (
-              <>
-                <p className="mt-2 text-xs text-gray-400">Supported on:</p>
-                <div className="mt-1 flex gap-2">{renderNetworkIcons()}</div>
-              </>
-            )}
+            {currentChainId &&
+              widgetIntent !== Intent.BALANCES_INTENT &&
+              widgetIntent !== Intent.CONVERT_INTENT && (
+                <>
+                  <p className="mt-2 text-xs text-gray-400">Supported on:</p>
+                  <div className="mt-1 flex gap-2">{renderNetworkIcons()}</div>
+                </>
+              )}
           </TooltipContent>
         </TooltipPortal>
       )}

@@ -28,8 +28,8 @@ export function TradeCard() {
 
   const { skyTokens, nonSkyTokens } = useMemo(() => {
     const tokens = isRegionRestricted
-      ? (restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList] || [])
-      : (defaultConfig.tradeTokenList[chainId] || []);
+      ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList] || []
+      : defaultConfig.tradeTokenList[chainId] || [];
     const sky: typeof tokens = [];
     const nonSky: typeof tokens = [];
 

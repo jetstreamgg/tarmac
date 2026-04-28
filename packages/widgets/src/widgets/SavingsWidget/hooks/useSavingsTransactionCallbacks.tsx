@@ -8,8 +8,10 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/
 import { useMemo, useRef } from 'react';
 import { SavingsAction, SavingsFlow } from '../lib/constants';
 
-interface UseSavingsTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseSavingsTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   amount: bigint;
   assetDecimals: number;
   assetSymbol: string;
@@ -105,8 +107,7 @@ export const useSavingsTransactionCallbacks = ({
         });
       },
       onError: (error, hash) => {
-        const failedAtApproveStep =
-          needsAllowance && !shouldUseBatch && supplyStepRef.current === 1;
+        const failedAtApproveStep = needsAllowance && !shouldUseBatch && supplyStepRef.current === 1;
         const failedAction = failedAtApproveStep ? SavingsAction.APPROVE : SavingsAction.SUPPLY;
 
         supplyStepRef.current = 0;

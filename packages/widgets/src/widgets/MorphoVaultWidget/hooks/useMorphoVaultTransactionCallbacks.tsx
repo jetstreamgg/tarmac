@@ -8,8 +8,10 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/
 import { useMemo, useRef } from 'react';
 import { MorphoVaultAction, MorphoVaultFlow } from '../lib/constants';
 
-interface UseMorphoVaultTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseMorphoVaultTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   amount: bigint;
   /** Decimals of the underlying asset token */
   assetDecimals: number;
@@ -55,7 +57,14 @@ export const useMorphoVaultTransactionCallbacks = ({
   });
 
   const formattedAmount = Number(formatUnits(amount, assetDecimals));
-  const vaultData = { module: 'morpho', product: vaultName, productAddress: vaultAddress, assetAddress, assetSymbol, isBatchTx: shouldUseBatch };
+  const vaultData = {
+    module: 'morpho',
+    product: vaultName,
+    productAddress: vaultAddress,
+    assetAddress,
+    assetSymbol,
+    isBatchTx: shouldUseBatch
+  };
 
   // Tracks which step of a multi-call supply flow we're on (approve → deposit)
   const supplyStepRef = useRef(0);

@@ -321,7 +321,11 @@ const SavingsWidgetWrapped = ({
         flow: widgetState.flow,
         amount: Number(formatUnits(debouncedAmount, assetDecimals)),
         assetSymbol: originToken.symbol,
-        data: { module: 'savings', assetAddress: originToken.address[chainId], assetSymbol: originToken.symbol }
+        data: {
+          module: 'savings',
+          assetAddress: originToken.address[chainId],
+          assetSymbol: originToken.symbol
+        }
       });
     } catch {
       // Analytics must never break functionality

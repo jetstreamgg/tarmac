@@ -12,8 +12,10 @@ import { useChainId } from 'wagmi';
 import { RewardsAction } from '../lib/constants';
 import { useRewardsTransactionCallbacks } from './useRewardsTransactionCallbacks';
 
-interface UseRewardsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseRewardsTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   selectedRewardContract: RewardContract | undefined;
   referralCode: number | undefined;
   amount: bigint;
