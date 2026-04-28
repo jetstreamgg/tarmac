@@ -168,8 +168,8 @@ vi.mock('@/modules/icons', async importOriginal => {
   };
 });
 
-vi.mock('framer-motion', async importOriginal => {
-  const actual = await importOriginal<typeof import('framer-motion')>();
+vi.mock('motion/react', async importOriginal => {
+  const actual = await importOriginal<typeof import('motion/react')>();
   return {
     ...actual,
     AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>

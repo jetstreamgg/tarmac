@@ -27,7 +27,7 @@ import { getValidatedState } from '@widgets/lib/utils';
 import { L2TradeInputs } from './components/L2TradeInputs';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { useAddTokenToWallet } from '@widgets/shared/hooks/useAddTokenToWallet';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { ArrowLeft } from 'lucide-react';

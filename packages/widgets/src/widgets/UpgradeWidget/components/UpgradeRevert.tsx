@@ -7,7 +7,7 @@ import { UpgradeStats } from './UpgradeStats';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { t } from '@lingui/core/macro';
 import { formatBigInt, math } from '@jetstreamgg/sky-utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { useChainId } from 'wagmi';
 import { UpgradeFlow } from '../lib/constants';

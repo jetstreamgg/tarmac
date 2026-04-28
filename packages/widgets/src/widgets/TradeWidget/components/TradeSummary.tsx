@@ -9,7 +9,7 @@ import { TradeSide } from '../lib/constants';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
 import { formatUnits } from 'viem';

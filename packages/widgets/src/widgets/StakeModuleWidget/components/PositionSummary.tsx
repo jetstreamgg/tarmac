@@ -22,7 +22,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { WAD_PRECISION, capitalizeFirstLetter, formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';

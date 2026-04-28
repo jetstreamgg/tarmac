@@ -18,7 +18,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { SavingsFlow } from '../lib/constants';
 import { SavingsStatsCard } from './SavingsStatsCard';
 import { useConnection, useChainId } from 'wagmi';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { formatUnits } from 'viem';

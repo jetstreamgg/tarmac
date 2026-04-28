@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { easeOutExpo } from '../animation/timingFunctions';
 import { positionAnimations } from '../animation/presets';
 import { AnimationLabels } from '../animation/constants';

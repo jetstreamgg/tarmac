@@ -12,7 +12,7 @@ import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { easeOutExpo } from '@/modules/ui/animation/timingFunctions';
 import { cardAnimations } from '@/modules/ui/animation/presets';
 import { AnimationLabels } from '@/modules/ui/animation/constants';

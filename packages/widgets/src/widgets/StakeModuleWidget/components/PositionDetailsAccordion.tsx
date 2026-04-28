@@ -8,7 +8,7 @@ import { positionAnimations } from '@widgets/shared/animation/presets';
 import { PopoverInfo } from '@widgets/shared/components/ui/PopoverInfo';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { formatBigInt, formatPercent } from '@jetstreamgg/sky-utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { getIlkName, useCollateralData } from '@jetstreamgg/sky-hooks';
 import { getTooltipById } from '../../../data/tooltips';
 

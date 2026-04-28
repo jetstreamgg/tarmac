@@ -3,7 +3,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { StepIndicator } from '@widgets/shared/components/ui/transaction/StepIndicator';
 import { TxStatus } from '@widgets/shared/constants';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useContext } from 'react';
 
 export const UpgradeAndSupplySteps = () => {

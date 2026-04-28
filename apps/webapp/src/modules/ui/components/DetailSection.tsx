@@ -3,7 +3,7 @@ import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { Heading } from '@/modules/layout/components/Typography';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '../animation/presets';
 
 type DetailSectionProps = {

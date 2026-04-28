@@ -19,7 +19,7 @@ import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents'
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { Button } from '@widgets/components/ui/button';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowLeft } from 'lucide-react';
