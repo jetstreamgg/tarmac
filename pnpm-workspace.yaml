@@ -84,7 +84,7 @@ catalog:
   react-jazzicon: ^1.0.4
   react-markdown: ^10.1.0
   react-router-dom: ^6.30.3
-  recharts: ^2.15.4
+  recharts: ^3.8.1
   rehype-sanitize: ^6.0.0
   rollup-plugin-visualizer: ^6.0.11
   sonner: ^2.0.7
