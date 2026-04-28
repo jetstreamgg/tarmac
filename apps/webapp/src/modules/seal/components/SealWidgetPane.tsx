@@ -9,6 +9,11 @@ import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import {
+  getTermsLinkConfig,
+  reportMissingTermsLinkOnce,
+  reportTermsLinkConfigErrorOnce
+} from '@/modules/config/termsLink';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
@@ -16,12 +21,16 @@ import { useEffect } from 'react';
 
 import { Error } from '@/modules/layout/components/Error';
 export function SealWidgetPane(sharedProps: SharedProps) {
-  let termsLink: any[] = [];
-  try {
-    termsLink = JSON.parse(import.meta.env.VITE_TERMS_LINK);
-  } catch (error) {
-    console.error('Error parsing terms link: ', error);
-  }
+  const { primaryTermsLink } = getTermsLinkConfig();
+
+  useEffect(() => {
+    reportTermsLinkConfigErrorOnce({
+      module: 'widgets',
+      flow: 'seal',
+      action: 'parse-terms-link',
+      type: 'config_error'
+    });
+  }, []);
 
   const {
     userConfig,
@@ -170,9 +179,18 @@ export function SealWidgetPane(sharedProps: SharedProps) {
     }
   };
 
-  const hasTermsLink = Array.isArray(termsLink) && termsLink.length > 0;
-  if (!hasTermsLink) {
-    console.error('No terms link found');
+  useEffect(() => {
+    if (primaryTermsLink) return;
+
+    reportMissingTermsLinkOnce({
+      module: 'widgets',
+      flow: 'seal',
+      action: 'load-terms-link',
+      type: 'missing_terms_link'
+    });
+  }, [primaryTermsLink]);
+
+  if (!primaryTermsLink) {
     return <Error />;
   }
 
@@ -190,7 +208,7 @@ export function SealWidgetPane(sharedProps: SharedProps) {
         sealTab,
         flow
       }}
-      termsLink={Array.isArray(termsLink) && termsLink.length > 0 ? termsLink[0] : undefined}
+      termsLink={primaryTermsLink}
       mkrSkyUpgradeUrl="https://upgrademkrtosky.skyeco.com"
     />
   );

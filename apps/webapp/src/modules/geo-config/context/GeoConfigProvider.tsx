@@ -6,6 +6,7 @@ import { FALLBACK_CONFIG } from '../constants';
 import { applyGeoOverrides } from '../applyGeoOverrides';
 import { router } from '@/pages/router';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
+import { reportError } from '@/modules/sentry/reportError';
 
 // When true, bypass geo-restrictions entirely (for local development or
 // Cloudflare Access-gated private deployments like app-private.sky.money)
@@ -25,13 +26,24 @@ async function fetchGeoConfig(): Promise<GeoConfig> {
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      console.error('Geo config fetch failed:', res.status);
+      reportError(new Error(`Geo config fetch failed with status ${res.status}`), {
+        module: 'geo-config',
+        flow: 'fetch-config',
+        action: 'fetch',
+        type: 'http_error',
+        statusCode: res.status
+      });
       return FALLBACK_CONFIG;
     }
     return res.json();
   } catch (error) {
     clearTimeout(timeoutId);
-    console.error('Geo config fetch error:', error);
+    reportError(error, {
+      module: 'geo-config',
+      flow: 'fetch-config',
+      action: 'fetch',
+      type: 'request_error'
+    });
     return FALLBACK_CONFIG;
   }
 }
