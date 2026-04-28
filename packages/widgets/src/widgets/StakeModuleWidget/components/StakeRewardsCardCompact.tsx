@@ -76,7 +76,7 @@ export const StakeRewardsCardCompact = ({
   return (
     <Card
       className={cn(
-        'flex items-center justify-between bg-radial-(--gradient-position) transition-colors',
+        'flex items-center justify-between bg-transparent bg-radial-(--gradient-position) transition-colors',
         isRewardContractSelected
           ? 'from-primary-start/100 to-primary-end/100 cursor-default'
           : 'from-card to-card hover:from-primary-start/40 hover:to-primary-end/40 cursor-pointer'
