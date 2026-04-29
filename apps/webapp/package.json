@@ -44,7 +44,6 @@
     "@jetstreamgg/sky-utils": "workspace:^",
     "@jetstreamgg/sky-widgets": "workspace:^",
     "@lingui/detect-locale": "catalog:",
-    "@lingui/macro": "catalog:",
     "@lingui/react": "catalog:",
     "@metamask/connect-evm": "catalog:",
     "@radix-ui/react-accordion": "catalog:",
