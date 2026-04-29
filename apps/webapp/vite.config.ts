@@ -38,6 +38,8 @@ export default ({ mode }: { mode: modeEnum }) => {
   const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
+  // connect-src includes `data:` so the MetaMask SDK can fetch its embedded fox-logo SVG, which is
+  // rendered in the center of the connection QR. Without it, the logo fetch fails and the QR renders blank.
   const CONTENT_SECURITY_POLICY = `
     default-src 'self';
     script-src 'self'
@@ -47,7 +49,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     style-src 'self' 'unsafe-inline' https://*.posthog.com https://e.sky.money;
     img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com https://e.sky.money;
     font-src 'self';
-    connect-src 'self'
+    connect-src 'self' data:
       https://proxy.sky.money
       https://staging-proxy.sky.money
       ${PROXY_ORIGIN}
@@ -93,6 +95,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://metamask-sdk.api.cx.metamask.io/evt
       https://a.markfi.xyz
       wss://metamask-sdk.api.cx.metamask.io
+      wss://mm-sdk-relay.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
