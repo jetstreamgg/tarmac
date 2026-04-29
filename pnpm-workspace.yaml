@@ -3,23 +3,22 @@ packages:
   - packages/*
 
 catalog:
-  '@base-org/account': ~2.5.2
+  '@base-org/account': ~2.5.4
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@changesets/cli': ^2.30.0
-  '@coinbase/wallet-sdk': ~4.3.6
+  '@coinbase/wallet-sdk': ~4.3.7
   '@eslint/eslintrc': ^3.3.5
-  '@eslint/js': ^9.39.4
-  '@lingui/cli': ^5.9.2
-  '@lingui/conf': ^5.9.2
-  '@lingui/core': ^5.9.2
-  '@lingui/detect-locale': ^5.9.2
-  '@lingui/format-po': ^5.9.2
-  '@lingui/macro': ^5.9.2
-  '@lingui/react': ^5.9.2
-  '@lingui/swc-plugin': ^5.11.0
-  '@lingui/vite-plugin': ^5.9.2
+  '@eslint/js': ^10.0.1
+  '@lingui/cli': ^6.0.0
+  '@lingui/conf': ^6.0.0
+  '@lingui/core': ^6.0.0
+  '@lingui/detect-locale': ^6.0.0
+  '@lingui/format-po': ^6.0.0
+  '@lingui/react': ^6.0.0
+  '@lingui/swc-plugin': ^6.0.0
+  '@lingui/vite-plugin': ^6.0.0
   '@metamask/connect-evm': ^0.9.1
-  '@playwright/test': ^1.58.2
+  '@playwright/test': ^1.59.1
   '@radix-ui/react-accordion': ^1.2.12
   '@radix-ui/react-avatar': ^1.1.11
   '@radix-ui/react-checkbox': ^1.3.3
@@ -37,71 +36,71 @@ catalog:
   '@radix-ui/react-tooltip': ^1.2.8
   '@safe-global/safe-apps-provider': ~0.18.6
   '@safe-global/safe-apps-sdk': ~9.1.0
-  '@sentry/react': ^10.35.0
-  '@sentry/vite-plugin': ^3.2.0
-  '@tailwindcss/vite': ^4.2.1
-  '@tanstack/eslint-plugin-query': ^5.91.4
-  '@tanstack/react-query': ^5.90.21
+  '@sentry/react': ^10.49.0
+  '@sentry/vite-plugin': ^5.2.0
+  '@tailwindcss/vite': ^4.2.2
+  '@tanstack/eslint-plugin-query': ^5.99.0
+  '@tanstack/react-query': ^5.99.0
   '@testing-library/dom': ^10.4.1
   '@testing-library/react': ^16.3.2
-  '@types/react': ^19.2.7
+  '@types/react': ^19.2.14
   '@types/react-dom': ^19.2.3
-  '@typescript-eslint/eslint-plugin': ^8.56.1
-  '@typescript-eslint/parser': ^8.56.1
-  '@vitejs/plugin-react-swc': ^4.2.3
-  '@vitest/coverage-v8': ^3.2.4
+  '@typescript-eslint/eslint-plugin': ^8.58.2
+  '@typescript-eslint/parser': ^8.58.2
+  '@vitejs/plugin-react-swc': ^4.3.0
+  '@vitest/coverage-v8': ^4.0.0
   '@wagmi/cli': ^2.10.0
-  '@wagmi/core': ^3.4.1
+  '@wagmi/core': ^3.4.3
   '@walletconnect/ethereum-provider': ~2.23.9
   class-variance-authority: ^0.7.1
-  clsx: ^2.1.0
-  date-fns: ^3.6.0
+  clsx: ^2.1.1
+  date-fns: ^4.1.0
   dotenv: ^16.6.1
   embla-carousel-autoplay: ^8.6.0
   embla-carousel-fade: ^8.6.0
   embla-carousel-react: ^8.6.0
-  eslint: ^9.39.4
+  eslint: ^10.2.0
   eslint-plugin-react: ^7.37.5
   eslint-plugin-testing-library: ^7.16.2
   ethers: ^6.16.0
-  framer-motion: ^11.18.2
-  globals: ^15.15.0
+  globals: ^17.5.0
   graphql: ^16.13.2
   graphql-request: ^7.4.0
-  happy-dom: ^20.8.9
-  husky: ^9.0.11
+  happy-dom: ^20.9.0
+  husky: ^9.1.7
   knip: ^5.88.1
   lint-staged: ^15.5.1
   lucide-react: ^0.577.0
+  motion: ^12.38.0
   openapi-fetch: ^0.17.0
   porto: ~0.2.37
-  posthog-js: ^1.359.1
-  prettier: ^3.6.1
+  posthog-js: ^1.369.2
+  prettier: ^3.8.3
   prettier-plugin-tailwindcss: ^0.7.2
-  react: ^19.2.4
-  react-dom: ^19.2.4
+  react: ^19.2.5
+  react-dom: ^19.2.5
   react-intersection-observer: ^9.16.0
   react-jazzicon: ^1.0.4
-  react-markdown: ^9.1.0
+  react-markdown: ^10.1.0
   react-router-dom: ^6.30.3
-  recharts: ^2.15.4
+  recharts: ^3.8.1
   rehype-sanitize: ^6.0.0
   rollup-plugin-visualizer: ^6.0.11
   sonner: ^2.0.7
-  tailwind-merge: ^2.6.1
-  tailwindcss: ^4.1.17
+  tailwind-merge: ^3.5.0
+  tailwindcss: ^4.2.2
   tailwindcss-animate: ^1.0.7
-  tiny-invariant: ^1.3.1
-  typescript: 5.9.3
-  viem: ^2.47.6
-  vite: ^7.3.2
+  tiny-invariant: ^1.3.3
+  typescript: ^6.0.3
+  viem: ^2.48.0
+  vite: ^8.0.8
   vite-plugin-dts: ^4.5.4
-  vite-plugin-node-polyfills: ^0.25.0
+  vite-plugin-node-polyfills: ^0.26.0
   vite-plugin-simple-html: ^1.1.0
-  vite-plugin-static-copy: ^3.2.0
-  vitest: ^3.2.4
-  vitest-canvas-mock: ^0.3.3
-  wagmi: ^3.6.0
+  vite-plugin-static-copy: ^4.0.1
+  vitest: ^4.0.0
+  vitest-canvas-mock: ^1.1.4
+  wagmi: ^3.6.2
   zod: ^4.3.6
 
 catalogMode: strict

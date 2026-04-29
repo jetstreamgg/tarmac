@@ -17,8 +17,10 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/
 import { useContext, useMemo, useRef } from 'react';
 import { RewardsAction, RewardsFlow, RewardsScreen } from '../lib/constants';
 
-interface UseRewardsTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseRewardsTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   selectedRewardContract: RewardContract | undefined;
   amount: bigint;
   rewardsBalance: bigint | undefined;
@@ -92,7 +94,9 @@ export const useRewardsTransactionCallbacks = ({
     ? getTokenDecimals(selectedRewardContract.rewardToken, chainId)
     : 18;
   const rewardTokenSymbol = selectedRewardContract?.rewardToken.symbol ?? '';
-  const formattedRewardsBalance = rewardsBalance ? Number(formatUnits(rewardsBalance, rewardTokenDecimals)) : 0;
+  const formattedRewardsBalance = rewardsBalance
+    ? Number(formatUnits(rewardsBalance, rewardTokenDecimals))
+    : 0;
 
   // ClaimAll: build claimedRewards by joining rewardContractsToClaim with contract metadata
   const claimedRewardsForAll = rewardContractsToClaim
@@ -316,9 +320,7 @@ export const useRewardsTransactionCallbacks = ({
           action,
           flow: RewardsFlow.CLAIM,
           assetSymbol,
-          data: isClaim
-            ? { ...rewardsData, claimedRewards }
-            : { module: 'rewards', claimedRewards }
+          data: isClaim ? { ...rewardsData, claimedRewards } : { module: 'rewards', claimedRewards }
         });
       },
       onStart: hash => {
@@ -338,9 +340,7 @@ export const useRewardsTransactionCallbacks = ({
           flow: RewardsFlow.CLAIM,
           txHash: hash,
           assetSymbol,
-          data: isClaim
-            ? { ...rewardsData, claimedRewards }
-            : { module: 'rewards', claimedRewards }
+          data: isClaim ? { ...rewardsData, claimedRewards } : { module: 'rewards', claimedRewards }
         });
       },
       onError: (error, hash) => {

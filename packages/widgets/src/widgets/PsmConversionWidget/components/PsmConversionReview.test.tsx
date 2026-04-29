@@ -79,8 +79,6 @@ describe('PsmConversionReview', () => {
       </I18nProvider>
     );
 
-    expect(setTxSubtitle).toHaveBeenCalledWith(
-      'Approve USDC first, then complete the conversion to USDS.'
-    );
+    expect(setTxSubtitle).toHaveBeenCalledWith('Approve USDC first, then complete the conversion to USDS.');
   });
 });

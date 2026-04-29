@@ -8,7 +8,7 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { TxStatus } from '@widgets/shared/constants';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { positionAnimations } from '@widgets/shared/animation/presets';

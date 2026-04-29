@@ -62,7 +62,10 @@ export default [
 
     settings: {
       react: {
-        version: 'detect'
+        // Pinned (instead of 'detect') to avoid eslint-plugin-react@7.37.5's
+        // context.getFilename() call, which ESLint 10 removed. Revisit once
+        // the plugin ships ESLint 10 support (tracked upstream as jsx-eslint/eslint-plugin-react#3977).
+        version: '19.2'
       }
     },
 

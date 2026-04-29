@@ -1,5 +1,5 @@
 import React, { Children } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '../animation/presets';
 
 type DetailSectionRowProps = {

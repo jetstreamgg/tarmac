@@ -11,8 +11,7 @@ afterAll(async () => {
 
   const snapshotIdMainnet =
     (globalThis as Record<string, any>).__snapshotMainnet ?? inject('snapshotIdMainnet');
-  const snapshotIdBase =
-    (globalThis as Record<string, any>).__snapshotBase ?? inject('snapshotIdBase');
+  const snapshotIdBase = (globalThis as Record<string, any>).__snapshotBase ?? inject('snapshotIdBase');
   const snapshotIdArbitrum =
     (globalThis as Record<string, any>).__snapshotArbitrum ?? inject('snapshotIdArbitrum');
 

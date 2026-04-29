@@ -1,5 +1,10 @@
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { ExpertIntentMapping, VaultsIntentMapping, IntentMapping, linkedActionMetadata } from '@/lib/constants';
+import {
+  ExpertIntentMapping,
+  VaultsIntentMapping,
+  IntentMapping,
+  linkedActionMetadata
+} from '@/lib/constants';
 import { ArrowStepIndicator } from './ArrowStepIndicator';
 import { ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 

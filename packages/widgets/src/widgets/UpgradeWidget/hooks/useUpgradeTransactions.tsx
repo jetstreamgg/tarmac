@@ -3,8 +3,10 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { Token } from '@jetstreamgg/sky-hooks';
 import { useUpgradeTransactionCallbacks } from './useUpgradeTransactionCallbacks';
 
-interface UseUpgradeTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseUpgradeTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   originToken: Token;
   targetToken: Token;
   originAmount: bigint;

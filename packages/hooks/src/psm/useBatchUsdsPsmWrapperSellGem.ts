@@ -56,8 +56,7 @@ export function useBatchUsdsPsmWrapperSellGem({
   if (!hasAllowance) calls.push(approveCall);
   calls.push(sellGemCall);
 
-  const enabled =
-    paramEnabled && isConnected && allowance !== undefined && gemAmt !== 0n && !!recipient;
+  const enabled = paramEnabled && isConnected && allowance !== undefined && gemAmt !== 0n && !!recipient;
 
   const transactionFlowResults = useTransactionFlow({
     calls,

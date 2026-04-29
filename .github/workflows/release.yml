@@ -17,7 +17,7 @@ jobs:
       id-token: write        # REQUIRED for npm Trusted Publishing (OIDC)
     strategy:
       matrix:
-        node-version: [20]
+        node-version: [22]
         pnpm-version: [10.17.0]
 
     steps:

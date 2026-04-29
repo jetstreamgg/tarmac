@@ -81,7 +81,9 @@ export const StakeBalanceCard = ({
   return variant === ModuleCardVariant.default ? (
     <InteractiveStatsCard
       title={t`Supplied to Staking Engine`}
-      icon={<img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />}
+      icon={
+        <img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />
+      }
       headerRightContent={
         loading ? (
           <Skeleton className="w-32" />
@@ -129,7 +131,9 @@ export const StakeBalanceCard = ({
   ) : (
     <InteractiveStatsCardAlt
       title={t`Supplied to Staking Engine`}
-      icon={<img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />}
+      icon={
+        <img src="/images/staking_engine_icon_large.svg" alt="Staking Engine" className="h-full w-full" />
+      }
       url={url}
       logoName="staking"
       content={

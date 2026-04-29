@@ -6,9 +6,7 @@ let mockSearchParams = new URLSearchParams();
 
 const setSearchParamsMock = vi.fn(
   (
-    next:
-      | URLSearchParams
-      | ((params: URLSearchParams) => URLSearchParams),
+    next: URLSearchParams | ((params: URLSearchParams) => URLSearchParams),
     _options?: { replace?: boolean } // eslint-disable-line @typescript-eslint/no-unused-vars
   ) => {
     mockSearchParams =
@@ -22,12 +20,16 @@ const onAnalyticsEventMock = vi.fn();
 
 let capturedWidgetProps: Record<string, any> | undefined;
 
-vi.mock('@jetstreamgg/sky-widgets', () => ({
-  PsmConversionWidget: (props: Record<string, any>) => {
-    capturedWidgetProps = props;
-    return <div data-testid="psm-conversion-widget" />;
-  }
-}));
+vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+  return {
+    ...actual,
+    PsmConversionWidget: (props: Record<string, any>) => {
+      capturedWidgetProps = props;
+      return <div data-testid="psm-conversion-widget" />;
+    }
+  };
+});
 
 vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({
@@ -43,9 +45,13 @@ vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
   useWidgetAnalytics: () => onAnalyticsEventMock
 }));
 
-vi.mock('wagmi', () => ({
-  useChainId: () => 1
-}));
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useChainId: () => 1
+  };
+});
 
 vi.mock('react-router-dom', () => ({
   useSearchParams: () => [mockSearchParams, setSearchParamsMock]
@@ -65,7 +71,9 @@ describe('PsmConversionWidgetPane', () => {
   };
 
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams('widget=convert&convert_module=psm&source_token=USDC&input_amount=10');
+    mockSearchParams = new URLSearchParams(
+      'widget=convert&convert_module=psm&source_token=USDC&input_amount=10'
+    );
     capturedWidgetProps = undefined;
     setSearchParamsMock.mockClear();
     setSelectedConvertOptionMock.mockClear();

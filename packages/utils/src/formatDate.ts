@@ -14,8 +14,7 @@ export const getDateLocale = async (locale: string): Promise<Locale> => {
     console.error('Error importing locale: ', error);
     localeModule = await import('date-fns/locale/en-US');
   }
-  // In date-fns v3, locales export both 'default' and a named export
-  // The named export is the locale object we need
+  // Locale modules may expose both 'default' and a named export; the named export is the locale object we need.
   const localeKey = Object.keys(localeModule).find(
     key => key !== 'default' && typeof localeModule[key] === 'object'
   );

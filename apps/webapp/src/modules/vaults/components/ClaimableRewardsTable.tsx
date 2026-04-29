@@ -241,10 +241,7 @@ function RewardTokenRows({
   return (
     <>
       {/* Main token row */}
-      <TableRow
-        className="cursor-pointer"
-        onClick={onToggleSelect}
-      >
+      <TableRow className="cursor-pointer" onClick={onToggleSelect}>
         <TableCell>
           <Checkbox checked={isSelected} className="pointer-events-none" aria-label={reward.tokenSymbol} />
         </TableCell>
@@ -296,10 +293,7 @@ function RewardTokenRows({
                   </colgroup>
                   <tbody>
                     {reward.sources.map(source => (
-                      <tr
-                        key={`${reward.tokenAddress}-${source.label}`}
-                        className="border-0"
-                      >
+                      <tr key={`${reward.tokenAddress}-${source.label}`} className="border-0">
                         <td className="p-4" />
                         <td className="p-4" />
                         <td className="p-4">

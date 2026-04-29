@@ -16,7 +16,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { StakeAction, StakeFlow, StakeStep } from '../lib/constants';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export const OpenNewUrn = ({
   isConnectedAndEnabled,

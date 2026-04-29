@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCookieConsent } from '../context/CookieConsentContext';
 import { applyPostHogConsent } from '../PostHogProvider';
@@ -89,7 +89,8 @@ export function CookieConsentBanner() {
   prevBannerVisibleRef.current = bannerVisible;
 
   // Auto-show only when geo requires it; always allow manual open from footer link
-  const visible = (isCookieBannerRequired || manuallyOpened) && bannerVisible && (consent !== null || delayComplete);
+  const visible =
+    (isCookieBannerRequired || manuallyOpened) && bannerVisible && (consent !== null || delayComplete);
 
   // Report banner height to context so toasts can stack above it
   useEffect(() => {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, ReactNode } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   TxStatus,
   Clock,
@@ -183,11 +183,7 @@ export function TransactionModal({
                 const allDone = isTransaction && txStatus === TxStatus.SUCCESS;
                 const isCompleted = isTransaction && (allDone || i < currentStep);
                 const isCurrent = isTransaction && !allDone && i === currentStep;
-                const stepTxStatus = isCompleted
-                  ? TxStatus.SUCCESS
-                  : isCurrent
-                    ? txStatus
-                    : TxStatus.IDLE;
+                const stepTxStatus = isCompleted ? TxStatus.SUCCESS : isCurrent ? txStatus : TxStatus.IDLE;
 
                 return (
                   <StepIndicator
@@ -270,11 +266,7 @@ export function TransactionModal({
 
                   {txStatus === TxStatus.ERROR && (
                     <div className="flex w-full gap-3">
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={handleBack}
-                      >
+                      <Button variant="outline" className="flex-1" onClick={handleBack}>
                         <Trans>Back</Trans>
                       </Button>
                       <Button variant="primaryAlt" className="flex-1" onClick={handleRetry}>
@@ -316,9 +308,9 @@ function BatchToggle() {
             </div>
             <Text className="mt-2 text-sm text-white/80">
               <Trans>
-                Bundled transactions are set &apos;on&apos; by default to complete transactions in a single step.
-                Combining actions improves the user experience and reduces gas fees. Manually toggle off to cancel
-                this feature.
+                Bundled transactions are set &apos;on&apos; by default to complete transactions in a single
+                step. Combining actions improves the user experience and reduces gas fees. Manually toggle off
+                to cancel this feature.
               </Trans>
             </Text>
             <PopoverArrow />
@@ -328,7 +320,11 @@ function BatchToggle() {
           <Trans>(toggled on by default)</Trans>
         </Text>
       </div>
-      <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} aria-label={t`Toggle bundled transactions`} />
+      <Switch
+        checked={batchEnabled}
+        onCheckedChange={setBatchEnabled}
+        aria-label={t`Toggle bundled transactions`}
+      />
     </div>
   );
 }

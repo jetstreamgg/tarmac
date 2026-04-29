@@ -27,7 +27,8 @@ async function fetchDelegates(
   if (search) whereConditions.push(`{ address: { _ilike: "%${search}%" } }`);
   const whereClause = `where: { _and: [${whereConditions.join(', ')}] }`;
 
-  const paginationClause = first !== undefined && skip !== undefined ? `limit: ${first}, offset: ${skip}` : '';
+  const paginationClause =
+    first !== undefined && skip !== undefined ? `limit: ${first}, offset: ${skip}` : '';
 
   const orderByClause = orderBy && orderDirection ? `order_by: { ${orderBy}: ${orderDirection} }` : '';
 

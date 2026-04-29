@@ -5,7 +5,11 @@ import { getSubgraphUrl } from '../helpers/getSubgraphUrl';
 import { useQuery } from '@tanstack/react-query';
 import { UrnInfo, UrnInfoRaw } from './sealModule';
 
-async function fetchUrnsInfo(urlSubgraph: string, chainId: number, user: `0x${string}`): Promise<UrnInfo[] | undefined> {
+async function fetchUrnsInfo(
+  urlSubgraph: string,
+  chainId: number,
+  user: `0x${string}`
+): Promise<UrnInfo[] | undefined> {
   const query = gql`
     {
       sealedUrns: SealUrn(where: { owner: { _ilike: "${user.toLowerCase()}" }, chainId: { _eq: ${chainId} } }, order_by: { index: asc }) {

@@ -117,7 +117,7 @@ async function getBalance(rpcUrl: string, address: string, tokenAddress?: string
 
     return BigInt(result.result || '0x0');
   } catch (error) {
-    throw new Error(`Failed to get balance: ${(error as Error).message}`);
+    throw new Error(`Failed to get balance: ${(error as Error).message}`, { cause: error });
   }
 }
 

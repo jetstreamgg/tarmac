@@ -26,7 +26,7 @@ import { formatUnits, parseUnits } from 'viem';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { getValidatedState } from '@widgets/lib/utils';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { usePreviewSwapExactIn, usePreviewSwapExactOut } from '@jetstreamgg/sky-hooks';
@@ -321,7 +321,11 @@ const SavingsWidgetWrapped = ({
         flow: widgetState.flow,
         amount: Number(formatUnits(debouncedAmount, assetDecimals)),
         assetSymbol: originToken.symbol,
-        data: { module: 'savings', assetAddress: originToken.address[chainId], assetSymbol: originToken.symbol }
+        data: {
+          module: 'savings',
+          assetAddress: originToken.address[chainId],
+          assetSymbol: originToken.symbol
+        }
       });
     } catch {
       // Analytics must never break functionality

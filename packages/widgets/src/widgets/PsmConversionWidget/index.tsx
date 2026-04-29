@@ -19,7 +19,7 @@ import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents'
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { withWidgetProvider } from '@widgets/shared/hocs/withWidgetProvider';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { Button } from '@widgets/components/ui/button';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowLeft } from 'lucide-react';
@@ -134,15 +134,18 @@ function PsmConversionWidgetWrapped({
     setWidgetState,
     setBackButtonText
   } = useContext(WidgetContext);
-  const lastWidgetStateNotificationRef = useRef<{
-    txStatus: TxStatus;
-    flow?: string;
-    action?: string;
-    screen?: string;
-    originToken: string;
-    targetToken: string;
-    originAmount: string;
-  } | undefined>(undefined);
+  const lastWidgetStateNotificationRef = useRef<
+    | {
+        txStatus: TxStatus;
+        flow?: string;
+        action?: string;
+        screen?: string;
+        originToken: string;
+        targetToken: string;
+        originAmount: string;
+      }
+    | undefined
+  >(undefined);
 
   useEffect(() => {
     // Don't override origin amount during active transactions to avoid a race condition
@@ -152,7 +155,9 @@ function PsmConversionWidgetWrapped({
     if (txStatus !== TxStatus.IDLE) return;
     const nextDirection = getDirectionForToken(validatedExternalState?.token);
     setDirection(nextDirection);
-    setOriginAmount(parseUnits(validatedExternalState?.amount || '0', getPsmDecimalsForDirection(nextDirection)));
+    setOriginAmount(
+      parseUnits(validatedExternalState?.amount || '0', getPsmDecimalsForDirection(nextDirection))
+    );
   }, [validatedExternalState?.amount, validatedExternalState?.token, txStatus]);
 
   const transactionStateRef = useRef<{
@@ -244,9 +249,12 @@ function PsmConversionWidgetWrapped({
         notificationTitle: t`Conversion successful`,
         notificationDescription: t`You converted ${formatBigInt(originAmount, {
           unit: getTokenDecimals(current.originToken, chainId)
-        })} ${current.originToken?.symbol || ''} into ${formatBigInt(getPsmTargetAmount(direction, originAmount), {
-          unit: getTokenDecimals(current.targetToken, chainId)
-        })} ${current.targetToken?.symbol || ''}`,
+        })} ${current.originToken?.symbol || ''} into ${formatBigInt(
+          getPsmTargetAmount(direction, originAmount),
+          {
+            unit: getTokenDecimals(current.targetToken, chainId)
+          }
+        )} ${current.targetToken?.symbol || ''}`,
         notificationType: notificationTypeMaping[current.targetToken?.symbol?.toUpperCase() || 'none']
       });
       setBackButtonText(t`Back`);
@@ -302,12 +310,7 @@ function PsmConversionWidgetWrapped({
       shouldUseBatch: conversion.shouldUseBatch,
       action: transactionStateRef.current.action
     };
-  }, [
-    conversion.needsAllowance,
-    conversion.originToken,
-    conversion.shouldUseBatch,
-    conversion.targetToken
-  ]);
+  }, [conversion.needsAllowance, conversion.originToken, conversion.shouldUseBatch, conversion.targetToken]);
 
   const { data: originBalance, refetch: mutateOriginBalance } = useTokenBalance({
     chainId,
@@ -346,10 +349,7 @@ function PsmConversionWidgetWrapped({
   }, [chainId, setExternalLink, setTxStatus, setWidgetState]);
 
   const isBalanceError = Boolean(
-    txStatus === TxStatus.IDLE &&
-      originBalance &&
-      originAmount > originBalance.value &&
-      originAmount !== 0n
+    txStatus === TxStatus.IDLE && originBalance && originAmount > originBalance.value && originAmount !== 0n
   );
   const disabledReasonText = getDisabledReasonText(conversion.disabledReason, conversion.targetToken?.symbol);
   const reviewDisabled =
@@ -399,8 +399,7 @@ function PsmConversionWidgetWrapped({
   ]);
 
   useEffect(() => {
-    const disabled =
-      widgetState.screen === PsmConversionScreen.REVIEW ? confirmDisabled : reviewDisabled;
+    const disabled = widgetState.screen === PsmConversionScreen.REVIEW ? confirmDisabled : reviewDisabled;
     setIsDisabled(txStatus === TxStatus.IDLE && isConnectedAndEnabled && disabled);
   }, [confirmDisabled, isConnectedAndEnabled, reviewDisabled, setIsDisabled, txStatus, widgetState.screen]);
 
@@ -421,9 +420,7 @@ function PsmConversionWidgetWrapped({
       originToken: conversion.originToken?.symbol || '',
       targetToken: conversion.targetToken?.symbol || '',
       originAmount:
-        originAmount > 0n
-          ? formatUnits(originAmount, getTokenDecimals(conversion.originToken, chainId))
-          : ''
+        originAmount > 0n ? formatUnits(originAmount, getTokenDecimals(conversion.originToken, chainId)) : ''
     };
     const previousState = lastWidgetStateNotificationRef.current;
 
@@ -448,7 +445,15 @@ function PsmConversionWidgetWrapped({
       txStatus,
       widgetState
     });
-  }, [chainId, conversion.originToken, conversion.targetToken, onWidgetStateChange, originAmount, txStatus, widgetState]);
+  }, [
+    chainId,
+    conversion.originToken,
+    conversion.targetToken,
+    onWidgetStateChange,
+    originAmount,
+    txStatus,
+    widgetState
+  ]);
 
   const reviewOnClick = () => {
     fireAnalytics({
@@ -575,10 +580,13 @@ function PsmConversionWidgetWrapped({
                       unit: getTokenDecimals(conversion.originToken, chainId),
                       compact: true
                     }),
-                    formatBigInt(originBalance.value > originAmount ? originBalance.value - originAmount : 0n, {
-                      unit: getTokenDecimals(conversion.originToken, chainId),
-                      compact: true
-                    })
+                    formatBigInt(
+                      originBalance.value > originAmount ? originBalance.value - originAmount : 0n,
+                      {
+                        unit: getTokenDecimals(conversion.originToken, chainId),
+                        compact: true
+                      }
+                    )
                   ]
                 : '--'
           },
@@ -693,12 +701,16 @@ function PsmConversionWidgetWrapped({
                 isConnectedAndEnabled={isConnectedAndEnabled}
                 onOriginAmountChange={setOriginAmount}
                 onSwitchDirection={onSwitchDirection}
-                error={conversion.disabledReason === 'insufficient_liquidity' ? disabledReasonText : undefined}
+                error={
+                  conversion.disabledReason === 'insufficient_liquidity' ? disabledReasonText : undefined
+                }
               />
 
-              {((disabledReasonText && conversion.disabledReason !== 'insufficient_liquidity') || conversion.error) && (
-                <Text className="text-sm text-error">
-                  {(conversion.disabledReason !== 'insufficient_liquidity' && disabledReasonText) || conversion.error?.message}
+              {((disabledReasonText && conversion.disabledReason !== 'insufficient_liquidity') ||
+                conversion.error) && (
+                <Text className="text-error text-sm">
+                  {(conversion.disabledReason !== 'insufficient_liquidity' && disabledReasonText) ||
+                    conversion.error?.message}
                 </Text>
               )}
 
@@ -724,7 +736,4 @@ function PsmConversionWidgetWrapped({
   );
 }
 
-export const PsmConversionWidget = withWidgetProvider(
-  PsmConversionWidgetWrapped,
-  'PsmConversionWidget'
-);
+export const PsmConversionWidget = withWidgetProvider(PsmConversionWidgetWrapped, 'PsmConversionWidget');

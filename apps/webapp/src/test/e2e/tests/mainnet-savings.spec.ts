@@ -49,9 +49,7 @@ const getOverviewRowAmount = async (
     timeout: 10_000
   });
   const text = await row.innerText();
-  const match = text.match(
-    new RegExp(`([\\d,.]+)\\s*([KMB])?\\s*${tokenSymbol}(?!\\w)`)
-  );
+  const match = text.match(new RegExp(`([\\d,.]+)\\s*([KMB])?\\s*${tokenSymbol}(?!\\w)`));
   if (!match) {
     throw new Error(`Could not parse ${tokenSymbol} amount for row "${label}" (got: ${text})`);
   }
@@ -109,9 +107,7 @@ test('Supply and withdraw from Savings', async ({ isolatedPage }) => {
 // strings under the widget's `formatBigInt({ maxDecimals: 2 })` formatting.
 // At chi ≈ 1.09, 10 USDS supply renders as ~9.17 (correct) vs ~10.93 (buggy);
 // 5 USDS withdraw renders as ~4.58 (correct) vs ~5.47 (buggy).
-test('Savings transaction overview shows correct sUSDS preview values', async ({
-  isolatedPage
-}) => {
+test('Savings transaction overview shows correct sUSDS preview values', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
