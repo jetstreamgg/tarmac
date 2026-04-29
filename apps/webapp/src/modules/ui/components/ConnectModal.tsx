@@ -24,6 +24,38 @@ interface ConnectModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Detectors for in-page wallet SDK modals that may overlay our own Dialog.
+// Each detector knows the element selector AND how to tell whether the modal
+// is currently open — needed because Reown AppKit keeps `<w3m-modal>` mounted
+// at all times and only toggles a `class="open"` (via `:host(.open)` CSS in
+// its shadow DOM) to show/hide the actual content. MetaMask Connect and
+// Binance, by contrast, add and remove their modal elements from the DOM
+// per-flow.
+//
+// Add new entries as we adopt new connectors that ship a document.body-mounted
+// modal. Extension popups, mobile deep links, and window.open popups (Coinbase
+// Wallet, Base Account) do not render an in-page modal and don't need to be
+// listed.
+const WALLET_OVERLAY_DETECTORS: { selector: string; isOpen: (el: Element) => boolean }[] = [
+  // MetaMask Connect — modal element is added/removed per-flow, existence = open.
+  { selector: 'mm-install-modal', isOpen: () => true },
+  { selector: 'mm-otp-modal', isOpen: () => true },
+  // Reown / WalletConnect AppKit — element stays mounted, signals open via class.
+  { selector: 'wcm-modal', isOpen: el => el.classList.contains('open') },
+  { selector: 'w3m-modal', isOpen: el => el.classList.contains('open') },
+  { selector: 'appkit-modal', isOpen: el => el.classList.contains('open') },
+  // Binance Web3 Wallet — wrapper div added/removed per-flow, existence = open.
+  { selector: '#binanceW3W-wrapper', isOpen: () => true }
+];
+
+function isWalletOverlayVisible(): boolean {
+  for (const { selector, isOpen } of WALLET_OVERLAY_DETECTORS) {
+    const el = document.querySelector(selector);
+    if (el && isOpen(el)) return true;
+  }
+  return false;
+}
+
 export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   const connectors = useConnectors();
   const { connector: connectedConnector } = useConnection();
@@ -180,8 +212,39 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
     );
   };
 
+  // Wallet SDKs that render their own modal (MetaMask Connect, WalletConnect)
+  // mount it as a sibling of our Radix Dialog under document.body. With Radix
+  // in modal mode, DismissableLayer globally blocks outside pointer events, so
+  // clicks meant for the SDK modal get swallowed. Rather than fight Radix, we
+  // close our own Dialog while a known SDK modal is on screen and reopen it
+  // when the SDK modal goes away. Flows that don't render an in-page modal
+  // (browser extensions, mobile deep links, popup windows for Coinbase/Base)
+  // don't trigger this — our Dialog stays open through them.
+  const [hasWalletOverlay, setHasWalletOverlay] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setHasWalletOverlay(false);
+      return;
+    }
+
+    const check = () => setHasWalletOverlay(isWalletOverlayVisible());
+
+    check();
+    // Watch DOM mounts AND attribute changes — Reown AppKit reuses its modal
+    // element and toggles visibility via attributes/CSS rather than removal.
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['open', 'data-state', 'class', 'style', 'aria-hidden']
+    });
+    return () => observer.disconnect();
+  }, [open]);
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && !hasWalletOverlay} onOpenChange={onOpenChange}>
       <DialogContent
         className="bg-containerDark max-h-[calc(100dvh-32px)] gap-6 overflow-auto p-4 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
