@@ -98,7 +98,10 @@ export function useQuotePendleConvert({
       side,
       inputToken,
       outputToken,
-      amountIn,
+      // React Query hashes the queryKey via JSON.stringify, which throws on
+      // BigInt values. Serialize amountIn to string so the cache key is stable
+      // and unique without crashing the renderer.
+      amountIn?.toString(),
       connectedAddress,
       slippage,
       ytTokenForExit
