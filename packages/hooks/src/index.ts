@@ -131,6 +131,40 @@ export type {
   AllMorphoVaultsUserAssetsData
 } from './morpho';
 
+// Pendle (Fixed Yield)
+export {
+  PENDLE_API_BASE_URL,
+  PENDLE_QUOTE_REFETCH_MS,
+  PENDLE_QUOTE_TTL_MS,
+  PENDLE_DEFAULT_SLIPPAGE,
+  PENDLE_ROUTER_V4_ADDRESS,
+  PENDLE_ROUTER_V4_ABI,
+  PENDLE_MARKETS,
+  getPendleMarketByAddress,
+  isMarketMatured,
+  usePendleMarketsApiData,
+  usePendleUserPtBalances,
+  useQuotePendleConvert,
+  useBatchPendleConvert,
+  buildVerifiedArgs,
+  PendleConvertSide
+} from './pendle';
+export type {
+  PendleMarketConfig,
+  PendleConvertQuote,
+  PendleQuoteHook,
+  PendleMarketStats,
+  PendleMarketsStats,
+  PendleMarketsStatsHook,
+  PendleUserPtBalances,
+  PendleUserPtBalancesHook,
+  KnownCallValues,
+  VerifiedCall,
+  VerifiedBuyArgs,
+  VerifiedWithdrawArgs,
+  VerifiedExitArgs
+} from './pendle';
+
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';
