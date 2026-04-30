@@ -1,5 +1,5 @@
 import { mainnet } from 'wagmi/chains';
-import { TENDERLY_CHAIN_ID } from '../constants';
+import { TENDERLY_CHAIN_ID, ZERO_ADDRESS } from '../constants';
 import type { PendleMarketConfig } from './pendle';
 
 // ---------------------------------------------------------------------------
@@ -10,12 +10,6 @@ import type { PendleMarketConfig } from './pendle';
 export enum PendleConvertSide {
   BUY = 'buy',
   WITHDRAW = 'withdraw'
-}
-
-/** Maturity-aware sub-mode for the WITHDRAW flow */
-export enum PendleWithdrawMode {
-  SELL = 'sell',
-  REDEEM = 'redeem'
 }
 
 // ---------------------------------------------------------------------------
@@ -36,12 +30,8 @@ export const PENDLE_QUOTE_TTL_MS = 90_000;
 // Slippage defaults
 // ---------------------------------------------------------------------------
 
-/** 0.2% — buying PT goes through the most-liquid path (token → SY → PT). */
-export const PENDLE_DEFAULT_BUY_SLIPPAGE = 0.002;
-/** 0.5% — pre-maturity sell can hit thinner liquidity than buys. */
-export const PENDLE_DEFAULT_SELL_SLIPPAGE = 0.005;
-/** 0% — post-maturity redemption is 1:1; user-facing slippage UI is hidden. */
-export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0;
+/** 0.2% — applied to Buy, Sell, and Redeem in v1. */
+export const PENDLE_DEFAULT_SLIPPAGE = 0.002;
 
 // ---------------------------------------------------------------------------
 // Pendle Router V4
@@ -280,35 +270,54 @@ export const PENDLE_ROUTER_V4_ABI = [
       { name: 'netSyFee', type: 'uint256' },
       { name: 'netSyInterm', type: 'uint256' }
     ]
+  },
+  {
+    type: 'function',
+    name: 'exitPostExpToToken',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'market', type: 'address' },
+      { name: 'netPtIn', type: 'uint256' },
+      { name: 'netLpIn', type: 'uint256' },
+      {
+        name: 'output',
+        type: 'tuple',
+        components: [
+          { name: 'tokenOut', type: 'address' },
+          { name: 'minTokenOut', type: 'uint256' },
+          { name: 'tokenRedeemSy', type: 'address' },
+          { name: 'pendleSwap', type: 'address' },
+          {
+            name: 'swapData',
+            type: 'tuple',
+            components: [
+              { name: 'swapType', type: 'uint8' },
+              { name: 'extRouter', type: 'address' },
+              { name: 'extCalldata', type: 'bytes' },
+              { name: 'needScale', type: 'bool' }
+            ]
+          }
+        ]
+      }
+    ],
+    outputs: [
+      { name: 'netTokenOut', type: 'uint256' },
+      { name: 'netPtOutFromBurn', type: 'uint256' },
+      { name: 'netSyFromBurn', type: 'uint256' },
+      { name: 'netPtFromSwap', type: 'uint256' },
+      { name: 'netSyFromSwap', type: 'uint256' },
+      { name: 'netSyFee', type: 'uint256' },
+      { name: 'netSyInterm', type: 'uint256' }
+    ]
   }
 ] as const;
 
 /** Per-flow allowlist — the only selectors usePendleConvert will sign. */
 export const PENDLE_ALLOWED_SELECTORS = {
   buy: ['swapExactTokenForPt'] as const,
-  withdraw: ['swapExactPtForToken'] as const
+  withdraw: ['swapExactPtForToken', 'exitPostExpToToken'] as const
 };
-
-// ---------------------------------------------------------------------------
-// SY (ERC-5115) — minimal read ABI
-// ---------------------------------------------------------------------------
-
-export const PENDLE_SY_ABI = [
-  {
-    type: 'function',
-    name: 'getTokensIn',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'address[]' }]
-  },
-  {
-    type: 'function',
-    name: 'getTokensOut',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'address[]' }]
-  }
-] as const;
 
 // ---------------------------------------------------------------------------
 // Empty-struct constants matching Pendle's StructGen.sol reference.
@@ -318,14 +327,14 @@ export const PENDLE_SY_ABI = [
 /** Mirrors `SwapData public emptySwap;` in StructGen.sol */
 export const PENDLE_EMPTY_SWAP_DATA = {
   swapType: 0,
-  extRouter: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  extRouter: ZERO_ADDRESS,
   extCalldata: '0x' as `0x${string}`,
   needScale: false
 } as const;
 
 /** Mirrors `LimitOrderData public emptyLimit;` in StructGen.sol */
 export const PENDLE_EMPTY_LIMIT = {
-  limitRouter: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  limitRouter: ZERO_ADDRESS,
   epsSkipMarket: 0n,
   normalFills: [] as const,
   flashFills: [] as const,

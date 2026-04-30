@@ -15,7 +15,8 @@ export const WIDGET_NETWORK_REQUIREMENTS: Record<Intent, 'mainnet' | 'multichain
   [Intent.EXPERT_INTENT]: 'mainnet',
   [Intent.SEAL_INTENT]: 'mainnet',
   [Intent.VAULTS_INTENT]: 'mainnet',
-  [Intent.CONVERT_INTENT]: 'multichain'
+  [Intent.CONVERT_INTENT]: 'multichain',
+  [Intent.PENDLE_INTENT]: 'mainnet'
 };
 
 /**

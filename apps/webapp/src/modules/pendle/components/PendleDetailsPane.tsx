@@ -1,0 +1,121 @@
+import { t } from '@lingui/core/macro';
+import { Trans } from '@lingui/react/macro';
+import { useSearchParams } from 'react-router-dom';
+import { useChainId, useConnection } from 'wagmi';
+import {
+  isMarketMatured,
+  PENDLE_MARKETS,
+  usePendleUserPtBalances,
+  type PendleMarketConfig
+} from '@jetstreamgg/sky-hooks';
+import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { mainnet } from 'viem/chains';
+import { QueryParams } from '@/lib/constants';
+import { DetailSection } from '@/modules/ui/components/DetailSection';
+import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
+import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
+import { Text } from '@/modules/layout/components/Typography';
+import { PendleMarketStatsCard } from './PendleMarketStatsCard';
+import { PendleAbout } from './PendleAbout';
+import { PendleBalanceDetails } from './PendleBalanceDetails';
+import { PendleMarketInfoCard } from './PendleMarketInfoCard';
+import { TimeToMaturityCard } from './TimeToMaturityCard';
+import { PendleHistoryPlaceholder } from './PendleHistoryPlaceholder';
+
+const findMarket = (address: string | null): PendleMarketConfig | undefined => {
+  if (!address) return undefined;
+  const lower = address.toLowerCase();
+  return PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
+};
+
+export const PendleDetailsPane = () => {
+  const [searchParams] = useSearchParams();
+  const chainId = useChainId();
+  const { address: userAddress } = useConnection();
+  const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
+
+  const selectedMarket = findMarket(searchParams.get(QueryParams.Market));
+  const { data: ptBalances } = usePendleUserPtBalances();
+
+  if (selectedMarket) {
+    return (
+      <DetailSectionWrapper>
+        <DetailSection title={t`Your balances`}>
+          <DetailSectionRow>
+            <PendleBalanceDetails market={selectedMarket} />
+          </DetailSectionRow>
+        </DetailSection>
+        <DetailSection title={t`Market info`}>
+          <DetailSectionRow>
+            <PendleMarketInfoCard market={selectedMarket} />
+          </DetailSectionRow>
+        </DetailSection>
+        <DetailSection title={t`Time to maturity`}>
+          <DetailSectionRow>
+            <TimeToMaturityCard market={selectedMarket} />
+          </DetailSectionRow>
+        </DetailSection>
+        <DetailSection title={t`Your transaction history`}>
+          <DetailSectionRow>
+            <PendleHistoryPlaceholder />
+          </DetailSectionRow>
+        </DetailSection>
+      </DetailSectionWrapper>
+    );
+  }
+
+  // Overview (no market selected). Show available markets, gated by maturity / hold rule.
+  const visibleMarkets = PENDLE_MARKETS.filter(market => {
+    if (!isMarketMatured(market.expiry)) return true;
+    if (!userAddress) return false;
+    const heldBalance = ptBalances?.[market.marketAddress];
+    return heldBalance !== undefined && heldBalance > 0n;
+  });
+
+  if (!isOnPendleChain) {
+    return (
+      <DetailSectionWrapper>
+        <DetailSection title={t`Pendle fixed yield`}>
+          <DetailSectionRow>
+            <Text className="text-textSecondary">
+              <Trans>
+                Pendle markets are only available on Ethereum mainnet. Switch networks to view available
+                markets.
+              </Trans>
+            </Text>
+          </DetailSectionRow>
+        </DetailSection>
+        <DetailSection title={t`About`}>
+          <DetailSectionRow>
+            <PendleAbout />
+          </DetailSectionRow>
+        </DetailSection>
+      </DetailSectionWrapper>
+    );
+  }
+
+  return (
+    <DetailSectionWrapper>
+      <DetailSection title={t`Available markets`}>
+        <DetailSectionRow>
+          {visibleMarkets.length === 0 ? (
+            <Text className="text-textSecondary">
+              <Trans>No active Pendle markets at the moment. Check back soon.</Trans>
+            </Text>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {visibleMarkets.map(market => (
+                <PendleMarketStatsCard key={market.marketAddress} market={market} />
+              ))}
+            </div>
+          )}
+        </DetailSectionRow>
+      </DetailSection>
+      <DetailSection title={t`About`}>
+        <DetailSectionRow>
+          <PendleAbout />
+        </DetailSectionRow>
+      </DetailSection>
+    </DetailSectionWrapper>
+  );
+};

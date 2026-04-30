@@ -37,7 +37,8 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
     [Intent.STAKE_INTENT]: { default: 'about-the-staking-engine' },
     [Intent.EXPERT_INTENT]: { default: 'about-expert-modules' },
     [Intent.VAULTS_INTENT]: { default: 'vaults' },
-    [Intent.CONVERT_INTENT]: { default: 'about-convert' }
+    [Intent.CONVERT_INTENT]: { default: 'about-convert' },
+    [Intent.PENDLE_INTENT]: { default: 'about-balances' }
   };
 
   // Map convert sub-options to banner IDs

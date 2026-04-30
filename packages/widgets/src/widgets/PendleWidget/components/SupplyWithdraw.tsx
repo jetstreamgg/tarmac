@@ -1,0 +1,217 @@
+import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
+import { useMemo } from 'react';
+import { formatUnits } from 'viem';
+import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import {
+  isMarketMatured,
+  type PendleConvertQuote,
+  type PendleMarketConfig,
+  type Token
+} from '@jetstreamgg/sky-hooks';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
+import { Skeleton } from '@widgets/components/ui/skeleton';
+import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
+import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { motion } from 'motion/react';
+import { positionAnimations } from '@widgets/shared/animation/presets';
+import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
+import { PendleFlow } from '../lib/constants';
+import { PendleRoutingDisclosure } from './PendleRoutingDisclosure';
+
+type SupplyWithdrawProps = {
+  market: PendleMarketConfig;
+  flow: PendleFlow;
+  onFlowChange: (flow: PendleFlow) => void;
+  amount: bigint;
+  onAmountChange: (val: bigint) => void;
+  underlyingBalance?: bigint;
+  ptBalance?: bigint;
+  quote?: PendleConvertQuote;
+  isFetchingQuote: boolean;
+  slippage: number;
+  routerAddress: `0x${string}`;
+  enabled: boolean;
+  insufficientFunds: boolean;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+};
+
+// Pendle PTs inherit decimals from the underlying SY, which inherits from the
+// underlying token. So a PT-USDG (USDG = 6 dec) is 6 dec; a PT-sUSDS (sUSDS =
+// 18 dec) is 18 dec. We treat them as equal here and read from market config.
+const ptDecimals = (market: PendleMarketConfig): number => market.underlyingDecimals;
+
+const buildUnderlyingToken = (market: PendleMarketConfig): Token => ({
+  name: market.underlyingSymbol,
+  symbol: market.underlyingSymbol,
+  decimals: market.underlyingDecimals,
+  color: '#6d7ce3',
+  address: { 1: market.underlyingToken }
+});
+
+const buildPtToken = (market: PendleMarketConfig): Token => ({
+  name: `PT-${market.underlyingSymbol}`,
+  symbol: `PT-${market.underlyingSymbol}`,
+  decimals: ptDecimals(market),
+  color: '#f97316',
+  address: { 1: market.ptToken }
+});
+
+export const SupplyWithdraw = ({
+  market,
+  flow,
+  onFlowChange,
+  amount,
+  onAmountChange,
+  underlyingBalance,
+  ptBalance,
+  quote,
+  isFetchingQuote,
+  slippage,
+  routerAddress,
+  enabled,
+  insufficientFunds,
+  onExternalLinkClicked
+}: SupplyWithdrawProps) => {
+  const matured = isMarketMatured(market.expiry);
+  const isRedeemMode = flow === PendleFlow.WITHDRAW && matured;
+
+  const underlyingToken = useMemo(() => buildUnderlyingToken(market), [market]);
+  const ptToken = useMemo(() => buildPtToken(market), [market]);
+
+  const inputDecimals = flow === PendleFlow.BUY ? market.underlyingDecimals : ptDecimals(market);
+  const outputDecimals = flow === PendleFlow.BUY ? ptDecimals(market) : market.underlyingDecimals;
+  const outputSymbol = flow === PendleFlow.BUY ? `PT-${market.underlyingSymbol}` : market.underlyingSymbol;
+  const inputBalance = flow === PendleFlow.BUY ? underlyingBalance : ptBalance;
+
+  const formattedReceive = quote
+    ? `${formatBigInt(quote.amountOut, { unit: outputDecimals, maxDecimals: 4 })} ${outputSymbol}`
+    : undefined;
+  const formattedMin = quote
+    ? `${formatBigInt(quote.apiMinOut, { unit: outputDecimals, maxDecimals: 4 })} ${outputSymbol}`
+    : undefined;
+  const apyDisplay = quote ? formatDecimalPercentage(quote.effectiveApy) : '—';
+  const maturityDisplay = new Date(market.expiry * 1000).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  const errorText = insufficientFunds
+    ? t`Insufficient funds. Your balance is ${formatUnits(inputBalance ?? 0n, inputDecimals)}.`
+    : undefined;
+
+  return (
+    <MotionVStack gap={0} className="w-full" variants={positionAnimations}>
+      <Tabs value={flow}>
+        <motion.div variants={positionAnimations}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger position="left" value={PendleFlow.BUY} onClick={() => onFlowChange(PendleFlow.BUY)}>
+              <Trans>Supply</Trans>
+            </TabsTrigger>
+            <TabsTrigger
+              position="right"
+              value={PendleFlow.WITHDRAW}
+              onClick={() => onFlowChange(PendleFlow.WITHDRAW)}
+            >
+              <Trans>Withdraw</Trans>
+            </TabsTrigger>
+          </TabsList>
+        </motion.div>
+
+        <TabsContent value={PendleFlow.BUY}>
+          <motion.div className="flex w-full flex-col" variants={positionAnimations}>
+            <TokenInput
+              className="w-full"
+              label={t`How much ${market.underlyingSymbol} would you like to supply?`}
+              placeholder={t`Enter amount`}
+              token={underlyingToken}
+              tokenList={[underlyingToken]}
+              balance={enabled ? underlyingBalance : undefined}
+              value={amount}
+              onChange={(newValue: bigint) => onAmountChange(newValue)}
+              error={errorText}
+              showPercentageButtons={enabled}
+              enabled={enabled}
+              dataTestId="pendle-supply-input"
+            />
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value={PendleFlow.WITHDRAW}>
+          <motion.div className="flex w-full flex-col" variants={positionAnimations}>
+            <TokenInput
+              className="w-full"
+              label={t`How much PT-${market.underlyingSymbol} would you like to withdraw?`}
+              placeholder={t`Enter amount`}
+              token={ptToken}
+              tokenList={[ptToken]}
+              balance={enabled ? ptBalance : undefined}
+              value={amount}
+              onChange={(newValue: bigint) => onAmountChange(newValue)}
+              error={errorText}
+              showPercentageButtons={enabled}
+              enabled={enabled}
+              dataTestId="pendle-withdraw-input"
+            />
+            {isRedeemMode && (
+              <div className="bg-bullish/10 text-bullish mt-3 rounded-xl px-3 py-2 text-sm">
+                <Trans>
+                  Maturity reached — redeem 1 PT-{market.underlyingSymbol} for 1 {market.underlyingSymbol}.
+                </Trans>
+              </div>
+            )}
+          </motion.div>
+        </TabsContent>
+      </Tabs>
+
+      {amount > 0n && !insufficientFunds && (
+        <TransactionOverview
+          title={t`Transaction overview`}
+          isFetching={isFetchingQuote && !quote}
+          fetchingMessage={t`Fetching quote from Pendle`}
+          onExternalLinkClicked={onExternalLinkClicked}
+          transactionData={[
+            {
+              label: flow === PendleFlow.BUY ? t`You supply` : t`You redeem`,
+              value: `${formatBigInt(amount, { unit: inputDecimals, maxDecimals: 4 })} ${
+                flow === PendleFlow.BUY ? market.underlyingSymbol : `PT-${market.underlyingSymbol}`
+              }`
+            },
+            {
+              label: t`You receive`,
+              value: formattedReceive ?? <Skeleton className="bg-textSecondary h-4 w-20" />
+            },
+            {
+              label: flow === PendleFlow.BUY ? t`Fixed APY locked` : t`Effective APY`,
+              value: apyDisplay,
+              className: 'text-bullish'
+            },
+            {
+              label: t`Maturity date`,
+              value: maturityDisplay
+            },
+            ...(isRedeemMode
+              ? []
+              : [
+                  {
+                    label: t`Min. received`,
+                    value: formattedMin ?? <Skeleton className="bg-textSecondary h-4 w-20" />
+                  },
+                  {
+                    label: t`Slippage tolerance`,
+                    value: `${(slippage * 100).toFixed(2)}%`
+                  }
+                ]),
+            {
+              label: t`Routing fee`,
+              value: isRedeemMode ? <Trans>Free</Trans> : <Trans>Included in quote</Trans>
+            }
+          ]}
+        />
+      )}
+
+      <PendleRoutingDisclosure routerAddress={routerAddress} onExternalLinkClicked={onExternalLinkClicked} />
+    </MotionVStack>
+  );
+};

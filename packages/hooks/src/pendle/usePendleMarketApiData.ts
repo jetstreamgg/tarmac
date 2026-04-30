@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { mainnet } from 'wagmi/chains';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
-import { PendleMarketStatsHook } from './pendle';
+import { PendleMarketsStatsHook } from './pendle';
 import { fetchPendleMarketsByIds } from './pendleApiClient';
 
 /**
@@ -15,7 +15,7 @@ export function usePendleMarketApiData({
   marketAddress
 }: {
   marketAddress?: `0x${string}`;
-}): PendleMarketStatsHook {
+}): PendleMarketsStatsHook {
   const { data, isLoading, error, refetch } = useQuery({
     enabled: !!marketAddress,
     queryKey: ['pendle-market-api', marketAddress?.toLowerCase()],

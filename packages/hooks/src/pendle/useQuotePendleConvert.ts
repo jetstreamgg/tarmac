@@ -7,19 +7,27 @@ import type { PendleQuoteHook, PendleConvertQuote } from './pendle';
 import { fetchPendleConvert } from './pendleApiClient';
 
 /**
- * Pull `minPtOut` (Buy) or `output.minTokenOut` (Withdraw) from the API's
- * contractCallParams. Position 2 for Buy, nested under position 3 for Withdraw.
+ * Pull the on-chain `minOut` value from the API's contractCallParams.
  * Numeric fields come back as decimal wei strings (JSON has no native bigint).
- * Returns 0n if the API didn't include it — buildVerifiedArgs will fall back
- * to the local floor.
+ * Returns 0n if the API didn't include it.
  */
-function extractApiMinOut(side: PendleConvertSide, params: unknown[]): bigint {
+function extractApiMinOut(method: string, params: unknown[]): bigint {
   try {
-    if (side === PendleConvertSide.BUY) {
+    if (method === 'swapExactTokenForPt') {
+      // (receiver, market, minPtOut, guessPtOut, input, limit)
       return BigInt((params[2] as string | undefined) ?? 0);
     }
-    const output = params[3] as { minTokenOut?: string } | undefined;
-    return BigInt(output?.minTokenOut ?? 0);
+    if (method === 'swapExactPtForToken') {
+      // (receiver, market, exactPtIn, output, limit)
+      const output = params[3] as { minTokenOut?: string } | undefined;
+      return BigInt(output?.minTokenOut ?? 0);
+    }
+    if (method === 'exitPostExpToToken') {
+      // (receiver, market, netPtIn, netLpIn, output)
+      const output = params[4] as { minTokenOut?: string } | undefined;
+      return BigInt(output?.minTokenOut ?? 0);
+    }
+    return 0n;
   } catch {
     return 0n;
   }
@@ -36,6 +44,13 @@ type UseQuotePendleConvertParams = {
   amountIn?: bigint;
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
   slippage: number;
+  /**
+   * Set ONLY when the market is matured. Included in the request as
+   * `inputs[1]` with amount `0`; the API uses this as a marker to route to
+   * `exitPostExpToToken` instead of `swapExactPtForToken`. Callers should
+   * pass `market.ytToken` iff `isMarketMatured(market.expiry)`.
+   */
+  ytTokenForExit?: `0x${string}`;
   enabled?: boolean;
 };
 
@@ -61,6 +76,7 @@ export function useQuotePendleConvert({
   outputToken,
   amountIn,
   slippage,
+  ytTokenForExit,
   enabled: enabledParam = true
 }: UseQuotePendleConvertParams): PendleQuoteHook {
   const { address: connectedAddress } = useConnection();
@@ -84,20 +100,32 @@ export function useQuotePendleConvert({
       outputToken,
       amountIn,
       connectedAddress,
-      slippage
+      slippage,
+      ytTokenForExit
     ],
     queryFn: async (): Promise<PendleConvertQuote> => {
+      const inputs: Array<{ token: `0x${string}`; amount: string }> = [
+        { token: inputToken!, amount: amountIn!.toString() }
+      ];
+      if (ytTokenForExit) {
+        // Matured-market exit: the API routes to `exitPostExpToToken` when YT
+        // is included as a second input (with amount 0).
+        inputs.push({ token: ytTokenForExit, amount: '0' });
+      }
       const response = await fetchPendleConvert(mainnet.id, {
         receiver: connectedAddress!,
         slippage,
-        inputs: [{ token: inputToken!, amount: amountIn!.toString() }],
+        inputs,
         outputs: [outputToken!],
         additionalData: 'impliedApy,effectiveApy'
       });
 
       const route = response.routes[0];
       const apiAmountOut = BigInt(route.outputs[0]?.amount ?? '0');
-      const apiMinOut = extractApiMinOut(side, route.contractParamInfo.contractCallParams);
+      const apiMinOut = extractApiMinOut(
+        route.contractParamInfo.method,
+        route.contractParamInfo.contractCallParams
+      );
 
       return {
         method: route.contractParamInfo.method,

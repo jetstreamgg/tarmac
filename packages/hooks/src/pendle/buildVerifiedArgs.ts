@@ -1,29 +1,11 @@
+import { ZERO_ADDRESS } from '../constants';
 import {
   PENDLE_ALLOWED_SELECTORS,
   PENDLE_EMPTY_LIMIT,
   PENDLE_EMPTY_SWAP_DATA,
   PendleConvertSide
 } from './constants';
-import { applySlippageToMinOut } from './helpers';
 import type { PendleConvertQuote } from './pendle';
-
-// ---------------------------------------------------------------------------
-// Errors
-// ---------------------------------------------------------------------------
-
-export class PendleSelectorNotAllowedError extends Error {
-  constructor(method: string, side: PendleConvertSide) {
-    super(`Pendle: refusing to sign — selector "${method}" not allowed for ${side}`);
-    this.name = 'PendleSelectorNotAllowedError';
-  }
-}
-
-export class PendleMalformedQuoteError extends Error {
-  constructor(reason: string) {
-    super(`Pendle: refusing to sign — malformed quote: ${reason}`);
-    this.name = 'PendleMalformedQuoteError';
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Verified-args output (typed for the ABI)
@@ -73,12 +55,36 @@ export type VerifiedWithdrawArgs = readonly [
   limit: VerifiedLimit
 ];
 
+/**
+ * Args for `exitPostExpToToken` — used to redeem PT for the underlying after
+ * market expiry. v1 always passes `netLpIn = 0n` since we do not expose LP.
+ * No `limit` parameter; this method does not support limit orders.
+ */
+export type VerifiedExitArgs = readonly [
+  receiver: `0x${string}`,
+  market: `0x${string}`,
+  netPtIn: bigint,
+  netLpIn: bigint,
+  output: {
+    tokenOut: `0x${string}`;
+    minTokenOut: bigint;
+    tokenRedeemSy: `0x${string}`;
+    pendleSwap: `0x${string}`;
+    swapData: VerifiedSwapData;
+  }
+];
+
 export type VerifiedCall =
   | { side: PendleConvertSide.BUY; functionName: 'swapExactTokenForPt'; args: VerifiedBuyArgs }
   | {
       side: PendleConvertSide.WITHDRAW;
       functionName: 'swapExactPtForToken';
       args: VerifiedWithdrawArgs;
+    }
+  | {
+      side: PendleConvertSide.WITHDRAW;
+      functionName: 'exitPostExpToToken';
+      args: VerifiedExitArgs;
     };
 
 // ---------------------------------------------------------------------------
@@ -102,27 +108,8 @@ export type KnownCallValues = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const;
 const verifiedEmptySwapData: VerifiedSwapData = PENDLE_EMPTY_SWAP_DATA;
 const verifiedEmptyLimit: VerifiedLimit = PENDLE_EMPTY_LIMIT;
-
-/**
- * Resolve the on-chain `minPtOut` / `minTokenOut` enforced in the call.
- *
- * Pendle's API computes `apiMinOut` factoring in fees and AMM curve nonlinearity,
- * not just `amountOut * (1 - slippage)`. We trust that value because the API is
- * the source of truth for AMM math, but we also enforce a local floor so a
- * compromised API cannot lower minOut below what the user's slippage allows.
- *
- * Result: `max(apiMinOut, localFloor)`.
- *   - Honest API where its formula matches ours → values equal, behavior unchanged.
- *   - Honest API where its formula is tighter (higher) → we use the tighter bound (better protection).
- *   - Compromised API trying to set apiMinOut = 0 → we use the local floor (sandwich protection preserved).
- */
-function resolveMinOut(apiMinOut: bigint, amountOut: bigint, slippage: number): bigint {
-  const localFloor = applySlippageToMinOut(amountOut, slippage);
-  return apiMinOut > localFloor ? apiMinOut : localFloor;
-}
 
 /**
  * Extract the `guessPtOut` solver hint from the API's parsed contract params.
@@ -144,7 +131,9 @@ function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
         eps?: string;
       };
   if (!raw || typeof raw !== 'object') {
-    throw new PendleMalformedQuoteError('apiContractParams[3] (guessPtOut) missing or not an object');
+    throw new Error(
+      'Pendle: refusing to sign — malformed quote: apiContractParams[3] (guessPtOut) missing or not an object'
+    );
   }
   try {
     return {
@@ -155,7 +144,9 @@ function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
       eps: BigInt(raw.eps ?? 0)
     };
   } catch {
-    throw new PendleMalformedQuoteError('apiContractParams[3] (guessPtOut) has non-numeric fields');
+    throw new Error(
+      'Pendle: refusing to sign — malformed quote: apiContractParams[3] (guessPtOut) has non-numeric fields'
+    );
   }
 }
 
@@ -185,14 +176,22 @@ export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallVal
     known.side === PendleConvertSide.BUY ? PENDLE_ALLOWED_SELECTORS.buy : PENDLE_ALLOWED_SELECTORS.withdraw
   ) as readonly string[];
   if (!allowed.includes(quote.method)) {
-    throw new PendleSelectorNotAllowedError(quote.method, known.side);
+    throw new Error(`Pendle: refusing to sign — selector "${quote.method}" not allowed for ${known.side}`);
   }
 
-  // 2 + 3. Rebuild args from known values + force-empty
-  if (known.side === PendleConvertSide.BUY) {
+  // 2 + 3. Rebuild args from known values + force-empty.
+  // Dispatch on the API's method (already gated by the allowlist above).
+  if (quote.method === 'swapExactTokenForPt') {
     return buildBuyArgs(quote, known);
   }
-  return buildWithdrawArgs(quote, known);
+  if (quote.method === 'swapExactPtForToken') {
+    return buildWithdrawArgs(quote, known);
+  }
+  if (quote.method === 'exitPostExpToToken') {
+    return buildExitArgs(quote, known);
+  }
+  // Unreachable: the allowlist check would have thrown above.
+  throw new Error(`Pendle: unreachable — selector "${quote.method}" has no verified-args builder`);
 }
 
 // ---------------------------------------------------------------------------
@@ -201,12 +200,11 @@ export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallVal
 
 function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   const guessPtOut = extractGuessPtOut(quote.apiContractParams);
-  const minPtOut = resolveMinOut(quote.apiMinOut, quote.amountOut, known.slippage);
 
   const args: VerifiedBuyArgs = [
     known.receiver,
     known.market,
-    minPtOut,
+    quote.apiMinOut,
     guessPtOut,
     {
       tokenIn: known.inputToken,
@@ -226,15 +224,13 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
 // ---------------------------------------------------------------------------
 
 function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
-  const minTokenOut = resolveMinOut(quote.apiMinOut, quote.amountOut, known.slippage);
-
   const args: VerifiedWithdrawArgs = [
     known.receiver,
     known.market,
     known.amountIn,
     {
       tokenOut: known.outputToken,
-      minTokenOut,
+      minTokenOut: quote.apiMinOut,
       tokenRedeemSy: known.outputToken, // the no-aggregator invariant
       pendleSwap: ZERO_ADDRESS,
       swapData: verifiedEmptySwapData
@@ -243,4 +239,26 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
   ] as const;
 
   return { side: PendleConvertSide.WITHDRAW, functionName: 'swapExactPtForToken', args };
+}
+
+// ---------------------------------------------------------------------------
+// Exit: exitPostExpToToken(receiver, market, netPtIn, netLpIn, output)
+// ---------------------------------------------------------------------------
+
+function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
+  const args: VerifiedExitArgs = [
+    known.receiver,
+    known.market,
+    known.amountIn,
+    0n, // netLpIn — v1 does not expose LP
+    {
+      tokenOut: known.outputToken,
+      minTokenOut: quote.apiMinOut,
+      tokenRedeemSy: known.outputToken, // the no-aggregator invariant
+      pendleSwap: ZERO_ADDRESS,
+      swapData: verifiedEmptySwapData
+    }
+  ] as const;
+
+  return { side: PendleConvertSide.WITHDRAW, functionName: 'exitPostExpToToken', args };
 }

@@ -41,6 +41,7 @@ import { Repaid } from './Repaid';
 import { SelectRewards } from './SelectRewards';
 import { Vaults } from './Vaults';
 import { Convert } from './Convert';
+import { Pendle } from './Pendle';
 
 export {
   ArrowDown,
@@ -85,5 +86,6 @@ export {
   Repaid,
   SelectRewards,
   Vaults,
-  Convert
+  Convert,
+  Pendle
 };

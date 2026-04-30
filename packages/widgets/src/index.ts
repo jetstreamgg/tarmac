@@ -17,6 +17,8 @@ export type { BalancesWidgetProps } from './widgets/BalancesWidget';
 export { StakeModuleWidget } from './widgets/StakeModuleWidget/index';
 export { MorphoVaultWidget } from './widgets/MorphoVaultWidget';
 export type { MorphoVaultWidgetProps } from './widgets/MorphoVaultWidget';
+export { PendleWidget } from './widgets/PendleWidget';
+export type { PendleWidgetProps } from './widgets/PendleWidget';
 export { MorphoVaultBadge } from './widgets/MorphoVaultWidget/components/MorphoVaultBadge';
 export { MorphoRateBreakdownPopover } from './widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';
@@ -41,6 +43,12 @@ export {
   MorphoVaultAction,
   MorphoVaultScreen
 } from './widgets/MorphoVaultWidget/lib/constants';
+export {
+  PendleFlow,
+  PendleAction,
+  PendleScreen,
+  PendleSlippageType
+} from './widgets/PendleWidget/lib/constants';
 export { formatUrnIndex } from './widgets/SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';

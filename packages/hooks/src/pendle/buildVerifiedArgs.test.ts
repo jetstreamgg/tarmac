@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  buildVerifiedArgs,
-  PendleMalformedQuoteError,
-  PendleSelectorNotAllowedError
-} from './buildVerifiedArgs';
+import { buildVerifiedArgs } from './buildVerifiedArgs';
 import {
   PENDLE_EMPTY_LIMIT,
   PENDLE_EMPTY_SWAP_DATA,
@@ -149,25 +145,8 @@ describe('buildVerifiedArgs — Buy', () => {
     expect(verified.args[4].netTokenIn).toBe(100_000_000n);
   });
 
-  it('uses the API apiMinOut when it equals the local floor', () => {
-    // amountOut=100M, slippage=0.2% → both = 99_800_000
+  it('passes apiMinOut through as minPtOut', () => {
     const verified = buyVerified(makeBuyQuote({ apiMinOut: 99_800_000n }));
-    expect(verified.args[2]).toBe(99_800_000n);
-  });
-
-  it('uses the API apiMinOut when it is tighter (higher) than the local floor', () => {
-    // API knows AMM curve gives a tighter bound — use it
-    const verified = buyVerified(makeBuyQuote({ apiMinOut: 99_900_000n }));
-    expect(verified.args[2]).toBe(99_900_000n);
-  });
-
-  it('falls back to the local floor when apiMinOut is below it (sandwich-attack defense)', () => {
-    const verified = buyVerified(makeBuyQuote({ apiMinOut: 0n }));
-    expect(verified.args[2]).toBe(99_800_000n); // local floor: floor(100M * 0.998)
-  });
-
-  it('falls back to the local floor when apiMinOut is suspiciously low (~50% of amountOut)', () => {
-    const verified = buyVerified(makeBuyQuote({ apiMinOut: 50_000_000n }));
     expect(verified.args[2]).toBe(99_800_000n);
   });
 
@@ -213,21 +192,21 @@ describe('buildVerifiedArgs — Buy', () => {
     expect(verified.args[5]).toEqual(PENDLE_EMPTY_LIMIT);
   });
 
-  it('throws PendleSelectorNotAllowedError on an unknown method', () => {
+  it('throws on an unknown method (selector allowlist)', () => {
     const quote = makeBuyQuote({ method: 'addLiquiditySinglePt' });
-    expect(() => buildVerifiedArgs(quote, BUY_KNOWN)).toThrow(PendleSelectorNotAllowedError);
+    expect(() => buildVerifiedArgs(quote, BUY_KNOWN)).toThrow(/selector .* not allowed/);
   });
 
-  it('throws PendleSelectorNotAllowedError if BUY allowlist receives a withdraw selector', () => {
+  it('throws if BUY allowlist receives a withdraw selector', () => {
     const quote = makeBuyQuote({ method: 'swapExactPtForToken' });
-    expect(() => buildVerifiedArgs(quote, BUY_KNOWN)).toThrow(PendleSelectorNotAllowedError);
+    expect(() => buildVerifiedArgs(quote, BUY_KNOWN)).toThrow(/selector .* not allowed/);
   });
 
-  it('throws PendleMalformedQuoteError when guessPtOut is missing', () => {
+  it('throws when guessPtOut is missing (malformed quote)', () => {
     const quote = makeBuyQuote({
       apiContractParams: [RECEIVER, MARKET, '99000000', undefined, {}, API_EMPTY_LIMIT]
     });
-    expect(() => buildVerifiedArgs(quote, BUY_KNOWN)).toThrow(PendleMalformedQuoteError);
+    expect(() => buildVerifiedArgs(quote, BUY_KNOWN)).toThrow(/malformed quote/);
   });
 });
 
@@ -285,8 +264,8 @@ describe('buildVerifiedArgs — Withdraw', () => {
 
   function withdrawVerified(quote: PendleConvertQuote, known = WITHDRAW_KNOWN) {
     const verified = buildVerifiedArgs(quote, known);
-    if (verified.side !== PendleConvertSide.WITHDRAW) {
-      throw new Error('expected WITHDRAW side');
+    if (verified.functionName !== 'swapExactPtForToken') {
+      throw new Error('expected swapExactPtForToken');
     }
     return verified;
   }
@@ -303,26 +282,116 @@ describe('buildVerifiedArgs — Withdraw', () => {
     expect(output.tokenRedeemSy).toBe(USDG);
     expect(output.pendleSwap).toBe(ZERO);
     expect(output.swapData).toEqual(PENDLE_EMPTY_SWAP_DATA);
-    // apiMinOut = 99_500_000n; local floor = floor(100M * 0.995) = 99_500_000n; max = 99_500_000
-    expect(output.minTokenOut).toBe(99_500_000n);
+    expect(output.minTokenOut).toBe(99_500_000n); // apiMinOut passed through
     expect(limit).toEqual(PENDLE_EMPTY_LIMIT);
   });
 
-  it('passes minTokenOut = amountOut when slippage is 0 and apiMinOut == amountOut (post-maturity redeem)', () => {
-    const verified = withdrawVerified(makeWithdrawQuote({ apiMinOut: 100_000_000n }), {
-      ...WITHDRAW_KNOWN,
-      slippage: 0
-    });
-    expect(verified.args[3].minTokenOut).toBe(100_000_000n);
-  });
-
-  it('falls back to local floor when withdraw apiMinOut is 0 (sandwich defense)', () => {
-    const verified = withdrawVerified(makeWithdrawQuote({ apiMinOut: 0n }));
-    expect(verified.args[3].minTokenOut).toBe(99_500_000n); // local floor
-  });
-
-  it('throws PendleSelectorNotAllowedError on an unknown method', () => {
+  it('throws on an unknown method (selector allowlist)', () => {
     const quote = makeWithdrawQuote({ method: 'redeemPyToToken' });
-    expect(() => buildVerifiedArgs(quote, WITHDRAW_KNOWN)).toThrow(PendleSelectorNotAllowedError);
+    expect(() => buildVerifiedArgs(quote, WITHDRAW_KNOWN)).toThrow(/selector .* not allowed/);
+  });
+});
+
+describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
+  const EXIT_PARAM_NAMES = ['receiver', 'market', 'netPtIn', 'netLpIn', 'output'];
+
+  function makeExitParams(overrides: {
+    receiver?: string;
+    market?: string;
+    netPtIn?: string;
+    netLpIn?: string;
+    outputTokenOut?: string;
+    outputMinTokenOut?: string;
+    outputTokenRedeemSy?: string;
+    outputPendleSwap?: string;
+  } = {}): unknown[] {
+    return [
+      overrides.receiver ?? RECEIVER,
+      overrides.market ?? MARKET,
+      overrides.netPtIn ?? '100000000',
+      overrides.netLpIn ?? '0',
+      {
+        tokenOut: overrides.outputTokenOut ?? USDG,
+        minTokenOut: overrides.outputMinTokenOut ?? '99000000',
+        tokenRedeemSy: overrides.outputTokenRedeemSy ?? USDG,
+        pendleSwap: overrides.outputPendleSwap ?? ZERO,
+        swapData: { swapType: '0', extRouter: ZERO, extCalldata: '0x', needScale: false }
+      }
+    ];
+  }
+
+  function makeExitQuote(overrides: Partial<PendleConvertQuote> = {}): PendleConvertQuote {
+    return {
+      method: 'exitPostExpToToken',
+      amountOut: 100_000_000n,
+      apiMinOut: 99_800_000n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: -0.0045,
+      fetchedAt: Date.now(),
+      apiContractParams: makeExitParams(),
+      apiContractParamsName: EXIT_PARAM_NAMES,
+      ...overrides
+    };
+  }
+
+  // WITHDRAW side — same as pre-maturity sell. The discriminator is the
+  // API's method, not user intent.
+  const EXIT_KNOWN = {
+    side: PendleConvertSide.WITHDRAW,
+    receiver: RECEIVER,
+    market: MARKET,
+    inputToken: PT_USDG,
+    outputToken: USDG,
+    amountIn: 100_000_000n,
+    slippage: 0.002
+  };
+
+  function exitVerified(quote: PendleConvertQuote, known = EXIT_KNOWN) {
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.functionName !== 'exitPostExpToToken') {
+      throw new Error('expected exitPostExpToToken');
+    }
+    return verified;
+  }
+
+  it('produces a verified exitPostExpToToken call with netLpIn forced to 0', () => {
+    const verified = exitVerified(makeExitQuote());
+
+    expect(verified.functionName).toBe('exitPostExpToToken');
+    const [receiver, market, netPtIn, netLpIn, output] = verified.args;
+    expect(receiver).toBe(RECEIVER);
+    expect(market).toBe(MARKET);
+    expect(netPtIn).toBe(100_000_000n);
+    expect(netLpIn).toBe(0n); // forced to 0 — v1 does not expose LP
+    expect(output.tokenOut).toBe(USDG);
+    expect(output.tokenRedeemSy).toBe(USDG);
+    expect(output.pendleSwap).toBe(ZERO);
+    expect(output.swapData).toEqual(PENDLE_EMPTY_SWAP_DATA);
+    expect(output.minTokenOut).toBe(99_800_000n);
+    // No `limit` slot — exitPostExpToToken does not support limit orders
+  });
+
+  it('forces netLpIn to 0 even if API populates it', () => {
+    const verified = exitVerified(
+      makeExitQuote({ apiContractParams: makeExitParams({ netLpIn: '999999' }) })
+    );
+    expect(verified.args[3]).toBe(0n);
+  });
+
+  it('overrides receiver when API tries to redirect funds', () => {
+    const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
+    const verified = exitVerified(
+      makeExitQuote({ apiContractParams: makeExitParams({ receiver: ATTACKER }) })
+    );
+    expect(verified.args[0]).toBe(RECEIVER);
+  });
+
+  it('forces tokenRedeemSy === tokenOut (no-aggregator invariant)', () => {
+    const ANOTHER = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const verified = exitVerified(
+      makeExitQuote({ apiContractParams: makeExitParams({ outputTokenRedeemSy: ANOTHER }) })
+    );
+    expect(verified.args[4].tokenRedeemSy).toBe(USDG); // === EXIT_KNOWN.outputToken
   });
 });
