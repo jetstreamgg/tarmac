@@ -37,7 +37,7 @@ import { useLingui } from '@lingui/react';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { getValidatedState } from '@widgets/lib/utils';
 import { WidgetButtons } from '@widgets/shared/components/ui/widget/WidgetButtons';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
 import { UpgradeTransactionReview } from './components/UpgradeTransactionReview';

@@ -9,8 +9,10 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@widgets/shared/
 import { useMemo, useRef } from 'react';
 import { StakeFlow } from '../lib/constants';
 
-interface UseStakeTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseStakeTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   lockAmount: bigint;
   setIndexToClaim: React.Dispatch<React.SetStateAction<bigint | undefined>>;
   setRewardContractsToClaim: React.Dispatch<React.SetStateAction<`0x${string}`[] | undefined>>;

@@ -85,106 +85,113 @@ export const InteractiveStatsCardWithVaultAccordion = ({
   return (
     <Accordion type="single" collapsible>
       <AccordionItem value="details" className="accordion-item border-0">
-        <Card variant="stats" className="w-full !px-0 transition-colors has-[.header-link:hover]:bg-radial-(--gradient-position) has-[.header-link:hover]:from-primary-start/100 has-[.header-link:hover]:to-primary-end/100">
-          <div className="group/header-link relative -mt-3 px-4 pb-1 pt-3 lg:-mt-5 lg:px-5 lg:pt-5">
-            <div>
-              {headerContent}
-            </div>
-            {url && <Link to={url} aria-label={typeof title === 'string' ? title : undefined} className="header-link absolute inset-0 z-0 h-full w-full" />}
+        <Card
+          variant="stats"
+          className="has-[.header-link:hover]:from-primary-start/100 has-[.header-link:hover]:to-primary-end/100 w-full !px-0 transition-colors has-[.header-link:hover]:bg-radial-(--gradient-position)"
+        >
+          <div className="group/header-link relative -mt-3 px-4 pt-3 pb-1 lg:-mt-5 lg:px-5 lg:pt-5">
+            <div>{headerContent}</div>
+            {url && (
+              <Link
+                to={url}
+                aria-label={typeof title === 'string' ? title : undefined}
+                className="header-link absolute inset-0 z-0 h-full w-full"
+              />
+            )}
           </div>
           <AccordionTrigger className="-mb-3 w-full px-4 pb-5 hover:no-underline lg:-mb-5 lg:px-5 lg:pb-5 [&>svg]:hidden">
-              <HStack className="pt-1.5 w-full justify-between">
-                <HStack className="items-center -space-x-0.5 opacity-100 transition-opacity duration-200 [.accordion-item[data-state=open]_&]:opacity-0">
-                  {vaultsWithBalance.map(({ vaultAddress, assetSymbol }, index) => (
-                    <div key={vaultAddress} style={{ zIndex: vaultsWithBalance.length - index }}>
-                      <TokenIcon
-                        className="h-[17px] w-[17px]"
-                        token={{ symbol: assetSymbol, name: assetSymbol }}
-                        noChain={true}
-                      />
-                    </div>
-                  ))}
-                </HStack>
-                <HStack className="text-textSecondary w-full items-center justify-end gap-0.5">
-                  <Text variant="small" className="leading-none">
-                    Funds by vault
-                  </Text>
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="chevron transition-transform duration-200 [.accordion-item[data-state=open]_&]:rotate-180"
-                  >
-                    <path
-                      d="M2 4L6 8L10 4"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </HStack>
-              </HStack>
-            </AccordionTrigger>
-          <AccordionContent className="mt-2 p-0">
-            {vaultsWithBalance.map(({ vaultName, vaultAddress, balance, assetSymbol, assetDecimals, rate }) => {
-              // Use USDS price as approximation for stablecoin vaults
-              const usdValue = pricesData?.USDS?.price
-                ? parseFloat(formatUnits(balance, assetDecimals)) * parseFloat(pricesData.USDS.price)
-                : 0;
-
-              const vaultUrl = urlMap[vaultAddress];
-
-              const rowContent = (
-                <div className="group/interactive-card from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer bg-radial-(--gradient-position) transition-colors">
-                  <div className="flex items-start gap-2 p-2 px-4 lg:px-5">
+            <HStack className="w-full justify-between pt-1.5">
+              <HStack className="items-center -space-x-0.5 opacity-100 transition-opacity duration-200 [.accordion-item[data-state=open]_&]:opacity-0">
+                {vaultsWithBalance.map(({ vaultAddress, assetSymbol }, index) => (
+                  <div key={vaultAddress} style={{ zIndex: vaultsWithBalance.length - index }}>
                     <TokenIcon
-                      className="h-8 w-8"
+                      className="h-[17px] w-[17px]"
                       token={{ symbol: assetSymbol, name: assetSymbol }}
                       noChain={true}
                     />
-                    <div className="grow">
-                      <div className="flex items-start justify-between">
-                        <div className="flex flex-col">
-                          <Text>{vaultName}</Text>
-                          <HStack gap={2} className="items-center">
-                            {rate !== undefined && rate > 0 && (
-                              <Text variant="small" className="text-bullish">
-                                Rate: {(rate * 100).toFixed(2)}%
-                              </Text>
-                            )}
-                            {vaultUrl && (
-                              <ArrowRight
-                                size={16}
-                                className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
-                              />
-                            )}
-                          </HStack>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <Text>
-                            {formatBigInt(balance, { unit: assetDecimals })}
-                          </Text>
-                          <Text variant="small" className="text-textSecondary">
-                            ${formatNumber(usdValue, { maxDecimals: 2 })}
-                          </Text>
+                  </div>
+                ))}
+              </HStack>
+              <HStack className="text-textSecondary w-full items-center justify-end gap-0.5">
+                <Text variant="small" className="leading-none">
+                  Funds by vault
+                </Text>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 12"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="chevron transition-transform duration-200 [.accordion-item[data-state=open]_&]:rotate-180"
+                >
+                  <path
+                    d="M2 4L6 8L10 4"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </HStack>
+            </HStack>
+          </AccordionTrigger>
+          <AccordionContent className="mt-2 p-0">
+            {vaultsWithBalance.map(
+              ({ vaultName, vaultAddress, balance, assetSymbol, assetDecimals, rate }) => {
+                // Use USDS price as approximation for stablecoin vaults
+                const usdValue = pricesData?.USDS?.price
+                  ? parseFloat(formatUnits(balance, assetDecimals)) * parseFloat(pricesData.USDS.price)
+                  : 0;
+
+                const vaultUrl = urlMap[vaultAddress];
+
+                const rowContent = (
+                  <div className="group/interactive-card from-primary-start/0 to-primary-end/0 hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer bg-radial-(--gradient-position) transition-colors">
+                    <div className="flex items-start gap-2 p-2 px-4 lg:px-5">
+                      <TokenIcon
+                        className="h-8 w-8"
+                        token={{ symbol: assetSymbol, name: assetSymbol }}
+                        noChain={true}
+                      />
+                      <div className="grow">
+                        <div className="flex items-start justify-between">
+                          <div className="flex flex-col">
+                            <Text>{vaultName}</Text>
+                            <HStack gap={2} className="items-center">
+                              {rate !== undefined && rate > 0 && (
+                                <Text variant="small" className="text-bullish">
+                                  Rate: {(rate * 100).toFixed(2)}%
+                                </Text>
+                              )}
+                              {vaultUrl && (
+                                <ArrowRight
+                                  size={16}
+                                  className="opacity-0 transition-opacity group-hover/interactive-card:opacity-100"
+                                />
+                              )}
+                            </HStack>
+                          </div>
+                          <div className="flex flex-col items-end">
+                            <Text>{formatBigInt(balance, { unit: assetDecimals })}</Text>
+                            <Text variant="small" className="text-textSecondary">
+                              ${formatNumber(usdValue, { maxDecimals: 2 })}
+                            </Text>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
+                );
 
-              return vaultUrl ? (
-                <Link to={vaultUrl} key={vaultAddress}>
-                  {rowContent}
-                </Link>
-              ) : (
-                <div key={vaultAddress}>{rowContent}</div>
-              );
-            })}
+                return vaultUrl ? (
+                  <Link to={vaultUrl} key={vaultAddress}>
+                    {rowContent}
+                  </Link>
+                ) : (
+                  <div key={vaultAddress}>{rowContent}</div>
+                );
+              }
+            )}
           </AccordionContent>
         </Card>
       </AccordionItem>

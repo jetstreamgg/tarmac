@@ -69,9 +69,8 @@ export function useStUsdsProviderSelection(
 
   // Determine which provider to use
   const selection = useMemo(() => {
-    // Default values while loading
-    let selectedProvider = StUsdsProviderType.NATIVE;
-    let selectionReason = StUsdsSelectionReason.NATIVE_DEFAULT;
+    let selectedProvider: StUsdsProviderType;
+    let selectionReason: StUsdsSelectionReason;
     let allProvidersBlocked = false;
     let rateDifferencePercent = 0;
 

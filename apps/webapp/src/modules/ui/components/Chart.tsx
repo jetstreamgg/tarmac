@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChartSkeleton } from '@/components/ui/chart-skeleton';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { easeOutExpo } from '../animation/timingFunctions';
 import { positionAnimations } from '../animation/presets';
 import { AnimationLabels } from '../animation/constants';
@@ -155,12 +155,10 @@ const formatedXAxis = (data: Data[], tf: TimeFrame, bpi: BP) => {
   if (!data.length) {
     return [];
   }
-  let filteredData = [...data];
-
   const steps = bpi < BP.lg ? 4 : 7;
   const stepSize = (data.length - 1) / (steps - 1);
 
-  filteredData = [data[0]]; // Always include the first element
+  const filteredData = [data[0]]; // Always include the first element
 
   // Generate indices for intermediate steps
   for (let i = 1; i < steps - 1; i++) {
@@ -273,11 +271,18 @@ function CardTitleContent({
               >
                 <Text className="max-w-28 text-base text-ellipsis lg:max-w-none lg:text-lg">
                   {percentage > 10000 ? (
-                    <><span className="align-middle text-[0.6em]">▲</span> 10,000+%</>
+                    <>
+                      <span className="align-middle text-[0.6em]">▲</span> 10,000+%
+                    </>
                   ) : percentage > 0 && !isZeroPercentage ? (
-                    <><span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}</>
+                    <>
+                      <span className="align-middle text-[0.6em]">▲</span> {formattedPercentage}
+                    </>
                   ) : percentage < 0 && !isZeroPercentage ? (
-                    <><span className="align-middle text-[0.6em]">▼</span> {formattedPercentage.replace('-', '')}</>
+                    <>
+                      <span className="align-middle text-[0.6em]">▼</span>{' '}
+                      {formattedPercentage.replace('-', '')}
+                    </>
                   ) : (
                     formattedPercentage
                   )}

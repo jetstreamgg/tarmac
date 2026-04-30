@@ -11,8 +11,10 @@ import { SavingsAction, SavingsFlow } from '../lib/constants';
 import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
-interface UseSavingsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseSavingsTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   amount: bigint;
   max: boolean;
   referralCode: number | undefined;

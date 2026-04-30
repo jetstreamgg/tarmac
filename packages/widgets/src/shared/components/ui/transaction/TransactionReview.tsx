@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { Card, CardContent, CardFooter, CardHeader } from '@widgets/components/ui/card';

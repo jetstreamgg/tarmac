@@ -5,7 +5,7 @@ import { t } from '@lingui/core/macro';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { SelectedRewardsCard } from './SelectedRewardsCard';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { RewardsFlow } from '../lib/constants';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 

@@ -221,11 +221,7 @@ export function useMorphoVaultRewards({
   const queryClient = useQueryClient();
   const queryKey = ['morpho-vault-rewards', userAddress, vaultAddress, chainId];
 
-  const {
-    data,
-    error,
-    isLoading
-  } = useQuery({
+  const { data, error, isLoading } = useQuery({
     queryKey,
     queryFn: () => {
       if (!userAddress) {

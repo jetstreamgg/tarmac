@@ -4,7 +4,7 @@ import { WidgetButton } from './WidgetButton';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { useConnection } from 'wagmi';
 import { ConnectWalletCopy } from '../ConnectWalletCopy';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { ButtonsAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { VStack } from '../layout/VStack';
 

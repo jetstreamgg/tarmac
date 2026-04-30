@@ -57,12 +57,9 @@ export const ExpertBalanceCard = ({
         ) : stUsdsSupplied > 0n && !!pricesData?.USDS ? (
           <Text variant="small" className="text-textSecondary">
             $
-            {formatNumber(
-              parseFloat(formatUnits(stUsdsSupplied, 18)) * parseFloat(pricesData.USDS.price),
-              {
-                maxDecimals: 2
-              }
-            )}
+            {formatNumber(parseFloat(formatUnits(stUsdsSupplied, 18)) * parseFloat(pricesData.USDS.price), {
+              maxDecimals: 2
+            })}
           </Text>
         ) : undefined
       }

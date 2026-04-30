@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TxStatus } from '../../../constants';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { SuccessCheckSolidColor } from '../../icons/Icons';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { cn } from '@widgets/lib/utils';

@@ -89,7 +89,10 @@ export function usePsmConversion({
   const chainId = chainIdOverride ?? connectedChainId;
   const isL2 = isL2ChainId(chainId);
   const { address } = useConnection();
-  const { originToken, targetToken } = useMemo(() => getPsmConversionTokens(chainId, direction), [chainId, direction]);
+  const { originToken, targetToken } = useMemo(
+    () => getPsmConversionTokens(chainId, direction),
+    [chainId, direction]
+  );
   const execution = useMemo(() => getPsmExecutionAmounts(direction, amount), [direction, amount]);
 
   const spender = isL2
@@ -108,10 +111,9 @@ export function usePsmConversion({
   const { data: tin, refetch: refetchTin } = useUsdsPsmWrapperTin({ chainIdOverride: chainId });
   const { data: tout, refetch: refetchTout } = useUsdsPsmWrapperTout({ chainIdOverride: chainId });
   const { data: haltedValue, refetch: refetchHalted } = useUsdsPsmWrapperHalted({ chainIdOverride: chainId });
-  const {
-    data: pocketBalanceData,
-    refetch: refetchPocketBalance
-  } = usePsmPocketBalance({ chainIdOverride: chainId });
+  const { data: pocketBalanceData, refetch: refetchPocketBalance } = usePsmPocketBalance({
+    chainIdOverride: chainId
+  });
 
   const { data: l2Liquidity, mutate: mutateL2Liquidity } = usePsmLiquidity(chainId);
 
@@ -129,7 +131,9 @@ export function usePsmConversion({
     }
 
     const outputBalance = isL2
-      ? (direction === 'USDC_TO_USDS' ? l2Liquidity?.usds?.value : l2Liquidity?.usdc?.value)
+      ? direction === 'USDC_TO_USDS'
+        ? l2Liquidity?.usds?.value
+        : l2Liquidity?.usdc?.value
       : pocketBalance;
 
     if (outputBalance === undefined) {
@@ -146,7 +150,17 @@ export function usePsmConversion({
       availableLiquidity: liquidity,
       hasSufficientLiquidity: outputBalance >= requiredAmount
     };
-  }, [isL2, direction, l2Liquidity, pocketBalance, execution.l2MinAmountOut, execution.mainnetGemAmt, originToken, targetToken, chainId]);
+  }, [
+    isL2,
+    direction,
+    l2Liquidity,
+    pocketBalance,
+    execution.l2MinAmountOut,
+    execution.mainnetGemAmt,
+    originToken,
+    targetToken,
+    chainId
+  ]);
 
   const disabledReason = getPsmDisabledReason({
     chainId,
@@ -160,7 +174,8 @@ export function usePsmConversion({
 
   const needsAllowance = !!originToken?.address && amount > 0n && (!allowance || allowance < amount);
   const effectiveShouldUseBatch = !!shouldUseBatch && !!batchSupported && needsAllowance;
-  const hookEnabled = paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;
+  const hookEnabled =
+    paramEnabled && amount > 0n && !disabledReason && !!originToken?.address && !!targetToken?.address;
 
   const l2SwapExactIn = useBatchPsmSwapExactIn({
     amountIn: execution.l2AmountIn,
@@ -199,11 +214,7 @@ export function usePsmConversion({
     onStart
   });
 
-  const activeHook = isL2
-    ? l2SwapExactIn
-    : direction === 'USDC_TO_USDS'
-      ? mainnetSellGem
-      : mainnetBuyGem;
+  const activeHook = isL2 ? l2SwapExactIn : direction === 'USDC_TO_USDS' ? mainnetSellGem : mainnetBuyGem;
 
   return {
     direction,

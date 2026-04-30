@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { cn } from '@widgets/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 const cardVariants = cva(
   'rounded-[20px] bg-card p-4 lg:p-5 text-text text-base font-normal leading-normal data-[status=success]:bg-radial-(--gradient-position)',

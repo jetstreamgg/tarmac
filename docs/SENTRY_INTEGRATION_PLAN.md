@@ -57,6 +57,7 @@ SENTRY_AUTH_TOKEN=
 ```
 
 **Notes:**
+
 - `VITE_SENTRY_DSN` is public (client-side), consistent with marketing-page's `NEXT_PUBLIC_SENTRY_DSN`
 - Build-time variables (`SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`) are used by the Vite plugin for source map uploads and should NOT be prefixed with `VITE_`
 - `VITE_SENTRY_ENVIRONMENT` defaults to `'development'` to match the existing `VITE_ENV_NAME` pattern
@@ -70,12 +71,7 @@ Create `src/modules/sentry/init.ts`:
 ```typescript
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
-import {
-  useLocation,
-  useNavigationType,
-  createRoutesFromChildren,
-  matchRoutes,
-} from 'react-router-dom';
+import { useLocation, useNavigationType, createRoutesFromChildren, matchRoutes } from 'react-router-dom';
 
 const isProd = import.meta.env.VITE_SENTRY_ENVIRONMENT === 'production';
 const isDebug = !!import.meta.env.VITE_SENTRY_DEBUG;
@@ -111,8 +107,8 @@ export function initSentry() {
         useLocation,
         useNavigationType,
         createRoutesFromChildren,
-        matchRoutes,
-      }),
+        matchRoutes
+      })
     ],
 
     // Filter noisy errors — from marketing-page's beforeSend
@@ -129,18 +125,25 @@ export function initSentry() {
       }
 
       // Ignore common network noise
-      const ignorePatterns = ['Network Error', 'Failed to fetch', 'Load failed', 'AbortError', 'The operation was aborted'];
+      const ignorePatterns = [
+        'Network Error',
+        'Failed to fetch',
+        'Load failed',
+        'AbortError',
+        'The operation was aborted'
+      ];
       if (ignorePatterns.some(pattern => message.includes(pattern))) {
         return null;
       }
 
       return event;
-    },
+    }
   });
 }
 ```
 
 **Key decisions:**
+
 - Matches marketing-page's sampling strategy (10% prod / 100% dev for traces)
 - Session replay is **not** initialized here — it is added dynamically after consent (Step 9)
 - Same error filtering for browser extensions and network noise
@@ -230,7 +233,7 @@ export function ErrorPage() {
 
   useEffect(() => {
     Sentry.captureException(error, {
-      tags: { type: 'route_error' },
+      tags: { type: 'route_error' }
     });
   }, [error]);
 
@@ -251,7 +254,7 @@ export function reportAnalyticsError(context: string, error: unknown): void {
   console.warn(`[Analytics] ${context}:`, error);
   Sentry.captureException(error, {
     level: 'warning',
-    tags: { type: 'analytics_error', context },
+    tags: { type: 'analytics_error', context }
   });
 }
 ```
@@ -270,7 +273,7 @@ In hooks or services that call external APIs (RPC providers, auth endpoints, cha
 
 ```typescript
 Sentry.captureException(error, {
-  tags: { type: 'api_error', endpoint: 'rpc_mainnet' },
+  tags: { type: 'api_error', endpoint: 'rpc_mainnet' }
 });
 ```
 
@@ -278,7 +281,7 @@ Sentry.captureException(error, {
 
 ```typescript
 Sentry.captureException(error, {
-  tags: { type: 'wallet_error', action: 'connect' },
+  tags: { type: 'wallet_error', action: 'connect' }
 });
 ```
 
@@ -286,11 +289,12 @@ Sentry.captureException(error, {
 
 ```typescript
 Sentry.captureException(error, {
-  tags: { type: 'tx_error', module: 'trade' },
+  tags: { type: 'tx_error', module: 'trade' }
 });
 ```
 
 **Tagging strategy** (consistent with both existing projects):
+
 - `type` — Error category (`api_error`, `wallet_error`, `tx_error`, `config_error`, `analytics_error`)
 - `endpoint` / `module` / `action` — Specific context for filtering in the Sentry dashboard
 
@@ -307,7 +311,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 export default defineConfig({
   build: {
-    sourcemap: true, // Required for Sentry source maps
+    sourcemap: true // Required for Sentry source maps
   },
   plugins: [
     // ... existing plugins
@@ -318,16 +322,17 @@ export default defineConfig({
       project: process.env.SENTRY_PROJECT,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       sourcemaps: {
-        deleteAfterUpload: true, // Mirrors marketing-page's deleteSourcemapsAfterUpload
+        deleteAfterUpload: true // Mirrors marketing-page's deleteSourcemapsAfterUpload
       },
       // Only upload in CI/production builds
-      disable: !process.env.SENTRY_AUTH_TOKEN,
-    }),
-  ],
+      disable: !process.env.SENTRY_AUTH_TOKEN
+    })
+  ]
 });
 ```
 
 **Notes:**
+
 - Source maps are uploaded then deleted (matches marketing-page pattern)
 - Plugin is disabled when `SENTRY_AUTH_TOKEN` is missing (local dev)
 - `sourcemap: true` in build config is required for the plugin to work
@@ -374,7 +379,7 @@ function onSentryReplayConsentChange(hasConsent: boolean) {
     Sentry.addIntegration(
       Sentry.replayIntegration({
         maskAllText: true,
-        blockAllMedia: true,
+        blockAllMedia: true
       })
     );
     replayEnabled = true;
@@ -389,15 +394,18 @@ function onSentryReplayConsentChange(hasConsent: boolean) {
 ```
 
 Recommended wiring:
+
 - When the user accepts analytics cookies, call `onSentryReplayConsentChange(true)`.
 - When the user disables analytics cookies later in the same session, call `onSentryReplayConsentChange(false)` so replay stops immediately.
 - If the app starts with consent already granted in the cookie, call `onSentryReplayConsentChange(true)` during Sentry bootstrap after `initSentry()`.
 
 **What runs without consent:**
+
 - Error capturing (`captureException`) — no PII, only stack traces
 - Performance tracing (`browserTracingIntegration`) — anonymized route data
 
 **What requires consent:**
+
 - Session Replay (`replayIntegration`) — records DOM snapshots, user interactions
 
 This matches the marketing-page's privacy settings (`maskAllText: true`, `blockAllMedia: true`) and aligns with the existing `PostHogProvider` consent flow.
@@ -424,7 +432,7 @@ vi.mock('@sentry/react', () => ({
   reactRouterV6BrowserTracingIntegration: vi.fn(() => ({})),
   wrapCreateBrowserRouterV6: (fn: Function) => fn,
   withScope: vi.fn((cb: Function) => cb({ setTag: vi.fn(), setExtra: vi.fn() })),
-  addIntegration: vi.fn(),
+  addIntegration: vi.fn()
 }));
 ```
 
@@ -432,21 +440,21 @@ vi.mock('@sentry/react', () => ({
 
 ## Implementation Order
 
-| Step | Task | Files Modified | Risk |
-|------|------|---------------|------|
-| 1 | Add to pnpm catalog & install | `pnpm-workspace.yaml`, `apps/webapp/package.json` | Low |
-| 2 | Add env vars | `.env.example`, `.env` | Low |
-| 3 | Create Sentry init module | `src/modules/sentry/init.ts` (new) | Low |
-| 4 | Initialize in entry point | `src/pages/main.tsx` | Low |
-| 5 | Router v6 integration | `src/pages/router.tsx` | Low |
-| 6a | Error boundary integration | `src/modules/layout/components/ErrorBoundary.tsx` | Low |
-| 6b | Router error page | `src/pages/ErrorPage.tsx` | Low |
-| 6c | Analytics error reporting | `src/modules/analytics/constants.ts` | Low |
-| 7 | Contextual captures | Various hooks/services | Medium |
-| 8a | Vite source map plugin | `vite.config.ts` | Medium |
-| 8b | CSP update | `vite.config.ts` (CSP string) | Medium |
-| 9 | Consent-gated replay | Consent-related files | Medium |
-| 10 | Test mocks | `vitest.config.ts` or setup file | Low |
+| Step | Task                          | Files Modified                                    | Risk   |
+| ---- | ----------------------------- | ------------------------------------------------- | ------ |
+| 1    | Add to pnpm catalog & install | `pnpm-workspace.yaml`, `apps/webapp/package.json` | Low    |
+| 2    | Add env vars                  | `.env.example`, `.env`                            | Low    |
+| 3    | Create Sentry init module     | `src/modules/sentry/init.ts` (new)                | Low    |
+| 4    | Initialize in entry point     | `src/pages/main.tsx`                              | Low    |
+| 5    | Router v6 integration         | `src/pages/router.tsx`                            | Low    |
+| 6a   | Error boundary integration    | `src/modules/layout/components/ErrorBoundary.tsx` | Low    |
+| 6b   | Router error page             | `src/pages/ErrorPage.tsx`                         | Low    |
+| 6c   | Analytics error reporting     | `src/modules/analytics/constants.ts`              | Low    |
+| 7    | Contextual captures           | Various hooks/services                            | Medium |
+| 8a   | Vite source map plugin        | `vite.config.ts`                                  | Medium |
+| 8b   | CSP update                    | `vite.config.ts` (CSP string)                     | Medium |
+| 9    | Consent-gated replay          | Consent-related files                             | Medium |
+| 10   | Test mocks                    | `vitest.config.ts` or setup file                  | Low    |
 
 **Recommended approach:** Steps 1–6 + 8b + 9 as one PR (core integration with CSP and consent — these are not deferrable), steps 7 + 8a as a follow-up PR (contextual captures and source map uploads), step 10 alongside each PR.
 
@@ -454,17 +462,17 @@ vi.mock('@sentry/react', () => ({
 
 ## Summary of Patterns Adopted
 
-| Pattern | Source | Applied To Webapp |
-|---------|--------|-------------------|
-| `captureException` with tags | api-workers | Error boundaries, API calls, wallet errors |
-| Dev event suppression via `beforeSend` | marketing-page | `init.ts` beforeSend hook |
-| 10% prod / 100% dev trace sampling | marketing-page | `tracesSampleRate` |
-| Consent-gated session replay | marketing-page + PostHogProvider | `addIntegration` after consent |
-| Session replay privacy masking | marketing-page | `maskAllText`, `blockAllMedia` |
-| Browser extension error filtering | marketing-page | `beforeSend` filter |
-| Network error filtering | marketing-page | `beforeSend` filter |
-| CSP whitelisting for Sentry endpoints | marketing-page | `connect-src`, `worker-src` in CSP |
-| Source map upload + delete | marketing-page | Vite plugin config |
-| Error level for non-critical issues | marketing-page | `level: 'warning'` for analytics/config errors |
-| Sentry mock in tests | api-workers | Vitest mock setup |
-| pnpm catalog for dependency versions | tarmac convention | `pnpm-workspace.yaml` catalog entry |
+| Pattern                                | Source                           | Applied To Webapp                              |
+| -------------------------------------- | -------------------------------- | ---------------------------------------------- |
+| `captureException` with tags           | api-workers                      | Error boundaries, API calls, wallet errors     |
+| Dev event suppression via `beforeSend` | marketing-page                   | `init.ts` beforeSend hook                      |
+| 10% prod / 100% dev trace sampling     | marketing-page                   | `tracesSampleRate`                             |
+| Consent-gated session replay           | marketing-page + PostHogProvider | `addIntegration` after consent                 |
+| Session replay privacy masking         | marketing-page                   | `maskAllText`, `blockAllMedia`                 |
+| Browser extension error filtering      | marketing-page                   | `beforeSend` filter                            |
+| Network error filtering                | marketing-page                   | `beforeSend` filter                            |
+| CSP whitelisting for Sentry endpoints  | marketing-page                   | `connect-src`, `worker-src` in CSP             |
+| Source map upload + delete             | marketing-page                   | Vite plugin config                             |
+| Error level for non-critical issues    | marketing-page                   | `level: 'warning'` for analytics/config errors |
+| Sentry mock in tests                   | api-workers                      | Vitest mock setup                              |
+| pnpm catalog for dependency versions   | tarmac convention                | `pnpm-workspace.yaml` catalog entry            |

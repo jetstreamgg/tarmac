@@ -20,7 +20,7 @@ import { TokenIconWithBalance } from '@widgets/shared/components/ui/token/TokenI
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import {
   EthFlowTxStatus,

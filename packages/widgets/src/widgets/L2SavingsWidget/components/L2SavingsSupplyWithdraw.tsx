@@ -7,7 +7,7 @@ import { Token, useOverallSkyData, getTokenDecimals, useSsrAssetsToShares } from
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { t } from '@lingui/core/macro';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { L2SavingsStatsCard } from './L2SavingsStatsCard';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';

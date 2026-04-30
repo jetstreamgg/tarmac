@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { easeOutExpo } from '@/modules/ui/animation/timingFunctions';
 import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 

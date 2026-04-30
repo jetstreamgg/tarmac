@@ -36,9 +36,18 @@ function extractUrnIndex(text: string): number | undefined {
 
 // On-chain reward contract addresses per chainId (from packages/hooks/src/generated.ts)
 const REWARD_CONTRACT_ADDRESSES: Record<RewardContractId, Record<number, string>> = {
-  usdsSkyReward: { 1: '0x0650CAF159C5A49f711e8169D4336ECB9b950275', 314310: '0x0650CAF159C5A49f711e8169D4336ECB9b950275' },
-  usdsSpkReward: { 1: '0x173e314C7635B45322cd8Cb14f44b312e079F3af', 314310: '0x173e314C7635B45322cd8Cb14f44b312e079F3af' },
-  cleReward: { 1: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce', 314310: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce' }
+  usdsSkyReward: {
+    1: '0x0650CAF159C5A49f711e8169D4336ECB9b950275',
+    314310: '0x0650CAF159C5A49f711e8169D4336ECB9b950275'
+  },
+  usdsSpkReward: {
+    1: '0x173e314C7635B45322cd8Cb14f44b312e079F3af',
+    314310: '0x173e314C7635B45322cd8Cb14f44b312e079F3af'
+  },
+  cleReward: {
+    1: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce',
+    314310: '0x10ab606B067C9C461d8893c47C7512472E19e2Ce'
+  }
 };
 
 function resolveRewardAddress(rewardContract: RewardContractId, chainId: number): string | undefined {
@@ -144,7 +153,8 @@ export function parseIntent(input: string): ParsedIntent | null {
   // --- Rewards supply/withdraw without amount (check before amount extraction) ---
   if (
     !normalized.match(/\d/) &&
-    (/\bsupply\b/.test(normalized) || (/\b(deposit|stake|add)\b/.test(normalized) && /\b(earn|reward)\b/.test(normalized))) &&
+    (/\bsupply\b/.test(normalized) ||
+      (/\b(deposit|stake|add)\b/.test(normalized) && /\b(earn|reward)\b/.test(normalized))) &&
     /\b(sky|spk|cle|rewards?)\b/.test(normalized)
   ) {
     const rc = inferRewardContract(normalized);
@@ -344,7 +354,11 @@ export function parseIntent(input: string): ParsedIntent | null {
  * Maps a ParsedIntent to webapp URL search params for widget navigation.
  * Returns null if the intent can't be mapped to a valid widget route.
  */
-export function intentToWidgetParams(intent: ParsedIntent, chainId: number, networkName: string): URLSearchParams | null {
+export function intentToWidgetParams(
+  intent: ParsedIntent,
+  chainId: number,
+  networkName: string
+): URLSearchParams | null {
   const params = new URLSearchParams();
   params.set(QueryParams.Network, networkName);
 

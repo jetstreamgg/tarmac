@@ -1,4 +1,4 @@
-import { HTMLMotionProps, motion } from 'framer-motion';
+import { HTMLMotionProps, motion } from 'motion/react';
 import { buttonsAnimations, cardAnimations, iconAnimations, positionAnimationsWithExit } from './presets';
 import { AnimationLabels } from './constants';
 import { forwardRef } from 'react';

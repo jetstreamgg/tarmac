@@ -32,7 +32,7 @@ import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { ArrowLeft } from 'lucide-react';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
 import { useNotifyWidgetState } from '@widgets/shared/hooks/useNotifyWidgetState';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { RewardsTransactionReview } from './components/RewardsTransactionReview';

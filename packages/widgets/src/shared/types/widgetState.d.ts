@@ -45,7 +45,15 @@ type Amount = {
 };
 
 type Flow = {
-  flow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | PsmConversionFlow | StakeFlow | SealFlow;
+  flow?:
+    | BalancesFlow
+    | SavingsFlow
+    | UpgradeFlow
+    | RewardsFlow
+    | TradeFlow
+    | PsmConversionFlow
+    | StakeFlow
+    | SealFlow;
 };
 
 type BalancesWidgetState = Flow;
@@ -124,5 +132,13 @@ export type WidgetProps = {
   referralCode?: number;
   shouldReset?: boolean;
   legalBatchTxUrl?: string;
-  disallowedFlow?: BalancesFlow | SavingsFlow | UpgradeFlow | RewardsFlow | TradeFlow | PsmConversionFlow | StakeFlow | SealFlow;
+  disallowedFlow?:
+    | BalancesFlow
+    | SavingsFlow
+    | UpgradeFlow
+    | RewardsFlow
+    | TradeFlow
+    | PsmConversionFlow
+    | StakeFlow
+    | SealFlow;
 };

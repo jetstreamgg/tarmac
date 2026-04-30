@@ -57,7 +57,17 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
   return (
     <CookieConsentContext.Provider
-      value={{ consent, bannerVisible, bannerView, bannerHeight, setBannerView, setBannerHeight, setConsent, showBanner, hideBanner }}
+      value={{
+        consent,
+        bannerVisible,
+        bannerView,
+        bannerHeight,
+        setBannerView,
+        setBannerHeight,
+        setConsent,
+        showBanner,
+        hideBanner
+      }}
     >
       {children}
     </CookieConsentContext.Provider>

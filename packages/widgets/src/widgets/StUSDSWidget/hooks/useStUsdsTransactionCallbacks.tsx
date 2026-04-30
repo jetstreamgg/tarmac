@@ -10,8 +10,10 @@ import { useMemo, useRef } from 'react';
 import { useChainId } from 'wagmi';
 import { StUSDSAction, StUSDSFlow } from '../lib/constants';
 
-interface UseStUsdsTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseStUsdsTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   amount: bigint;
   needsAllowance: boolean;
   shouldUseBatch: boolean;

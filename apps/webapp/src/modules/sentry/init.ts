@@ -100,10 +100,7 @@ export function initSentry(): void {
         message.includes('Failed to fetch') ||
         message.includes('Load failed') ||
         message.includes('NetworkError when attempting to fetch');
-      if (
-        isNetworkLayerFetchError &&
-        (endpointTag === 'ip-status' || endpointTag === 'terms-check')
-      ) {
+      if (isNetworkLayerFetchError && (endpointTag === 'ip-status' || endpointTag === 'terms-check')) {
         return null;
       }
 

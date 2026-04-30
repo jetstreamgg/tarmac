@@ -11,7 +11,7 @@ import { LoadingButton } from '@widgets/shared/components/ui/LoadingButton';
 import { ConnectWalletCopy } from '@widgets/shared/components/ui/ConnectWalletCopy';
 import { NoFundsCopy } from '@widgets/shared/components/ui/NoFundsCopy';
 import { ErrorBoundary } from '@widgets/shared/components/ErrorBoundary';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { useCallback, useMemo, useState } from 'react';
 

@@ -5,7 +5,7 @@ import { WidgetContext } from '@widgets/context/WidgetContext';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
 import { StepIndicator } from '@widgets/shared/components/ui/transaction/StepIndicator';
 import { BatchStatus, TxStatus } from '@widgets/shared/constants';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import {
   getMorphoVaultSupplyReviewSubtitle,

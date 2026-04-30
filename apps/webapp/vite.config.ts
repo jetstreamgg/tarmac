@@ -34,31 +34,26 @@ export default ({ mode }: { mode: modeEnum }) => {
     process.env.SENTRY_PROJECT
   );
 
-  const RPC_PROVIDER_MAINNET = process.env.VITE_RPC_PROVIDER_MAINNET || '';
   const RPC_PROVIDER_TENDERLY = process.env.VITE_RPC_PROVIDER_TENDERLY || '';
-  const RPC_PROVIDER_BASE = process.env.VITE_RPC_PROVIDER_BASE || '';
-  const RPC_PROVIDER_ARBITRUM = process.env.VITE_RPC_PROVIDER_ARBITRUM || '';
-  const RPC_PROVIDER_OPTIMISM = process.env.VITE_RPC_PROVIDER_OPTIMISM || '';
-  const RPC_PROVIDER_UNICHAIN = process.env.VITE_RPC_PROVIDER_UNICHAIN || '';
+  const PROXY_ORIGIN = process.env.VITE_PROXY_ORIGIN || '';
 
   // TODO: Update the githubusercontent.com url when the terms document is ready in the right location
+  // connect-src includes `data:` so the MetaMask SDK can fetch its embedded fox-logo SVG, which is
+  // rendered in the center of the connection QR. Without it, the logo fetch fails and the QR renders blank.
   const CONTENT_SECURITY_POLICY = `
     default-src 'self';
     script-src 'self'
-      'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='
       https://static.cloudflareinsights.com
       https://challenges.cloudflare.com
       https://*.posthog.com https://e.sky.money;
     style-src 'self' 'unsafe-inline' https://*.posthog.com https://e.sky.money;
     img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com https://e.sky.money;
     font-src 'self';
-    connect-src 'self'
-      ${RPC_PROVIDER_MAINNET}
+    connect-src 'self' data:
+      https://proxy.sky.money
+      https://staging-proxy.sky.money
+      ${PROXY_ORIGIN}
       ${RPC_PROVIDER_TENDERLY}
-      ${RPC_PROVIDER_BASE}
-      ${RPC_PROVIDER_ARBITRUM}
-      ${RPC_PROVIDER_OPTIMISM}
-      ${RPC_PROVIDER_UNICHAIN}
       https://virtual.rpc.tenderly.co
       https://virtual.mainnet.rpc.tenderly.co
       https://virtual.base.rpc.tenderly.co
@@ -80,7 +75,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://chain-proxy.wallet.coinbase.com
       https://vote.makerdao.com
       https://vote.sky.money
-      https://indexer.hyperindex.xyz
       https://staging-api.sky.money
       https://api.sky.money
       https://info-sky.blockanalitica.com
@@ -101,6 +95,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://metamask-sdk.api.cx.metamask.io/evt
       https://a.markfi.xyz
       wss://metamask-sdk.api.cx.metamask.io
+      wss://mm-sdk-relay.api.cx.metamask.io
       wss://nbstream.binance.com/wallet-connector
       https://*.jetstream-account.workers.dev
       cloudflareinsights.com
@@ -139,10 +134,11 @@ export default ({ mode }: { mode: modeEnum }) => {
     build: {
       sourcemap: shouldUploadSourcemaps,
       outDir: '../dist',
-      emptyOutDir: true
+      emptyOutDir: true,
+      modulePreload: { polyfill: false }
     },
     test: {
-      exclude: [...configDefaults.exclude],
+      exclude: [...configDefaults.exclude, '**/test/e2e/**'],
       globals: true,
       environment: 'happy-dom',
       setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')]

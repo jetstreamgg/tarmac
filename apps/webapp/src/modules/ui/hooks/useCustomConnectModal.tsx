@@ -25,7 +25,14 @@ export function useCustomConnectModal() {
     } else {
       return openConnectModal;
     }
-  }, [isConnectedAndAcceptedTerms, openConnectModal, openModal, isConnected, termsCheckError, retryAndShowModal]);
+  }, [
+    isConnectedAndAcceptedTerms,
+    openConnectModal,
+    openModal,
+    isConnected,
+    termsCheckError,
+    retryAndShowModal
+  ]);
 
   return action;
 }

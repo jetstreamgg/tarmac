@@ -4,6 +4,7 @@ import { metaMask, safe, walletConnect, coinbaseWallet, baseAccount } from 'wagm
 import { getWagmiConnectorV2 } from '@binance/w3w-wagmi-connector-v2';
 import { TENDERLY_CHAIN_ID, TENDERLY_RPC_URL } from './testTenderlyChain';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { createProxyTransport } from './proxyTransport';
 
 export const tenderly = {
   ...mainnet,
@@ -66,12 +67,12 @@ export const wagmiConfigDev = createConfig({
   chains: [mainnet, tenderly, base, arbitrum, optimism, unichain],
   connectors,
   transports: {
-    [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
+    [mainnet.id]: createProxyTransport(mainnet.id),
     [tenderly.id]: http(import.meta.env.VITE_RPC_PROVIDER_TENDERLY || ''),
-    [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
-    [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || ''),
-    [unichain.id]: http(import.meta.env.VITE_RPC_PROVIDER_UNICHAIN || ''),
-    [optimism.id]: http(import.meta.env.VITE_RPC_PROVIDER_OPTIMISM || '')
+    [base.id]: createProxyTransport(base.id),
+    [arbitrum.id]: createProxyTransport(arbitrum.id),
+    [unichain.id]: createProxyTransport(unichain.id),
+    [optimism.id]: createProxyTransport(optimism.id)
   },
   // This was causing issues in the past when users tried to connect to the Safe connector and had the Phantom wallet installed
   // due to how Phantom handled `eth_accounts` requests, resulting in the Safe connector hanging in a reconnecting state
@@ -86,11 +87,11 @@ export const wagmiConfigMainnet = createConfig({
   chains: [mainnet, base, arbitrum, optimism, unichain],
   connectors: connectors,
   transports: {
-    [mainnet.id]: http(import.meta.env.VITE_RPC_PROVIDER_MAINNET || ''),
-    [base.id]: http(import.meta.env.VITE_RPC_PROVIDER_BASE || ''),
-    [arbitrum.id]: http(import.meta.env.VITE_RPC_PROVIDER_ARBITRUM || ''),
-    [optimism.id]: http(import.meta.env.VITE_RPC_PROVIDER_OPTIMISM || ''),
-    [unichain.id]: http(import.meta.env.VITE_RPC_PROVIDER_UNICHAIN || '')
+    [mainnet.id]: createProxyTransport(mainnet.id),
+    [base.id]: createProxyTransport(base.id),
+    [arbitrum.id]: createProxyTransport(arbitrum.id),
+    [optimism.id]: createProxyTransport(optimism.id),
+    [unichain.id]: createProxyTransport(unichain.id)
   },
   multiInjectedProviderDiscovery: true
 });
