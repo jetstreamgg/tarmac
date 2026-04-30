@@ -100,8 +100,6 @@ export type KnownCallValues = {
   /** For BUY: PT token. For WITHDRAW: underlying token. */
   outputToken: `0x${string}`;
   amountIn: bigint;
-  /** Decimal slippage (e.g. 0.002 = 0.2%) */
-  slippage: number;
 };
 
 // ---------------------------------------------------------------------------

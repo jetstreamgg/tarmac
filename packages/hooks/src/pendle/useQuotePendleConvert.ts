@@ -9,28 +9,35 @@ import { fetchPendleConvert } from './pendleApiClient';
 /**
  * Pull the on-chain `minOut` value from the API's contractCallParams.
  * Numeric fields come back as decimal wei strings (JSON has no native bigint).
- * Returns 0n if the API didn't include it.
+ * Throws on missing or non-numeric values — a malformed quote must NOT
+ * silently fall back to `0n`, which would propagate into the on-chain
+ * `minOut` and remove all slippage protection. React Query surfaces the
+ * throw as a quote error and the user never gets a sign prompt.
  */
 function extractApiMinOut(method: string, params: unknown[]): bigint {
-  try {
-    if (method === 'swapExactTokenForPt') {
-      // (receiver, market, minPtOut, guessPtOut, input, limit)
-      return BigInt((params[2] as string | undefined) ?? 0);
-    }
-    if (method === 'swapExactPtForToken') {
-      // (receiver, market, exactPtIn, output, limit)
-      const output = params[3] as { minTokenOut?: string } | undefined;
-      return BigInt(output?.minTokenOut ?? 0);
-    }
-    if (method === 'exitPostExpToToken') {
-      // (receiver, market, netPtIn, netLpIn, output)
-      const output = params[4] as { minTokenOut?: string } | undefined;
-      return BigInt(output?.minTokenOut ?? 0);
-    }
-    return 0n;
-  } catch {
-    return 0n;
+  const fail = (reason: string): never => {
+    throw new Error(`Pendle: malformed quote — ${reason}`);
+  };
+
+  if (method === 'swapExactTokenForPt') {
+    // (receiver, market, minPtOut, guessPtOut, input, limit)
+    const raw = params[2];
+    if (typeof raw !== 'string') fail('missing minPtOut at apiContractParams[2]');
+    return BigInt(raw as string);
   }
+  if (method === 'swapExactPtForToken') {
+    // (receiver, market, exactPtIn, output, limit)
+    const output = params[3] as { minTokenOut?: string } | undefined;
+    if (!output?.minTokenOut) fail('missing output.minTokenOut at apiContractParams[3]');
+    return BigInt(output!.minTokenOut as string);
+  }
+  if (method === 'exitPostExpToToken') {
+    // (receiver, market, netPtIn, netLpIn, output)
+    const output = params[4] as { minTokenOut?: string } | undefined;
+    if (!output?.minTokenOut) fail('missing output.minTokenOut at apiContractParams[4]');
+    return BigInt(output!.minTokenOut as string);
+  }
+  return fail(`unknown method "${method}"`);
 }
 
 type UseQuotePendleConvertParams = {
@@ -56,7 +63,7 @@ type UseQuotePendleConvertParams = {
 
 /**
  * Core quote hook. POSTs /v3/sdk/1/convert and shapes the result for
- * downstream usePendleConvert.
+ * downstream useBatchPendleConvert.
  *
  * Our integration only adds mainnet markets to PENDLE_MARKETS, and Pendle's API
  * doesn't serve Tenderly fork chain IDs, so we always query mainnet regardless
@@ -65,9 +72,12 @@ type UseQuotePendleConvertParams = {
  * The returned quote intentionally drops the API's `tx.to` and `tx.data` — we
  * never sign them. We only keep:
  *   - `method` for the per-flow selector allowlist
- *   - `amountOut` to derive `minOut` locally (with user-selected slippage)
+ *   - `amountOut` for display
+ *   - `apiMinOut` (extracted from the API's parsed args) — passed through as
+ *     the on-chain min tolerance; extraction throws on missing/non-numeric so
+ *     a malformed quote becomes a query error rather than a silent 0n
  *   - `apiContractParams` so buildVerifiedArgs can read the `guessPtOut` hint
- *   - the APY / price-impact metrics for display
+ *   - APY / price-impact metrics for display
  */
 export function useQuotePendleConvert({
   side,

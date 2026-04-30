@@ -87,8 +87,7 @@ const BUY_KNOWN = {
   market: MARKET,
   inputToken: USDG,
   outputToken: PT_USDG,
-  amountIn: 100_000_000n,
-  slippage: 0.002
+  amountIn: 100_000_000n
 };
 
 describe('buildVerifiedArgs — Buy', () => {
@@ -258,8 +257,7 @@ describe('buildVerifiedArgs — Withdraw', () => {
     market: MARKET,
     inputToken: PT_USDG,
     outputToken: USDG,
-    amountIn: 100_000_000n,
-    slippage: 0.005
+    amountIn: 100_000_000n
   };
 
   function withdrawVerified(quote: PendleConvertQuote, known = WITHDRAW_KNOWN) {
@@ -343,8 +341,7 @@ describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
     market: MARKET,
     inputToken: PT_USDG,
     outputToken: USDG,
-    amountIn: 100_000_000n,
-    slippage: 0.002
+    amountIn: 100_000_000n
   };
 
   function exitVerified(quote: PendleConvertQuote, known = EXIT_KNOWN) {

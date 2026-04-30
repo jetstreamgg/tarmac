@@ -24,8 +24,6 @@ type UseBatchPendleConvertParams = BatchWriteHookParams & {
   outputToken?: `0x${string}`;
   /** For BUY: underlying amount in wei. For WITHDRAW: PT amount in wei. */
   amountIn?: bigint;
-  /** Decimal slippage (e.g. 0.002 = 0.2%) */
-  slippage: number;
   /** The latest quote from useQuotePendleConvert */
   quote?: PendleConvertQuote;
 };
@@ -54,7 +52,6 @@ export function useBatchPendleConvert({
   inputToken,
   outputToken,
   amountIn,
-  slippage,
   quote,
   enabled: activeTabEnabled = true,
   shouldUseBatch = true,
@@ -97,14 +94,13 @@ export function useBatchPendleConvert({
         market: marketAddress,
         inputToken,
         outputToken,
-        amountIn,
-        slippage
+        amountIn
       });
       return { verified: v, verifyError: null };
     } catch (e) {
       return { verified: undefined, verifyError: e as Error };
     }
-  }, [quote, marketAddress, inputToken, outputToken, amountIn, slippage, connectedAddress, side]);
+  }, [quote, marketAddress, inputToken, outputToken, amountIn, connectedAddress, side]);
 
   // Build the call list: optional approve, then convert.
   const calls: Call[] = [];
