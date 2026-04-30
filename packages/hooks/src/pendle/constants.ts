@@ -12,12 +12,6 @@ export enum PendleConvertSide {
   WITHDRAW = 'withdraw'
 }
 
-/** Maturity-aware sub-mode for the WITHDRAW flow */
-export enum PendleWithdrawMode {
-  SELL = 'sell',
-  REDEEM = 'redeem'
-}
-
 // ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
@@ -276,13 +270,53 @@ export const PENDLE_ROUTER_V4_ABI = [
       { name: 'netSyFee', type: 'uint256' },
       { name: 'netSyInterm', type: 'uint256' }
     ]
+  },
+  {
+    type: 'function',
+    name: 'exitPostExpToToken',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'market', type: 'address' },
+      { name: 'netPtIn', type: 'uint256' },
+      { name: 'netLpIn', type: 'uint256' },
+      {
+        name: 'output',
+        type: 'tuple',
+        components: [
+          { name: 'tokenOut', type: 'address' },
+          { name: 'minTokenOut', type: 'uint256' },
+          { name: 'tokenRedeemSy', type: 'address' },
+          { name: 'pendleSwap', type: 'address' },
+          {
+            name: 'swapData',
+            type: 'tuple',
+            components: [
+              { name: 'swapType', type: 'uint8' },
+              { name: 'extRouter', type: 'address' },
+              { name: 'extCalldata', type: 'bytes' },
+              { name: 'needScale', type: 'bool' }
+            ]
+          }
+        ]
+      }
+    ],
+    outputs: [
+      { name: 'netTokenOut', type: 'uint256' },
+      { name: 'netPtOutFromBurn', type: 'uint256' },
+      { name: 'netSyFromBurn', type: 'uint256' },
+      { name: 'netPtFromSwap', type: 'uint256' },
+      { name: 'netSyFromSwap', type: 'uint256' },
+      { name: 'netSyFee', type: 'uint256' },
+      { name: 'netSyInterm', type: 'uint256' }
+    ]
   }
 ] as const;
 
 /** Per-flow allowlist — the only selectors usePendleConvert will sign. */
 export const PENDLE_ALLOWED_SELECTORS = {
   buy: ['swapExactTokenForPt'] as const,
-  withdraw: ['swapExactPtForToken'] as const
+  withdraw: ['swapExactPtForToken', 'exitPostExpToToken'] as const
 };
 
 // ---------------------------------------------------------------------------

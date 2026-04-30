@@ -147,8 +147,7 @@ export {
   useQuotePendleConvert,
   useBatchPendleConvert,
   buildVerifiedArgs,
-  PendleConvertSide,
-  PendleWithdrawMode
+  PendleConvertSide
 } from './pendle';
 export type {
   PendleMarketConfig,
@@ -162,7 +161,8 @@ export type {
   KnownCallValues,
   VerifiedCall,
   VerifiedBuyArgs,
-  VerifiedWithdrawArgs
+  VerifiedWithdrawArgs,
+  VerifiedExitArgs
 } from './pendle';
 
 // Authentication

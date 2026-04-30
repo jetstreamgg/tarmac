@@ -76,8 +76,7 @@ export function useBatchPendleConvert({
     spender: routerAddress
   });
 
-  const hasAllowance =
-    allowance !== undefined && amountIn !== undefined && allowance >= amountIn;
+  const hasAllowance = allowance !== undefined && amountIn !== undefined && allowance >= amountIn;
 
   // Verify the quote and rebuild args. Memoised so the verification only runs
   // when an input changes — guards otherwise re-throw on every render.
@@ -119,21 +118,12 @@ export function useBatchPendleConvert({
       })
     );
   }
-  if (verified?.side === PendleConvertSide.BUY) {
+  if (verified) {
     calls.push(
       getWriteContractCall({
         to: routerAddress,
         abi: PENDLE_ROUTER_V4_ABI,
-        functionName: 'swapExactTokenForPt',
-        args: verified.args
-      })
-    );
-  } else if (verified?.side === PendleConvertSide.WITHDRAW) {
-    calls.push(
-      getWriteContractCall({
-        to: routerAddress,
-        abi: PENDLE_ROUTER_V4_ABI,
-        functionName: 'swapExactPtForToken',
+        functionName: verified.functionName,
         args: verified.args
       })
     );

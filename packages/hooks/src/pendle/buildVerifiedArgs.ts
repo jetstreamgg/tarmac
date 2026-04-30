@@ -55,12 +55,36 @@ export type VerifiedWithdrawArgs = readonly [
   limit: VerifiedLimit
 ];
 
+/**
+ * Args for `exitPostExpToToken` — used to redeem PT for the underlying after
+ * market expiry. v1 always passes `netLpIn = 0n` since we do not expose LP.
+ * No `limit` parameter; this method does not support limit orders.
+ */
+export type VerifiedExitArgs = readonly [
+  receiver: `0x${string}`,
+  market: `0x${string}`,
+  netPtIn: bigint,
+  netLpIn: bigint,
+  output: {
+    tokenOut: `0x${string}`;
+    minTokenOut: bigint;
+    tokenRedeemSy: `0x${string}`;
+    pendleSwap: `0x${string}`;
+    swapData: VerifiedSwapData;
+  }
+];
+
 export type VerifiedCall =
   | { side: PendleConvertSide.BUY; functionName: 'swapExactTokenForPt'; args: VerifiedBuyArgs }
   | {
       side: PendleConvertSide.WITHDRAW;
       functionName: 'swapExactPtForToken';
       args: VerifiedWithdrawArgs;
+    }
+  | {
+      side: PendleConvertSide.WITHDRAW;
+      functionName: 'exitPostExpToToken';
+      args: VerifiedExitArgs;
     };
 
 // ---------------------------------------------------------------------------
@@ -155,11 +179,19 @@ export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallVal
     throw new Error(`Pendle: refusing to sign — selector "${quote.method}" not allowed for ${known.side}`);
   }
 
-  // 2 + 3. Rebuild args from known values + force-empty
-  if (known.side === PendleConvertSide.BUY) {
+  // 2 + 3. Rebuild args from known values + force-empty.
+  // Dispatch on the API's method (already gated by the allowlist above).
+  if (quote.method === 'swapExactTokenForPt') {
     return buildBuyArgs(quote, known);
   }
-  return buildWithdrawArgs(quote, known);
+  if (quote.method === 'swapExactPtForToken') {
+    return buildWithdrawArgs(quote, known);
+  }
+  if (quote.method === 'exitPostExpToToken') {
+    return buildExitArgs(quote, known);
+  }
+  // Unreachable: the allowlist check would have thrown above.
+  throw new Error(`Pendle: unreachable — selector "${quote.method}" has no verified-args builder`);
 }
 
 // ---------------------------------------------------------------------------
@@ -207,4 +239,26 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
   ] as const;
 
   return { side: PendleConvertSide.WITHDRAW, functionName: 'swapExactPtForToken', args };
+}
+
+// ---------------------------------------------------------------------------
+// Exit: exitPostExpToToken(receiver, market, netPtIn, netLpIn, output)
+// ---------------------------------------------------------------------------
+
+function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
+  const args: VerifiedExitArgs = [
+    known.receiver,
+    known.market,
+    known.amountIn,
+    0n, // netLpIn — v1 does not expose LP
+    {
+      tokenOut: known.outputToken,
+      minTokenOut: quote.apiMinOut,
+      tokenRedeemSy: known.outputToken, // the no-aggregator invariant
+      pendleSwap: ZERO_ADDRESS,
+      swapData: verifiedEmptySwapData
+    }
+  ] as const;
+
+  return { side: PendleConvertSide.WITHDRAW, functionName: 'exitPostExpToToken', args };
 }

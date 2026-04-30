@@ -10,7 +10,6 @@ export {
   PENDLE_EMPTY_LIMIT,
   PENDLE_MARKETS,
   PendleConvertSide,
-  PendleWithdrawMode,
   getPendleMarketByAddress
 } from './constants';
 
@@ -28,7 +27,8 @@ export {
   type KnownCallValues,
   type VerifiedCall,
   type VerifiedBuyArgs,
-  type VerifiedWithdrawArgs
+  type VerifiedWithdrawArgs,
+  type VerifiedExitArgs
 } from './buildVerifiedArgs';
 
 export type {
