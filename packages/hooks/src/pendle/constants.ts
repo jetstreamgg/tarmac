@@ -1,5 +1,5 @@
 import { mainnet } from 'wagmi/chains';
-import { TENDERLY_CHAIN_ID } from '../constants';
+import { TENDERLY_CHAIN_ID, ZERO_ADDRESS } from '../constants';
 import type { PendleMarketConfig } from './pendle';
 
 // ---------------------------------------------------------------------------
@@ -36,12 +36,8 @@ export const PENDLE_QUOTE_TTL_MS = 90_000;
 // Slippage defaults
 // ---------------------------------------------------------------------------
 
-/** 0.2% — buying PT goes through the most-liquid path (token → SY → PT). */
-export const PENDLE_DEFAULT_BUY_SLIPPAGE = 0.002;
-/** 0.5% — pre-maturity sell can hit thinner liquidity than buys. */
-export const PENDLE_DEFAULT_SELL_SLIPPAGE = 0.005;
-/** 0% — post-maturity redemption is 1:1; user-facing slippage UI is hidden. */
-export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0;
+/** 0.2% — applied to Buy, Sell, and Redeem in v1. */
+export const PENDLE_DEFAULT_SLIPPAGE = 0.002;
 
 // ---------------------------------------------------------------------------
 // Pendle Router V4
@@ -290,27 +286,6 @@ export const PENDLE_ALLOWED_SELECTORS = {
 };
 
 // ---------------------------------------------------------------------------
-// SY (ERC-5115) — minimal read ABI
-// ---------------------------------------------------------------------------
-
-export const PENDLE_SY_ABI = [
-  {
-    type: 'function',
-    name: 'getTokensIn',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'address[]' }]
-  },
-  {
-    type: 'function',
-    name: 'getTokensOut',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'address[]' }]
-  }
-] as const;
-
-// ---------------------------------------------------------------------------
 // Empty-struct constants matching Pendle's StructGen.sol reference.
 // These are what every "no aggregator, no limit orders" call must use.
 // ---------------------------------------------------------------------------
@@ -318,14 +293,14 @@ export const PENDLE_SY_ABI = [
 /** Mirrors `SwapData public emptySwap;` in StructGen.sol */
 export const PENDLE_EMPTY_SWAP_DATA = {
   swapType: 0,
-  extRouter: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  extRouter: ZERO_ADDRESS,
   extCalldata: '0x' as `0x${string}`,
   needScale: false
 } as const;
 
 /** Mirrors `LimitOrderData public emptyLimit;` in StructGen.sol */
 export const PENDLE_EMPTY_LIMIT = {
-  limitRouter: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  limitRouter: ZERO_ADDRESS,
   epsSkipMarket: 0n,
   normalFills: [] as const,
   flashFills: [] as const,

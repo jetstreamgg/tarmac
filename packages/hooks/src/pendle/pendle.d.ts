@@ -53,8 +53,10 @@ export type PendleConvertQuote = {
   amountOut: bigint;
   /**
    * The API's calculated minimum output (`minPtOut` for Buy, `minTokenOut`
-   * nested in `output` for Withdraw). buildVerifiedArgs uses this directly
-   * but enforces a local-floor guard against malicious lowering.
+   * nested in `output` for Withdraw). Used directly as the on-chain min
+   * tolerance. If a compromised API tampers with this, our other defenses
+   * (pinned router, override receiver/market/amounts, force-empty
+   * pendleSwap/swapData/limit) still bound the blast radius.
    */
   apiMinOut: bigint;
   /** Effective APY at user's input amount (decimal, e.g. 0.04 = 4%) */
@@ -84,14 +86,22 @@ export type PendleQuoteHook = ReadHook & {
 export type PendleMarketStats = {
   /** Implied APY headline (decimal) */
   impliedApy: number;
-  /** Liquidity / TVL display string (e.g. "$10.5M") */
+  /** Total TVL in USD (raw number) */
+  tvl?: number;
+  /** Total TVL display string (e.g. "$10.5M") */
   formattedTvl?: string;
   /** Underlying APY of the SY (decimal) */
   underlyingApy?: number;
 };
 
-export type PendleMarketStatsHook = ReadHook & {
-  data?: PendleMarketStats;
+/**
+ * Per-market stats keyed by `marketAddress` exactly as it appears in
+ * PENDLE_MARKETS. Markets the API didn't return (e.g. misconfigured) are absent.
+ */
+export type PendleMarketsStats = Record<`0x${string}`, PendleMarketStats>;
+
+export type PendleMarketsStatsHook = ReadHook & {
+  data?: PendleMarketsStats;
 };
 
 /**
@@ -102,4 +112,94 @@ export type PendleUserPtBalances = Record<`0x${string}`, bigint>;
 
 export type PendleUserPtBalancesHook = ReadHook & {
   data?: PendleUserPtBalances;
+};
+
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/convert and /v2/markets/all)
+// ---------------------------------------------------------------------------
+
+export type PendleConvertRequest = {
+  receiver: `0x${string}`;
+  /** Decimal: 0.002 = 0.2% */
+  slippage: number;
+  inputs: Array<{ token: `0x${string}`; amount: string }>;
+  outputs: Array<`0x${string}`>;
+  additionalData?: string;
+};
+
+/**
+ * The relevant fields we care about from /convert. Pendle returns a richer
+ * response with several routes; we always read `routes[0]` (the recommended
+ * route) and pluck what we need.
+ */
+export type PendleConvertRouteRaw = {
+  contractParamInfo: {
+    method: string;
+    contractCallParamsName: string[];
+    contractCallParams: unknown[];
+  };
+  tx: {
+    to: `0x${string}`;
+    data: `0x${string}`;
+    from: `0x${string}`;
+  };
+  outputs: Array<{ token: `0x${string}`; amount: string }>;
+  data: {
+    aggregatorType: string;
+    priceImpact: number;
+    impliedApy?: { before: number; after: number };
+    effectiveApy?: number;
+    fee?: { usd: number };
+  };
+};
+
+export type PendleConvertResponseRaw = {
+  action: string;
+  inputs: Array<{ token: `0x${string}`; amount: string }>;
+  requiredApprovals: Array<{ token: `0x${string}`; amount: string }>;
+  routes: PendleConvertRouteRaw[];
+};
+
+/**
+ * Per-market detail bag returned under `details`. Only the fields we actually
+ * use are typed; the API includes many more (swapFeeApy, pendleApy,
+ * ytFloatingApy, yieldRange, etc.) — add them here as needed.
+ */
+export type PendleMarketDetailsRaw = {
+  liquidity?: number;
+  totalTvl?: number;
+  tradingVolume?: number;
+  underlyingApy?: number;
+  impliedApy?: number;
+  swapFeeApy?: number;
+};
+
+/**
+ * One entry in the `results` array. References to other tokens come back as
+ * "<chainId>-<address>" strings (e.g. "1-0xb87511..."). `expiry` is an ISO
+ * timestamp string.
+ */
+export type PendleMarketSummaryRaw = {
+  name: string;
+  address: `0x${string}`;
+  expiry: string;
+  pt: string;
+  yt: string;
+  sy: string;
+  underlyingAsset: string;
+  accountingAsset?: string;
+  chainId: number;
+  details: PendleMarketDetailsRaw;
+  isNew?: boolean;
+  isPrime?: boolean;
+  timestamp?: string;
+  categoryIds?: string[];
+  isVolatile?: boolean;
+};
+
+export type PendleMarketsAllResponseRaw = {
+  total: number;
+  limit: number;
+  skip: number;
+  results: PendleMarketSummaryRaw[];
 };

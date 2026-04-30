@@ -2,12 +2,9 @@ export {
   PENDLE_API_BASE_URL,
   PENDLE_QUOTE_REFETCH_MS,
   PENDLE_QUOTE_TTL_MS,
-  PENDLE_DEFAULT_BUY_SLIPPAGE,
-  PENDLE_DEFAULT_SELL_SLIPPAGE,
-  PENDLE_DEFAULT_REDEEM_SLIPPAGE,
+  PENDLE_DEFAULT_SLIPPAGE,
   PENDLE_ROUTER_V4_ADDRESS,
   PENDLE_ROUTER_V4_ABI,
-  PENDLE_SY_ABI,
   PENDLE_ALLOWED_SELECTORS,
   PENDLE_EMPTY_SWAP_DATA,
   PENDLE_EMPTY_LIMIT,
@@ -17,35 +14,17 @@ export {
   getPendleMarketByAddress
 } from './constants';
 
-export {
-  isMarketMatured,
-  applySlippageToMinOut,
-  computeRealisedApy,
-  formatPendleApy,
-  secondsToExpiry
-} from './helpers';
+export { isMarketMatured, secondsToExpiry } from './helpers';
 
-export {
-  fetchPendleConvert,
-  fetchPendleMarketsByIds,
-  type PendleConvertRequest,
-  type PendleConvertRouteRaw,
-  type PendleConvertResponseRaw,
-  type PendleMarketSummaryRaw,
-  type PendleMarketsAllResponseRaw
-} from './pendleApiClient';
+export { fetchPendleConvert, fetchPendleMarketsByIds } from './pendleApiClient';
 
-export { usePendleMarketApiData } from './usePendleMarketApiData';
+export { usePendleMarketsApiData } from './usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './usePendleUserPtBalances';
 export { useQuotePendleConvert } from './useQuotePendleConvert';
-export { usePendleAllowance } from './usePendleAllowance';
-export { usePendleApprove } from './usePendleApprove';
-export { usePendleConvert } from './usePendleConvert';
+export { useBatchPendleConvert } from './useBatchPendleConvert';
 
 export {
   buildVerifiedArgs,
-  PendleSelectorNotAllowedError,
-  PendleMalformedQuoteError,
   type KnownCallValues,
   type VerifiedCall,
   type VerifiedBuyArgs,
@@ -57,7 +36,14 @@ export type {
   PendleConvertQuote,
   PendleQuoteHook,
   PendleMarketStats,
-  PendleMarketStatsHook,
+  PendleMarketsStats,
+  PendleMarketsStatsHook,
   PendleUserPtBalances,
-  PendleUserPtBalancesHook
+  PendleUserPtBalancesHook,
+  PendleConvertRequest,
+  PendleConvertRouteRaw,
+  PendleConvertResponseRaw,
+  PendleMarketSummaryRaw,
+  PendleMarketDetailsRaw,
+  PendleMarketsAllResponseRaw
 } from './pendle';
