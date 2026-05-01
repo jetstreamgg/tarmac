@@ -1,8 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { useChainId, useReadContract } from 'wagmi';
-import { erc20Abi, zeroAddress } from 'viem';
+import { useChainId } from 'wagmi';
 import { useConnection } from 'wagmi';
 import {
   isMarketMatured,
@@ -11,6 +10,7 @@ import {
   useBatchPendleConvert,
   useQuotePendleConvert,
   useTokenAllowance,
+  useTokenBalance,
   type PendleMarketConfig
 } from '@jetstreamgg/sky-hooks';
 import { isTestnetId, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
@@ -55,7 +55,7 @@ const PendleWidgetWrapped = ({
   enabled = true
 }: PendleWidgetProps) => {
   const chainId = useChainId();
-  const { address, isConnected } = useConnection();
+  const { address, isConnected, isConnecting } = useConnection();
   const isConnectedAndEnabled = isConnected && enabled;
   const matured = isMarketMatured(market.expiry);
 
@@ -63,6 +63,7 @@ const PendleWidgetWrapped = ({
     setButtonText,
     setIsDisabled,
     setIsLoading,
+    txStatus,
     setTxStatus,
     setShowStepIndicator,
     setExternalLink,
@@ -104,22 +105,16 @@ const PendleWidgetWrapped = ({
 
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
-  const { data: underlyingBalance, refetch: refetchUnderlyingBalance } = useReadContract({
-    abi: erc20Abi,
-    address: market.underlyingToken,
-    functionName: 'balanceOf',
-    args: [address ?? zeroAddress],
+  const { data: underlyingBalance, refetch: refetchUnderlyingBalance } = useTokenBalance({
     chainId: balanceChainId,
-    query: { enabled: !!address }
+    address,
+    token: market.underlyingToken
   });
 
-  const { data: ptBalance, refetch: refetchPtBalance } = useReadContract({
-    abi: erc20Abi,
-    address: market.ptToken,
-    functionName: 'balanceOf',
-    args: [address ?? zeroAddress],
+  const { data: ptBalance, refetch: refetchPtBalance } = useTokenBalance({
     chainId: balanceChainId,
-    query: { enabled: !!address }
+    address,
+    token: market.ptToken
   });
 
   const inputToken = flow === PendleFlow.BUY ? market.underlyingToken : market.ptToken;
@@ -168,7 +163,7 @@ const PendleWidgetWrapped = ({
 
   const insufficientFunds = useMemo(() => {
     if (!isConnectedAndEnabled || amount === 0n) return false;
-    const balance = flow === PendleFlow.BUY ? underlyingBalance : ptBalance;
+    const balance = flow === PendleFlow.BUY ? underlyingBalance?.value : ptBalance?.value;
     return balance !== undefined && amount > balance;
   }, [isConnectedAndEnabled, amount, flow, underlyingBalance, ptBalance]);
 
@@ -251,28 +246,12 @@ const PendleWidgetWrapped = ({
     }
   }, [prepareErrorMessage, onNotification]);
 
-  const txInFlight = batchConvert.isLoading;
-  // True while we're still resolving whether the user can proceed: quote
-  // fetch in flight OR simulation hasn't yet returned a verdict (prepared
-  // vs error). Drives both the disabled flag and the button spinner so the
-  // user can't click into Review before we know it'll work.
-  const isCheckingPrepare =
-    isConnectedAndEnabled &&
-    amount > 0n &&
-    !insufficientFunds &&
-    !batchConvert.prepared &&
-    !prepareErrorMessage;
   const inputSymbolForCopy =
     flow === PendleFlow.BUY ? market.underlyingSymbol : `PT-${market.underlyingSymbol}`;
 
-  // Bridge the in-flight tx state to WidgetContext so WidgetButton renders the
-  // proper loading spinner. Also spin during quote/simulation resolution on
-  // ACTION so the user sees we're still checking rather than a clickable
-  // dead-end.
   useEffect(() => {
-    const showSpinner = txInFlight || (screen === PendleScreen.ACTION && isCheckingPrepare);
-    setIsLoading(showSpinner);
-  }, [txInFlight, screen, isCheckingPrepare, setIsLoading]);
+    setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
+  }, [isConnecting, txStatus, setIsLoading]);
 
   const onClickAction = () => {
     if (!isConnectedAndEnabled) {
@@ -341,7 +320,10 @@ const PendleWidgetWrapped = ({
   }, [isConnectedAndEnabled, screen, flow, isRedeemMode, inputSymbolForCopy, setButtonText]);
 
   const convertDisabled =
-    amount === 0n || insufficientFunds || !!prepareErrorMessage || (!batchConvert.prepared && !txInFlight);
+    amount === 0n ||
+    insufficientFunds ||
+    !!prepareErrorMessage ||
+    (!batchConvert.prepared && !batchConvert.isLoading);
 
   useEffect(() => {
     setIsDisabled(isConnectedAndEnabled && convertDisabled);
@@ -420,8 +402,8 @@ const PendleWidgetWrapped = ({
               onFlowChange={setFlow}
               amount={amount}
               onAmountChange={setAmount}
-              underlyingBalance={underlyingBalance}
-              ptBalance={ptBalance}
+              underlyingBalance={underlyingBalance?.value}
+              ptBalance={ptBalance?.value}
               quote={quote}
               isFetchingQuote={isFetchingQuote}
               slippage={slippage}
