@@ -6,7 +6,6 @@ import { erc20Abi, zeroAddress } from 'viem';
 import { useConnection } from 'wagmi';
 import {
   isMarketMatured,
-  PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
   useQuotePendleConvert,
@@ -30,6 +29,7 @@ import { PendleFlow, PendleScreen } from './lib/constants';
 import { usePendleWidgetState } from './hooks/usePendleWidgetState';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
+import { PendlePoweredBy } from './components/PendlePoweredBy';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
 
@@ -81,10 +81,6 @@ const PendleWidgetWrapped = ({
     defaultSlippage,
     isRedeemMode
   } = usePendleWidgetState(market);
-
-  const routerAddress =
-    PENDLE_ROUTER_V4_ADDRESS[isTestnetId(chainId) ? chainId : mainnet.id] ??
-    PENDLE_ROUTER_V4_ADDRESS[mainnet.id];
 
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
@@ -375,6 +371,9 @@ const PendleWidgetWrapped = ({
         </div>
       }
     >
+      <div className="mt-[-16px] space-y-0">
+        <PendlePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
+      </div>
       <AnimatePresence mode="popLayout" initial={false}>
         <CardAnimationWrapper key={screen} className="h-full">
           {screen === PendleScreen.ACTION && (
@@ -389,7 +388,6 @@ const PendleWidgetWrapped = ({
               quote={quote}
               isFetchingQuote={isFetchingQuote}
               slippage={slippage}
-              routerAddress={routerAddress}
               enabled={isConnectedAndEnabled}
               insufficientFunds={insufficientFunds}
               onExternalLinkClicked={onExternalLinkClicked}

@@ -17,7 +17,6 @@ import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
 import { PendleFlow } from '../lib/constants';
-import { PendleRoutingDisclosure } from './PendleRoutingDisclosure';
 
 type SupplyWithdrawProps = {
   market: PendleMarketConfig;
@@ -30,7 +29,6 @@ type SupplyWithdrawProps = {
   quote?: PendleConvertQuote;
   isFetchingQuote: boolean;
   slippage: number;
-  routerAddress: `0x${string}`;
   enabled: boolean;
   insufficientFunds: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -68,7 +66,6 @@ export const SupplyWithdraw = ({
   quote,
   isFetchingQuote,
   slippage,
-  routerAddress,
   enabled,
   insufficientFunds,
   onExternalLinkClicked
@@ -211,7 +208,6 @@ export const SupplyWithdraw = ({
         />
       )}
 
-      <PendleRoutingDisclosure routerAddress={routerAddress} onExternalLinkClicked={onExternalLinkClicked} />
     </MotionVStack>
   );
 };
