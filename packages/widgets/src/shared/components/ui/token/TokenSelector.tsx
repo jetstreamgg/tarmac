@@ -26,7 +26,7 @@ export function TokenSelector({
   return (
     <PopoverTrigger
       disabled={disabled}
-      className={`w-full ${token ? 'max-w-[104px]' : ''}`}
+      className={`w-full ${token ? 'w-fit max-w-[160px] shrink-0 whitespace-nowrap' : ''}`}
       data-testid={`${dataTestId}-menu-button`}
     >
       {token ? (

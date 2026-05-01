@@ -30,6 +30,7 @@ import { usePendleWidgetState } from './hooks/usePendleWidgetState';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
 import { PendlePoweredBy } from './components/PendlePoweredBy';
+import { PendleStatsCard } from './components/PendleStatsCard';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
 
@@ -374,6 +375,9 @@ const PendleWidgetWrapped = ({
       <div className="mt-[-16px] space-y-0">
         <PendlePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
       </div>
+      {screen === PendleScreen.ACTION && (
+        <PendleStatsCard market={market} onExternalLinkClicked={onExternalLinkClicked} />
+      )}
       <AnimatePresence mode="popLayout" initial={false}>
         <CardAnimationWrapper key={screen} className="h-full">
           {screen === PendleScreen.ACTION && (
