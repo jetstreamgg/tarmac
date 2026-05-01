@@ -10,8 +10,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 i18n.load('en', {});
 i18n.activate('en');
 
+const ACTIVE_MARKET_ADDRESS = '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as const;
+const MATURED_MARKET_ADDRESS = '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as const;
+
 const hoisted = vi.hoisted(() => ({
-  mockMarket: {
+  activeMarket: {
     name: 'PT-USDG',
     marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as `0x${string}`,
     ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548' as `0x${string}`,
@@ -21,7 +24,21 @@ const hoisted = vi.hoisted(() => ({
     underlyingSymbol: 'USDG',
     underlyingDecimals: 6,
     expiry: 1779926400 // far future
-  }
+  },
+  maturedMarket: {
+    name: 'PT-MATURED',
+    marketAddress: '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as `0x${string}`,
+    ptToken: '0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2' as `0x${string}`,
+    ytToken: '0xc3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3' as `0x${string}`,
+    syToken: '0xd4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4' as `0x${string}`,
+    underlyingToken: '0xe5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5' as `0x${string}`,
+    underlyingSymbol: 'MATR',
+    underlyingDecimals: 6,
+    expiry: 1700000000 // 2023 — matured
+  },
+  // Mutable connection + balances. Tests reassign these before render.
+  userAddress: undefined as `0x${string}` | undefined,
+  ptBalances: undefined as Record<`0x${string}`, bigint> | undefined
 }));
 
 let mockSearchParams = new URLSearchParams();
@@ -36,12 +53,10 @@ vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
   return {
     ...actual,
-    PENDLE_MARKETS: [hoisted.mockMarket],
-    isMarketMatured: () => false,
-    // formatPendleApy was removed from the hooks layer; consumers now use
-    // formatDecimalPercentage from @jetstreamgg/sky-utils directly.
+    PENDLE_MARKETS: [hoisted.activeMarket, hoisted.maturedMarket],
+    isMarketMatured: (expiry: number) => expiry < 1_700_000_001, // matches the matured fixture
     usePendleUserPtBalances: () => ({
-      data: undefined,
+      data: hoisted.ptBalances,
       isLoading: false,
       error: undefined,
       mutate: () => undefined,
@@ -102,7 +117,11 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChainId: () => 1,
-    useConnection: () => ({ address: undefined, isConnected: false, isConnecting: false })
+    useConnection: () => ({
+      address: hoisted.userAddress,
+      isConnected: !!hoisted.userAddress,
+      isConnecting: false
+    })
   };
 });
 
@@ -120,8 +139,10 @@ vi.mock('@/modules/layout/components/Typography', () => ({
 }));
 
 vi.mock('../PendleMarketStatsCard', () => ({
-  PendleMarketStatsCard: ({ market }: { market: { underlyingSymbol: string } }) => (
-    <div data-testid="pendle-market-stats-card">PT-{market.underlyingSymbol}</div>
+  PendleMarketStatsCard: ({ market }: { market: { marketAddress: string; underlyingSymbol: string } }) => (
+    <div data-testid="pendle-market-stats-card" data-market={market.marketAddress}>
+      PT-{market.underlyingSymbol}
+    </div>
   )
 }));
 
@@ -159,10 +180,19 @@ const sharedProps = {
   legalBatchTxUrl: ''
 };
 
+const cardAddresses = (container: HTMLElement): string[] =>
+  // eslint-disable-next-line testing-library/no-container
+  Array.from(container.querySelectorAll<HTMLElement>('[data-testid="pendle-market-stats-card"]')).map(
+    el => el.dataset.market ?? ''
+  );
+
 describe('PendleWidgetPane', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('widget=pendle');
     setSearchParamsMock.mockClear();
+    // Reset connection + balances between tests.
+    hoisted.userAddress = undefined;
+    hoisted.ptBalances = undefined;
   });
 
   afterEach(() => {
@@ -174,8 +204,7 @@ describe('PendleWidgetPane', () => {
 
     // eslint-disable-next-line testing-library/no-container
     expect(container.querySelector('[data-testid="pendle-widget-stub"]')).toBeNull();
-    // eslint-disable-next-line testing-library/no-container
-    expect(container.querySelectorAll('[data-testid="pendle-market-stats-card"]').length).toBeGreaterThan(0);
+    expect(cardAddresses(container).length).toBeGreaterThan(0);
     expect(container.textContent).toContain('All markets');
 
     unmount();
@@ -183,7 +212,7 @@ describe('PendleWidgetPane', () => {
 
   it('renders the PendleWidget when a known ?market is selected', () => {
     mockSearchParams = new URLSearchParams(
-      'widget=pendle&pendle_module=market&market=0xc5b32dba5f29f8395fb9591e1a15f23a75214f33'
+      `widget=pendle&pendle_module=market&market=${ACTIVE_MARKET_ADDRESS}`
     );
 
     const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
@@ -206,5 +235,71 @@ describe('PendleWidgetPane', () => {
     expect(container.textContent).toContain('All markets');
 
     unmount();
+  });
+
+  // ---- Matured-market filter behavior ----
+
+  describe('matured-market filter', () => {
+    it('hides matured markets from a disconnected user', () => {
+      // userAddress = undefined, balances = undefined
+      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+
+      const addresses = cardAddresses(container);
+      expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
+      expect(addresses).not.toContain(MATURED_MARKET_ADDRESS);
+
+      unmount();
+    });
+
+    it('hides matured markets when connected but holding zero PT', () => {
+      hoisted.userAddress = '0x000000000000000000000000000000000000beef';
+      hoisted.ptBalances = {
+        [ACTIVE_MARKET_ADDRESS]: 0n,
+        [MATURED_MARKET_ADDRESS]: 0n
+      };
+
+      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+
+      const addresses = cardAddresses(container);
+      expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
+      expect(addresses).not.toContain(MATURED_MARKET_ADDRESS);
+
+      unmount();
+    });
+
+    it('shows a matured market in My positions when the user holds PT for it', () => {
+      hoisted.userAddress = '0x000000000000000000000000000000000000beef';
+      hoisted.ptBalances = {
+        [ACTIVE_MARKET_ADDRESS]: 0n,
+        [MATURED_MARKET_ADDRESS]: 100n // user has matured PT to redeem
+      };
+
+      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+
+      // Both groups render their own card; matured one should be in "My positions"
+      const addresses = cardAddresses(container);
+      expect(addresses).toContain(MATURED_MARKET_ADDRESS);
+      expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
+      expect(container.textContent).toContain('My positions');
+
+      unmount();
+    });
+
+    it('shows an active market in My positions when the user holds PT for it', () => {
+      hoisted.userAddress = '0x000000000000000000000000000000000000beef';
+      hoisted.ptBalances = {
+        [ACTIVE_MARKET_ADDRESS]: 100n,
+        [MATURED_MARKET_ADDRESS]: 0n
+      };
+
+      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+
+      const addresses = cardAddresses(container);
+      expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
+      expect(addresses).not.toContain(MATURED_MARKET_ADDRESS);
+      expect(container.textContent).toContain('My positions');
+
+      unmount();
+    });
   });
 });
