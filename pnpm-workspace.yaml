@@ -38,7 +38,7 @@ catalog:
   '@safe-global/safe-apps-sdk': ~9.1.0
   '@sentry/react': ^10.49.0
   '@sentry/vite-plugin': ^5.2.0
-  '@tailwindcss/vite': ^4.2.2
+  '@tailwindcss/vite': ^4.2.4
   '@tanstack/eslint-plugin-query': ^5.99.0
   '@tanstack/react-query': ^5.99.0
   '@testing-library/dom': ^10.4.1
@@ -77,8 +77,8 @@ catalog:
   posthog-js: ^1.369.2
   prettier: ^3.8.3
   prettier-plugin-tailwindcss: ^0.7.2
-  react: ^19.2.5
-  react-dom: ^19.2.5
+  react: ^18.3.1
+  react-dom: ^18.3.1
   react-intersection-observer: ^9.16.0
   react-jazzicon: ^1.0.4
   react-markdown: ^10.1.0
@@ -91,13 +91,13 @@ catalog:
   tailwindcss: ^4.2.2
   tailwindcss-animate: ^1.0.7
   tiny-invariant: ^1.3.3
-  typescript: ^6.0.3
+  typescript: ^5.9.3
   viem: ^2.48.0
-  vite: ^8.0.8
+  vite: ^8.0.10
   vite-plugin-dts: ^4.5.4
   vite-plugin-node-polyfills: ^0.26.0
   vite-plugin-simple-html: ^1.1.0
-  vite-plugin-static-copy: ^4.0.1
+  vite-plugin-static-copy: ^4.1.0
   vitest: ^4.0.0
   vitest-canvas-mock: ^1.1.4
   wagmi: ^3.6.2
