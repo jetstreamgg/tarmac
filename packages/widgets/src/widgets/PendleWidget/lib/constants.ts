@@ -142,19 +142,17 @@ export function getPendleWithdrawSubtitle({
 export function getPendleSupplyLoadingButtonText({
   txStatus,
   amount,
-  symbol,
-  isApproving
+  symbol
 }: {
   txStatus: TxStatus;
   amount: string;
   symbol: string;
-  isApproving: boolean;
 }): MessageDescriptor {
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return msg`Waiting for confirmation`;
     case TxStatus.LOADING:
-      return isApproving ? msg`Approving ${amount} ${symbol}` : msg`Supplying ${amount} ${symbol}`;
+      return msg`Supplying ${amount} ${symbol}`;
     default:
       return msg``;
   }
@@ -164,20 +162,17 @@ export function getPendleWithdrawLoadingButtonText({
   txStatus,
   amount,
   ptSymbol,
-  isApproving,
   isRedeem
 }: {
   txStatus: TxStatus;
   amount: string;
   ptSymbol: string;
-  isApproving: boolean;
   isRedeem: boolean;
 }): MessageDescriptor {
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return msg`Waiting for confirmation`;
     case TxStatus.LOADING:
-      if (isApproving) return msg`Approving ${amount} ${ptSymbol}`;
       return isRedeem ? msg`Redeeming ${amount} ${ptSymbol}` : msg`Withdrawing ${amount} ${ptSymbol}`;
     default:
       return msg``;

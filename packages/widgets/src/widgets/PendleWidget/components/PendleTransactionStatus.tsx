@@ -25,9 +25,7 @@ type PendleTransactionStatusProps = {
   amount: bigint;
   quote?: PendleConvertQuote;
   isRedeemMode: boolean;
-  /** Whether the active step is the approve tx (vs the convert tx) */
-  isApproving: boolean;
-  /** Whether the flow needed an approval at all (for subtitle wording) */
+  /** Whether the flow needs an approval at all (for subtitle wording). Snapshotted on mount. */
   needsAllowance: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
@@ -54,7 +52,6 @@ export const PendleTransactionStatus = ({
   amount,
   quote,
   isRedeemMode,
-  isApproving,
   needsAllowance,
   onExternalLinkClicked
 }: PendleTransactionStatusProps) => {
@@ -111,8 +108,7 @@ export const PendleTransactionStatus = ({
           getPendleSupplyLoadingButtonText({
             txStatus,
             amount: amountStr,
-            symbol: market.underlyingSymbol,
-            isApproving
+            symbol: market.underlyingSymbol
           })
         )
       );
@@ -137,7 +133,6 @@ export const PendleTransactionStatus = ({
             txStatus,
             amount: amountStr,
             ptSymbol: `PT-${market.underlyingSymbol}`,
-            isApproving,
             isRedeem: isRedeemMode
           })
         )
@@ -146,23 +141,13 @@ export const PendleTransactionStatus = ({
 
     setTxDescription(i18n._(getPendleActionDescription(flow, isRedeemMode, market.underlyingSymbol)));
 
-    // Track which step the indicator highlights: approve = step 1, convert = step 2.
-    // On SUCCESS the entire batch is done by definition, so step must equal
-    // totalSteps (2) — otherwise BatchTransactionStatus stays in the
-    // "approvalSuccess" branch and renders the InProgress icon + dim card
-    // instead of the SuccessCheck + bright success background.
-    if (txStatus === TxStatus.SUCCESS) {
-      setStep(2);
-    } else if (isApproving) {
-      setStep(1);
-    } else {
-      setStep(2);
-    }
+    // Pendle always uses EIP-5792 batched execution, so the step indicator is
+    // always on its terminal step — same shape as Savings's batched branch.
+    setStep(2);
   }, [
     txStatus,
     flow,
     isRedeemMode,
-    isApproving,
     flowNeedsAllowance,
     amount,
     market.underlyingSymbol,

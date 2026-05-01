@@ -6,9 +6,11 @@ import { erc20Abi, zeroAddress } from 'viem';
 import { useConnection } from 'wagmi';
 import {
   isMarketMatured,
+  PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
   useQuotePendleConvert,
+  useTokenAllowance,
   type PendleMarketConfig
 } from '@jetstreamgg/sky-hooks';
 import { isTestnetId, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
@@ -23,10 +25,10 @@ import { CardAnimationWrapper } from '@widgets/shared/animation/Wrappers';
 import { AnimatePresence } from 'motion/react';
 import { TxStatus } from '@widgets/shared/constants';
 import { WidgetContext } from '@widgets/context/WidgetContext';
-import { WidgetProps } from '@widgets/shared/types/widgetState';
+import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { mainnet } from 'viem/chains';
-import { PendleFlow, PendleScreen } from './lib/constants';
-import { usePendleWidgetState } from './hooks/usePendleWidgetState';
+import { PendleAction, PendleFlow, PendleScreen } from './lib/constants';
+import { usePendleSlippage } from './hooks/usePendleSlippage';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
 import { PendlePoweredBy } from './components/PendlePoweredBy';
@@ -57,12 +59,17 @@ const PendleWidgetWrapped = ({
   const isConnectedAndEnabled = isConnected && enabled;
   const matured = isMarketMatured(market.expiry);
 
-  const { setButtonText, setIsDisabled, setIsLoading, setTxStatus, setShowStepIndicator, setExternalLink } =
-    useContext(WidgetContext);
+  const {
+    setButtonText,
+    setIsDisabled,
+    setIsLoading,
+    setTxStatus,
+    setShowStepIndicator,
+    setExternalLink,
+    widgetState,
+    setWidgetState
+  } = useContext(WidgetContext);
   const isSafeWallet = useIsSafeWallet();
-  // Snapshot the active "phase" for the status screen so we can label the
-  // approve vs convert step correctly even after the hook's isLoading flips.
-  const [activePhase, setActivePhase] = useState<'idle' | 'approving' | 'converting'>('idle');
 
   // WidgetProvider initializes isLoading=true; reset on mount so the action
   // button doesn't render a stuck spinner. The real in-flight loading state
@@ -71,18 +78,36 @@ const PendleWidgetWrapped = ({
     setIsLoading(false);
   }, [setIsLoading]);
 
-  const {
-    flow,
-    setFlow,
-    screen,
-    setScreen,
-    amount,
-    setAmount,
-    slippage,
-    setSlippage,
-    defaultSlippage,
-    isRedeemMode
-  } = usePendleWidgetState(market);
+  const [amount, setAmount] = useState<bigint>(0n);
+  const flow = (widgetState.flow as PendleFlow | null) ?? PendleFlow.BUY;
+  const screen = (widgetState.screen as PendleScreen | null) ?? PendleScreen.ACTION;
+  const isRedeemMode = matured && flow === PendleFlow.WITHDRAW;
+  const { slippage, setSlippage, defaultSlippage } = usePendleSlippage(flow);
+
+  // Initialize widgetState (matches the SavingsWidget pattern). Re-runs when
+  // the connection state changes — disconnecting mid-flow rolls the user back
+  // to the ACTION screen.
+  useEffect(() => {
+    setWidgetState({
+      flow: PendleFlow.BUY,
+      action: isConnectedAndEnabled ? PendleAction.BUY : null,
+      screen: PendleScreen.ACTION
+    });
+  }, [isConnectedAndEnabled, setWidgetState]);
+
+  const setScreen = (next: PendleScreen) => {
+    setWidgetState((prev: WidgetState) => ({ ...prev, screen: next }));
+  };
+
+  const setFlow = (next: PendleFlow) => {
+    setAmount(0n);
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      flow: next,
+      action: next === PendleFlow.BUY ? PendleAction.BUY : PendleAction.WITHDRAW,
+      screen: PendleScreen.ACTION
+    }));
+  };
 
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
@@ -107,6 +132,16 @@ const PendleWidgetWrapped = ({
   const inputToken = flow === PendleFlow.BUY ? market.underlyingToken : market.ptToken;
   const outputToken = flow === PendleFlow.BUY ? market.ptToken : market.underlyingToken;
   const side = flow === PendleFlow.BUY ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
+
+  // Allowance for the input token (underlying for Buy, PT for Withdraw) → router.
+  // Mirrors the check inside useBatchPendleConvert; React Query cache dedupes.
+  const { data: allowance } = useTokenAllowance({
+    chainId: balanceChainId,
+    contractAddress: inputToken,
+    owner: address,
+    spender: PENDLE_ROUTER_V4_ADDRESS[balanceChainId]
+  });
+  const needsAllowance = !!(allowance === undefined || allowance < amount);
 
   const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
     side,
@@ -233,18 +268,6 @@ const PendleWidgetWrapped = ({
     !insufficientFunds &&
     !batchConvert.prepared &&
     !prepareErrorMessage;
-  // currentCallIndex 0 = approve when 2 calls; 1 = convert. When only 1 call
-  // (no approval needed), currentCallIndex stays 0 and isApproving is false.
-  // We flip activePhase based on the hook's reported step.
-  useEffect(() => {
-    if (!txInFlight) return;
-    if (batchConvert.currentCallIndex === 0) {
-      setActivePhase('approving');
-    } else {
-      setActivePhase('converting');
-    }
-  }, [batchConvert.currentCallIndex, txInFlight]);
-
   const inputSymbolForCopy =
     flow === PendleFlow.BUY ? market.underlyingSymbol : `PT-${market.underlyingSymbol}`;
 
@@ -274,7 +297,6 @@ const PendleWidgetWrapped = ({
     // TRANSACTION → reset back to ACTION + clear amount
     setScreen(PendleScreen.ACTION);
     setAmount(0n);
-    setActivePhase('idle');
     setTxStatus(TxStatus.IDLE);
     batchConvert.reset();
   };
@@ -284,7 +306,6 @@ const PendleWidgetWrapped = ({
     else if (screen === PendleScreen.TRANSACTION) {
       setScreen(PendleScreen.ACTION);
       setAmount(0n);
-      setActivePhase('idle');
       setTxStatus(TxStatus.IDLE);
       batchConvert.reset();
     }
@@ -432,8 +453,7 @@ const PendleWidgetWrapped = ({
               amount={amount}
               quote={quote}
               isRedeemMode={isRedeemMode}
-              isApproving={activePhase === 'approving'}
-              needsAllowance={activePhase === 'approving'}
+              needsAllowance={needsAllowance}
               onExternalLinkClicked={onExternalLinkClicked}
             />
           )}
