@@ -1,6 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
+import { useLingui } from '@lingui/react';
 import { useChainId } from 'wagmi';
 import { useConnection } from 'wagmi';
 import {
@@ -8,6 +9,7 @@ import {
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
+  useIsBatchSupported,
   useQuotePendleConvert,
   useTokenAllowance,
   useTokenBalance,
@@ -43,6 +45,8 @@ export type PendleWidgetProps = WidgetProps & {
   /** When provided, renders a "Back to Pendle" link above the heading. The webapp module
    * uses this to clear the market query params and return to the overview list. */
   onBackToPendle?: () => void;
+  batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 const PendleWidgetWrapped = ({
@@ -52,7 +56,10 @@ const PendleWidgetWrapped = ({
   onNotification,
   onExternalLinkClicked,
   onBackToPendle,
-  enabled = true
+  enabled = true,
+  batchEnabled,
+  setBatchEnabled,
+  legalBatchTxUrl
 }: PendleWidgetProps) => {
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
@@ -71,6 +78,7 @@ const PendleWidgetWrapped = ({
     setWidgetState
   } = useContext(WidgetContext);
   const isSafeWallet = useIsSafeWallet();
+  const linguiCtx = useLingui();
 
   const [amount, setAmount] = useState<bigint>(0n);
   const flow = (widgetState.flow as PendleFlow | null) ?? PendleFlow.BUY;
@@ -130,6 +138,8 @@ const PendleWidgetWrapped = ({
     spender: PENDLE_ROUTER_V4_ADDRESS[balanceChainId]
   });
   const needsAllowance = !!(allowance === undefined || allowance < amount);
+  const { data: batchSupported } = useIsBatchSupported();
+  const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
   const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
     side,
@@ -180,7 +190,7 @@ const PendleWidgetWrapped = ({
     slippage,
     quote,
     enabled: isConnectedAndEnabled && amount > 0n,
-    shouldUseBatch: true,
+    shouldUseBatch,
     onMutate: () => {
       setTxStatus(TxStatus.INITIALIZED);
       setExternalLink(undefined);
@@ -246,52 +256,46 @@ const PendleWidgetWrapped = ({
     }
   }, [prepareErrorMessage, onNotification]);
 
-  const inputSymbolForCopy =
-    flow === PendleFlow.BUY ? market.underlyingSymbol : `PT-${market.underlyingSymbol}`;
-
   useEffect(() => {
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
   }, [isConnecting, txStatus, setIsLoading]);
 
-  const onClickAction = () => {
-    if (!isConnectedAndEnabled) {
-      onConnect?.();
-      return;
-    }
-    if (screen === PendleScreen.ACTION) {
-      setScreen(PendleScreen.REVIEW);
-      return;
-    }
-    if (screen === PendleScreen.REVIEW) {
-      setScreen(PendleScreen.TRANSACTION);
-      batchConvert.execute();
-      return;
-    }
-    // TRANSACTION → reset back to ACTION + clear amount
+  const reviewOnClick = () => {
+    setScreen(PendleScreen.REVIEW);
+  };
+
+  const nextOnClick = () => {
     setScreen(PendleScreen.ACTION);
     setAmount(0n);
     setTxStatus(TxStatus.IDLE);
     batchConvert.reset();
   };
 
+  const errorOnClick = () => batchConvert.execute();
+
+  const onClickAction = !isConnectedAndEnabled
+    ? onConnect
+    : txStatus === TxStatus.SUCCESS
+      ? nextOnClick
+      : txStatus === TxStatus.ERROR
+        ? errorOnClick
+        : screen === PendleScreen.ACTION
+          ? reviewOnClick
+          : batchConvert.execute;
+
+  const showSecondaryButton = txStatus === TxStatus.ERROR || screen === PendleScreen.REVIEW;
+
   const onClickBack = () => {
-    if (screen === PendleScreen.REVIEW) setScreen(PendleScreen.ACTION);
-    else if (screen === PendleScreen.TRANSACTION) {
-      setScreen(PendleScreen.ACTION);
-      setAmount(0n);
-      setTxStatus(TxStatus.IDLE);
-      batchConvert.reset();
-    }
+    batchConvert.reset();
+    setTxStatus(TxStatus.IDLE);
+    setScreen(PendleScreen.ACTION);
   };
 
-  // Show the step indicator when the batched flow contains 2 calls
-  // (approve + convert). The hook exposes the current call index but not the
-  // total step count directly, so we infer "needs allowance" from whether the
-  // batched call list will include an approval — for the simplest first pass
-  // we just always show it on Buy and hide on Withdraw, mirroring Morpho.
   useEffect(() => {
-    setShowStepIndicator(flow === PendleFlow.BUY);
-  }, [flow, setShowStepIndicator]);
+    if (txStatus === TxStatus.IDLE) {
+      setShowStepIndicator(needsAllowance);
+    }
+  }, [txStatus, needsAllowance, setShowStepIndicator]);
 
   // Drive the WidgetContext-backed action button (label + disabled state) so the
   // widget reuses the same primaryAlt-styled WidgetButton as Savings/Trade/etc.
@@ -299,25 +303,39 @@ const PendleWidgetWrapped = ({
     let label: string;
     if (!isConnectedAndEnabled) {
       label = t`Connect Wallet`;
+    } else if (txStatus === TxStatus.SUCCESS) {
+      label = t`Back to ${market.name}`;
+    } else if (txStatus === TxStatus.ERROR) {
+      label = t`Retry`;
+    } else if (screen === PendleScreen.ACTION && amount === 0n) {
+      label = t`Enter amount`;
     } else if (screen === PendleScreen.ACTION) {
-      label =
-        flow === PendleFlow.BUY
-          ? t`Review supply`
-          : isRedeemMode
-            ? t`Review redemption`
-            : t`Review withdrawal`;
-    } else if (screen === PendleScreen.REVIEW) {
-      label =
-        flow === PendleFlow.BUY
-          ? t`Confirm supply`
-          : isRedeemMode
-            ? t`Confirm redemption`
-            : t`Confirm withdrawal`;
+      label = t`Review`;
+    } else if (shouldUseBatch) {
+      label = t`Confirm bundled transaction`;
+    } else if (needsAllowance) {
+      label = t`Confirm 2 transactions`;
+    } else if (flow === PendleFlow.BUY) {
+      label = t`Confirm supply`;
+    } else if (isRedeemMode) {
+      label = t`Confirm redemption`;
     } else {
-      label = t`Done`;
+      label = t`Confirm withdrawal`;
     }
     setButtonText(label);
-  }, [isConnectedAndEnabled, screen, flow, isRedeemMode, inputSymbolForCopy, setButtonText]);
+  }, [
+    isConnectedAndEnabled,
+    txStatus,
+    screen,
+    flow,
+    amount,
+    isRedeemMode,
+    market.name,
+    shouldUseBatch,
+    needsAllowance,
+    linguiCtx,
+    setButtonText
+  ]);
 
   const convertDisabled =
     amount === 0n ||
@@ -354,7 +372,7 @@ const PendleWidgetWrapped = ({
             </Button>
           )}
           <Heading variant="x-large" className="whitespace-nowrap">
-            PT-{market.underlyingSymbol}
+            {market.name}
             {matured ? (
               <span className="text-textSecondary ml-2 text-sm font-normal">
                 <Trans>· matured</Trans>
@@ -380,8 +398,8 @@ const PendleWidgetWrapped = ({
       footer={
         <WidgetButtons
           onClickAction={onClickAction}
-          onClickBack={screen === PendleScreen.ACTION ? undefined : onClickBack}
-          showSecondaryButton={screen !== PendleScreen.ACTION}
+          onClickBack={showSecondaryButton ? onClickBack : undefined}
+          showSecondaryButton={showSecondaryButton}
           enabled={enabled}
           onExternalLinkClicked={onExternalLinkClicked}
         />
@@ -390,12 +408,37 @@ const PendleWidgetWrapped = ({
       <div className="-mt-4 space-y-0">
         <PendlePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
       </div>
-      {screen === PendleScreen.ACTION && (
+      {screen === PendleScreen.ACTION && txStatus === TxStatus.IDLE && (
         <PendleStatsCard market={market} onExternalLinkClicked={onExternalLinkClicked} />
       )}
       <AnimatePresence mode="popLayout" initial={false}>
-        <CardAnimationWrapper key={screen} className="h-full">
-          {screen === PendleScreen.ACTION && (
+        {txStatus !== TxStatus.IDLE ? (
+          <CardAnimationWrapper key="pendle-tx-status" className="h-full">
+            <PendleTransactionStatus
+              market={market}
+              flow={flow}
+              amount={amount}
+              quote={quote}
+              isRedeemMode={isRedeemMode}
+              needsAllowance={needsAllowance}
+              onExternalLinkClicked={onExternalLinkClicked}
+            />
+          </CardAnimationWrapper>
+        ) : screen === PendleScreen.REVIEW ? (
+          <CardAnimationWrapper key="pendle-tx-review" className="h-full">
+            <PendleTransactionReview
+              market={market}
+              flow={flow}
+              amount={amount}
+              quote={quote}
+              isRedeemMode={isRedeemMode}
+              batchEnabled={batchEnabled}
+              setBatchEnabled={setBatchEnabled}
+              legalBatchTxUrl={legalBatchTxUrl}
+            />
+          </CardAnimationWrapper>
+        ) : (
+          <CardAnimationWrapper key="pendle-action" className="h-full">
             <SupplyWithdraw
               market={market}
               flow={flow}
@@ -412,28 +455,8 @@ const PendleWidgetWrapped = ({
               prepareErrorMessage={prepareErrorMessage}
               onExternalLinkClicked={onExternalLinkClicked}
             />
-          )}
-          {screen === PendleScreen.REVIEW && (
-            <PendleTransactionReview
-              market={market}
-              flow={flow}
-              amount={amount}
-              quote={quote}
-              isRedeemMode={isRedeemMode}
-            />
-          )}
-          {screen === PendleScreen.TRANSACTION && (
-            <PendleTransactionStatus
-              market={market}
-              flow={flow}
-              amount={amount}
-              quote={quote}
-              isRedeemMode={isRedeemMode}
-              needsAllowance={needsAllowance}
-              onExternalLinkClicked={onExternalLinkClicked}
-            />
-          )}
-        </CardAnimationWrapper>
+          </CardAnimationWrapper>
+        )}
       </AnimatePresence>
     </WidgetContainer>
   );

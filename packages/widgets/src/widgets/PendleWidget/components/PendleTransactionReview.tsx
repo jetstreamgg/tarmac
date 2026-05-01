@@ -21,6 +21,9 @@ type PendleTransactionReviewProps = {
   amount: bigint;
   quote?: PendleConvertQuote;
   isRedeemMode: boolean;
+  batchEnabled?: boolean;
+  setBatchEnabled?: (enabled: boolean) => void;
+  legalBatchTxUrl?: string;
 };
 
 const buildUnderlyingToken = (market: PendleMarketConfig): Token => ({
@@ -44,7 +47,10 @@ export const PendleTransactionReview = ({
   flow,
   amount,
   quote,
-  isRedeemMode
+  isRedeemMode,
+  batchEnabled,
+  setBatchEnabled,
+  legalBatchTxUrl
 }: PendleTransactionReviewProps) => {
   const { i18n } = useLingui();
   const {
@@ -98,5 +104,11 @@ export const PendleTransactionReview = ({
     setTxDescription(i18n._(getPendleActionDescription(flow, isRedeemMode, market.underlyingSymbol)));
   }, [flow, isRedeemMode, i18n.locale, market.underlyingSymbol, setTxTitle, setTxSubtitle, setStepTwoTitle, setTxDescription]);
 
-  return <TransactionReview />;
+  return (
+    <TransactionReview
+      batchEnabled={batchEnabled}
+      setBatchEnabled={setBatchEnabled}
+      legalBatchTxUrl={legalBatchTxUrl}
+    />
+  );
 };
