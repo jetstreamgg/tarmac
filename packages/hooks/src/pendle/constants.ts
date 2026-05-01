@@ -392,6 +392,17 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingSymbol: 'USDe',
     underlyingDecimals: 18,
     expiry: 1778112000
+  },
+  {
+    name: 'PT-sENA',
+    marketAddress: '0xeab7b7c8353ba1cb4b29cf7ae9c166efdc57835f',
+    ptToken: '0x4552C668eb8dEDeAc53e00CfD05d873f11a80204',
+    ytToken: '0xF8a735034Ce8eBec8f6A742658460a78Ebfae725',
+    syToken: '0xA36ECCA8B7624D224F01CD6649C8afAd3Da12C3D',
+    underlyingToken: '0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9',
+    underlyingSymbol: 'sENA',
+    underlyingDecimals: 18,
+    expiry: 1777507200
   }
 ];
 
