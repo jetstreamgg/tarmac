@@ -310,6 +310,18 @@ export const PENDLE_ROUTER_V4_ABI = [
       { name: 'netSyFee', type: 'uint256' },
       { name: 'netSyInterm', type: 'uint256' }
     ]
+  },
+  {
+    // Pendle Router V4 native multicall — bundles N inner calls to the same
+    // Router into one tx. Used by useBatchPendleRedeemMulticall to redeem
+    // multiple matured positions atomically with a single signature. Each
+    // inner blob is independently selector-allowlist verified before being
+    // wrapped here (see buildMulticallVerifiedArgs).
+    type: 'function',
+    name: 'multicall',
+    stateMutability: 'payable',
+    inputs: [{ name: 'data', type: 'bytes[]' }],
+    outputs: [{ name: 'results', type: 'bytes[]' }]
   }
 ] as const;
 

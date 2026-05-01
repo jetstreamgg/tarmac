@@ -146,7 +146,10 @@ export {
   usePendleUserPtBalances,
   useQuotePendleConvert,
   useBatchPendleConvert,
+  useBatchPendleRedeemMulticall,
   buildVerifiedArgs,
+  buildMaturedRedeemVerifiedArgs,
+  buildMulticallVerifiedArgs,
   PendleConvertSide
 } from './pendle';
 export type {
@@ -159,10 +162,13 @@ export type {
   PendleUserPtBalances,
   PendleUserPtBalancesHook,
   KnownCallValues,
+  MaturedRedeemContext,
+  RedeemPosition,
   VerifiedCall,
   VerifiedBuyArgs,
   VerifiedWithdrawArgs,
-  VerifiedExitArgs
+  VerifiedExitArgs,
+  VerifiedMulticall
 } from './pendle';
 
 // Authentication

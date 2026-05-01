@@ -31,6 +31,8 @@ type SupplyWithdrawProps = {
   slippage: number;
   enabled: boolean;
   insufficientFunds: boolean;
+  /** User-friendly message for simulation/prepare failure (e.g. slippage too tight). */
+  prepareErrorMessage?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
@@ -68,6 +70,7 @@ export const SupplyWithdraw = ({
   slippage,
   enabled,
   insufficientFunds,
+  prepareErrorMessage,
   onExternalLinkClicked
 }: SupplyWithdrawProps) => {
   const matured = isMarketMatured(market.expiry);
@@ -151,6 +154,16 @@ export const SupplyWithdraw = ({
               enabled={enabled}
               dataTestId="pendle-withdraw-input"
             />
+            {!matured && (
+              <div
+                className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-300"
+                data-testid="pendle-early-withdraw-banner"
+              >
+                <Trans>
+                  Withdrawing before maturity uses the current market price, not the originally locked APY.
+                </Trans>
+              </div>
+            )}
             {isRedeemMode && (
               <div className="bg-bullish/10 text-bullish mt-3 rounded-xl px-3 py-2 text-sm">
                 <Trans>
@@ -161,6 +174,16 @@ export const SupplyWithdraw = ({
           </motion.div>
         </TabsContent>
       </Tabs>
+
+      {prepareErrorMessage && amount > 0n && !insufficientFunds && (
+        <div
+          className="bg-error/10 text-error mt-3 rounded-xl px-3 py-2 text-sm"
+          data-testid="pendle-prepare-error-banner"
+          role="alert"
+        >
+          {prepareErrorMessage}
+        </div>
+      )}
 
       {amount > 0n && !insufficientFunds && (
         <TransactionOverview

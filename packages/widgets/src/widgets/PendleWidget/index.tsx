@@ -11,7 +11,7 @@ import {
   useQuotePendleConvert,
   type PendleMarketConfig
 } from '@jetstreamgg/sky-hooks';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { isTestnetId, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@widgets/components/ui/button';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
@@ -57,8 +57,15 @@ const PendleWidgetWrapped = ({
   const isConnectedAndEnabled = isConnected && enabled;
   const matured = isMarketMatured(market.expiry);
 
-  const { setButtonText, setIsDisabled, setIsLoading, setTxStatus, setShowStepIndicator } =
-    useContext(WidgetContext);
+  const {
+    setButtonText,
+    setIsDisabled,
+    setIsLoading,
+    setTxStatus,
+    setShowStepIndicator,
+    setExternalLink
+  } = useContext(WidgetContext);
+  const isSafeWallet = useIsSafeWallet();
   // Snapshot the active "phase" for the status screen so we can label the
   // approve vs convert step correctly even after the hook's isLoading flips.
   const [activePhase, setActivePhase] = useState<'idle' | 'approving' | 'converting'>('idle');
@@ -121,7 +128,6 @@ const PendleWidgetWrapped = ({
   // for inspecting Pendle's /convert response shape and decimal handling.
   useEffect(() => {
     if (quote) {
-      // eslint-disable-next-line no-console
       console.log('[Pendle quote]', {
         side,
         market: market.name,
@@ -159,14 +165,21 @@ const PendleWidgetWrapped = ({
     shouldUseBatch: true,
     onMutate: () => {
       setTxStatus(TxStatus.INITIALIZED);
+      setExternalLink(undefined);
     },
-    onStart: () => {
+    onStart: hash => {
       setTxStatus(TxStatus.LOADING);
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+      }
     },
-    onSuccess: () => {
+    onSuccess: hash => {
       refetchUnderlyingBalance();
       refetchPtBalance();
       setTxStatus(TxStatus.SUCCESS);
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+      }
       onNotification?.({
         title: flow === PendleFlow.BUY ? t`Supply complete` : t`Withdrawal complete`,
         description:
@@ -176,8 +189,11 @@ const PendleWidgetWrapped = ({
         status: TxStatus.SUCCESS
       });
     },
-    onError: (err: Error) => {
+    onError: (err: Error, hash) => {
       setTxStatus(TxStatus.ERROR);
+      if (hash) {
+        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
+      }
       onNotification?.({
         title: t`Transaction failed`,
         description: err.message,
@@ -186,18 +202,43 @@ const PendleWidgetWrapped = ({
     }
   });
 
-  // Surface prepare/verify errors (e.g. stale quote) as a toast.
+  // Map raw viem/Pendle revert messages to user-friendly copy. Returns
+  // undefined when there's no error to show. Keeping this inline (not a
+  // separate util) since it's tightly coupled to the messages we surface.
+  const prepareErrorMessage = useMemo<string | undefined>(() => {
+    const raw = batchConvert.error?.message;
+    if (!raw) return undefined;
+    if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
+      return t`Current market price exceeds your slippage tolerance. Increase slippage via the gear icon, or wait for the quote to refresh.`;
+    }
+    if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
+      return t`Quote expired. Refreshing — please wait a moment.`;
+    }
+    return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
+  }, [batchConvert.error]);
+
+  // Surface prepare/verify errors as a toast (in addition to inline display).
   useEffect(() => {
-    if (batchConvert.error) {
+    if (prepareErrorMessage) {
       onNotification?.({
         title: t`Quote unavailable`,
-        description: batchConvert.error.message,
+        description: prepareErrorMessage,
         status: TxStatus.ERROR
       });
     }
-  }, [batchConvert.error, onNotification]);
+  }, [prepareErrorMessage, onNotification]);
 
   const txInFlight = batchConvert.isLoading;
+  // True while we're still resolving whether the user can proceed: quote
+  // fetch in flight OR simulation hasn't yet returned a verdict (prepared
+  // vs error). Drives both the disabled flag and the button spinner so the
+  // user can't click into Review before we know it'll work.
+  const isCheckingPrepare =
+    isConnectedAndEnabled &&
+    amount > 0n &&
+    !insufficientFunds &&
+    !batchConvert.prepared &&
+    !prepareErrorMessage;
   // currentCallIndex 0 = approve when 2 calls; 1 = convert. When only 1 call
   // (no approval needed), currentCallIndex stays 0 and isApproving is false.
   // We flip activePhase based on the hook's reported step.
@@ -214,10 +255,13 @@ const PendleWidgetWrapped = ({
     flow === PendleFlow.BUY ? market.underlyingSymbol : `PT-${market.underlyingSymbol}`;
 
   // Bridge the in-flight tx state to WidgetContext so WidgetButton renders the
-  // proper loading spinner.
+  // proper loading spinner. Also spin during quote/simulation resolution on
+  // ACTION so the user sees we're still checking rather than a clickable
+  // dead-end.
   useEffect(() => {
-    setIsLoading(txInFlight);
-  }, [txInFlight, setIsLoading]);
+    const showSpinner = txInFlight || (screen === PendleScreen.ACTION && isCheckingPrepare);
+    setIsLoading(showSpinner);
+  }, [txInFlight, screen, isCheckingPrepare, setIsLoading]);
 
   const onClickAction = () => {
     if (!isConnectedAndEnabled) {
@@ -297,7 +341,17 @@ const PendleWidgetWrapped = ({
   useEffect(() => {
     let disabled = false;
     if (screen === PendleScreen.ACTION) {
-      disabled = !isConnectedAndEnabled || amount === 0n || insufficientFunds;
+      // Block advancing when:
+      //  - wallet not connected / widget disabled
+      //  - empty amount or insufficient funds
+      //  - we already know simulation will fail (prepareErrorMessage set)
+      //  - we're still resolving quote/simulation (isCheckingPrepare)
+      disabled =
+        !isConnectedAndEnabled ||
+        amount === 0n ||
+        insufficientFunds ||
+        !!prepareErrorMessage ||
+        isCheckingPrepare;
     } else if (screen === PendleScreen.REVIEW) {
       disabled = txInFlight ? false : !batchConvert.prepared;
     }
@@ -307,6 +361,8 @@ const PendleWidgetWrapped = ({
     isConnectedAndEnabled,
     amount,
     insufficientFunds,
+    prepareErrorMessage,
+    isCheckingPrepare,
     batchConvert.prepared,
     txInFlight,
     setIsDisabled
@@ -394,6 +450,7 @@ const PendleWidgetWrapped = ({
               slippage={slippage}
               enabled={isConnectedAndEnabled}
               insufficientFunds={insufficientFunds}
+              prepareErrorMessage={prepareErrorMessage}
               onExternalLinkClicked={onExternalLinkClicked}
             />
           )}

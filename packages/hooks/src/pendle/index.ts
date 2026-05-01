@@ -21,14 +21,19 @@ export { usePendleMarketsApiData } from './usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './usePendleUserPtBalances';
 export { useQuotePendleConvert } from './useQuotePendleConvert';
 export { useBatchPendleConvert } from './useBatchPendleConvert';
+export { useBatchPendleRedeemMulticall, type RedeemPosition } from './useBatchPendleRedeemMulticall';
 
 export {
   buildVerifiedArgs,
+  buildMaturedRedeemVerifiedArgs,
+  buildMulticallVerifiedArgs,
   type KnownCallValues,
+  type MaturedRedeemContext,
   type VerifiedCall,
   type VerifiedBuyArgs,
   type VerifiedWithdrawArgs,
-  type VerifiedExitArgs
+  type VerifiedExitArgs,
+  type VerifiedMulticall
 } from './buildVerifiedArgs';
 
 export type {

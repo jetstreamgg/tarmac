@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Settings as SettingsIcon } from '@widgets/shared/components/icons/Icons';
@@ -37,13 +38,43 @@ export const PendleConfigMenu = ({
   setSlippage,
   hidden
 }: PendleConfigMenuProps) => {
+  // Local raw string state for the input. Storing the user's keystrokes as a
+  // string (rather than reformatting from `slippage: number` on every render)
+  // is what lets them type "0.5" — without this, the "." gets eaten because
+  // `Number("0.") === 0` round-trips back to "0" in the display.
+  const [rawInput, setRawInput] = useState<string>(() =>
+    slippage !== defaultSlippage ? decimalSlippageToPercentString(slippage) : ''
+  );
+
+  // Mirror rawInput into a ref so the effect below can read its latest value
+  // without listing it as a dependency (which would re-fire on every keystroke
+  // and clobber in-progress edits).
+  const rawInputRef = useRef(rawInput);
+  rawInputRef.current = rawInput;
+
+  // Re-sync the input when slippage is updated from outside the menu
+  // (e.g. flow change resets default; Auto tab click sets to default).
+  useEffect(() => {
+    if (slippage === defaultSlippage) {
+      setRawInput('');
+      return;
+    }
+    // Only overwrite the input if the user's current text doesn't already
+    // map to the same numeric value — otherwise we'd clobber an in-progress
+    // edit (e.g. user mid-typing "0." while slippage emits the same number).
+    const currentNumeric = percentStringToDecimalSlippage(rawInputRef.current);
+    if (Math.abs(currentNumeric - slippage) > 1e-9) {
+      setRawInput(decimalSlippageToPercentString(slippage));
+    }
+  }, [slippage, defaultSlippage]);
+
   if (hidden) return null;
 
   const isCustom = slippage !== defaultSlippage;
-  const customPercent = isCustom ? decimalSlippageToPercentString(slippage) : '';
 
   const handleCustomChange = (value: string) => {
     const verified = verifyPendleSlippage(value, pendleSlippageConfig);
+    setRawInput(verified);
     if (verified === '') {
       setSlippage(0);
       return;
@@ -113,9 +144,11 @@ export const PendleConfigMenu = ({
                       placeholder={t`Custom`}
                       className="bg-background ring-offset-background placeholder:text-surface text-text focus-visible:outline-hidden w-[55px] text-right text-[14px] leading-tight [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       type="number"
+                      step="any"
                       min={pendleSlippageConfig.min}
                       max={pendleSlippageConfig.max}
-                      value={customPercent}
+                      inputMode="decimal"
+                      value={rawInput}
                       onChange={e => handleCustomChange(e.target.value)}
                     />
                     <Text variant="small" className="text-text mt-[3px]">

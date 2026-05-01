@@ -21,6 +21,7 @@ import { PendleBalanceDetails } from './PendleBalanceDetails';
 import { PendleMarketInfoCard } from './PendleMarketInfoCard';
 import { TimeToMaturityCard } from './TimeToMaturityCard';
 import { PendleHistoryPlaceholder } from './PendleHistoryPlaceholder';
+import { PendleReadyToRedeemTable } from './PendleReadyToRedeemTable';
 
 const findMarket = (address: string | null): PendleMarketConfig | undefined => {
   if (!address) return undefined;
@@ -37,6 +38,16 @@ export const PendleDetailsPane = () => {
   const selectedMarket = findMarket(searchParams.get(QueryParams.Market));
   const { data: ptBalances } = usePendleUserPtBalances();
 
+  // Whether the connected user holds matured PT in any market — drives the
+  // "Ready to redeem" section visibility on both the detail and overview views.
+  const hasMaturedHoldings = !!(
+    userAddress &&
+    ptBalances &&
+    PENDLE_MARKETS.some(
+      m => isMarketMatured(m.expiry) && (ptBalances[m.marketAddress] ?? 0n) > 0n
+    )
+  );
+
   if (selectedMarket) {
     return (
       <DetailSectionWrapper>
@@ -45,6 +56,13 @@ export const PendleDetailsPane = () => {
             <PendleBalanceDetails market={selectedMarket} />
           </DetailSectionRow>
         </DetailSection>
+        {hasMaturedHoldings && (
+          <DetailSection title={t`Ready to redeem`}>
+            <DetailSectionRow>
+              <PendleReadyToRedeemTable />
+            </DetailSectionRow>
+          </DetailSection>
+        )}
         <DetailSection title={t`Market info`}>
           <DetailSectionRow>
             <PendleMarketInfoCard market={selectedMarket} />

@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { PENDLE_MARKETS } from '@jetstreamgg/sky-hooks';
 import { WagmiWrapper } from '../../../../test/WagmiWrapper';
 import { PendleWidget } from '..';
@@ -36,14 +36,11 @@ describe('Pendle widget tests', () => {
     expect(screen.getAllByText(`PT-${market.underlyingSymbol}`, { exact: false }).length).toBeGreaterThan(0);
   });
 
-  it('toggles the routing disclosure when clicked', async () => {
+  it('renders the "Powered by Pendle" label with an external link', async () => {
     renderWithWagmiWrapper(<PendleWidget market={market} onConnect={() => true} />);
 
-    const toggle = await screen.findByTestId('pendle-routing-disclosure-toggle');
-    expect(toggle.textContent).toContain('see details');
-
-    fireEvent.click(toggle);
-    expect(toggle.textContent).toContain('hide details');
+    const link = await screen.findByRole('link', { name: /Pendle/i });
+    expect(link.getAttribute('href')).toContain('pendle.finance');
   });
 
   it('disables the action button when not connected', async () => {

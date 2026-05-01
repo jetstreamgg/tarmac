@@ -22,6 +22,7 @@ import { PendleIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { PendleMarketStatsCard } from './PendleMarketStatsCard';
+import { PendleReadyToRedeemList } from './PendleReadyToRedeemList';
 
 const findMarket = (address: string | null): PendleMarketConfig | undefined => {
   if (!address) return undefined;
@@ -109,6 +110,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
                   </Trans>
                 </Text>
               )}
+              {isOnPendleChain && <PendleReadyToRedeemList />}
               {isOnPendleChain && myMarkets.length > 0 && (
                 <motion.div className="space-y-3" variants={positionAnimations}>
                   <Heading tag="h3" variant="medium">

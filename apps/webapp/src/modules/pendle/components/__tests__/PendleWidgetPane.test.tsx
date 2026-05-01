@@ -138,6 +138,23 @@ vi.mock('@/modules/layout/components/Typography', () => ({
   Text: ({ children }: { children: ReactNode }) => <div>{children}</div>
 }));
 
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({
+    launch: () => undefined,
+    txCallbacks: {
+      onMutate: () => undefined,
+      onStart: () => undefined,
+      onSuccess: () => undefined,
+      onError: () => undefined
+    },
+    txStatus: 'idle'
+  })
+}));
+
+vi.mock('../PendleReadyToRedeemList', () => ({
+  PendleReadyToRedeemList: () => <div data-testid="pendle-ready-to-redeem-list" />
+}));
+
 vi.mock('../PendleMarketStatsCard', () => ({
   PendleMarketStatsCard: ({ market }: { market: { marketAddress: string; underlyingSymbol: string } }) => (
     <div data-testid="pendle-market-stats-card" data-market={market.marketAddress}>

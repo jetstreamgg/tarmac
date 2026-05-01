@@ -147,7 +147,11 @@ export const PendleTransactionStatus = ({
     setTxDescription(i18n._(getPendleActionDescription(flow, isRedeemMode, market.underlyingSymbol)));
 
     // Track which step the indicator highlights: approve = step 1, convert = step 2.
-    if (txStatus === TxStatus.SUCCESS && !isApproving) {
+    // On SUCCESS the entire batch is done by definition, so step must equal
+    // totalSteps (2) — otherwise BatchTransactionStatus stays in the
+    // "approvalSuccess" branch and renders the InProgress icon + dim card
+    // instead of the SuccessCheck + bright success background.
+    if (txStatus === TxStatus.SUCCESS) {
       setStep(2);
     } else if (isApproving) {
       setStep(1);
