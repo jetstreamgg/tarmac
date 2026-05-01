@@ -71,13 +71,6 @@ const PendleWidgetWrapped = ({
   } = useContext(WidgetContext);
   const isSafeWallet = useIsSafeWallet();
 
-  // WidgetProvider initializes isLoading=true; reset on mount so the action
-  // button doesn't render a stuck spinner. The real in-flight loading state
-  // is set further down based on approve/convert hook isLoading.
-  useEffect(() => {
-    setIsLoading(false);
-  }, [setIsLoading]);
-
   const [amount, setAmount] = useState<bigint>(0n);
   const flow = (widgetState.flow as PendleFlow | null) ?? PendleFlow.BUY;
   const screen = (widgetState.screen as PendleScreen | null) ?? PendleScreen.ACTION;
@@ -150,6 +143,7 @@ const PendleWidgetWrapped = ({
     outputToken,
     amountIn: amount > 0n ? amount : undefined,
     slippage,
+    ytTokenForExit: side === PendleConvertSide.WITHDRAW && matured ? market.ytToken : undefined,
     enabled: isConnectedAndEnabled && amount > 0n
   });
 

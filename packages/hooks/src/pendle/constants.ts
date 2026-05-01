@@ -381,6 +381,17 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingSymbol: 'USDG',
     underlyingDecimals: 6,
     expiry: 1779926400 // Thu May 28 2026 00:00:00 UTC
+  },
+  {
+    name: 'PT-USDe',
+    marketAddress: '0xa3336f04f7afbf26714331e395054f33b77c9b8d',
+    ptToken: '0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0',
+    ytToken: '0x4265ebF36F738D4D623C201BecBbc0f92bE57198',
+    syToken: '0xf0bAcD9C3D94fC924DBcaaF644208C4E3f4d3bB4',
+    underlyingToken: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
+    underlyingSymbol: 'USDe',
+    underlyingDecimals: 18,
+    expiry: 1778112000
   }
 ];
 
