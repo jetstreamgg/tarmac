@@ -57,14 +57,8 @@ const PendleWidgetWrapped = ({
   const isConnectedAndEnabled = isConnected && enabled;
   const matured = isMarketMatured(market.expiry);
 
-  const {
-    setButtonText,
-    setIsDisabled,
-    setIsLoading,
-    setTxStatus,
-    setShowStepIndicator,
-    setExternalLink
-  } = useContext(WidgetContext);
+  const { setButtonText, setIsDisabled, setIsLoading, setTxStatus, setShowStepIndicator, setExternalLink } =
+    useContext(WidgetContext);
   const isSafeWallet = useIsSafeWallet();
   // Snapshot the active "phase" for the status screen so we can label the
   // approve vs convert step correctly even after the hook's isLoading flips.
@@ -310,7 +304,7 @@ const PendleWidgetWrapped = ({
   useEffect(() => {
     let label: string;
     if (!isConnectedAndEnabled) {
-      label = t`Connect wallet`;
+      label = t`Connect Wallet`;
     } else if (screen === PendleScreen.ACTION) {
       label =
         flow === PendleFlow.BUY
@@ -329,44 +323,14 @@ const PendleWidgetWrapped = ({
       label = t`Done`;
     }
     setButtonText(label);
-  }, [
-    isConnectedAndEnabled,
-    screen,
-    flow,
-    isRedeemMode,
-    inputSymbolForCopy,
-    setButtonText
-  ]);
+  }, [isConnectedAndEnabled, screen, flow, isRedeemMode, inputSymbolForCopy, setButtonText]);
+
+  const convertDisabled =
+    amount === 0n || insufficientFunds || !!prepareErrorMessage || (!batchConvert.prepared && !txInFlight);
 
   useEffect(() => {
-    let disabled = false;
-    if (screen === PendleScreen.ACTION) {
-      // Block advancing when:
-      //  - wallet not connected / widget disabled
-      //  - empty amount or insufficient funds
-      //  - we already know simulation will fail (prepareErrorMessage set)
-      //  - we're still resolving quote/simulation (isCheckingPrepare)
-      disabled =
-        !isConnectedAndEnabled ||
-        amount === 0n ||
-        insufficientFunds ||
-        !!prepareErrorMessage ||
-        isCheckingPrepare;
-    } else if (screen === PendleScreen.REVIEW) {
-      disabled = txInFlight ? false : !batchConvert.prepared;
-    }
-    setIsDisabled(disabled);
-  }, [
-    screen,
-    isConnectedAndEnabled,
-    amount,
-    insufficientFunds,
-    prepareErrorMessage,
-    isCheckingPrepare,
-    batchConvert.prepared,
-    txInFlight,
-    setIsDisabled
-  ]);
+    setIsDisabled(isConnectedAndEnabled && convertDisabled);
+  }, [isConnectedAndEnabled, convertDisabled, setIsDisabled]);
 
   const headerSlippage = (
     <PendleConfigMenu
@@ -417,18 +381,16 @@ const PendleWidgetWrapped = ({
         </HStack>
       }
       footer={
-        <div className="w-full px-3 pb-3 md:px-6 md:pb-4">
-          <WidgetButtons
-            onClickAction={onClickAction}
-            onClickBack={screen === PendleScreen.ACTION ? undefined : onClickBack}
-            showSecondaryButton={screen !== PendleScreen.ACTION}
-            enabled={enabled}
-            onExternalLinkClicked={onExternalLinkClicked}
-          />
-        </div>
+        <WidgetButtons
+          onClickAction={onClickAction}
+          onClickBack={screen === PendleScreen.ACTION ? undefined : onClickBack}
+          showSecondaryButton={screen !== PendleScreen.ACTION}
+          enabled={enabled}
+          onExternalLinkClicked={onExternalLinkClicked}
+        />
       }
     >
-      <div className="mt-[-16px] space-y-0">
+      <div className="-mt-4 space-y-0">
         <PendlePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
       </div>
       {screen === PendleScreen.ACTION && (
