@@ -137,6 +137,7 @@ export function useQuotePendleConvert({
         effectiveApy: route.data.effectiveApy ?? 0,
         impliedApy: route.data.impliedApy?.after ?? route.data.impliedApy?.before ?? 0,
         priceImpact: route.data.priceImpact,
+        feeUsd: route.data.fee?.usd,
         fetchedAt: Date.now(),
         apiContractParams: route.contractParamInfo.contractCallParams,
         apiContractParamsName: route.contractParamInfo.contractCallParamsName

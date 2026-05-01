@@ -61,7 +61,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
         {isLoading ? (
           <Skeleton className="h-4 w-16" />
         ) : marketData?.impliedApy !== undefined ? (
-          <Text className="text-success">{formatDecimalPercentage(marketData.impliedApy)}</Text>
+          <Text className="text-bullish">{formatDecimalPercentage(marketData.impliedApy)}</Text>
         ) : (
           <Text>—</Text>
         )}

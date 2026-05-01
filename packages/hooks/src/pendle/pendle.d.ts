@@ -65,6 +65,8 @@ export type PendleConvertQuote = {
   impliedApy: number;
   /** Price impact (decimal, signed) */
   priceImpact: number;
+  /** Routing fee in USD as reported by the API (undefined if API omits it) */
+  feeUsd?: number;
   /** ms epoch when this quote was fetched (for staleness check) */
   fetchedAt: number;
   /**
@@ -92,6 +94,10 @@ export type PendleMarketStats = {
   formattedTvl?: string;
   /** Underlying APY of the SY (decimal) */
   underlyingApy?: number;
+  /** Market expiry as a UNIX timestamp in seconds (matches the on-chain expiry()) */
+  expirySec?: number;
+  /** Market deployment timestamp in seconds (start of the maturity window) */
+  startTimestampSec?: number;
 };
 
 /**

@@ -198,11 +198,24 @@ export const SupplyWithdraw = ({
                   {
                     label: t`Slippage tolerance`,
                     value: `${(slippage * 100).toFixed(2)}%`
+                  },
+                  {
+                    label: t`Price impact`,
+                    value:
+                      quote?.priceImpact !== undefined
+                        ? `${(quote.priceImpact * 100).toFixed(3)}%`
+                        : '—'
                   }
                 ]),
             {
               label: t`Routing fee`,
-              value: isRedeemMode ? <Trans>Free</Trans> : <Trans>Included in quote</Trans>
+              value: isRedeemMode ? (
+                <Trans>Free</Trans>
+              ) : quote?.feeUsd !== undefined ? (
+                `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
+              ) : (
+                <Trans>Included in quote</Trans>
+              )
             }
           ]}
         />
