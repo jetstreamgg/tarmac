@@ -15,7 +15,7 @@ import {
   useTokenBalance,
   type PendleMarketConfig
 } from '@jetstreamgg/sky-hooks';
-import { isTestnetId, getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { isTestnetId, getTransactionLink, useDebounce, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@widgets/components/ui/button';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
@@ -81,6 +81,7 @@ const PendleWidgetWrapped = ({
   const linguiCtx = useLingui();
 
   const [amount, setAmount] = useState<bigint>(0n);
+  const debouncedAmount = useDebounce(amount);
   const flow = (widgetState.flow as PendleFlow | null) ?? PendleFlow.BUY;
   const screen = (widgetState.screen as PendleScreen | null) ?? PendleScreen.ACTION;
   const isRedeemMode = matured && flow === PendleFlow.WITHDRAW;
@@ -137,7 +138,7 @@ const PendleWidgetWrapped = ({
     owner: address,
     spender: PENDLE_ROUTER_V4_ADDRESS[balanceChainId]
   });
-  const needsAllowance = !!(allowance === undefined || allowance < amount);
+  const needsAllowance = !!(allowance === undefined || allowance < debouncedAmount);
   const { data: batchSupported } = useIsBatchSupported();
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
@@ -146,10 +147,10 @@ const PendleWidgetWrapped = ({
     marketAddress: market.marketAddress,
     inputToken,
     outputToken,
-    amountIn: amount > 0n ? amount : undefined,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
     ytTokenForExit: side === PendleConvertSide.WITHDRAW && matured ? market.ytToken : undefined,
-    enabled: isConnectedAndEnabled && amount > 0n
+    enabled: isConnectedAndEnabled && debouncedAmount > 0n
   });
 
   // TODO(APP-175): drop this console.log before shipping. Useful during scaffold
@@ -174,8 +175,8 @@ const PendleWidgetWrapped = ({
   const insufficientFunds = useMemo(() => {
     if (!isConnectedAndEnabled || amount === 0n) return false;
     const balance = flow === PendleFlow.BUY ? underlyingBalance?.value : ptBalance?.value;
-    return balance !== undefined && amount > balance;
-  }, [isConnectedAndEnabled, amount, flow, underlyingBalance, ptBalance]);
+    return balance !== undefined && debouncedAmount > balance;
+  }, [isConnectedAndEnabled, amount, debouncedAmount, flow, underlyingBalance, ptBalance]);
 
   // -------- WRITE WIRING --------
   // useBatchPendleConvert internally handles allowance check + ERC20 approval +
@@ -186,10 +187,10 @@ const PendleWidgetWrapped = ({
     marketAddress: market.marketAddress,
     inputToken,
     outputToken,
-    amountIn: amount > 0n ? amount : undefined,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
     quote,
-    enabled: isConnectedAndEnabled && amount > 0n,
+    enabled: isConnectedAndEnabled && debouncedAmount > 0n,
     shouldUseBatch,
     onMutate: () => {
       setTxStatus(TxStatus.INITIALIZED);
@@ -417,7 +418,7 @@ const PendleWidgetWrapped = ({
             <PendleTransactionStatus
               market={market}
               flow={flow}
-              amount={amount}
+              amount={debouncedAmount}
               quote={quote}
               isRedeemMode={isRedeemMode}
               needsAllowance={needsAllowance}
@@ -429,7 +430,7 @@ const PendleWidgetWrapped = ({
             <PendleTransactionReview
               market={market}
               flow={flow}
-              amount={amount}
+              amount={debouncedAmount}
               quote={quote}
               isRedeemMode={isRedeemMode}
               batchEnabled={batchEnabled}
