@@ -317,11 +317,36 @@ export const PENDLE_ROUTER_V4_ABI = [
     // multiple matured positions atomically with a single signature. Each
     // inner blob is independently selector-allowlist verified before being
     // wrapped here (see buildMulticallVerifiedArgs).
+    //
+    // Signature must match Pendle's ActionMiscV3.multicall exactly:
+    //   function multicall(Call3[] calls) returns (Result[])
+    //   struct Call3  { bool allowFailure; bytes callData; }
+    //   struct Result { bool success; bytes returnData; }
+    // Mismatching the signature (e.g. multicall(bytes[])) hits a different
+    // 4-byte selector and the call reverts at simulation time.
     type: 'function',
     name: 'multicall',
     stateMutability: 'payable',
-    inputs: [{ name: 'data', type: 'bytes[]' }],
-    outputs: [{ name: 'results', type: 'bytes[]' }]
+    inputs: [
+      {
+        name: 'calls',
+        type: 'tuple[]',
+        components: [
+          { name: 'allowFailure', type: 'bool' },
+          { name: 'callData', type: 'bytes' }
+        ]
+      }
+    ],
+    outputs: [
+      {
+        name: 'res',
+        type: 'tuple[]',
+        components: [
+          { name: 'success', type: 'bool' },
+          { name: 'returnData', type: 'bytes' }
+        ]
+      }
+    ]
   }
 ] as const;
 

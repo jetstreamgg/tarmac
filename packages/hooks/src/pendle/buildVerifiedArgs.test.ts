@@ -471,10 +471,18 @@ describe('buildMulticallVerifiedArgs', () => {
     expect(wrapped.innerCalls).toEqual([inner1, inner2]);
   });
 
-  it('encodes each inner call to bytes that decode back to the original args', () => {
+  it('wraps each inner call as a Call3 struct with allowFailure=false', () => {
     const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
-    for (const [i, encoded] of wrapped.args[0].entries()) {
-      const decoded = decodeFunctionData({ abi: PENDLE_ROUTER_V4_ABI, data: encoded });
+    for (const call of wrapped.args[0]) {
+      expect(call.allowFailure).toBe(false);
+      expect(call.callData).toMatch(/^0x[0-9a-fA-F]+$/);
+    }
+  });
+
+  it('encodes each inner callData to bytes that decode back to the original args', () => {
+    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
+    for (const [i, call] of wrapped.args[0].entries()) {
+      const decoded = decodeFunctionData({ abi: PENDLE_ROUTER_V4_ABI, data: call.callData });
       expect(decoded.functionName).toBe(wrapped.innerCalls[i].functionName);
     }
   });

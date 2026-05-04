@@ -325,10 +325,16 @@ export function buildMaturedRedeemVerifiedArgs(ctx: MaturedRedeemContext): Verif
 // Multicall — wraps N already-verified inner calls into Router.multicall(bytes[])
 // ---------------------------------------------------------------------------
 
+/** One element of the Pendle Router multicall input — `Call3` in Solidity. */
+export type VerifiedMulticallCall = {
+  allowFailure: boolean;
+  callData: `0x${string}`;
+};
+
 export type VerifiedMulticall = {
   functionName: 'multicall';
-  /** [bytes[]] — single arg, the encoded inner-call payload */
-  args: readonly [readonly `0x${string}`[]];
+  /** [Call3[]] — single arg, the array of (allowFailure, callData) tuples */
+  args: readonly [readonly VerifiedMulticallCall[]];
   /** The inner verified calls in order, exposed for caller introspection */
   innerCalls: readonly VerifiedCall[];
 };
@@ -350,19 +356,22 @@ export function buildMulticallVerifiedArgs(inner: readonly VerifiedCall[]): Veri
   if (inner.length === 0) {
     throw new Error('Pendle: refusing to build multicall — no inner calls provided');
   }
-  const encoded = inner.map(call => {
+  const calls: VerifiedMulticallCall[] = inner.map(call => {
     // viem's encodeFunctionData uses the ABI to find the matching function +
     // encode its args. The verified call's `functionName` is from a closed
     // discriminated union, so we know it matches an ABI entry.
-    return encodeFunctionData({
+    const callData = encodeFunctionData({
       abi: PENDLE_ROUTER_V4_ABI,
       functionName: call.functionName,
       args: call.args as never
     });
+    // allowFailure is hard-coded to false: a partial multicall would
+    // approve PT but leave funds stranded mid-batch. We want all-or-nothing.
+    return { allowFailure: false, callData };
   });
   return {
     functionName: 'multicall',
-    args: [encoded] as const,
+    args: [calls] as const,
     innerCalls: inner
   };
 }
