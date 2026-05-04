@@ -381,6 +381,28 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingSymbol: 'USDG',
     underlyingDecimals: 6,
     expiry: 1779926400 // Thu May 28 2026 00:00:00 UTC
+  },
+  {
+    name: 'PT-USDe',
+    marketAddress: '0xa3336f04f7afbf26714331e395054f33b77c9b8d',
+    ptToken: '0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0',
+    ytToken: '0x4265ebF36F738D4D623C201BecBbc0f92bE57198',
+    syToken: '0xf0bAcD9C3D94fC924DBcaaF644208C4E3f4d3bB4',
+    underlyingToken: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
+    underlyingSymbol: 'USDe',
+    underlyingDecimals: 18,
+    expiry: 1778112000
+  },
+  {
+    name: 'PT-sENA',
+    marketAddress: '0xeab7b7c8353ba1cb4b29cf7ae9c166efdc57835f',
+    ptToken: '0x4552C668eb8dEDeAc53e00CfD05d873f11a80204',
+    ytToken: '0xF8a735034Ce8eBec8f6A742658460a78Ebfae725',
+    syToken: '0xA36ECCA8B7624D224F01CD6649C8afAd3Da12C3D',
+    underlyingToken: '0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9',
+    underlyingSymbol: 'sENA',
+    underlyingDecimals: 18,
+    expiry: 1777507200
   }
 ];
 

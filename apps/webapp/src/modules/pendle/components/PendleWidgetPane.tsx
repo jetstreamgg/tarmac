@@ -21,6 +21,7 @@ import { PendleIntent } from '@/lib/enums';
 import { PendleIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SharedProps } from '@/modules/app/types/Widgets';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { PendleMarketStatsCard } from './PendleMarketStatsCard';
 import { PendleReadyToRedeemList } from './PendleReadyToRedeemList';
 
@@ -35,6 +36,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
   const { address: userAddress } = useConnection();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
 
   const selectedMarketAddress = searchParams.get(QueryParams.Market);
   const selectedMarket = useMemo(() => findMarket(selectedMarketAddress), [selectedMarketAddress]);
@@ -84,6 +86,8 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             market={selectedMarket}
             onExternalLinkClicked={sharedProps.onExternalLinkClicked}
             onBackToPendle={handleBack}
+            batchEnabled={batchEnabled}
+            setBatchEnabled={setBatchEnabled}
           />
         ) : (
           <WidgetContainer
