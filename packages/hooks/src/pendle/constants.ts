@@ -12,6 +12,16 @@ export enum PendleConvertSide {
   WITHDRAW = 'withdraw'
 }
 
+/**
+ * Subset of `action` values from the /transactions endpoint we surface in
+ * trade history. The endpoint also returns BUY_YT, SELL_YT, LONG_YIELD,
+ * SHORT_YIELD, ADD_LIQUIDITY, REMOVE_LIQUIDITY — those are filtered out.
+ */
+export enum PendleTradeAction {
+  BUY_PT = 'BUY_PT',
+  SELL_PT = 'SELL_PT'
+}
+
 // ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------

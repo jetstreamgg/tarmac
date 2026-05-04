@@ -1,4 +1,5 @@
 import { ReadHook } from '../hooks';
+import { PendleTradeAction } from './constants';
 
 /**
  * Configuration for a Pendle market.
@@ -208,4 +209,38 @@ export type PendleMarketsAllResponseRaw = {
   limit: number;
   skip: number;
   results: PendleMarketSummaryRaw[];
+};
+
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/v5/{chainId}/transactions/{marketAddress})
+// ---------------------------------------------------------------------------
+
+/**
+ * One entry in the transactions `results` array. `market` comes back as a
+ * "<chainId>-<address>" string. `value` and `impliedApy` are decimal numbers.
+ */
+export type PendleTransactionRaw = {
+  id: string;
+  market: string;
+  timestamp: string;
+  chainId: number;
+  txHash: `0x${string}`;
+  value: number;
+  type: 'TRADES';
+  action: PendleTradeAction;
+  txOrigin: `0x${string}`;
+  impliedApy: number;
+  notional?: Record<string, number>;
+};
+
+export type PendleMarketTransactionsResponseRaw = {
+  total: number;
+  resumeToken?: string;
+  limit: number;
+  skip: number;
+  results: PendleTransactionRaw[];
+};
+
+export type PendleMarketHistoryHook = ReadHook & {
+  data?: PendleTransactionRaw[];
 };

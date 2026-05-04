@@ -144,13 +144,15 @@ export {
   isMarketMatured,
   usePendleMarketsApiData,
   usePendleUserPtBalances,
+  usePendleMarketHistory,
   useQuotePendleConvert,
   useBatchPendleConvert,
   useBatchPendleRedeemMulticall,
   buildVerifiedArgs,
   buildMaturedRedeemVerifiedArgs,
   buildMulticallVerifiedArgs,
-  PendleConvertSide
+  PendleConvertSide,
+  PendleTradeAction
 } from './pendle';
 export type {
   PendleMarketConfig,
@@ -161,6 +163,9 @@ export type {
   PendleMarketsStatsHook,
   PendleUserPtBalances,
   PendleUserPtBalancesHook,
+  PendleTransactionRaw,
+  PendleMarketTransactionsResponseRaw,
+  PendleMarketHistoryHook,
   KnownCallValues,
   MaturedRedeemContext,
   RedeemPosition,

@@ -10,15 +10,21 @@ export {
   PENDLE_EMPTY_LIMIT,
   PENDLE_MARKETS,
   PendleConvertSide,
+  PendleTradeAction,
   getPendleMarketByAddress
 } from './constants';
 
 export { isMarketMatured, secondsToExpiry } from './helpers';
 
-export { fetchPendleConvert, fetchPendleMarketsByIds } from './pendleApiClient';
+export {
+  fetchPendleConvert,
+  fetchPendleMarketsByIds,
+  fetchPendleMarketTransactions
+} from './pendleApiClient';
 
 export { usePendleMarketsApiData } from './usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './usePendleUserPtBalances';
+export { usePendleMarketHistory } from './usePendleMarketHistory';
 export { useQuotePendleConvert } from './useQuotePendleConvert';
 export { useBatchPendleConvert } from './useBatchPendleConvert';
 export { useBatchPendleRedeemMulticall, type RedeemPosition } from './useBatchPendleRedeemMulticall';
@@ -50,5 +56,8 @@ export type {
   PendleConvertResponseRaw,
   PendleMarketSummaryRaw,
   PendleMarketDetailsRaw,
-  PendleMarketsAllResponseRaw
+  PendleMarketsAllResponseRaw,
+  PendleTransactionRaw,
+  PendleMarketTransactionsResponseRaw,
+  PendleMarketHistoryHook
 } from './pendle';

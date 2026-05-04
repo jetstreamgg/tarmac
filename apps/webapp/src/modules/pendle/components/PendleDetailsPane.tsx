@@ -20,7 +20,7 @@ import { PendleAbout } from './PendleAbout';
 import { PendleBalanceDetails } from './PendleBalanceDetails';
 import { PendleMarketInfoCard } from './PendleMarketInfoCard';
 import { TimeToMaturityCard } from './TimeToMaturityCard';
-import { PendleHistoryPlaceholder } from './PendleHistoryPlaceholder';
+import { PendleMarketHistory } from './PendleMarketHistory';
 import { PendleReadyToRedeemTable } from './PendleReadyToRedeemTable';
 
 const findMarket = (address: string | null): PendleMarketConfig | undefined => {
@@ -82,7 +82,7 @@ export const PendleDetailsPane = () => {
         </DetailSection>
         <DetailSection title={t`Your transaction history`}>
           <DetailSectionRow>
-            <PendleHistoryPlaceholder />
+            <PendleMarketHistory market={selectedMarket} />
           </DetailSectionRow>
         </DetailSection>
       </DetailSectionWrapper>
