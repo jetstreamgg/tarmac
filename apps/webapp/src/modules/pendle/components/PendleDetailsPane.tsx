@@ -38,8 +38,8 @@ export const PendleDetailsPane = () => {
   const selectedMarket = findMarket(searchParams.get(QueryParams.Market));
   const { data: ptBalances } = usePendleUserPtBalances();
 
-  // Whether the connected user holds matured PT in any market — drives the
-  // "Ready to redeem" section visibility on both the detail and overview views.
+  // Whether the user holds matured PT in any market — gates the overview
+  // "Ready to redeem" section.
   const hasMaturedHoldings = !!(
     userAddress &&
     ptBalances &&
@@ -49,6 +49,13 @@ export const PendleDetailsPane = () => {
   );
 
   if (selectedMarket) {
+    // Per-market view: only show the redeem table when THIS market is matured
+    // and held by the user. Filter the table to just that one row so the user
+    // doesn't see unrelated markets while focused on this one.
+    const selectedIsMatured = isMarketMatured(selectedMarket.expiry);
+    const selectedBalance = ptBalances?.[selectedMarket.marketAddress] ?? 0n;
+    const showSelectedRedeem = !!userAddress && selectedIsMatured && selectedBalance > 0n;
+
     return (
       <DetailSectionWrapper>
         <DetailSection title={t`Your balances`}>
@@ -56,10 +63,10 @@ export const PendleDetailsPane = () => {
             <PendleBalanceDetails market={selectedMarket} />
           </DetailSectionRow>
         </DetailSection>
-        {hasMaturedHoldings && (
+        {showSelectedRedeem && (
           <DetailSection title={t`Ready to redeem`}>
             <DetailSectionRow>
-              <PendleReadyToRedeemTable />
+              <PendleReadyToRedeemTable marketFilter={selectedMarket} />
             </DetailSectionRow>
           </DetailSection>
         )}
@@ -114,6 +121,13 @@ export const PendleDetailsPane = () => {
 
   return (
     <DetailSectionWrapper>
+      {hasMaturedHoldings && (
+        <DetailSection title={t`Ready to redeem`}>
+          <DetailSectionRow>
+            <PendleReadyToRedeemTable />
+          </DetailSectionRow>
+        </DetailSection>
+      )}
       <DetailSection title={t`Available markets`}>
         <DetailSectionRow>
           {visibleMarkets.length === 0 ? (
@@ -121,7 +135,7 @@ export const PendleDetailsPane = () => {
               <Trans>No active Pendle markets at the moment. Check back soon.</Trans>
             </Text>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {visibleMarkets.map(market => (
                 <PendleMarketStatsCard key={market.marketAddress} market={market} />
               ))}

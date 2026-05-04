@@ -9,6 +9,7 @@ import {
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
+  useBatchPendleRedeemMulticall,
   useIsBatchSupported,
   useQuotePendleConvert,
   useTokenAllowance,
@@ -32,6 +33,7 @@ import { mainnet } from 'viem/chains';
 import { PendleAction, PendleFlow, PendleScreen } from './lib/constants';
 import { usePendleSlippage } from './hooks/usePendleSlippage';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
+import { MaturedRedeem } from './components/MaturedRedeem';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
 import { PendlePoweredBy } from './components/PendlePoweredBy';
 import { PendleStatsCard } from './components/PendleStatsCard';
@@ -82,6 +84,11 @@ const PendleWidgetWrapped = ({
 
   const [amount, setAmount] = useState<bigint>(0n);
   const debouncedAmount = useDebounce(amount);
+
+  // Matured market: amount is fixed to the user's full PT balance — there's no
+  // input in the UI. Re-sync whenever the balance refetches (and reset to 0 on
+  // success since the post-redeem balance becomes 0).
+  // Non-matured: caller controls amount via the input.
   const flow = (widgetState.flow as PendleFlow | null) ?? PendleFlow.BUY;
   const screen = (widgetState.screen as PendleScreen | null) ?? PendleScreen.ACTION;
   const isRedeemMode = matured && flow === PendleFlow.WITHDRAW;
@@ -89,14 +96,14 @@ const PendleWidgetWrapped = ({
 
   // Initialize widgetState (matches the SavingsWidget pattern). Re-runs when
   // the connection state changes — disconnecting mid-flow rolls the user back
-  // to the ACTION screen.
+  // to the ACTION screen. Matured markets only support WITHDRAW (redeem).
   useEffect(() => {
     setWidgetState({
-      flow: PendleFlow.BUY,
-      action: isConnectedAndEnabled ? PendleAction.BUY : null,
+      flow: matured ? PendleFlow.WITHDRAW : PendleFlow.BUY,
+      action: isConnectedAndEnabled ? (matured ? PendleAction.WITHDRAW : PendleAction.BUY) : null,
       screen: PendleScreen.ACTION
     });
-  }, [isConnectedAndEnabled, setWidgetState]);
+  }, [isConnectedAndEnabled, matured, setWidgetState]);
 
   const setScreen = (next: PendleScreen) => {
     setWidgetState((prev: WidgetState) => ({ ...prev, screen: next }));
@@ -126,6 +133,15 @@ const PendleWidgetWrapped = ({
     token: market.ptToken
   });
 
+  // Matured: pin the redeem amount to the user's full PT balance. We only do
+  // this on ACTION/IDLE so a post-success reset (which clears amount → 0)
+  // isn't immediately overwritten before the user dismisses the success card.
+  useEffect(() => {
+    if (matured && txStatus === TxStatus.IDLE && ptBalance?.value !== undefined) {
+      setAmount(ptBalance.value);
+    }
+  }, [matured, txStatus, ptBalance?.value]);
+
   const inputToken = flow === PendleFlow.BUY ? market.underlyingToken : market.ptToken;
   const outputToken = flow === PendleFlow.BUY ? market.ptToken : market.underlyingToken;
   const side = flow === PendleFlow.BUY ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
@@ -142,6 +158,10 @@ const PendleWidgetWrapped = ({
   const { data: batchSupported } = useIsBatchSupported();
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
+  // Matured markets bypass the API quote entirely — redeem is deterministic
+  // (PT → SY 1:1, then SY → underlying via SY exchange rate). The convert API
+  // is unreliable post-maturity (most market info is dropped) and would route
+  // a withdraw through the dead AMM with heavy price impact.
   const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
@@ -149,8 +169,7 @@ const PendleWidgetWrapped = ({
     outputToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    ytTokenForExit: side === PendleConvertSide.WITHDRAW && matured ? market.ytToken : undefined,
-    enabled: isConnectedAndEnabled && debouncedAmount > 0n
+    enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n
   });
 
   // TODO(APP-175): drop this console.log before shipping. Useful during scaffold
@@ -179,30 +198,23 @@ const PendleWidgetWrapped = ({
   }, [isConnectedAndEnabled, amount, debouncedAmount, flow, underlyingBalance, ptBalance]);
 
   // -------- WRITE WIRING --------
-  // useBatchPendleConvert internally handles allowance check + ERC20 approval +
-  // Pendle Router convert call. Returns currentCallIndex so we can label which
-  // step is active for the status screen.
-  const batchConvert = useBatchPendleConvert({
-    side,
-    marketAddress: market.marketAddress,
-    inputToken,
-    outputToken,
-    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
-    slippage,
-    quote,
-    enabled: isConnectedAndEnabled && debouncedAmount > 0n,
-    shouldUseBatch,
+  // Two hooks, but only one is live per render (the other is gated by `enabled`):
+  //   - matured  → useBatchPendleRedeemMulticall (deterministic redeem, no API quote)
+  //   - !matured → useBatchPendleConvert (Pendle /convert API → router swap)
+  // Both implement the same BatchWriteHook interface so the rest of the widget
+  // doesn't care which one's driving.
+  const txCallbacks = {
     onMutate: () => {
       setTxStatus(TxStatus.INITIALIZED);
       setExternalLink(undefined);
     },
-    onStart: hash => {
+    onStart: (hash: string | undefined) => {
       setTxStatus(TxStatus.LOADING);
       if (hash) {
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
     },
-    onSuccess: hash => {
+    onSuccess: (hash: string | undefined) => {
       refetchUnderlyingBalance();
       refetchPtBalance();
       setTxStatus(TxStatus.SUCCESS);
@@ -210,7 +222,12 @@ const PendleWidgetWrapped = ({
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
       onNotification?.({
-        title: flow === PendleFlow.BUY ? t`Supply complete` : t`Withdrawal complete`,
+        title:
+          flow === PendleFlow.BUY
+            ? t`Supply complete`
+            : matured
+              ? t`Redemption complete`
+              : t`Withdrawal complete`,
         description:
           flow === PendleFlow.BUY
             ? t`PT-${market.underlyingSymbol} delivered to your wallet.`
@@ -218,7 +235,7 @@ const PendleWidgetWrapped = ({
         status: TxStatus.SUCCESS
       });
     },
-    onError: (err: Error, hash) => {
+    onError: (err: Error, hash: string | undefined) => {
       setTxStatus(TxStatus.ERROR);
       if (hash) {
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
@@ -229,13 +246,36 @@ const PendleWidgetWrapped = ({
         status: TxStatus.ERROR
       });
     }
+  };
+
+  const batchConvert = useBatchPendleConvert({
+    side,
+    marketAddress: market.marketAddress,
+    inputToken,
+    outputToken,
+    amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
+    slippage,
+    quote,
+    enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n,
+    shouldUseBatch,
+    ...txCallbacks
   });
+
+  const batchRedeem = useBatchPendleRedeemMulticall({
+    positions:
+      matured && debouncedAmount > 0n ? [{ market, ptBalance: debouncedAmount }] : [],
+    enabled: matured && isConnectedAndEnabled && debouncedAmount > 0n,
+    shouldUseBatch,
+    ...txCallbacks
+  });
+
+  const writeHook = matured ? batchRedeem : batchConvert;
 
   // Map raw viem/Pendle revert messages to user-friendly copy. Returns
   // undefined when there's no error to show. Keeping this inline (not a
   // separate util) since it's tightly coupled to the messages we surface.
   const prepareErrorMessage = useMemo<string | undefined>(() => {
-    const raw = batchConvert.error?.message;
+    const raw = writeHook.error?.message;
     if (!raw) return undefined;
     if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
       return t`Current market price exceeds your slippage tolerance. Increase slippage via the gear icon, or wait for the quote to refresh.`;
@@ -244,7 +284,7 @@ const PendleWidgetWrapped = ({
       return t`Quote expired. Refreshing — please wait a moment.`;
     }
     return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
-  }, [batchConvert.error]);
+  }, [writeHook.error]);
 
   // Surface prepare/verify errors as a toast (in addition to inline display).
   useEffect(() => {
@@ -269,10 +309,27 @@ const PendleWidgetWrapped = ({
     setScreen(PendleScreen.ACTION);
     setAmount(0n);
     setTxStatus(TxStatus.IDLE);
-    batchConvert.reset();
+    writeHook.reset();
   };
 
-  const errorOnClick = () => batchConvert.execute();
+  const errorOnClick = () => writeHook.execute();
+
+  // Matured-redeem click: log the call shape before kicking off the write so
+  // it's easy to inspect in dev. TODO(APP-175): drop this log before shipping.
+  const onMaturedRedeemClick = () => {
+    const routerAddress = PENDLE_ROUTER_V4_ADDRESS[balanceChainId];
+    console.log('[Pendle redeem]', {
+      function: 'PendleRouter.multicall([exitPostExpToToken(...)])',
+      router: routerAddress,
+      market: market.name,
+      marketAddress: market.marketAddress,
+      ptToken: market.ptToken,
+      underlyingToken: market.underlyingToken,
+      ptAmount: debouncedAmount.toString(),
+      receiver: address
+    });
+    writeHook.execute();
+  };
 
   const onClickAction = !isConnectedAndEnabled
     ? onConnect
@@ -280,14 +337,17 @@ const PendleWidgetWrapped = ({
       ? nextOnClick
       : txStatus === TxStatus.ERROR
         ? errorOnClick
-        : screen === PendleScreen.ACTION
-          ? reviewOnClick
-          : batchConvert.execute;
+        : matured
+          ? // Matured redeem skips the Review screen — execute immediately.
+            onMaturedRedeemClick
+          : screen === PendleScreen.ACTION
+            ? reviewOnClick
+            : writeHook.execute;
 
   const showSecondaryButton = txStatus === TxStatus.ERROR || screen === PendleScreen.REVIEW;
 
   const onClickBack = () => {
-    batchConvert.reset();
+    writeHook.reset();
     setTxStatus(TxStatus.IDLE);
     setScreen(PendleScreen.ACTION);
   };
@@ -308,6 +368,10 @@ const PendleWidgetWrapped = ({
       label = t`Back to ${market.name}`;
     } else if (txStatus === TxStatus.ERROR) {
       label = t`Retry`;
+    } else if (matured) {
+      // Matured redeem: single-click flow, no separate Review step. Disabled
+      // state (e.g. zero PT balance) is set elsewhere via setIsDisabled.
+      label = t`Redeem 1:1`;
     } else if (screen === PendleScreen.ACTION && amount === 0n) {
       label = t`Enter amount`;
     } else if (screen === PendleScreen.ACTION) {
@@ -330,6 +394,7 @@ const PendleWidgetWrapped = ({
     screen,
     flow,
     amount,
+    matured,
     isRedeemMode,
     market.name,
     shouldUseBatch,
@@ -342,7 +407,7 @@ const PendleWidgetWrapped = ({
     amount === 0n ||
     insufficientFunds ||
     !!prepareErrorMessage ||
-    (!batchConvert.prepared && !batchConvert.isLoading);
+    (!writeHook.prepared && !writeHook.isLoading);
 
   useEffect(() => {
     setIsDisabled(isConnectedAndEnabled && convertDisabled);
@@ -384,10 +449,17 @@ const PendleWidgetWrapped = ({
       }
       subHeader={
         <Text className="text-textSecondary" variant="small">
-          <Trans>
-            Lock in fixed yield by buying PT-{market.underlyingSymbol}. Each PT redeems 1:1 for{' '}
-            {market.underlyingSymbol} at maturity.
-          </Trans>
+          {matured ? (
+            <Trans>
+              This market has matured. Redeem your PT-{market.underlyingSymbol} 1:1 for{' '}
+              {market.underlyingSymbol}.
+            </Trans>
+          ) : (
+            <Trans>
+              Lock in fixed yield by buying PT-{market.underlyingSymbol}. Each PT redeems 1:1 for{' '}
+              {market.underlyingSymbol} at maturity.
+            </Trans>
+          )}
         </Text>
       }
       rightHeader={
@@ -421,6 +493,7 @@ const PendleWidgetWrapped = ({
               amount={debouncedAmount}
               quote={quote}
               isRedeemMode={isRedeemMode}
+              targetAmount={matured ? debouncedAmount : undefined}
               needsAllowance={needsAllowance}
               onExternalLinkClicked={onExternalLinkClicked}
             />
@@ -433,9 +506,18 @@ const PendleWidgetWrapped = ({
               amount={debouncedAmount}
               quote={quote}
               isRedeemMode={isRedeemMode}
+              targetAmount={matured ? debouncedAmount : undefined}
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
               legalBatchTxUrl={legalBatchTxUrl}
+            />
+          </CardAnimationWrapper>
+        ) : matured ? (
+          <CardAnimationWrapper key="pendle-matured-redeem" className="h-full">
+            <MaturedRedeem
+              market={market}
+              ptBalance={ptBalance?.value}
+              prepareErrorMessage={prepareErrorMessage}
             />
           </CardAnimationWrapper>
         ) : (

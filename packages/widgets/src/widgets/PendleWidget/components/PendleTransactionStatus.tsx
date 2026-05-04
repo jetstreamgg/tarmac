@@ -25,6 +25,12 @@ type PendleTransactionStatusProps = {
   amount: bigint;
   quote?: PendleConvertQuote;
   isRedeemMode: boolean;
+  /**
+   * Override for the displayed target-amount tile. Used by the matured-redeem
+   * flow where there is no API quote — parent passes `amount` (1:1 PT →
+   * underlying for SY-1:1 markets). When omitted, falls back to quote.amountOut.
+   */
+  targetAmount?: bigint;
   /** Whether the flow needs an approval at all (for subtitle wording). Snapshotted on mount. */
   needsAllowance: boolean;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -52,6 +58,7 @@ export const PendleTransactionStatus = ({
   amount,
   quote,
   isRedeemMode,
+  targetAmount,
   needsAllowance,
   onExternalLinkClicked
 }: PendleTransactionStatusProps) => {
@@ -78,13 +85,15 @@ export const PendleTransactionStatus = ({
   const originToken = flow === PendleFlow.BUY ? underlyingToken : ptToken;
   const targetToken = flow === PendleFlow.BUY ? ptToken : underlyingToken;
 
+  const resolvedTargetAmount = targetAmount ?? quote?.amountOut;
+
   // Origin/target token + amount feeds the TransactionDetail tile in the card.
   useEffect(() => {
     setOriginToken(originToken);
     setOriginAmount(amount);
     setTargetToken(targetToken);
-    setTargetAmount(quote?.amountOut);
-  }, [originToken, targetToken, amount, quote?.amountOut, setOriginToken, setOriginAmount, setTargetToken, setTargetAmount]);
+    setTargetAmount(resolvedTargetAmount);
+  }, [originToken, targetToken, amount, resolvedTargetAmount, setOriginToken, setOriginAmount, setTargetToken, setTargetAmount]);
 
   // Title/subtitle/description/loading-text for each phase.
   useEffect(() => {

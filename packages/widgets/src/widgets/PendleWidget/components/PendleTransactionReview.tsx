@@ -21,6 +21,12 @@ type PendleTransactionReviewProps = {
   amount: bigint;
   quote?: PendleConvertQuote;
   isRedeemMode: boolean;
+  /**
+   * Override for the displayed target-amount tile. Used by the matured-redeem
+   * flow where there is no API quote — the parent passes `amount` (1:1 PT →
+   * underlying for SY-1:1 markets). When omitted, falls back to quote.amountOut.
+   */
+  targetAmount?: bigint;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   legalBatchTxUrl?: string;
@@ -48,6 +54,7 @@ export const PendleTransactionReview = ({
   amount,
   quote,
   isRedeemMode,
+  targetAmount,
   batchEnabled,
   setBatchEnabled,
   legalBatchTxUrl
@@ -70,7 +77,7 @@ export const PendleTransactionReview = ({
   const originToken = flow === PendleFlow.BUY ? underlyingToken : ptToken;
   const targetToken = flow === PendleFlow.BUY ? ptToken : underlyingToken;
   const originAmount = amount;
-  const targetAmount = quote?.amountOut;
+  const resolvedTargetAmount = targetAmount ?? quote?.amountOut;
 
   // Push origin/target token + amount into context so TransactionDetail
   // (the default fallback rendered by TransactionReview) can show the
@@ -79,8 +86,8 @@ export const PendleTransactionReview = ({
     setOriginToken(originToken);
     setOriginAmount(originAmount);
     setTargetToken(targetToken);
-    setTargetAmount(targetAmount);
-  }, [originToken, originAmount, targetToken, targetAmount, setOriginToken, setOriginAmount, setTargetToken, setTargetAmount]);
+    setTargetAmount(resolvedTargetAmount);
+  }, [originToken, originAmount, targetToken, resolvedTargetAmount, setOriginToken, setOriginAmount, setTargetToken, setTargetAmount]);
 
   // Push title/subtitle/stepper copy.
   useEffect(() => {

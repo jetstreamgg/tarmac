@@ -44,13 +44,6 @@ type UseQuotePendleConvertParams = {
   amountIn?: bigint;
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
   slippage: number;
-  /**
-   * Set ONLY when the market is matured. Included in the request as
-   * `inputs[1]` with amount `0`; the API uses this as a marker to route to
-   * `exitPostExpToToken` instead of `swapExactPtForToken`. Callers should
-   * pass `market.ytToken` iff `isMarketMatured(market.expiry)`.
-   */
-  ytTokenForExit?: `0x${string}`;
   enabled?: boolean;
 };
 
@@ -76,7 +69,6 @@ export function useQuotePendleConvert({
   outputToken,
   amountIn,
   slippage,
-  ytTokenForExit,
   enabled: enabledParam = true
 }: UseQuotePendleConvertParams): PendleQuoteHook {
   const { address: connectedAddress } = useConnection();
@@ -103,18 +95,12 @@ export function useQuotePendleConvert({
       // and unique without crashing the renderer.
       amountIn?.toString(),
       connectedAddress,
-      slippage,
-      ytTokenForExit
+      slippage
     ],
     queryFn: async (): Promise<PendleConvertQuote> => {
       const inputs: Array<{ token: `0x${string}`; amount: string }> = [
         { token: inputToken!, amount: amountIn!.toString() }
       ];
-      if (ytTokenForExit) {
-        // Matured-market exit: the API routes to `exitPostExpToToken` when YT
-        // is included as a second input (with amount 0).
-        inputs.push({ token: ytTokenForExit, amount: '0' });
-      }
       const response = await fetchPendleConvert(mainnet.id, {
         receiver: connectedAddress!,
         slippage,

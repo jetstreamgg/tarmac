@@ -17,25 +17,35 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
 import { usePendleRedeemAllModal } from '../hooks/usePendleRedeemAllModal';
 
+type PendleReadyToRedeemTableProps = {
+  /**
+   * When set, the table is restricted to this single market — used by the
+   * per-market detail pane so the user only sees the row relevant to the
+   * market they're viewing. Omit on the overview to show all matured holdings.
+   */
+  marketFilter?: PendleMarketConfig;
+};
+
 /**
  * Right-pane table of matured positions with per-row Redeem + Claim selected
  * footer. Mirrors the shape of Vaults' ClaimableRewardsTable. Renders null
  * when no matured PT held — the parent DetailSection wraps it.
  */
-export const PendleReadyToRedeemTable = () => {
+export const PendleReadyToRedeemTable = ({ marketFilter }: PendleReadyToRedeemTableProps = {}) => {
   const { address } = useConnection();
   const { data: ptBalances } = usePendleUserPtBalances();
 
   const maturedHeld = useMemo<{ market: PendleMarketConfig; ptBalance: bigint }[]>(() => {
     if (!address || !ptBalances) return [];
+    const candidateMarkets = marketFilter ? [marketFilter] : PENDLE_MARKETS;
     const held: { market: PendleMarketConfig; ptBalance: bigint }[] = [];
-    PENDLE_MARKETS.forEach(market => {
+    candidateMarkets.forEach(market => {
       if (!isMarketMatured(market.expiry)) return;
       const balance = ptBalances[market.marketAddress];
       if (balance !== undefined && balance > 0n) held.push({ market, ptBalance: balance });
     });
     return held;
-  }, [address, ptBalances]);
+  }, [address, ptBalances, marketFilter]);
 
   const [selected, setSelected] = useState<Set<`0x${string}`>>(new Set());
 
