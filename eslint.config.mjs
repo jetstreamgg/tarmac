@@ -98,6 +98,39 @@ export default [
     }
   },
   {
+    files: ['apps/webapp/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'info', 'debug'] }],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Sentry',
+          property: 'captureException',
+          message: 'Use reportError() outside modules/sentry.'
+        }
+      ]
+    }
+  },
+  {
+    files: [
+      'apps/webapp/src/modules/sentry/**/*.{ts,tsx}',
+      'apps/webapp/src/test/**/*.{ts,tsx}',
+      'apps/webapp/src/pages/Dev.tsx',
+      'apps/webapp/src/data/wagmi/config/config.e2e.ts'
+    ],
+    rules: {
+      'no-console': 'off',
+      'no-restricted-properties': 'off'
+    }
+  },
+  {
+    files: ['apps/webapp/scripts/**/*.{ts,tsx,js,mjs,cjs}'],
+    rules: {
+      'no-console': 'off',
+      'no-restricted-properties': 'off'
+    }
+  },
+  {
     files: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
     plugins: {
       'testing-library': testingLibrary
