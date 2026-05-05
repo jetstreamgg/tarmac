@@ -1,6 +1,5 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { useMemo } from 'react';
 import { formatUnits } from 'viem';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import {
@@ -20,6 +19,8 @@ import { PendleFlow } from '../lib/constants';
 
 type SupplyWithdrawProps = {
   market: PendleMarketConfig;
+  underlyingToken: Token;
+  ptToken: Token;
   flow: PendleFlow;
   onFlowChange: (flow: PendleFlow) => void;
   amount: bigint;
@@ -36,29 +37,10 @@ type SupplyWithdrawProps = {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
-// Pendle PTs inherit decimals from the underlying SY, which inherits from the
-// underlying token. So a PT-USDG (USDG = 6 dec) is 6 dec; a PT-sUSDS (sUSDS =
-// 18 dec) is 18 dec. We treat them as equal here and read from market config.
-const ptDecimals = (market: PendleMarketConfig): number => market.underlyingDecimals;
-
-const buildUnderlyingToken = (market: PendleMarketConfig): Token => ({
-  name: market.underlyingSymbol,
-  symbol: market.underlyingSymbol,
-  decimals: market.underlyingDecimals,
-  color: '#6d7ce3',
-  address: { 1: market.underlyingToken }
-});
-
-const buildPtToken = (market: PendleMarketConfig): Token => ({
-  name: `PT-${market.underlyingSymbol}`,
-  symbol: `PT-${market.underlyingSymbol}`,
-  decimals: ptDecimals(market),
-  color: '#f97316',
-  address: { 1: market.ptToken }
-});
-
 export const SupplyWithdraw = ({
   market,
+  underlyingToken,
+  ptToken,
   flow,
   onFlowChange,
   amount,
@@ -76,19 +58,18 @@ export const SupplyWithdraw = ({
   const matured = isMarketMatured(market.expiry);
   const isRedeemMode = flow === PendleFlow.WITHDRAW && matured;
 
-  const underlyingToken = useMemo(() => buildUnderlyingToken(market), [market]);
-  const ptToken = useMemo(() => buildPtToken(market), [market]);
-
-  const inputDecimals = flow === PendleFlow.BUY ? market.underlyingDecimals : ptDecimals(market);
-  const outputDecimals = flow === PendleFlow.BUY ? ptDecimals(market) : market.underlyingDecimals;
+  // Pendle PTs inherit decimals from the underlying SY, which inherits from the
+  // underlying token. So a PT-USDG (USDG = 6 dec) is 6 dec — input and output
+  // share decimals on both flow directions.
+  const decimals = market.underlyingDecimals;
   const outputSymbol = flow === PendleFlow.BUY ? `PT-${market.underlyingSymbol}` : market.underlyingSymbol;
   const inputBalance = flow === PendleFlow.BUY ? underlyingBalance : ptBalance;
 
   const formattedReceive = quote
-    ? `${formatBigInt(quote.amountOut, { unit: outputDecimals, maxDecimals: 4 })} ${outputSymbol}`
+    ? `${formatBigInt(quote.amountOut, { unit: decimals, maxDecimals: 4 })} ${outputSymbol}`
     : undefined;
   const formattedMin = quote
-    ? `${formatBigInt(quote.apiMinOut, { unit: outputDecimals, maxDecimals: 4 })} ${outputSymbol}`
+    ? `${formatBigInt(quote.apiMinOut, { unit: decimals, maxDecimals: 4 })} ${outputSymbol}`
     : undefined;
   const apyDisplay = quote ? formatDecimalPercentage(quote.effectiveApy) : '—';
   const maturityDisplay = new Date(market.expiry * 1000).toLocaleDateString(undefined, {
@@ -98,7 +79,7 @@ export const SupplyWithdraw = ({
   });
 
   const errorText = insufficientFunds
-    ? t`Insufficient funds. Your balance is ${formatUnits(inputBalance ?? 0n, inputDecimals)}.`
+    ? t`Insufficient funds. Your balance is ${formatUnits(inputBalance ?? 0n, decimals)}.`
     : undefined;
 
   return (
@@ -194,7 +175,7 @@ export const SupplyWithdraw = ({
           transactionData={[
             {
               label: flow === PendleFlow.BUY ? t`You supply` : t`You redeem`,
-              value: `${formatBigInt(amount, { unit: inputDecimals, maxDecimals: 4 })} ${
+              value: `${formatBigInt(amount, { unit: decimals, maxDecimals: 4 })} ${
                 flow === PendleFlow.BUY ? market.underlyingSymbol : `PT-${market.underlyingSymbol}`
               }`
             },

@@ -508,6 +508,8 @@ const PendleWidgetWrapped = ({
           <CardAnimationWrapper key="pendle-action" className="h-full">
             <SupplyWithdraw
               market={market}
+              underlyingToken={underlyingToken}
+              ptToken={ptToken}
               flow={flow}
               onFlowChange={setFlow}
               amount={amount}
