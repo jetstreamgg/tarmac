@@ -1,5 +1,5 @@
 import { cn } from '@widgets/lib/utils';
-import { HTMLMotionProps, motion } from 'framer-motion';
+import { HTMLMotionProps, motion } from 'motion/react';
 
 type VStackProps = HTMLMotionProps<'div'> & {
   gap?: number;

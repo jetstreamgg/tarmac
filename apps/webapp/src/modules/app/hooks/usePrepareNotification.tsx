@@ -86,16 +86,11 @@ export const usePrepareNotification = () => {
   }, [data, isTradeModule]);
 
   // We don't send them to a single reward contract but to the overview page
-  let tradeUrlValue = '';
-  if (isTradeModule) {
-    if (isL2) {
-      tradeUrlValue = `/?widget=${IntentMapping[Intent.SAVINGS_INTENT]}`;
-    } else {
-      tradeUrlValue = `/?widget=${IntentMapping[Intent.REWARDS_INTENT]}`;
-    }
-  } else {
-    tradeUrlValue = action?.url || '';
-  }
+  const tradeUrlValue = isTradeModule
+    ? isL2
+      ? `/?widget=${IntentMapping[Intent.SAVINGS_INTENT]}`
+      : `/?widget=${IntentMapping[Intent.REWARDS_INTENT]}`
+    : action?.url || '';
 
   const tradeUrl = useRetainedQueryParams(tradeUrlValue);
 

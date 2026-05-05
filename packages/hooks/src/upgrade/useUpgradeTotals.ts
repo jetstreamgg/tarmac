@@ -10,10 +10,7 @@ type GraphQLUpgradeTotalResponse = {
   total: string;
 };
 
-async function fetchUpgradeTotals(
-  urlSubgraph: string,
-  chainId: number
-): Promise<UpgradeTotals | undefined> {
+async function fetchUpgradeTotals(urlSubgraph: string, chainId: number): Promise<UpgradeTotals | undefined> {
   const query = gql`
     {
       mkrTotal: Total_by_pk(id: "${chainId}-mkrUpgraded") {

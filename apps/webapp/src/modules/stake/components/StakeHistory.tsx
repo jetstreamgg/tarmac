@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import {
+  StakeHistoryItem,
   TransactionTypeEnum,
   useDelegateName,
   useRewardContractTokens,
@@ -21,7 +22,6 @@ import {
 } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 import { Text } from '@/modules/layout/components/Typography';
-import { StakeHistoryItem } from 'node_modules/@jetstreamgg/sky-hooks/src/stake/stakeModule';
 import { HighlightColor } from '@/modules/ui/components/historyTable/types';
 
 const mapTypeEnumToColumn = (type: TransactionTypeEnum) => {
@@ -52,23 +52,23 @@ const mapTypeEnumToColumn = (type: TransactionTypeEnum) => {
 const mapTypeEnumToIcon = (type: TransactionTypeEnum) => {
   switch (type) {
     case TransactionTypeEnum.STAKE_OPEN:
-      return <Stake width={20} height={20} className="-ml-1 mr-1" />;
+      return <Stake width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.STAKE:
       return <SavingsSupply width={14} height={13} className="mr-1" />;
     case TransactionTypeEnum.STAKE_REWARD:
-      return <ClaimRewards width={20} height={20} className="-ml-1 mr-1" />;
+      return <ClaimRewards width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.STAKE_BORROW:
-      return <Borrow width={20} height={20} className="-ml-1 mr-1" />;
+      return <Borrow width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.STAKE_SELECT_DELEGATE:
-      return <Delegate width={20} height={20} className="-ml-1 mr-1" />;
+      return <Delegate width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.STAKE_SELECT_REWARD:
-      return <SelectRewards width={20} height={20} className="-ml-1 mr-1" />;
+      return <SelectRewards width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.UNSTAKE:
       return <ArrowDown width={10} height={14} className="mr-1 fill-white" />;
     case TransactionTypeEnum.STAKE_REPAY:
-      return <Repaid width={20} height={20} className="-ml-1 mr-1" />;
+      return <Repaid width={20} height={20} className="mr-1 -ml-1" />;
     case TransactionTypeEnum.UNSTAKE_KICK:
-      return <Liquidated width={20} height={20} className="text-error -ml-1 mr-1" />;
+      return <Liquidated width={20} height={20} className="text-error mr-1 -ml-1" />;
     default:
       return <></>;
   }

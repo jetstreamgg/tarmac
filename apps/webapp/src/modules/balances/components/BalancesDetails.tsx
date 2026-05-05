@@ -15,7 +15,11 @@ export function BalancesDetails() {
     <DetailSectionWrapper>
       <DetailSection title={t`Earn with your Stables`} fixedOpen>
         <DetailSectionRow>
-          <BalancesSuggestedActions widget="stables" variant="card" restrictedModules={isRegionRestricted ? ['morpho'] : undefined} />
+          <BalancesSuggestedActions
+            widget="stables"
+            variant="card"
+            restrictedModules={isRegionRestricted ? ['morpho'] : undefined}
+          />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`Stake, Borrow, and Earn with SKY`} fixedOpen>

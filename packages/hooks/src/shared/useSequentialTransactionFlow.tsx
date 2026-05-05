@@ -1,9 +1,4 @@
-import {
-  useConnection,
-  useSimulateContract,
-  useWaitForTransactionReceipt,
-  useWriteContract
-} from 'wagmi';
+import { useConnection, useSimulateContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { isRevertedError, toError } from '../helpers';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { SAFE_CONNECTOR_ID } from './constants';

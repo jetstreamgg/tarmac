@@ -71,8 +71,8 @@ export function MainApp() {
           if (chainName) {
             const normalizedChainName = normalizeUrlParam(chainName);
             const currentNetwork = searchParams.get(QueryParams.Network);
-            // Only update if the network actually changed
-            if (currentNetwork !== normalizedChainName) {
+            // Only update if the network actually changed (compare normalized to avoid case-only diffs)
+            if (normalizeUrlParam(currentNetwork || '') !== normalizedChainName) {
               setSearchParams(params => {
                 params.set(QueryParams.Network, normalizedChainName);
                 return params;
@@ -191,8 +191,8 @@ export function MainApp() {
       if (newChainName) {
         const normalizedNewChainName = normalizeUrlParam(newChainName);
         const currentNetwork = searchParams.get(QueryParams.Network);
-        // Only update if the network actually changed
-        if (currentNetwork !== normalizedNewChainName) {
+        // Only update if the network actually changed (compare normalized to avoid case-only diffs)
+        if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
           setSearchParams(params => {
             params.set(QueryParams.Network, normalizedNewChainName);
             return params;

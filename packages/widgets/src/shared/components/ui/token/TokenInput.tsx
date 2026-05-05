@@ -15,7 +15,7 @@ import { Wallet } from '../../icons/Wallet';
 import { Gauge } from '../../icons/Gauge';
 import { tokenColors } from '@widgets/shared/constants';
 import { Trans } from '@lingui/react/macro';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { easeOutExpo } from '@widgets/shared/animation/timingFunctions';
 import { AnimationLabels } from '@widgets/shared/animation/constants';

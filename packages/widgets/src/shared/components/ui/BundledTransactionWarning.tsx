@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';
 import { positionAnimations } from '@widgets/shared/animation/presets';

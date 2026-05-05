@@ -31,10 +31,7 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
     setSelectedConvertOption(undefined);
   };
 
-  const onPsmConversionWidgetStateChange = ({
-    originToken,
-    originAmount
-  }: WidgetStateChangeParams) => {
+  const onPsmConversionWidgetStateChange = ({ originToken, originAmount }: WidgetStateChangeParams) => {
     if (!isPsmContext) {
       return;
     }
@@ -48,23 +45,26 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
       return;
     }
 
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
 
-      if (nextSourceToken) {
-        next.set(QueryParams.SourceToken, nextSourceToken);
-      } else {
-        next.delete(QueryParams.SourceToken);
-      }
+        if (nextSourceToken) {
+          next.set(QueryParams.SourceToken, nextSourceToken);
+        } else {
+          next.delete(QueryParams.SourceToken);
+        }
 
-      if (nextInputAmount) {
-        next.set(QueryParams.InputAmount, nextInputAmount);
-      } else {
-        next.delete(QueryParams.InputAmount);
-      }
+        if (nextInputAmount) {
+          next.set(QueryParams.InputAmount, nextInputAmount);
+        } else {
+          next.delete(QueryParams.InputAmount);
+        }
 
-      return next;
-    }, { replace: true });
+        return next;
+      },
+      { replace: true }
+    );
   };
 
   const externalWidgetState = useMemo(

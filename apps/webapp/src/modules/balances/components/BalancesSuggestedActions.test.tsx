@@ -5,11 +5,7 @@ import { BalancesSuggestedActions } from './BalancesSuggestedActions';
 let mockSearchParams = new URLSearchParams();
 
 const setSearchParamsMock = vi.fn(
-  (
-    next:
-      | URLSearchParams
-      | ((params: URLSearchParams) => URLSearchParams)
-  ) => {
+  (next: URLSearchParams | ((params: URLSearchParams) => URLSearchParams)) => {
     mockSearchParams =
       typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
   }
@@ -17,14 +13,22 @@ const setSearchParamsMock = vi.fn(
 
 const setIsSwitchingNetworkMock = vi.fn();
 
-vi.mock('react-router-dom', () => ({
-  useSearchParams: () => [mockSearchParams, setSearchParamsMock]
-}));
+vi.mock('react-router-dom', async importOriginal => {
+  const actual = await importOriginal<typeof import('react-router-dom')>();
+  return {
+    ...actual,
+    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+  };
+});
 
-vi.mock('wagmi', () => ({
-  useChainId: () => 1,
-  useChains: () => [{ id: 1, name: 'Ethereum' }]
-}));
+vi.mock('wagmi', async importOriginal => {
+  const actual = await importOriginal<typeof import('wagmi')>();
+  return {
+    ...actual,
+    useChainId: () => 1,
+    useChains: () => [{ id: 1, name: 'Ethereum' }]
+  };
+});
 
 vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   useNetworkSwitch: () => ({
@@ -32,32 +36,42 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
-vi.mock('@jetstreamgg/sky-hooks', () => ({
-  TOKENS: { usds: { symbol: 'USDS' }, spk: { symbol: 'SPK' }, cle: { symbol: 'CLE' } },
-  MORPHO_VAULTS: [],
-  useOverallSkyData: () => ({ data: undefined, isLoading: false }),
-  useStUsdsData: () => ({ data: undefined, isLoading: false }),
-  useMorphoVaultMultipleRateApiData: () => ({ data: [], isLoading: false }),
-  useAvailableTokenRewardContracts: () => [],
-  useRewardsChartInfo: () => ({ data: undefined, isLoading: false }),
-  useHighestRateFromChartData: () => undefined,
-  filterDeprecatedRewardContracts: () => [],
-  useStakeRewardContracts: () => ({ data: [], isLoading: false }),
-  useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false })
-}));
+vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
+  return {
+    ...actual,
+    useOverallSkyData: () => ({ data: undefined, isLoading: false }),
+    useStUsdsData: () => ({ data: undefined, isLoading: false }),
+    useMorphoVaultMultipleRateApiData: () => ({ data: [], isLoading: false }),
+    useAvailableTokenRewardContracts: () => [],
+    useRewardsChartInfo: () => ({ data: undefined, isLoading: false }),
+    useHighestRateFromChartData: () => undefined,
+    filterDeprecatedRewardContracts: () => [],
+    useStakeRewardContracts: () => ({ data: [], isLoading: false }),
+    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false })
+  };
+});
 
-vi.mock('@jetstreamgg/sky-utils', () => ({
-  formatDecimalPercentage: (value: number) => `${value}%`,
-  calculateApyFromStr: (value: string) => Number(value),
-  isTestnetId: () => false,
-  isMainnetId: (chainId: number) => chainId === 1,
-  chainId: { mainnet: 1, tenderly: 314310 }
-}));
+vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+  return {
+    ...actual,
+    formatDecimalPercentage: (value: number) => `${value}%`,
+    calculateApyFromStr: (value: string) => Number(value),
+    isTestnetId: () => false,
+    isMainnetId: (chainId: number) => chainId === 1,
+    chainId: { mainnet: 1, tenderly: 314310 }
+  };
+});
 
-vi.mock('@jetstreamgg/sky-widgets', () => ({
-  Morpho: () => <div>morpho</div>,
-  PopoverRateInfo: () => <div>popover-rate-info</div>
-}));
+vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+  return {
+    ...actual,
+    Morpho: () => <div>morpho</div>,
+    PopoverRateInfo: () => <div>popover-rate-info</div>
+  };
+});
 
 describe('BalancesSuggestedActions', () => {
   beforeEach(() => {

@@ -21,7 +21,7 @@ import { Token, getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { useChainId } from 'wagmi';
 import { TxStatus } from '@widgets/shared/constants';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 
 export const MorphoVaultTransactionStatus = ({

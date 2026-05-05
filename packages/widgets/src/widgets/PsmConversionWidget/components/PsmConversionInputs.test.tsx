@@ -22,7 +22,6 @@ vi.mock('wagmi', () => ({
   useChainId: () => 1
 }));
 
-
 describe('PsmConversionInputs', () => {
   const originToken = { symbol: 'USDC', name: 'USD Coin' } as any;
   const targetToken = { symbol: 'USDS', name: 'USDS' } as any;

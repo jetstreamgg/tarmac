@@ -23,18 +23,23 @@ The stUSDS tests require a specific mainnet fork (container ID: `cec455a4-3a8a-4
 ### Setup
 
 1. **Create Standard VNets** (for most tests):
+
    ```bash
    pnpm vnet:fork
    ```
+
    Creates `tenderlyTestnetData.json` with standard fork.
 
 2. **Create stUSDS VNets** (for stUSDS tests):
+
    ```bash
    pnpm vnet:stusds:fork
    ```
+
    Creates `tenderlyTestnetData-stusds.json` with Curve pool fork.
 
 3. **Fund Standard VNets**:
+
    ```bash
    cd apps/webapp
    pnpm e2e:fund
@@ -48,12 +53,14 @@ The stUSDS tests require a specific mainnet fork (container ID: `cec455a4-3a8a-4
 ### Running Tests
 
 **Run all tests** (automatically uses correct VNet for each test):
+
 ```bash
 cd apps/webapp
 pnpm e2e:parallel
 ```
 
 **Run only standard tests**:
+
 ```bash
 pnpm e2e:parallel:standard
 # or with specific test:
@@ -61,6 +68,7 @@ pnpm e2e:parallel --project=chromium mainnet-savings.spec.ts
 ```
 
 **Run only stUSDS tests**:
+
 ```bash
 pnpm e2e:parallel:stusds
 # or with specific test:
@@ -70,16 +78,19 @@ pnpm e2e:parallel --project=chromium-stusds expert-stusds.spec.ts
 ### Cleanup
 
 **Delete Standard VNets**:
+
 ```bash
 pnpm vnet:delete:all
 ```
 
 **Delete stUSDS VNets**:
+
 ```bash
 pnpm vnet:stusds:delete
 ```
 
 **Delete both**:
+
 ```bash
 pnpm vnet:delete:all
 pnpm vnet:stusds:delete
@@ -90,6 +101,7 @@ pnpm vnet:stusds:delete
 For CI environments (GitHub Actions, etc.), use the `:ci` variants that don't require `.env` file:
 
 ### Standard VNets (CI)
+
 ```bash
 # Create
 pnpm vnet:fork:ci
@@ -105,6 +117,7 @@ pnpm vnet:delete:all:ci
 ```
 
 ### stUSDS VNets (CI)
+
 ```bash
 # Create
 pnpm vnet:stusds:fork:ci
@@ -122,6 +135,7 @@ pnpm vnet:stusds:delete:ci
 ### Recommended CI Strategy
 
 **Option 1: Sequential (Simpler)**
+
 ```yaml
 - name: Run Standard Tests
   run: |
@@ -139,6 +153,7 @@ pnpm vnet:stusds:delete:ci
 ```
 
 **Option 2: Parallel (Faster)**
+
 ```yaml
 - name: Setup Standard VNets
   run: |
@@ -169,6 +184,7 @@ pnpm vnet:stusds:delete:ci
 ## How It Works
 
 ### File Structure
+
 - `tenderlyTestnetData.json` - Standard VNet configuration
 - `tenderlyTestnetData-stusds.json` - stUSDS VNet configuration
 - `apps/webapp/src/test/e2e/persistent-vnet-snapshots.json` - Snapshots for standard VNets
@@ -199,30 +215,34 @@ pnpm vnet:stusds:delete:ci
 
 ## Test Matrix
 
-| Test File | Project | VNet Fork | File Used |
-|-----------|---------|-----------|-----------|
-| mainnet-savings.spec.ts | chromium | Standard | tenderlyTestnetData.json |
-| base-trade.spec.ts | chromium | Standard | tenderlyTestnetData.json |
-| expert-stusds.spec.ts | chromium-stusds | Curve Pool | tenderlyTestnetData-stusds.json |
+| Test File                         | Project         | VNet Fork  | File Used                       |
+| --------------------------------- | --------------- | ---------- | ------------------------------- |
+| mainnet-savings.spec.ts           | chromium        | Standard   | tenderlyTestnetData.json        |
+| base-trade.spec.ts                | chromium        | Standard   | tenderlyTestnetData.json        |
+| expert-stusds.spec.ts             | chromium-stusds | Curve Pool | tenderlyTestnetData-stusds.json |
 | stusds-provider-switching.spec.ts | chromium-stusds | Curve Pool | tenderlyTestnetData-stusds.json |
 
 ## Troubleshooting
 
 ### Tests fail with "No RPC URL found"
+
 - Check that the appropriate VNet data file exists
 - For standard tests: `tenderlyTestnetData.json` must exist
 - For stUSDS tests: `tenderlyTestnetData-stusds.json` must exist
 
 ### stUSDS tests fail with pool-related errors
+
 - Ensure you're using the stUSDS VNet fork: `pnpm vnet:stusds:fork`
 - The standard fork does NOT have the Curve pool configured
 
 ### "VNets expired" error
+
 - VNets have a limited lifetime on Tenderly
 - Delete cache files and recreate: `pnpm vnet:delete:all && pnpm vnet:fork`
 - For stUSDS: `pnpm vnet:stusds:delete && pnpm vnet:stusds:fork`
 
 ### Running both test types together
+
 ```bash
 # This works - Playwright will automatically use correct VNet per project
 pnpm e2e:parallel
@@ -233,6 +253,7 @@ The global setup is smart enough to detect which project is running and use the 
 ## Commands Quick Reference
 
 ### Standard VNets
+
 ```bash
 pnpm vnet:fork              # Create (local)
 pnpm vnet:fork:ci           # Create (CI)
@@ -242,6 +263,7 @@ pnpm vnet:delete:all:ci     # Delete (CI)
 ```
 
 ### stUSDS VNets
+
 ```bash
 pnpm vnet:stusds:fork       # Create (local)
 pnpm vnet:stusds:fork:ci    # Create (CI)
@@ -251,6 +273,7 @@ pnpm vnet:stusds:delete:ci  # Delete (CI)
 ```
 
 ### Running Tests
+
 ```bash
 pnpm e2e:parallel           # Run all tests (auto-selects VNet)
 pnpm e2e:parallel:standard  # Run standard tests only

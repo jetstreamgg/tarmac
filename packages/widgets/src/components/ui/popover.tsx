@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 
 import { cn } from '@widgets/lib/utils';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { AnimationLabels } from '@widgets/shared/animation/constants';
 import { cardInAnimate, cardInInitial } from '@widgets/shared/animation/presets';
 

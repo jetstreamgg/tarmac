@@ -1,4 +1,4 @@
-import { Transition, Variant, Variants } from 'framer-motion';
+import { Transition, Variant, Variants } from 'motion/react';
 import { bezierIconIn, bezierIconOut, bezierSkeleton, easeOutExpo } from './timingFunctions';
 import { AnimationLabels } from './constants';
 

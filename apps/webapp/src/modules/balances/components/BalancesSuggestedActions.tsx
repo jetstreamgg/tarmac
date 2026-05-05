@@ -20,7 +20,13 @@ import {
   useStakeRewardContracts,
   useMultipleRewardsChartInfo
 } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage, calculateApyFromStr, isTestnetId, isMainnetId, chainId as chainIdConstants } from '@jetstreamgg/sky-utils';
+import {
+  formatDecimalPercentage,
+  calculateApyFromStr,
+  isTestnetId,
+  isMainnetId,
+  chainId as chainIdConstants
+} from '@jetstreamgg/sky-utils';
 import { Savings, Upgrade, RewardsModule, Stake, Expert, Vaults, Trade, Convert } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
@@ -145,7 +151,10 @@ const RATE_TOOLTIP_TYPES: Record<NonNullable<BalancesAction['rateKey']>, Popover
   staking: 'srr'
 };
 
-function resolveAction(action: BalancesAction, rateMap: Record<string, string>): { label: string; subtitle?: string } {
+function resolveAction(
+  action: BalancesAction,
+  rateMap: Record<string, string>
+): { label: string; subtitle?: string } {
   let label = action.label;
   let subtitle = action.subtitle;
 
@@ -160,7 +169,10 @@ function resolveAction(action: BalancesAction, rateMap: Record<string, string>):
   return { label, subtitle };
 }
 
-function useActionRates(actions: BalancesAction[], chainId: number): { rates: Record<string, string>; loading: Record<string, boolean> } {
+function useActionRates(
+  actions: BalancesAction[],
+  chainId: number
+): { rates: Record<string, string>; loading: Record<string, boolean> } {
   const rateKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const action of actions) {
@@ -179,7 +191,9 @@ function useActionRates(actions: BalancesAction[], chainId: number): { rates: Re
     () => MORPHO_VAULTS.map(v => v.vaultAddress[mainnetChainId]),
     [mainnetChainId]
   );
-  const { data: morphoRatesData, isLoading: vaultsLoading } = useMorphoVaultMultipleRateApiData({ vaultAddresses });
+  const { data: morphoRatesData, isLoading: vaultsLoading } = useMorphoVaultMultipleRateApiData({
+    vaultAddresses
+  });
 
   const allRewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
   const activeRewardContracts = filterDeprecatedRewardContracts(allRewardContracts, mainnetChainId);
@@ -268,7 +282,20 @@ function useActionRates(actions: BalancesAction[], chainId: number): { rates: Re
     }
 
     return { rates, loading };
-  }, [hasRates, rateKeys, overallSkyData, stUsdsData, morphoRatesData, rewardsHighestRate, stakeHighestRateData, savingsLoading, stUsdsLoading, vaultsLoading, rewardsLoading, stakingLoading]);
+  }, [
+    hasRates,
+    rateKeys,
+    overallSkyData,
+    stUsdsData,
+    morphoRatesData,
+    rewardsHighestRate,
+    stakeHighestRateData,
+    savingsLoading,
+    stUsdsLoading,
+    vaultsLoading,
+    rewardsLoading,
+    stakingLoading
+  ]);
 }
 
 export function BalancesSuggestedActions({
@@ -378,11 +405,14 @@ export function BalancesSuggestedActions({
                 <ModuleIcon boxSize={20} className="text-textSecondary shrink-0" />
                 <div className="flex min-w-0 flex-1 flex-col">
                   <Text className="text-text truncate">{resolved.label}</Text>
-                  {resolved.subtitle && (
-                    action.rateKey && rateLoading[action.rateKey] ? (
+                  {resolved.subtitle &&
+                    (action.rateKey && rateLoading[action.rateKey] ? (
                       <Skeleton className="h-4 w-24" />
                     ) : (
-                      <Text variant="small" className={`flex items-center gap-1 ${action.rateKey && rateMap[action.rateKey] !== '—' ? 'text-bullish' : 'text-textSecondary'}`}>
+                      <Text
+                        variant="small"
+                        className={`flex items-center gap-1 ${action.rateKey && rateMap[action.rateKey] !== '—' ? 'text-bullish' : 'text-textSecondary'}`}
+                      >
                         {resolved.subtitle}
                         {action.rateKey && rateMap[action.rateKey] !== '—' && (
                           <PopoverRateInfo
@@ -393,13 +423,12 @@ export function BalancesSuggestedActions({
                           />
                         )}
                       </Text>
-                    )
-                  )}
+                    ))}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {action.badge && (
                     <span
-                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase ${
                         action.showMorphoIcon
                           ? 'bg-[#2973FF]/15 text-[#2973FF]'
                           : 'bg-textEmphasis/15 text-textEmphasis'
@@ -436,7 +465,7 @@ export function BalancesSuggestedActions({
     return (
       <div className="@container">
         <div className="space-y-2">
-          {featuredAction && (
+          {featuredAction &&
             (() => {
               const resolved = resolveAction(featuredAction, rateMap);
               const ModuleIcon = MODULE_ICONS[featuredAction.module];
@@ -444,7 +473,7 @@ export function BalancesSuggestedActions({
                 <button
                   key={featuredAction.label}
                   onClick={() => handleClick(featuredAction)}
-                  className="from-primary-start/15 to-primary-end/15 hover:from-primary-start/25 hover:to-primary-end/25 border-primary-start/30 bg-radial-(--gradient-position) flex w-full cursor-pointer items-center gap-3 rounded-[20px] border px-4 py-3 text-left transition-[background-color,background-image]"
+                  className="from-primary-start/15 to-primary-end/15 hover:from-primary-start/25 hover:to-primary-end/25 border-primary-start/30 flex w-full cursor-pointer items-center gap-3 rounded-[20px] border bg-radial-(--gradient-position) px-4 py-3 text-left transition-[background-color,background-image]"
                 >
                   <ModuleIcon boxSize={20} className="text-textSecondary shrink-0" />
                   <div className="min-w-0 flex-1">
@@ -468,8 +497,7 @@ export function BalancesSuggestedActions({
                   </div>
                 </button>
               );
-            })()
-          )}
+            })()}
 
           <div className="grid grid-cols-1 gap-1 @[600px]:grid-cols-2">
             {compactActions.map(action => {
@@ -488,7 +516,7 @@ export function BalancesSuggestedActions({
                   <div className="flex shrink-0 items-center gap-2">
                     {action.badge && (
                       <span
-                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
                           action.showMorphoIcon
                             ? 'bg-[#2973FF]/15 text-[#2973FF]'
                             : 'bg-textEmphasis/15 text-textEmphasis'
@@ -529,7 +557,7 @@ export function BalancesSuggestedActions({
             <button
               key={action.label}
               onClick={() => handleClick(action)}
-              className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 px-3 py-2 text-left transition-colors hover:bg-brandLight/20"
+              className="hover:bg-brandLight/20 flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 px-3 py-2 text-left transition-colors"
             >
               <ModuleIcon boxSize={16} className="text-textSecondary shrink-0" />
               <div className="flex -space-x-1.5">
@@ -548,7 +576,7 @@ export function BalancesSuggestedActions({
               </Text>
               {action.badge && (
                 <span
-                  className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                  className={`ml-auto flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase ${
                     action.showMorphoIcon
                       ? 'bg-[#2973FF]/15 text-[#2973FF]'
                       : 'bg-textEmphasis/15 text-textEmphasis'

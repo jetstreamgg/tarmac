@@ -105,11 +105,9 @@ export function initSentry(): void {
         message.includes('NetworkError when attempting to fetch');
       if (
         isNetworkLayerFetchError &&
-        (
-          endpointTag === 'ip-status' ||
+        (endpointTag === 'ip-status' ||
           endpointTag === 'terms-check' ||
-          (errorModule === 'auth' && (errorFlow === 'vpn-check' || errorFlow === 'terms-check'))
-        )
+          (errorModule === 'auth' && (errorFlow === 'vpn-check' || errorFlow === 'terms-check')))
       ) {
         return null;
       }

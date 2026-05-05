@@ -11,8 +11,10 @@ import { WidgetProps } from '@widgets/shared/types/widgetState';
 import { useCallback, useContext, useMemo } from 'react';
 import { useChainId } from 'wagmi';
 
-interface UseL2TradeTransactionCallbacksParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'> {
+interface UseL2TradeTransactionCallbacksParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'
+> {
   originAmount: bigint;
   originToken: TokenForChain | undefined;
   targetAmount: bigint;

@@ -1,6 +1,6 @@
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { PopoverRateInfo } from '@widgets/shared/components/ui/PopoverRateInfo';
 import { InfoTooltip } from '@widgets/shared/components/ui/tooltip/InfoTooltip';

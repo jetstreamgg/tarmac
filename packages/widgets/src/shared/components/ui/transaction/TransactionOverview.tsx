@@ -6,7 +6,7 @@ import {
 } from '@widgets/components/ui/accordion';
 import { Text } from '../Typography';
 import { FetchingSpinner } from '../spinner/FetchingSpinner';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { positionAnimations, positionAnimationsWithExit } from '@widgets/shared/animation/presets';
 import { AnimationLabels } from '@widgets/shared/animation/constants';
 import { PopoverRateInfo } from '../PopoverRateInfo';

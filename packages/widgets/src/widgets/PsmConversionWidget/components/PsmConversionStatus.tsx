@@ -35,8 +35,16 @@ export function PsmConversionStatus({
 }) {
   const [flowNeedsAllowance] = useState(needsAllowance);
   const chainId = useChainId();
-  const originTokenForContext = tokenForChainToToken(originToken, originToken.address || ZERO_ADDRESS, chainId);
-  const targetTokenForContext = tokenForChainToToken(targetToken, targetToken.address || ZERO_ADDRESS, chainId);
+  const originTokenForContext = tokenForChainToToken(
+    originToken,
+    originToken.address || ZERO_ADDRESS,
+    chainId
+  );
+  const targetTokenForContext = tokenForChainToToken(
+    targetToken,
+    targetToken.address || ZERO_ADDRESS,
+    chainId
+  );
   const { i18n } = useLingui();
   const {
     setLoadingText,

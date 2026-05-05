@@ -6,7 +6,7 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { t } from '@lingui/core/macro';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Button } from '@widgets/components/ui/button';
 import { ShiftArrow } from '@widgets/shared/components/icons/Icons';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -47,9 +47,7 @@ export function PsmConversionInputs({
 
   // Show liquidity limit instead of balance when liquidity is lower
   const showLiquidityLimit =
-    availableLiquidity !== undefined &&
-    originBalance !== undefined &&
-    availableLiquidity < originBalance;
+    availableLiquidity !== undefined && originBalance !== undefined && availableLiquidity < originBalance;
 
   const liquidityLimitText = showLiquidityLimit
     ? `${formatBigInt(availableLiquidity, { unit: getTokenDecimals(originToken, chainId) })} ${originToken.symbol}`
@@ -80,11 +78,11 @@ export function PsmConversionInputs({
         />
       </motion.div>
 
-      <motion.div variants={positionAnimations} className="-my-3 z-10 flex justify-center">
+      <motion.div variants={positionAnimations} className="z-10 -my-3 flex justify-center">
         <Button
           aria-label={t`Switch conversion direction`}
           size="icon"
-          className="border-background text-tabPrimary focus:outline-hidden h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent"
+          className="border-background text-tabPrimary h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent focus:outline-hidden active:bg-transparent"
           onClick={onSwitchDirection}
         >
           <ShiftArrow height={24} className="text-textDesaturated" />

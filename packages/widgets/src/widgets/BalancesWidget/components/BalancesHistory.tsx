@@ -8,7 +8,7 @@ import { Skeleton } from '@widgets/components/ui/skeleton';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { Trans } from '@lingui/react/macro';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { NoResults } from '@widgets/shared/components/icons/NoResults';
 import { cn } from '@widgets/lib/utils';

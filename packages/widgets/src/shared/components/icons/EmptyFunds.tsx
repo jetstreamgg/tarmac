@@ -18,7 +18,15 @@ export const EmptyFunds = (props: IconProps) => (
       d="M41.8227 54.466C34.6447 58.6099 23.0068 58.6099 15.8288 54.466C8.65081 50.322 8.65081 43.6034 15.8288 39.4595C23.0068 35.3156 34.6447 35.3156 41.8227 39.4595C49.0007 43.6034 49.0007 50.322 41.8227 54.466Z"
       fill="url(#paint3_linear_9261_125997)"
     />
-    <mask id="mask0_9261_125997" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="10" y="36" width="38" height="22">
+    <mask
+      id="mask0_9261_125997"
+      style={{ maskType: 'alpha' }}
+      maskUnits="userSpaceOnUse"
+      x="10"
+      y="36"
+      width="38"
+      height="22"
+    >
       <path
         d="M41.8227 54.466C34.6447 58.6099 23.0068 58.6099 15.8288 54.466C8.65081 50.322 8.65081 43.6034 15.8288 39.4595C23.0068 35.3156 34.6447 35.3156 41.8227 39.4595C49.0007 43.6034 49.0007 50.322 41.8227 54.466Z"
         fill="url(#paint4_linear_9261_125997)"
@@ -42,7 +50,15 @@ export const EmptyFunds = (props: IconProps) => (
       d="M41.8149 39.3878C34.6369 43.5317 22.999 43.5317 15.821 39.3878C8.643 35.2439 8.643 28.5253 15.821 24.3814C22.999 20.2375 34.6369 20.2375 41.8149 24.3814C48.9929 28.5253 48.9929 35.2439 41.8149 39.3878Z"
       fill="url(#paint7_linear_9261_125997)"
     />
-    <mask id="mask1_9261_125997" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="10" y="21" width="38" height="22">
+    <mask
+      id="mask1_9261_125997"
+      style={{ maskType: 'alpha' }}
+      maskUnits="userSpaceOnUse"
+      x="10"
+      y="21"
+      width="38"
+      height="22"
+    >
       <path
         d="M41.8149 39.3878C34.6369 43.5317 22.999 43.5317 15.821 39.3878C8.643 35.2439 8.643 28.5253 15.821 24.3814C22.999 20.2375 34.6369 20.2375 41.8149 24.3814C48.9929 28.5253 48.9929 35.2439 41.8149 39.3878Z"
         fill="url(#paint8_linear_9261_125997)"
@@ -69,7 +85,15 @@ export const EmptyFunds = (props: IconProps) => (
       fill="#E1C9FF"
       fillOpacity="0.3"
     />
-    <mask id="mask2_9261_125997" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="10" y="6" width="38" height="22">
+    <mask
+      id="mask2_9261_125997"
+      style={{ maskType: 'alpha' }}
+      maskUnits="userSpaceOnUse"
+      x="10"
+      y="6"
+      width="38"
+      height="22"
+    >
       <path
         d="M41.7758 24.1691C34.5978 28.313 22.9599 28.313 15.7819 24.1691C8.60394 20.0252 8.60394 13.3065 15.7819 9.16263C22.9599 5.01871 34.5978 5.01871 41.7758 9.16263C48.9538 13.3065 48.9538 20.0252 41.7758 24.1691Z"
         fill="url(#paint12_linear_9261_125997)"
@@ -106,66 +130,167 @@ export const EmptyFunds = (props: IconProps) => (
       fill="#4D2EE5"
     />
     <defs>
-      <filter id="filter0_f_9261_125997" x="19.2858" y="32.5788" width="46.1393" height="30.6041" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+      <filter
+        id="filter0_f_9261_125997"
+        x="19.2858"
+        y="32.5788"
+        width="46.1393"
+        height="30.6041"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
         <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
         <feGaussianBlur stdDeviation="2.34537" result="effect1_foregroundBlur_9261_125997" />
       </filter>
-      <filter id="filter1_f_9261_125997" x="19.278" y="17.5046" width="46.1393" height="30.6041" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+      <filter
+        id="filter1_f_9261_125997"
+        x="19.278"
+        y="17.5046"
+        width="46.1393"
+        height="30.6041"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
         <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
         <feGaussianBlur stdDeviation="2.34537" result="effect1_foregroundBlur_9261_125997" />
       </filter>
-      <filter id="filter3_f_9261_125997" x="9.92936" y="5.58561" width="37.696" height="12.6803" filterUnits="userSpaceOnUse" colorInterpolationFilters="sRGB">
+      <filter
+        id="filter3_f_9261_125997"
+        x="9.92936"
+        y="5.58561"
+        width="37.696"
+        height="12.6803"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
         <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
         <feGaussianBlur stdDeviation="0.234537" result="effect1_foregroundBlur_9261_125997" />
       </filter>
-      <linearGradient id="paint0_linear_9261_125997" x1="38.087" y1="84.3392" x2="-6.97744" y2="84.3398" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint0_linear_9261_125997"
+        x1="38.087"
+        y1="84.3392"
+        x2="-6.97744"
+        y2="84.3398"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#A273FF" />
         <stop offset="1" stopColor="#4331E9" />
       </linearGradient>
-      <linearGradient id="paint1_linear_9261_125997" x1="-6.57198" y1="37.9269" x2="55.106" y2="4.4425" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint1_linear_9261_125997"
+        x1="-6.57198"
+        y1="37.9269"
+        x2="55.106"
+        y2="4.4425"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFD2B9" />
         <stop offset="0.443004" stopColor="#C99BED" />
         <stop offset="1" stopColor="#0075FF" />
       </linearGradient>
-      <linearGradient id="paint2_linear_9261_125997" x1="49.6286" y1="56.7644" x2="4.18543" y2="48.7919" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint2_linear_9261_125997"
+        x1="49.6286"
+        y1="56.7644"
+        x2="4.18543"
+        y2="48.7919"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#A4E6E6" />
         <stop offset="0.409375" stopColor="#97B8F8" />
         <stop offset="1" stopColor="#B061FF" />
       </linearGradient>
-      <linearGradient id="paint3_linear_9261_125997" x1="7.56622" y1="48.3103" x2="48.6608" y2="48.3103" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint3_linear_9261_125997"
+        x1="7.56622"
+        y1="48.3103"
+        x2="48.6608"
+        y2="48.3103"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#A4E6E6" />
         <stop offset="0.409375" stopColor="#97B8F8" />
         <stop offset="1" stopColor="#B061FF" />
       </linearGradient>
-      <linearGradient id="paint4_linear_9261_125997" x1="9.12812" y1="57.5739" x2="9.12812" y2="36.3516" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint4_linear_9261_125997"
+        x1="9.12812"
+        y1="57.5739"
+        x2="9.12812"
+        y2="36.3516"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#A4E6E6" />
         <stop offset="0.409375" stopColor="#97B8F8" />
         <stop offset="1" stopColor="#B061FF" />
       </linearGradient>
-      <linearGradient id="paint5_linear_9261_125997" x1="8.73843" y1="49.6057" x2="53.5003" y2="49.6057" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint5_linear_9261_125997"
+        x1="8.73843"
+        y1="49.6057"
+        x2="53.5003"
+        y2="49.6057"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#F365FF" />
         <stop offset="1" stopColor="#F365FF" stopOpacity="0" />
       </linearGradient>
-      <linearGradient id="paint6_linear_9261_125997" x1="99.9614" y1="36.8077" x2="4.50929" y2="24.567" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint6_linear_9261_125997"
+        x1="99.9614"
+        y1="36.8077"
+        x2="4.50929"
+        y2="24.567"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFCD6B" />
         <stop offset="1" stopColor="#EA5DD3" />
       </linearGradient>
-      <linearGradient id="paint7_linear_9261_125997" x1="2.82407" y1="31.8846" x2="15.8196" y2="9.37407" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint7_linear_9261_125997"
+        x1="2.82407"
+        y1="31.8846"
+        x2="15.8196"
+        y2="9.37407"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFCD6B" />
         <stop offset="1" stopColor="#EA5DD3" />
       </linearGradient>
-      <linearGradient id="paint8_linear_9261_125997" x1="2.82407" y1="31.8846" x2="15.8196" y2="9.37407" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint8_linear_9261_125997"
+        x1="2.82407"
+        y1="31.8846"
+        x2="15.8196"
+        y2="9.37407"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFCD6B" />
         <stop offset="1" stopColor="#EA5DD3" />
       </linearGradient>
-      <linearGradient id="paint9_linear_9261_125997" x1="8.73062" y1="34.5315" x2="53.4925" y2="34.5315" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint9_linear_9261_125997"
+        x1="8.73062"
+        y1="34.5315"
+        x2="53.4925"
+        y2="34.5315"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#F365FF" />
         <stop offset="1" stopColor="#F365FF" stopOpacity="0" />
       </linearGradient>
-      <linearGradient id="paint10_linear_9261_125997" x1="10.3984" y1="15.655" x2="47.1593" y2="15.655" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint10_linear_9261_125997"
+        x1="10.3984"
+        y1="15.655"
+        x2="47.1593"
+        y2="15.655"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFAEDA" />
         <stop offset="0.139668" stopColor="#E3E3FF" />
         <stop offset="0.3015" stopColor="#EE6ED0" />
@@ -173,7 +298,14 @@ export const EmptyFunds = (props: IconProps) => (
         <stop offset="0.818" stopColor="#EE6ED0" />
         <stop offset="1" stopColor="#E3E3FF" />
       </linearGradient>
-      <linearGradient id="paint11_linear_9261_125997" x1="10.3984" y1="15.655" x2="47.1593" y2="15.655" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint11_linear_9261_125997"
+        x1="10.3984"
+        y1="15.655"
+        x2="47.1593"
+        y2="15.655"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#E3E3FF" />
         <stop offset="0.126163" stopColor="#C3C0FF" />
         <stop offset="0.312675" stopColor="#FFC6AE" />
@@ -182,11 +314,25 @@ export const EmptyFunds = (props: IconProps) => (
         <stop offset="0.882531" stopColor="#C2BFFF" />
         <stop offset="1" stopColor="#E3E3FF" />
       </linearGradient>
-      <linearGradient id="paint12_linear_9261_125997" x1="28.7789" y1="3.27129" x2="28.7789" y2="27.277" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint12_linear_9261_125997"
+        x1="28.7789"
+        y1="3.27129"
+        x2="28.7789"
+        y2="27.277"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#8EACE7" />
         <stop offset="1" stopColor="#3532B0" />
       </linearGradient>
-      <linearGradient id="paint13_linear_9261_125997" x1="10.3984" y1="4.83831" x2="47.1593" y2="4.83831" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint13_linear_9261_125997"
+        x1="10.3984"
+        y1="4.83831"
+        x2="47.1593"
+        y2="4.83831"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#E3E3FF" />
         <stop offset="0.126163" stopColor="#C3C0FF" />
         <stop offset="0.312675" stopColor="#FFC6AE" />
@@ -195,42 +341,98 @@ export const EmptyFunds = (props: IconProps) => (
         <stop offset="0.882531" stopColor="#C2BFFF" />
         <stop offset="1" stopColor="#E3E3FF" />
       </linearGradient>
-      <linearGradient id="paint14_linear_9261_125997" x1="0" y1="3.87685" x2="2.7641e-07" y2="0" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint14_linear_9261_125997"
+        x1="0"
+        y1="3.87685"
+        x2="2.7641e-07"
+        y2="0"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFCD6B" />
         <stop offset="0.0001" stopColor="#FFCD6B" />
         <stop offset="1" stopColor="#EB5EDF" />
       </linearGradient>
-      <linearGradient id="paint15_linear_9261_125997" x1="1.3846" y1="15.9209" x2="1.3846" y2="3.875" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint15_linear_9261_125997"
+        x1="1.3846"
+        y1="15.9209"
+        x2="1.3846"
+        y2="3.875"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#F7A7F9" />
         <stop offset="1" stopColor="#6D28FF" />
       </linearGradient>
-      <linearGradient id="paint16_linear_9261_125997" x1="53.9813" y1="87.9814" x2="53.9813" y2="74.0742" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint16_linear_9261_125997"
+        x1="53.9813"
+        y1="87.9814"
+        x2="53.9813"
+        y2="74.0742"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#F7A7F9" />
         <stop offset="1" stopColor="#6D28FF" />
       </linearGradient>
-      <linearGradient id="paint17_linear_9261_125997" x1="54.0018" y1="74.0743" x2="54.0018" y2="70.3359" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint17_linear_9261_125997"
+        x1="54.0018"
+        y1="74.0743"
+        x2="54.0018"
+        y2="70.3359"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#00DDFB" />
         <stop offset="1" stopColor="#0075FF" />
       </linearGradient>
-      <linearGradient id="paint18_linear_9261_125997" x1="52.6172" y1="70.3379" x2="52.6172" y2="61.4766" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint18_linear_9261_125997"
+        x1="52.6172"
+        y1="70.3379"
+        x2="52.6172"
+        y2="61.4766"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#FFCD6B" />
         <stop offset="0.0001" stopColor="#FFCD6B" />
         <stop offset="1" stopColor="#EB5EDF" />
       </linearGradient>
-      <linearGradient id="paint19_linear_9261_125997" x1="54.899" y1="108.758" x2="-21.4323" y2="108.758" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint19_linear_9261_125997"
+        x1="54.899"
+        y1="108.758"
+        x2="-21.4323"
+        y2="108.758"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop offset="0.147704" stopColor="#A4E6E6" />
         <stop offset="0.255568" stopColor="#97B8F8" />
         <stop offset="0.68869" stopColor="#B061FF" />
         <stop offset="0.756345" stopColor="#99B2F9" />
       </linearGradient>
-      <linearGradient id="paint20_linear_9261_125997" x1="29.5653" y1="55.1039" x2="56.1632" y2="105.605" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint20_linear_9261_125997"
+        x1="29.5653"
+        y1="55.1039"
+        x2="56.1632"
+        y2="105.605"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop offset="0.0831223" stopColor="#FFD2B9" />
         <stop offset="0.330704" stopColor="#9FD3EE" />
         <stop offset="0.395118" stopColor="#4C60E6" />
         <stop offset="0.694824" stopColor="#4C60E6" />
         <stop offset="0.919319" stopColor="#E173AF" />
       </linearGradient>
-      <linearGradient id="paint21_linear_9261_125997" x1="27.8846" y1="83.8794" x2="30.7126" y2="88.7454" gradientUnits="userSpaceOnUse">
+      <linearGradient
+        id="paint21_linear_9261_125997"
+        x1="27.8846"
+        y1="83.8794"
+        x2="30.7126"
+        y2="88.7454"
+        gradientUnits="userSpaceOnUse"
+      >
         <stop stopColor="#5084F9" />
         <stop offset="1" stopColor="#4D2EE5" />
       </linearGradient>

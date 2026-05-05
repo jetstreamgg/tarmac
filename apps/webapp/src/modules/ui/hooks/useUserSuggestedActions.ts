@@ -549,8 +549,7 @@ const fetchUserSuggestedActions = (
   });
 
   const filteredLinkedActions = linkedActions.filter(action => {
-    if (restricted.includes(action.intent) || restricted.includes(action.la))
-      return false;
+    if (restricted.includes(action.intent) || restricted.includes(action.la)) return false;
     return isIntentSupported(action.intent) && isIntentSupported(action.la);
   });
 

@@ -8,7 +8,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPane';
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
@@ -153,7 +153,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 role="button"
                 tabIndex={isPending ? -1 : 0}
                 aria-disabled={isPending}
-                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start hover:to-primary-end border-primary-start/30 bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                className={`from-primary-start/15 to-primary-end/15 hover:from-primary-start hover:to-primary-end border-primary-start/30 bg-transparent bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                 onClick={() => handleSelectOption(ConvertIntent.PSM_INTENT)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -182,7 +182,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                   role="button"
                   tabIndex={isPending ? -1 : 0}
                   aria-disabled={isPending}
-                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-transparent bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                   onClick={() => handleSelectOption(ConvertIntent.TRADE_INTENT)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -213,7 +213,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                   tabIndex={isPending ? -1 : 0}
                   aria-disabled={isPending}
                   data-testid="convert-upgrade-card"
-                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
+                  className={`from-card to-card hover:from-primary-start hover:to-primary-end bg-transparent bg-radial-(--gradient-position) transition-[background-color,background-image] lg:p-5 ${cardInteractionClass}`}
                   onClick={() => handleSelectOption(ConvertIntent.UPGRADE_INTENT)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {

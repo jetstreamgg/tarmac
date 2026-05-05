@@ -122,11 +122,11 @@ export function ChainModal({
                       if (newChainName) {
                         const normalizedNewChainName = normalizeUrlParam(newChainName);
                         const currentNetwork = searchParams.get(QueryParams.Network);
-                        // Only update if the network actually changed
-                        if (currentNetwork !== normalizedNewChainName) {
+                        // Only update if the network actually changed (compare normalized to avoid case-only diffs)
+                        if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
                           setSearchParams(
                             (params: URLSearchParams) => {
-                              if (currentNetwork !== normalizedNewChainName) {
+                              if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
                                 params.set(QueryParams.Network, normalizedNewChainName);
                               }
                               if (nextIntent) {

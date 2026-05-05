@@ -13,7 +13,7 @@ import { t } from '@lingui/core/macro';
 import { ExternalLink } from '@widgets/shared/components/ExternalLink';
 import { HStack } from '../layout/HStack';
 import { ArrowRight } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { IconAnimationWrapper, PositionAnimationWithExitWrapper } from '@widgets/shared/animation/Wrappers';
 import { useChainId } from 'wagmi';

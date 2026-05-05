@@ -41,9 +41,7 @@ export const ToastCloseAll = () => {
         bannerHeight > 0 ? 'right-10 pb-1' : 'right-10 bottom-8 pb-1 md:right-8 md:bottom-2 md:pb-0'
       )}
       style={
-        bannerHeight > 0
-          ? { bottom: BANNER_BOTTOM_MARGIN + bannerHeight + BANNER_TOAST_GAP }
-          : undefined
+        bannerHeight > 0 ? { bottom: BANNER_BOTTOM_MARGIN + bannerHeight + BANNER_TOAST_GAP } : undefined
       }
     >
       <button

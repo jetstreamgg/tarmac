@@ -11,8 +11,10 @@ import { useContext } from 'react';
 import { StUSDSAction } from '../lib/constants';
 import { useStUsdsTransactionCallbacks } from './useStUsdsTransactionCallbacks';
 
-interface UseStUsdsTransactionsParameters
-  extends Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'> {
+interface UseStUsdsTransactionsParameters extends Pick<
+  WidgetProps,
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+> {
   amount: bigint;
   referralCode: number | undefined;
   max: boolean;

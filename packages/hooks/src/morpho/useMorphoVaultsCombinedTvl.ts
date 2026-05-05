@@ -55,5 +55,14 @@ export function useMorphoVaultsCombinedTvl(): MorphoVaultsCombinedTvl {
   const isLoading = results.some(r => r.isLoading);
   const error = results.find(r => r.error)?.error ?? null;
 
-  return { totalAssetsUsd, totalAssetsScaled, minRate, maxRate, formattedMinRate, formattedMaxRate, isLoading, error };
+  return {
+    totalAssetsUsd,
+    totalAssetsScaled,
+    minRate,
+    maxRate,
+    formattedMinRate,
+    formattedMaxRate,
+    isLoading,
+    error
+  };
 }

@@ -73,7 +73,8 @@ export function getStoredConsent(): ServiceConsent | null {
         const parsed = JSON.parse(legacy);
         if (typeof parsed === 'object' && parsed !== null && typeof parsed.posthog === 'boolean') {
           const migrated: ServiceConsent = { posthog: parsed.posthog };
-          if (typeof parsed.google_analytics === 'boolean') migrated.google_analytics = parsed.google_analytics;
+          if (typeof parsed.google_analytics === 'boolean')
+            migrated.google_analytics = parsed.google_analytics;
           saveConsent(migrated);
           localStorage.removeItem(LEGACY_STORAGE_KEY);
           return migrated;
