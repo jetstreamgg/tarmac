@@ -239,7 +239,6 @@ const PendleWidgetWrapped = ({
     inputToken,
     outputToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
-    slippage,
     quote,
     enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n,
     shouldUseBatch,
