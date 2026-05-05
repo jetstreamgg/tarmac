@@ -7,7 +7,8 @@ import {
   Vaults,
   Convert,
   Upgrade,
-  Trade
+  Trade,
+  Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { useLingui } from '@lingui/react';
@@ -19,11 +20,12 @@ import {
   IntentMapping,
   ExpertIntentMapping,
   VaultsIntentMapping,
-  ConvertIntentMapping
+  ConvertIntentMapping,
+  PendleIntentMapping
 } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ExpertIntent, VaultsIntent, ConvertIntent } from '@/lib/enums';
+import { ExpertIntent, VaultsIntent, ConvertIntent, PendleIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -49,8 +51,15 @@ import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
+import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
-import { useAvailableTokenRewardContracts, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import {
+  useAvailableTokenRewardContracts,
+  MORPHO_VAULTS,
+  PENDLE_MARKETS,
+  isMarketMatured,
+  usePendleUserPtBalances
+} from '@jetstreamgg/sky-hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -81,6 +90,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   // Map Intent → ModuleId for geo-config filtering
+  // TODO(geo-gating): Pendle is intentionally absent from this map. Adding gating
+  // requires written sign-off from Jacek or Kacper (regulatory-sensitive change).
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
     [Intent.SAVINGS_INTENT]: 'savings',
     [Intent.REWARDS_INTENT]: 'rewards',
@@ -159,6 +170,22 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   }));
 
+  // Pendle markets are mainnet-only. Matured markets are hidden unless the connected
+  // user holds a non-zero PT balance for them (mirrors deprecated-rewards behavior).
+  const { data: pendlePtBalances } = usePendleUserPtBalances();
+  const pendleSubItems = PENDLE_MARKETS.filter(market => {
+    if (!isMarketMatured(market.expiry)) return true;
+    const heldBalance = pendlePtBalances?.[market.marketAddress];
+    return heldBalance !== undefined && heldBalance > 0n;
+  }).map(market => ({
+    label: `PT-${market.underlyingSymbol}`,
+    icon: <TokenIcon token={{ symbol: 'USDS' }} className="h-3 w-3" showChainIcon={false} />,
+    params: {
+      [QueryParams.PendleModule]: PendleIntentMapping[PendleIntent.MARKET_INTENT],
+      [QueryParams.Market]: market.marketAddress
+    }
+  }));
+
   const widgetItems: WidgetItem[] = [
     [
       Intent.BALANCES_INTENT,
@@ -224,6 +251,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       undefined,
       'Third-party vault integrations with Sky Ecosystem tokens',
       vaultSubItems
+    ],
+    [
+      Intent.PENDLE_INTENT,
+      'Pendle',
+      Pendle,
+      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
+      false,
+      undefined,
+      'Lock in fixed yield via Pendle PT markets',
+      pendleSubItems
     ],
     [
       Intent.EXPERT_INTENT,
@@ -311,6 +348,10 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     {
       id: 'group-3',
       items: widgetItems.filter(([intent]) => intent === Intent.VAULTS_INTENT)
+    },
+    {
+      id: 'group-pendle',
+      items: widgetItems.filter(([intent]) => intent === Intent.PENDLE_INTENT)
     },
     {
       id: 'group-4',

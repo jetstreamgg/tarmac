@@ -5,7 +5,9 @@ import type {
   PendleConvertRequest,
   PendleConvertResponseRaw,
   PendleMarketSummaryRaw,
-  PendleMarketsAllResponseRaw
+  PendleMarketsAllResponseRaw,
+  PendleMarketTransactionsResponseRaw,
+  PendleTransactionRaw
 } from './pendle';
 
 /**
@@ -76,5 +78,28 @@ export async function fetchPendleMarketsByIds(
     throw new Error(`Pendle /markets/all ${response.status}`);
   }
   const json = (await response.json()) as PendleMarketsAllResponseRaw;
+  return json.results || [];
+}
+
+/**
+ * GET /v5/{chainId}/transactions/{marketAddress}?limit=100&type=TRADES&txOrigin=<user>
+ *
+ * Returns the most recent trade transactions for a Pendle market scoped to a
+ * specific user. We never fetch the unscoped market history — the hook gates
+ * on a connected account.
+ */
+export async function fetchPendleMarketTransactions(
+  chainId: number,
+  marketAddress: `0x${string}`,
+  txOrigin: `0x${string}`
+): Promise<PendleTransactionRaw[]> {
+  const apiChainId = resolveApiChainId(chainId);
+  const url = `${PENDLE_API_BASE_URL}/v5/${apiChainId}/transactions/${marketAddress.toLowerCase()}?limit=100&type=TRADES&txOrigin=${txOrigin.toLowerCase()}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Pendle /transactions ${response.status}`);
+  }
+  const json = (await response.json()) as PendleMarketTransactionsResponseRaw;
   return json.results || [];
 }

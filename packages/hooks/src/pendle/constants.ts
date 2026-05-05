@@ -12,6 +12,16 @@ export enum PendleConvertSide {
   WITHDRAW = 'withdraw'
 }
 
+/**
+ * Subset of `action` values from the /transactions endpoint we surface in
+ * trade history. The endpoint also returns BUY_YT, SELL_YT, LONG_YIELD,
+ * SHORT_YIELD, ADD_LIQUIDITY, REMOVE_LIQUIDITY — those are filtered out.
+ */
+export enum PendleTradeAction {
+  BUY_PT = 'BUY_PT',
+  SELL_PT = 'SELL_PT'
+}
+
 // ---------------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------------
@@ -301,14 +311,63 @@ export const PENDLE_ROUTER_V4_ABI = [
         ]
       }
     ],
+    // Real signature: returns (uint256 netTokenOut, ExitPostExpReturnParams params)
+    // where ExitPostExpReturnParams is a 5-field struct. Flattened by viem at
+    // decode time, so the wire layout is 6 × uint256 = 192 bytes. Mismatching
+    // this (e.g. the older 7-field shape from earlier Pendle versions) makes
+    // viem's `simulateContract` throw "Position 192 is out of bounds" since it
+    // tries to read past the actual return data length. Verified against
+    // pendle-core-v2-public IPAllActionTypeV3.sol.
     outputs: [
       { name: 'netTokenOut', type: 'uint256' },
-      { name: 'netPtOutFromBurn', type: 'uint256' },
-      { name: 'netSyFromBurn', type: 'uint256' },
-      { name: 'netPtFromSwap', type: 'uint256' },
-      { name: 'netSyFromSwap', type: 'uint256' },
-      { name: 'netSyFee', type: 'uint256' },
-      { name: 'netSyInterm', type: 'uint256' }
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'netPtFromRemove', type: 'uint256' },
+          { name: 'netSyFromRemove', type: 'uint256' },
+          { name: 'netPtRedeem', type: 'uint256' },
+          { name: 'netSyFromRedeem', type: 'uint256' },
+          { name: 'totalSyOut', type: 'uint256' }
+        ]
+      }
+    ]
+  },
+  {
+    // Pendle Router V4 native multicall — bundles N inner calls to the same
+    // Router into one tx. Used by useBatchPendleRedeemAll to redeem
+    // multiple matured positions atomically with a single signature. Each
+    // inner blob is independently selector-allowlist verified before being
+    // wrapped here (see buildMulticallVerifiedArgs).
+    //
+    // Signature must match Pendle's ActionMiscV3.multicall exactly:
+    //   function multicall(Call3[] calls) returns (Result[])
+    //   struct Call3  { bool allowFailure; bytes callData; }
+    //   struct Result { bool success; bytes returnData; }
+    // Mismatching the signature (e.g. multicall(bytes[])) hits a different
+    // 4-byte selector and the call reverts at simulation time.
+    type: 'function',
+    name: 'multicall',
+    stateMutability: 'payable',
+    inputs: [
+      {
+        name: 'calls',
+        type: 'tuple[]',
+        components: [
+          { name: 'allowFailure', type: 'bool' },
+          { name: 'callData', type: 'bytes' }
+        ]
+      }
+    ],
+    outputs: [
+      {
+        name: 'res',
+        type: 'tuple[]',
+        components: [
+          { name: 'success', type: 'bool' },
+          { name: 'returnData', type: 'bytes' }
+        ]
+      }
     ]
   }
 ] as const;
@@ -369,6 +428,28 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingSymbol: 'USDG',
     underlyingDecimals: 6,
     expiry: 1779926400 // Thu May 28 2026 00:00:00 UTC
+  },
+  {
+    name: 'PT-USDe',
+    marketAddress: '0xa3336f04f7afbf26714331e395054f33b77c9b8d',
+    ptToken: '0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0',
+    ytToken: '0x4265ebF36F738D4D623C201BecBbc0f92bE57198',
+    syToken: '0xf0bAcD9C3D94fC924DBcaaF644208C4E3f4d3bB4',
+    underlyingToken: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
+    underlyingSymbol: 'USDe',
+    underlyingDecimals: 18,
+    expiry: 1778112000
+  },
+  {
+    name: 'PT-sENA',
+    marketAddress: '0xeab7b7c8353ba1cb4b29cf7ae9c166efdc57835f',
+    ptToken: '0x4552C668eb8dEDeAc53e00CfD05d873f11a80204',
+    ytToken: '0xF8a735034Ce8eBec8f6A742658460a78Ebfae725',
+    syToken: '0xA36ECCA8B7624D224F01CD6649C8afAd3Da12C3D',
+    underlyingToken: '0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9',
+    underlyingSymbol: 'sENA',
+    underlyingDecimals: 18,
+    expiry: 1777507200
   }
 ];
 

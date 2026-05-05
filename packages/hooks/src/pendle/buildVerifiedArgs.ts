@@ -1,8 +1,10 @@
+import { encodeFunctionData } from 'viem';
 import { ZERO_ADDRESS } from '../constants';
 import {
   PENDLE_ALLOWED_SELECTORS,
   PENDLE_EMPTY_LIMIT,
   PENDLE_EMPTY_SWAP_DATA,
+  PENDLE_ROUTER_V4_ABI,
   PendleConvertSide
 } from './constants';
 import type { PendleConvertQuote } from './pendle';
@@ -259,4 +261,115 @@ function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): Verif
   ] as const;
 
   return { side: PendleConvertSide.WITHDRAW, functionName: 'exitPostExpToToken', args };
+}
+
+// ---------------------------------------------------------------------------
+// Matured redeem (quote-less) — produces a VerifiedExitArgs without an API
+// call. Post-expiry redemption is contractually 1:1 (PT → SY → underlying),
+// so we don't need the API to compute amountOut or guess hints. We construct
+// the same struct buildVerifiedArgs would produce for an exit, with
+// `minTokenOut = 0n` (the redeem path is deterministic — no slippage).
+// ---------------------------------------------------------------------------
+
+export type MaturedRedeemContext = {
+  receiver: `0x${string}`;
+  market: `0x${string}`;
+  /** PT token address — the input being burned for redemption */
+  ptToken: `0x${string}`;
+  /** Underlying asset to receive — must match `tokenRedeemSy` of the SY */
+  underlyingToken: `0x${string}`;
+  /** PT amount to redeem (raw wei) */
+  amountIn: bigint;
+};
+
+/**
+ * Build a verified `exitPostExpToToken` call without an API quote. Use only
+ * for matured markets. Output struct is byte-equivalent to what
+ * buildVerifiedArgs() produces for the exit path with apiMinOut = 0.
+ *
+ * Why no quote: the exit path is deterministic post-expiry — the contract
+ * burns PT 1:1 for SY then redeems SY for the underlying at the configured
+ * rate. There's no slippage, no aggregator routing, no price impact. The
+ * API would just confirm what we already know.
+ *
+ * Pinning context: this still respects the no-aggregator invariant
+ * (`pendleSwap = 0`, empty `swapData`) and the locked-router invariant
+ * (caller submits to PENDLE_ROUTER_V4_ADDRESS, never anything else).
+ */
+export function buildMaturedRedeemVerifiedArgs(ctx: MaturedRedeemContext): VerifiedCall & {
+  functionName: 'exitPostExpToToken';
+} {
+  if (ctx.amountIn === 0n) {
+    throw new Error('Pendle: refusing to build redeem args — amountIn is zero');
+  }
+  const args: VerifiedExitArgs = [
+    ctx.receiver,
+    ctx.market,
+    ctx.amountIn,
+    0n, // netLpIn — v1 does not expose LP
+    {
+      tokenOut: ctx.underlyingToken,
+      minTokenOut: 0n, // matured redeem is deterministic 1:1, no slippage
+      tokenRedeemSy: ctx.underlyingToken, // no-aggregator invariant
+      pendleSwap: ZERO_ADDRESS,
+      swapData: verifiedEmptySwapData
+    }
+  ] as const;
+
+  return { side: PendleConvertSide.WITHDRAW, functionName: 'exitPostExpToToken', args };
+}
+
+// ---------------------------------------------------------------------------
+// Multicall — wraps N already-verified inner calls into Router.multicall(bytes[])
+// ---------------------------------------------------------------------------
+
+/** One element of the Pendle Router multicall input — `Call3` in Solidity. */
+export type VerifiedMulticallCall = {
+  allowFailure: boolean;
+  callData: `0x${string}`;
+};
+
+export type VerifiedMulticall = {
+  functionName: 'multicall';
+  /** [Call3[]] — single arg, the array of (allowFailure, callData) tuples */
+  args: readonly [readonly VerifiedMulticallCall[]];
+  /** The inner verified calls in order, exposed for caller introspection */
+  innerCalls: readonly VerifiedCall[];
+};
+
+/**
+ * Wrap N pre-verified inner calls into a single Router.multicall(bytes[]).
+ *
+ * Each `inner` MUST already be the output of `buildVerifiedArgs()` or
+ * `buildMaturedRedeemVerifiedArgs()` — i.e. selector-allowlisted, fields
+ * overridden from known values, and pendleSwap/swapData/limit forced empty.
+ * This wrapper does NOT re-verify; it only encodes via viem and bundles.
+ *
+ * Pinned-router guard: caller must submit to PENDLE_ROUTER_V4_ADDRESS. The
+ * Pendle Router's native multicall preserves msg.sender via internal
+ * delegate-call, so each inner call sees the original user as the caller —
+ * which means PT pulls work without any approval indirection.
+ */
+export function buildMulticallVerifiedArgs(inner: readonly VerifiedCall[]): VerifiedMulticall {
+  if (inner.length === 0) {
+    throw new Error('Pendle: refusing to build multicall — no inner calls provided');
+  }
+  const calls: VerifiedMulticallCall[] = inner.map(call => {
+    // viem's encodeFunctionData uses the ABI to find the matching function +
+    // encode its args. The verified call's `functionName` is from a closed
+    // discriminated union, so we know it matches an ABI entry.
+    const callData = encodeFunctionData({
+      abi: PENDLE_ROUTER_V4_ABI,
+      functionName: call.functionName,
+      args: call.args as never
+    });
+    // allowFailure is hard-coded to false: a partial multicall would
+    // approve PT but leave funds stranded mid-batch. We want all-or-nothing.
+    return { allowFailure: false, callData };
+  });
+  return {
+    functionName: 'multicall',
+    args: [calls] as const,
+    innerCalls: inner
+  };
 }

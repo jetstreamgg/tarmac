@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildVerifiedArgs } from './buildVerifiedArgs';
+import { decodeFunctionData } from 'viem';
+import {
+  buildVerifiedArgs,
+  buildMaturedRedeemVerifiedArgs,
+  buildMulticallVerifiedArgs
+} from './buildVerifiedArgs';
+import { PENDLE_ROUTER_V4_ABI } from './constants';
 import {
   PENDLE_EMPTY_LIMIT,
   PENDLE_EMPTY_SWAP_DATA,
@@ -390,5 +396,101 @@ describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
       makeExitQuote({ apiContractParams: makeExitParams({ outputTokenRedeemSy: ANOTHER }) })
     );
     expect(verified.args[4].tokenRedeemSy).toBe(USDG); // === EXIT_KNOWN.outputToken
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildMaturedRedeemVerifiedArgs (quote-less)
+// ---------------------------------------------------------------------------
+
+describe('buildMaturedRedeemVerifiedArgs', () => {
+  const ctx = {
+    receiver: RECEIVER,
+    market: MARKET,
+    ptToken: PT_USDG,
+    underlyingToken: USDG,
+    amountIn: 100_000_000n
+  };
+
+  it('produces an exitPostExpToToken VerifiedCall', () => {
+    const verified = buildMaturedRedeemVerifiedArgs(ctx);
+    expect(verified.functionName).toBe('exitPostExpToToken');
+    expect(verified.side).toBe(PendleConvertSide.WITHDRAW);
+  });
+
+  it('sets minTokenOut to 0 (matured redeem is deterministic 1:1)', () => {
+    const verified = buildMaturedRedeemVerifiedArgs(ctx);
+    expect(verified.args[4].minTokenOut).toBe(0n);
+  });
+
+  it('forces netLpIn to 0', () => {
+    const verified = buildMaturedRedeemVerifiedArgs(ctx);
+    expect(verified.args[3]).toBe(0n);
+  });
+
+  it('forces tokenRedeemSy === underlyingToken (no-aggregator invariant)', () => {
+    const verified = buildMaturedRedeemVerifiedArgs(ctx);
+    expect(verified.args[4].tokenRedeemSy).toBe(USDG);
+    expect(verified.args[4].pendleSwap).toBe(ZERO);
+    expect(verified.args[4].swapData).toEqual(PENDLE_EMPTY_SWAP_DATA);
+  });
+
+  it('throws when amountIn is zero', () => {
+    expect(() => buildMaturedRedeemVerifiedArgs({ ...ctx, amountIn: 0n })).toThrow(/amountIn is zero/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildMulticallVerifiedArgs
+// ---------------------------------------------------------------------------
+
+describe('buildMulticallVerifiedArgs', () => {
+  const inner1 = buildMaturedRedeemVerifiedArgs({
+    receiver: RECEIVER,
+    market: MARKET,
+    ptToken: PT_USDG,
+    underlyingToken: USDG,
+    amountIn: 100_000_000n
+  });
+  const inner2 = buildMaturedRedeemVerifiedArgs({
+    receiver: RECEIVER,
+    market: '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as const,
+    ptToken: '0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2' as const,
+    underlyingToken: '0xc3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3' as const,
+    amountIn: 50_000_000n
+  });
+
+  it('returns a multicall-shaped VerifiedMulticall', () => {
+    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
+    expect(wrapped.functionName).toBe('multicall');
+    expect(wrapped.args).toHaveLength(1);
+    expect(wrapped.args[0]).toHaveLength(2);
+    expect(wrapped.innerCalls).toEqual([inner1, inner2]);
+  });
+
+  it('wraps each inner call as a Call3 struct with allowFailure=false', () => {
+    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
+    for (const call of wrapped.args[0]) {
+      expect(call.allowFailure).toBe(false);
+      expect(call.callData).toMatch(/^0x[0-9a-fA-F]+$/);
+    }
+  });
+
+  it('encodes each inner callData to bytes that decode back to the original args', () => {
+    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
+    for (const [i, call] of wrapped.args[0].entries()) {
+      const decoded = decodeFunctionData({ abi: PENDLE_ROUTER_V4_ABI, data: call.callData });
+      expect(decoded.functionName).toBe(wrapped.innerCalls[i].functionName);
+    }
+  });
+
+  it('throws when given an empty inner array', () => {
+    expect(() => buildMulticallVerifiedArgs([])).toThrow(/no inner calls/);
+  });
+
+  it('preserves order of inner calls', () => {
+    const wrapped = buildMulticallVerifiedArgs([inner2, inner1]);
+    expect(wrapped.innerCalls[0]).toEqual(inner2);
+    expect(wrapped.innerCalls[1]).toEqual(inner1);
   });
 });

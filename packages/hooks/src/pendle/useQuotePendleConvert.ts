@@ -51,13 +51,6 @@ type UseQuotePendleConvertParams = {
   amountIn?: bigint;
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
   slippage: number;
-  /**
-   * Set ONLY when the market is matured. Included in the request as
-   * `inputs[1]` with amount `0`; the API uses this as a marker to route to
-   * `exitPostExpToToken` instead of `swapExactPtForToken`. Callers should
-   * pass `market.ytToken` iff `isMarketMatured(market.expiry)`.
-   */
-  ytTokenForExit?: `0x${string}`;
   enabled?: boolean;
 };
 
@@ -86,7 +79,6 @@ export function useQuotePendleConvert({
   outputToken,
   amountIn,
   slippage,
-  ytTokenForExit,
   enabled: enabledParam = true
 }: UseQuotePendleConvertParams): PendleQuoteHook {
   const { address: connectedAddress } = useConnection();
@@ -108,20 +100,17 @@ export function useQuotePendleConvert({
       side,
       inputToken,
       outputToken,
-      amountIn,
+      // React Query hashes the queryKey via JSON.stringify, which throws on
+      // BigInt values. Serialize amountIn to string so the cache key is stable
+      // and unique without crashing the renderer.
+      amountIn?.toString(),
       connectedAddress,
-      slippage,
-      ytTokenForExit
+      slippage
     ],
     queryFn: async (): Promise<PendleConvertQuote> => {
       const inputs: Array<{ token: `0x${string}`; amount: string }> = [
         { token: inputToken!, amount: amountIn!.toString() }
       ];
-      if (ytTokenForExit) {
-        // Matured-market exit: the API routes to `exitPostExpToToken` when YT
-        // is included as a second input (with amount 0).
-        inputs.push({ token: ytTokenForExit, amount: '0' });
-      }
       const response = await fetchPendleConvert(mainnet.id, {
         receiver: connectedAddress!,
         slippage,
@@ -144,6 +133,7 @@ export function useQuotePendleConvert({
         effectiveApy: route.data.effectiveApy ?? 0,
         impliedApy: route.data.impliedApy?.after ?? route.data.impliedApy?.before ?? 0,
         priceImpact: route.data.priceImpact,
+        feeUsd: route.data.fee?.usd,
         fetchedAt: Date.now(),
         apiContractParams: route.contractParamInfo.contractCallParams,
         apiContractParamsName: route.contractParamInfo.contractCallParamsName

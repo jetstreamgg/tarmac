@@ -12,6 +12,7 @@ import {
   PsmConversionFlow,
   PsmConversionScreen
 } from '@/widgets/PsmConversionWidget/lib/constants';
+import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { RewardContract } from '@jetstreamgg/sky-hooks';
 import { TxStatus, NotificationType } from '../constants';
 import { SealFlow } from '@widgets/widgets/SealModuleWidget/lib/constants';
@@ -27,8 +28,16 @@ export type WidgetState = {
     | TradeFlow
     | PsmConversionFlow
     | StakeFlow
-    | SealFlow;
-  action: InitialAction | SavingsAction | UpgradeAction | RewardsAction | TradeAction | PsmConversionAction;
+    | SealFlow
+    | PendleFlow;
+  action:
+    | InitialAction
+    | SavingsAction
+    | UpgradeAction
+    | RewardsAction
+    | TradeAction
+    | PsmConversionAction
+    | PendleAction;
   screen:
     | InitialScreen
     | SavingsScreen
@@ -37,7 +46,8 @@ export type WidgetState = {
     | TradeScreen
     | PsmConversionScreen
     | StakeScreen
-    | SealScreen;
+    | SealScreen
+    | PendleScreen;
 };
 
 type Amount = {

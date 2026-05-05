@@ -27,6 +27,13 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
         PENDLE_MARKETS.map(m => m.marketAddress)
       );
 
+      // ISO timestamp ("2026-05-28T00:00:00.000Z") → unix seconds; undefined if missing/unparseable.
+      const parseIsoToSec = (iso?: string): number | undefined => {
+        if (!iso) return undefined;
+        const ms = Date.parse(iso);
+        return Number.isFinite(ms) ? Math.floor(ms / 1000) : undefined;
+      };
+
       const map: PendleMarketsStats = {} as PendleMarketsStats;
       PENDLE_MARKETS.forEach(market => {
         const summary = results.find(
@@ -41,7 +48,9 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
           formattedTvl:
             tvl !== undefined
               ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-              : undefined
+              : undefined,
+          expirySec: parseIsoToSec(summary.expiry),
+          startTimestampSec: parseIsoToSec(summary.timestamp)
         };
       });
       return map;

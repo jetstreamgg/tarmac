@@ -1,4 +1,5 @@
 import { ReadHook } from '../hooks';
+import { PendleTradeAction } from './constants';
 
 /**
  * Configuration for a Pendle market.
@@ -65,6 +66,8 @@ export type PendleConvertQuote = {
   impliedApy: number;
   /** Price impact (decimal, signed) */
   priceImpact: number;
+  /** Routing fee in USD as reported by the API (undefined if API omits it) */
+  feeUsd?: number;
   /** ms epoch when this quote was fetched (for staleness check) */
   fetchedAt: number;
   /**
@@ -92,6 +95,10 @@ export type PendleMarketStats = {
   formattedTvl?: string;
   /** Underlying APY of the SY (decimal) */
   underlyingApy?: number;
+  /** Market expiry as a UNIX timestamp in seconds (matches the on-chain expiry()) */
+  expirySec?: number;
+  /** Market deployment timestamp in seconds (start of the maturity window) */
+  startTimestampSec?: number;
 };
 
 /**
@@ -202,4 +209,38 @@ export type PendleMarketsAllResponseRaw = {
   limit: number;
   skip: number;
   results: PendleMarketSummaryRaw[];
+};
+
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/v5/{chainId}/transactions/{marketAddress})
+// ---------------------------------------------------------------------------
+
+/**
+ * One entry in the transactions `results` array. `market` comes back as a
+ * "<chainId>-<address>" string. `value` and `impliedApy` are decimal numbers.
+ */
+export type PendleTransactionRaw = {
+  id: string;
+  market: string;
+  timestamp: string;
+  chainId: number;
+  txHash: `0x${string}`;
+  value: number;
+  type: 'TRADES';
+  action: PendleTradeAction;
+  txOrigin: `0x${string}`;
+  impliedApy: number;
+  notional?: Record<string, number>;
+};
+
+export type PendleMarketTransactionsResponseRaw = {
+  total: number;
+  resumeToken?: string;
+  limit: number;
+  skip: number;
+  results: PendleTransactionRaw[];
+};
+
+export type PendleMarketHistoryHook = ReadHook & {
+  data?: PendleTransactionRaw[];
 };
