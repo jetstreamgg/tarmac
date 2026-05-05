@@ -198,7 +198,6 @@ const sharedProps = {
 };
 
 const cardAddresses = (container: HTMLElement): string[] =>
-  // eslint-disable-next-line testing-library/no-container
   Array.from(container.querySelectorAll<HTMLElement>('[data-testid="pendle-market-stats-card"]')).map(
     el => el.dataset.market ?? ''
   );

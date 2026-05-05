@@ -6,7 +6,6 @@ import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { type PendleConvertQuote, type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
 import { BatchTransactionStatus } from '@widgets/shared/components/ui/transaction/BatchTransactionStatus';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
-import { TxStatus } from '@widgets/shared/constants';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
   PendleFlow,
