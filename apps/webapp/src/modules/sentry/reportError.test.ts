@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type MockedFunction, vi } from 'vitest';
 import { reportError } from './reportError';
 
 describe('reportError', () => {
@@ -8,17 +8,25 @@ describe('reportError', () => {
   const setExtras = vi.fn();
   const setContext = vi.fn();
   const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  type MockScope = {
+    setTag: typeof setTag;
+    setLevel: typeof setLevel;
+    setExtras: typeof setExtras;
+    setContext: typeof setContext;
+  };
+  type WithScopeMock = MockedFunction<(callback: (scope: MockScope) => void) => void>;
 
   beforeEach(() => {
     vi.clearAllMocks();
 
-    vi.mocked(Sentry.withScope).mockImplementation(callback => {
+    const withScopeMock = vi.mocked(Sentry.withScope) as unknown as WithScopeMock;
+    withScopeMock.mockImplementation(callback => {
       callback({
         setTag,
         setLevel,
         setExtras,
         setContext
-      } as never);
+      });
     });
   });
 
