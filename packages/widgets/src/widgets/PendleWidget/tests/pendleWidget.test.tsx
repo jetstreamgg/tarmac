@@ -43,11 +43,13 @@ describe('Pendle widget tests', () => {
     expect(link.getAttribute('href')).toContain('pendle.finance');
   });
 
-  it('disables the action button when not connected', async () => {
+  it('shows an enabled "Connect Wallet" button when not connected', async () => {
     renderWithWagmiWrapper(<PendleWidget market={market} onConnect={() => true} />);
 
     const button = (await screen.findByTestId('widget-button')) as HTMLButtonElement;
-    // WagmiWrapper's mock connection isn't connected; widget should disable until connect.
-    expect(button.disabled).toBe(true);
+    // WagmiWrapper's mock connection isn't connected; the action button should
+    // stay enabled so clicking it triggers the connect flow.
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toContain('Connect Wallet');
   });
 });
