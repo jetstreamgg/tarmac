@@ -39,7 +39,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
     >
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <HStack className="items-center" gap={2}>
-          <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS' }} />
+          <TokenIcon className="h-6 w-6" token={{ symbol: `PT-${market.underlyingSymbol}` }} />
           <Text>PT-{market.underlyingSymbol}</Text>
           {matured ? (
             <Text variant="small" className="text-textSecondary">

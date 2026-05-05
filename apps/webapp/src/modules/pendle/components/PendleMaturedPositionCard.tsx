@@ -33,11 +33,25 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
 
   const tokenTile = (
     <HStack className="items-center" gap={2}>
-      <TokenIcon className="h-5 w-5" token={{ symbol: 'USDS' }} showChainIcon={false} />
-      <Text>
-        {formattedBalance} PT-{market.underlyingSymbol} → {formattedReceive ?? formattedBalance}{' '}
-        {market.underlyingSymbol}
-      </Text>
+      <HStack className="items-center" gap={2}>
+        <TokenIcon
+          className="h-5 w-5"
+          token={{ symbol: `PT-${market.underlyingSymbol}` }}
+          showChainIcon={false}
+        />
+        <Text>
+          {formattedBalance} PT-{market.underlyingSymbol}
+        </Text>
+      </HStack>
+      {formattedReceive && (
+        <HStack className="items-center" gap={2}>
+          <Text>→</Text>
+          <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
+          <Text>
+            {formattedReceive} {market.underlyingSymbol}
+          </Text>
+        </HStack>
+      )}
     </HStack>
   );
 
@@ -53,7 +67,11 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
             <Trans>Available to redeem</Trans>
           </CardTitle>
           <HStack className="items-center" gap={2}>
-            <TokenIcon className="h-5 w-5" token={{ symbol: 'USDS' }} showChainIcon={false} />
+            <TokenIcon
+              className="h-5 w-5"
+              token={{ symbol: `PT-${market.underlyingSymbol}` }}
+              showChainIcon={false}
+            />
             <Text>
               {formattedBalance} PT-{market.underlyingSymbol}
             </Text>

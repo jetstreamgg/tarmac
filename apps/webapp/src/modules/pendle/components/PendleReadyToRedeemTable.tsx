@@ -81,10 +81,25 @@ const PendleMaturedRow = ({ market, ptBalance }: RowProps) => {
 
   const tokenTile = (
     <HStack className="items-center" gap={2}>
-      <TokenIcon className="h-5 w-5" token={{ symbol: 'USDS' }} showChainIcon={false} />
-      <Text>
-        {formatted} PT-{market.underlyingSymbol} → {formattedReceive ?? formatted} {market.underlyingSymbol}
-      </Text>
+      <HStack className="items-center" gap={2}>
+        <TokenIcon
+          className="h-5 w-5"
+          token={{ symbol: `PT-${market.underlyingSymbol}` }}
+          showChainIcon={false}
+        />
+        <Text>
+          {formatted} PT-{market.underlyingSymbol}
+        </Text>
+      </HStack>
+      {formattedReceive && (
+        <HStack className="items-center" gap={2}>
+          <Text>→</Text>
+          <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
+          <Text>
+            {formattedReceive} {market.underlyingSymbol}
+          </Text>
+        </HStack>
+      )}
     </HStack>
   );
 
@@ -94,7 +109,11 @@ const PendleMaturedRow = ({ market, ptBalance }: RowProps) => {
     <TableRow data-testid="pendle-matured-row" data-market={market.marketAddress}>
       <TableCell>
         <HStack className="items-center" gap={2}>
-          <TokenIcon className="h-5 w-5" token={{ symbol: 'USDS' }} showChainIcon={false} />
+          <TokenIcon
+            className="h-5 w-5"
+            token={{ symbol: `PT-${market.underlyingSymbol}` }}
+            showChainIcon={false}
+          />
           <Text>PT-{market.underlyingSymbol}</Text>
         </HStack>
       </TableCell>
