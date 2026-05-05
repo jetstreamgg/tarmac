@@ -35,13 +35,13 @@ export function getFooterLinks(): FooterLink[] {
     if (footerLinksVar) footerLinks = JSON.parse(footerLinksVar);
   } catch (error) {
     if (!footerLinksParseErrorReported) {
+      footerLinksParseErrorReported = true;
       reportError(error, {
         module: 'config',
         flow: 'footer-links',
         action: 'parse',
         type: 'env_parse_error'
       });
-      footerLinksParseErrorReported = true;
     }
   }
   return footerLinks;
