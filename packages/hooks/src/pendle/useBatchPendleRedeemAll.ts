@@ -54,7 +54,7 @@ type UseBatchPendleRedeemMulticallParams = BatchWriteHookParams & {
  * fallback — partial-success recoverable; the user can re-run with the
  * remaining markets.
  */
-export function useBatchPendleRedeemMulticall({
+export function useBatchPendleRedeemAll({
   positions,
   enabled: activeEnabled = true,
   shouldUseBatch = true,

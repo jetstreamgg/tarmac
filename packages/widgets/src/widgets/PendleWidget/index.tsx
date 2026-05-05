@@ -9,8 +9,8 @@ import {
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
-  useBatchPendleRedeemMulticall,
   useIsBatchSupported,
+  usePendleRedeem,
   useQuotePendleConvert,
   useTokenAllowance,
   useTokenBalance,
@@ -172,25 +172,6 @@ const PendleWidgetWrapped = ({
     enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n
   });
 
-  // TODO(APP-175): drop this console.log before shipping. Useful during scaffold
-  // for inspecting Pendle's /convert response shape and decimal handling.
-  useEffect(() => {
-    if (quote) {
-      console.log('[Pendle quote]', {
-        side,
-        market: market.name,
-        underlyingDecimals: market.underlyingDecimals,
-        amountIn: amount.toString(),
-        amountOut: quote.amountOut.toString(),
-        apiMinOut: quote.apiMinOut.toString(),
-        impliedApy: quote.impliedApy,
-        effectiveApy: quote.effectiveApy,
-        priceImpact: quote.priceImpact,
-        method: quote.method
-      });
-    }
-  }, [quote, side, market, amount]);
-
   const insufficientFunds = useMemo(() => {
     if (!isConnectedAndEnabled || amount === 0n) return false;
     const balance = flow === PendleFlow.BUY ? underlyingBalance?.value : ptBalance?.value;
@@ -199,7 +180,11 @@ const PendleWidgetWrapped = ({
 
   // -------- WRITE WIRING --------
   // Two hooks, but only one is live per render (the other is gated by `enabled`):
-  //   - matured  → useBatchPendleRedeemMulticall (deterministic redeem, no API quote)
+  //   - matured  → usePendleRedeem (deterministic redeem, no API quote; calls
+  //                 Router.exitPostExpToToken directly — no multicall wrapper
+  //                 since this widget redeems one market at a time. Pair to
+  //                 useBatchPendleRedeemAll for the multi-market case, mirroring
+  //                 the stake module's useStakeClaimRewards / useBatchStakeClaimAllRewards split)
   //   - !matured → useBatchPendleConvert (Pendle /convert API → router swap)
   // Both implement the same BatchWriteHook interface so the rest of the widget
   // doesn't care which one's driving.
@@ -261,15 +246,15 @@ const PendleWidgetWrapped = ({
     ...txCallbacks
   });
 
-  const batchRedeem = useBatchPendleRedeemMulticall({
-    positions:
-      matured && debouncedAmount > 0n ? [{ market, ptBalance: debouncedAmount }] : [],
+  const redeem = usePendleRedeem({
+    market,
+    ptBalance: matured && debouncedAmount > 0n ? debouncedAmount : 0n,
     enabled: matured && isConnectedAndEnabled && debouncedAmount > 0n,
     shouldUseBatch,
     ...txCallbacks
   });
 
-  const writeHook = matured ? batchRedeem : batchConvert;
+  const writeHook = matured ? redeem : batchConvert;
 
   // Map raw viem/Pendle revert messages to user-friendly copy. Returns
   // undefined when there's no error to show. Keeping this inline (not a
@@ -314,23 +299,6 @@ const PendleWidgetWrapped = ({
 
   const errorOnClick = () => writeHook.execute();
 
-  // Matured-redeem click: log the call shape before kicking off the write so
-  // it's easy to inspect in dev. TODO(APP-175): drop this log before shipping.
-  const onMaturedRedeemClick = () => {
-    const routerAddress = PENDLE_ROUTER_V4_ADDRESS[balanceChainId];
-    console.log('[Pendle redeem]', {
-      function: 'PendleRouter.multicall([exitPostExpToToken(...)])',
-      router: routerAddress,
-      market: market.name,
-      marketAddress: market.marketAddress,
-      ptToken: market.ptToken,
-      underlyingToken: market.underlyingToken,
-      ptAmount: debouncedAmount.toString(),
-      receiver: address
-    });
-    writeHook.execute();
-  };
-
   const onClickAction = !isConnectedAndEnabled
     ? onConnect
     : txStatus === TxStatus.SUCCESS
@@ -339,7 +307,7 @@ const PendleWidgetWrapped = ({
         ? errorOnClick
         : matured
           ? // Matured redeem skips the Review screen — execute immediately.
-            onMaturedRedeemClick
+            writeHook.execute
           : screen === PendleScreen.ACTION
             ? reviewOnClick
             : writeHook.execute;

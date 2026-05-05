@@ -14,7 +14,7 @@ type MaturedRedeemProps = {
 /**
  * Matured-market redeem view — strips the widget to a single information
  * banner. There's no input: the action button redeems the user's full PT
- * balance 1:1 (via useBatchPendleRedeemMulticall in the parent widget).
+ * balance 1:1 (via usePendleRedeem in the parent widget).
  *
  * 1:1 holds for all PENDLE_MARKETS today (USDG, USDe, sENA — each has SY
  * exchange rate 1.0 to its underlying). If we ever add a market whose SY

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { t } from '@lingui/core/macro';
 import {
-  useBatchPendleRedeemMulticall,
+  useBatchPendleRedeemAll,
   usePendleUserPtBalances,
   type RedeemPosition
 } from '@jetstreamgg/sky-hooks';
@@ -15,7 +15,7 @@ type Options = {
 
 /**
  * Multi-market matured redemption (Path A) via the global TransactionContext
- * modal. Wraps `useBatchPendleRedeemMulticall` + `launch()`.
+ * modal. Wraps `useBatchPendleRedeemAll` + `launch()`.
  *
  * The caller passes the selected positions; this hook composes the modal
  * launch + balance refetch on success.
@@ -24,7 +24,7 @@ export function usePendleRedeemAllModal(positions: RedeemPosition[], opts: Optio
   const { launch, txCallbacks } = useTransaction();
   const { mutate: mutatePtBalances } = usePendleUserPtBalances();
 
-  const batchRedeem = useBatchPendleRedeemMulticall({
+  const batchRedeem = useBatchPendleRedeemAll({
     positions,
     enabled: positions.length > 0,
     shouldUseBatch: true,

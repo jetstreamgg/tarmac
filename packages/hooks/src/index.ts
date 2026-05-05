@@ -141,19 +141,31 @@ export {
   PENDLE_ROUTER_V4_ABI,
   PENDLE_MARKETS,
   getPendleMarketByAddress,
-  isMarketMatured,
-  usePendleMarketsApiData,
-  usePendleUserPtBalances,
-  usePendleMarketHistory,
-  useQuotePendleConvert,
-  useBatchPendleConvert,
-  useBatchPendleRedeemMulticall,
-  buildVerifiedArgs,
-  buildMaturedRedeemVerifiedArgs,
-  buildMulticallVerifiedArgs,
   PendleConvertSide,
   PendleTradeAction
-} from './pendle';
+} from './pendle/constants';
+export { isMarketMatured } from './pendle/helpers';
+export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
+export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
+export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
+export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
+export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
+export { useBatchPendleRedeemAll, type RedeemPosition } from './pendle/useBatchPendleRedeemAll';
+export { useRedeem as usePendleRedeem } from './pendle/useRedeem';
+export {
+  buildVerifiedArgs,
+  buildMaturedRedeemVerifiedArgs,
+  buildMulticallVerifiedArgs
+} from './pendle/buildVerifiedArgs';
+export type {
+  KnownCallValues,
+  MaturedRedeemContext,
+  VerifiedCall,
+  VerifiedBuyArgs,
+  VerifiedWithdrawArgs,
+  VerifiedExitArgs,
+  VerifiedMulticall
+} from './pendle/buildVerifiedArgs';
 export type {
   PendleMarketConfig,
   PendleConvertQuote,
@@ -165,16 +177,8 @@ export type {
   PendleUserPtBalancesHook,
   PendleTransactionRaw,
   PendleMarketTransactionsResponseRaw,
-  PendleMarketHistoryHook,
-  KnownCallValues,
-  MaturedRedeemContext,
-  RedeemPosition,
-  VerifiedCall,
-  VerifiedBuyArgs,
-  VerifiedWithdrawArgs,
-  VerifiedExitArgs,
-  VerifiedMulticall
-} from './pendle';
+  PendleMarketHistoryHook
+} from './pendle/pendle';
 
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';

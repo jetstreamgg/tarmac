@@ -311,19 +311,31 @@ export const PENDLE_ROUTER_V4_ABI = [
         ]
       }
     ],
+    // Real signature: returns (uint256 netTokenOut, ExitPostExpReturnParams params)
+    // where ExitPostExpReturnParams is a 5-field struct. Flattened by viem at
+    // decode time, so the wire layout is 6 × uint256 = 192 bytes. Mismatching
+    // this (e.g. the older 7-field shape from earlier Pendle versions) makes
+    // viem's `simulateContract` throw "Position 192 is out of bounds" since it
+    // tries to read past the actual return data length. Verified against
+    // pendle-core-v2-public IPAllActionTypeV3.sol.
     outputs: [
       { name: 'netTokenOut', type: 'uint256' },
-      { name: 'netPtOutFromBurn', type: 'uint256' },
-      { name: 'netSyFromBurn', type: 'uint256' },
-      { name: 'netPtFromSwap', type: 'uint256' },
-      { name: 'netSyFromSwap', type: 'uint256' },
-      { name: 'netSyFee', type: 'uint256' },
-      { name: 'netSyInterm', type: 'uint256' }
+      {
+        name: 'params',
+        type: 'tuple',
+        components: [
+          { name: 'netPtFromRemove', type: 'uint256' },
+          { name: 'netSyFromRemove', type: 'uint256' },
+          { name: 'netPtRedeem', type: 'uint256' },
+          { name: 'netSyFromRedeem', type: 'uint256' },
+          { name: 'totalSyOut', type: 'uint256' }
+        ]
+      }
     ]
   },
   {
     // Pendle Router V4 native multicall — bundles N inner calls to the same
-    // Router into one tx. Used by useBatchPendleRedeemMulticall to redeem
+    // Router into one tx. Used by useBatchPendleRedeemAll to redeem
     // multiple matured positions atomically with a single signature. Each
     // inner blob is independently selector-allowlist verified before being
     // wrapped here (see buildMulticallVerifiedArgs).

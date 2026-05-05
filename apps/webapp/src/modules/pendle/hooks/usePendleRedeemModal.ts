@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { t } from '@lingui/core/macro';
 import {
   isMarketMatured,
-  useBatchPendleRedeemMulticall,
+  usePendleRedeem,
   usePendleUserPtBalances,
   type PendleMarketConfig
 } from '@jetstreamgg/sky-hooks';
@@ -18,12 +18,10 @@ type Options = {
 /**
  * Single-market matured redemption via the global TransactionContext modal.
  *
- * Built on top of `useBatchPendleRedeemMulticall` with a one-element
- * `positions` array. That re-uses the same security-verified multicall path
- * the multi-redeem flow uses — single source of truth for the redeem call
- * shape. (For a single market the inner `multicall(bytes[])` wraps just one
- * exit call, which is technically wasteful but keeps every redeem path going
- * through the same primitive.)
+ * Wraps `usePendleRedeem` (direct `Router.exitPostExpToToken` call, no
+ * multicall wrapper) + `launch()`. For multi-market redeem use
+ * `usePendleRedeemAllModal` instead — that one composes
+ * `useBatchPendleRedeemAll`.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
   const { launch, txCallbacks } = useTransaction();
@@ -32,8 +30,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const matured = isMarketMatured(market.expiry);
   const isRedeemable = matured && ptBalance > 0n;
 
-  const batchRedeem = useBatchPendleRedeemMulticall({
-    positions: isRedeemable ? [{ market, ptBalance }] : [],
+  const redeem = usePendleRedeem({
+    market,
+    ptBalance: isRedeemable ? ptBalance : 0n,
     enabled: isRedeemable,
     shouldUseBatch: true,
     onMutate: () => txCallbacks.onMutate(),
@@ -51,7 +50,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       title: t`Redeem PT-${market.underlyingSymbol}`,
       transactionContent: opts.transactionContent,
       confirmLabel: t`Confirm`,
-      onConfirm: () => batchRedeem.execute(),
+      onConfirm: () => redeem.execute(),
       analytics: {
         widgetName: 'pendle',
         flow: 'redeem',
@@ -59,13 +58,13 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         data: { market: market.marketAddress, underlyingSymbol: market.underlyingSymbol }
       }
     });
-  }, [launch, batchRedeem, market.underlyingSymbol, market.marketAddress, opts.transactionContent]);
+  }, [launch, redeem, market.underlyingSymbol, market.marketAddress, opts.transactionContent]);
 
   return {
     openRedeemModal,
     isRedeemable,
-    isPrepared: batchRedeem.prepared,
+    isPrepared: redeem.prepared,
     ptBalance,
-    error: batchRedeem.error
+    error: redeem.error
   };
 }
