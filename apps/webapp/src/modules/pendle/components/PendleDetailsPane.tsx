@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useSearchParams } from 'react-router-dom';
@@ -36,7 +37,18 @@ export const PendleDetailsPane = () => {
   const { address: userAddress } = useConnection();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
 
-  const selectedMarket = findMarket(searchParams.get(QueryParams.Market));
+  const selectedMarketAddress = searchParams.get(QueryParams.Market);
+  const selectedMarket = useMemo(() => findMarket(selectedMarketAddress), [selectedMarketAddress]);
+
+  // A market URL is only valid when it points at an active (non-matured)
+  // entry in PENDLE_MARKETS. Matured markets only surface as redeem rows on
+  // the overview, never as a detail view. Unknown addresses (typo/old
+  // deployment) likewise fall through to overview.
+  const showSelectedMarket = !!selectedMarket && !isMarketMatured(selectedMarket.expiry);
+
+  // URL cleanup for matured/unknown markets is centralized in PendleWidgetPane
+  // (sibling pane). Doing it here too caused both setSearchParams calls to
+  // race on the same render, with one stomping on the other.
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     setSearchParams(params => {
@@ -49,62 +61,42 @@ export const PendleDetailsPane = () => {
 
   // Whether the user holds matured PT in any market — gates the overview
   // "Ready to redeem" section.
-  // TEMP: force `true` for visual QA — revert to the original expression below:
-  //   const hasMaturedHoldings = !!(
-  //     userAddress &&
-  //     ptBalances &&
-  //     PENDLE_MARKETS.some(m => isMarketMatured(m.expiry) && (ptBalances[m.marketAddress] ?? 0n) > 0n)
-  //   );
-  const hasMaturedHoldings = true;
+  const hasMaturedHoldings = !!(
+    userAddress &&
+    ptBalances &&
+    PENDLE_MARKETS.some(m => isMarketMatured(m.expiry) && (ptBalances[m.marketAddress] ?? 0n) > 0n)
+  );
 
-  if (selectedMarket) {
-    // Per-market view: only show the redeem table when THIS market is matured
-    // and held by the user. Filter the table to just that one row so the user
-    // doesn't see unrelated markets while focused on this one.
-    const selectedIsMatured = isMarketMatured(selectedMarket.expiry);
-    const selectedBalance = ptBalances?.[selectedMarket.marketAddress] ?? 0n;
-    const showSelectedRedeem = !!userAddress && selectedIsMatured && selectedBalance > 0n;
-
+  if (showSelectedMarket) {
     return (
       <DetailSectionWrapper>
         <DetailSection title={t`Your balances`}>
           <DetailSectionRow>
-            <PendleBalanceDetails market={selectedMarket} />
+            <PendleBalanceDetails market={selectedMarket!} />
           </DetailSectionRow>
         </DetailSection>
-        {showSelectedRedeem && (
-          <DetailSection title={t`Ready to redeem`}>
-            <DetailSectionRow>
-              <PendleReadyToRedeemTable marketFilter={selectedMarket} />
-            </DetailSectionRow>
-          </DetailSection>
-        )}
         <DetailSection title={t`Market info`}>
           <DetailSectionRow>
-            <PendleMarketInfoCard market={selectedMarket} />
+            <PendleMarketInfoCard market={selectedMarket!} />
           </DetailSectionRow>
         </DetailSection>
         <DetailSection title={t`Time to maturity`}>
           <DetailSectionRow>
-            <TimeToMaturityCard market={selectedMarket} />
+            <TimeToMaturityCard market={selectedMarket!} />
           </DetailSectionRow>
         </DetailSection>
         <DetailSection title={t`Your transaction history`}>
           <DetailSectionRow>
-            <PendleMarketHistory market={selectedMarket} />
+            <PendleMarketHistory market={selectedMarket!} />
           </DetailSectionRow>
         </DetailSection>
       </DetailSectionWrapper>
     );
   }
 
-  // Overview (no market selected). Show available markets, gated by maturity / hold rule.
-  const visibleMarkets = PENDLE_MARKETS.filter(market => {
-    if (!isMarketMatured(market.expiry)) return true;
-    if (!userAddress) return false;
-    const heldBalance = ptBalances?.[market.marketAddress];
-    return heldBalance !== undefined && heldBalance > 0n;
-  });
+  // Overview. Available markets excludes matured — those live in
+  // PendleReadyToRedeemTable, not as stats cards.
+  const visibleMarkets = PENDLE_MARKETS.filter(market => !isMarketMatured(market.expiry));
 
   if (!isOnPendleChain) {
     return (

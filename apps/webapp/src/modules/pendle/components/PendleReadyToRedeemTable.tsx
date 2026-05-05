@@ -34,13 +34,6 @@ export const PendleReadyToRedeemTable = ({ marketFilter }: PendleReadyToRedeemTa
       const balance = ptBalances[market.marketAddress];
       if (balance !== undefined && balance > 0n) held.push({ market, ptBalance: balance });
     });
-    // TEMP: force-render up to 2 demo rows for visual QA when the user has no
-    // real matured holdings — revert by removing this fallback block.
-    if (held.length === 0) {
-      const demoBalance = 1_010_000_000_000_000_000_000n;
-      const demoMarkets = (marketFilter ? [marketFilter] : PENDLE_MARKETS).slice(0, 2);
-      demoMarkets.forEach(market => held.push({ market, ptBalance: demoBalance }));
-    }
     return held;
   }, [address, ptBalances, marketFilter]);
 
@@ -125,7 +118,7 @@ const PendleMaturedRow = ({ market, ptBalance }: RowProps) => {
           size="sm"
           className="rounded-xl px-4"
           onClick={openRedeemModal}
-          disabled={false /* TEMP: force-enabled for visual QA — revert to !isPrepared */}
+          disabled={!isPrepared}
           data-testid="pendle-row-redeem-button"
         >
           <Trans>Redeem</Trans>
