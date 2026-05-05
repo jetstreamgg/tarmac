@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { TxStatus } from '@widgets/shared/constants';
+import { BatchStatus, TxStatus } from '@widgets/shared/constants';
 import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
 
 export enum PendleFlow {
@@ -51,26 +51,88 @@ export const pendleBuyReviewTitle = msg`Begin the supply process`;
 export const pendleWithdrawReviewTitle = msg`Begin the withdraw process`;
 export const pendleRedeemReviewTitle = msg`Begin the redemption process`;
 
-export function getPendleBuyReviewSubtitle(symbol: string): MessageDescriptor {
-  return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in multiple transactions.`;
+export function getPendleBuyReviewSubtitle({
+  batchStatus,
+  symbol,
+  needsAllowance
+}: {
+  batchStatus: BatchStatus;
+  symbol: string;
+  needsAllowance: boolean;
+}): MessageDescriptor {
+  if (!needsAllowance) {
+    return msg`You will supply your ${symbol} to the Pendle fixed-yield market.`;
+  }
+  switch (batchStatus) {
+    case BatchStatus.ENABLED:
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in one bundled transaction.`;
+    case BatchStatus.DISABLED:
+      return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in multiple transactions.`;
+    default:
+      return msg``;
+  }
 }
 
-export function getPendleWithdrawReviewSubtitle(ptSymbol: string, underlyingSymbol: string): MessageDescriptor {
-  return msg`You're allowing this app to sell your ${ptSymbol} for ${underlyingSymbol} via Pendle in multiple transactions.`;
+export function getPendleWithdrawReviewSubtitle({
+  batchStatus,
+  ptSymbol,
+  underlyingSymbol,
+  needsAllowance
+}: {
+  batchStatus: BatchStatus;
+  ptSymbol: string;
+  underlyingSymbol: string;
+  needsAllowance: boolean;
+}): MessageDescriptor {
+  if (!needsAllowance) {
+    return msg`You will sell your ${ptSymbol} for ${underlyingSymbol} via Pendle.`;
+  }
+  switch (batchStatus) {
+    case BatchStatus.ENABLED:
+      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} via Pendle in one bundled transaction.`;
+    case BatchStatus.DISABLED:
+      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} via Pendle in multiple transactions.`;
+    default:
+      return msg``;
+  }
 }
 
 export function getPendleRedeemReviewSubtitle(ptSymbol: string, underlyingSymbol: string): MessageDescriptor {
   return msg`You're allowing this app to redeem your ${ptSymbol} for ${underlyingSymbol} from the matured Pendle market.`;
 }
 
-export function getPendleActionDescription(
-  flow: PendleFlow,
-  isRedeem: boolean,
-  underlyingSymbol: string
-): MessageDescriptor {
-  if (flow === PendleFlow.BUY) return msg`Supplying ${underlyingSymbol} to the Pendle fixed-yield market`;
+export function getPendleActionDescription({
+  flow,
+  action,
+  txStatus,
+  isRedeem,
+  needsAllowance,
+  underlyingSymbol
+}: {
+  flow: PendleFlow;
+  action: PendleAction | null;
+  txStatus: TxStatus;
+  isRedeem: boolean;
+  needsAllowance: boolean;
+  underlyingSymbol: string;
+}): MessageDescriptor {
+  if (
+    (action === PendleAction.BUY || action === PendleAction.WITHDRAW) &&
+    txStatus === TxStatus.SUCCESS
+  ) {
+    if (flow === PendleFlow.BUY) return msg`Supplied ${underlyingSymbol} to the Pendle fixed-yield market`;
+    if (isRedeem) return msg`Redeemed PT-${underlyingSymbol} for ${underlyingSymbol}`;
+    return msg`Sold PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
+  }
+  if (flow === PendleFlow.BUY) {
+    return needsAllowance
+      ? msg`Approving and supplying ${underlyingSymbol} to the Pendle fixed-yield market`
+      : msg`Supplying ${underlyingSymbol} to the Pendle fixed-yield market`;
+  }
   if (isRedeem) return msg`Redeeming PT-${underlyingSymbol} for ${underlyingSymbol} at maturity`;
-  return msg`Selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
+  return needsAllowance
+    ? msg`Approving and selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`
+    : msg`Selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
 }
 
 // ---- Transaction-status copy ----

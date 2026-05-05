@@ -32,6 +32,7 @@ import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
 import { mainnet } from 'viem/chains';
 import { PendleAction, PendleFlow, PendleScreen } from './lib/constants';
 import { usePendleSlippage } from './hooks/usePendleSlippage';
+import { usePendleTokens } from './hooks/usePendleTokens';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { MaturedRedeem } from './components/MaturedRedeem';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
@@ -146,6 +147,10 @@ const PendleWidgetWrapped = ({
   const outputToken = flow === PendleFlow.BUY ? market.ptToken : market.underlyingToken;
   const side = flow === PendleFlow.BUY ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
 
+  const { underlyingToken, ptToken } = usePendleTokens(market);
+  const originToken = flow === PendleFlow.BUY ? underlyingToken : ptToken;
+  const targetToken = flow === PendleFlow.BUY ? ptToken : underlyingToken;
+
   // Allowance for the input token (underlying for Buy, PT for Withdraw) → router.
   // Mirrors the check inside useBatchPendleConvert; React Query cache dedupes.
   const { data: allowance } = useTokenAllowance({
@@ -192,6 +197,7 @@ const PendleWidgetWrapped = ({
     onMutate: () => {
       setTxStatus(TxStatus.INITIALIZED);
       setExternalLink(undefined);
+      setWidgetState((prev: WidgetState) => ({ ...prev, screen: PendleScreen.TRANSACTION }));
     },
     onStart: (hash: string | undefined) => {
       setTxStatus(TxStatus.LOADING);
@@ -456,12 +462,15 @@ const PendleWidgetWrapped = ({
           <CardAnimationWrapper key="pendle-tx-status" className="h-full">
             <PendleTransactionStatus
               market={market}
-              flow={flow}
+              originToken={originToken}
+              targetToken={targetToken}
               amount={debouncedAmount}
               quote={quote}
               isRedeemMode={isRedeemMode}
               targetAmount={matured ? debouncedAmount : undefined}
               needsAllowance={needsAllowance}
+              isBatchTransaction={shouldUseBatch}
+              currentCallIndex={writeHook.currentCallIndex}
               onExternalLinkClicked={onExternalLinkClicked}
             />
           </CardAnimationWrapper>
@@ -469,11 +478,14 @@ const PendleWidgetWrapped = ({
           <CardAnimationWrapper key="pendle-tx-review" className="h-full">
             <PendleTransactionReview
               market={market}
-              flow={flow}
+              originToken={originToken}
+              targetToken={targetToken}
               amount={debouncedAmount}
               quote={quote}
               isRedeemMode={isRedeemMode}
               targetAmount={matured ? debouncedAmount : undefined}
+              needsAllowance={needsAllowance}
+              isBatchTransaction={shouldUseBatch}
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
               legalBatchTxUrl={legalBatchTxUrl}
