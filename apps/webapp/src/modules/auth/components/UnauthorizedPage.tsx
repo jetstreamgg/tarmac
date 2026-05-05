@@ -9,6 +9,11 @@ import { LoadingSpinner } from '@/modules/ui/components/LoadingSpinner';
 import { sanitizeUrl } from '@/lib/utils';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
 import { type BlockReason } from '@/modules/analytics/constants';
+import {
+  type TermsLink,
+  getTermsLinkConfig,
+  reportTermsLinkConfigErrorOnce
+} from '@/modules/config/termsLink';
 
 type AuthData = {
   addressAllowed?: boolean;
@@ -56,7 +61,11 @@ const getTitle = (authData: AuthData, vpnData: VpnData): string => {
   return t`Network Error`;
 };
 
-const getMessage = (authData: AuthData, vpnData: VpnData, termsLink: any[]): string | React.ReactElement => {
+const getMessage = (
+  authData: AuthData,
+  vpnData: VpnData,
+  termsLink: TermsLink[]
+): string | React.ReactElement => {
   if (!vpnData.vpnIsLoading && vpnData.isConnectedToVpn && !vpnData.vpnError) {
     return t`Access via VPN is not permitted. Please disconnect your VPN and refresh the page to continue.`;
   }
@@ -122,12 +131,16 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
     trackVpnBlockedPageView
   ]);
 
-  let termsLink: any[] = [];
-  try {
-    termsLink = JSON.parse(import.meta.env.VITE_TERMS_LINK);
-  } catch (error) {
-    console.error('Error parsing terms link: ', error);
-  }
+  const { termsLinks } = getTermsLinkConfig();
+
+  useEffect(() => {
+    reportTermsLinkConfigErrorOnce({
+      module: 'auth',
+      flow: 'unauthorized-page',
+      action: 'parse-terms-link',
+      type: 'config_error'
+    });
+  }, []);
 
   const isLoading = useMemo(
     () => authData.authIsLoading || vpnData.vpnIsLoading,
@@ -159,7 +172,7 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
                   </Text>
                 </DialogTitle>
                 <Text className="font-graphik text-text mb-10">
-                  {getMessage(authData, vpnData, termsLink)}
+                  {getMessage(authData, vpnData, termsLinks)}
                 </Text>
               </div>
             </div>
