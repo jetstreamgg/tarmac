@@ -15,7 +15,7 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
       name: market.underlyingSymbol,
       symbol: market.underlyingSymbol,
       decimals: market.underlyingDecimals,
-      color: '#6d7ce3',
+      color: '#00C2A1',
       address: { [mainnet.id]: market.underlyingToken }
     }),
     [market.underlyingSymbol, market.underlyingDecimals, market.underlyingToken]
@@ -26,7 +26,7 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
       name: `PT-${market.underlyingSymbol}`,
       symbol: `PT-${market.underlyingSymbol}`,
       decimals: market.underlyingDecimals,
-      color: '#f97316',
+      color: '#1BE3C2',
       address: { [mainnet.id]: market.ptToken }
     }),
     [market.underlyingSymbol, market.underlyingDecimals, market.ptToken]

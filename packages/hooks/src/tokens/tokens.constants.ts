@@ -161,7 +161,7 @@ export const TOKENS: TokenMapping = {
     },
     name: 'sUSDS',
     symbol: 'sUSDS',
-    color: '#1AAB9B',
+    color: '#00C2A1',
     decimals: 18
   },
   spk: {
