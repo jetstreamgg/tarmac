@@ -10,7 +10,8 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
-import { QueryParams } from '@/lib/constants';
+import { PendleIntent } from '@/lib/enums';
+import { PendleIntentMapping, QueryParams } from '@/lib/constants';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
@@ -30,23 +31,31 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
 };
 
 export const PendleDetailsPane = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
   const { address: userAddress } = useConnection();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
 
   const selectedMarket = findMarket(searchParams.get(QueryParams.Market));
+
+  const handleSelectMarket = (market: PendleMarketConfig) => {
+    setSearchParams(params => {
+      params.set(QueryParams.PendleModule, PendleIntentMapping[PendleIntent.MARKET_INTENT]);
+      params.set(QueryParams.Market, market.marketAddress);
+      return params;
+    });
+  };
   const { data: ptBalances } = usePendleUserPtBalances();
 
   // Whether the user holds matured PT in any market — gates the overview
   // "Ready to redeem" section.
-  const hasMaturedHoldings = !!(
-    userAddress &&
-    ptBalances &&
-    PENDLE_MARKETS.some(
-      m => isMarketMatured(m.expiry) && (ptBalances[m.marketAddress] ?? 0n) > 0n
-    )
-  );
+  // TEMP: force `true` for visual QA — revert to the original expression below:
+  //   const hasMaturedHoldings = !!(
+  //     userAddress &&
+  //     ptBalances &&
+  //     PENDLE_MARKETS.some(m => isMarketMatured(m.expiry) && (ptBalances[m.marketAddress] ?? 0n) > 0n)
+  //   );
+  const hasMaturedHoldings = true;
 
   if (selectedMarket) {
     // Per-market view: only show the redeem table when THIS market is matured
@@ -135,9 +144,13 @@ export const PendleDetailsPane = () => {
               <Trans>No active Pendle markets at the moment. Check back soon.</Trans>
             </Text>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {visibleMarkets.map(market => (
-                <PendleMarketStatsCard key={market.marketAddress} market={market} />
+                <PendleMarketStatsCard
+                  key={market.marketAddress}
+                  market={market}
+                  onClick={() => handleSelectMarket(market)}
+                />
               ))}
             </div>
           )}

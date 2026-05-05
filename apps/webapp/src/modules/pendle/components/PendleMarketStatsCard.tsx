@@ -1,12 +1,7 @@
 import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
-import {
-  isMarketMatured,
-  usePendleMarketsApiData,
-  type PendleMarketConfig
-} from '@jetstreamgg/sky-hooks';
+import { isMarketMatured, usePendleMarketsApiData, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
 
-const secondsToExpiry = (expiry: number): number =>
-  Math.max(0, expiry - Math.floor(Date.now() / 1000));
+const secondsToExpiry = (expiry: number): number => Math.max(0, expiry - Math.floor(Date.now() / 1000));
 import { Trans } from '@lingui/react/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -36,10 +31,8 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
 
   return (
     <Card
-      className={`bg-transparent from-card to-card h-full bg-radial-(--gradient-position) transition-[background-color,background-image,opacity] lg:p-5 ${
-        onClick && !disabled
-          ? 'hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer'
-          : ''
+      className={`from-card to-card h-full bg-transparent bg-radial-(--gradient-position) transition-[background-color,background-image,opacity] lg:p-5 ${
+        onClick && !disabled ? 'hover:from-primary-start/100 hover:to-primary-end/100 cursor-pointer' : ''
       } ${disabled ? 'opacity-50' : ''}`}
       onClick={disabled ? undefined : onClick}
       data-testid="pendle-market-stats-card"
@@ -69,7 +62,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
       <CardContent className="mt-5 p-0">
         <HStack className="justify-between" gap={2}>
           <VStack className="items-stretch justify-between" gap={2}>
-            <Text className="text-textSecondary text-sm leading-4">
+            <Text className="text-textSecondary text-sm leading-4 whitespace-nowrap">
               <Trans>Underlying APY</Trans>
             </Text>
             {isLoading ? (
@@ -98,7 +91,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>Maturity</Trans>
             </Text>
-            <Text>
+            <Text className="whitespace-nowrap">
               {new Date(market.expiry * 1000).toLocaleDateString(undefined, {
                 year: 'numeric',
                 month: 'short',

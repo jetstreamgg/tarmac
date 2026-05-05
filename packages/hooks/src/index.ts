@@ -152,6 +152,7 @@ export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
 export { useBatchPendleRedeemAll, type RedeemPosition } from './pendle/useBatchPendleRedeemAll';
 export { useRedeem as usePendleRedeem } from './pendle/useRedeem';
+export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
 export {
   buildVerifiedArgs,
   buildMaturedRedeemVerifiedArgs,
