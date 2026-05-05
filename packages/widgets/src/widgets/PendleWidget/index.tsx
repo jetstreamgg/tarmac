@@ -376,11 +376,16 @@ const PendleWidgetWrapped = ({
     setButtonText
   ]);
 
+  const isAmountWaitingForDebounce = debouncedAmount !== amount;
+
   const convertDisabled =
+    [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
     amount === 0n ||
     insufficientFunds ||
+    isAmountWaitingForDebounce ||
     !!prepareErrorMessage ||
-    (!writeHook.prepared && !writeHook.isLoading);
+    !writeHook.prepared ||
+    writeHook.isLoading;
 
   useEffect(() => {
     setIsDisabled(isConnectedAndEnabled && convertDisabled);
