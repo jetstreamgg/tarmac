@@ -3,10 +3,10 @@ import { formatBigInt } from '@jetstreamgg/sky-utils';
 import { type PendleMarketConfig, usePendleRedeemPreview } from '@jetstreamgg/sky-hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Text } from '@/modules/layout/components/Typography';
 import { HStack } from '@/modules/layout/components/HStack';
-import { VStack } from '@/modules/layout/components/VStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
+import { Text } from '@/modules/layout/components/Typography';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
 
 type PendleMaturedPositionCardProps = {
@@ -30,28 +30,17 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
     previewAmount !== undefined
       ? formatBigInt(previewAmount as bigint, { unit: market.underlyingDecimals, maxDecimals: 4 })
       : undefined;
+  // The amount we surface to the user is the receive amount (post SY-rate
+  // conversion). Until the on-chain preview resolves, fall back to the PT
+  // balance — same number of decimals, just a transient discrepancy.
+  const displayedAmount = formattedReceive ?? formattedBalance;
 
   const tokenTile = (
     <HStack className="items-center" gap={2}>
-      <HStack className="items-center" gap={2}>
-        <TokenIcon
-          className="h-5 w-5"
-          token={{ symbol: `PT-${market.underlyingSymbol}` }}
-          showChainIcon={false}
-        />
-        <Text>
-          {formattedBalance} PT-{market.underlyingSymbol}
-        </Text>
-      </HStack>
-      {formattedReceive && (
-        <HStack className="items-center" gap={2}>
-          <Text>→</Text>
-          <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
-          <Text>
-            {formattedReceive} {market.underlyingSymbol}
-          </Text>
-        </HStack>
-      )}
+      <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
+      <Text>
+        {displayedAmount} {market.underlyingSymbol}
+      </Text>
     </HStack>
   );
 
@@ -62,38 +51,28 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
   return (
     <Card variant="stats" data-testid="pendle-matured-position-card">
       <CardHeader>
-        <VStack className="items-stretch" gap={1}>
-          <CardTitle variant="stats">
-            <Trans>Available to redeem</Trans>
-          </CardTitle>
-          <HStack className="items-center" gap={2}>
-            <TokenIcon
-              className="h-5 w-5"
-              token={{ symbol: `PT-${market.underlyingSymbol}` }}
-              showChainIcon={false}
-            />
-            <Text>
-              {formattedBalance} PT-{market.underlyingSymbol}
-            </Text>
-          </HStack>
-        </VStack>
-        <VStack className="items-stretch text-right" gap={1}>
-          <CardTitle variant="stats" className="whitespace-nowrap">
-            <Trans>Matured</Trans>
-          </CardTitle>
-          <Text className="whitespace-nowrap">{maturityLabel}</Text>
-        </VStack>
+        <CardTitle variant="stats" className="mb-2">
+          <Trans>Matured on {maturityLabel}</Trans>
+        </CardTitle>
       </CardHeader>
-      <CardContent variant="stats" className="mt-4">
+      <CardContent variant="stats">
+        <TokenIconWithBalance
+          token={{ symbol: market.underlyingSymbol, name: market.underlyingSymbol }}
+          balance={displayedAmount}
+        />
+        {/* TODO: mock copy — replace with computed earnings + APY. */}
+        <Text variant="small" className="text-textSecondary mt-4">
+          <Trans>You&apos;ve earned 87.42 {market.underlyingSymbol} with 5.21% APY</Trans>
+        </Text>
         <Button
           variant="primary"
-          className="w-full"
+          className="mt-4 w-full"
           onClick={openRedeemModal}
           disabled={!isRedeemable || !isPrepared || previewLoading}
           data-testid="pendle-matured-redeem-button"
         >
           <Trans>
-            Redeem {formattedBalance} PT-{market.underlyingSymbol}
+            Redeem {displayedAmount} {market.underlyingSymbol}
           </Trans>
         </Button>
       </CardContent>
