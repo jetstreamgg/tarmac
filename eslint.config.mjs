@@ -1,5 +1,6 @@
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import testingLibrary from 'eslint-plugin-testing-library';
+import reactHooks from 'eslint-plugin-react-hooks';
 import tanstackEslintPluginQuery from '@tanstack/eslint-plugin-query';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
@@ -34,6 +35,22 @@ export default [
     'plugin:react/recommended',
     'plugin:@typescript-eslint/recommended'
   ),
+  reactHooks.configs.flat.recommended,
+  {
+    // TODO(APP-227): Demoted react-hooks rules from `error` to `warn` to land the
+    // plugin without a large up-front triage. Promote each rule back to `error`
+    // (delete its line below) as the existing violations are fixed across the
+    // monorepo. `exhaustive-deps` is already `warn` in the recommended preset.
+    rules: {
+      'react-hooks/rules-of-hooks': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/purity': 'warn'
+    }
+  },
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
@@ -95,6 +112,39 @@ export default [
       'testing-library/no-debugging-utils': 'off',
       'testing-library/no-node-access': 'off',
       'ui-testing/no-hard-wait': 'off'
+    }
+  },
+  {
+    files: ['apps/webapp/src/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'info', 'debug'] }],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Sentry',
+          property: 'captureException',
+          message: 'Use reportError() outside modules/sentry.'
+        }
+      ]
+    }
+  },
+  {
+    files: [
+      'apps/webapp/src/modules/sentry/**/*.{ts,tsx}',
+      'apps/webapp/src/test/**/*.{ts,tsx}',
+      'apps/webapp/src/pages/Dev.tsx',
+      'apps/webapp/src/data/wagmi/config/config.e2e.ts'
+    ],
+    rules: {
+      'no-console': 'off',
+      'no-restricted-properties': 'off'
+    }
+  },
+  {
+    files: ['apps/webapp/scripts/**/*.{ts,tsx,js,mjs,cjs}'],
+    rules: {
+      'no-console': 'off',
+      'no-restricted-properties': 'off'
     }
   },
   {

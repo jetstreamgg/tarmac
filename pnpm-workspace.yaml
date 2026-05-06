@@ -48,7 +48,7 @@ catalog:
   '@typescript-eslint/eslint-plugin': ^8.58.2
   '@typescript-eslint/parser': ^8.58.2
   '@vitejs/plugin-react-swc': ^4.3.0
-  '@vitest/coverage-v8': ^4.0.0
+  '@vitest/coverage-v8': ^4.1.5
   '@wagmi/cli': ^2.10.0
   '@wagmi/core': ^3.4.3
   '@walletconnect/ethereum-provider': ~2.23.9
@@ -61,6 +61,7 @@ catalog:
   embla-carousel-react: ^8.6.0
   eslint: ^10.2.0
   eslint-plugin-react: ^7.37.5
+  eslint-plugin-react-hooks: ^7.1.1
   eslint-plugin-testing-library: ^7.16.2
   ethers: ^6.16.0
   globals: ^17.5.0
@@ -98,7 +99,7 @@ catalog:
   vite-plugin-node-polyfills: ^0.26.0
   vite-plugin-simple-html: ^1.1.0
   vite-plugin-static-copy: ^4.0.1
-  vitest: ^4.0.0
+  vitest: ^4.1.5
   vitest-canvas-mock: ^1.1.4
   wagmi: ^3.6.2
   zod: ^4.3.6
