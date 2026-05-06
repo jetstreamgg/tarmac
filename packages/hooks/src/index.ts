@@ -153,6 +153,8 @@ export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
 export { useBatchPendleRedeemAll, type RedeemPosition } from './pendle/useBatchPendleRedeemAll';
 export { useRedeem as usePendleRedeem } from './pendle/useRedeem';
 export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
+export { usePendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
+export type { PendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
 export {
   buildVerifiedArgs,
   buildMaturedRedeemVerifiedArgs,

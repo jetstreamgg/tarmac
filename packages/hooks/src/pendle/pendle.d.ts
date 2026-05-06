@@ -36,6 +36,13 @@ export type PendleMarketConfig = {
   underlyingDecimals: number;
   /** Market expiry as a UNIX timestamp in seconds (immutable post-deploy) */
   expiry: number;
+  /**
+   * How the underlying converts to USDS for earnings display:
+   *   - 'pegged'  → 1 underlying ≈ 1 USDS (stablecoins like USDS, USDG, USDe)
+   *   - 'sUSDS'   → multiply by chi from sUSDS.previewRedeem(1e18)
+   *   - undefined → no USDS conversion; display in underlying token symbol
+   */
+  usdsEquivalence?: 'pegged' | 'sUSDS';
 };
 
 /**

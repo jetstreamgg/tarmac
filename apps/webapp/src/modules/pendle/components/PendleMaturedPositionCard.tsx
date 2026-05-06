@@ -1,6 +1,10 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { type PendleMarketConfig, usePendleRedeemPreview } from '@jetstreamgg/sky-hooks';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
+import {
+  type PendleMarketConfig,
+  usePendleMaturedPositionEarnings,
+  usePendleRedeemPreview
+} from '@jetstreamgg/sky-hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -26,6 +30,7 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
   });
 
   const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
+  const { earnings, apy, currency } = usePendleMaturedPositionEarnings(market, ptBalance);
   const formattedReceive =
     previewAmount !== undefined
       ? formatBigInt(previewAmount as bigint, { unit: market.underlyingDecimals, maxDecimals: 4 })
@@ -60,10 +65,19 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
           token={{ symbol: market.underlyingSymbol, name: market.underlyingSymbol }}
           balance={displayedAmount}
         />
-        {/* TODO: mock copy — replace with computed earnings + APY. */}
-        <Text variant="small" className="text-textSecondary mt-4">
-          <Trans>You&apos;ve earned 87.42 {market.underlyingSymbol} with 5.21% APY</Trans>
-        </Text>
+        {earnings !== undefined && earnings > 0 && currency && (
+          <Text variant="small" className="text-textSecondary mt-4">
+            {apy !== undefined ? (
+              <Trans>
+                You&apos;ve earned {formatNumber(earnings)} {currency} with {formatDecimalPercentage(apy)} APY
+              </Trans>
+            ) : (
+              <Trans>
+                You&apos;ve earned {formatNumber(earnings)} {currency}
+              </Trans>
+            )}
+          </Text>
+        )}
         <Button
           variant="primary"
           className="mt-4 w-full"

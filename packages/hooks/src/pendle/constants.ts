@@ -427,7 +427,8 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingToken: '0xe343167631d89B6Ffc58B88d6b7fB0228795491D',
     underlyingSymbol: 'USDG',
     underlyingDecimals: 6,
-    expiry: 1779926400 // Thu May 28 2026 00:00:00 UTC
+    expiry: 1779926400, // Thu May 28 2026 00:00:00 UTC
+    usdsEquivalence: 'pegged'
   },
   {
     name: 'PT-USDe',
@@ -438,7 +439,8 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingToken: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
     underlyingSymbol: 'USDe',
     underlyingDecimals: 18,
-    expiry: 1778112000
+    expiry: 1778112000,
+    usdsEquivalence: 'pegged'
   },
   {
     name: 'PT-sENA',
