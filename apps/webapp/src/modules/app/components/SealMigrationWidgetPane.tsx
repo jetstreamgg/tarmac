@@ -28,6 +28,7 @@ import { IntentMapping } from '@/lib/constants';
 import { QueryParams } from '@/lib/constants';
 import { DetailsSwitcher } from '@/components/DetailsSwitcher';
 import { CustomConnectButton } from '@/modules/layout/components/CustomConnectButton';
+import { getTermsLinkConfig, reportTermsLinkConfigErrorOnce } from '@/modules/config/termsLink';
 import { WidgetContent, WidgetItem } from '../types/Widgets';
 
 type WidgetPaneProps = {
@@ -101,12 +102,16 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
     };
   }, []);
 
-  let termsLink: any[] = [];
-  try {
-    termsLink = JSON.parse(import.meta.env.VITE_TERMS_LINK);
-  } catch (error) {
-    console.error('Error parsing terms link: ', error);
-  }
+  const { primaryTermsLink } = getTermsLinkConfig();
+
+  useEffect(() => {
+    reportTermsLinkConfigErrorOnce({
+      module: 'widgets',
+      flow: 'seal-migration',
+      action: 'parse-terms-link',
+      type: 'config_error'
+    });
+  }, []);
 
   const sharedProps = {
     onConnect,
@@ -179,7 +184,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
             <SealModuleWidget
               {...sharedProps}
               onWidgetStateChange={onSealWidgetStateChange}
-              termsLink={termsLink[0]}
+              termsLink={primaryTermsLink}
               mkrSkyUpgradeUrl="https://upgrademkrtosky.skyeco.com"
             />
           )}

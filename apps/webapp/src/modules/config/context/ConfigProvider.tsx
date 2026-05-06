@@ -12,6 +12,7 @@ import {
   LinkedActionConfig
 } from './ConfigContext';
 import { defaultConfig as siteConfig } from '../default-config';
+import { reportError } from '@/modules/sentry/reportError';
 
 export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [userConfig, setUserConfig] = useState<UserConfig>(defaultUserConfig);
@@ -51,7 +52,12 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         rewardsUsdsSkyDisclaimerDismissed: parsed.rewardsUsdsSkyDisclaimerDismissed ?? false
       });
     } catch (e) {
-      console.log('Error parsing user settings', e);
+      reportError(e, {
+        module: 'config',
+        flow: 'user-settings',
+        action: 'parse-local-storage',
+        type: 'local_storage_parse_error'
+      });
       window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userConfig));
     }
     setLoaded(true);
