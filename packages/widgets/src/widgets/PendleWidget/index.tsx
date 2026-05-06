@@ -14,7 +14,8 @@ import {
   useQuotePendleConvert,
   useTokenAllowance,
   useTokenBalance,
-  type PendleMarketConfig
+  type PendleMarketConfig,
+  type Token
 } from '@jetstreamgg/sky-hooks';
 import { isTestnetId, getTransactionLink, useDebounce, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { ArrowLeft } from 'lucide-react';
@@ -122,10 +123,41 @@ const PendleWidgetWrapped = ({
 
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
-  const { data: underlyingBalance, refetch: refetchUnderlyingBalance } = useTokenBalance({
+  const { underlyingToken, ptToken, inputTokenList } = usePendleTokens(market);
+
+  const [selectedSupplyToken, setSelectedSupplyToken] = useState<Token>(underlyingToken);
+  const [selectedWithdrawOutToken, setSelectedWithdrawOutToken] = useState<Token>(underlyingToken);
+
+  const handleSupplyTokenChange = (next: Token) => {
+    setAmount(0n);
+    setSelectedSupplyToken(next);
+  };
+
+  // The "user-side" token for the active flow — input on BUY, output on SELL.
+  const userSideToken = flow === PendleFlow.BUY ? selectedSupplyToken : selectedWithdrawOutToken;
+  const userSideTokenAddress = userSideToken.address[mainnet.id] as `0x${string}`;
+
+  const inputToken = flow === PendleFlow.BUY ? userSideTokenAddress : market.ptToken;
+  const outputToken = flow === PendleFlow.BUY ? market.ptToken : userSideTokenAddress;
+  const side = flow === PendleFlow.BUY ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
+
+  const originToken = flow === PendleFlow.BUY ? selectedSupplyToken : ptToken;
+  const targetToken = flow === PendleFlow.BUY ? ptToken : selectedWithdrawOutToken;
+
+  // Balance for the input side: BUY → user-selected supply token; SELL → PT.
+  const { data: inputBalance, refetch: refetchInputBalance } = useTokenBalance({
     chainId: balanceChainId,
     address,
-    token: market.underlyingToken
+    token: inputToken
+  });
+
+  // Balance for the output side: BUY → PT; SELL → user-selected output token.
+  // Read-only TokenInputs render "No wallet connected" when balance is
+  // undefined, so we query this even though the user isn't editing it.
+  const { data: outputBalance, refetch: refetchOutputBalance } = useTokenBalance({
+    chainId: balanceChainId,
+    address,
+    token: outputToken
   });
 
   const { data: ptBalance, refetch: refetchPtBalance } = useTokenBalance({
@@ -143,14 +175,6 @@ const PendleWidgetWrapped = ({
     }
   }, [matured, txStatus, ptBalance?.value]);
 
-  const inputToken = flow === PendleFlow.BUY ? market.underlyingToken : market.ptToken;
-  const outputToken = flow === PendleFlow.BUY ? market.ptToken : market.underlyingToken;
-  const side = flow === PendleFlow.BUY ? PendleConvertSide.BUY : PendleConvertSide.WITHDRAW;
-
-  const { underlyingToken, ptToken } = usePendleTokens(market);
-  const originToken = flow === PendleFlow.BUY ? underlyingToken : ptToken;
-  const targetToken = flow === PendleFlow.BUY ? ptToken : underlyingToken;
-
   // Allowance for the input token (underlying for Buy, PT for Withdraw) → router.
   // Mirrors the check inside useBatchPendleConvert; React Query cache dedupes.
   const { data: allowance } = useTokenAllowance({
@@ -167,21 +191,23 @@ const PendleWidgetWrapped = ({
   // (PT → SY 1:1, then SY → underlying via SY exchange rate). The convert API
   // is unreliable post-maturity (most market info is dropped) and would route
   // a withdraw through the dead AMM with heavy price impact.
+  const debounceSettled = amount === debouncedAmount;
   const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
     inputToken,
     outputToken,
+    underlyingToken: market.underlyingToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n
+    enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n && debounceSettled
   });
 
   const insufficientFunds = useMemo(() => {
     if (!isConnectedAndEnabled || amount === 0n) return false;
-    const balance = flow === PendleFlow.BUY ? underlyingBalance?.value : ptBalance?.value;
+    const balance = flow === PendleFlow.BUY ? inputBalance?.value : ptBalance?.value;
     return balance !== undefined && debouncedAmount > balance;
-  }, [isConnectedAndEnabled, amount, debouncedAmount, flow, underlyingBalance, ptBalance]);
+  }, [isConnectedAndEnabled, amount, debouncedAmount, flow, inputBalance, ptBalance]);
 
   // -------- WRITE WIRING --------
   // Two hooks, but only one is live per render (the other is gated by `enabled`):
@@ -206,7 +232,8 @@ const PendleWidgetWrapped = ({
       }
     },
     onSuccess: (hash: string | undefined) => {
-      refetchUnderlyingBalance();
+      refetchInputBalance();
+      refetchOutputBalance();
       refetchPtBalance();
       setTxStatus(TxStatus.SUCCESS);
       if (hash) {
@@ -222,7 +249,7 @@ const PendleWidgetWrapped = ({
         description:
           flow === PendleFlow.BUY
             ? t`PT-${market.underlyingSymbol} delivered to your wallet.`
-            : t`${market.underlyingSymbol} delivered to your wallet.`,
+            : t`${targetToken.symbol} delivered to your wallet.`,
         status: TxStatus.SUCCESS
       });
     },
@@ -244,6 +271,7 @@ const PendleWidgetWrapped = ({
     marketAddress: market.marketAddress,
     inputToken,
     outputToken,
+    underlyingToken: market.underlyingToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     quote,
     enabled: !matured && isConnectedAndEnabled && debouncedAmount > 0n,
@@ -273,6 +301,7 @@ const PendleWidgetWrapped = ({
     if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
       return t`Quote expired. Refreshing — please wait a moment.`;
     }
+    console.log({ writeHook });
     return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
   }, [writeHook.error]);
 
@@ -508,13 +537,18 @@ const PendleWidgetWrapped = ({
           <CardAnimationWrapper key="pendle-action" className="h-full">
             <SupplyWithdraw
               market={market}
-              underlyingToken={underlyingToken}
               ptToken={ptToken}
+              inputTokenList={inputTokenList}
+              selectedSupplyToken={selectedSupplyToken}
+              onSupplyTokenChange={handleSupplyTokenChange}
+              selectedWithdrawOutToken={selectedWithdrawOutToken}
+              onWithdrawOutTokenChange={setSelectedWithdrawOutToken}
               flow={flow}
               onFlowChange={setFlow}
               amount={amount}
               onAmountChange={setAmount}
-              underlyingBalance={underlyingBalance?.value}
+              inputBalance={inputBalance?.value}
+              outputBalance={outputBalance?.value}
               ptBalance={ptBalance?.value}
               quote={quote}
               isFetchingQuote={isFetchingQuote}

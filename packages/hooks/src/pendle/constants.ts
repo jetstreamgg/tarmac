@@ -64,6 +64,21 @@ export const PENDLE_ROUTER_V4_ADDRESS: Record<number, `0x${string}`> = {
 };
 
 /**
+ * Pinned Pendle SwapAggregatorRouter (a.k.a. PendleSwap) — the only contract
+ * we permit as the `pendleSwap` field when an aggregator route is taken. This
+ * Pendle-deployed forwarder is the audited bridge between the Router V4 and
+ * external aggregators (KyberSwap, Odos, OKX, Paraswap, …). If the API ever
+ * returns a different `pendleSwap`, buildVerifiedArgs refuses to sign — that
+ * is the single trust anchor of the multi-token / aggregator path.
+ *
+ * Tenderly fork mirrors mainnet state, so the same address applies.
+ */
+export const PENDLE_PINNED_PENDLESWAP_ADDRESSES: Record<number, `0x${string}`> = {
+  [mainnet.id]: '0xd4f480965d2347d421f1bec7f545682e5ec2151d',
+  [TENDERLY_CHAIN_ID]: '0xd4f480965d2347d421f1bec7f545682e5ec2151d'
+};
+
+/**
  * Minimal Pendle Router V4 ABI — only the selectors v1 allows for PT trading.
  *
  * IMPORTANT: this ABI is intentionally minimal. `decodeFunctionData` against

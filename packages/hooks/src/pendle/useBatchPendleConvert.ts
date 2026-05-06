@@ -7,6 +7,7 @@ import { getWriteContractCall } from '../shared/getWriteContractCall';
 import { useTransactionFlow } from '../shared/useTransactionFlow';
 import { useTokenAllowance } from '../tokens/useTokenAllowance';
 import {
+  PENDLE_PINNED_PENDLESWAP_ADDRESSES,
   PENDLE_QUOTE_TTL_MS,
   PENDLE_ROUTER_V4_ABI,
   PENDLE_ROUTER_V4_ADDRESS,
@@ -18,11 +19,18 @@ import { buildVerifiedArgs } from './buildVerifiedArgs';
 type UseBatchPendleConvertParams = BatchWriteHookParams & {
   side: PendleConvertSide;
   marketAddress?: `0x${string}`;
-  /** For BUY: underlying token. For WITHDRAW: PT token. */
+  /** For BUY: user-selected input token. For WITHDRAW: PT token. */
   inputToken?: `0x${string}`;
-  /** For BUY: PT token. For WITHDRAW: underlying token. */
+  /** For BUY: PT token. For WITHDRAW: user-selected output token. */
   outputToken?: `0x${string}`;
-  /** For BUY: underlying amount in wei. For WITHDRAW: PT amount in wei. */
+  /**
+   * The market's underlying token (the SY's accepted token). When the user-
+   * picked side equals this, the call goes through the no-aggregator path;
+   * otherwise buildVerifiedArgs takes the aggregator branch and pins
+   * tokenMintSy / tokenRedeemSy to this address.
+   */
+  underlyingToken?: `0x${string}`;
+  /** For BUY: input amount in wei. For WITHDRAW: PT amount in wei. */
   amountIn?: bigint;
   /** The latest quote from useQuotePendleConvert */
   quote?: PendleConvertQuote;
@@ -51,6 +59,7 @@ export function useBatchPendleConvert({
   marketAddress,
   inputToken,
   outputToken,
+  underlyingToken,
   amountIn,
   quote,
   enabled: activeTabEnabled = true,
@@ -64,6 +73,7 @@ export function useBatchPendleConvert({
   const connectedChainId = useChainId();
   const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
   const routerAddress = PENDLE_ROUTER_V4_ADDRESS[chainIdToUse];
+  const pinnedPendleSwap = PENDLE_PINNED_PENDLESWAP_ADDRESSES[chainIdToUse];
 
   // Allowance for the input token (underlying for Buy, PT for Withdraw) → router
   const { data: allowance, error: allowanceError } = useTokenAllowance({
@@ -78,7 +88,16 @@ export function useBatchPendleConvert({
   // Verify the quote and rebuild args. Memoised so the verification only runs
   // when an input changes — guards otherwise re-throw on every render.
   const { verified, verifyError } = useMemo(() => {
-    if (!quote || !marketAddress || !inputToken || !outputToken || !amountIn || !connectedAddress) {
+    if (
+      !quote ||
+      !marketAddress ||
+      !inputToken ||
+      !outputToken ||
+      !underlyingToken ||
+      !pinnedPendleSwap ||
+      !amountIn ||
+      !connectedAddress
+    ) {
       return { verified: undefined, verifyError: null as Error | null };
     }
     if (Date.now() - quote.fetchedAt > PENDLE_QUOTE_TTL_MS) {
@@ -94,13 +113,25 @@ export function useBatchPendleConvert({
         market: marketAddress,
         inputToken,
         outputToken,
-        amountIn
+        underlyingToken,
+        amountIn,
+        pinnedPendleSwap
       });
       return { verified: v, verifyError: null };
     } catch (e) {
       return { verified: undefined, verifyError: e as Error };
     }
-  }, [quote, marketAddress, inputToken, outputToken, amountIn, connectedAddress, side]);
+  }, [
+    quote,
+    marketAddress,
+    inputToken,
+    outputToken,
+    underlyingToken,
+    pinnedPendleSwap,
+    amountIn,
+    connectedAddress,
+    side
+  ]);
 
   // Build the call list: optional approve, then convert.
   const calls: Call[] = [];
