@@ -1,26 +1,20 @@
+import { Trans } from '@lingui/react/macro';
 import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import { isMarketMatured, usePendleMarketsApiData, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
-
-const secondsToExpiry = (expiry: number): number => Math.max(0, expiry - Math.floor(Date.now() / 1000));
-import { Trans } from '@lingui/react/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatTimeLeft } from '../utils/formatTimeLeft';
+
+const secondsToExpiry = (expiry: number): number => Math.max(0, expiry - Math.floor(Date.now() / 1000));
 
 type PendleMarketStatsCardProps = {
   market: PendleMarketConfig;
   onClick?: () => void;
   disabled?: boolean;
-};
-
-const formatDays = (seconds: number): string => {
-  const days = Math.max(0, Math.round(seconds / 86_400));
-  if (days === 0) return 'today';
-  if (days === 1) return '1 day';
-  return `${days} days`;
 };
 
 export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: PendleMarketStatsCardProps) => {
@@ -47,7 +41,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
             </Text>
           ) : (
             <Text variant="small" className="text-textSecondary">
-              <Trans>· {formatDays(remaining)} left</Trans>
+              <Trans>· {formatTimeLeft(remaining)} left</Trans>
             </Text>
           )}
         </HStack>
