@@ -29,18 +29,6 @@ export const PendleMarketInfoCard = ({ market }: PendleMarketInfoCardProps) => {
       </div>
       <div className="min-w-[250px] flex-1">
         <StatsCard
-          title={t`Underlying APY`}
-          isLoading={isLoading}
-          error={error}
-          content={
-            <Text className="mt-2" variant="large">
-              {data?.underlyingApy !== undefined ? formatDecimalPercentage(data.underlyingApy) : '—'}
-            </Text>
-          }
-        />
-      </div>
-      <div className="min-w-[250px] flex-1">
-        <StatsCard
           title={<Trans>TVL</Trans>}
           isLoading={isLoading}
           error={error}

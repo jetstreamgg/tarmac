@@ -62,25 +62,11 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
       <CardContent className="mt-5 p-0">
         <HStack className="justify-between" gap={2}>
           <VStack className="items-stretch justify-between" gap={2}>
-            <Text className="text-textSecondary text-sm leading-4 whitespace-nowrap">
-              <Trans>Underlying APY</Trans>
-            </Text>
-            {isLoading ? (
-              <Skeleton className="h-4 w-21" />
-            ) : marketData?.underlyingApy !== undefined ? (
-              <Text>{formatDecimalPercentage(marketData.underlyingApy)}</Text>
-            ) : (
-              <Text>—</Text>
-            )}
-          </VStack>
-          <VStack className="items-stretch justify-between text-right" gap={2}>
             <Text className="text-textSecondary text-sm leading-4">
               <Trans>TVL</Trans>
             </Text>
             {isLoading ? (
-              <div className="flex justify-end">
-                <Skeleton className="h-4 w-30" />
-              </div>
+              <Skeleton className="h-4 w-30" />
             ) : marketData?.formattedTvl ? (
               <Text>{marketData.formattedTvl}</Text>
             ) : (

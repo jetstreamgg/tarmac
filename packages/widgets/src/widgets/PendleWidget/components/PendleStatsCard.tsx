@@ -8,7 +8,6 @@ import { StatsAccordionCard } from '@widgets/shared/components/ui/card/StatsAcco
 import { TokenIcon } from '@widgets/shared/components/ui/token/TokenIcon';
 import { MotionHStack } from '@widgets/shared/components/ui/layout/MotionHStack';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
-import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { Text } from '@widgets/shared/components/ui/Typography';
 import { Skeleton } from '@widgets/components/ui/skeleton';
 import { positionAnimations } from '@widgets/shared/animation/presets';
@@ -21,7 +20,7 @@ type PendleStatsCardProps = {
 /**
  * In-widget stats card mirroring MorphoVaultStatsCard's shape:
  * - Header: market name + Fixed APY
- * - Accordion: View PT contract + collapsible Underlying APY / TVL row
+ * - Accordion: View PT contract + collapsible TVL row
  *
  * Sits at the top of the widget body (above the Supply/Withdraw form) to give
  * the user the same at-a-glance product info they'd see in the right details
@@ -37,38 +36,18 @@ export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCa
     marketData?.impliedApy !== undefined ? formatDecimalPercentage(marketData.impliedApy) : '—';
 
   const accordionContent = (
-    <HStack className="mt-5 justify-between" gap={2}>
-      <MotionVStack className="justify-between" gap={2} variants={positionAnimations}>
-        <Text className="text-textSecondary text-sm leading-4">
-          <Trans>Underlying APY</Trans>
-        </Text>
-        {isLoading ? (
-          <Skeleton className="bg-textSecondary h-6 w-20" />
-        ) : marketData?.underlyingApy !== undefined ? (
-          <Text className="whitespace-nowrap">{formatDecimalPercentage(marketData.underlyingApy)}</Text>
-        ) : (
-          <Text>—</Text>
-        )}
-      </MotionVStack>
-      <MotionVStack
-        className="min-w-0 flex-1 items-end justify-between text-right"
-        gap={2}
-        variants={positionAnimations}
-      >
-        <Text className="text-textSecondary text-sm leading-4">
-          <Trans>TVL</Trans>
-        </Text>
-        {isLoading ? (
-          <div className="flex justify-end">
-            <Skeleton className="bg-textSecondary h-6 w-20" />
-          </div>
-        ) : marketData?.formattedTvl ? (
-          <Text>{marketData.formattedTvl}</Text>
-        ) : (
-          <Text>—</Text>
-        )}
-      </MotionVStack>
-    </HStack>
+    <MotionVStack className="mt-5 justify-between" gap={2} variants={positionAnimations}>
+      <Text className="text-textSecondary text-sm leading-4">
+        <Trans>TVL</Trans>
+      </Text>
+      {isLoading ? (
+        <Skeleton className="bg-textSecondary h-6 w-20" />
+      ) : marketData?.formattedTvl ? (
+        <Text>{marketData.formattedTvl}</Text>
+      ) : (
+        <Text>—</Text>
+      )}
+    </MotionVStack>
   );
 
   return (
