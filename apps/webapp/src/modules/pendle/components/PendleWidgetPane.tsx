@@ -17,8 +17,8 @@ import {
   WidgetContainer,
   positionAnimations
 } from '@jetstreamgg/sky-widgets';
-import { PendleIntent } from '@/lib/enums';
-import { PendleIntentMapping, QueryParams } from '@/lib/constants';
+import { FixedIntent } from '@/lib/enums';
+import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -71,7 +71,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     setSearchParams(params => {
-      params.set(QueryParams.PendleModule, PendleIntentMapping[PendleIntent.MARKET_INTENT]);
+      params.set(QueryParams.FixedModule, FixedIntentMapping[FixedIntent.MARKET_INTENT]);
       params.set(QueryParams.Market, market.marketAddress);
       return params;
     });
@@ -79,7 +79,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
 
   const handleBack = () => {
     setSearchParams(params => {
-      params.delete(QueryParams.PendleModule);
+      params.delete(QueryParams.FixedModule);
       params.delete(QueryParams.Market);
       return params;
     });
@@ -104,7 +104,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
           <WidgetContainer
             header={
               <Heading variant="x-large">
-                <Trans>Pendle</Trans>
+                <Trans>Fixed Yield</Trans>
               </Heading>
             }
             subHeader={
@@ -120,7 +120,9 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             <div className="flex flex-col gap-4">
               {!isOnPendleChain && (
                 <Text className="text-textSecondary">
-                  <Trans>Pendle markets are only on Ethereum mainnet. Switch networks to view markets.</Trans>
+                  <Trans>
+                    Fixed yield markets are only on Ethereum mainnet. Switch networks to view markets.
+                  </Trans>
                 </Text>
               )}
               {isOnPendleChain && <PendleReadyToRedeemList />}
@@ -154,7 +156,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
               )}
               {isOnPendleChain && myMarkets.length === 0 && allMarkets.length === 0 && (
                 <Text className="text-textSecondary">
-                  <Trans>No active Pendle markets at the moment. Check back soon.</Trans>
+                  <Trans>No active fixed yield markets at the moment. Check back soon.</Trans>
                 </Text>
               )}
             </div>

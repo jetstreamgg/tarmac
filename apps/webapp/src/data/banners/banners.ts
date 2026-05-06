@@ -287,6 +287,22 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
+    id: 'about-fixed-yield',
+    title: 'About Fixed Yield',
+    module: 'fixed-yield-banners',
+    description:
+      'Lock in a fixed yield by buying Principal Tokens (PT) at a discount. At maturity each PT redeems 1:1 for the underlying asset — the difference is your fixed yield.',
+    display: ['disconnected']
+  },
+  {
+    id: 'fixed-yield',
+    title: 'Fixed Yield',
+    module: 'fixed-yield-banners',
+    description:
+      'A Principal Token (PT) is a tokenized claim on an underlying yield-bearing asset. PT trades at a discount until maturity, when it redeems 1:1 for the underlying. Holding to maturity locks in a fixed APY; sell early at the prevailing market price if you change your mind.',
+    display: ['connected', 'disconnected']
+  },
+  {
     id: 'usds-risk-capital-vault',
     title: 'USDS Risk Capital Vault',
     module: 'vaults-banners',

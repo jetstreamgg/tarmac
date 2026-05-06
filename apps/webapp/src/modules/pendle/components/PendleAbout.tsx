@@ -1,21 +1,29 @@
 import { Trans } from '@lingui/react/macro';
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { Text } from '@/modules/layout/components/Typography';
+import { getBannerByIdAndModule, filterBannersByConnectionStatus } from '@/data/banners/helpers';
+import { parseBannerContent } from '@/utils/bannerContentParser';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { AboutCard } from '@/modules/ui/components/AboutCard';
+import { Pendle } from '@/modules/icons';
 
-export const PendleAbout = () => (
-  <Card variant="stats" className="w-full">
-    <CardTitle>
-      <Trans>About Pendle fixed yield</Trans>
-    </CardTitle>
-    <CardContent>
-      <Text variant="medium" className="text-textSecondary mt-2">
-        <Trans>
-          A Principal Token (PT) lets you lock in a fixed yield until a market&apos;s maturity date. You
-          buy PT below face value, and at maturity each PT redeems 1:1 for the underlying asset — the
-          difference is your fixed yield. Sell early at the prevailing market price if you change your
-          mind, or hold until maturity for the full advertised APY.
-        </Trans>
-      </Text>
-    </CardContent>
-  </Card>
-);
+export const PendleAbout = () => {
+  const { isConnectedAndAcceptedTerms } = useConnectedContext();
+
+  const banner = getBannerByIdAndModule('fixed-yield', 'fixed-yield-banners');
+  if (!banner) return null;
+
+  if (banner.display) {
+    const filtered = filterBannersByConnectionStatus([banner], isConnectedAndAcceptedTerms);
+    if (filtered.length === 0) return null;
+  }
+
+  const description = banner.description ? parseBannerContent(banner.description) : '';
+
+  return (
+    <AboutCard
+      title={<Trans>{banner.title}</Trans>}
+      icon={<Pendle className="h-6 w-6" />}
+      description={description}
+      colorMiddle="linear-gradient(360deg, #6D28FF 0%, #F7A7F9 300%)"
+    />
+  );
+};

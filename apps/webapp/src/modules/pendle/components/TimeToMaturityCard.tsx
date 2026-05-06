@@ -3,11 +3,11 @@ import { Trans } from '@lingui/react/macro';
 import { type PendleMarketConfig, usePendleMarketsApiData } from '@jetstreamgg/sky-hooks';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
+import { formatTimeLeft } from '../utils/formatTimeLeft';
 
 const SECONDS_PER_DAY = 86_400;
 
-const secondsToExpiry = (expiry: number): number =>
-  Math.max(0, expiry - Math.floor(Date.now() / 1000));
+const secondsToExpiry = (expiry: number): number => Math.max(0, expiry - Math.floor(Date.now() / 1000));
 
 type TimeToMaturityCardProps = {
   market: PendleMarketConfig;
@@ -50,7 +50,7 @@ export const TimeToMaturityCard = ({ market }: TimeToMaturityCardProps) => {
     remainingSeconds <= 0 ? (
       <Trans>Matured</Trans>
     ) : (
-      <Trans>{Math.floor(remainingSeconds / SECONDS_PER_DAY)} days remaining</Trans>
+      <Trans>{formatTimeLeft(remainingSeconds)} remaining</Trans>
     );
 
   const maturityDateLabel = new Date(expirySec * 1000).toLocaleDateString(undefined, {

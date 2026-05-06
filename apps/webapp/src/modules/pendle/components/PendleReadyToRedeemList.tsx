@@ -36,7 +36,7 @@ export const PendleReadyToRedeemList = () => {
   return (
     <motion.div className="space-y-3" variants={positionAnimations}>
       <Heading tag="h3" variant="medium">
-        <Trans>Ready to redeem</Trans>
+        <Trans>Your matured positions</Trans>
       </Heading>
       {maturedHeld.map(({ market, ptBalance }) => (
         <PendleMaturedPositionCard key={market.marketAddress} market={market} ptBalance={ptBalance} />

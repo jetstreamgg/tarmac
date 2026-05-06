@@ -50,7 +50,7 @@ export function usePendleRedeemAllModal(positions: RedeemPosition[], opts: Optio
       confirmLabel: t`Confirm`,
       onConfirm: () => batchRedeem.execute(),
       analytics: {
-        widgetName: 'pendle',
+        widgetName: 'fixed',
         flow: 'redeem-all',
         action: 'redeem-all',
         data: {

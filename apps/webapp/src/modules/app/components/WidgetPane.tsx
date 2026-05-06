@@ -21,11 +21,11 @@ import {
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping,
-  PendleIntentMapping
+  FixedIntentMapping
 } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ExpertIntent, VaultsIntent, ConvertIntent, PendleIntent } from '@/lib/enums';
+import { ExpertIntent, VaultsIntent, ConvertIntent, FixedIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -181,7 +181,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     label: `PT-${market.underlyingSymbol}`,
     icon: <TokenIcon token={{ symbol: 'USDS' }} className="h-3 w-3" showChainIcon={false} />,
     params: {
-      [QueryParams.PendleModule]: PendleIntentMapping[PendleIntent.MARKET_INTENT],
+      [QueryParams.FixedModule]: FixedIntentMapping[FixedIntent.MARKET_INTENT],
       [QueryParams.Market]: market.marketAddress
     }
   }));
@@ -234,6 +234,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         : 'Use USDS to access the Sky Savings Rate'
     ],
     [
+      Intent.FIXED_INTENT,
+      'Fixed Yield',
+      Pendle,
+      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
+      false,
+      undefined,
+      'Lock in fixed yield via Pendle PT markets',
+      pendleSubItems
+    ],
+    [
       Intent.STAKE_INTENT,
       'Stake & Borrow',
       Stake,
@@ -251,16 +261,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       undefined,
       'Third-party vault integrations with Sky Ecosystem tokens',
       vaultSubItems
-    ],
-    [
-      Intent.PENDLE_INTENT,
-      'Pendle',
-      Pendle,
-      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
-      false,
-      undefined,
-      'Lock in fixed yield via Pendle PT markets',
-      pendleSubItems
     ],
     [
       Intent.EXPERT_INTENT,
@@ -341,6 +341,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       items: widgetItems.filter(
         ([intent]) =>
           intent === Intent.SAVINGS_INTENT ||
+          intent === Intent.FIXED_INTENT ||
           intent === Intent.REWARDS_INTENT ||
           intent === Intent.STAKE_INTENT
       )
@@ -348,10 +349,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     {
       id: 'group-3',
       items: widgetItems.filter(([intent]) => intent === Intent.VAULTS_INTENT)
-    },
-    {
-      id: 'group-pendle',
-      items: widgetItems.filter(([intent]) => intent === Intent.PENDLE_INTENT)
     },
     {
       id: 'group-4',
