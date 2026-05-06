@@ -46,7 +46,7 @@ export const PendleBalanceDetails = ({ market }: PendleBalanceDetailsProps) => {
         balance={ptBalance ?? 0n}
         isLoading={ptLoading}
         token={ptToken}
-        label={t`Pendle PT balance`}
+        label={t`PT balance`}
         dataTestId="pendle-supplied-balance-details"
       />
       <UnsuppliedBalanceCard

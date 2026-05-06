@@ -11,14 +11,14 @@ test.describe('Pendle (scaffold — write actions stubbed)', () => {
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   });
 
-  test.skip('reaches the Pendle module from the sidebar', async ({ isolatedPage }) => {
-    await isolatedPage.getByRole('tab', { name: 'Pendle' }).click();
-    await expect(isolatedPage.getByText('Pendle')).toBeVisible();
+  test.skip('reaches the Fixed Yield module from the sidebar', async ({ isolatedPage }) => {
+    await isolatedPage.getByRole('tab', { name: 'Fixed Yield' }).click();
+    await expect(isolatedPage.getByText('Fixed Yield')).toBeVisible();
   });
 
   test.skip('opens a market detail page via deeplink ?market=<address>', async ({ isolatedPage }) => {
     await isolatedPage.goto(
-      '/?widget=pendle&pendle_module=market&market=0xc5b32dba5f29f8395fb9591e1a15f23a75214f33'
+      '/?widget=fixed&fixed_module=market&market=0xc5b32dba5f29f8395fb9591e1a15f23a75214f33'
     );
     await expect(isolatedPage.getByText('PT-USDG')).toBeVisible();
     await expect(isolatedPage.getByTestId('pendle-action-button')).toBeVisible();
@@ -26,14 +26,14 @@ test.describe('Pendle (scaffold — write actions stubbed)', () => {
 
   test.skip('falls back to the overview when ?market=<unknown> is passed', async ({ isolatedPage }) => {
     await isolatedPage.goto(
-      '/?widget=pendle&pendle_module=market&market=0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+      '/?widget=fixed&fixed_module=market&market=0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
     );
     await expect(isolatedPage.getByText('All markets')).toBeVisible();
   });
 
   test.skip('routing disclosure expands and collapses', async ({ isolatedPage }) => {
     await isolatedPage.goto(
-      '/?widget=pendle&pendle_module=market&market=0xc5b32dba5f29f8395fb9591e1a15f23a75214f33'
+      '/?widget=fixed&fixed_module=market&market=0xc5b32dba5f29f8395fb9591e1a15f23a75214f33'
     );
     const toggle = isolatedPage.getByTestId('pendle-routing-disclosure-toggle');
     await toggle.click();

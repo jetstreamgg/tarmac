@@ -101,11 +101,11 @@ export const PendleDetailsPane = () => {
   if (!isOnPendleChain) {
     return (
       <DetailSectionWrapper>
-        <DetailSection title={t`Pendle fixed yield`}>
+        <DetailSection title={t`Fixed Yield`}>
           <DetailSectionRow>
             <Text className="text-textSecondary">
               <Trans>
-                Pendle markets are only available on Ethereum mainnet. Switch networks to view available
+                Fixed yield markets are only available on Ethereum mainnet. Switch networks to view available
                 markets.
               </Trans>
             </Text>
@@ -133,7 +133,7 @@ export const PendleDetailsPane = () => {
         <DetailSectionRow>
           {visibleMarkets.length === 0 ? (
             <Text className="text-textSecondary">
-              <Trans>No active Pendle markets at the moment. Check back soon.</Trans>
+              <Trans>No active fixed yield markets at the moment. Check back soon.</Trans>
             </Text>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

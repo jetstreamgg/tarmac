@@ -26,7 +26,7 @@ export enum QueryParams {
   VaultModule = 'vault_module',
   ConvertModule = 'convert_module',
   Market = 'market',
-  PendleModule = 'pendle_module'
+  PendleModule = 'fixed_module'
 }
 
 export enum Environment {
@@ -46,7 +46,7 @@ export const IntentMapping = {
   [Intent.EXPERT_INTENT]: 'expert',
   [Intent.VAULTS_INTENT]: 'vaults',
   [Intent.CONVERT_INTENT]: 'convert',
-  [Intent.PENDLE_INTENT]: 'pendle'
+  [Intent.PENDLE_INTENT]: 'fixed'
 };
 
 export const ExpertIntentMapping: Record<ExpertIntent, string> = {

@@ -254,7 +254,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     ],
     [
       Intent.PENDLE_INTENT,
-      'Pendle',
+      'Fixed Yield',
       Pendle,
       withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
       false,

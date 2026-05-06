@@ -204,7 +204,7 @@ const cardAddresses = (container: HTMLElement): string[] =>
 
 describe('PendleWidgetPane', () => {
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams('widget=pendle');
+    mockSearchParams = new URLSearchParams('widget=fixed');
     setSearchParamsMock.mockClear();
     // Reset connection + balances between tests.
     hoisted.userAddress = undefined;
@@ -228,7 +228,7 @@ describe('PendleWidgetPane', () => {
 
   it('renders the PendleWidget when a known ?market is selected', () => {
     mockSearchParams = new URLSearchParams(
-      `widget=pendle&pendle_module=market&market=${ACTIVE_MARKET_ADDRESS}`
+      `widget=fixed&fixed_module=market&market=${ACTIVE_MARKET_ADDRESS}`
     );
 
     const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
@@ -241,7 +241,7 @@ describe('PendleWidgetPane', () => {
 
   it('falls back to the overview when ?market is unknown', () => {
     mockSearchParams = new URLSearchParams(
-      'widget=pendle&pendle_module=market&market=0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
+      'widget=fixed&fixed_module=market&market=0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
     );
 
     const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
@@ -283,7 +283,10 @@ describe('PendleWidgetPane', () => {
       unmount();
     });
 
-    it('shows a matured market in My positions when the user holds PT for it', () => {
+    it('hides a matured market from stats cards even when the user holds PT for it', () => {
+      // Matured markets surface only in the "Ready to redeem" list — they
+      // never appear as PendleMarketStatsCard. Active markets the user holds
+      // still appear under "My positions".
       hoisted.userAddress = '0x000000000000000000000000000000000000beef';
       hoisted.ptBalances = {
         [ACTIVE_MARKET_ADDRESS]: 0n,
@@ -292,11 +295,9 @@ describe('PendleWidgetPane', () => {
 
       const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
 
-      // Both groups render their own card; matured one should be in "My positions"
       const addresses = cardAddresses(container);
-      expect(addresses).toContain(MATURED_MARKET_ADDRESS);
+      expect(addresses).not.toContain(MATURED_MARKET_ADDRESS);
       expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
-      expect(container.textContent).toContain('My positions');
 
       unmount();
     });

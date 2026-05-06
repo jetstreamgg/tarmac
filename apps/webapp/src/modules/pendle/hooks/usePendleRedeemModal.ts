@@ -52,7 +52,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       confirmLabel: t`Confirm`,
       onConfirm: () => redeem.execute(),
       analytics: {
-        widgetName: 'pendle',
+        widgetName: 'fixed',
         flow: 'redeem',
         action: 'redeem',
         data: { market: market.marketAddress, underlyingSymbol: market.underlyingSymbol }

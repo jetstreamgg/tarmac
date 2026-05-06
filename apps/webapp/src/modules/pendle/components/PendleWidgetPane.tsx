@@ -104,7 +104,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
           <WidgetContainer
             header={
               <Heading variant="x-large">
-                <Trans>Pendle</Trans>
+                <Trans>Fixed Yield</Trans>
               </Heading>
             }
             subHeader={
@@ -120,7 +120,9 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             <div className="flex flex-col gap-4">
               {!isOnPendleChain && (
                 <Text className="text-textSecondary">
-                  <Trans>Pendle markets are only on Ethereum mainnet. Switch networks to view markets.</Trans>
+                  <Trans>
+                    Fixed yield markets are only on Ethereum mainnet. Switch networks to view markets.
+                  </Trans>
                 </Text>
               )}
               {isOnPendleChain && <PendleReadyToRedeemList />}
@@ -154,7 +156,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
               )}
               {isOnPendleChain && myMarkets.length === 0 && allMarkets.length === 0 && (
                 <Text className="text-textSecondary">
-                  <Trans>No active Pendle markets at the moment. Check back soon.</Trans>
+                  <Trans>No active fixed yield markets at the moment. Check back soon.</Trans>
                 </Text>
               )}
             </div>
