@@ -1,10 +1,17 @@
-import { useContext, useEffect, useMemo } from 'react';
+import { useContext, useEffect } from 'react';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
-import { type PendleConvertQuote, type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
+import {
+  type PendleConvertQuote,
+  type PendleMarketConfig,
+  type Token,
+  useIsBatchSupported
+} from '@jetstreamgg/sky-hooks';
 import { TransactionReview } from '@widgets/shared/components/ui/transaction/TransactionReview';
+import { BatchStatus } from '@widgets/shared/constants';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
+  PendleAction,
   PendleFlow,
   pendleBuyReviewTitle,
   pendleRedeemReviewTitle,
@@ -17,7 +24,8 @@ import {
 
 type PendleTransactionReviewProps = {
   market: PendleMarketConfig;
-  flow: PendleFlow;
+  originToken: Token;
+  targetToken: Token;
   amount: bigint;
   quote?: PendleConvertQuote;
   isRedeemMode: boolean;
@@ -27,39 +35,30 @@ type PendleTransactionReviewProps = {
    * underlying for SY-1:1 markets). When omitted, falls back to quote.amountOut.
    */
   targetAmount?: bigint;
+  needsAllowance: boolean;
+  /** True when the wallet will sign a single EIP-5792 batched call. */
+  isBatchTransaction: boolean;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   legalBatchTxUrl?: string;
 };
 
-const buildUnderlyingToken = (market: PendleMarketConfig): Token => ({
-  name: market.underlyingSymbol,
-  symbol: market.underlyingSymbol,
-  decimals: market.underlyingDecimals,
-  color: '#6d7ce3',
-  address: { 1: market.underlyingToken }
-});
-
-const buildPtToken = (market: PendleMarketConfig): Token => ({
-  name: `PT-${market.underlyingSymbol}`,
-  symbol: `PT-${market.underlyingSymbol}`,
-  decimals: market.underlyingDecimals,
-  color: '#f97316',
-  address: { 1: market.ptToken }
-});
-
 export const PendleTransactionReview = ({
   market,
-  flow,
+  originToken,
+  targetToken,
   amount,
   quote,
   isRedeemMode,
   targetAmount,
+  needsAllowance,
+  isBatchTransaction,
   batchEnabled,
   setBatchEnabled,
   legalBatchTxUrl
 }: PendleTransactionReviewProps) => {
   const { i18n } = useLingui();
+  const { data: batchSupported } = useIsBatchSupported();
   const {
     setTxTitle,
     setTxSubtitle,
@@ -68,15 +67,12 @@ export const PendleTransactionReview = ({
     setOriginAmount,
     setTargetToken,
     setTargetAmount,
-    setTxDescription
+    setTxDescription,
+    txStatus,
+    widgetState
   } = useContext(WidgetContext);
+  const { flow, action, screen } = widgetState;
 
-  const underlyingToken = useMemo(() => buildUnderlyingToken(market), [market]);
-  const ptToken = useMemo(() => buildPtToken(market), [market]);
-
-  const originToken = flow === PendleFlow.BUY ? underlyingToken : ptToken;
-  const targetToken = flow === PendleFlow.BUY ? ptToken : underlyingToken;
-  const originAmount = amount;
   const resolvedTargetAmount = targetAmount ?? quote?.amountOut;
 
   // Push origin/target token + amount into context so TransactionDetail
@@ -84,16 +80,36 @@ export const PendleTransactionReview = ({
   // "input → output" tile.
   useEffect(() => {
     setOriginToken(originToken);
-    setOriginAmount(originAmount);
+    setOriginAmount(amount);
     setTargetToken(targetToken);
     setTargetAmount(resolvedTargetAmount);
-  }, [originToken, originAmount, targetToken, resolvedTargetAmount, setOriginToken, setOriginAmount, setTargetToken, setTargetAmount]);
+  }, [
+    originToken,
+    targetToken,
+    amount,
+    resolvedTargetAmount,
+    setOriginToken,
+    setOriginAmount,
+    setTargetToken,
+    setTargetAmount
+  ]);
 
   // Push title/subtitle/stepper copy.
   useEffect(() => {
+    const batchStatus =
+      !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED;
+
     if (flow === PendleFlow.BUY) {
       setTxTitle(i18n._(pendleBuyReviewTitle));
-      setTxSubtitle(i18n._(getPendleBuyReviewSubtitle(market.underlyingSymbol)));
+      setTxSubtitle(
+        i18n._(
+          getPendleBuyReviewSubtitle({
+            batchStatus,
+            symbol: market.underlyingSymbol,
+            needsAllowance
+          })
+        )
+      );
       setStepTwoTitle(t`Supply`);
     } else if (isRedeemMode) {
       setTxTitle(i18n._(pendleRedeemReviewTitle));
@@ -104,12 +120,46 @@ export const PendleTransactionReview = ({
     } else {
       setTxTitle(i18n._(pendleWithdrawReviewTitle));
       setTxSubtitle(
-        i18n._(getPendleWithdrawReviewSubtitle(`PT-${market.underlyingSymbol}`, market.underlyingSymbol))
+        i18n._(
+          getPendleWithdrawReviewSubtitle({
+            batchStatus,
+            ptSymbol: `PT-${market.underlyingSymbol}`,
+            underlyingSymbol: market.underlyingSymbol,
+            needsAllowance
+          })
+        )
       );
       setStepTwoTitle(t`Withdraw`);
     }
-    setTxDescription(i18n._(getPendleActionDescription(flow, isRedeemMode, market.underlyingSymbol)));
-  }, [flow, isRedeemMode, i18n.locale, market.underlyingSymbol, setTxTitle, setTxSubtitle, setStepTwoTitle, setTxDescription]);
+    setTxDescription(
+      i18n._(
+        getPendleActionDescription({
+          flow: (flow as PendleFlow) ?? PendleFlow.BUY,
+          action: (action as PendleAction | null) ?? null,
+          txStatus,
+          isRedeem: isRedeemMode,
+          needsAllowance,
+          underlyingSymbol: market.underlyingSymbol
+        })
+      )
+    );
+  }, [
+    flow,
+    action,
+    screen,
+    isRedeemMode,
+    needsAllowance,
+    isBatchTransaction,
+    batchSupported,
+    batchEnabled,
+    txStatus,
+    i18n.locale,
+    market.underlyingSymbol,
+    setTxTitle,
+    setTxSubtitle,
+    setStepTwoTitle,
+    setTxDescription
+  ]);
 
   return (
     <TransactionReview

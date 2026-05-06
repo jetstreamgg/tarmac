@@ -1,4 +1,4 @@
-import { RewardContract } from '@jetstreamgg/sky-hooks';
+import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@jetstreamgg/sky-hooks';
 import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/sky-widgets';
 import {
   QueryParams,
@@ -10,6 +10,7 @@ import {
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping,
+  PendleIntentMapping,
   IS_PRODUCTION_ENV
 } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
@@ -222,6 +223,33 @@ export const validateSearchParams = (
     if (widget !== IntentMapping[Intent.CONVERT_INTENT]) {
       searchParams.delete(QueryParams.ConvertModule);
       setSelectedConvertOption(undefined);
+    }
+
+    // validates pendle_module param against PendleIntentMapping
+    if (key === QueryParams.PendleModule) {
+      const isValidIntent = Object.values(PendleIntentMapping).includes(value);
+      if (!isValidIntent) {
+        searchParams.delete(key);
+      }
+    }
+
+    // validates market param: must be an active (non-matured) market address.
+    // Matured markets have no detail view — they only render as redeem rows
+    // on the overview, so the URL state would be misleading.
+    if (key === QueryParams.Market) {
+      const lower = value.toLowerCase();
+      const market = PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
+      const isValid = !!market && !isMarketMatured(market.expiry);
+      if (!isValid) {
+        searchParams.delete(QueryParams.PendleModule);
+        searchParams.delete(key);
+      }
+    }
+
+    // if widget changes to something other than pendle, drop the pendle params
+    if (widget !== IntentMapping[Intent.PENDLE_INTENT]) {
+      searchParams.delete(QueryParams.PendleModule);
+      searchParams.delete(QueryParams.Market);
     }
 
     // validate source token

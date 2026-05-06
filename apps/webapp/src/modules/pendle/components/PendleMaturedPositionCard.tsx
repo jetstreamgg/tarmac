@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { type PendleMarketConfig, usePendleRedeemPreview } from '@jetstreamgg/sky-hooks';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -14,11 +14,6 @@ type PendleMaturedPositionCardProps = {
   ptBalance: bigint;
 };
 
-/**
- * Single matured-position card for the "Ready to redeem" section on the list
- * page. Shows the market + 1:1 redemption preview + a Redeem button that
- * opens the global TransactionContext modal.
- */
 export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPositionCardProps) => {
   const formattedBalance = formatBigInt(ptBalance, {
     unit: market.underlyingDecimals,
@@ -30,12 +25,33 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
     day: 'numeric'
   });
 
+  const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
+  const formattedReceive =
+    previewAmount !== undefined
+      ? formatBigInt(previewAmount as bigint, { unit: market.underlyingDecimals, maxDecimals: 4 })
+      : undefined;
+
   const tokenTile = (
     <HStack className="items-center" gap={2}>
-      <TokenIcon className="h-5 w-5" token={{ symbol: 'USDS' }} showChainIcon={false} />
-      <Text>
-        {formattedBalance} PT-{market.underlyingSymbol} → {formattedBalance} {market.underlyingSymbol}
-      </Text>
+      <HStack className="items-center" gap={2}>
+        <TokenIcon
+          className="h-5 w-5"
+          token={{ symbol: `PT-${market.underlyingSymbol}` }}
+          showChainIcon={false}
+        />
+        <Text>
+          {formattedBalance} PT-{market.underlyingSymbol}
+        </Text>
+      </HStack>
+      {formattedReceive && (
+        <HStack className="items-center" gap={2}>
+          <Text>→</Text>
+          <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
+          <Text>
+            {formattedReceive} {market.underlyingSymbol}
+          </Text>
+        </HStack>
+      )}
     </HStack>
   );
 
@@ -44,38 +60,42 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
   });
 
   return (
-    <Card
-      className="bg-transparent from-card to-card bg-radial-(--gradient-position) lg:p-5"
-      data-testid="pendle-matured-position-card"
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <HStack className="items-center" gap={2}>
-          <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS' }} />
-          <Text>PT-{market.underlyingSymbol}</Text>
-          <Text variant="small" className="text-textSecondary">
-            <Trans>· Matured</Trans>
-          </Text>
-        </HStack>
+    <Card variant="stats" data-testid="pendle-matured-position-card">
+      <CardHeader>
+        <VStack className="items-stretch" gap={1}>
+          <CardTitle variant="stats">
+            <Trans>Available to redeem</Trans>
+          </CardTitle>
+          <HStack className="items-center" gap={2}>
+            <TokenIcon
+              className="h-5 w-5"
+              token={{ symbol: `PT-${market.underlyingSymbol}` }}
+              showChainIcon={false}
+            />
+            <Text>
+              {formattedBalance} PT-{market.underlyingSymbol}
+            </Text>
+          </HStack>
+        </VStack>
+        <VStack className="items-stretch text-right" gap={1}>
+          <CardTitle variant="stats" className="whitespace-nowrap">
+            <Trans>Matured</Trans>
+          </CardTitle>
+          <Text className="whitespace-nowrap">{maturityLabel}</Text>
+        </VStack>
+      </CardHeader>
+      <CardContent variant="stats" className="mt-4">
         <Button
+          variant="primary"
+          className="w-full"
           onClick={openRedeemModal}
-          disabled={!isRedeemable || !isPrepared}
+          disabled={!isRedeemable || !isPrepared || previewLoading}
           data-testid="pendle-matured-redeem-button"
         >
-          <Trans>Redeem</Trans>
+          <Trans>
+            Redeem {formattedBalance} PT-{market.underlyingSymbol}
+          </Trans>
         </Button>
-      </CardHeader>
-      <CardContent className="mt-3 p-0">
-        <VStack gap={1}>
-          <Text className="text-textSecondary text-sm">
-            <Trans>
-              Redeem {formattedBalance} PT-{market.underlyingSymbol} for {formattedBalance}{' '}
-              {market.underlyingSymbol} (1:1)
-            </Trans>
-          </Text>
-          <Text variant="small" className="text-textSecondary">
-            <Trans>Matured · {maturityLabel}</Trans>
-          </Text>
-        </VStack>
       </CardContent>
     </Card>
   );

@@ -3,12 +3,15 @@ import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { useChainId } from 'wagmi';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { type PendleConvertQuote, type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
+import type { PendleConvertQuote, PendleMarketConfig, Token } from '@jetstreamgg/sky-hooks';
 import { BatchTransactionStatus } from '@widgets/shared/components/ui/transaction/BatchTransactionStatus';
-import { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
+import type { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
+import { TxStatus } from '@widgets/shared/constants';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import {
+  PendleAction,
   PendleFlow,
+  PendleScreen,
   pendleBuyTitle,
   pendleWithdrawTitle,
   getPendleSupplySubtitle,
@@ -20,7 +23,8 @@ import {
 
 type PendleTransactionStatusProps = {
   market: PendleMarketConfig;
-  flow: PendleFlow;
+  originToken: Token;
+  targetToken: Token;
   amount: bigint;
   quote?: PendleConvertQuote;
   isRedeemMode: boolean;
@@ -32,33 +36,24 @@ type PendleTransactionStatusProps = {
   targetAmount?: bigint;
   /** Whether the flow needs an approval at all (for subtitle wording). Snapshotted on mount. */
   needsAllowance: boolean;
+  /** True when the wallet is signing a single EIP-5792 batched call. */
+  isBatchTransaction?: boolean;
+  /** Index of the currently executing call in the sequential (non-batched) flow. */
+  currentCallIndex: number;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
-const buildUnderlyingToken = (market: PendleMarketConfig): Token => ({
-  name: market.underlyingSymbol,
-  symbol: market.underlyingSymbol,
-  decimals: market.underlyingDecimals,
-  color: '#6d7ce3',
-  address: { 1: market.underlyingToken }
-});
-
-const buildPtToken = (market: PendleMarketConfig): Token => ({
-  name: `PT-${market.underlyingSymbol}`,
-  symbol: `PT-${market.underlyingSymbol}`,
-  decimals: market.underlyingDecimals,
-  color: '#f97316',
-  address: { 1: market.ptToken }
-});
-
 export const PendleTransactionStatus = ({
   market,
-  flow,
+  originToken,
+  targetToken,
   amount,
   quote,
   isRedeemMode,
   targetAmount,
   needsAllowance,
+  isBatchTransaction,
+  currentCallIndex,
   onExternalLinkClicked
 }: PendleTransactionStatusProps) => {
   const { i18n } = useLingui();
@@ -75,14 +70,12 @@ export const PendleTransactionStatus = ({
     setTargetToken,
     setTargetAmount,
     setStep,
+    step,
     setStepTwoTitle,
-    txStatus
+    txStatus,
+    widgetState
   } = useContext(WidgetContext);
-
-  const underlyingToken = buildUnderlyingToken(market);
-  const ptToken = buildPtToken(market);
-  const originToken = flow === PendleFlow.BUY ? underlyingToken : ptToken;
-  const targetToken = flow === PendleFlow.BUY ? ptToken : underlyingToken;
+  const { flow, action, screen } = widgetState;
 
   const resolvedTargetAmount = targetAmount ?? quote?.amountOut;
 
@@ -92,19 +85,37 @@ export const PendleTransactionStatus = ({
     setOriginAmount(amount);
     setTargetToken(targetToken);
     setTargetAmount(resolvedTargetAmount);
-  }, [originToken, targetToken, amount, resolvedTargetAmount, setOriginToken, setOriginAmount, setTargetToken, setTargetAmount]);
+  }, [
+    originToken,
+    targetToken,
+    amount,
+    resolvedTargetAmount,
+    setOriginToken,
+    setOriginAmount,
+    setTargetToken,
+    setTargetAmount
+  ]);
 
   // Title/subtitle/description/loading-text for each phase.
   useEffect(() => {
+    if (screen !== PendleScreen.TRANSACTION) return;
+
+    const isWaitingForSecondTransaction =
+      txStatus === TxStatus.INITIALIZED &&
+      action !== PendleAction.APPROVE &&
+      flowNeedsAllowance &&
+      !isBatchTransaction;
+    const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
+
     const amountStr = formatBigInt(amount, { unit: market.underlyingDecimals });
 
     if (flow === PendleFlow.BUY) {
       setStepTwoTitle(t`Supply`);
-      setTxTitle(i18n._(pendleBuyTitle[txStatus as keyof TxCardCopyText]));
+      setTxTitle(i18n._(pendleBuyTitle[flowTxStatus as keyof TxCardCopyText]));
       setTxSubtitle(
         i18n._(
           getPendleSupplySubtitle({
-            txStatus,
+            txStatus: flowTxStatus,
             amount: amountStr,
             symbol: market.underlyingSymbol,
             needsAllowance: flowNeedsAllowance
@@ -114,7 +125,7 @@ export const PendleTransactionStatus = ({
       setLoadingText(
         i18n._(
           getPendleSupplyLoadingButtonText({
-            txStatus,
+            txStatus: flowTxStatus,
             amount: amountStr,
             symbol: market.underlyingSymbol
           })
@@ -122,11 +133,11 @@ export const PendleTransactionStatus = ({
       );
     } else {
       setStepTwoTitle(isRedeemMode ? t`Redeem` : t`Withdraw`);
-      setTxTitle(i18n._(pendleWithdrawTitle[txStatus as keyof TxCardCopyText]));
+      setTxTitle(i18n._(pendleWithdrawTitle[flowTxStatus as keyof TxCardCopyText]));
       setTxSubtitle(
         i18n._(
           getPendleWithdrawSubtitle({
-            txStatus,
+            txStatus: flowTxStatus,
             amount: amountStr,
             ptSymbol: `PT-${market.underlyingSymbol}`,
             underlyingSymbol: market.underlyingSymbol,
@@ -138,7 +149,7 @@ export const PendleTransactionStatus = ({
       setLoadingText(
         i18n._(
           getPendleWithdrawLoadingButtonText({
-            txStatus,
+            txStatus: flowTxStatus,
             amount: amountStr,
             ptSymbol: `PT-${market.underlyingSymbol}`,
             isRedeem: isRedeemMode
@@ -147,16 +158,42 @@ export const PendleTransactionStatus = ({
       );
     }
 
-    setTxDescription(i18n._(getPendleActionDescription(flow, isRedeemMode, market.underlyingSymbol)));
+    setTxDescription(
+      i18n._(
+        getPendleActionDescription({
+          flow: flow as PendleFlow,
+          action: (action as PendleAction | null) ?? null,
+          txStatus: flowTxStatus,
+          isRedeem: isRedeemMode,
+          needsAllowance: flowNeedsAllowance,
+          underlyingSymbol: market.underlyingSymbol
+        })
+      )
+    );
 
-    // Pendle always uses EIP-5792 batched execution, so the step indicator is
-    // always on its terminal step — same shape as Savings's batched branch.
-    setStep(2);
+    if (isBatchTransaction || flowTxStatus === TxStatus.SUCCESS) {
+      setStep(2);
+    } else if (flowNeedsAllowance) {
+      const candidateStep = currentCallIndex + 1;
+      // Don't advance step while txStatus is stale from the previous transaction.
+      // When currentCallIndex advances (previous tx mined), txStatus is still LOADING.
+      // Wait until txStatus transitions away from LOADING (e.g. to INITIALIZED via onMutate)
+      // before advancing step, to prevent the next step from briefly flashing as loading.
+      if (candidateStep <= step || txStatus !== TxStatus.LOADING) {
+        setStep(candidateStep);
+      }
+    } else {
+      setStep(2);
+    }
   }, [
     txStatus,
     flow,
+    action,
+    screen,
     isRedeemMode,
     flowNeedsAllowance,
+    isBatchTransaction,
+    currentCallIndex,
     amount,
     market.underlyingSymbol,
     market.underlyingDecimals,
@@ -170,5 +207,10 @@ export const PendleTransactionStatus = ({
     setStepTwoTitle
   ]);
 
-  return <BatchTransactionStatus onExternalLinkClicked={onExternalLinkClicked} />;
+  return (
+    <BatchTransactionStatus
+      onExternalLinkClicked={onExternalLinkClicked}
+      isBatchTransaction={isBatchTransaction}
+    />
+  );
 };

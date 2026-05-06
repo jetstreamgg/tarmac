@@ -75,8 +75,8 @@ export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCa
     <StatsOverviewCardCore
       headerLeftContent={
         <MotionHStack className="items-center" gap={2} variants={positionAnimations}>
-          <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS' }} />
-          <Text>{market.underlyingSymbol}</Text>
+          <TokenIcon className="h-6 w-6" token={{ symbol: `PT-${market.underlyingSymbol}` }} />
+          <Text>{market.name}</Text>
         </MotionHStack>
       }
       headerRightContent={

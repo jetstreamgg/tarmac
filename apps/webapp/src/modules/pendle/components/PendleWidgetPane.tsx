@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { useChainId, useConnection } from 'wagmi';
+import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import {
   isMarketMatured,
@@ -34,7 +34,6 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
 export function PendleWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
-  const { address: userAddress } = useConnection();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
 
@@ -43,15 +42,24 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
 
   const { data: ptBalances } = usePendleUserPtBalances();
 
-  // Partition into "My positions" (user holds PT) vs "All markets". Matured markets
-  // only show up if the user is holding the PT — otherwise they're hidden entirely.
+  // A market URL is only valid when it points at an active (non-matured)
+  // entry in PENDLE_MARKETS. Matured markets only surface as redeem rows on
+  // the overview, never as a detail view. Unknown addresses (typo/old
+  // deployment) likewise fall through to overview.
+  const showSelectedMarket = !!selectedMarket && !isMarketMatured(selectedMarket.expiry);
+
+  // URL cleanup for matured/unknown markets is centralized in
+  // validateSearchParams (called from MainApp) — same pattern as Vaults,
+  // Convert, etc.
+
+  // Partition into "My positions" (user holds PT) vs "All markets". Matured
+  // markets are excluded from both — they live in PendleReadyToRedeemList.
   const [myMarkets, allMarkets] = useMemo(() => {
     const mine: PendleMarketConfig[] = [];
     const all: PendleMarketConfig[] = [];
     PENDLE_MARKETS.forEach(market => {
+      if (isMarketMatured(market.expiry)) return;
       const heldBalance = ptBalances?.[market.marketAddress] ?? 0n;
-      const matured = isMarketMatured(market.expiry);
-      if (matured && (!userAddress || heldBalance === 0n)) return;
       if (heldBalance > 0n) {
         mine.push(market);
       } else {
@@ -59,7 +67,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
       }
     });
     return [mine, all];
-  }, [ptBalances, userAddress]);
+  }, [ptBalances]);
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     setSearchParams(params => {
@@ -79,11 +87,14 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
 
   return (
     <AnimatePresence mode="popLayout" initial={false}>
-      <CardAnimationWrapper key={selectedMarket?.marketAddress ?? 'overview'} className="h-full">
-        {selectedMarket ? (
+      <CardAnimationWrapper
+        key={showSelectedMarket ? selectedMarket!.marketAddress : 'overview'}
+        className="h-full"
+      >
+        {showSelectedMarket ? (
           <PendleWidget
             {...sharedProps}
-            market={selectedMarket}
+            market={selectedMarket!}
             onExternalLinkClicked={sharedProps.onExternalLinkClicked}
             onBackToPendle={handleBack}
             batchEnabled={batchEnabled}
@@ -99,8 +110,8 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             subHeader={
               <Text className="text-textSecondary" variant="small">
                 <Trans>
-                  Lock in fixed yield by buying Principal Tokens (PT) at a discount. Each PT redeems 1:1
-                  for the underlying asset at maturity.
+                  Lock in fixed yield by buying Principal Tokens (PT) at a discount. Each PT redeems 1:1 for
+                  the underlying asset at maturity.
                 </Trans>
               </Text>
             }
@@ -109,9 +120,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             <div className="flex flex-col gap-4">
               {!isOnPendleChain && (
                 <Text className="text-textSecondary">
-                  <Trans>
-                    Pendle markets are only on Ethereum mainnet. Switch networks to view markets.
-                  </Trans>
+                  <Trans>Pendle markets are only on Ethereum mainnet. Switch networks to view markets.</Trans>
                 </Text>
               )}
               {isOnPendleChain && <PendleReadyToRedeemList />}
