@@ -86,7 +86,8 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
       </CardHeader>
       <CardContent variant="stats" className="mt-4">
         <Button
-          className="border-textSecondary disabled:border-textMuted disabled:text-textMuted w-full border bg-transparent hover:bg-[rgb(77,76,111)] active:bg-[rgb(94,92,136)]"
+          variant="primary"
+          className="w-full"
           onClick={openRedeemModal}
           disabled={!isRedeemable || !isPrepared || previewLoading}
           data-testid="pendle-matured-redeem-button"
