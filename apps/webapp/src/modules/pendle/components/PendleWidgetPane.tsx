@@ -17,8 +17,8 @@ import {
   WidgetContainer,
   positionAnimations
 } from '@jetstreamgg/sky-widgets';
-import { PendleIntent } from '@/lib/enums';
-import { PendleIntentMapping, QueryParams } from '@/lib/constants';
+import { FixedIntent } from '@/lib/enums';
+import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
@@ -71,7 +71,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     setSearchParams(params => {
-      params.set(QueryParams.PendleModule, PendleIntentMapping[PendleIntent.MARKET_INTENT]);
+      params.set(QueryParams.FixedModule, FixedIntentMapping[FixedIntent.MARKET_INTENT]);
       params.set(QueryParams.Market, market.marketAddress);
       return params;
     });
@@ -79,7 +79,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
 
   const handleBack = () => {
     setSearchParams(params => {
-      params.delete(QueryParams.PendleModule);
+      params.delete(QueryParams.FixedModule);
       params.delete(QueryParams.Market);
       return params;
     });

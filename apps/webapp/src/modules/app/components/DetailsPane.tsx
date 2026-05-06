@@ -198,7 +198,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                   <SealDetailsPane />
                 </MotionDetailsWrapper>
               );
-            case Intent.PENDLE_INTENT:
+            case Intent.FIXED_INTENT:
               return (
                 <MotionDetailsWrapper key={keys[9]}>
                   <PendleDetailsPane />

@@ -9,7 +9,7 @@ export enum Intent {
   EXPERT_INTENT = 'EXPERT_INTENT',
   VAULTS_INTENT = 'VAULTS_INTENT',
   CONVERT_INTENT = 'CONVERT_INTENT',
-  PENDLE_INTENT = 'PENDLE_INTENT'
+  FIXED_INTENT = 'FIXED_INTENT'
 }
 
 export enum ExpertIntent {
@@ -26,6 +26,6 @@ export enum ConvertIntent {
   TRADE_INTENT = 'TRADE_INTENT'
 }
 
-export enum PendleIntent {
+export enum FixedIntent {
   MARKET_INTENT = 'MARKET_INTENT'
 }

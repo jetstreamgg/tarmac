@@ -10,7 +10,7 @@ import {
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping,
-  PendleIntentMapping,
+  FixedIntentMapping,
   IS_PRODUCTION_ENV
 } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
@@ -225,9 +225,9 @@ export const validateSearchParams = (
       setSelectedConvertOption(undefined);
     }
 
-    // validates pendle_module param against PendleIntentMapping
-    if (key === QueryParams.PendleModule) {
-      const isValidIntent = Object.values(PendleIntentMapping).includes(value);
+    // validates fixed_module param against FixedIntentMapping
+    if (key === QueryParams.FixedModule) {
+      const isValidIntent = Object.values(FixedIntentMapping).includes(value);
       if (!isValidIntent) {
         searchParams.delete(key);
       }
@@ -241,14 +241,14 @@ export const validateSearchParams = (
       const market = PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
       const isValid = !!market && !isMarketMatured(market.expiry);
       if (!isValid) {
-        searchParams.delete(QueryParams.PendleModule);
+        searchParams.delete(QueryParams.FixedModule);
         searchParams.delete(key);
       }
     }
 
     // if widget changes to something other than pendle, drop the pendle params
-    if (widget !== IntentMapping[Intent.PENDLE_INTENT]) {
-      searchParams.delete(QueryParams.PendleModule);
+    if (widget !== IntentMapping[Intent.FIXED_INTENT]) {
+      searchParams.delete(QueryParams.FixedModule);
       searchParams.delete(QueryParams.Market);
     }
 

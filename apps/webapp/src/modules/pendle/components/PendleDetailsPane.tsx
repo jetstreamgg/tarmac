@@ -11,8 +11,8 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { mainnet } from 'viem/chains';
-import { PendleIntent } from '@/lib/enums';
-import { PendleIntentMapping, QueryParams } from '@/lib/constants';
+import { FixedIntent } from '@/lib/enums';
+import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
@@ -52,7 +52,7 @@ export const PendleDetailsPane = () => {
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     setSearchParams(params => {
-      params.set(QueryParams.PendleModule, PendleIntentMapping[PendleIntent.MARKET_INTENT]);
+      params.set(QueryParams.FixedModule, FixedIntentMapping[FixedIntent.MARKET_INTENT]);
       params.set(QueryParams.Market, market.marketAddress);
       return params;
     });
