@@ -1,5 +1,5 @@
 import { RewardsModule, Savings, Trade, Upgrade, Seal, Expert, Vaults, Convert } from '@/modules/icons';
-import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from './enums';
+import { ConvertIntent, ExpertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
 import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
@@ -24,7 +24,9 @@ export enum QueryParams {
   ExpertModule = 'expert_module',
   Vault = 'vault',
   VaultModule = 'vault_module',
-  ConvertModule = 'convert_module'
+  ConvertModule = 'convert_module',
+  Market = 'market',
+  FixedModule = 'fixed_module'
 }
 
 export enum Environment {
@@ -43,7 +45,8 @@ export const IntentMapping = {
   [Intent.STAKE_INTENT]: 'stake',
   [Intent.EXPERT_INTENT]: 'expert',
   [Intent.VAULTS_INTENT]: 'vaults',
-  [Intent.CONVERT_INTENT]: 'convert'
+  [Intent.CONVERT_INTENT]: 'convert',
+  [Intent.FIXED_INTENT]: 'fixed'
 };
 
 export const ExpertIntentMapping: Record<ExpertIntent, string> = {
@@ -60,6 +63,10 @@ export const ConvertIntentMapping: Record<ConvertIntent, string> = {
   [ConvertIntent.TRADE_INTENT]: 'trade'
 };
 
+export const FixedIntentMapping: Record<FixedIntent, string> = {
+  [FixedIntent.MARKET_INTENT]: 'market'
+};
+
 export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
   [mainnet.id]: [
     Intent.BALANCES_INTENT,
@@ -71,7 +78,8 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.STAKE_INTENT,
     Intent.EXPERT_INTENT,
     Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT
+    Intent.CONVERT_INTENT,
+    Intent.FIXED_INTENT
   ],
   [tenderly.id]: [
     Intent.BALANCES_INTENT,
@@ -83,7 +91,8 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.STAKE_INTENT,
     Intent.EXPERT_INTENT,
     Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT
+    Intent.CONVERT_INTENT,
+    Intent.FIXED_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
@@ -107,7 +116,8 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   seal: msg`seal`,
   stake: msg`stake`,
   vaults: msg`vaults`,
-  convert: msg`convert`
+  convert: msg`convert`,
+  pendle: msg`pendle`
 };
 
 export const EXPERT_WIDGET_OPTIONS: {

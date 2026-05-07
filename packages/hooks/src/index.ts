@@ -131,6 +131,56 @@ export type {
   AllMorphoVaultsUserAssetsData
 } from './morpho';
 
+// Pendle (Fixed Yield)
+export {
+  PENDLE_API_BASE_URL,
+  PENDLE_QUOTE_REFETCH_MS,
+  PENDLE_QUOTE_TTL_MS,
+  PENDLE_DEFAULT_SLIPPAGE,
+  PENDLE_ROUTER_V4_ADDRESS,
+  PENDLE_ROUTER_V4_ABI,
+  PENDLE_MARKETS,
+  getPendleMarketByAddress,
+  PendleConvertSide,
+  PendleTradeAction
+} from './pendle/constants';
+export { isMarketMatured } from './pendle/helpers';
+export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
+export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
+export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
+export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
+export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
+export { useBatchPendleRedeemAll, type RedeemPosition } from './pendle/useBatchPendleRedeemAll';
+export { useRedeem as usePendleRedeem } from './pendle/useRedeem';
+export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
+export {
+  buildVerifiedArgs,
+  buildMaturedRedeemVerifiedArgs,
+  buildMulticallVerifiedArgs
+} from './pendle/buildVerifiedArgs';
+export type {
+  KnownCallValues,
+  MaturedRedeemContext,
+  VerifiedCall,
+  VerifiedBuyArgs,
+  VerifiedWithdrawArgs,
+  VerifiedExitArgs,
+  VerifiedMulticall
+} from './pendle/buildVerifiedArgs';
+export type {
+  PendleMarketConfig,
+  PendleConvertQuote,
+  PendleQuoteHook,
+  PendleMarketStats,
+  PendleMarketsStats,
+  PendleMarketsStatsHook,
+  PendleUserPtBalances,
+  PendleUserPtBalancesHook,
+  PendleTransactionRaw,
+  PendleMarketTransactionsResponseRaw,
+  PendleMarketHistoryHook
+} from './pendle/pendle';
+
 // Authentication
 export { useRestrictedAddressCheck } from './authentication/useRestrictedAddressCheck';
 export { useVpnCheck } from './authentication/useVpnCheck';

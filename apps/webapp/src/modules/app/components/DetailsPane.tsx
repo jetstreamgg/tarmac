@@ -22,6 +22,7 @@ import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { StakeDetailsPane } from '@/modules/stake/components/StakeDetailsPane';
 import { ExpertDetailsPane } from '@/modules/expert/components/ExpertDetailsPane';
 import { VaultsDetailsPane } from '@/modules/vaults/components/VaultsDetailsPane';
+import { PendleDetailsPane } from '@/modules/pendle/components/PendleDetailsPane';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { SealDetailsPane } from '@/modules/seal/components/SealDetailsPane';
 import { PsmConversionDetails } from '@/modules/convert/components/PsmConversionDetails';
@@ -195,6 +196,12 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
               return (
                 <MotionDetailsWrapper key={keys[7]}>
                   <SealDetailsPane />
+                </MotionDetailsWrapper>
+              );
+            case Intent.FIXED_INTENT:
+              return (
+                <MotionDetailsWrapper key={keys[9]}>
+                  <PendleDetailsPane />
                 </MotionDetailsWrapper>
               );
             case Intent.BALANCES_INTENT:

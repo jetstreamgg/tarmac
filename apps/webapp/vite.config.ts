@@ -82,6 +82,7 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://api.cow.fi/
       https://api.morpho.org/
       https://api.merkl.xyz/
+      https://api-v2.pendle.finance
       wss://relay.walletconnect.com
       wss://relay.walletconnect.org
       https://pulse.walletconnect.org
