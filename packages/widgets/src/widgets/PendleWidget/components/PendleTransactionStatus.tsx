@@ -28,13 +28,6 @@ type PendleTransactionStatusProps = {
   targetToken: Token;
   amount: bigint;
   quote?: PendleConvertQuote;
-  isRedeemMode: boolean;
-  /**
-   * Override for the displayed target-amount tile. Used by the matured-redeem
-   * flow where there is no API quote — parent passes `amount` (1:1 PT →
-   * underlying for SY-1:1 markets). When omitted, falls back to quote.amountOut.
-   */
-  targetAmount?: bigint;
   /** Whether the flow needs an approval at all (for subtitle wording). Snapshotted on mount. */
   needsAllowance: boolean;
   /** True when the wallet is signing a single EIP-5792 batched call. */
@@ -50,8 +43,6 @@ export const PendleTransactionStatus = ({
   targetToken,
   amount,
   quote,
-  isRedeemMode,
-  targetAmount,
   needsAllowance,
   isBatchTransaction,
   currentCallIndex,
@@ -78,19 +69,17 @@ export const PendleTransactionStatus = ({
   } = useContext(WidgetContext);
   const { flow, action, screen } = widgetState;
 
-  const resolvedTargetAmount = targetAmount ?? quote?.amountOut;
-
   // Origin/target token + amount feeds the TransactionDetail tile in the card.
   useEffect(() => {
     setOriginToken(originToken);
     setOriginAmount(amount);
     setTargetToken(targetToken);
-    setTargetAmount(resolvedTargetAmount);
+    setTargetAmount(quote?.amountOut);
   }, [
     originToken,
     targetToken,
     amount,
-    resolvedTargetAmount,
+    quote?.amountOut,
     setOriginToken,
     setOriginAmount,
     setTargetToken,
@@ -140,7 +129,7 @@ export const PendleTransactionStatus = ({
         )
       );
     } else {
-      setStepTwoTitle(isRedeemMode ? t`Redeem` : t`Withdraw`);
+      setStepTwoTitle(t`Withdraw`);
       setTxTitle(i18n._(pendleWithdrawTitle[flowTxStatus as keyof TxCardCopyText]));
       setTxSubtitle(
         i18n._(
@@ -148,9 +137,8 @@ export const PendleTransactionStatus = ({
             txStatus: flowTxStatus,
             amount: amountStr,
             ptSymbol: `PT-${market.underlyingSymbol}`,
-            underlyingSymbol: isRedeemMode ? market.underlyingSymbol : userSideSymbol,
-            needsAllowance: flowNeedsAllowance,
-            isRedeem: isRedeemMode
+            underlyingSymbol: userSideSymbol,
+            needsAllowance: flowNeedsAllowance
           })
         )
       );
@@ -159,8 +147,7 @@ export const PendleTransactionStatus = ({
           getPendleWithdrawLoadingButtonText({
             txStatus: flowTxStatus,
             amount: amountStr,
-            ptSymbol: `PT-${market.underlyingSymbol}`,
-            isRedeem: isRedeemMode
+            ptSymbol: `PT-${market.underlyingSymbol}`
           })
         )
       );
@@ -172,9 +159,8 @@ export const PendleTransactionStatus = ({
           flow: flow as PendleFlow,
           action: (action as PendleAction | null) ?? null,
           txStatus: flowTxStatus,
-          isRedeem: isRedeemMode,
           needsAllowance: flowNeedsAllowance,
-          underlyingSymbol: isRedeemMode ? market.underlyingSymbol : userSideSymbol
+          underlyingSymbol: userSideSymbol
         })
       )
     );
@@ -198,7 +184,6 @@ export const PendleTransactionStatus = ({
     flow,
     action,
     screen,
-    isRedeemMode,
     flowNeedsAllowance,
     isBatchTransaction,
     currentCallIndex,

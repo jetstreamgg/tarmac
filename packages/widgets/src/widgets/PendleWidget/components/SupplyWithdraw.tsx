@@ -5,7 +5,6 @@ import { mainnet } from 'viem/chains';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import {
   getTokenDecimals,
-  isMarketMatured,
   type PendleConvertQuote,
   type PendleMarketConfig,
   type Token
@@ -88,9 +87,6 @@ export const SupplyWithdraw = ({
   prepareErrorMessage,
   onExternalLinkClicked
 }: SupplyWithdrawProps) => {
-  const matured = isMarketMatured(market.expiry);
-  const isRedeemMode = flow === PendleFlow.WITHDRAW && matured;
-
   // Pendle PTs share decimals with the underlying SY (which equals the
   // underlying token's decimals). The user-side token may be USDS (18) or
   // USDC (6), so we resolve decimals per-token rather than hardcoding to
@@ -227,23 +223,14 @@ export const SupplyWithdraw = ({
               />
             </motion.div>
           </VStack>
-          {!matured && (
-            <div
-              className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-300"
-              data-testid="pendle-early-withdraw-banner"
-            >
-              <Trans>
-                Withdrawing before maturity uses the current market price, not the originally locked APY.
-              </Trans>
-            </div>
-          )}
-          {isRedeemMode && (
-            <div className="bg-bullish/10 text-bullish mt-3 rounded-xl px-3 py-2 text-sm">
-              <Trans>
-                Maturity reached — redeem 1 PT-{market.underlyingSymbol} for 1 {market.underlyingSymbol}.
-              </Trans>
-            </div>
-          )}
+          <div
+            className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-300"
+            data-testid="pendle-early-withdraw-banner"
+          >
+            <Trans>
+              Withdrawing before maturity uses the current market price, not the originally locked APY.
+            </Trans>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -281,51 +268,44 @@ export const SupplyWithdraw = ({
               label: t`Maturity date`,
               value: maturityDisplay
             },
-            ...(isRedeemMode
-              ? []
-              : [
+            {
+              label: t`Min. received`,
+              value: formattedMin ?? <Skeleton className="bg-textSecondary h-4 w-20" />
+            },
+            {
+              label: t`Slippage tolerance`,
+              value: `${(slippage * 100).toFixed(2)}%`
+            },
+            {
+              label: t`Price impact`,
+              value: priceImpactRow
+            },
+            ...(breakdown
+              ? [
                   {
-                    label: t`Min. received`,
-                    value: formattedMin ?? <Skeleton className="bg-textSecondary h-4 w-20" />
+                    label: t`  · Pendle AMM`,
+                    value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`
                   },
                   {
-                    label: t`Slippage tolerance`,
-                    value: `${(slippage * 100).toFixed(2)}%`
-                  },
+                    label: t`  · Aggregator hop`,
+                    value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`
+                  }
+                ]
+              : []),
+            ...(aggregatorName
+              ? [
                   {
-                    label: t`Price impact`,
-                    value: priceImpactRow
-                  },
-                  ...(breakdown
-                    ? [
-                        {
-                          label: t`  · Pendle AMM`,
-                          value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`
-                        },
-                        {
-                          label: t`  · Aggregator hop`,
-                          value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`
-                        }
-                      ]
-                    : []),
-                  ...(aggregatorName
-                    ? [
-                        {
-                          label: t`Routed via`,
-                          value: aggregatorName
-                        }
-                      ]
-                    : [])
-                ]),
+                    label: t`Routed via`,
+                    value: aggregatorName
+                  }
+                ]
+              : []),
             {
               label: t`Routing fee`,
-              value: isRedeemMode ? (
-                <Trans>Free</Trans>
-              ) : quote?.feeUsd !== undefined ? (
-                `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
-              ) : (
-                <Trans>Included in quote</Trans>
-              )
+              value:
+                quote?.feeUsd !== undefined
+                  ? `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
+                  : <Trans>Included in quote</Trans>
             }
           ]}
         />

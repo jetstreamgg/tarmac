@@ -25,8 +25,6 @@ type PendleConfigMenuProps = {
   defaultSlippage: number;
   setSlippage: (decimal: number) => void;
   flow: PendleFlow;
-  /** Hide the gear when the flow has no slippage (e.g. matured-market redeem) */
-  hidden?: boolean;
 };
 
 const paginationButtonClasses =
@@ -35,8 +33,7 @@ const paginationButtonClasses =
 export const PendleConfigMenu = ({
   slippage,
   defaultSlippage,
-  setSlippage,
-  hidden
+  setSlippage
 }: PendleConfigMenuProps) => {
   // Local raw string state for the input. Storing the user's keystrokes as a
   // string (rather than reformatting from `slippage: number` on every render)
@@ -67,8 +64,6 @@ export const PendleConfigMenu = ({
       setRawInput(decimalSlippageToPercentString(slippage));
     }
   }, [slippage, defaultSlippage]);
-
-  if (hidden) return null;
 
   const isCustom = slippage !== defaultSlippage;
 

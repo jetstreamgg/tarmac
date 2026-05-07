@@ -14,10 +14,8 @@ import {
   PendleAction,
   PendleFlow,
   pendleBuyReviewTitle,
-  pendleRedeemReviewTitle,
   pendleWithdrawReviewTitle,
   getPendleBuyReviewSubtitle,
-  getPendleRedeemReviewSubtitle,
   getPendleWithdrawReviewSubtitle,
   getPendleActionDescription
 } from '../lib/constants';
@@ -28,13 +26,6 @@ type PendleTransactionReviewProps = {
   targetToken: Token;
   amount: bigint;
   quote?: PendleConvertQuote;
-  isRedeemMode: boolean;
-  /**
-   * Override for the displayed target-amount tile. Used by the matured-redeem
-   * flow where there is no API quote — the parent passes `amount` (1:1 PT →
-   * underlying for SY-1:1 markets). When omitted, falls back to quote.amountOut.
-   */
-  targetAmount?: bigint;
   needsAllowance: boolean;
   /** True when the wallet will sign a single EIP-5792 batched call. */
   isBatchTransaction: boolean;
@@ -49,8 +40,6 @@ export const PendleTransactionReview = ({
   targetToken,
   amount,
   quote,
-  isRedeemMode,
-  targetAmount,
   needsAllowance,
   isBatchTransaction,
   batchEnabled,
@@ -73,8 +62,6 @@ export const PendleTransactionReview = ({
   } = useContext(WidgetContext);
   const { flow, action, screen } = widgetState;
 
-  const resolvedTargetAmount = targetAmount ?? quote?.amountOut;
-
   // Push origin/target token + amount into context so TransactionDetail
   // (the default fallback rendered by TransactionReview) can show the
   // "input → output" tile.
@@ -82,12 +69,12 @@ export const PendleTransactionReview = ({
     setOriginToken(originToken);
     setOriginAmount(amount);
     setTargetToken(targetToken);
-    setTargetAmount(resolvedTargetAmount);
+    setTargetAmount(quote?.amountOut);
   }, [
     originToken,
     targetToken,
     amount,
-    resolvedTargetAmount,
+    quote?.amountOut,
     setOriginToken,
     setOriginAmount,
     setTargetToken,
@@ -98,8 +85,7 @@ export const PendleTransactionReview = ({
   // Multi-token: copy that names the user-side token comes from the selected
   // token's symbol (originToken on BUY, targetToken on SELL), not from
   // market.underlyingSymbol — those can differ now (e.g. user supplies USDC
-  // into a PT-USDG market). The matured-redeem branch still uses the market's
-  // underlying since redeem is single-token only.
+  // into a PT-USDG market).
   const userSideSymbol = flow === PendleFlow.BUY ? originToken.symbol : targetToken.symbol;
   useEffect(() => {
     const batchStatus =
@@ -117,12 +103,6 @@ export const PendleTransactionReview = ({
         )
       );
       setStepTwoTitle(t`Supply`);
-    } else if (isRedeemMode) {
-      setTxTitle(i18n._(pendleRedeemReviewTitle));
-      setTxSubtitle(
-        i18n._(getPendleRedeemReviewSubtitle(`PT-${market.underlyingSymbol}`, market.underlyingSymbol))
-      );
-      setStepTwoTitle(t`Redeem`);
     } else {
       setTxTitle(i18n._(pendleWithdrawReviewTitle));
       setTxSubtitle(
@@ -143,9 +123,8 @@ export const PendleTransactionReview = ({
           flow: (flow as PendleFlow) ?? PendleFlow.BUY,
           action: (action as PendleAction | null) ?? null,
           txStatus,
-          isRedeem: isRedeemMode,
           needsAllowance,
-          underlyingSymbol: isRedeemMode ? market.underlyingSymbol : userSideSymbol
+          underlyingSymbol: userSideSymbol
         })
       )
     );
@@ -153,7 +132,6 @@ export const PendleTransactionReview = ({
     flow,
     action,
     screen,
-    isRedeemMode,
     needsAllowance,
     isBatchTransaction,
     batchSupported,
