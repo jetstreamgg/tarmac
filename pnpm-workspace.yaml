@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 catalog:
-  '@base-org/account': ~2.5.4
+  '@base-org/account': ~2.5.5
   '@binance/w3w-wagmi-connector-v2': ^1.2.11
   '@changesets/cli': ^2.30.0
   '@coinbase/wallet-sdk': ~4.3.7
@@ -17,7 +17,7 @@ catalog:
   '@lingui/react': ^6.0.0
   '@lingui/swc-plugin': ^6.0.0
   '@lingui/vite-plugin': ^6.0.0
-  '@metamask/connect-evm': ^0.9.1
+  '@metamask/connect-evm': ^1.0.0
   '@playwright/test': ^1.59.1
   '@radix-ui/react-accordion': ^1.2.12
   '@radix-ui/react-avatar': ^1.1.11
