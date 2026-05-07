@@ -17,11 +17,7 @@ type Options = {
 
 /**
  * Single-market matured redemption via the global TransactionContext modal.
- *
- * Wraps `usePendleRedeem` (direct `Router.exitPostExpToToken` call, no
- * multicall wrapper) + `launch()`. For multi-market redeem use
- * `usePendleRedeemAllModal` instead — that one composes
- * `useBatchPendleRedeemAll`.
+ * Wraps `usePendleRedeem` (`Router.exitPostExpToToken`) + `launch()`.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
   const { launch, txCallbacks } = useTransaction();

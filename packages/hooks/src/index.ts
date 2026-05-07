@@ -150,13 +150,11 @@ export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
-export { useBatchPendleRedeemAll, type RedeemPosition } from './pendle/useBatchPendleRedeemAll';
 export { useRedeem as usePendleRedeem } from './pendle/useRedeem';
 export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
 export {
   buildVerifiedArgs,
-  buildMaturedRedeemVerifiedArgs,
-  buildMulticallVerifiedArgs
+  buildMaturedRedeemVerifiedArgs
 } from './pendle/buildVerifiedArgs';
 export type {
   KnownCallValues,
@@ -164,8 +162,7 @@ export type {
   VerifiedCall,
   VerifiedBuyArgs,
   VerifiedWithdrawArgs,
-  VerifiedExitArgs,
-  VerifiedMulticall
+  VerifiedExitArgs
 } from './pendle/buildVerifiedArgs';
 export type {
   PendleMarketConfig,

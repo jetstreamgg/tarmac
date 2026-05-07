@@ -19,15 +19,7 @@ type UseRedeemParams = BatchWriteHookParams & {
 };
 
 /**
- * Single-market matured-PT redeem.
- *
- * Calls Pendle Router V4 `exitPostExpToToken` directly — no
- * `multicall(Call3[])` wrapper, since wrapping a single inner call just pays
- * the dispatch overhead (delegatecall, abi.decode of bytes, Result assembly)
- * for nothing. Use `useBatchPendleRedeemAll` instead when redeeming across
- * multiple markets in one tx; the widget picks based on how many positions
- * need redeeming (mirrors the stake engine's `useStakeClaimRewards` vs
- * `useBatchStakeClaimAllRewards` split).
+ * Single-market matured-PT redeem via Pendle Router V4 `exitPostExpToToken`.
  *
  * Pipeline:
  *   1. Verify the call args via `buildMaturedRedeemVerifiedArgs` — no API

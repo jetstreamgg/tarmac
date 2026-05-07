@@ -1,16 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { decodeFunctionData } from 'viem';
-import {
-  buildVerifiedArgs,
-  buildMaturedRedeemVerifiedArgs,
-  buildMulticallVerifiedArgs
-} from './buildVerifiedArgs';
-import { PENDLE_ROUTER_V4_ABI } from './constants';
-import {
-  PENDLE_EMPTY_LIMIT,
-  PENDLE_EMPTY_SWAP_DATA,
-  PendleConvertSide
-} from './constants';
+import { buildVerifiedArgs, buildMaturedRedeemVerifiedArgs } from './buildVerifiedArgs';
+import { PENDLE_EMPTY_LIMIT, PENDLE_EMPTY_SWAP_DATA, PendleConvertSide } from './constants';
 import type { PendleConvertQuote } from './pendle';
 
 const RECEIVER = '0x1111111111111111111111111111111111111111' as const;
@@ -642,60 +632,5 @@ describe('buildMaturedRedeemVerifiedArgs', () => {
 
   it('throws when amountIn is zero', () => {
     expect(() => buildMaturedRedeemVerifiedArgs({ ...ctx, amountIn: 0n })).toThrow(/amountIn is zero/);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// buildMulticallVerifiedArgs
-// ---------------------------------------------------------------------------
-
-describe('buildMulticallVerifiedArgs', () => {
-  const inner1 = buildMaturedRedeemVerifiedArgs({
-    receiver: RECEIVER,
-    market: MARKET,
-    ptToken: PT_USDG,
-    underlyingToken: USDG,
-    amountIn: 100_000_000n
-  });
-  const inner2 = buildMaturedRedeemVerifiedArgs({
-    receiver: RECEIVER,
-    market: '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as const,
-    ptToken: '0xb2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2' as const,
-    underlyingToken: '0xc3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3' as const,
-    amountIn: 50_000_000n
-  });
-
-  it('returns a multicall-shaped VerifiedMulticall', () => {
-    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
-    expect(wrapped.functionName).toBe('multicall');
-    expect(wrapped.args).toHaveLength(1);
-    expect(wrapped.args[0]).toHaveLength(2);
-    expect(wrapped.innerCalls).toEqual([inner1, inner2]);
-  });
-
-  it('wraps each inner call as a Call3 struct with allowFailure=false', () => {
-    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
-    for (const call of wrapped.args[0]) {
-      expect(call.allowFailure).toBe(false);
-      expect(call.callData).toMatch(/^0x[0-9a-fA-F]+$/);
-    }
-  });
-
-  it('encodes each inner callData to bytes that decode back to the original args', () => {
-    const wrapped = buildMulticallVerifiedArgs([inner1, inner2]);
-    for (const [i, call] of wrapped.args[0].entries()) {
-      const decoded = decodeFunctionData({ abi: PENDLE_ROUTER_V4_ABI, data: call.callData });
-      expect(decoded.functionName).toBe(wrapped.innerCalls[i].functionName);
-    }
-  });
-
-  it('throws when given an empty inner array', () => {
-    expect(() => buildMulticallVerifiedArgs([])).toThrow(/no inner calls/);
-  });
-
-  it('preserves order of inner calls', () => {
-    const wrapped = buildMulticallVerifiedArgs([inner2, inner1]);
-    expect(wrapped.innerCalls[0]).toEqual(inner2);
-    expect(wrapped.innerCalls[1]).toEqual(inner1);
   });
 });
