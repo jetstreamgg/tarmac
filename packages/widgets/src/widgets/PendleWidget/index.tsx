@@ -301,7 +301,6 @@ const PendleWidgetWrapped = ({
     if (/quote/i.test(raw) && /stale|expired/i.test(raw)) {
       return t`Quote expired. Refreshing — please wait a moment.`;
     }
-    console.log({ writeHook });
     return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
   }, [writeHook.error]);
 
