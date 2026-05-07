@@ -7,11 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui
 import { HStack } from '@widgets/shared/components/ui/layout/HStack';
 import { VStack } from '@widgets/shared/components/ui/layout/VStack';
 import { Heading, Text } from '@widgets/shared/components/ui/Typography';
-import {
-  pendleSlippageConfig,
-  PendleSlippageType,
-  PendleFlow
-} from '../lib/constants';
+import { pendleSlippageConfig, PendleSlippageType } from '../lib/constants';
 import {
   decimalSlippageToPercentString,
   percentStringToDecimalSlippage,
@@ -24,20 +20,12 @@ type PendleConfigMenuProps = {
   /** Default slippage for the active flow as a decimal */
   defaultSlippage: number;
   setSlippage: (decimal: number) => void;
-  flow: PendleFlow;
-  /** Hide the gear when the flow has no slippage (e.g. matured-market redeem) */
-  hidden?: boolean;
 };
 
 const paginationButtonClasses =
   'flex justify-center text-textDesaturated text-base leading-normal bg-radial-(--gradient-position) from-primary-start/0 to-primary-end/0 rounded-full hover:from-primary-start/40 hover:to-primary-end/40 hover:text-text active:text-text active:from-primary-start/20 active:to-primary-end/20 data-[state=open]:from-primary-start/80 data-[state=open]:to-primary-end/80 data-[state=open]:text-text h-min p-1.5 transition-[background-color,background-image,opacity,color] duration-250 ease-out-expo';
 
-export const PendleConfigMenu = ({
-  slippage,
-  defaultSlippage,
-  setSlippage,
-  hidden
-}: PendleConfigMenuProps) => {
+export const PendleConfigMenu = ({ slippage, defaultSlippage, setSlippage }: PendleConfigMenuProps) => {
   // Local raw string state for the input. Storing the user's keystrokes as a
   // string (rather than reformatting from `slippage: number` on every render)
   // is what lets them type "0.5" — without this, the "." gets eaten because
@@ -68,8 +56,6 @@ export const PendleConfigMenu = ({
     }
   }, [slippage, defaultSlippage]);
 
-  if (hidden) return null;
-
   const isCustom = slippage !== defaultSlippage;
 
   const handleCustomChange = (value: string) => {
@@ -87,7 +73,7 @@ export const PendleConfigMenu = ({
       <PopoverTrigger className={paginationButtonClasses} aria-label={t`Open slippage settings`}>
         <SettingsIcon width={20} />
       </PopoverTrigger>
-      <PopoverContent className="bg-container w-[330px] rounded-[20px] border-0 backdrop-blur-[50px]">
+      <PopoverContent className="bg-containerDark border-selectActive/30 w-[330px] rounded-[20px] border shadow-xl backdrop-blur-[50px]">
         <VStack className="w-full gap-5">
           <div className="space-y-3">
             <Heading variant="small">
@@ -129,9 +115,7 @@ export const PendleConfigMenu = ({
                   <Text className="text-text">
                     <Trans>Max slippage:</Trans>
                   </Text>
-                  <Text className="text-text ml-2">
-                    {decimalSlippageToPercentString(defaultSlippage)}%
-                  </Text>
+                  <Text className="text-text ml-2">{decimalSlippageToPercentString(defaultSlippage)}%</Text>
                 </div>
               </TabsContent>
               <TabsContent value={PendleSlippageType.CUSTOM}>
@@ -142,7 +126,7 @@ export const PendleConfigMenu = ({
                   <HStack className="border-selectActive flex items-center rounded-xl border p-2">
                     <input
                       placeholder={t`Custom`}
-                      className="bg-background ring-offset-background placeholder:text-surface text-text focus-visible:outline-hidden w-[55px] text-right text-[14px] leading-tight [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      className="bg-background ring-offset-background placeholder:text-surface text-text w-[55px] [appearance:textfield] text-right text-[14px] leading-tight focus-visible:outline-hidden [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       type="number"
                       step="any"
                       min={pendleSlippageConfig.min}

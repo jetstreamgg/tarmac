@@ -26,7 +26,7 @@ export function TokenSelector({
   return (
     <PopoverTrigger
       disabled={disabled}
-      className={`w-full ${token ? 'w-fit max-w-[160px] shrink-0 whitespace-nowrap' : ''}`}
+      className={`group w-full ${token ? 'w-fit max-w-[160px] shrink-0 whitespace-nowrap' : ''}`}
       data-testid={`${dataTestId}-menu-button`}
     >
       {token ? (
@@ -34,19 +34,19 @@ export function TokenSelector({
           <TokenIcon className="mr-2 h-6 w-6 text-black" fallbackClassName="text-[9px]" token={token} />
           <Text>{token.symbol}</Text>
           {showChevron && (
-            <ChevronDown className="chevron-down text-textDesaturated h-6 w-6 shrink-0 transition-transform duration-200" />
+            <ChevronDown className="text-textDesaturated h-6 w-6 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
           )}
         </HStack>
       ) : (
         <div className={`${extraBottomPadding ? 'pb-[47px]' : ''}`}>
           {label && (
-            <Text className="text-text mb-4 text-left text-sm font-normal leading-none">{label}</Text>
+            <Text className="text-text mb-4 text-left text-sm leading-none font-normal">{label}</Text>
           )}
-          <HStack className="text-surface cursor-pointer items-center justify-between px-0 pb-0 pt-4">
+          <HStack className="text-surface cursor-pointer items-center justify-between px-0 pt-4 pb-0">
             <Text className="text-textDimmed text-[18px]">
               <Trans>Select token</Trans>
             </Text>
-            <ChevronDown className="chevron-down text-textDesaturated h-6 w-6 shrink-0 transition-transform duration-200" />
+            <ChevronDown className="text-textDesaturated h-6 w-6 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
           </HStack>
         </div>
       )}

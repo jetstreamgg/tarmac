@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
@@ -47,6 +47,16 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
   // the overview, never as a detail view. Unknown addresses (typo/old
   // deployment) likewise fall through to overview.
   const showSelectedMarket = !!selectedMarket && !isMarketMatured(selectedMarket.expiry);
+
+  // Force a re-render at expiry so the user is bumped out of a market that matures while open.
+  const [, tick] = useReducer(x => x + 1, 0);
+  useEffect(() => {
+    if (!selectedMarket) return;
+    const ms = selectedMarket.expiry * 1000 - Date.now();
+    if (ms <= 0 || ms > 2_147_483_000) return;
+    const id = setTimeout(tick, ms);
+    return () => clearTimeout(id);
+  }, [selectedMarket?.marketAddress, selectedMarket?.expiry]);
 
   // URL cleanup for matured/unknown markets is centralized in
   // validateSearchParams (called from MainApp) — same pattern as Vaults,

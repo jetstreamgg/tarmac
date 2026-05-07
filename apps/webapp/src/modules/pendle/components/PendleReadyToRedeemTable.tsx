@@ -79,31 +79,7 @@ const PendleMaturedRow = ({ market, ptBalance }: RowProps) => {
       ? formatBigInt(previewAmount as bigint, { unit: market.underlyingDecimals, maxDecimals: 4 })
       : undefined;
 
-  const tokenTile = (
-    <HStack className="items-center" gap={2}>
-      <HStack className="items-center" gap={2}>
-        <TokenIcon
-          className="h-5 w-5"
-          token={{ symbol: `PT-${market.underlyingSymbol}` }}
-          showChainIcon={false}
-        />
-        <Text>
-          {formatted} PT-{market.underlyingSymbol}
-        </Text>
-      </HStack>
-      {formattedReceive && (
-        <HStack className="items-center" gap={2}>
-          <Text>→</Text>
-          <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
-          <Text>
-            {formattedReceive} {market.underlyingSymbol}
-          </Text>
-        </HStack>
-      )}
-    </HStack>
-  );
-
-  const { openRedeemModal, isPrepared } = usePendleRedeemModal(market, { transactionContent: tokenTile });
+  const { openRedeemModal, isPrepared } = usePendleRedeemModal(market);
 
   return (
     <TableRow data-testid="pendle-matured-row" data-market={market.marketAddress}>
