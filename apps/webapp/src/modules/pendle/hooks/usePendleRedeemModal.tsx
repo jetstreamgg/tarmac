@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
 import {
@@ -22,17 +22,14 @@ type Options = {
 };
 
 /**
- * Single-market matured-PT redeem via the global TransactionContext modal.
- *
- * Routes through the same /convert pipeline as buy/sell so the user can pick
- * the underlying, USDS, or USDC as the output token. Pendle's API returns
- * `exitPostExpToToken` quotes either with empty swapData (1:1 underlying
- * redeem) or a populated aggregator route (USDS / USDC via PendleSwap →
- * KyberSwap / Odos / OKX / Paraswap). buildVerifiedArgs handles both branches
- * through the same trust anchors as the pre-maturity flows.
+ * Matured-PT redeem via the global TransactionContext modal. Routes through
+ * the same /convert pipeline as buy/sell so the user can pick the underlying,
+ * USDS, or USDC.
  */
 export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options = {}) {
-  const { launch, txCallbacks } = useTransaction();
+  const { launch, updateModalContent, isModalOpen, txCallbacks } = useTransaction();
+  // Per-instance id so the provider can ignore live updates from sibling cards.
+  const sessionId = useId();
   const { data: ptBalances, mutate: mutatePtBalances } = usePendleUserPtBalances();
   const ptBalance = ptBalances?.[market.marketAddress] ?? 0n;
   const matured = isMarketMatured(market.expiry);
@@ -106,23 +103,40 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
   }, [writeHook.error]);
 
-  const transactionContent = (
-    <PendleRedeem
-      market={market}
-      ptBalance={ptBalance}
-      outputTokenList={inputTokenList}
-      selectedOutputToken={selectedOutputToken}
-      onOutputTokenChange={setSelectedOutputToken}
-      quote={quote}
-      isFetchingQuote={isFetchingQuote}
-      slippage={slippage}
-      prepareErrorMessage={prepareErrorMessage}
-    />
+  const transactionContent = useMemo(
+    () => (
+      <PendleRedeem
+        market={market}
+        ptBalance={ptBalance}
+        outputTokenList={inputTokenList}
+        selectedOutputToken={selectedOutputToken}
+        onOutputTokenChange={setSelectedOutputToken}
+        quote={quote}
+        isFetchingQuote={isFetchingQuote}
+        slippage={slippage}
+        prepareErrorMessage={prepareErrorMessage}
+      />
+    ),
+    [
+      market,
+      ptBalance,
+      inputTokenList,
+      selectedOutputToken,
+      quote,
+      isFetchingQuote,
+      slippage,
+      prepareErrorMessage
+    ]
   );
 
-  const rightHeaderComponent = (
-    <PendleConfigMenu slippage={slippage} defaultSlippage={defaultSlippage} setSlippage={setSlippage} />
+  const rightHeaderComponent = useMemo(
+    () => (
+      <PendleConfigMenu slippage={slippage} defaultSlippage={defaultSlippage} setSlippage={setSlippage} />
+    ),
+    [slippage, defaultSlippage, setSlippage]
   );
+
+  const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
 
   const openRedeemModal = useCallback(() => {
     launch({
@@ -130,7 +144,9 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       transactionContent,
       rightHeaderComponent,
       confirmLabel: t`Confirm`,
+      confirmDisabled,
       onConfirm: () => writeHook.execute(),
+      sessionId,
       analytics: {
         widgetName: 'fixed',
         flow: 'redeem',
@@ -149,8 +165,15 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     market.marketAddress,
     selectedOutputToken.symbol,
     transactionContent,
-    rightHeaderComponent
+    rightHeaderComponent,
+    confirmDisabled,
+    sessionId
   ]);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    updateModalContent(sessionId, { transactionContent, rightHeaderComponent, confirmDisabled });
+  }, [isModalOpen, sessionId, updateModalContent, transactionContent, rightHeaderComponent, confirmDisabled]);
 
   return {
     openRedeemModal,

@@ -47,6 +47,8 @@ export type TransactionModalProps = {
   txStatus: TxStatus;
   externalLink?: string;
   confirmLabel?: string;
+  /** Disables the Confirm button (e.g. while a quote is refetching). */
+  confirmDisabled?: boolean;
   successLabel?: string;
   errorLabel?: string;
   steps?: string[];
@@ -82,6 +84,7 @@ export function TransactionModal({
   txStatus,
   externalLink,
   confirmLabel,
+  confirmDisabled,
   successLabel,
   errorLabel,
   steps,
@@ -221,7 +224,12 @@ export function TransactionModal({
                 className="flex flex-col gap-4"
               >
                 {showBatchToggle && <BatchToggle />}
-                <Button variant="primaryAlt" className="w-full" onClick={handleConfirm}>
+                <Button
+                  variant="primaryAlt"
+                  className="w-full"
+                  onClick={handleConfirm}
+                  disabled={confirmDisabled}
+                >
                   {confirmLabel ?? <Trans>Confirm</Trans>}
                 </Button>
               </motion.div>

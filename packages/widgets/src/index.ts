@@ -24,6 +24,8 @@ export type { PendleTokens } from './widgets/PendleWidget/hooks/usePendleTokens'
 export { usePendleSlippage } from './widgets/PendleWidget/hooks/usePendleSlippage';
 export type { PendleSlippageMode } from './widgets/PendleWidget/hooks/usePendleSlippage';
 export { PendleConfigMenu } from './widgets/PendleWidget/components/PendleConfigMenu';
+export { TokenDropdown } from './shared/components/ui/token/TokenDropdown';
+export { TransactionOverview } from './shared/components/ui/transaction/TransactionOverview';
 export { MorphoVaultBadge } from './widgets/MorphoVaultWidget/components/MorphoVaultBadge';
 export { MorphoRateBreakdownPopover } from './widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';

@@ -44,7 +44,36 @@ vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
   return {
     ...actual,
     useTokenImage: () => '',
-    useChainImage: () => ''
+    useChainImage: () => '',
+    // Stub heavy widget components to keep this a focused unit test.
+    TokenDropdown: ({ token, dataTestId }: { token: { symbol: string }; dataTestId?: string }) => (
+      <button data-testid={`${dataTestId}-menu-button`}>{token.symbol}</button>
+    ),
+    TransactionOverview: ({
+      title,
+      isFetching,
+      fetchingMessage,
+      transactionData
+    }: {
+      title: string;
+      isFetching: boolean;
+      fetchingMessage: string;
+      transactionData?: { label: string; value: React.ReactNode }[];
+    }) => (
+      <div data-testid="transaction-overview-stub">
+        <p>{title}</p>
+        {isFetching ? (
+          <p>{fetchingMessage}</p>
+        ) : (
+          transactionData?.map(row => (
+            <div key={row.label}>
+              <span>{row.label}</span>
+              <span>{row.value}</span>
+            </div>
+          ))
+        )}
+      </div>
+    )
   };
 });
 
@@ -88,49 +117,47 @@ describe('PendleRedeem', () => {
   it('renders the full PT balance in the read-only input tile', () => {
     const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
 
-    // The PT amount appears in both the input tile and the transaction overview.
     expect(container.textContent).toContain('1.5');
     expect(container.textContent).toContain('PT-USDG');
-    // Default selection is the underlying.
-    expect(container.querySelector('[data-testid="pendle-redeem-output-token"]')?.textContent).toContain(
-      'USDG'
-    );
+    // TokenSelector appends `-menu-button` to dataTestId.
+    expect(
+      container.querySelector('[data-testid="pendle-redeem-output-token-menu-button"]')?.textContent
+    ).toContain('USDG');
 
     unmount();
   });
 
-  it('renders the slippage tolerance from the slippage prop', () => {
-    const { container, rerender, unmount } = renderComponent(<PendleRedeem {...baseProps} slippage={0.01} />);
-    expect(container.textContent).toContain('1.00%');
+  it('renders the slippage tolerance from the slippage prop and strips trailing zeros', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_500_000n,
+      apiMinOut: 1_485_000n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, rerender, unmount } = renderComponent(
+      <PendleRedeem {...baseProps} slippage={0.01} quote={quote} />
+    );
+    expect(container.textContent).toContain('1%');
+    expect(container.textContent).not.toContain('1.00%');
 
-    rerender(<PendleRedeem {...baseProps} slippage={0.025} />);
-    expect(container.textContent).toContain('2.50%');
+    rerender(<PendleRedeem {...baseProps} slippage={0.025} quote={quote} />);
+    expect(container.textContent).toContain('2.5%');
+    expect(container.textContent).not.toContain('2.50%');
 
     unmount();
   });
 
-  it('calls onOutputTokenChange when the dropdown selects a new token', () => {
-    const onOutputTokenChange = vi.fn();
-    const { container, unmount } = renderComponent(
-      <PendleRedeem {...baseProps} onOutputTokenChange={onOutputTokenChange} />
-    );
-
-    // Radix Select's value is on a hidden <select> in headless test envs; pick
-    // it up via the aria-selected dropdown items. Skip the click-driven path
-    // since happy-dom's Pointer events don't open Radix's portal reliably —
-    // verify the contract instead: the component hands `onValueChange` to
-    // Select, which forwards the symbol string to onOutputTokenChange.
+  it('renders the dropdown trigger', () => {
+    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
     const trigger = container.querySelector(
-      '[data-testid="pendle-redeem-output-token"]'
+      '[data-testid="pendle-redeem-output-token-menu-button"]'
     ) as HTMLButtonElement | null;
     expect(trigger).not.toBeNull();
-
-    // Direct test of the contract: simulate Select's onValueChange firing for
-    // 'USDS'. We re-render with a matching selection to assert the parent
-    // would receive the new token.
-    onOutputTokenChange(USDS_TOKEN);
-    expect(onOutputTokenChange).toHaveBeenCalledWith(USDS_TOKEN);
-
     unmount();
   });
 

@@ -109,7 +109,12 @@ export const SupplyWithdraw = ({
   // BUY → PT. SELL → user-selected output token.
   const targetToken = flow === PendleFlow.BUY ? ptToken : selectedWithdrawOutToken;
 
-  const priceImpactRow = quote?.priceImpact !== undefined ? `${(quote.priceImpact * 100).toFixed(3)}%` : '—';
+  const isPositiveImpact = (quote?.priceImpact ?? 0) > 0;
+  const positiveImpactClass = isPositiveImpact ? 'text-bullish' : undefined;
+  const priceImpactRow =
+    quote?.priceImpact !== undefined
+      ? `${isPositiveImpact ? '+' : ''}${(quote.priceImpact * 100).toFixed(3)}%`
+      : '—';
 
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
   // Pendle's API returns priceImpactBreakDown even on no-aggregator routes
@@ -264,17 +269,20 @@ export const SupplyWithdraw = ({
             },
             {
               label: t`Price impact`,
-              value: priceImpactRow
+              value: priceImpactRow,
+              className: positiveImpactClass
             },
             ...(breakdown
               ? [
                   {
                     label: t`  · Pendle AMM`,
-                    value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`
+                    value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`,
+                    className: positiveImpactClass
                   },
                   {
                     label: t`  · Aggregator hop`,
-                    value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`
+                    value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`,
+                    className: positiveImpactClass
                   }
                 ]
               : []),
@@ -289,9 +297,11 @@ export const SupplyWithdraw = ({
             {
               label: t`Routing fee`,
               value:
-                quote?.feeUsd !== undefined
-                  ? `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
-                  : <Trans>Included in quote</Trans>
+                quote?.feeUsd !== undefined ? (
+                  `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
+                ) : (
+                  <Trans>Included in quote</Trans>
+                )
             }
           ]}
         />

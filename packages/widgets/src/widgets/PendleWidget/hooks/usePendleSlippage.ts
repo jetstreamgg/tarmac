@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { PENDLE_DEFAULT_SLIPPAGE } from '@jetstreamgg/sky-hooks';
 import {
   PendleFlow,
@@ -55,10 +55,13 @@ export function usePendleSlippage(mode: PendleSlippageMode) {
     setSlippageRaw(readStoredSlippage(storageKey, defaultSlippage));
   }, [storageKey, defaultSlippage]);
 
-  const setSlippage = (decimal: number) => {
-    setSlippageRaw(decimal);
-    writeStoredSlippage(storageKey, decimal);
-  };
+  const setSlippage = useCallback(
+    (decimal: number) => {
+      setSlippageRaw(decimal);
+      writeStoredSlippage(storageKey, decimal);
+    },
+    [storageKey]
+  );
 
   return { slippage, setSlippage, defaultSlippage };
 }
