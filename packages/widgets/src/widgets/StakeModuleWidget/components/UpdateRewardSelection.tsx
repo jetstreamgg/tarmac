@@ -67,16 +67,6 @@ export const UpdateRewardSelection = ({
   // Show dropdown if: multiple options available OR current reward is deprecated (needs to change)
   const showDropdown = filteredRewardContracts?.length > 1 || currentRewardIsDeprecated;
 
-  // If only one reward option AND current reward is not deprecated, show static display
-  if (!showDropdown) {
-    return (
-      <div className="flex items-center">
-        <TokenIcon token={rewardToken} width={24} className="h-6 w-6" />
-        <Text className="ml-2">{rewardToken.symbol}</Text>
-      </div>
-    );
-  }
-
   const handleSelectRewardContract = useCallback(
     (contractAddress: `0x${string}`) => {
       setIsOpen(false);
@@ -99,6 +89,16 @@ export const UpdateRewardSelection = ({
     },
     [urnAddress, index, selectedVoteDelegate]
   );
+
+  // If only one reward option AND current reward is not deprecated, show static display
+  if (!showDropdown) {
+    return (
+      <div className="flex items-center">
+        <TokenIcon token={rewardToken} width={24} className="h-6 w-6" />
+        <Text className="ml-2">{rewardToken.symbol}</Text>
+      </div>
+    );
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
