@@ -37,7 +37,8 @@ const connectors = [
   metaMask(),
   baseAccount({
     appName: 'sky.money',
-    appLogoUrl: 'https://app.sky.money/images/sky.svg'
+    appLogoUrl: 'https://app.sky.money/images/sky.svg',
+    preference: { telemetry: false }
   }),
   coinbaseWallet({
     appName: 'sky.money',
