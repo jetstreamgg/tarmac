@@ -38,18 +38,20 @@ const API_EMPTY_LIMIT = {
 
 const BUY_PARAM_NAMES = ['receiver', 'market', 'minPtOut', 'guessPtOut', 'input', 'limit'];
 
-function makeBuyParams(overrides: {
-  receiver?: string;
-  market?: string;
-  minPtOut?: string;
-  guessPtOut?: typeof API_GUESS;
-  inputTokenIn?: string;
-  inputNetTokenIn?: string;
-  inputTokenMintSy?: string;
-  inputPendleSwap?: string;
-  inputSwapData?: typeof API_EMPTY_SWAP;
-  limit?: typeof API_EMPTY_LIMIT;
-} = {}): unknown[] {
+function makeBuyParams(
+  overrides: {
+    receiver?: string;
+    market?: string;
+    minPtOut?: string;
+    guessPtOut?: typeof API_GUESS;
+    inputTokenIn?: string;
+    inputNetTokenIn?: string;
+    inputTokenMintSy?: string;
+    inputPendleSwap?: string;
+    inputSwapData?: typeof API_EMPTY_SWAP;
+    limit?: typeof API_EMPTY_LIMIT;
+  } = {}
+): unknown[] {
   return [
     overrides.receiver ?? RECEIVER,
     overrides.market ?? MARKET,
@@ -123,17 +125,13 @@ describe('buildVerifiedArgs — Buy', () => {
 
   it('overrides receiver even if API returns an attacker address', () => {
     const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef';
-    const verified = buyVerified(
-      makeBuyQuote({ apiContractParams: makeBuyParams({ receiver: ATTACKER }) })
-    );
+    const verified = buyVerified(makeBuyQuote({ apiContractParams: makeBuyParams({ receiver: ATTACKER }) }));
     expect(verified.args[0]).toBe(RECEIVER);
   });
 
   it('overrides market even if API tries to swap markets', () => {
     const FAKE_MARKET = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadb';
-    const verified = buyVerified(
-      makeBuyQuote({ apiContractParams: makeBuyParams({ market: FAKE_MARKET }) })
-    );
+    const verified = buyVerified(makeBuyQuote({ apiContractParams: makeBuyParams({ market: FAKE_MARKET }) }));
     expect(verified.args[1]).toBe(MARKET);
   });
 
@@ -214,15 +212,17 @@ describe('buildVerifiedArgs — Buy', () => {
 describe('buildVerifiedArgs — Withdraw', () => {
   const WITHDRAW_PARAM_NAMES = ['receiver', 'market', 'exactPtIn', 'output', 'limit'];
 
-  function makeWithdrawParams(overrides: {
-    receiver?: string;
-    market?: string;
-    exactPtIn?: string;
-    outputTokenOut?: string;
-    outputMinTokenOut?: string;
-    outputTokenRedeemSy?: string;
-    outputPendleSwap?: string;
-  } = {}): unknown[] {
+  function makeWithdrawParams(
+    overrides: {
+      receiver?: string;
+      market?: string;
+      exactPtIn?: string;
+      outputTokenOut?: string;
+      outputMinTokenOut?: string;
+      outputTokenRedeemSy?: string;
+      outputPendleSwap?: string;
+    } = {}
+  ): unknown[] {
     return [
       overrides.receiver ?? RECEIVER,
       overrides.market ?? MARKET,
@@ -321,13 +321,15 @@ describe('buildVerifiedArgs — Buy aggregator branch', () => {
     pinnedPendleSwap: PINNED_PENDLE_SWAP
   };
 
-  function makeAggBuyParams(opts: {
-    pendleSwap?: string;
-    swapType?: string;
-    extRouter?: string;
-    extCalldata?: string;
-    inputTokenMintSy?: string;
-  } = {}): unknown[] {
+  function makeAggBuyParams(
+    opts: {
+      pendleSwap?: string;
+      swapType?: string;
+      extRouter?: string;
+      extCalldata?: string;
+      inputTokenMintSy?: string;
+    } = {}
+  ): unknown[] {
     return [
       RECEIVER,
       MARKET,
@@ -425,7 +427,9 @@ describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
     pinnedPendleSwap: PINNED_PENDLE_SWAP
   };
 
-  function makeAggWithdrawParams(opts: { pendleSwap?: string; outputTokenRedeemSy?: string } = {}): unknown[] {
+  function makeAggWithdrawParams(
+    opts: { pendleSwap?: string; outputTokenRedeemSy?: string } = {}
+  ): unknown[] {
     return [
       RECEIVER,
       MARKET,
@@ -492,16 +496,18 @@ describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
 describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
   const EXIT_PARAM_NAMES = ['receiver', 'market', 'netPtIn', 'netLpIn', 'output'];
 
-  function makeExitParams(overrides: {
-    receiver?: string;
-    market?: string;
-    netPtIn?: string;
-    netLpIn?: string;
-    outputTokenOut?: string;
-    outputMinTokenOut?: string;
-    outputTokenRedeemSy?: string;
-    outputPendleSwap?: string;
-  } = {}): unknown[] {
+  function makeExitParams(
+    overrides: {
+      receiver?: string;
+      market?: string;
+      netPtIn?: string;
+      netLpIn?: string;
+      outputTokenOut?: string;
+      outputMinTokenOut?: string;
+      outputTokenRedeemSy?: string;
+      outputPendleSwap?: string;
+    } = {}
+  ): unknown[] {
     return [
       overrides.receiver ?? RECEIVER,
       overrides.market ?? MARKET,
@@ -591,6 +597,94 @@ describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
       makeExitQuote({ apiContractParams: makeExitParams({ outputTokenRedeemSy: ANOTHER }) })
     );
     expect(verified.args[4].tokenRedeemSy).toBe(USDG); // === EXIT_KNOWN.outputToken
+  });
+});
+
+describe('buildVerifiedArgs — Exit aggregator branch', () => {
+  // User redeems matured PT to USDS (not the underlying USDG). The API
+  // returns a route through Pendle's PendleSwap → KyberSwap → USDS.
+  const EXIT_AGG_KNOWN = {
+    side: PendleConvertSide.WITHDRAW,
+    receiver: RECEIVER,
+    market: MARKET,
+    inputToken: PT_USDG,
+    outputToken: USDS, // user-picked, NOT the underlying
+    underlyingToken: USDG,
+    amountIn: 100_000_000n,
+    pinnedPendleSwap: PINNED_PENDLE_SWAP
+  };
+
+  function makeAggExitParams(
+    opts: {
+      pendleSwap?: string;
+      outputTokenRedeemSy?: string;
+    } = {}
+  ): unknown[] {
+    return [
+      RECEIVER,
+      MARKET,
+      '100000000',
+      '0',
+      {
+        tokenOut: USDS,
+        minTokenOut: '99000000000000000000',
+        tokenRedeemSy: opts.outputTokenRedeemSy ?? USDG,
+        pendleSwap: opts.pendleSwap ?? PINNED_PENDLE_SWAP,
+        swapData: {
+          swapType: '1',
+          extRouter: KYBER_ROUTER,
+          extCalldata: KYBER_SWAP_DATA.extCalldata,
+          needScale: false
+        }
+      }
+    ];
+  }
+
+  function makeAggExitQuote(overrides: Partial<PendleConvertQuote> = {}): PendleConvertQuote {
+    return {
+      method: 'exitPostExpToToken',
+      amountOut: 100_000_000_000_000_000_000n,
+      apiMinOut: 99_500_000_000_000_000_000n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: -0.0045,
+      aggregatorType: 'KYBERSWAP',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: makeAggExitParams(),
+      apiContractParamsName: ['receiver', 'market', 'netPtIn', 'netLpIn', 'output'],
+      ...overrides
+    };
+  }
+
+  it('pins tokenRedeemSy to the underlying when output ≠ underlying', () => {
+    const verified = buildVerifiedArgs(makeAggExitQuote(), EXIT_AGG_KNOWN);
+    if (verified.functionName !== 'exitPostExpToToken') throw new Error('expected exitPostExpToToken');
+    expect(verified.args[4].tokenOut).toBe(USDS); // user-picked, kept as tokenOut
+    expect(verified.args[4].tokenRedeemSy).toBe(USDG); // pinned to underlying
+    expect(verified.args[4].pendleSwap).toBe(PINNED_PENDLE_SWAP);
+    expect(verified.args[4].swapData).toEqual(KYBER_SWAP_DATA);
+  });
+
+  it('rejects when the API returns a non-pinned pendleSwap', () => {
+    const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
+    const quote = makeAggExitQuote({
+      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA }
+    });
+    expect(() => buildVerifiedArgs(quote, EXIT_AGG_KNOWN)).toThrow(/not the pinned forwarder/);
+  });
+
+  it('rejects when output ≠ underlying but quote has no aggregatorRoute', () => {
+    const quote = makeAggExitQuote({ aggregatorRoute: undefined });
+    expect(() => buildVerifiedArgs(quote, EXIT_AGG_KNOWN)).toThrow(/aggregator required/);
+  });
+
+  it('forces netLpIn to 0 even on aggregator-branch exit', () => {
+    const verified = buildVerifiedArgs(makeAggExitQuote(), EXIT_AGG_KNOWN);
+    expect(verified.args[3]).toBe(0n);
   });
 });
 

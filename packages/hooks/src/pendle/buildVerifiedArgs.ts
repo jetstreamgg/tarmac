@@ -68,9 +68,14 @@ export type VerifiedWithdrawArgs = readonly [
 ];
 
 /**
- * Args for `exitPostExpToToken` — used to redeem PT for the underlying after
- * market expiry. v1 always passes `netLpIn = 0n` since we do not expose LP.
- * No `limit` parameter; this method does not support limit orders.
+ * Args for `exitPostExpToToken` — used to redeem PT after market expiry.
+ * Always passes `netLpIn = 0n` since we do not expose LP. No `limit`
+ * parameter; this method does not support limit orders.
+ *
+ * Output token may be the underlying (no-aggregator: empty pendleSwap /
+ * swapData) or USDS / USDC (aggregator: pinned PendleSwap + populated
+ * swapData routed through KyberSwap / Odos / OKX / Paraswap). Selection
+ * happens upstream via the user's output-token choice in the redeem UI.
  */
 export type VerifiedExitArgs = readonly [
   receiver: `0x${string}`,
@@ -362,6 +367,14 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
 // ---------------------------------------------------------------------------
 
 function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
+  const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
+    known.outputToken, // EXIT's user-picked side is the output, same as WITHDRAW
+    known.underlyingToken,
+    known.pinnedPendleSwap,
+    quote.aggregatorRoute,
+    PendleConvertSide.WITHDRAW
+  );
+
   const args: VerifiedExitArgs = [
     known.receiver,
     known.market,
@@ -370,9 +383,9 @@ function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): Verif
     {
       tokenOut: known.outputToken,
       minTokenOut: quote.apiMinOut,
-      tokenRedeemSy: known.outputToken, // the no-aggregator invariant
-      pendleSwap: ZERO_ADDRESS,
-      swapData: verifiedEmptySwapData
+      tokenRedeemSy: tokenMintSyOrRedeem,
+      pendleSwap,
+      swapData
     }
   ] as const;
 

@@ -19,6 +19,11 @@ export { MorphoVaultWidget } from './widgets/MorphoVaultWidget';
 export type { MorphoVaultWidgetProps } from './widgets/MorphoVaultWidget';
 export { PendleWidget } from './widgets/PendleWidget';
 export type { PendleWidgetProps } from './widgets/PendleWidget';
+export { usePendleTokens } from './widgets/PendleWidget/hooks/usePendleTokens';
+export type { PendleTokens } from './widgets/PendleWidget/hooks/usePendleTokens';
+export { usePendleSlippage } from './widgets/PendleWidget/hooks/usePendleSlippage';
+export type { PendleSlippageMode } from './widgets/PendleWidget/hooks/usePendleSlippage';
+export { PendleConfigMenu } from './widgets/PendleWidget/components/PendleConfigMenu';
 export { MorphoVaultBadge } from './widgets/MorphoVaultWidget/components/MorphoVaultBadge';
 export { MorphoRateBreakdownPopover } from './widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';
@@ -47,7 +52,11 @@ export {
   PendleFlow,
   PendleAction,
   PendleScreen,
-  PendleSlippageType
+  PendleSlippageType,
+  PENDLE_BUY_SLIPPAGE_STORAGE_KEY,
+  PENDLE_SELL_SLIPPAGE_STORAGE_KEY,
+  PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY,
+  PENDLE_DEFAULT_REDEEM_SLIPPAGE
 } from './widgets/PendleWidget/lib/constants';
 export { formatUrnIndex } from './widgets/SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';

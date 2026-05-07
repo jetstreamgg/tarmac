@@ -364,12 +364,7 @@ const PendleWidgetWrapped = ({
   }, [isConnectedAndEnabled, convertDisabled, setIsDisabled]);
 
   const headerSlippage = (
-    <PendleConfigMenu
-      slippage={slippage}
-      defaultSlippage={defaultSlippage}
-      setSlippage={setSlippage}
-      flow={flow}
-    />
+    <PendleConfigMenu slippage={slippage} defaultSlippage={defaultSlippage} setSlippage={setSlippage} />
   );
 
   return (

@@ -30,6 +30,8 @@ export type TransactionConfig = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /** Optional node rendered to the right of the title — e.g. a slippage gear. */
+  rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
   onRetry?: () => void;
   confirmLabel?: string;
@@ -253,6 +255,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           title={config.title}
           subtitles={config.subtitles}
           transactionContent={config.transactionContent}
+          rightHeaderComponent={config.rightHeaderComponent}
           onConfirm={config.onConfirm}
           onRetry={handleRetry}
           onBack={resetTransactionProgress}

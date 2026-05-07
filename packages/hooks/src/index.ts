@@ -144,18 +144,14 @@ export {
   PendleConvertSide,
   PendleTradeAction
 } from './pendle/constants';
-export { isMarketMatured } from './pendle/helpers';
+export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
-export { useRedeem as usePendleRedeem } from './pendle/useRedeem';
 export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
-export {
-  buildVerifiedArgs,
-  buildMaturedRedeemVerifiedArgs
-} from './pendle/buildVerifiedArgs';
+export { buildVerifiedArgs, buildMaturedRedeemVerifiedArgs } from './pendle/buildVerifiedArgs';
 export type {
   KnownCallValues,
   MaturedRedeemContext,

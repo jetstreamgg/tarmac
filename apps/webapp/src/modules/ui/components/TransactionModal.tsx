@@ -39,6 +39,8 @@ export type TransactionModalProps = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /** Optional node rendered between the title and the close button — e.g. a slippage gear. */
+  rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
   onRetry?: () => void;
   onBack?: () => void;
@@ -73,6 +75,7 @@ export function TransactionModal({
   title,
   subtitles,
   transactionContent,
+  rightHeaderComponent,
   onConfirm,
   onRetry,
   onBack,
@@ -146,14 +149,17 @@ export function TransactionModal({
       >
         <div className="flex items-center justify-between">
           <DialogTitle className="text-text text-2xl">{title}</DialogTitle>
-          <Button
-            variant="ghost"
-            className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
-            onClick={handleClose}
-            disabled={isTransacting}
-          >
-            <Close className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {rightHeaderComponent}
+            <Button
+              variant="ghost"
+              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
+              onClick={handleClose}
+              disabled={isTransacting}
+            >
+              <Close className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <div

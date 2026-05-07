@@ -4,6 +4,7 @@ import { formatUnits } from 'viem';
 import { mainnet } from 'viem/chains';
 import { formatBigInt, formatDecimalPercentage } from '@jetstreamgg/sky-utils';
 import {
+  formatPendleAggregatorName,
   getTokenDecimals,
   type PendleConvertQuote,
   type PendleMarketConfig,
@@ -48,21 +49,6 @@ type SupplyWithdrawProps = {
   prepareErrorMessage?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
-
-/**
- * Display name for an aggregator. Pendle currently routes through KyberSwap,
- * Odos, OKX, and Paraswap; we render those with canonical brand casing. Any
- * other value (e.g. a future addition) passes through unchanged.
- */
-function formatAggregatorName(raw: string): string {
-  const known: Record<string, string> = {
-    KYBERSWAP: 'KyberSwap',
-    ODOS: 'Odos',
-    OKX: 'OKX',
-    PARASWAP: 'Paraswap'
-  };
-  return known[raw.toUpperCase()] ?? raw;
-}
 
 export const SupplyWithdraw = ({
   market,
@@ -125,7 +111,7 @@ export const SupplyWithdraw = ({
 
   const priceImpactRow = quote?.priceImpact !== undefined ? `${(quote.priceImpact * 100).toFixed(3)}%` : '—';
 
-  const aggregatorName = quote?.aggregatorType ? formatAggregatorName(quote.aggregatorType) : undefined;
+  const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
   // Pendle's API returns priceImpactBreakDown even on no-aggregator routes
   // (with externalPriceImpact = 0). Only surface it when an aggregator is
   // actually used — otherwise the breakdown is misleading noise.

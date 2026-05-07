@@ -27,6 +27,12 @@ export enum PendleSlippageType {
 
 export const PENDLE_BUY_SLIPPAGE_STORAGE_KEY = 'pendle-buy-slippage';
 export const PENDLE_SELL_SLIPPAGE_STORAGE_KEY = 'pendle-sell-slippage';
+/** Matured-PT redeem flow gets its own key — different default and semantics
+ * from buy/sell. Aggregator hops on redeem-to-USDS/USDC tend to need wider
+ * slippage than pre-maturity AMM trades, hence the higher default below. */
+export const PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY = 'pendle-redeem-slippage';
+/** 1% — applied to matured-PT redeem (vs. 0.2% for buy/sell). */
+export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0.01;
 
 export const pendleSlippageConfig = {
   min: 0,
@@ -109,10 +115,7 @@ export function getPendleActionDescription({
   needsAllowance: boolean;
   underlyingSymbol: string;
 }): MessageDescriptor {
-  if (
-    (action === PendleAction.BUY || action === PendleAction.WITHDRAW) &&
-    txStatus === TxStatus.SUCCESS
-  ) {
+  if ((action === PendleAction.BUY || action === PendleAction.WITHDRAW) && txStatus === TxStatus.SUCCESS) {
     if (flow === PendleFlow.BUY) return msg`Supplied ${underlyingSymbol} to the Pendle fixed-yield market`;
     return msg`Sold PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
   }
