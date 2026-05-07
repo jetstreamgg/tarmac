@@ -47,6 +47,43 @@ export type PendleMarketConfig = {
  * only API value the call actually depends on is `amountOut` (used to derive
  * minOut) and `apiContractParams[3]` (the `guessPtOut` solver hint, Buy only).
  */
+/**
+ * Pendle's on-chain SwapData struct (matches `swapData` arg in
+ * swapExactTokenForPt / swapExactPtForToken). Populated by the API when an
+ * aggregator hop is needed; empty otherwise (see PENDLE_EMPTY_SWAP_DATA).
+ */
+export type PendleSwapData = {
+  /** Pendle's SwapType enum — non-zero indicates an aggregator route */
+  swapType: number;
+  /** External aggregator router address (KyberSwap, Odos, OKX, Paraswap, …) */
+  extRouter: `0x${string}`;
+  /** Encoded calldata to forward to the external aggregator */
+  extCalldata: `0x${string}`;
+  /** Whether output amounts must be scaled (Pendle internal) */
+  needScale: boolean;
+};
+
+/**
+ * Aggregator route returned by /convert when the input/output token differs
+ * from the SY's accepted token (i.e. when `enableAggregator: true` is set on
+ * the request). buildVerifiedArgs validates `pendleSwap` against
+ * PENDLE_PINNED_PENDLESWAP_ADDRESSES before allowing the call.
+ */
+export type PendleAggregatorRoute = {
+  /** MUST equal a Pendle-deployed PendleSwap forwarder; rejected otherwise. */
+  pendleSwap: `0x${string}`;
+  /** Aggregator forwarding payload */
+  swapData: PendleSwapData;
+};
+
+/** Pendle's price-impact breakdown — present only when an aggregator hop is in the route. */
+export type PendlePriceImpactBreakdown = {
+  /** Slippage from Pendle's own AMM (decimal, signed) */
+  internalPriceImpact: number;
+  /** Slippage from the external aggregator hop (decimal, signed) */
+  externalPriceImpact: number;
+};
+
 export type PendleConvertQuote = {
   /** Function name as reported by Pendle's contractParamInfo */
   method: string;
@@ -66,6 +103,18 @@ export type PendleConvertQuote = {
   impliedApy: number;
   /** Price impact (decimal, signed) */
   priceImpact: number;
+  /** Internal/external price-impact split — present only on aggregator routes */
+  priceImpactBreakdown?: PendlePriceImpactBreakdown;
+  /** Aggregator name as reported by Pendle ("KYBERSWAP", "ODOS", …); display only */
+  aggregatorType?: string;
+  /**
+   * Aggregator forwarding payload — present iff the route uses an aggregator.
+   * When present, buildVerifiedArgs takes the aggregator branch:
+   * `tokenMintSy`/`tokenRedeemSy` is set to the underlying token (not the
+   * user-selected input/output), and `pendleSwap` + `swapData` are forwarded
+   * after the pinned-pendleSwap check.
+   */
+  aggregatorRoute?: PendleAggregatorRoute;
   /** Routing fee in USD as reported by the API (undefined if API omits it) */
   feeUsd?: number;
   /** ms epoch when this quote was fetched (for staleness check) */
@@ -132,6 +181,13 @@ export type PendleConvertRequest = {
   inputs: Array<{ token: `0x${string}`; amount: string }>;
   outputs: Array<`0x${string}`>;
   additionalData?: string;
+  /**
+   * When true, Pendle's API may return a route that uses an external
+   * aggregator (KyberSwap, Odos, …) in front of / behind the SY conversion.
+   * Set only when the user-selected input/output token differs from the
+   * market's underlying token.
+   */
+  enableAggregator?: boolean;
 };
 
 /**
@@ -154,6 +210,11 @@ export type PendleConvertRouteRaw = {
   data: {
     aggregatorType: string;
     priceImpact: number;
+    /** Present only on aggregator routes (when enableAggregator was true and a hop was needed). */
+    priceImpactBreakDown?: {
+      internalPriceImpact: number;
+      externalPriceImpact: number;
+    };
     impliedApy?: { before: number; after: number };
     effectiveApy?: number;
     fee?: { usd: number };

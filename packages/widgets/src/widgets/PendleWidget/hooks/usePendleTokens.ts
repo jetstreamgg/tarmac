@@ -1,10 +1,17 @@
 import { useMemo } from 'react';
-import { type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
+import { TOKENS, type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
 import { mainnet } from 'viem/chains';
 
 export type PendleTokens = {
   underlyingToken: Token;
   ptToken: Token;
+  /**
+   * The selectable token list for the user-picked side of the convert flow:
+   * BUY input or SELL output. Always begins with the market's underlying
+   * (default selection) and appends USDS / USDC if they aren't already the
+   * underlying. Reuses the global TOKENS registry — no inline definitions.
+   */
+  inputTokenList: Token[];
 };
 
 // Pendle markets are dynamic (per-market PT address + arbitrary underlying),
@@ -32,5 +39,19 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
     [market.underlyingSymbol, market.underlyingDecimals, market.ptToken]
   );
 
-  return { underlyingToken, ptToken };
+  const inputTokenList = useMemo<Token[]>(() => {
+    const seen = new Set<string>([market.underlyingToken.toLowerCase()]);
+    const list: Token[] = [underlyingToken];
+    for (const candidate of [TOKENS.usds, TOKENS.usdc]) {
+      const addr = candidate.address[mainnet.id];
+      if (!addr) continue;
+      const key = addr.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      list.push(candidate);
+    }
+    return list;
+  }, [market.underlyingToken, underlyingToken]);
+
+  return { underlyingToken, ptToken, inputTokenList };
 };
