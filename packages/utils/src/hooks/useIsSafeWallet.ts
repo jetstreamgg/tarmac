@@ -22,7 +22,7 @@ export const useIsSafeWallet = () => {
   const { address, connector } = useConnection();
   const chainId = useChainId();
 
-  const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID;
+  const isSafeConnector = connector?.id === SAFE_CONNECTOR_ID && !!address;
   const baseUrl = SAFE_TRANSACTION_SERVICE_URL[chainId];
   let url: URL | undefined;
   if (baseUrl) {
