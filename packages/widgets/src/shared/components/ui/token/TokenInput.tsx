@@ -42,6 +42,8 @@ export interface TokenInputProps {
   className?: string;
   disabled?: boolean;
   inputDisabled?: boolean;
+  /** Display-only variant: replaces the editable input with a formatted readout. */
+  readOnly?: boolean;
   error?: string;
   errorTooltip?: string;
   variant?: 'bottom' | 'top';
@@ -72,6 +74,7 @@ export function TokenInput({
   value,
   disabled,
   inputDisabled = false,
+  readOnly = false,
   dataTestId = 'token-input',
   placeholder,
   onChange,
@@ -282,7 +285,8 @@ export function TokenInput({
         <MotionCard
           ref={cardRef}
           className={cn(
-            'hover-in-before pb-4! min-h-16 w-96 overflow-hidden rounded-2xl border-0',
+            'hover-in-before min-h-16 w-96 overflow-hidden rounded-2xl border-0',
+            !readOnly && 'pb-4!',
             className
           )}
           style={{
@@ -310,90 +314,112 @@ export function TokenInput({
                   animate={AnimationLabels.animate}
                 >
                   <motion.div variants={positionAnimations}>
-                    <Input
-                      ref={inputRef}
-                      className="hide-spin-button placeholder:text-white/30"
-                      value={inputValue !== '00' ? inputValue : '0'}
-                      onChange={e => {
-                        updateValue(e.target.value as `${number}`, e);
-                        if (typeof onSetMax === 'function') onSetMax(false);
-                      }}
-                      onInput={() => {
-                        onInput?.();
-                      }}
-                      disabled={disabled || inputDisabled}
-                      //prevent scrolling to change input
-                      onWheel={e => (e.target as HTMLElement).blur()}
-                      type="number"
-                      placeholder={placeholder || 'Enter amount'}
-                      rightElement={
-                        <div ref={tokenSelectorRef}>
+                    {readOnly ? (
+                      <HStack className="items-center justify-between pb-1 pt-4">
+                        <div
+                          className="text-text flex h-6 grow items-center truncate text-base lg:h-7 lg:text-lg"
+                          data-testid={dataTestId}
+                        >
+                          {value && value !== 0n
+                            ? formatBigInt(value, { unit: decimals, maxDecimals: 4 })
+                            : '—'}
+                        </div>
+                        <div ref={tokenSelectorRef} className="shrink-0">
                           <TokenSelector
                             token={token}
                             disabled={disabled || tokenList.length <= 1}
                             showChevron={tokenList.length > 1}
                           />
                         </div>
-                      }
-                      error={shownError}
-                      errorTooltip={errorTooltip}
-                      data-testid={dataTestId}
-                      step={'any'}
-                      min={0}
-                    />
+                      </HStack>
+                    ) : (
+                      <Input
+                        ref={inputRef}
+                        className="hide-spin-button placeholder:text-white/30"
+                        value={inputValue !== '00' ? inputValue : '0'}
+                        onChange={e => {
+                          updateValue(e.target.value as `${number}`, e);
+                          if (typeof onSetMax === 'function') onSetMax(false);
+                        }}
+                        onInput={() => {
+                          onInput?.();
+                        }}
+                        disabled={disabled || inputDisabled}
+                        //prevent scrolling to change input
+                        onWheel={e => (e.target as HTMLElement).blur()}
+                        type="number"
+                        placeholder={placeholder || 'Enter amount'}
+                        rightElement={
+                          <div ref={tokenSelectorRef}>
+                            <TokenSelector
+                              token={token}
+                              disabled={disabled || tokenList.length <= 1}
+                              showChevron={tokenList.length > 1}
+                            />
+                          </div>
+                        }
+                        error={shownError}
+                        errorTooltip={errorTooltip}
+                        data-testid={dataTestId}
+                        step={'any'}
+                        min={0}
+                      />
+                    )}
                   </motion.div>
-                  <motion.div variants={positionAnimations}>
-                    <HStack className="justify-between pt-4">
-                      <HStack
-                        gap={2}
-                        className={`text-selectActive ${'w-full'} items-center overflow-clip`}
-                        title={balanceText}
-                      >
-                        {!hideIcon && limitText && isConnectedAndEnabled ? (
-                          showGauge ? (
-                            <div>
-                              <Gauge height={20} width={20} className="text-textDesaturated" />
-                            </div>
-                          ) : (
+                  {!readOnly && (
+                    <motion.div variants={positionAnimations}>
+                      <HStack className="justify-between pt-4">
+                        <HStack
+                          gap={2}
+                          className={`text-selectActive ${'w-full'} items-center overflow-clip`}
+                          title={balanceText}
+                        >
+                          {!hideIcon && limitText && isConnectedAndEnabled ? (
+                            showGauge ? (
+                              <div>
+                                <Gauge height={20} width={20} className="text-textDesaturated" />
+                              </div>
+                            ) : (
+                              <div>
+                                <Wallet height={20} width={20} className="text-textDesaturated" />
+                              </div>
+                            )
+                          ) : !hideIcon && (!limitText || !isConnectedAndEnabled) ? (
                             <div>
                               <Wallet height={20} width={20} className="text-textDesaturated" />
                             </div>
-                          )
-                        ) : !hideIcon && (!limitText || !isConnectedAndEnabled) ? (
-                          <div>
-                            <Wallet height={20} width={20} className="text-textDesaturated" />
-                          </div>
-                        ) : null}
-                        <Text
-                          className="text-textDesaturated text-nowrap text-sm leading-none"
-                          dataTestId={`${dataTestId}-balance`}
-                        >
-                          {limitText && isConnectedAndEnabled ? limitText : balanceText}
-                        </Text>
+                          ) : null}
+                          <Text
+                            className="text-textDesaturated text-nowrap text-sm leading-none"
+                            dataTestId={`${dataTestId}-balance`}
+                          >
+                            {limitText && isConnectedAndEnabled ? limitText : balanceText}
+                          </Text>
+                        </HStack>
+                        {showPercentageButtons && (
+                          <HStack gap={2} className="text-selectActive items-center">
+                            {buttonsToShow.map(percentage => (
+                              <Button
+                                key={percentage}
+                                size="input"
+                                variant="input"
+                                onClick={e => onPercentageClicked(e, percentage, percentage === 100)}
+                                disabled={disabled}
+                                data-testid={percentage === 100 ? `${dataTestId}-max` : undefined}
+                              >
+                                {`${percentage}%`}
+                              </Button>
+                            ))}
+                          </HStack>
+                        )}
+                        {customActionButtons && (
+                          <HStack gap={2} className="text-selectActive items-center">
+                            {customActionButtons}
+                          </HStack>
+                        )}
                       </HStack>
-                      {showPercentageButtons && (
-                        <HStack gap={2} className="text-selectActive items-center">
-                          {buttonsToShow.map(percentage => (
-                            <Button
-                              key={percentage}
-                              size="input"
-                              variant="input"
-                              onClick={e => onPercentageClicked(e, percentage, percentage === 100)}
-                              disabled={disabled}
-                              data-testid={percentage === 100 ? `${dataTestId}-max` : undefined}
-                            >
-                              {`${percentage}%`}
-                            </Button>
-                          ))}
-                        </HStack>
-                      )}
-                      {customActionButtons && (
-                        <HStack gap={2} className="text-selectActive items-center">
-                          {customActionButtons}
-                        </HStack>
-                      )}
-                    </HStack>
-                  </motion.div>
+                    </motion.div>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div
