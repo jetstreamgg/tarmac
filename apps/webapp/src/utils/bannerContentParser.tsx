@@ -1,19 +1,11 @@
 import React from 'react';
 import { Text } from '@/modules/layout/components/Typography';
-import {
-  PopoverRateInfo as PopoverInfo,
-  POPOVER_TOOLTIP_TYPES,
-  type PopoverTooltipType
-} from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo, resolvePopoverTooltipKey } from '@jetstreamgg/sky-widgets';
 import { Trans } from '@lingui/react/macro';
-
-// Use the exported constant from the widgets package for runtime validation
-// Create a set for O(1) lookup performance
-const TOOLTIP_TYPE_SET = new Set<string>(POPOVER_TOOLTIP_TYPES);
 
 /**
  * Parses banner description text and replaces tooltip placeholders with React components
- * Supports patterns like [(PSM)](#tooltip-psm) which get replaced with <PopoverInfo type="psm" />
+ * Supports patterns like [(PSM)](#tooltip-psm) which get replaced with <PopoverRateInfo type="psm" />
  */
 export function parseBannerContent(description: string | React.ReactNode): React.ReactNode {
   // If it's already a React element, return as is
@@ -57,19 +49,14 @@ export function parseBannerContent(description: string | React.ReactNode): React
     const label = match[1]; // e.g., "PSM"
     const tooltipTypeRaw = match[2]; // e.g., "psm"
 
-    // Validate that the tooltip type is valid
-    if (TOOLTIP_TYPE_SET.has(tooltipTypeRaw)) {
-      // TypeScript knows this is safe because we validated it exists in the set
-      const tooltipType = tooltipTypeRaw as PopoverTooltipType;
-
-      // Add the label text followed by the tooltip
+    const tooltipKey = resolvePopoverTooltipKey(tooltipTypeRaw);
+    if (tooltipKey) {
       parts.push(
         <React.Fragment key={`tooltip-${match.index}`}>
-          {label} <PopoverInfo type={tooltipType} />
+          {label} <PopoverRateInfo type={tooltipKey} />
         </React.Fragment>
       );
     } else {
-      // If tooltip type is not recognized, just add the label without tooltip
       console.warn(`Unknown tooltip type: ${tooltipTypeRaw}`);
       parts.push(label);
     }

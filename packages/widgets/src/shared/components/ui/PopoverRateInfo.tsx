@@ -78,6 +78,14 @@ export const POPOVER_TOOLTIP_TYPES = Object.keys(TOOLTIP_ID_MAP) as (keyof typeo
 // Derive the type from the map
 export type PopoverTooltipType = keyof typeof TOOLTIP_ID_MAP;
 
+// Accepts short keys ("ssr") or full ids ("sky-savings-rate").
+export function resolvePopoverTooltipKey(raw: string): PopoverTooltipType | undefined {
+  if (raw in TOOLTIP_ID_MAP) return raw as PopoverTooltipType;
+  return Object.entries(TOOLTIP_ID_MAP).find(([, fullId]) => fullId === raw)?.[0] as
+    | PopoverTooltipType
+    | undefined;
+}
+
 export const PopoverRateInfo = ({
   type,
   onExternalLinkClicked,
