@@ -48,6 +48,7 @@ export { NoResults } from './shared/components/icons/NoResults';
 export {
   PopoverRateInfo,
   POPOVER_TOOLTIP_TYPES,
+  resolvePopoverTooltipKey,
   type PopoverTooltipType
 } from './shared/components/ui/PopoverRateInfo';
 export { PopoverInfo } from './shared/components/ui/PopoverInfo';

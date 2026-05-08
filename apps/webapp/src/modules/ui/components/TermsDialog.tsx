@@ -63,7 +63,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
   };
 
   const dialogContent = showLoadingState ? (
-    <DialogContent className="bg-containerDark max-w-[300px]">
+    <DialogContent aria-describedby={undefined} className="bg-containerDark max-w-[300px]">
       {loadingContent || (
         <div className="flex items-center justify-center p-4">
           <DialogTitle asChild>
@@ -76,7 +76,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
       )}
     </DialogContent>
   ) : (
-    <DialogContent className="bg-containerDark max-h-[95dvh] overflow-y-auto">
+    <DialogContent aria-describedby={undefined} className="bg-containerDark max-h-[95dvh] overflow-y-auto">
       <DialogTitle className="sr-only">{title}</DialogTitle>
       {termsVersion && (
         <Text className="text-center text-xs text-white/50">
