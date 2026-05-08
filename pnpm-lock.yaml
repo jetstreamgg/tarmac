@@ -334,7 +334,6 @@ overrides:
   qs@<6.14.2: ^6.14.2
   mdast-util-to-hast@>=13.0.0 <13.2.1: ^13.2.1
   hono@<4.12.14: ^4.12.14
-  semver@<7.0.0: ~7.7.4
 
 importers:
 
@@ -2597,6 +2596,7 @@ packages:
   '@safe-global/safe-gateway-typescript-sdk@3.23.1':
     resolution: {integrity: sha512-6ORQfwtEJYpalCeVO21L4XXGSdbEMfyp2hEv6cP82afKXSwvse6d3sdelgaPWUxHIsFRkWvHDdzh8IyyKHZKxw==}
     engines: {node: '>=16'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   '@scure/base@1.1.9':
     resolution: {integrity: sha512-8YKhl8GHiNI/pU2VMaofa2Tor7PJRAjwQLBBuilkJ9L5+13yVbC7JO/wS7piioAvPSwR3JKM1IJ/u4xQzbcXKg==}
@@ -6842,6 +6842,10 @@ packages:
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
+  semver@6.3.1:
+    resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
+    hasBin: true
+
   semver@7.5.4:
     resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
     engines: {node: '>=10'}
@@ -7814,7 +7818,7 @@ snapshots:
       debug: 4.4.3
       gensync: 1.0.0-beta.2
       json5: 2.2.3
-      semver: 7.7.4
+      semver: 6.3.1
     transitivePeerDependencies:
       - supports-color
 
@@ -7832,7 +7836,7 @@ snapshots:
       '@babel/helper-validator-option': 7.27.1
       browserslist: 4.25.4
       lru-cache: 5.1.1
-      semver: 7.7.4
+      semver: 6.3.1
 
   '@babel/helper-globals@7.28.0': {}
 
@@ -12933,7 +12937,7 @@ snapshots:
       object.values: 1.2.1
       prop-types: 15.8.1
       resolve: 2.0.0-next.5
-      semver: 7.7.4
+      semver: 6.3.1
       string.prototype.matchall: 4.0.12
       string.prototype.repeat: 1.0.0
 
@@ -15279,6 +15283,8 @@ snapshots:
       loose-envify: 1.4.0
 
   scheduler@0.27.0: {}
+
+  semver@6.3.1: {}
 
   semver@7.5.4:
     dependencies:

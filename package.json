@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Tarmac is a web3 application framework for building decentralized applications",
   "engines": {
-    "pnpm": ">=9",
+    "pnpm": ">=11.0.8",
     "node": ">=24.0.0"
   },
   "scripts": {
