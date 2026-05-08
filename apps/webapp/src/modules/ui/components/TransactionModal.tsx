@@ -138,6 +138,7 @@ export function TransactionModal({
   return (
     <Dialog open={open} onOpenChange={val => !val && handleClose()}>
       <DialogContent
+        aria-describedby={undefined}
         className="bg-containerDark flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5"
         onPointerDownOutside={e => isTransacting && e.preventDefault()}
         onEscapeKeyDown={e => isTransacting && e.preventDefault()}

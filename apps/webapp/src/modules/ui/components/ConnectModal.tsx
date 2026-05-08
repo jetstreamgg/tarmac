@@ -262,6 +262,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   return (
     <Dialog open={open && !hasWalletOverlay} onOpenChange={onOpenChange}>
       <DialogContent
+        aria-describedby={undefined}
         className="bg-containerDark max-h-[calc(100dvh-32px)] gap-6 overflow-auto p-4 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}

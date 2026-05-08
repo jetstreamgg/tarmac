@@ -87,6 +87,7 @@ export function ChainModal({
         )}
       </DialogTrigger>
       <DialogContent
+        aria-describedby={undefined}
         className={cn('bg-containerDark p-4 sm:min-w-[400px] sm:p-4', isSafeWallet && 'sm:max-w-[400px]')}
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
