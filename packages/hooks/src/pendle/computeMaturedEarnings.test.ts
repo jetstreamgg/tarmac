@@ -366,3 +366,64 @@ describe('computeMaturedEarnings — reconciliation gate (slice 02)', () => {
     ).toEqual(EMPTY);
   });
 });
+
+describe('computeMaturedEarnings — APY policy (slice 03)', () => {
+  it('pure buy-and-hold (1 buy, 0 sells) keeps both earnings and APY', () => {
+    // Sanity check that the no-sells branch is unchanged: APY remains defined
+    // and matches the existing formula.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.apy).toBeDefined();
+    expect(result.apy!).toBeGreaterThan(0);
+  });
+
+  it('1 buy + 1 sell with remaining PT: earnings shown, APY hidden', () => {
+    // Bought 1000 PT for $1000, sold 200 PT for $200, still hold 800 PT.
+    // netPtFromPendle = 800 == ptBalanceFloat → reconciles.
+    // netCostUsd = $800; previewAmount → 820 underlying → earnings = $20.
+    // Because sells.length > 0, daysHeld from earliestBuyTimestamp is no
+    // longer a faithful capital-deployment window — drop APY.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        sell({ secondsBeforeExpiry: 60 * DAY, value: 200, pt: 200 })
+      ],
+      previewAmount: toUnderlying(820, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    expect(result.earnings).toBeCloseTo(20, 4);
+    expect(result.currency).toBe('USDS');
+    expect(result.apy).toBeUndefined();
+  });
+
+  it('buy-sell-buy pattern with remaining PT: earnings shown, APY hidden', () => {
+    // 600 in, 100 out, 500 in → net PT 1000; net cost $1000.
+    // Reconciles (1000 == ptBalanceFloat), preview 1050 → earnings $50.
+    // sells.length > 0 → APY hidden even though there's a real return.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 600, pt: 600 }),
+        sell({ secondsBeforeExpiry: 60 * DAY, value: 100, pt: 100 }),
+        buy({ secondsBeforeExpiry: 30 * DAY, value: 500, pt: 500 })
+      ],
+      previewAmount: toUnderlying(1050, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(50, 4);
+    expect(result.currency).toBe('USDS');
+    expect(result.apy).toBeUndefined();
+  });
+});

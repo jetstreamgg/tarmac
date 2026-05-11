@@ -121,8 +121,17 @@ export function computeMaturedEarnings({
 
   const earliestBuyTimestamp = Math.min(...buys.map(t => Number(new Date(t.timestamp)) / 1000));
   const daysHeld = (market.expiry - earliestBuyTimestamp) / 86_400;
+  // APY policy: only report a rate for pure buy-and-hold positions.
+  // `daysHeld` uses `earliestBuyTimestamp`, which is only a faithful capital-
+  // deployment window when the user never sold. With any SELL_PT in history,
+  // capital wasn't continuously deployed across that window — the rate would
+  // be biased low. FIFO per-lot age accounting is out of scope (PRD), so the
+  // honest UX is to hide the rate while still showing absolute earnings
+  // (which are a sum and remain correct under any trade pattern).
   const apy =
-    daysHeld > 0 && netCostUsd > 0 ? Math.pow(finalValue / netCostUsd, 365 / daysHeld) - 1 : undefined;
+    sells.length === 0 && daysHeld > 0 && netCostUsd > 0
+      ? Math.pow(finalValue / netCostUsd, 365 / daysHeld) - 1
+      : undefined;
 
   return { earnings, apy, currency };
 }
