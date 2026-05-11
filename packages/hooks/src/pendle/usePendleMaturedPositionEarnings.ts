@@ -4,9 +4,8 @@ import { mainnet } from 'wagmi/chains';
 import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { usePendleMarketHistory } from './usePendleMarketHistory';
 import { usePendleRedeemPreview } from './usePendleRedeemPreview';
-import { PendleTradeAction } from './constants';
 import { computeMaturedEarnings } from './computeMaturedEarnings';
-import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
+import type { PendleMarketConfig } from './pendle';
 
 const SUSDS_PREVIEW_REDEEM_ABI = [
   {
@@ -49,37 +48,8 @@ export function usePendleMaturedPositionEarnings(
   const chainId = useChainId();
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
-  const { data: rawHistory, isLoading: historyLoading } = usePendleMarketHistory(market.marketAddress);
+  const { data: history, isLoading: historyLoading } = usePendleMarketHistory(market.marketAddress);
   const { data: previewAmount, isLoading: previewLoading } = usePendleRedeemPreview(market, ptBalance);
-
-  // TEMP: Pendle's API doesn't index Tenderly forks. On testnets, synthesize
-  // one BUY_PT trade so QA can validate the layout/math. Revert before prod.
-  const history = useMemo<PendleTransactionRaw[] | undefined>(() => {
-    if (!rawHistory) return undefined;
-    if (rawHistory.length > 0) return rawHistory;
-    if (!isTestnetId(chainId)) return rawHistory;
-    if (previewAmount === undefined || ptBalance === undefined || ptBalance === 0n) return rawHistory;
-    const receiveTokens = Number(previewAmount as bigint) / 10 ** market.underlyingDecimals;
-    return [
-      {
-        id: 'tenderly-mock',
-        market: market.marketAddress,
-        timestamp: new Date((market.expiry - 90 * 86_400) * 1000).toISOString(),
-        chainId: 1,
-        txHash: '0x0',
-        value: receiveTokens * 0.95,
-        type: 'TRADES',
-        action: PendleTradeAction.BUY_PT,
-        txOrigin: '0x0',
-        impliedApy: 0
-      }
-    ];
-  }, [rawHistory, chainId, previewAmount, ptBalance, market]);
-
-  // TEMP: on Tenderly, coerce tier-3 markets (e.g. PT-sENA) into 'pegged'
-  // treatment so QA can see the earnings line render. Numbers are nonsense
-  // for non-stable underlyings but the layout is what we're validating.
-  const effectiveTier = isTestnetId(chainId) ? (market.usdsEquivalence ?? 'pegged') : market.usdsEquivalence;
 
   const { data: chi } = useReadContract({
     abi: SUSDS_PREVIEW_REDEEM_ABI,
@@ -97,8 +67,16 @@ export function usePendleMaturedPositionEarnings(
   const ptBalanceFloat = Number(ptBalance ?? 0n) / 1e18;
 
   const result = useMemo<Omit<PendleMaturedPositionEarnings, 'isLoading'>>(
-    () => computeMaturedEarnings({ history, previewAmount, chi, market, effectiveTier, ptBalanceFloat }),
-    [history, previewAmount, chi, market, effectiveTier, ptBalanceFloat]
+    () =>
+      computeMaturedEarnings({
+        history,
+        previewAmount,
+        chi,
+        market,
+        effectiveTier: market.usdsEquivalence,
+        ptBalanceFloat
+      }),
+    [history, previewAmount, chi, market, ptBalanceFloat]
   );
 
   return { ...result, isLoading: historyLoading || previewLoading };
