@@ -96,6 +96,9 @@ export function useStakeRewardContracts({
 } = {}): ReadHook & { data: { contractAddress: `0x${string}` }[] | undefined } {
   const walletChainId = useChainId();
   const chainId = walletChainId === TENDERLY_CHAIN_ID ? walletChainId : mainnet.id;
+  // The indexer only has Reward rows for mainnet, so always query with mainnet's
+  // chainId. Tenderly is a mainnet fork and uses the same reward addresses.
+  const indexerChainId = mainnet.id;
   const config = useConfig();
   const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
 
@@ -109,8 +112,8 @@ export function useStakeRewardContracts({
     refetch: mutate,
     isLoading: isGraphqlLoading
   } = useQuery({
-    queryKey: ['stakeRewardContracts', urlSubgraph, chainId],
-    queryFn: () => fetchStakeRewardContracts(urlSubgraph, chainId),
+    queryKey: ['stakeRewardContracts', urlSubgraph, indexerChainId],
+    queryFn: () => fetchStakeRewardContracts(urlSubgraph, indexerChainId),
     enabled: !!urlSubgraph,
     placeholderData: hardcodedContracts
   });
