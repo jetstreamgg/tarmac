@@ -127,7 +127,7 @@ export function usePsmTradeHistory({
   const { address } = useConnection();
   const currentChainId = useChainId();
   const chainIdToUse = chainId || currentChainId;
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainIdToUse) || '';
   const tokenAddressMap = useTokenAddressMap(chainIdToUse);
 
   const {

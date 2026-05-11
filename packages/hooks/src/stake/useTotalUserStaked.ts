@@ -32,7 +32,7 @@ export function useTotalUserStaked({
 } = {}): ReadHook & { data?: bigint } {
   const { address } = useConnection();
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data,
