@@ -31,15 +31,11 @@ export type PendleMaturedPositionEarnings = {
 };
 
 /**
- * Computes the user's realized earnings + APY for a matured PT position.
- *
- * Cost basis comes from BUY_PT/SELL_PT history (Pendle API, user-scoped).
- * Final value comes from the on-chain redeem preview, optionally converted to
- * USDS based on `market.usdsEquivalence`. Returns undefined values when the
- * data is insufficient (no buy history → likely transferred-in PT).
- *
- * chi is read at display time; tiny post-maturity drift is accepted as a
- * tradeoff for simplicity.
+ * Wagmi-wiring wrapper around `computeMaturedEarnings`. Pulls trade history,
+ * the on-chain redeem preview, and (for sUSDS markets) the chi conversion
+ * rate, then threads them into the pure function. All earnings logic — the
+ * reconciliation gate, APY policy, currency selection — lives there. See
+ * computeMaturedEarnings.ts for the design rationale.
  */
 export function usePendleMaturedPositionEarnings(
   market: PendleMarketConfig,

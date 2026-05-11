@@ -1,3 +1,30 @@
+// PRD: ralph-workflow/tarmac/prds/pendle-matured-earnings-accuracy/prd.md
+//
+// Pure earnings math for a matured Pendle PT position. Lives outside the
+// hook so the branches are testable without a wagmi harness; the hook is
+// the thin wiring layer.
+//
+// Key decisions:
+//   1. Reconciliation gate (1% tolerance, see RECONCILIATION_TOLERANCE):
+//      Pendle's API only sees PT that came through its router. To guard
+//      against inflated earnings for users with transferred-in, gifted, or
+//      secondary-market PT — or pagination overflow past the 100-trade
+//      cap — we sum `notional.pt` across BUY_PT/SELL_PT and require it to
+//      match the on-chain PT balance within tolerance, else return empty.
+//   2. PT decimals = 18 assumption: PT tokens are 18-decimal across
+//      Pendle's SY/PT/YT architecture. The caller passes ptBalance as a
+//      float (`Number(bigint) / 1e18`); same constant the redeem-preview
+//      hook uses for pyIndex math. A future non-18-decimal PT market
+//      would break the reconciliation arithmetic AND the preview math
+//      together — handle at PENDLE_MARKETS level when that case appears.
+//   3. APY hidden when sells exist: `daysHeld` derives from the earliest
+//      buy, which is only a faithful capital-deployment window for pure
+//      buy-and-hold. Any SELL_PT in history biases the rate, so we drop
+//      it. Absolute earnings (a sum) remain correct under any pattern.
+//      FIFO per-lot age accounting is out of scope per PRD.
+//   4. Hide-on-mismatch is safe-correct: a wrong earnings number is
+//      worse than no earnings number. The card's `earnings !== undefined`
+//      guard skips the line cleanly when this function returns empty.
 import { PendleTradeAction } from './constants';
 import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
 
@@ -53,20 +80,9 @@ const EMPTY: ComputeMaturedEarningsResult = {
 const RECONCILIATION_TOLERANCE = 0.01;
 
 /**
- * Pure earnings math for a matured PT position. Returns empty values when data
- * is insufficient OR when Pendle's API view of trade history can't be reconciled
- * with the user's actual on-chain PT balance.
- *
- * The reconciliation gate guards against inflated earnings for users whose PT
- * didn't all come through Pendle's router (transferred from another wallet,
- * bought on a secondary market like Uniswap, partially gifted away) — and
- * incidentally handles >100-trade pagination overflow for free, since missing
- * buys produce a netPT-vs-balance mismatch the same way a transfer would.
- * Hide-on-mismatch is the conservative-correct outcome: a wrong earnings
- * number is worse than no earnings number.
- *
- * Lives outside the hook so the branches can be tested without a wagmi
- * harness; the hook is the thin wagmi-wiring layer.
+ * Returns `{ earnings, apy, currency }` for a matured PT position, or empty
+ * values when data is insufficient or the reconciliation gate fails. See the
+ * top-of-file block for the design rationale.
  */
 export function computeMaturedEarnings({
   history,
