@@ -17,6 +17,15 @@ export type ComputeMaturedEarningsInput = {
    * symbol rather than mislabeling values as USDS.
    */
   effectiveTier: 'pegged' | 'sUSDS' | undefined;
+  /**
+   * User's on-chain PT balance in PT units (e.g. 1000, not 1000n * 10n**18n).
+   * Caller converts from bigint via `Number(ptBalance ?? 0n) / 1e18`. The 18-decimal
+   * divisor reflects the universal Pendle convention for PT tokens — same constant
+   * (`ONE = 1e18`) the redeem-preview hook uses for `pyIndex` math. A future market
+   * deploying with non-18-decimal PT would break the reconciliation arithmetic AND
+   * the preview math together; revisit when that case appears in PENDLE_MARKETS.
+   */
+  ptBalanceFloat: number;
 };
 
 export type ComputeMaturedEarningsResult = {
@@ -35,9 +44,26 @@ const EMPTY: ComputeMaturedEarningsResult = {
 };
 
 /**
+ * 1% drift between Pendle's reported netPT and the user's on-chain balance.
+ * Initial value tuned against rounding/dust loss; revisit after first prod
+ * usage data shows where real divergence sits. Tighter risks false hides
+ * for legitimate users; looser lets adversarial small-amount transfers slip
+ * through the cost-basis story.
+ */
+const RECONCILIATION_TOLERANCE = 0.01;
+
+/**
  * Pure earnings math for a matured PT position. Returns empty values when data
- * is insufficient (no buys → likely transferred-in PT; missing preview or chi
- * → still loading or non-applicable market tier).
+ * is insufficient OR when Pendle's API view of trade history can't be reconciled
+ * with the user's actual on-chain PT balance.
+ *
+ * The reconciliation gate guards against inflated earnings for users whose PT
+ * didn't all come through Pendle's router (transferred from another wallet,
+ * bought on a secondary market like Uniswap, partially gifted away) — and
+ * incidentally handles >100-trade pagination overflow for free, since missing
+ * buys produce a netPT-vs-balance mismatch the same way a transfer would.
+ * Hide-on-mismatch is the conservative-correct outcome: a wrong earnings
+ * number is worse than no earnings number.
  *
  * Lives outside the hook so the branches can be tested without a wagmi
  * harness; the hook is the thin wagmi-wiring layer.
@@ -47,7 +73,8 @@ export function computeMaturedEarnings({
   previewAmount,
   chi,
   market,
-  effectiveTier
+  effectiveTier,
+  ptBalanceFloat
 }: ComputeMaturedEarningsInput): ComputeMaturedEarningsResult {
   // No honest math without a USDS-equivalence rule (tx.value is USD, but a
   // non-stable underlying receive amount isn't) — skip earnings entirely.
@@ -56,7 +83,18 @@ export function computeMaturedEarnings({
 
   const buys = history.filter(t => t.action === PendleTradeAction.BUY_PT);
   const sells = history.filter(t => t.action === PendleTradeAction.SELL_PT);
-  if (buys.length === 0) return EMPTY;
+
+  // Reconciliation gate: sum notional.pt across Pendle's view of buys/sells
+  // and compare to what the user actually holds on-chain. A trade missing the
+  // notional.pt field (older API versions, malformed entries) contributes 0
+  // to the sum — the safe-fallback failure mode, since underestimating PT-in
+  // means the gate hides the line. Same outcome we want when the API is
+  // genuinely incomplete.
+  const ptBought = buys.reduce((s, t) => s + (t.notional?.pt ?? 0), 0);
+  const ptSold = sells.reduce((s, t) => s + (t.notional?.pt ?? 0), 0);
+  const netPtFromPendle = ptBought - ptSold;
+  if (ptBalanceFloat <= 0) return EMPTY;
+  if (Math.abs(1 - netPtFromPendle / ptBalanceFloat) >= RECONCILIATION_TOLERANCE) return EMPTY;
 
   const totalSpentUsd = buys.reduce((s, t) => s + t.value, 0);
   const totalRecoveredUsd = sells.reduce((s, t) => s + t.value, 0);

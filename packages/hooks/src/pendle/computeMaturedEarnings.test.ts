@@ -45,7 +45,13 @@ function nextId() {
 
 function makeTrade(
   action: PendleTradeAction,
-  opts: { secondsBeforeExpiry: number; value: number; pt?: number; market?: PendleMarketConfig }
+  opts: {
+    secondsBeforeExpiry: number;
+    value: number;
+    pt?: number;
+    market?: PendleMarketConfig;
+    notional?: PendleTransactionRaw['notional'];
+  }
 ): PendleTransactionRaw {
   const market = opts.market ?? PEGGED_MARKET;
   return {
@@ -59,7 +65,7 @@ function makeTrade(
     action,
     txOrigin: '0x0',
     impliedApy: 0,
-    notional: { pt: opts.pt ?? opts.value }
+    notional: 'notional' in opts ? opts.notional : { pt: opts.pt ?? opts.value }
   };
 }
 
@@ -75,25 +81,31 @@ const EMPTY = { earnings: undefined, apy: undefined, currency: undefined };
 
 describe('computeMaturedEarnings', () => {
   it('returns empty when history is an empty array', () => {
+    // No trades → netPT = 0 vs ptBalanceFloat = 1000 fails the reconciliation
+    // gate. (Pre-slice-02 this hit the explicit "no buys" early return; the
+    // observable behavior is unchanged.)
     expect(
       computeMaturedEarnings({
         history: [],
         previewAmount: toUnderlying(1000, PEGGED_MARKET),
         chi: undefined,
         market: PEGGED_MARKET,
-        effectiveTier: 'pegged'
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 1000
       })
     ).toEqual(EMPTY);
   });
 
   it('returns empty when history has no BUY_PT actions (transferred-in PT)', () => {
+    // sells without buys → netPT = -500 vs ptBalanceFloat = 1000 → fails gate.
     expect(
       computeMaturedEarnings({
         history: [sell({ secondsBeforeExpiry: 90 * DAY, value: 500 })],
         previewAmount: toUnderlying(1000, PEGGED_MARKET),
         chi: undefined,
         market: PEGGED_MARKET,
-        effectiveTier: 'pegged'
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 1000
       })
     ).toEqual(EMPTY);
   });
@@ -105,7 +117,8 @@ describe('computeMaturedEarnings', () => {
         previewAmount: undefined,
         chi: undefined,
         market: PEGGED_MARKET,
-        effectiveTier: 'pegged'
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 1000
       })
     ).toEqual(EMPTY);
   });
@@ -117,7 +130,8 @@ describe('computeMaturedEarnings', () => {
         previewAmount: toUnderlying(1010, TIER3_MARKET),
         chi: undefined,
         market: TIER3_MARKET,
-        effectiveTier: undefined
+        effectiveTier: undefined,
+        ptBalanceFloat: 1000
       })
     ).toEqual(EMPTY);
   });
@@ -128,7 +142,8 @@ describe('computeMaturedEarnings', () => {
       previewAmount: toUnderlying(1010, PEGGED_MARKET),
       chi: undefined,
       market: PEGGED_MARKET,
-      effectiveTier: 'pegged'
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
     });
     expect(result.currency).toBe('USDS');
     expect(result.earnings).toBeGreaterThan(0);
@@ -143,7 +158,8 @@ describe('computeMaturedEarnings', () => {
       previewAmount: toUnderlying(1000, SUSDS_MARKET),
       chi: CHI_1_05,
       market: SUSDS_MARKET,
-      effectiveTier: 'sUSDS'
+      effectiveTier: 'sUSDS',
+      ptBalanceFloat: 1000
     });
     expect(result.currency).toBe('USDS');
     expect(result.earnings).toBeCloseTo(50, 4); // 1050 − 1000 cost
@@ -155,7 +171,8 @@ describe('computeMaturedEarnings', () => {
       previewAmount: toUnderlying(1000, SUSDS_MARKET),
       chi: CHI_ONE_TO_ONE,
       market: SUSDS_MARKET,
-      effectiveTier: 'sUSDS'
+      effectiveTier: 'sUSDS',
+      ptBalanceFloat: 1000
     });
     expect(result.earnings).toBeCloseTo(0, 4); // 1000 × 1.0 − 1000
   });
@@ -167,7 +184,8 @@ describe('computeMaturedEarnings', () => {
         previewAmount: toUnderlying(1000, SUSDS_MARKET),
         chi: undefined,
         market: SUSDS_MARKET,
-        effectiveTier: 'sUSDS'
+        effectiveTier: 'sUSDS',
+        ptBalanceFloat: 1000
       })
     ).toEqual(EMPTY);
   });
@@ -180,7 +198,8 @@ describe('computeMaturedEarnings', () => {
       previewAmount: toUnderlying(1010, TIER3_MARKET),
       chi: undefined,
       market: TIER3_MARKET,
-      effectiveTier: 'pegged'
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
     });
     expect(result.currency).toBe('sENA');
     expect(result.earnings).toBeCloseTo(10, 4);
@@ -194,7 +213,8 @@ describe('computeMaturedEarnings', () => {
       previewAmount: toUnderlying(1040, PEGGED_MARKET),
       chi: undefined,
       market: PEGGED_MARKET,
-      effectiveTier: 'pegged'
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
     });
     expect(result.apy).toBeDefined();
     expect(result.apy!).toBeGreaterThan(0.05);
@@ -202,18 +222,146 @@ describe('computeMaturedEarnings', () => {
     expect(result.apy!).toBeCloseTo(0.0828, 3);
   });
 
-  it('returns empty when net cost is zero (sells fully recovered the buys)', () => {
-    // Edge case from existing code: netCostUsd <= 0 → empty
+  it('returns empty when net cost is zero or negative (price spike: sells recovered more than buys spent)', () => {
+    // User bought 1000 PT for $1000, sold 500 PT for $1500 (price spike), still
+    // holds 500 PT. Reconciliation passes (1000 − 500 = 500 ≈ ptBalanceFloat).
+    // netCostUsd = 1000 − 1500 = -500 → empty via the netCost<=0 guard.
     expect(
       computeMaturedEarnings({
         history: [
-          buy({ secondsBeforeExpiry: 90 * DAY, value: 1000 }),
-          sell({ secondsBeforeExpiry: 60 * DAY, value: 1000 })
+          buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+          sell({ secondsBeforeExpiry: 60 * DAY, value: 1500, pt: 500 })
         ],
-        previewAmount: toUnderlying(50, PEGGED_MARKET),
+        previewAmount: toUnderlying(550, PEGGED_MARKET),
         chi: undefined,
         market: PEGGED_MARKET,
-        effectiveTier: 'pegged'
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 500
+      })
+    ).toEqual(EMPTY);
+  });
+});
+
+describe('computeMaturedEarnings — reconciliation gate (slice 02)', () => {
+  it('reconciles when notional.pt sums match ptBalanceFloat exactly (1 buy, 0 sells)', () => {
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.currency).toBe('USDS');
+  });
+
+  it('hides earnings on partial transfer-in (Pendle accounts for 50%, the rest came from elsewhere)', () => {
+    // netPtFromPendle = 50, ptBalanceFloat = 100 → 50% drift, far above 1% tolerance.
+    expect(
+      computeMaturedEarnings({
+        history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 50, pt: 50 })],
+        previewAmount: toUnderlying(105, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 100
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('hides earnings when user gifted PT away (netPT > balance)', () => {
+    // Bought 100 PT, sent 20 PT to a friend off-chain — Pendle still sees 100,
+    // chain shows 80. netPT/balance = 100/80 = 1.25 → 25% drift → empty.
+    expect(
+      computeMaturedEarnings({
+        history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 100, pt: 100 })],
+        previewAmount: toUnderlying(82, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 80
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('hides earnings when notional.pt is missing on some BUY trades (safe fallback)', () => {
+    // Two buys totaling 1000 PT, but the API omitted notional on one of them.
+    // The omitted entry contributes 0 to the sum → netPtFromPendle = 500 vs
+    // ptBalanceFloat = 1000 → 50% drift → empty. Asserts the conservative
+    // failure mode when API data is malformed.
+    expect(
+      computeMaturedEarnings({
+        history: [
+          buy({ secondsBeforeExpiry: 90 * DAY, value: 500, pt: 500 }),
+          buy({ secondsBeforeExpiry: 60 * DAY, value: 500, notional: undefined })
+        ],
+        previewAmount: toUnderlying(1010, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 1000
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('hides earnings on pagination overflow (>100 trades; older buys missing from API window)', () => {
+    // Simulate the API's 100-trade cap: the user really has 100 buys totaling
+    // 10000 PT, but the API only returned the most recent 50 totaling 5000 PT.
+    // To the pure function this looks identical to a partial transfer-in.
+    const truncatedHistory = Array.from({ length: 50 }, (_, i) =>
+      buy({ secondsBeforeExpiry: (90 - i) * DAY, value: 100, pt: 100 })
+    );
+    expect(
+      computeMaturedEarnings({
+        history: truncatedHistory,
+        previewAmount: toUnderlying(10100, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 10000
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('reconciles within tolerance: 0.5% drift still shows earnings', () => {
+    // netPtFromPendle = 100, ptBalanceFloat = 100.5 → |1 - 100/100.5| ≈ 0.005 < 0.01
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 100, pt: 100 })],
+      previewAmount: toUnderlying(101, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 100.5
+    });
+    expect(result.earnings).toBeCloseTo(1, 4);
+  });
+
+  it('rejects at the tolerance boundary: 1.1% drift hides earnings', () => {
+    // netPtFromPendle = 100, ptBalanceFloat = 101.1 → |1 - 100/101.1| ≈ 0.0109 >= 0.01
+    expect(
+      computeMaturedEarnings({
+        history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 100, pt: 100 })],
+        previewAmount: toUnderlying(102, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 101.1
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('returns empty when ptBalanceFloat is 0 (user holds nothing on-chain)', () => {
+    // Even with valid Pendle history, a zero balance means there's nothing
+    // matured to compute earnings against — early-return before the division.
+    expect(
+      computeMaturedEarnings({
+        history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+        previewAmount: toUnderlying(1010, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 0
       })
     ).toEqual(EMPTY);
   });

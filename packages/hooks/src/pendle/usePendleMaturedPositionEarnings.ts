@@ -90,9 +90,15 @@ export function usePendleMaturedPositionEarnings(
     query: { enabled: market.usdsEquivalence === 'sUSDS' }
   });
 
+  // PT tokens are 18-decimal across all of Pendle's SY/PT/YT architecture
+  // (same `ONE = 1e18` constant the redeem-preview path uses for pyIndex).
+  // If a future market deploys with non-18-decimal PT, this divisor and the
+  // preview math both break together — handle in PENDLE_MARKETS at that time.
+  const ptBalanceFloat = Number(ptBalance ?? 0n) / 1e18;
+
   const result = useMemo<Omit<PendleMaturedPositionEarnings, 'isLoading'>>(
-    () => computeMaturedEarnings({ history, previewAmount, chi, market, effectiveTier }),
-    [history, previewAmount, chi, market, effectiveTier]
+    () => computeMaturedEarnings({ history, previewAmount, chi, market, effectiveTier, ptBalanceFloat }),
+    [history, previewAmount, chi, market, effectiveTier, ptBalanceFloat]
   );
 
   return { ...result, isLoading: historyLoading || previewLoading };
