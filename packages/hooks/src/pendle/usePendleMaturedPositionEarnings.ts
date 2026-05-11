@@ -5,6 +5,7 @@ import { isTestnetId } from '@jetstreamgg/sky-utils';
 import { usePendleMarketHistory } from './usePendleMarketHistory';
 import { usePendleRedeemPreview } from './usePendleRedeemPreview';
 import { PendleTradeAction } from './constants';
+import { computeMaturedEarnings } from './computeMaturedEarnings';
 import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
 
 const SUSDS_PREVIEW_REDEEM_ABI = [
@@ -89,47 +90,10 @@ export function usePendleMaturedPositionEarnings(
     query: { enabled: market.usdsEquivalence === 'sUSDS' }
   });
 
-  const result = useMemo<Omit<PendleMaturedPositionEarnings, 'isLoading'>>(() => {
-    const empty = { earnings: undefined, apy: undefined, currency: undefined };
-    // No honest math without a USDS-equivalence rule (tx.value is USD, but
-    // a non-stable underlying receive amount isn't) — skip earnings entirely.
-    if (!effectiveTier) return empty;
-    if (!history || previewAmount === undefined) return empty;
-
-    const buys = history.filter(t => t.action === PendleTradeAction.BUY_PT);
-    const sells = history.filter(t => t.action === PendleTradeAction.SELL_PT);
-    if (buys.length === 0) return empty;
-
-    const totalSpentUsd = buys.reduce((s, t) => s + t.value, 0);
-    const totalRecoveredUsd = sells.reduce((s, t) => s + t.value, 0);
-    const netCostUsd = totalSpentUsd - totalRecoveredUsd;
-    if (netCostUsd <= 0) return empty;
-
-    const receiveTokens = Number(previewAmount as bigint) / 10 ** market.underlyingDecimals;
-
-    let finalValue: number;
-    if (effectiveTier === 'pegged') {
-      finalValue = receiveTokens;
-    } else {
-      if (chi === undefined) return empty;
-      const usdsPerSusds = Number(chi as bigint) / 1e18;
-      finalValue = receiveTokens * usdsPerSusds;
-    }
-    // When the market is genuinely USDS-equivalent (tier 1 or 2), label as
-    // USDS. When the line is rendering only because the Tenderly TEMP coerced
-    // a tier-3 market into 'pegged', label with the underlying symbol so the
-    // unit shown matches the receive token.
-    const currency = market.usdsEquivalence ? 'USDS' : market.underlyingSymbol;
-
-    const earnings = finalValue - netCostUsd;
-
-    const earliestBuyTimestamp = Math.min(...buys.map(t => Number(new Date(t.timestamp)) / 1000));
-    const daysHeld = (market.expiry - earliestBuyTimestamp) / 86_400;
-    const apy =
-      daysHeld > 0 && netCostUsd > 0 ? Math.pow(finalValue / netCostUsd, 365 / daysHeld) - 1 : undefined;
-
-    return { earnings, apy, currency };
-  }, [history, previewAmount, chi, market, effectiveTier]);
+  const result = useMemo<Omit<PendleMaturedPositionEarnings, 'isLoading'>>(
+    () => computeMaturedEarnings({ history, previewAmount, chi, market, effectiveTier }),
+    [history, previewAmount, chi, market, effectiveTier]
+  );
 
   return { ...result, isLoading: historyLoading || previewLoading };
 }
