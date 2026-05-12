@@ -289,4 +289,98 @@ describe('pendleAnalyticsData', () => {
       expect(data.isBatchTx).toBe(false);
     });
   });
+
+  describe('BUY shape', () => {
+    it('emits the supply token as from-side and PT as to-side (USDG underlying, 6dp)', () => {
+      const data = pendleAnalyticsData({
+        market: MARKET,
+        side: 'buy',
+        originToken: USDG_TOKEN,
+        targetToken: PT_TOKEN,
+        amountFromBigint: 1_000_000n, // 1 USDG (6dp)
+        amountToBigint: 1_500_000n, // 1.5 PT-USDG (6dp)
+        fromDecimals: 6,
+        toDecimals: 6,
+        slippage: 0.002,
+        quote: QUOTE,
+        isBatchTx: false
+      });
+
+      expect(data.tokenSymbolFrom).toBe('USDG');
+      expect(data.tokenAddressFrom).toBe(USDG_TOKEN.address[mainnet.id]);
+      expect(data.amountFrom).toBe(1);
+      expect(data.tokenSymbolTo).toBe('PT-USDG');
+      expect(data.tokenAddressTo).toBe(PT_TOKEN.address[mainnet.id]);
+      expect(data.amountTo).toBe(1.5);
+    });
+
+    it('threads non-underlying supply token decimals correctly (USDS, 18dp)', () => {
+      const data = pendleAnalyticsData({
+        market: MARKET,
+        side: 'buy',
+        originToken: USDS_TOKEN, // 18dp underlying
+        targetToken: PT_TOKEN,
+        amountFromBigint: 2_500_000_000_000_000_000n, // 2.5 USDS (18dp)
+        amountToBigint: 2_500_000n, // 2.5 PT (6dp)
+        fromDecimals: 18,
+        toDecimals: 6,
+        slippage: 0.002,
+        quote: QUOTE,
+        isBatchTx: false
+      });
+
+      expect(data.tokenSymbolFrom).toBe('USDS');
+      expect(data.amountFrom).toBe(2.5);
+      expect(data.tokenSymbolTo).toBe('PT-USDG');
+      expect(data.amountTo).toBe(2.5);
+    });
+  });
+
+  describe('SELL shape', () => {
+    it('emits PT as from-side and the withdraw token as to-side (swap of BUY)', () => {
+      const data = pendleAnalyticsData({
+        market: MARKET,
+        side: 'sell',
+        originToken: PT_TOKEN,
+        targetToken: USDG_TOKEN,
+        amountFromBigint: 1_500_000n, // 1.5 PT (6dp)
+        amountToBigint: 1_000_000n, // 1 USDG (6dp)
+        fromDecimals: 6,
+        toDecimals: 6,
+        slippage: 0.002,
+        quote: QUOTE,
+        isBatchTx: false
+      });
+
+      expect(data.tokenSymbolFrom).toBe('PT-USDG');
+      expect(data.tokenAddressFrom).toBe(PT_TOKEN.address[mainnet.id]);
+      expect(data.amountFrom).toBe(1.5);
+      expect(data.tokenSymbolTo).toBe('USDG');
+      expect(data.tokenAddressTo).toBe(USDG_TOKEN.address[mainnet.id]);
+      expect(data.amountTo).toBe(1);
+    });
+  });
+
+  describe('BUY batch toggle', () => {
+    it('structurally matches non-batch BUY except for isBatchTx', () => {
+      const common = {
+        market: MARKET,
+        side: 'buy' as const,
+        originToken: USDG_TOKEN,
+        targetToken: PT_TOKEN,
+        amountFromBigint: 1_000_000n,
+        amountToBigint: 1_500_000n,
+        fromDecimals: 6,
+        toDecimals: 6,
+        slippage: 0.002,
+        quote: QUOTE
+      };
+      const nonBatch = pendleAnalyticsData({ ...common, isBatchTx: false });
+      const batch = pendleAnalyticsData({ ...common, isBatchTx: true });
+
+      expect(nonBatch.isBatchTx).toBe(false);
+      expect(batch.isBatchTx).toBe(true);
+      expect({ ...nonBatch, isBatchTx: undefined }).toEqual({ ...batch, isBatchTx: undefined });
+    });
+  });
 });
