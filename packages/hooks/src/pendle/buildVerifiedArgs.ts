@@ -1,4 +1,4 @@
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData, isAddressEqual } from 'viem';
 import { ZERO_ADDRESS } from '../constants';
 import {
   PENDLE_ALLOWED_SELECTORS,
@@ -7,13 +7,24 @@ import {
   PENDLE_ROUTER_V4_ABI,
   PendleConvertSide
 } from './constants';
-import type { PendleConvertQuote } from './pendle';
+import type { PendleAggregatorRoute, PendleConvertQuote } from './pendle';
 
 // ---------------------------------------------------------------------------
 // Verified-args output (typed for the ABI)
 // ---------------------------------------------------------------------------
 
-type VerifiedSwapData = typeof PENDLE_EMPTY_SWAP_DATA;
+/**
+ * The on-chain swapData struct shape. When no aggregator is used this is
+ * byte-equivalent to PENDLE_EMPTY_SWAP_DATA; when an aggregator hop is taken
+ * (input/output token differs from the underlying), the fields come from the
+ * API after passing the pinned-pendleSwap check.
+ */
+type VerifiedSwapData = {
+  swapType: number;
+  extRouter: `0x${string}`;
+  extCalldata: `0x${string}`;
+  needScale: boolean;
+};
 type VerifiedLimit = {
   limitRouter: `0x${string}`;
   epsSkipMarket: bigint;
@@ -97,11 +108,25 @@ export type KnownCallValues = {
   side: PendleConvertSide;
   receiver: `0x${string}`;
   market: `0x${string}`;
-  /** For BUY: underlying token. For WITHDRAW: PT token. */
+  /** For BUY: user-selected input token. For WITHDRAW: PT token. */
   inputToken: `0x${string}`;
-  /** For BUY: PT token. For WITHDRAW: underlying token. */
+  /** For BUY: PT token. For WITHDRAW: user-selected output token. */
   outputToken: `0x${string}`;
+  /**
+   * The market's underlying token (the SY's accepted token). Equals
+   * inputToken on BUY / outputToken on WITHDRAW when the user picked the
+   * underlying directly; differs when the user picked USDS / USDC and the
+   * route therefore goes through an aggregator hop.
+   */
+  underlyingToken: `0x${string}`;
   amountIn: bigint;
+  /**
+   * The pinned PendleSwap forwarder address for the active chain. The caller
+   * resolves this from `PENDLE_PINNED_PENDLESWAP_ADDRESSES[chainId]`. When an
+   * aggregator route is taken, the API's `pendleSwap` MUST equal this — any
+   * other address is rejected.
+   */
+  pinnedPendleSwap: `0x${string}`;
 };
 
 // ---------------------------------------------------------------------------
@@ -110,6 +135,73 @@ export type KnownCallValues = {
 
 const verifiedEmptySwapData: VerifiedSwapData = PENDLE_EMPTY_SWAP_DATA;
 const verifiedEmptyLimit: VerifiedLimit = PENDLE_EMPTY_LIMIT;
+
+/**
+ * Resolve the (pendleSwap, swapData, tokenMintSyOrRedeem) triplet for a Buy
+ * or Withdraw call. There are exactly two valid cases:
+ *
+ *   1. **No aggregator** — the user-picked side equals the underlying. The
+ *      SY accepts the input/output directly; pendleSwap is forced to 0x0
+ *      and swapData to its empty form. tokenMintSy / tokenRedeemSy = the
+ *      user-picked token (which equals the underlying).
+ *
+ *   2. **Aggregator** — the user picked USDS / USDC (or any non-underlying).
+ *      The route must therefore pass through Pendle's PendleSwap forwarder,
+ *      which proxies to the external aggregator. We assert the API's
+ *      `pendleSwap` equals our pinned address; otherwise we refuse to sign.
+ *      tokenMintSy / tokenRedeemSy must be the underlying — that's what the
+ *      SY actually accepts after the aggregator hop produces it.
+ *
+ * @param userSideToken inputToken on BUY, outputToken on WITHDRAW
+ */
+function resolveAggregatorFields(
+  userSideToken: `0x${string}`,
+  underlyingToken: `0x${string}`,
+  pinnedPendleSwap: `0x${string}`,
+  aggregatorRoute: PendleAggregatorRoute | undefined,
+  side: PendleConvertSide
+): {
+  pendleSwap: `0x${string}`;
+  swapData: VerifiedSwapData;
+  tokenMintSyOrRedeem: `0x${string}`;
+} {
+  const usesAggregator = !isAddressEqual(userSideToken, underlyingToken);
+
+  // tokenMintSy / tokenRedeemSy is always the underlying — that's what the SY
+  // contract accepts. In the no-aggregator branch userSideToken === underlying
+  // by precondition, so the two are equivalent on the wire, but pinning to
+  // underlyingToken makes the invariant explicit and self-documenting.
+  if (!usesAggregator) {
+    return {
+      pendleSwap: ZERO_ADDRESS,
+      swapData: verifiedEmptySwapData,
+      tokenMintSyOrRedeem: underlyingToken
+    };
+  }
+
+  // Aggregator path — require the API to have returned a route.
+  if (!aggregatorRoute) {
+    throw new Error(
+      `Pendle: refusing to sign — aggregator required (${side} with non-underlying token) but the quote has no aggregatorRoute`
+    );
+  }
+  // The single trust anchor: pendleSwap MUST be the pinned PendleSwap
+  // forwarder. Anything else means the API is steering us at an unaudited
+  // contract — refuse to sign.
+  if (!isAddressEqual(aggregatorRoute.pendleSwap, pinnedPendleSwap)) {
+    throw new Error(
+      `Pendle: refusing to sign — pendleSwap "${aggregatorRoute.pendleSwap}" is not the pinned forwarder "${pinnedPendleSwap}"`
+    );
+  }
+  return {
+    pendleSwap: aggregatorRoute.pendleSwap,
+    swapData: aggregatorRoute.swapData,
+    // After the aggregator hop, what reaches the SY is the underlying. The
+    // tokenMintSy / tokenRedeemSy field describes what the SY interacts with,
+    // not what the user supplied.
+    tokenMintSyOrRedeem: underlyingToken
+  };
+}
 
 /**
  * Extract the `guessPtOut` solver hint from the API's parsed contract params.
@@ -161,14 +253,24 @@ function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
  *   1. Per-flow selector allowlist (`quote.method` ∈ allowed selectors)
  *   2. Override every user-controllable field with values WE know
  *      (receiver, market, amounts, minOut)
- *   3. Force every dangerous field to its empty form
- *      (pendleSwap, swapData, limit) — see Pendle's StructGen.sol
- *
- * The resulting struct is byte-equivalent to what
- * `createTokenInputStruct(token, amount)` + `emptyLimit` would produce.
+ *   3. Resolve (pendleSwap, swapData, tokenMintSy/tokenRedeemSy) based on
+ *      whether the user-picked token equals the underlying:
+ *        - Equal → no-aggregator: empty pendleSwap/swapData, SY field = user
+ *          token (byte-equivalent to `createTokenInputStruct + emptyLimit`).
+ *        - Differs → aggregator: pendleSwap from the API after a strict
+ *          equality check against PENDLE_PINNED_PENDLESWAP_ADDRESSES;
+ *          swapData forwarded; SY field = underlying.
+ *   4. `limit` is always forced to its empty form — limit-orders are out of
+ *      scope.
  *
  * The pinned-router guard is enforced upstream by usePendleConvert which
  * always submits to PENDLE_ROUTER_V4_ADDRESS — never to `quote.tx.to`.
+ *
+ * Trust anchors of the aggregator branch:
+ *   (a) pendleSwap is pinned (only Pendle's audited forwarder),
+ *   (b) tokenMintSy/tokenRedeemSy is pinned to the underlying,
+ *   (c) apiMinOut bounds the worst-case output denominated in the user-picked
+ *       token, so a malicious aggregator hop can at worst revert the tx.
  */
 export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   // 1. Per-flow allowlist
@@ -200,6 +302,13 @@ export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallVal
 
 function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   const guessPtOut = extractGuessPtOut(quote.apiContractParams);
+  const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
+    known.inputToken, // BUY's user-picked side is the input
+    known.underlyingToken,
+    known.pinnedPendleSwap,
+    quote.aggregatorRoute,
+    PendleConvertSide.BUY
+  );
 
   const args: VerifiedBuyArgs = [
     known.receiver,
@@ -209,9 +318,9 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
     {
       tokenIn: known.inputToken,
       netTokenIn: known.amountIn,
-      tokenMintSy: known.inputToken, // the no-aggregator invariant
-      pendleSwap: ZERO_ADDRESS,
-      swapData: verifiedEmptySwapData
+      tokenMintSy: tokenMintSyOrRedeem,
+      pendleSwap,
+      swapData
     },
     verifiedEmptyLimit
   ] as const;
@@ -224,6 +333,14 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
 // ---------------------------------------------------------------------------
 
 function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
+  const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
+    known.outputToken, // WITHDRAW's user-picked side is the output
+    known.underlyingToken,
+    known.pinnedPendleSwap,
+    quote.aggregatorRoute,
+    PendleConvertSide.WITHDRAW
+  );
+
   const args: VerifiedWithdrawArgs = [
     known.receiver,
     known.market,
@@ -231,9 +348,9 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
     {
       tokenOut: known.outputToken,
       minTokenOut: quote.apiMinOut,
-      tokenRedeemSy: known.outputToken, // the no-aggregator invariant
-      pendleSwap: ZERO_ADDRESS,
-      swapData: verifiedEmptySwapData
+      tokenRedeemSy: tokenMintSyOrRedeem,
+      pendleSwap,
+      swapData
     },
     verifiedEmptyLimit
   ] as const;
