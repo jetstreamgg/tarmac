@@ -49,7 +49,9 @@ function extractApiMinOut(method: string, params: unknown[]): bigint {
  * Position depends on the method:
  *   - swapExactTokenForPt: input struct at params[4]
  *   - swapExactPtForToken: output struct at params[3]
- *   - exitPostExpToToken: not used (post-maturity exit stays on the no-aggregator path)
+ *   - exitPostExpToToken: output struct at params[4] (matured-redeem path may
+ *     route through the aggregator when the user picks USDS/USDC instead of
+ *     the underlying)
  *
  * Throws on a malformed shape so a tampered quote becomes a query error
  * instead of silently producing a bad signing payload.
@@ -72,6 +74,8 @@ function extractAggregatorRoute(method: string, params: unknown[]): PendleAggreg
     slot = params[4] as RawSlot | undefined;
   } else if (method === 'swapExactPtForToken') {
     slot = params[3] as RawSlot | undefined;
+  } else if (method === 'exitPostExpToToken') {
+    slot = params[4] as RawSlot | undefined;
   } else {
     return undefined;
   }
@@ -122,9 +126,9 @@ function extractAggregatorRoute(method: string, params: unknown[]): PendleAggreg
 type UseQuotePendleConvertParams = {
   side: PendleConvertSide;
   marketAddress?: `0x${string}`;
-  /** The token going IN to /convert (user-selected for Buy, PT for Withdraw) */
+  /** The token going IN to /convert (user-selected for Buy, PT for Withdraw / matured-exit) */
   inputToken?: `0x${string}`;
-  /** The token coming OUT of /convert (PT for Buy, user-selected for Withdraw) */
+  /** The token coming OUT of /convert (PT for Buy, user-selected for Withdraw / matured-exit) */
   outputToken?: `0x${string}`;
   /**
    * The market's underlying token (the one the SY accepts directly). Used to
@@ -139,6 +143,16 @@ type UseQuotePendleConvertParams = {
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
   slippage: number;
   enabled?: boolean;
+  /**
+   * Matured-market exit. When true, the API's `inputs` is sent as a two-entry
+   * array: PT with `amountIn`, plus the YT with `amount: 0`. Pendle's /convert
+   * endpoint requires both entries for `exitPostExpToToken` quotes (the
+   * matured-exit math operates over the PT/YT pair even though only PT moves).
+   * The corresponding YT address is required when this is set.
+   */
+  maturedExit?: boolean;
+  /** YT token address — required when `maturedExit` is true. */
+  ytToken?: `0x${string}`;
 };
 
 /**
@@ -167,7 +181,9 @@ export function useQuotePendleConvert({
   underlyingToken,
   amountIn,
   slippage,
-  enabled: enabledParam = true
+  enabled: enabledParam = true,
+  maturedExit = false,
+  ytToken
 }: UseQuotePendleConvertParams): PendleQuoteHook {
   const { address: connectedAddress } = useConnection();
 
@@ -179,14 +195,14 @@ export function useQuotePendleConvert({
     !!underlyingToken &&
     !!amountIn &&
     amountIn !== 0n &&
-    !!connectedAddress;
+    !!connectedAddress &&
+    (!maturedExit || !!ytToken);
 
   // Aggregator is needed iff the user's non-PT-side token differs from the
   // SY's accepted (underlying) token. PT itself is never the underlying, so
   // we look at the input on Buy and the output on Withdraw.
   const nonPtToken = side === PendleConvertSide.BUY ? inputToken : outputToken;
-  const enableAggregator =
-    !!nonPtToken && !!underlyingToken && !isAddressEqual(nonPtToken, underlyingToken);
+  const enableAggregator = !!nonPtToken && !!underlyingToken && !isAddressEqual(nonPtToken, underlyingToken);
 
   const { data, isLoading, error, refetch } = useQuery({
     enabled,
@@ -198,6 +214,8 @@ export function useQuotePendleConvert({
       outputToken,
       underlyingToken,
       enableAggregator,
+      maturedExit,
+      ytToken,
       // React Query hashes the queryKey via JSON.stringify, which throws on
       // BigInt values. Serialize amountIn to string so the cache key is stable
       // and unique without crashing the renderer.
@@ -206,9 +224,15 @@ export function useQuotePendleConvert({
       slippage
     ],
     queryFn: async (): Promise<PendleConvertQuote> => {
-      const inputs: Array<{ token: `0x${string}`; amount: string }> = [
-        { token: inputToken!, amount: amountIn!.toString() }
-      ];
+      // Matured-exit: Pendle's /convert requires the PT/YT pair as inputs even
+      // though only PT moves. YT goes in with `amount: 0` — without this entry
+      // the API rejects the request for `exitPostExpToToken` quotes.
+      const inputs: Array<{ token: `0x${string}`; amount: string }> = maturedExit
+        ? [
+            { token: inputToken!, amount: amountIn!.toString() },
+            { token: ytToken!, amount: '0' }
+          ]
+        : [{ token: inputToken!, amount: amountIn!.toString() }];
       const response = await fetchPendleConvert(mainnet.id, {
         receiver: connectedAddress!,
         slippage,

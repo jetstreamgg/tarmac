@@ -7,8 +7,6 @@ import {
 } from '@jetstreamgg/sky-hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { HStack } from '@/modules/layout/components/HStack';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { Text } from '@/modules/layout/components/Typography';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
@@ -40,18 +38,7 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
   // balance — same number of decimals, just a transient discrepancy.
   const displayedAmount = formattedReceive ?? formattedBalance;
 
-  const tokenTile = (
-    <HStack className="items-center" gap={2}>
-      <TokenIcon className="h-5 w-5" token={{ symbol: market.underlyingSymbol }} showChainIcon={false} />
-      <Text>
-        {displayedAmount} {market.underlyingSymbol}
-      </Text>
-    </HStack>
-  );
-
-  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market, {
-    transactionContent: tokenTile
-  });
+  const { openRedeemModal, isRedeemable, isPrepared } = usePendleRedeemModal(market);
 
   return (
     <Card variant="stats" data-testid="pendle-matured-position-card">

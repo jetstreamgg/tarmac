@@ -39,12 +39,16 @@ export type TransactionModalProps = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /** Optional node rendered between the title and the close button — e.g. a slippage gear. */
+  rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
   onRetry?: () => void;
   onBack?: () => void;
   txStatus: TxStatus;
   externalLink?: string;
   confirmLabel?: string;
+  /** Disables the Confirm button (e.g. while a quote is refetching). */
+  confirmDisabled?: boolean;
   successLabel?: string;
   errorLabel?: string;
   steps?: string[];
@@ -73,12 +77,14 @@ export function TransactionModal({
   title,
   subtitles,
   transactionContent,
+  rightHeaderComponent,
   onConfirm,
   onRetry,
   onBack,
   txStatus,
   externalLink,
   confirmLabel,
+  confirmDisabled,
   successLabel,
   errorLabel,
   steps,
@@ -146,14 +152,17 @@ export function TransactionModal({
       >
         <div className="flex items-center justify-between">
           <DialogTitle className="text-text text-2xl">{title}</DialogTitle>
-          <Button
-            variant="ghost"
-            className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
-            onClick={handleClose}
-            disabled={isTransacting}
-          >
-            <Close className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {rightHeaderComponent}
+            <Button
+              variant="ghost"
+              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
+              onClick={handleClose}
+              disabled={isTransacting}
+            >
+              <Close className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <div
@@ -215,7 +224,12 @@ export function TransactionModal({
                 className="flex flex-col gap-4"
               >
                 {showBatchToggle && <BatchToggle />}
-                <Button variant="primaryAlt" className="w-full" onClick={handleConfirm}>
+                <Button
+                  variant="primaryAlt"
+                  className="w-full"
+                  onClick={handleConfirm}
+                  disabled={confirmDisabled}
+                >
                   {confirmLabel ?? <Trans>Confirm</Trans>}
                 </Button>
               </motion.div>
