@@ -17,7 +17,8 @@ export function ConnectedModalTabs() {
   const { onExternalLinkClicked } = useConfigContext();
   const { isRegionRestricted } = useGeoConfig();
 
-  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, vaultsUrl } = useModuleUrls();
+  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, vaultsUrl, fixedYieldUrl } =
+    useModuleUrls();
 
   return (
     <Tabs defaultValue={ConnectedModalTabsEnum.SUPPLIED_FUNDS} className="flex min-h-0 flex-1 flex-col">
@@ -42,6 +43,7 @@ export function ConnectedModalTabs() {
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={expertOverviewUrl}
           vaultsCardUrl={vaultsUrl}
+          fixedYieldCardUrl={fixedYieldUrl}
           hideRestrictedModules={isRegionRestricted}
           onExternalLinkClicked={onExternalLinkClicked}
         />

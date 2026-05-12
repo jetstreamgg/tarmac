@@ -27,13 +27,21 @@ export const FixedYieldBalanceCard = ({
 
   const { total, totalUsd, markets } = assetsData;
 
-  // Highest implied APY across markets the user actually holds (skip matured ones).
-  const maxRate = markets.reduce((max, m) => {
-    const config = getPendleMarketByAddress(m.marketAddress);
-    if (!config || isMarketMatured(config.expiry)) return max;
-    const rate = marketsApi?.[m.marketAddress]?.impliedApy ?? 0;
-    return rate > max ? rate : max;
-  }, 0);
+  // Highest implied APY across markets the user actually holds (skip matured ones)
+  // plus a count of those active markets so we can switch between "Rate" and
+  // "Rates up to" labelling.
+  const { maxRate, activeMarketsCount } = markets.reduce(
+    (acc, m) => {
+      const config = getPendleMarketByAddress(m.marketAddress);
+      if (!config || isMarketMatured(config.expiry)) return acc;
+      const rate = marketsApi?.[m.marketAddress]?.impliedApy ?? 0;
+      return {
+        maxRate: rate > acc.maxRate ? rate : acc.maxRate,
+        activeMarketsCount: acc.activeMarketsCount + 1
+      };
+    },
+    { maxRate: 0, activeMarketsCount: 0 }
+  );
 
   const isBalanceLoading = loading || assetsLoading;
   const isRateLoading = loading || assetsLoading || ratesLoading;
@@ -48,6 +56,8 @@ export const FixedYieldBalanceCard = ({
       const config = getPendleMarketByAddress(m.marketAddress);
       if (!config) return [];
       const matured = isMarketMatured(config.expiry);
+      // Matured markets are only worth showing if the user still holds PT to redeem.
+      if (matured && m.ptBalance <= 0n) return [];
       return [
         {
           marketName: config.name,
@@ -101,7 +111,9 @@ export const FixedYieldBalanceCard = ({
           <Skeleton className="h-4 w-20" />
         ) : maxRate > 0 ? (
           <Text variant="small" className="text-bullish">
-            {t`Rates up to: ${formatDecimalPercentage(maxRate)}`}
+            {activeMarketsCount === 1
+              ? t`Rate: ${formatDecimalPercentage(maxRate)}`
+              : t`Rates up to: ${formatDecimalPercentage(maxRate)}`}
           </Text>
         ) : (
           <></>
@@ -127,11 +139,7 @@ export const FixedYieldBalanceCard = ({
       url={url}
       logoName="fixedYield"
       content={
-        isBalanceLoading ? (
-          <Skeleton className="w-32" />
-        ) : (
-          <Text>${formatNumber(totalUsd, { maxDecimals: 2 })}</Text>
-        )
+        isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(total)}</Text>
       }
     />
   );

@@ -18,7 +18,10 @@ import {
   useHighestRateFromChartData,
   filterDeprecatedRewardContracts,
   useStakeRewardContracts,
-  useMultipleRewardsChartInfo
+  useMultipleRewardsChartInfo,
+  PENDLE_MARKETS,
+  isMarketMatured,
+  usePendleMarketsApiData
 } from '@jetstreamgg/sky-hooks';
 import {
   formatDecimalPercentage,
@@ -27,7 +30,17 @@ import {
   isMainnetId,
   chainId as chainIdConstants
 } from '@jetstreamgg/sky-utils';
-import { Savings, Upgrade, RewardsModule, Stake, Expert, Vaults, Trade, Convert } from '@/modules/icons';
+import {
+  Savings,
+  Upgrade,
+  RewardsModule,
+  Stake,
+  Expert,
+  Vaults,
+  Trade,
+  Convert,
+  Pendle
+} from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
 import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@jetstreamgg/sky-widgets';
@@ -37,9 +50,9 @@ import type { ModuleId } from '@/modules/geo-config';
 type BalancesAction = {
   label: string;
   tokens: string[];
-  module: 'convert' | 'morpho' | 'rewards' | 'savings' | 'stusds' | 'stake' | 'trade' | 'upgrade';
+  module: 'convert' | 'morpho' | 'rewards' | 'savings' | 'stusds' | 'stake' | 'trade' | 'upgrade' | 'fixedYield';
   url: string;
-  rateKey?: 'vaults' | 'rewards' | 'savings' | 'stusds' | 'staking';
+  rateKey?: 'vaults' | 'rewards' | 'savings' | 'stusds' | 'staking' | 'fixedYield';
   badge?: string;
   showMorphoIcon?: boolean;
   subtitle?: string;
@@ -140,10 +153,11 @@ const MODULE_ICONS: Record<BalancesAction['module'], (props: IconProps) => React
   rewards: RewardsModule,
   stake: Stake,
   stusds: Expert,
-  morpho: Vaults
+  morpho: Vaults,
+  fixedYield: Pendle
 };
 
-const RATE_TOOLTIP_TYPES: Record<NonNullable<BalancesAction['rateKey']>, PopoverTooltipType> = {
+const RATE_TOOLTIP_TYPES: Partial<Record<NonNullable<BalancesAction['rateKey']>, PopoverTooltipType>> = {
   vaults: 'morpho',
   rewards: 'str',
   savings: 'ssr',
@@ -223,6 +237,16 @@ function useActionRates(
   const stakeHighestRateData = useHighestRateFromChartData(stakeRewardsChartsInfoData || []);
   const stakingLoading = stakeContractsLoading || stakeChartsLoading;
 
+  const { data: pendleMarketsApi, isLoading: pendleMarketsLoading } = usePendleMarketsApiData();
+  const pendleMaxRate = useMemo(() => {
+    if (!pendleMarketsApi) return 0;
+    return PENDLE_MARKETS.reduce((max, market) => {
+      if (isMarketMatured(market.expiry)) return max;
+      const apy = pendleMarketsApi[market.marketAddress]?.impliedApy ?? 0;
+      return apy > max ? apy : max;
+    }, 0);
+  }, [pendleMarketsApi]);
+
   return useMemo(() => {
     if (!hasRates) return { rates: {}, loading: {} };
 
@@ -281,6 +305,11 @@ function useActionRates(
       }
     }
 
+    if (rateKeys.has('fixedYield')) {
+      loading.fixedYield = pendleMarketsLoading;
+      rates.fixedYield = pendleMaxRate > 0 ? formatDecimalPercentage(pendleMaxRate) : '—';
+    }
+
     return { rates, loading };
   }, [
     hasRates,
@@ -294,7 +323,9 @@ function useActionRates(
     stUsdsLoading,
     vaultsLoading,
     rewardsLoading,
-    stakingLoading
+    stakingLoading,
+    pendleMarketsLoading,
+    pendleMaxRate
   ]);
 }
 
@@ -343,8 +374,26 @@ export function BalancesSuggestedActions({
     trade: 'trade'
   };
 
+  const fixedYieldAction = useMemo<BalancesAction>(() => {
+    const activeMarkets = PENDLE_MARKETS.filter(m => !isMarketMatured(m.expiry));
+    const activePtSymbols = activeMarkets.map(m => `PT-${m.underlyingSymbol}`);
+    return {
+      label: 'Fixed yield markets',
+      tokens: activePtSymbols,
+      rateKey: 'fixedYield',
+      subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
+      module: 'fixedYield',
+      url: '?widget=fixed'
+    };
+  }, []);
+
   const actions = useMemo(() => {
-    let result = widget === 'stables' ? STABLE_ACTIONS : widget === 'sky' ? SKY_ACTIONS : TOKEN_ACTIONS;
+    let result =
+      widget === 'stables'
+        ? [...STABLE_ACTIONS, fixedYieldAction]
+        : widget === 'sky'
+          ? SKY_ACTIONS
+          : TOKEN_ACTIONS;
     if (restrictedModules) {
       result = result.filter(action => restrictedModules.includes(action.module));
     }
@@ -353,7 +402,7 @@ export function BalancesSuggestedActions({
       return !geoModuleId || isModuleEnabled(geoModuleId);
     });
     return result;
-  }, [widget, restrictedModules, isModuleEnabled]);
+  }, [widget, restrictedModules, isModuleEnabled, fixedYieldAction]);
 
   const { rates: rateMap, loading: rateLoading } = useActionRates(actions, chainId);
 
@@ -414,14 +463,16 @@ export function BalancesSuggestedActions({
                         className={`flex items-center gap-1 ${action.rateKey && rateMap[action.rateKey] !== '—' ? 'text-bullish' : 'text-textSecondary'}`}
                       >
                         {resolved.subtitle}
-                        {action.rateKey && rateMap[action.rateKey] !== '—' && (
-                          <PopoverRateInfo
-                            type={RATE_TOOLTIP_TYPES[action.rateKey]}
-                            width={12}
-                            height={12}
-                            iconClassName="text-textSecondary"
-                          />
-                        )}
+                        {action.rateKey &&
+                          rateMap[action.rateKey] !== '—' &&
+                          RATE_TOOLTIP_TYPES[action.rateKey] && (
+                            <PopoverRateInfo
+                              type={RATE_TOOLTIP_TYPES[action.rateKey]!}
+                              width={12}
+                              height={12}
+                              iconClassName="text-textSecondary"
+                            />
+                          )}
                       </Text>
                     ))}
                 </div>
