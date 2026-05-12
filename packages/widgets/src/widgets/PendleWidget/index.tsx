@@ -1,10 +1,12 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
+import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
 import { useChainId } from 'wagmi';
 import { useConnection } from 'wagmi';
 import {
+  getTokenDecimals,
   PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useBatchPendleConvert,
@@ -15,7 +17,7 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@jetstreamgg/sky-hooks';
-import { isTestnetId, getTransactionLink, useDebounce, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { isTestnetId, useDebounce, useIsSafeWallet } from '@jetstreamgg/sky-utils';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@widgets/components/ui/button';
 import { WidgetContainer } from '@widgets/shared/components/ui/widget/WidgetContainer';
@@ -28,10 +30,13 @@ import { AnimatePresence } from 'motion/react';
 import { TxStatus } from '@widgets/shared/constants';
 import { WidgetContext } from '@widgets/context/WidgetContext';
 import { WidgetProps, WidgetState } from '@widgets/shared/types/widgetState';
+import { WidgetAnalyticsEventType } from '@widgets/shared/types/analyticsEvents';
 import { mainnet } from 'viem/chains';
 import { PendleAction, PendleFlow, PendleScreen } from './lib/constants';
 import { usePendleSlippage } from './hooks/usePendleSlippage';
 import { usePendleTokens } from './hooks/usePendleTokens';
+import { usePendleTransactionCallbacks } from './hooks/usePendleTransactionCallbacks';
+import { pendleAnalyticsData } from './lib/pendleAnalyticsData';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
 import { PendlePoweredBy } from './components/PendlePoweredBy';
@@ -55,6 +60,7 @@ const PendleWidgetWrapped = ({
   onConnect,
   rightHeaderComponent,
   onNotification,
+  onAnalyticsEvent,
   onExternalLinkClicked,
   onBackToPendle,
   enabled = true,
@@ -187,47 +193,34 @@ const PendleWidgetWrapped = ({
     return balance !== undefined && debouncedAmount > balance;
   }, [isConnectedAndEnabled, amount, debouncedAmount, flow, inputBalance, ptBalance]);
 
-  const txCallbacks = {
-    onMutate: () => {
-      setTxStatus(TxStatus.INITIALIZED);
-      setExternalLink(undefined);
-      setWidgetState((prev: WidgetState) => ({ ...prev, screen: PendleScreen.TRANSACTION }));
-    },
-    onStart: (hash: string | undefined) => {
-      setTxStatus(TxStatus.LOADING);
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-    },
-    onSuccess: (hash: string | undefined) => {
-      refetchInputBalance();
-      refetchOutputBalance();
-      refetchPtBalance();
-      setTxStatus(TxStatus.SUCCESS);
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      onNotification?.({
-        title: flow === PendleFlow.BUY ? t`Supply complete` : t`Withdrawal complete`,
-        description:
-          flow === PendleFlow.BUY
-            ? t`PT-${market.underlyingSymbol} delivered to your wallet.`
-            : t`${targetToken.symbol} delivered to your wallet.`,
-        status: TxStatus.SUCCESS
-      });
-    },
-    onError: (err: Error, hash: string | undefined) => {
-      setTxStatus(TxStatus.ERROR);
-      if (hash) {
-        setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
-      }
-      onNotification?.({
-        title: t`Transaction failed`,
-        description: err.message,
-        status: TxStatus.ERROR
-      });
-    }
-  };
+  const fromDecimals = getTokenDecimals(originToken, mainnet.id);
+  const toDecimals = getTokenDecimals(targetToken, mainnet.id);
+
+  const txCallbacks = usePendleTransactionCallbacks({
+    flow,
+    side,
+    market,
+    originToken,
+    targetToken,
+    amount: debouncedAmount,
+    fromDecimals,
+    toDecimals,
+    slippage,
+    quote,
+    needsAllowance,
+    shouldUseBatch,
+    chainId,
+    address,
+    isSafeWallet,
+    setTxStatus,
+    setExternalLink,
+    setWidgetState,
+    refetchInputBalance,
+    refetchOutputBalance,
+    refetchPtBalance,
+    onNotification,
+    onAnalyticsEvent
+  });
 
   const batchConvert = useBatchPendleConvert({
     side,
@@ -276,6 +269,31 @@ const PendleWidgetWrapped = ({
 
   const reviewOnClick = () => {
     setScreen(PendleScreen.REVIEW);
+
+    try {
+      const analyticsFlow = side === PendleConvertSide.BUY ? 'supply' : 'withdraw';
+      onAnalyticsEvent?.({
+        event: WidgetAnalyticsEventType.REVIEW_VIEWED,
+        action: analyticsFlow,
+        flow: analyticsFlow,
+        amount: Number(formatUnits(debouncedAmount, fromDecimals)),
+        data: pendleAnalyticsData({
+          market,
+          side: side === PendleConvertSide.BUY ? 'buy' : 'sell',
+          originToken,
+          targetToken,
+          amountFromBigint: debouncedAmount,
+          amountToBigint: quote?.amountOut ?? 0n,
+          fromDecimals,
+          toDecimals,
+          slippage,
+          quote,
+          isBatchTx: shouldUseBatch
+        })
+      });
+    } catch {
+      // Analytics must never break functionality
+    }
   };
 
   const nextOnClick = () => {

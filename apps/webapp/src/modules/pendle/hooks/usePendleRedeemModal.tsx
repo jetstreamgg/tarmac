@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
+import { formatUnits } from 'viem';
 import {
+  getTokenDecimals,
   isMarketMatured,
   PendleConvertSide,
   useBatchPendleConvert,
@@ -10,7 +12,12 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@jetstreamgg/sky-hooks';
-import { PendleConfigMenu, usePendleSlippage, usePendleTokens } from '@jetstreamgg/sky-widgets';
+import {
+  PendleConfigMenu,
+  pendleAnalyticsData,
+  usePendleSlippage,
+  usePendleTokens
+} from '@jetstreamgg/sky-widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
 
@@ -35,7 +42,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const matured = isMarketMatured(market.expiry);
   const isRedeemable = matured && ptBalance > 0n;
 
-  const { underlyingToken, inputTokenList } = usePendleTokens(market);
+  const { underlyingToken, ptToken, inputTokenList } = usePendleTokens(market);
   const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(underlyingToken);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
 
@@ -139,6 +146,23 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
 
   const openRedeemModal = useCallback(() => {
+    const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
+    const data = pendleAnalyticsData({
+      market,
+      side: 'redeem',
+      originToken: ptToken,
+      targetToken: selectedOutputToken,
+      amountFromBigint: ptBalance,
+      amountToBigint: quote?.amountOut ?? 0n,
+      fromDecimals: market.underlyingDecimals,
+      toDecimals,
+      slippage,
+      quote,
+      isBatchTx: true
+    });
+    // `useAppAnalytics` has no sign-flip helper — emit the withdrawal sign
+    // explicitly so dashboard tiles filtering `properties.amount < 0` pick
+    // up redeem as a withdrawal alongside SELL.
     launch({
       title: t`Redeem PT-${market.underlyingSymbol}`,
       transactionContent,
@@ -152,18 +176,20 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
         flow: 'redeem',
         action: 'redeem',
         data: {
-          market: market.marketAddress,
-          underlyingSymbol: market.underlyingSymbol,
-          outputToken: selectedOutputToken.symbol
+          ...data,
+          amount: -Number(formatUnits(ptBalance, market.underlyingDecimals))
         }
       }
     });
   }, [
     launch,
     writeHook,
-    market.underlyingSymbol,
-    market.marketAddress,
-    selectedOutputToken.symbol,
+    market,
+    ptToken,
+    ptBalance,
+    selectedOutputToken,
+    quote,
+    slippage,
     transactionContent,
     rightHeaderComponent,
     confirmDisabled,
