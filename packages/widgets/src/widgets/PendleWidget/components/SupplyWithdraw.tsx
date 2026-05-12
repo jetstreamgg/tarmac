@@ -169,8 +169,7 @@ export const SupplyWithdraw = ({
                 balance={enabled ? outputBalance : undefined}
                 value={quote?.amountOut ?? 0n}
                 onChange={() => null}
-                inputDisabled
-                showPercentageButtons={false}
+                readOnly
                 enabled={enabled}
                 dataTestId="pendle-supply-output"
               />
@@ -207,8 +206,7 @@ export const SupplyWithdraw = ({
                 balance={enabled ? outputBalance : undefined}
                 value={quote?.amountOut ?? 0n}
                 onChange={() => null}
-                inputDisabled
-                showPercentageButtons={false}
+                readOnly
                 enabled={enabled}
                 dataTestId="pendle-withdraw-output"
               />
