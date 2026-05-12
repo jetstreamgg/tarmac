@@ -4,6 +4,7 @@ import { PENDLE_API_BASE_URL } from './constants';
 import type {
   PendleConvertRequest,
   PendleConvertResponseRaw,
+  PendleDashboardPositionsResponseRaw,
   PendleMarketSummaryRaw,
   PendleMarketsAllResponseRaw,
   PendleMarketTransactionsResponseRaw,
@@ -102,4 +103,23 @@ export async function fetchPendleMarketTransactions(
   }
   const json = (await response.json()) as PendleMarketTransactionsResponseRaw;
   return json.results || [];
+}
+
+/**
+ * GET /v1/dashboard/positions/database/{userAddress}
+ *
+ * Returns the user's Pendle positions across every chain Pendle supports.
+ * Results are grouped per chain; consumers must filter to the chains and
+ * markets they care about. We use this to aggregate the user's PT holdings
+ * across our supported markets for the Balances widget.
+ */
+export async function fetchPendleDashboardPositions(
+  userAddress: `0x${string}`
+): Promise<PendleDashboardPositionsResponseRaw> {
+  const url = `${PENDLE_API_BASE_URL}/v1/dashboard/positions/database/${userAddress.toLowerCase()}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Pendle /dashboard/positions ${response.status}`);
+  }
+  return (await response.json()) as PendleDashboardPositionsResponseRaw;
 }

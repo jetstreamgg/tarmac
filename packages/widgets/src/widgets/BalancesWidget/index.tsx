@@ -24,6 +24,7 @@ export type BalancesWidgetProps = WidgetProps & {
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
+  fixedYieldCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   showAllNetworks?: boolean;
@@ -47,6 +48,7 @@ export const BalancesWidget = ({
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
+  fixedYieldCardUrl,
   chainIds,
   showAllNetworks,
   hideZeroBalances,
@@ -70,6 +72,7 @@ export const BalancesWidget = ({
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
           vaultsCardUrl={vaultsCardUrl}
+          fixedYieldCardUrl={fixedYieldCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
           showAllNetworks={showAllNetworks}
           hideZeroBalances={hideZeroBalances}
@@ -96,6 +99,7 @@ const BalancesWidgetWrapped = ({
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
+  fixedYieldCardUrl,
   showAllNetworks,
   hideZeroBalances,
   setShowAllNetworks,
@@ -170,6 +174,7 @@ const BalancesWidgetWrapped = ({
               stakeCardUrl={stakeCardUrl}
               stusdsCardUrl={stusdsCardUrl}
               vaultsCardUrl={vaultsCardUrl}
+              fixedYieldCardUrl={fixedYieldCardUrl}
               onExternalLinkClicked={onExternalLinkClicked}
               chainIds={chainIds}
               showAllNetworks={showAllNetworks}

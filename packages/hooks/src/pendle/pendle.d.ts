@@ -312,3 +312,65 @@ export type PendleMarketTransactionsResponseRaw = {
 export type PendleMarketHistoryHook = ReadHook & {
   data?: PendleTransactionRaw[];
 };
+
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/v1/dashboard/positions/database/{userAddress})
+// ---------------------------------------------------------------------------
+
+export type PendleDashboardLegPositionRaw = {
+  valuation: number;
+  balance: string;
+};
+
+export type PendleDashboardLpPositionRaw = PendleDashboardLegPositionRaw & {
+  activeBalance: string;
+};
+
+export type PendleDashboardOpenPositionRaw = {
+  /** "<chainId>-<marketAddress>" — e.g. "1-0xeab7..." */
+  marketId: string;
+  pt: PendleDashboardLegPositionRaw;
+  yt: PendleDashboardLegPositionRaw;
+  lp: PendleDashboardLpPositionRaw;
+  crossPtPositions: unknown[];
+};
+
+export type PendleDashboardChainPositionsRaw = {
+  chainId: number;
+  totalOpen: number;
+  totalClosed: number;
+  totalSy: number;
+  openPositions: PendleDashboardOpenPositionRaw[];
+  closedPositions: unknown[];
+  syPositions: unknown[];
+  updatedAt: string;
+};
+
+export type PendleDashboardPositionsResponseRaw = {
+  positions: PendleDashboardChainPositionsRaw[];
+};
+
+/** Per-market user PT balance + USD valuation, scoped to markets we support. */
+export type PendleMarketUserAsset = {
+  /** Market contract address */
+  marketAddress: `0x${string}`;
+  /** User's PT balance in the PT's native decimals (== underlying decimals) */
+  ptBalance: bigint;
+  /** User's PT balance normalized to 18 decimals (WAD) */
+  ptBalanceNormalized: bigint;
+  /** USD valuation of the PT position, as reported by Pendle's dashboard API */
+  valuationUsd: number;
+};
+
+export type AllPendleUserAssetsData = {
+  /** Total PT balance across all supported markets, normalized to 18 decimals (WAD) */
+  total: bigint;
+  /** Sum of per-market USD valuations across all supported markets */
+  totalUsd: number;
+  /** Per-market breakdown — only includes markets we support with a non-zero PT balance */
+  markets: PendleMarketUserAsset[];
+};
+
+export type AllPendleUserAssetsHook = ReadHook & {
+  data: AllPendleUserAssetsData;
+};
