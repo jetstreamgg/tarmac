@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
+import { isAddressEqual } from 'viem';
 import { useConnection } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
+import { TRUST_LEVELS, TrustLevelEnum, ZERO_ADDRESS } from '../constants';
 import { PENDLE_QUOTE_REFETCH_MS, PendleConvertSide } from './constants';
-import type { PendleQuoteHook, PendleConvertQuote } from './pendle';
+import type { PendleAggregatorRoute, PendleConvertQuote, PendleQuoteHook } from './pendle';
 import { fetchPendleConvert } from './pendleApiClient';
 
 /**
@@ -40,13 +41,99 @@ function extractApiMinOut(method: string, params: unknown[]): bigint {
   return fail(`unknown method "${method}"`);
 }
 
+/**
+ * Pull the aggregator route (`pendleSwap` + `swapData`) out of the API's
+ * parsed contract params. Returns `undefined` if the route is the default
+ * no-aggregator path (`pendleSwap = 0x0` and empty swapData).
+ *
+ * Position depends on the method:
+ *   - swapExactTokenForPt: input struct at params[4]
+ *   - swapExactPtForToken: output struct at params[3]
+ *   - exitPostExpToToken: not used (post-maturity exit stays on the no-aggregator path)
+ *
+ * Throws on a malformed shape so a tampered quote becomes a query error
+ * instead of silently producing a bad signing payload.
+ */
+function extractAggregatorRoute(method: string, params: unknown[]): PendleAggregatorRoute | undefined {
+  // Pendle's API returns numeric fields as decimal strings (JSON has no
+  // native bigint / uint8). `swapType` arrives as e.g. "1", not 1 — we coerce
+  // here. Other numeric scalars in the contract args follow the same shape;
+  // see extractApiMinOut for the precedent.
+  type RawSwapData = {
+    swapType?: number | string;
+    extRouter?: `0x${string}`;
+    extCalldata?: `0x${string}`;
+    needScale?: boolean;
+  };
+  type RawSlot = { pendleSwap?: `0x${string}`; swapData?: RawSwapData };
+
+  let slot: RawSlot | undefined;
+  if (method === 'swapExactTokenForPt') {
+    slot = params[4] as RawSlot | undefined;
+  } else if (method === 'swapExactPtForToken') {
+    slot = params[3] as RawSlot | undefined;
+  } else {
+    return undefined;
+  }
+
+  if (!slot || typeof slot !== 'object') {
+    throw new Error(`Pendle: malformed quote — missing input/output struct for "${method}"`);
+  }
+
+  const pendleSwap = slot.pendleSwap;
+  const swapData = slot.swapData;
+
+  // No-aggregator route: API returns ZERO_ADDRESS / empty swapData.
+  if (!pendleSwap || isAddressEqual(pendleSwap, ZERO_ADDRESS)) {
+    return undefined;
+  }
+
+  const swapTypeRaw = swapData?.swapType;
+  const swapTypeNum =
+    typeof swapTypeRaw === 'number'
+      ? swapTypeRaw
+      : typeof swapTypeRaw === 'string' && /^\d+$/.test(swapTypeRaw)
+        ? Number(swapTypeRaw)
+        : NaN;
+
+  if (
+    !swapData ||
+    !Number.isFinite(swapTypeNum) ||
+    !swapData.extRouter ||
+    typeof swapData.extCalldata !== 'string' ||
+    typeof swapData.needScale !== 'boolean'
+  ) {
+    throw new Error(
+      `Pendle: malformed quote — pendleSwap is set but swapData is missing/invalid for "${method}"`
+    );
+  }
+
+  return {
+    pendleSwap,
+    swapData: {
+      swapType: swapTypeNum,
+      extRouter: swapData.extRouter,
+      extCalldata: swapData.extCalldata,
+      needScale: swapData.needScale
+    }
+  };
+}
+
 type UseQuotePendleConvertParams = {
   side: PendleConvertSide;
   marketAddress?: `0x${string}`;
-  /** The token going IN to /convert (underlying for Buy, PT for Withdraw) */
+  /** The token going IN to /convert (user-selected for Buy, PT for Withdraw) */
   inputToken?: `0x${string}`;
-  /** The token coming OUT of /convert (PT for Buy, underlying for Withdraw) */
+  /** The token coming OUT of /convert (PT for Buy, user-selected for Withdraw) */
   outputToken?: `0x${string}`;
+  /**
+   * The market's underlying token (the one the SY accepts directly). Used to
+   * decide whether to ask the API for an aggregator route: when the user's
+   * non-PT-side token differs from the underlying, we set
+   * `enableAggregator: true` and the API may return a KyberSwap / Odos / OKX /
+   * Paraswap hop wrapped via Pendle's PendleSwap forwarder.
+   */
+  underlyingToken?: `0x${string}`;
   /** Input amount in wei */
   amountIn?: bigint;
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
@@ -77,6 +164,7 @@ export function useQuotePendleConvert({
   marketAddress,
   inputToken,
   outputToken,
+  underlyingToken,
   amountIn,
   slippage,
   enabled: enabledParam = true
@@ -88,9 +176,17 @@ export function useQuotePendleConvert({
     !!marketAddress &&
     !!inputToken &&
     !!outputToken &&
+    !!underlyingToken &&
     !!amountIn &&
     amountIn !== 0n &&
     !!connectedAddress;
+
+  // Aggregator is needed iff the user's non-PT-side token differs from the
+  // SY's accepted (underlying) token. PT itself is never the underlying, so
+  // we look at the input on Buy and the output on Withdraw.
+  const nonPtToken = side === PendleConvertSide.BUY ? inputToken : outputToken;
+  const enableAggregator =
+    !!nonPtToken && !!underlyingToken && !isAddressEqual(nonPtToken, underlyingToken);
 
   const { data, isLoading, error, refetch } = useQuery({
     enabled,
@@ -100,6 +196,8 @@ export function useQuotePendleConvert({
       side,
       inputToken,
       outputToken,
+      underlyingToken,
+      enableAggregator,
       // React Query hashes the queryKey via JSON.stringify, which throws on
       // BigInt values. Serialize amountIn to string so the cache key is stable
       // and unique without crashing the renderer.
@@ -116,7 +214,8 @@ export function useQuotePendleConvert({
         slippage,
         inputs,
         outputs: [outputToken!],
-        additionalData: 'impliedApy,effectiveApy'
+        additionalData: 'impliedApy,effectiveApy',
+        ...(enableAggregator ? { enableAggregator: true } : {})
       });
 
       const route = response.routes[0];
@@ -125,6 +224,20 @@ export function useQuotePendleConvert({
         route.contractParamInfo.method,
         route.contractParamInfo.contractCallParams
       );
+      const aggregatorRoute = extractAggregatorRoute(
+        route.contractParamInfo.method,
+        route.contractParamInfo.contractCallParams
+      );
+      const breakdownRaw = route.data.priceImpactBreakDown;
+      const priceImpactBreakdown =
+        breakdownRaw &&
+        typeof breakdownRaw.internalPriceImpact === 'number' &&
+        typeof breakdownRaw.externalPriceImpact === 'number'
+          ? {
+              internalPriceImpact: breakdownRaw.internalPriceImpact,
+              externalPriceImpact: breakdownRaw.externalPriceImpact
+            }
+          : undefined;
 
       return {
         method: route.contractParamInfo.method,
@@ -133,6 +246,9 @@ export function useQuotePendleConvert({
         effectiveApy: route.data.effectiveApy ?? 0,
         impliedApy: route.data.impliedApy?.after ?? route.data.impliedApy?.before ?? 0,
         priceImpact: route.data.priceImpact,
+        priceImpactBreakdown,
+        aggregatorType: aggregatorRoute ? route.data.aggregatorType : undefined,
+        aggregatorRoute,
         feeUsd: route.data.fee?.usd,
         fetchedAt: Date.now(),
         apiContractParams: route.contractParamInfo.contractCallParams,

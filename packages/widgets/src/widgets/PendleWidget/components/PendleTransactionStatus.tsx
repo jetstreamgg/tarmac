@@ -3,6 +3,7 @@ import { useLingui } from '@lingui/react';
 import { t } from '@lingui/core/macro';
 import { useChainId } from 'wagmi';
 import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { getTokenDecimals } from '@jetstreamgg/sky-hooks';
 import type { PendleConvertQuote, PendleMarketConfig, Token } from '@jetstreamgg/sky-hooks';
 import { BatchTransactionStatus } from '@widgets/shared/components/ui/transaction/BatchTransactionStatus';
 import type { TxCardCopyText } from '@widgets/shared/types/txCardCopyText';
@@ -107,7 +108,14 @@ export const PendleTransactionStatus = ({
       !isBatchTransaction;
     const flowTxStatus: TxStatus = isWaitingForSecondTransaction ? TxStatus.LOADING : txStatus;
 
-    const amountStr = formatBigInt(amount, { unit: market.underlyingDecimals });
+    // Decimals follow the input side: BUY input is the user-selected supply
+    // token; SELL input is PT (which inherits market.underlyingDecimals via
+    // the SY). Symbol for the user-selected side comes from the matching
+    // Token object, not from market.underlyingSymbol.
+    const inputDecimals =
+      flow === PendleFlow.BUY ? getTokenDecimals(originToken, chainId) : market.underlyingDecimals;
+    const amountStr = formatBigInt(amount, { unit: inputDecimals });
+    const userSideSymbol = flow === PendleFlow.BUY ? originToken.symbol : targetToken.symbol;
 
     if (flow === PendleFlow.BUY) {
       setStepTwoTitle(t`Supply`);
@@ -117,7 +125,7 @@ export const PendleTransactionStatus = ({
           getPendleSupplySubtitle({
             txStatus: flowTxStatus,
             amount: amountStr,
-            symbol: market.underlyingSymbol,
+            symbol: userSideSymbol,
             needsAllowance: flowNeedsAllowance
           })
         )
@@ -127,7 +135,7 @@ export const PendleTransactionStatus = ({
           getPendleSupplyLoadingButtonText({
             txStatus: flowTxStatus,
             amount: amountStr,
-            symbol: market.underlyingSymbol
+            symbol: userSideSymbol
           })
         )
       );
@@ -140,7 +148,7 @@ export const PendleTransactionStatus = ({
             txStatus: flowTxStatus,
             amount: amountStr,
             ptSymbol: `PT-${market.underlyingSymbol}`,
-            underlyingSymbol: market.underlyingSymbol,
+            underlyingSymbol: isRedeemMode ? market.underlyingSymbol : userSideSymbol,
             needsAllowance: flowNeedsAllowance,
             isRedeem: isRedeemMode
           })
@@ -166,7 +174,7 @@ export const PendleTransactionStatus = ({
           txStatus: flowTxStatus,
           isRedeem: isRedeemMode,
           needsAllowance: flowNeedsAllowance,
-          underlyingSymbol: market.underlyingSymbol
+          underlyingSymbol: isRedeemMode ? market.underlyingSymbol : userSideSymbol
         })
       )
     );
@@ -197,6 +205,8 @@ export const PendleTransactionStatus = ({
     amount,
     market.underlyingSymbol,
     market.underlyingDecimals,
+    originToken,
+    targetToken,
     chainId,
     i18n.locale,
     setTxTitle,

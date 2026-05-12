@@ -18,6 +18,10 @@ const MARKET = '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as const;
 const USDG = '0xe343167631d89B6Ffc58B88d6b7fB0228795491D' as const;
 const PT_USDG = '0x9db38D74a0D29380899aD354121DfB521aDb0548' as const;
 const ZERO = '0x0000000000000000000000000000000000000000' as const;
+const PINNED_PENDLE_SWAP = '0xd4f480965d2347d421f1bec7f545682e5ec2151d' as const;
+// USDS — used as the non-underlying input/output for aggregator-branch tests
+const USDS = '0xdC035D45d973E3EC169d2276DDab16f1e407384F' as const;
+const KYBER_ROUTER = '0x6131B5fae19EA4f9D964eAc0408E4408b66337b5' as const;
 
 const API_GUESS = {
   guessMin: '50000000',
@@ -93,7 +97,9 @@ const BUY_KNOWN = {
   market: MARKET,
   inputToken: USDG,
   outputToken: PT_USDG,
-  amountIn: 100_000_000n
+  underlyingToken: USDG,
+  amountIn: 100_000_000n,
+  pinnedPendleSwap: PINNED_PENDLE_SWAP
 };
 
 describe('buildVerifiedArgs — Buy', () => {
@@ -263,7 +269,9 @@ describe('buildVerifiedArgs — Withdraw', () => {
     market: MARKET,
     inputToken: PT_USDG,
     outputToken: USDG,
-    amountIn: 100_000_000n
+    underlyingToken: USDG,
+    amountIn: 100_000_000n,
+    pinnedPendleSwap: PINNED_PENDLE_SWAP
   };
 
   function withdrawVerified(quote: PendleConvertQuote, known = WITHDRAW_KNOWN) {
@@ -293,6 +301,201 @@ describe('buildVerifiedArgs — Withdraw', () => {
   it('throws on an unknown method (selector allowlist)', () => {
     const quote = makeWithdrawQuote({ method: 'redeemPyToToken' });
     expect(() => buildVerifiedArgs(quote, WITHDRAW_KNOWN)).toThrow(/selector .* not allowed/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Aggregator branch — input/output token differs from underlying. Pendle's
+// API returns a non-zero pendleSwap (the pinned PendleSwap forwarder) and a
+// populated swapData; tokenMintSy / tokenRedeemSy must equal the underlying.
+// ---------------------------------------------------------------------------
+
+const KYBER_SWAP_DATA = {
+  swapType: 1,
+  extRouter: KYBER_ROUTER,
+  extCalldata: ('0x' + 'ab'.repeat(120)) as `0x${string}`,
+  needScale: false
+};
+
+describe('buildVerifiedArgs — Buy aggregator branch', () => {
+  // User supplies USDS (not the underlying USDG). The API returns a route
+  // through Pendle's PendleSwap → KyberSwap → USDG → SY.
+  const BUY_AGG_KNOWN = {
+    side: PendleConvertSide.BUY,
+    receiver: RECEIVER,
+    market: MARKET,
+    inputToken: USDS, // user-picked, NOT the underlying
+    outputToken: PT_USDG,
+    underlyingToken: USDG,
+    amountIn: 100_000_000_000_000_000_000n, // 100 USDS (18 decimals)
+    pinnedPendleSwap: PINNED_PENDLE_SWAP
+  };
+
+  function makeAggBuyParams(opts: {
+    pendleSwap?: string;
+    swapType?: string;
+    extRouter?: string;
+    extCalldata?: string;
+    inputTokenMintSy?: string;
+  } = {}): unknown[] {
+    return [
+      RECEIVER,
+      MARKET,
+      '99000000',
+      API_GUESS,
+      {
+        tokenIn: USDS,
+        netTokenIn: '100000000000000000000',
+        tokenMintSy: opts.inputTokenMintSy ?? USDG,
+        pendleSwap: opts.pendleSwap ?? PINNED_PENDLE_SWAP,
+        swapData: {
+          swapType: opts.swapType ?? '1',
+          extRouter: opts.extRouter ?? KYBER_ROUTER,
+          extCalldata: opts.extCalldata ?? KYBER_SWAP_DATA.extCalldata,
+          needScale: false
+        }
+      },
+      API_EMPTY_LIMIT
+    ];
+  }
+
+  function makeAggBuyQuote(overrides: Partial<PendleConvertQuote> = {}): PendleConvertQuote {
+    return {
+      method: 'swapExactTokenForPt',
+      amountOut: 100_000_000n,
+      apiMinOut: 99_800_000n,
+      effectiveApy: 0.05,
+      impliedApy: 0.058,
+      priceImpact: -0.0002,
+      aggregatorType: 'KYBERSWAP',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: makeAggBuyParams(),
+      apiContractParamsName: BUY_PARAM_NAMES,
+      ...overrides
+    };
+  }
+
+  it('forwards pendleSwap and swapData when input ≠ underlying', () => {
+    const verified = buildVerifiedArgs(makeAggBuyQuote(), BUY_AGG_KNOWN);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[4].pendleSwap).toBe(PINNED_PENDLE_SWAP);
+    expect(verified.args[4].swapData).toEqual(KYBER_SWAP_DATA);
+  });
+
+  it('pins tokenMintSy to the underlying (not the user-picked input)', () => {
+    const verified = buildVerifiedArgs(makeAggBuyQuote(), BUY_AGG_KNOWN);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[4].tokenIn).toBe(USDS); // user-picked, kept as tokenIn
+    expect(verified.args[4].tokenMintSy).toBe(USDG); // pinned to underlying
+  });
+
+  it('rejects when the API returns a non-pinned pendleSwap', () => {
+    const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
+    const quote = makeAggBuyQuote({
+      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA }
+    });
+    expect(() => buildVerifiedArgs(quote, BUY_AGG_KNOWN)).toThrow(/not the pinned forwarder/);
+  });
+
+  it('rejects when input ≠ underlying but the quote has no aggregatorRoute', () => {
+    const quote = makeAggBuyQuote({ aggregatorRoute: undefined });
+    expect(() => buildVerifiedArgs(quote, BUY_AGG_KNOWN)).toThrow(/aggregator required/);
+  });
+
+  it('uses the no-aggregator path when input === underlying even if aggregatorRoute is present', () => {
+    // Sanity: BUY_KNOWN has inputToken == USDG (the underlying); presence of
+    // aggregatorRoute on the quote should be ignored.
+    const quote = makeAggBuyQuote({
+      aggregatorRoute: { pendleSwap: PINNED_PENDLE_SWAP, swapData: KYBER_SWAP_DATA }
+    });
+    quote.method = 'swapExactTokenForPt';
+    quote.apiContractParams = makeBuyParams();
+    const verified = buildVerifiedArgs(quote, BUY_KNOWN);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[4].pendleSwap).toBe(ZERO);
+    expect(verified.args[4].swapData).toEqual(PENDLE_EMPTY_SWAP_DATA);
+    expect(verified.args[4].tokenMintSy).toBe(USDG);
+  });
+});
+
+describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
+  // User wants USDS out (not the underlying USDG).
+  const WITHDRAW_AGG_KNOWN = {
+    side: PendleConvertSide.WITHDRAW,
+    receiver: RECEIVER,
+    market: MARKET,
+    inputToken: PT_USDG,
+    outputToken: USDS, // user-picked, NOT the underlying
+    underlyingToken: USDG,
+    amountIn: 100_000_000n,
+    pinnedPendleSwap: PINNED_PENDLE_SWAP
+  };
+
+  function makeAggWithdrawParams(opts: { pendleSwap?: string; outputTokenRedeemSy?: string } = {}): unknown[] {
+    return [
+      RECEIVER,
+      MARKET,
+      '100000000',
+      {
+        tokenOut: USDS,
+        minTokenOut: '99000000000000000000',
+        tokenRedeemSy: opts.outputTokenRedeemSy ?? USDG,
+        pendleSwap: opts.pendleSwap ?? PINNED_PENDLE_SWAP,
+        swapData: {
+          swapType: '1',
+          extRouter: KYBER_ROUTER,
+          extCalldata: KYBER_SWAP_DATA.extCalldata,
+          needScale: false
+        }
+      },
+      API_EMPTY_LIMIT
+    ];
+  }
+
+  function makeAggWithdrawQuote(overrides: Partial<PendleConvertQuote> = {}): PendleConvertQuote {
+    return {
+      method: 'swapExactPtForToken',
+      amountOut: 100_000_000n,
+      apiMinOut: 99_500_000_000_000_000_000n,
+      effectiveApy: 0.05,
+      impliedApy: 0.058,
+      priceImpact: -0.0002,
+      aggregatorType: 'KYBERSWAP',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: makeAggWithdrawParams(),
+      apiContractParamsName: ['receiver', 'market', 'exactPtIn', 'output', 'limit'],
+      ...overrides
+    };
+  }
+
+  it('pins tokenRedeemSy to the underlying when output ≠ underlying', () => {
+    const verified = buildVerifiedArgs(makeAggWithdrawQuote(), WITHDRAW_AGG_KNOWN);
+    if (verified.functionName !== 'swapExactPtForToken') throw new Error('expected swapExactPtForToken');
+    expect(verified.args[3].tokenOut).toBe(USDS); // user-picked, kept as tokenOut
+    expect(verified.args[3].tokenRedeemSy).toBe(USDG); // pinned to underlying
+    expect(verified.args[3].pendleSwap).toBe(PINNED_PENDLE_SWAP);
+    expect(verified.args[3].swapData).toEqual(KYBER_SWAP_DATA);
+  });
+
+  it('rejects when the API returns a non-pinned pendleSwap', () => {
+    const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
+    const quote = makeAggWithdrawQuote({
+      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA }
+    });
+    expect(() => buildVerifiedArgs(quote, WITHDRAW_AGG_KNOWN)).toThrow(/not the pinned forwarder/);
+  });
+
+  it('rejects when output ≠ underlying but quote has no aggregatorRoute', () => {
+    const quote = makeAggWithdrawQuote({ aggregatorRoute: undefined });
+    expect(() => buildVerifiedArgs(quote, WITHDRAW_AGG_KNOWN)).toThrow(/aggregator required/);
   });
 });
 
@@ -347,7 +550,9 @@ describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
     market: MARKET,
     inputToken: PT_USDG,
     outputToken: USDG,
-    amountIn: 100_000_000n
+    underlyingToken: USDG,
+    amountIn: 100_000_000n,
+    pinnedPendleSwap: PINNED_PENDLE_SWAP
   };
 
   function exitVerified(quote: PendleConvertQuote, known = EXIT_KNOWN) {

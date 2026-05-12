@@ -95,6 +95,12 @@ export const PendleTransactionReview = ({
   ]);
 
   // Push title/subtitle/stepper copy.
+  // Multi-token: copy that names the user-side token comes from the selected
+  // token's symbol (originToken on BUY, targetToken on SELL), not from
+  // market.underlyingSymbol — those can differ now (e.g. user supplies USDC
+  // into a PT-USDG market). The matured-redeem branch still uses the market's
+  // underlying since redeem is single-token only.
+  const userSideSymbol = flow === PendleFlow.BUY ? originToken.symbol : targetToken.symbol;
   useEffect(() => {
     const batchStatus =
       !!batchSupported && batchEnabled ? BatchStatus.ENABLED : BatchStatus.DISABLED;
@@ -105,7 +111,7 @@ export const PendleTransactionReview = ({
         i18n._(
           getPendleBuyReviewSubtitle({
             batchStatus,
-            symbol: market.underlyingSymbol,
+            symbol: userSideSymbol,
             needsAllowance
           })
         )
@@ -124,7 +130,7 @@ export const PendleTransactionReview = ({
           getPendleWithdrawReviewSubtitle({
             batchStatus,
             ptSymbol: `PT-${market.underlyingSymbol}`,
-            underlyingSymbol: market.underlyingSymbol,
+            underlyingSymbol: userSideSymbol,
             needsAllowance
           })
         )
@@ -139,7 +145,7 @@ export const PendleTransactionReview = ({
           txStatus,
           isRedeem: isRedeemMode,
           needsAllowance,
-          underlyingSymbol: market.underlyingSymbol
+          underlyingSymbol: isRedeemMode ? market.underlyingSymbol : userSideSymbol
         })
       )
     );
@@ -155,6 +161,7 @@ export const PendleTransactionReview = ({
     txStatus,
     i18n.locale,
     market.underlyingSymbol,
+    userSideSymbol,
     setTxTitle,
     setTxSubtitle,
     setStepTwoTitle,
