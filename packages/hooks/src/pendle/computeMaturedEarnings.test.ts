@@ -644,3 +644,195 @@ describe('computeMaturedEarnings — APY policy (slice 03)', () => {
     expect(result.apy).toBeUndefined();
   });
 });
+
+describe('computeMaturedEarnings — additional scenarios', () => {
+  it('merges multiple buys correctly regardless of trade source (Pendle UI, tarmac, or aggregator)', () => {
+    // Pendle's /v5/transactions API is filtered by (marketAddress, txOrigin) only —
+    // any trade through Pendle's router shows up regardless of which frontend or
+    // aggregator initiated it. Cross-frontend usage (e.g. user trades on
+    // app.pendle.finance AND on tarmac with the same wallet) is the happy path,
+    // not an edge case. Five buys at different timestamps confirm aggregation.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 100 * DAY, value: 200, pt: 200 }),
+        buy({ secondsBeforeExpiry: 80 * DAY, value: 200, pt: 200 }),
+        buy({ secondsBeforeExpiry: 60 * DAY, value: 200, pt: 200 }),
+        buy({ secondsBeforeExpiry: 40 * DAY, value: 200, pt: 200 }),
+        buy({ secondsBeforeExpiry: 20 * DAY, value: 200, pt: 200 })
+      ],
+      previewAmount: toUnderlying(1050, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(50, 4); // 1050 received − 1000 spent
+    expect(result.apy).toBeDefined();
+    // daysHeld derived from the earliest of the 5 buys (100 days).
+  });
+
+  it('multiple buys at different prices: cost basis aggregates by sum of values', () => {
+    // 500 PT at $500 (early), 500 PT at $480 (later) — total $980 for 1000 PT.
+    // Redeem preview 1010 USDG → earnings = 1010 − 980 = $30.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 500, pt: 500 }),
+        buy({ secondsBeforeExpiry: 30 * DAY, value: 480, pt: 500 })
+      ],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(30, 4);
+  });
+
+  it('multiple sells with PT remaining: earnings shown, APY hidden', () => {
+    // Buy 1000 for $1000, sell 100 for $105, sell 100 for $108.
+    // netPt = 1000 − 200 = 800 (matches balance). netCost = 1000 − 213 = $787.
+    // Redeem preview 815 USDG → earnings = $28. APY hidden (sells present).
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 120 * DAY, value: 1000, pt: 1000 }),
+        sell({ secondsBeforeExpiry: 90 * DAY, value: 105, pt: 100 }),
+        sell({ secondsBeforeExpiry: 60 * DAY, value: 108, pt: 100 })
+      ],
+      previewAmount: toUnderlying(815, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    expect(result.earnings).toBeCloseTo(28, 4);
+    expect(result.apy).toBeUndefined();
+  });
+
+  it('returns negative earnings when redeem yields less than net cost (card has its own > 0 guard)', () => {
+    // Bought 1000 PT for $1010 (overpaid); redeem preview 1000 USDG.
+    // earnings = 1000 − 1010 = −$10. Function returns the negative value;
+    // PendleMaturedPositionCard separately filters via `earnings > 0` before
+    // rendering. This test documents the function/card division of responsibility.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1010, pt: 1000 })],
+      previewAmount: toUnderlying(1000, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeLessThan(0);
+    expect(result.earnings).toBeCloseTo(-10, 4);
+    expect(result.currency).toBe('USDS');
+  });
+
+  it('bought at the expiry timestamp: daysHeld === 0 → APY undefined (no divide-by-zero)', () => {
+    // Edge case: trade timestamp equals market.expiry. daysHeld = 0.
+    // APY guard `daysHeld > 0 && proratedNetCost > 0` rejects → apy undefined.
+    // Earnings still computed honestly.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 0, value: 1000, pt: 1000 })],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.apy).toBeUndefined();
+  });
+
+  it('very short hold (1 day): APY math produces a finite annualized rate', () => {
+    // Bought 1 day before maturity for $1000, redeem 1001 USDG → earnings $1.
+    // APY = (1001/1000)^365 − 1 ≈ 0.44 (44%). Large but finite.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 1 * DAY, value: 1000, pt: 1000 })],
+      previewAmount: toUnderlying(1001, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(1, 4);
+    expect(result.apy).toBeDefined();
+    expect(Number.isFinite(result.apy!)).toBe(true);
+  });
+
+  it('just past the excess tolerance boundary (balance=1011, netPt=1000): hides', () => {
+    // Companion to the redeem-handling block's 1010 "still allowed" boundary test.
+    // 1011/1000 → 1.1% excess drift → `netPt < balance × 0.99` is true → hide.
+    expect(
+      computeMaturedEarnings({
+        history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+        previewAmount: toUnderlying(1010, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 1011
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('sUSDS path with chi=1.5: math remains correct at extreme conversion rates', () => {
+    // sUSDS rate has grown 50% since the user bought (very generous).
+    // receiveTokens × 1.5 = 1500 USDS. Cost $1000 → earnings $500.
+    const CHI_1_5 = 1_500_000_000_000_000_000n;
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 365 * DAY, value: 1000, pt: 1000, market: SUSDS_MARKET })],
+      previewAmount: toUnderlying(1000, SUSDS_MARKET),
+      chi: CHI_1_5,
+      market: SUSDS_MARKET,
+      effectiveTier: 'sUSDS',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(500, 4);
+    expect(result.currency).toBe('USDS');
+  });
+
+  it('history order does not affect earliestBuyTimestamp or the final result', () => {
+    // Math.min over timestamps and reduce-sum over values are both order-independent.
+    // Same fixtures in reverse order should produce identical output.
+    const earliest = buy({ secondsBeforeExpiry: 100 * DAY, value: 500, pt: 500 });
+    const latest = buy({ secondsBeforeExpiry: 50 * DAY, value: 500, pt: 500 });
+    const ordered = computeMaturedEarnings({
+      history: [earliest, latest],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    const reversed = computeMaturedEarnings({
+      history: [latest, earliest],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(reversed).toEqual(ordered);
+  });
+
+  it('notional present but without `pt` key: treated as 0 PT (safe fallback)', () => {
+    // API returns notional with other tokens (e.g. `sy`) but no `pt` field.
+    // `t.notional?.pt ?? 0` → 0. netPt = 0 vs balance = 1000 → reconciliation
+    // gate fails (excess direction), line hides. Companion to the existing
+    // "notional missing entirely" test in the reconciliation block.
+    expect(
+      computeMaturedEarnings({
+        history: [
+          buy({
+            secondsBeforeExpiry: 90 * DAY,
+            value: 1000,
+            notional: { sy: 1000 } // pt key absent
+          })
+        ],
+        previewAmount: toUnderlying(1010, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 1000
+      })
+    ).toEqual(EMPTY);
+  });
+});
