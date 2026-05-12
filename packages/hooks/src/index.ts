@@ -151,6 +151,8 @@ export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
 export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
+export { usePendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
+export type { PendleMaturedPositionEarnings } from './pendle/usePendleMaturedPositionEarnings';
 export { buildVerifiedArgs, buildMaturedRedeemVerifiedArgs } from './pendle/buildVerifiedArgs';
 export type {
   KnownCallValues,
