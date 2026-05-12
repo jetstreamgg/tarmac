@@ -6,11 +6,22 @@
 //
 // Key decisions:
 //   1. Reconciliation gate (1% tolerance, see RECONCILIATION_TOLERANCE):
-//      Pendle's API only sees PT that came through its router. To guard
-//      against inflated earnings for users with transferred-in, gifted, or
-//      secondary-market PT — or pagination overflow past the 100-trade
-//      cap — we sum `notional.pt` across BUY_PT/SELL_PT and require it to
-//      match the on-chain PT balance within tolerance, else return empty.
+//      The gate is ASYMMETRIC. Pendle's TRADES API indexes BUY_PT/SELL_PT
+//      only — post-maturity redeems (redeemPyToToken via Pendle's router)
+//      reduce on-chain PT balance but do NOT appear in trade history. So
+//      we split the two directions of deviation:
+//        - Excess PT on-chain (balance > netPt * 1.01): user has PT that
+//          Pendle's view doesn't account for — transferred-in, gifted-to,
+//          secondary-market, or pagination overflow past the API's
+//          100-trade cap. Cost basis is unknown for the surplus → hide.
+//        - Shortfall on-chain (balance < netPt): user redeemed some of
+//          their PT post-maturity. The remaining position's cost basis
+//          is recoverable by proration (see decision 5). Show the line.
+//      Within ±1% in either direction the proration math collapses to
+//      the un-prorated happy-path identity via the Math.min(1, ratio)
+//      cap, so existing buy-and-hold cases are unchanged. Per PR #1546
+//      review: reviewer's PT-sENA test position kept failing the prior
+//      symmetric gate because they had been making small redeems.
 //   2. PT decimals = underlying decimals (Pendle convention): PT tokens
 //      are deployed with the same decimal count as their underlying token
 //      (PT-USDG has 6 because USDG has 6; PT-sUSDS has 18 because sUSDS
@@ -26,10 +37,27 @@
 //      buy, which is only a faithful capital-deployment window for pure
 //      buy-and-hold. Any SELL_PT in history biases the rate, so we drop
 //      it. Absolute earnings (a sum) remain correct under any pattern.
-//      FIFO per-lot age accounting is out of scope per PRD.
+//      FIFO per-lot age accounting is out of scope per PRD. Note that
+//      redeems don't create SELL_PT entries, so a "buy + redeem" user
+//      still gets an APY; a "buy + sell + redeem" user does not.
 //   4. Hide-on-mismatch is safe-correct: a wrong earnings number is
 //      worse than no earnings number. The card's `earnings !== undefined`
 //      guard skips the line cleanly when this function returns empty.
+//   5. Redeem handling via prorated cost basis (PR #1546 review,
+//      review-fix slice 02): when Pendle's view exceeds on-chain balance
+//      (shortfall), we attribute only the proportional share of net cost
+//      basis to the remaining PT. The user paid `netCostUsd` for
+//      `netPtFromPendle` PT and still holds `ptBalanceFloat`, so the
+//      cost attributable to what they still hold is
+//        proratedNetCost = netCostUsd × (ptBalanceFloat / netPtFromPendle)
+//      Correct under the REDEEM assumption: the redeemed PT's cost has
+//      already been realized as the underlying tokens the redeem
+//      deposited into the user's wallet. Slightly overestimates the
+//      remaining-position cost if the shortfall is actually a transfer-
+//      out (gifted PT to a friend) — a documented edge case accepted as
+//      a tradeoff (transfers-out are rare; redeems are common,
+//      especially post-maturity). On-chain redeem-event detection would
+//      let us distinguish the two; out of scope per PRD.
 import { PendleTradeAction } from './constants';
 import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
 
@@ -116,12 +144,24 @@ export function computeMaturedEarnings({
   const ptSold = sells.reduce((s, t) => s + (t.notional?.pt ?? 0), 0);
   const netPtFromPendle = ptBought - ptSold;
   if (ptBalanceFloat <= 0) return EMPTY;
-  if (Math.abs(1 - netPtFromPendle / ptBalanceFloat) >= RECONCILIATION_TOLERANCE) return EMPTY;
+  // Asymmetric check (see top-of-file decision 1). Only hide on EXCESS PT,
+  // where the surplus has unknown cost basis. Shortfall is allowed through
+  // and interpreted as redeems (decision 5).
+  if (netPtFromPendle < ptBalanceFloat * (1 - RECONCILIATION_TOLERANCE)) return EMPTY;
 
   const totalSpentUsd = buys.reduce((s, t) => s + t.value, 0);
   const totalRecoveredUsd = sells.reduce((s, t) => s + t.value, 0);
   const netCostUsd = totalSpentUsd - totalRecoveredUsd;
   if (netCostUsd <= 0) return EMPTY;
+
+  // Prorated cost basis (see top-of-file decision 5). Math.min(1, ratio) is
+  // load-bearing for the happy path: when balance ≈ netPt with sub-tolerance
+  // drift in either direction, floating-point can push the ratio slightly
+  // above 1, which would otherwise inflate the cost basis and reduce displayed
+  // earnings. Capping at 1 makes within-tolerance excess collapse to the
+  // un-prorated identity. Below 1, proration applies — interpreted as redeem.
+  const remainingFraction = Math.min(1, ptBalanceFloat / netPtFromPendle);
+  const proratedNetCost = netCostUsd * remainingFraction;
 
   const receiveTokens = Number(previewAmount) / 10 ** market.underlyingDecimals;
 
@@ -139,7 +179,7 @@ export function computeMaturedEarnings({
   // into 'pegged' (Tenderly TEMP path), label with the underlying symbol so
   // the unit shown matches the receive token.
   const currency = market.usdsEquivalence ? 'USDS' : market.underlyingSymbol;
-  const earnings = finalValue - netCostUsd;
+  const earnings = finalValue - proratedNetCost;
 
   const earliestBuyTimestamp = Math.min(...buys.map(t => Number(new Date(t.timestamp)) / 1000));
   const daysHeld = (market.expiry - earliestBuyTimestamp) / 86_400;
@@ -149,10 +189,12 @@ export function computeMaturedEarnings({
   // capital wasn't continuously deployed across that window — the rate would
   // be biased low. FIFO per-lot age accounting is out of scope (PRD), so the
   // honest UX is to hide the rate while still showing absolute earnings
-  // (which are a sum and remain correct under any trade pattern).
+  // (which are a sum and remain correct under any trade pattern). APY uses
+  // proratedNetCost so a buy-then-redeem user sees a sensible rate on the
+  // remaining position (decision 5).
   const apy =
-    sells.length === 0 && daysHeld > 0 && netCostUsd > 0
-      ? Math.pow(finalValue / netCostUsd, 365 / daysHeld) - 1
+    sells.length === 0 && daysHeld > 0 && proratedNetCost > 0
+      ? Math.pow(finalValue / proratedNetCost, 365 / daysHeld) - 1
       : undefined;
 
   return { earnings, apy, currency };
