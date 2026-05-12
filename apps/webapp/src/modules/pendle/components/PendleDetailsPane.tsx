@@ -123,7 +123,7 @@ export const PendleDetailsPane = () => {
   return (
     <DetailSectionWrapper>
       {hasMaturedHoldings && (
-        <DetailSection title={t`Ready to redeem`}>
+        <DetailSection title={t`Your matured positions`}>
           <DetailSectionRow>
             <PendleReadyToRedeemTable />
           </DetailSectionRow>

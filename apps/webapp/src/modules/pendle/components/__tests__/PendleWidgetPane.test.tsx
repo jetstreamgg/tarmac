@@ -141,6 +141,8 @@ vi.mock('@/modules/layout/components/Typography', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: () => undefined,
+    updateModalContent: () => undefined,
+    isModalOpen: false,
     txCallbacks: {
       onMutate: () => undefined,
       onStart: () => undefined,
