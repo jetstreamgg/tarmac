@@ -65,8 +65,10 @@ const BUY_TRADE: PendleTransactionRaw = {
 
 // 1010 USDG with 6 decimals
 const PREVIEW_AMOUNT = 1_010_000_000n;
-// 1000 PT in 18-decimal units
-const PT_BALANCE = 1000n * 10n ** 18n;
+// 1000 PT-USDG. Decimals match the underlying (USDG = 6) per Pendle
+// convention; the pre-PR-#1546-review fixture hardcoded 18 here, which
+// only "worked" because the hook also divided by 1e18 universally.
+const PT_BALANCE = 1000n * 10n ** BigInt(PEGGED_MARKET.underlyingDecimals);
 
 describe('usePendleMaturedPositionEarnings', () => {
   beforeEach(() => {

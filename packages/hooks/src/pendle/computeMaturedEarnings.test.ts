@@ -367,6 +367,70 @@ describe('computeMaturedEarnings — reconciliation gate (slice 02)', () => {
   });
 });
 
+describe('computeMaturedEarnings — PT decimals = underlying decimals (review-fix slice 01)', () => {
+  // Regression coverage for PR #1546 review feedback. PT tokens inherit their
+  // underlying's decimals; an earlier draft assumed PT was universally
+  // 18-decimal and silently broke PT-USDG (6-decimal) reconciliation at the
+  // hook layer. The pure function takes ptBalanceFloat already-converted, so
+  // these tests assert that the function's contract is decimals-agnostic and
+  // the caller (the hook) can hand in correctly-scaled floats for either
+  // market.
+  const PT_USDG_MARKET: PendleMarketConfig = {
+    name: 'PT-USDG',
+    marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
+    ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
+    ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',
+    syToken: '0xc1799CaB1F201946f7CFaFBaF1BCC089b2F08927',
+    underlyingToken: '0xe343167631d89B6Ffc58B88d6b7fB0228795491D',
+    underlyingSymbol: 'USDG',
+    underlyingDecimals: 6,
+    expiry: EXPIRY,
+    usdsEquivalence: 'pegged'
+  };
+
+  const PT_SUSDS_MARKET: PendleMarketConfig = {
+    ...PT_USDG_MARKET,
+    name: 'PT-sUSDS',
+    underlyingSymbol: 'sUSDS',
+    underlyingDecimals: 18,
+    usdsEquivalence: 'pegged' // treat as pegged for this fixture so chi is irrelevant
+  };
+
+  it('PT-USDG (6-decimal underlying): reconciles and renders earnings', () => {
+    // Simulates the on-chain conversion the hook performs:
+    //   ptBalance = 1000n * 10n**6n  →  Number(...) / 10**6 = 1000.
+    // Pre-fix this was the silently-broken market: 1e18 divisor turned the
+    // 6-decimal balance into 1e-9 and the gate hid the line forever.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000, market: PT_USDG_MARKET })],
+      previewAmount: toUnderlying(1010, PT_USDG_MARKET),
+      chi: undefined,
+      market: PT_USDG_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.currency).toBe('USDS');
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.apy).toBeGreaterThan(0);
+  });
+
+  it('PT-sUSDS (18-decimal underlying): unchanged production-target behavior', () => {
+    // Confirms the decimals fix doesn't regress the market that always worked.
+    // ptBalance = 1000n * 10n**18n  →  1000.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000, market: PT_SUSDS_MARKET })],
+      previewAmount: toUnderlying(1010, PT_SUSDS_MARKET),
+      chi: undefined,
+      market: PT_SUSDS_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.currency).toBe('USDS');
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.apy).toBeGreaterThan(0);
+  });
+});
+
 describe('computeMaturedEarnings — APY policy (slice 03)', () => {
   it('pure buy-and-hold (1 buy, 0 sells) keeps both earnings and APY', () => {
     // Sanity check that the no-sells branch is unchanged: APY remains defined

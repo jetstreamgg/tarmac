@@ -17,6 +17,8 @@ const SUSDS_PREVIEW_REDEEM_ABI = [
   }
 ] as const;
 
+// sUSDS shares are 18-decimal regardless of the PT market's underlying — this
+// is the pyIndex/chi precision constant, NOT a claim about PT decimals.
 const ONE = 1_000_000_000_000_000_000n;
 
 export type PendleMaturedPositionEarnings = {
@@ -56,11 +58,13 @@ export function usePendleMaturedPositionEarnings(
     query: { enabled: market.usdsEquivalence === 'sUSDS' }
   });
 
-  // PT tokens are 18-decimal across all of Pendle's SY/PT/YT architecture
-  // (same `ONE = 1e18` constant the redeem-preview path uses for pyIndex).
-  // If a future market deploys with non-18-decimal PT, this divisor and the
-  // preview math both break together — handle in PENDLE_MARKETS at that time.
-  const ptBalanceFloat = Number(ptBalance ?? 0n) / 1e18;
+  // Per PR #1546 review (commit d37958e5) — Pendle PT tokens inherit their
+  // underlying's decimals (e.g. PT-USDG has 6 because USDG has 6; PT-sUSDS
+  // has 18 because sUSDS has 18). Earlier docs claimed PT was universally
+  // 18-decimal; they conflated pyIndex's fixed-point scale (1e18) with PT's
+  // own scale. The fix: divide by `market.underlyingDecimals`, which the
+  // PENDLE_MARKETS config already carries per market.
+  const ptBalanceFloat = Number(ptBalance ?? 0n) / 10 ** market.underlyingDecimals;
 
   const result = useMemo<Omit<PendleMaturedPositionEarnings, 'isLoading'>>(
     () =>

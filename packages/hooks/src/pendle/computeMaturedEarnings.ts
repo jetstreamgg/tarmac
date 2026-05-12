@@ -11,12 +11,17 @@
 //      secondary-market PT — or pagination overflow past the 100-trade
 //      cap — we sum `notional.pt` across BUY_PT/SELL_PT and require it to
 //      match the on-chain PT balance within tolerance, else return empty.
-//   2. PT decimals = 18 assumption: PT tokens are 18-decimal across
-//      Pendle's SY/PT/YT architecture. The caller passes ptBalance as a
-//      float (`Number(bigint) / 1e18`); same constant the redeem-preview
-//      hook uses for pyIndex math. A future non-18-decimal PT market
-//      would break the reconciliation arithmetic AND the preview math
-//      together — handle at PENDLE_MARKETS level when that case appears.
+//   2. PT decimals = underlying decimals (Pendle convention): PT tokens
+//      are deployed with the same decimal count as their underlying token
+//      (PT-USDG has 6 because USDG has 6; PT-sUSDS has 18 because sUSDS
+//      has 18). The caller converts using `market.underlyingDecimals`
+//      from PENDLE_MARKETS — NOT a hardcoded 1e18 divisor. Per PR #1546
+//      review (commit d37958e5): an earlier draft conflated pyIndex's
+//      1e18 fixed-point scale with PT's own decimal count and silently
+//      mis-reconciled PT-USDG balances. The two `1e18` constants in this
+//      codebase serve different roles — pyIndex precision (still 18) vs
+//      PT decimals (varies per market) — and only the latter belongs at
+//      this conversion site.
 //   3. APY hidden when sells exist: `daysHeld` derives from the earliest
 //      buy, which is only a faithful capital-deployment window for pure
 //      buy-and-hold. Any SELL_PT in history biases the rate, so we drop
@@ -45,12 +50,13 @@ export type ComputeMaturedEarningsInput = {
    */
   effectiveTier: 'pegged' | 'sUSDS' | undefined;
   /**
-   * User's on-chain PT balance in PT units (e.g. 1000, not 1000n * 10n**18n).
-   * Caller converts from bigint via `Number(ptBalance ?? 0n) / 1e18`. The 18-decimal
-   * divisor reflects the universal Pendle convention for PT tokens — same constant
-   * (`ONE = 1e18`) the redeem-preview hook uses for `pyIndex` math. A future market
-   * deploying with non-18-decimal PT would break the reconciliation arithmetic AND
-   * the preview math together; revisit when that case appears in PENDLE_MARKETS.
+   * User's on-chain PT balance in PT units (e.g. 1000, not the raw bigint).
+   * Caller converts from bigint via
+   *   `Number(ptBalance ?? 0n) / 10 ** market.underlyingDecimals`
+   * because PT decimals = underlying decimals per Pendle's convention
+   * (PT-USDG → 6, PT-sUSDS → 18). See top-of-file note 2 — and do NOT confuse
+   * this with the pyIndex `ONE = 1e18` constant the redeem-preview hook uses;
+   * those two 18s mean different things.
    */
   ptBalanceFloat: number;
 };
