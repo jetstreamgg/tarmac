@@ -25,6 +25,7 @@ export const UnsupportedNetworkPage = ({ children }: { children: React.ReactNode
     <>
       <Dialog open={true} modal={true}>
         <DialogContent
+          aria-describedby={undefined}
           className="bg-containerDark max-w-[640px] p-10"
           onOpenAutoFocus={e => e.preventDefault()} //don't automatically focus the first button
         >
