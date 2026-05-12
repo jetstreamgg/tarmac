@@ -192,8 +192,15 @@ export function computeMaturedEarnings({
   // (which are a sum and remain correct under any trade pattern). APY uses
   // proratedNetCost so a buy-then-redeem user sees a sensible rate on the
   // remaining position (decision 5).
+  //
+  // Sub-day guard: `daysHeld >= 1` (not just `> 0`). Annualizing a sub-day
+  // hold via Math.pow(ratio, 365/daysHeld) either overflows to Infinity for
+  // ratios > ~1.005, or produces UX-meaningless rates like 1000%+ for tiny
+  // gains compounded across a fictional 1460-period year. Real case that
+  // surfaced this: buying PT a few hours before market maturity. Earnings
+  // still display; just no annualized rate.
   const apy =
-    sells.length === 0 && daysHeld > 0 && proratedNetCost > 0
+    sells.length === 0 && daysHeld >= 1 && proratedNetCost > 0
       ? Math.pow(finalValue / proratedNetCost, 365 / daysHeld) - 1
       : undefined;
 

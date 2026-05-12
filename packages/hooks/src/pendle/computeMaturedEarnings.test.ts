@@ -742,9 +742,10 @@ describe('computeMaturedEarnings — additional scenarios', () => {
     expect(result.apy).toBeUndefined();
   });
 
-  it('very short hold (1 day): APY math produces a finite annualized rate', () => {
+  it('very short hold (exactly 1 day): APY math produces a finite annualized rate', () => {
     // Bought 1 day before maturity for $1000, redeem 1001 USDG → earnings $1.
-    // APY = (1001/1000)^365 − 1 ≈ 0.44 (44%). Large but finite.
+    // APY = (1001/1000)^365 − 1 ≈ 0.44 (44%). Large but finite. 1 day is the
+    // boundary at which APY is still allowed by the sub-day guard.
     const result = computeMaturedEarnings({
       history: [buy({ secondsBeforeExpiry: 1 * DAY, value: 1000, pt: 1000 })],
       previewAmount: toUnderlying(1001, PEGGED_MARKET),
@@ -756,6 +757,41 @@ describe('computeMaturedEarnings — additional scenarios', () => {
     expect(result.earnings).toBeCloseTo(1, 4);
     expect(result.apy).toBeDefined();
     expect(Number.isFinite(result.apy!)).toBe(true);
+  });
+
+  it('sub-day hold (0.25 days, bought 6 hours before expiry): APY undefined, no Infinity', () => {
+    // Surfaced by PR #1546 QA: a reviewer's PT-sENA position was bought a few
+    // hours before maturity. Math.pow(ratio, 365/0.25) = Math.pow(ratio, 1460)
+    // overflows to Infinity for any ratio > ~1.005, which the UI then renders
+    // as "Infinity% APY" — broken display. Sub-day annualization is also
+    // semantically meaningless. Hide APY; earnings still computed normally.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 0.25 * DAY, value: 1000, pt: 1000 })],
+      previewAmount: toUnderlying(1001, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(1, 4);
+    expect(result.apy).toBeUndefined();
+  });
+
+  it('sub-day hold with a large ratio (Infinity overflow case): APY undefined', () => {
+    // Stress test the overflow path directly. If we had not guarded against
+    // sub-day holds, Math.pow(15/7, 1460) would overflow to Infinity. The
+    // ratio here mirrors what the PR review surfaced (chi-inflated finalValue
+    // / cost basis ≈ 2). Earnings still computed; APY hidden.
+    const result = computeMaturedEarnings({
+      history: [buy({ secondsBeforeExpiry: 0.25 * DAY, value: 7, pt: 7 })],
+      previewAmount: toUnderlying(15, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 7
+    });
+    expect(result.earnings).toBeCloseTo(8, 4);
+    expect(result.apy).toBeUndefined();
   });
 
   it('just past the excess tolerance boundary (balance=1011, netPt=1000): hides', () => {
