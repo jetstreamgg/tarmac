@@ -121,6 +121,7 @@ describe('PendleRedeem', () => {
     expect(container.textContent).toContain('PT-USDG');
     // TokenSelector appends `-menu-button` to dataTestId.
     expect(
+      // eslint-disable-next-line testing-library/no-container
       container.querySelector('[data-testid="pendle-redeem-output-token-menu-button"]')?.textContent
     ).toContain('USDG');
 
@@ -154,6 +155,7 @@ describe('PendleRedeem', () => {
 
   it('renders the dropdown trigger', () => {
     const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
+    // eslint-disable-next-line testing-library/no-container
     const trigger = container.querySelector(
       '[data-testid="pendle-redeem-output-token-menu-button"]'
     ) as HTMLButtonElement | null;
@@ -167,6 +169,7 @@ describe('PendleRedeem', () => {
       <PendleRedeem {...baseProps} prepareErrorMessage={message} />
     );
 
+    // eslint-disable-next-line testing-library/no-container
     const banner = container.querySelector('[data-testid="pendle-redeem-prepare-error"]');
     expect(banner).not.toBeNull();
     expect(banner?.textContent).toContain(message);
@@ -177,6 +180,7 @@ describe('PendleRedeem', () => {
 
   it('omits the prepare-error banner when prepareErrorMessage is undefined', () => {
     const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} />);
+    // eslint-disable-next-line testing-library/no-container
     expect(container.querySelector('[data-testid="pendle-redeem-prepare-error"]')).toBeNull();
     unmount();
   });
