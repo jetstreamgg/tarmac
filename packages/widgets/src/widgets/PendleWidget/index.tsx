@@ -237,10 +237,12 @@ const PendleWidgetWrapped = ({
 
   const writeHook = batchConvert;
 
-  // Map raw viem/Pendle revert messages to user-friendly copy. Returns
-  // undefined when there's no error to show. Keeping this inline (not a
-  // separate util) since it's tightly coupled to the messages we surface.
+  // Map raw viem/Pendle revert messages to user-friendly copy. Only surfaces
+  // prepare-time errors (simulation / quote-verify); write/mining errors —
+  // including wallet rejection — are handled by the txStatus → ERROR screen
+  // flow, so once we have a usable simulation we suppress this message.
   const prepareErrorMessage = useMemo<string | undefined>(() => {
+    if (writeHook.prepared) return undefined;
     const raw = writeHook.error?.message;
     if (!raw) return undefined;
     if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
@@ -250,7 +252,7 @@ const PendleWidgetWrapped = ({
       return t`Quote expired. Refreshing — please wait a moment.`;
     }
     return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
-  }, [writeHook.error]);
+  }, [writeHook.error, writeHook.prepared]);
 
   // Surface prepare/verify errors as a toast (in addition to inline display).
   useEffect(() => {
@@ -373,7 +375,6 @@ const PendleWidgetWrapped = ({
     amount === 0n ||
     insufficientFunds ||
     isAmountWaitingForDebounce ||
-    !!prepareErrorMessage ||
     !writeHook.prepared ||
     writeHook.isLoading;
 
