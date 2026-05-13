@@ -7,8 +7,7 @@ import {
   PopoverRateInfo,
   PopoverInfo,
   getTooltipById,
-  POPOVER_TOOLTIP_TYPES,
-  type PopoverTooltipType
+  resolvePopoverTooltipKey
 } from '@jetstreamgg/sky-widgets';
 
 interface Item {
@@ -35,17 +34,18 @@ export function FaqAccordion({ items }: { items: Item[] }): React.ReactElement {
                     if (href?.startsWith('#tooltip-')) {
                       const tooltipId = href.replace('#tooltip-', '');
 
-                      // Check if it's a hardcoded PopoverRateInfo tooltip type
-                      if (POPOVER_TOOLTIP_TYPES.includes(tooltipId as PopoverTooltipType)) {
+                      const popoverKey = resolvePopoverTooltipKey(tooltipId);
+                      if (popoverKey) {
                         return (
                           <span className="inline-flex items-center gap-1">
                             {children}
-                            <PopoverRateInfo type={tooltipId as PopoverTooltipType} />
+                            <PopoverRateInfo type={popoverKey} />
                           </span>
                         );
                       }
 
-                      // Otherwise, try to get it from the dynamic tooltip system
+                      // Fall back to the dynamic tooltip system for ids without
+                      // a PopoverRateInfo equivalent (e.g. gas-fee, sealed).
                       const tooltip = getTooltipById(tooltipId);
                       if (tooltip) {
                         return (

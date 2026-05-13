@@ -61,7 +61,7 @@ export function useUrnsInfo({
   chainId: number;
   user: `0x${string}`;
 }): ReadHook & { data?: UrnInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data,

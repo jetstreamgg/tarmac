@@ -45,9 +45,10 @@ export default ({ mode }: { mode: modeEnum }) => {
     script-src 'self'
       https://static.cloudflareinsights.com
       https://challenges.cloudflare.com
+      https://*.googletagmanager.com
       https://*.posthog.com https://e.sky.money;
     style-src 'self' 'unsafe-inline' https://*.posthog.com https://e.sky.money;
-    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.posthog.com https://e.sky.money;
+    img-src 'self' data: blob: https://explorer-api.walletconnect.com https://*.google-analytics.com https://*.googletagmanager.com https://*.posthog.com https://e.sky.money;
     font-src 'self';
     connect-src 'self' data:
       https://proxy.sky.money
@@ -83,6 +84,9 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://api.morpho.org/
       https://api.merkl.xyz/
       https://api-v2.pendle.finance
+      https://*.google-analytics.com
+      https://*.analytics.google.com
+      https://*.googletagmanager.com
       wss://relay.walletconnect.com
       wss://relay.walletconnect.org
       https://pulse.walletconnect.org

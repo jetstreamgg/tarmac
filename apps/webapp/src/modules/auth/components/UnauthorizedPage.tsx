@@ -151,7 +151,7 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
     <>
       <Dialog open={true}>
         {isLoading ? (
-          <DialogContent className="bg-containerDark max-w-[300px]">
+          <DialogContent aria-describedby={undefined} className="bg-containerDark max-w-[300px]">
             <div className="flex items-center justify-center p-4">
               <DialogTitle asChild>
                 <Text className="text-text mr-2 text-center">
@@ -162,7 +162,7 @@ export const UnauthorizedPage = ({ authData, vpnData, children }: UnauthorizedPa
             </div>
           </DialogContent>
         ) : (
-          <DialogContent className="bg-containerDark max-w-[640px] p-10">
+          <DialogContent aria-describedby={undefined} className="bg-containerDark max-w-[640px] p-10">
             <div className="flex flex-col gap-5 sm:flex-row">
               <Unavailable className="shrink-0" />
               <div className="">
