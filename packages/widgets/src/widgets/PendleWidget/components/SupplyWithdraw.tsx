@@ -236,7 +236,7 @@ export const SupplyWithdraw = ({
       {amount > 0n && !insufficientFunds && (
         <TransactionOverview
           title={t`Transaction overview`}
-          isFetching={isFetchingQuote && !quote}
+          isFetching={isFetchingQuote || !quote}
           fetchingMessage={t`Fetching quote from Pendle`}
           onExternalLinkClicked={onExternalLinkClicked}
           transactionData={[
