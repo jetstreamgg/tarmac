@@ -17,6 +17,7 @@ interface BalancesContentProps {
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
+  fixedYieldCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   showAllNetworks?: boolean;
   hideZeroBalances?: boolean;
@@ -35,6 +36,7 @@ export const BalancesContent = ({
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
+  fixedYieldCardUrl,
   showAllNetworks: showAllNetworksProp,
   hideZeroBalances: hideZeroBalancesProp,
   setShowAllNetworks: setShowAllNetworksProp,
@@ -85,6 +87,7 @@ export const BalancesContent = ({
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
           vaultsCardUrl={vaultsCardUrl}
+          fixedYieldCardUrl={fixedYieldCardUrl}
           onExternalLinkClicked={onExternalLinkClicked}
           chainIds={chainIds}
           hideZeroBalances={hideZeroBalances}

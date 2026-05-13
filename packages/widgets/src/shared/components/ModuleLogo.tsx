@@ -35,6 +35,11 @@ const logoMetadata = [
     name: 'vaults',
     src: '/images/vaults_icon_large.svg',
     alt: 'Vaults logo'
+  },
+  {
+    name: 'fixedYield',
+    src: '/images/pendle_icon_large.svg',
+    alt: 'Fixed Yield logo'
   }
 ] as const;
 

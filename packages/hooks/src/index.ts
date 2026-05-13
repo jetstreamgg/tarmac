@@ -147,6 +147,7 @@ export {
 export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
+export { useAllPendleUserAssets } from './pendle/useAllPendleUserAssets';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
@@ -173,7 +174,10 @@ export type {
   PendleUserPtBalancesHook,
   PendleTransactionRaw,
   PendleMarketTransactionsResponseRaw,
-  PendleMarketHistoryHook
+  PendleMarketHistoryHook,
+  PendleMarketUserAsset,
+  AllPendleUserAssetsData,
+  AllPendleUserAssetsHook
 } from './pendle/pendle';
 
 // Authentication

@@ -7,13 +7,15 @@ import {
   useTotalUserSealed,
   useTotalUserStaked,
   useAllMorphoVaultsUserAssets,
-  usePrices
+  usePrices,
+  useAllPendleUserAssets
 } from '@jetstreamgg/sky-hooks';
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
 import { StakeBalanceCard } from './StakeBalanceCard';
 import { ExpertBalanceCard } from './ExpertBalanceCard';
+import { FixedYieldBalanceCard } from './FixedYieldBalanceCard';
 import { VaultsBalanceCard } from './VaultsBalanceCard';
 import { chainId, isMainnetId, isTestnetId } from '@jetstreamgg/sky-utils';
 import { useChainId, useConnection } from 'wagmi';
@@ -47,6 +49,7 @@ interface ModulesBalancesProps {
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
+  fixedYieldCardUrl?: string;
   variant?: ModuleCardVariant;
   hideZeroBalances?: boolean;
   showAllNetworks?: boolean;
@@ -63,6 +66,7 @@ export const ModulesBalances = ({
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
+  fixedYieldCardUrl,
   variant = ModuleCardVariant.default,
   hideZeroBalances = false,
   showAllNetworks = true,
@@ -144,6 +148,10 @@ export const ModulesBalances = ({
   } = useAllMorphoVaultsUserAssets();
   const totalMorphoUserAssets = morphoAssetsData.total;
 
+  // Get aggregate Pendle market data across all markets
+  const { data: pendleAssetsData, isLoading: pendleLoading, error: pendleError } = useAllPendleUserAssets();
+  const totalPendleUserAssets = pendleAssetsData.total;
+
   // Expert balance = total across expert modules (stUSDS only for now)
   const totalExpertSavingsBalance = stUsdsData?.userSuppliedUsds || 0n;
   const expertLoading = stUsdsLoading;
@@ -215,14 +223,21 @@ export const ModulesBalances = ({
     (totalSavingsBalance === 0n && hideZeroBalances)
   );
 
+  const hideFixedYield = Boolean(
+    pendleError ||
+    (totalPendleUserAssets === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
   // Fallback display order used while prices are loading to prevent layout shifts
   const fallbackOrder: Record<string, number> = {
     rewards: 0,
     savings: 1,
-    staking: 2,
-    vaults: 3,
-    stusds: 4,
-    seal: 5
+    fixedYield: 2,
+    staking: 3,
+    vaults: 4,
+    stusds: 5,
+    seal: 6
   };
 
   // Compute USD value for each module to sort by value descending
@@ -230,7 +245,13 @@ export const ModulesBalances = ({
     parseFloat((Number(balance) / 1e18).toString()) * parseFloat(priceStr);
 
   const anyBalanceLoading =
-    rewardsLoading || savingsLoading || stakeLoading || expertLoading || morphoLoading || sealLoading;
+    rewardsLoading ||
+    savingsLoading ||
+    stakeLoading ||
+    expertLoading ||
+    morphoLoading ||
+    pendleLoading ||
+    sealLoading;
   const canSortByValue = !anyBalanceLoading && !pricesLoading && !!pricesData;
 
   const moduleUsdValues = useMemo(() => {
@@ -249,6 +270,7 @@ export const ModulesBalances = ({
       totalMorphoUserAssets && pricesData.USDS
         ? bigintToUsd(totalMorphoUserAssets, pricesData.USDS.price)
         : 0;
+    values.fixedYield = pendleAssetsData.totalUsd;
     values.stusds =
       totalExpertSavingsBalance && pricesData.USDS
         ? bigintToUsd(totalExpertSavingsBalance, pricesData.USDS.price)
@@ -263,17 +285,19 @@ export const ModulesBalances = ({
     totalSavingsBalance,
     totalUserStaked,
     totalMorphoUserAssets,
+    pendleAssetsData.totalUsd,
     totalExpertSavingsBalance,
     totalUserSealed
   ]);
 
   const sortedModules = useMemo(() => {
     const modules: Array<{
-      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults';
+      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults' | 'fixedYield';
       hidden: boolean;
     }> = [
       { id: 'rewards', hidden: hideRewards },
       { id: 'savings', hidden: hideSavings },
+      { id: 'fixedYield', hidden: hideFixedYield },
       { id: 'staking', hidden: hideStake },
       { id: 'vaults', hidden: hideVaults },
       { id: 'stusds', hidden: hideExpert },
@@ -299,6 +323,7 @@ export const ModulesBalances = ({
     hideStake,
     hideSeal,
     hideVaults,
+    hideFixedYield,
     canSortByValue,
     moduleUsdValues
   ]);
@@ -306,7 +331,13 @@ export const ModulesBalances = ({
   // Check if all supplied funds are zero (before any filtering)
   const totalRawSavingsBalance = sortedSavingsBalances.reduce((acc, { balance }) => acc + balance, 0n);
   const isAllLoaded =
-    !rewardsLoading && !savingsLoading && !sealLoading && !stakeLoading && !expertLoading && !morphoLoading;
+    !rewardsLoading &&
+    !savingsLoading &&
+    !sealLoading &&
+    !stakeLoading &&
+    !expertLoading &&
+    !morphoLoading &&
+    !pendleLoading;
   const allFundsEmpty =
     isAllLoaded &&
     (hideRestrictedModules || totalUserRewardsSupplied === 0n) &&
@@ -314,7 +345,8 @@ export const ModulesBalances = ({
     (totalUserSealed ?? 0n) === 0n &&
     (totalUserStaked ?? 0n) === 0n &&
     (hideRestrictedModules || totalExpertSavingsBalance === 0n) &&
-    totalMorphoUserAssets === 0n;
+    totalMorphoUserAssets === 0n &&
+    totalPendleUserAssets === 0n;
 
   useEffect(() => {
     onAllFundsEmpty?.(allFundsEmpty);
@@ -325,7 +357,9 @@ export const ModulesBalances = ({
   }
 
   // Render functions for each module type
-  const renderModule = (moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults') => {
+  const renderModule = (
+    moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults' | 'fixedYield'
+  ) => {
     switch (moduleId) {
       case 'rewards':
         return (
@@ -386,6 +420,16 @@ export const ModulesBalances = ({
           <VaultsBalanceCard
             key="vaults"
             url={vaultsCardUrl}
+            onExternalLinkClicked={onExternalLinkClicked}
+            variant={variant}
+            hideZeroBalances={hideZeroBalances}
+          />
+        );
+      case 'fixedYield':
+        return (
+          <FixedYieldBalanceCard
+            key="fixedYield"
+            url={fixedYieldCardUrl}
             onExternalLinkClicked={onExternalLinkClicked}
             variant={variant}
             hideZeroBalances={hideZeroBalances}
