@@ -13,7 +13,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper';
 import { cn } from '@/lib/utils';
 import { Menu, ChevronDown, Loader2 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { DualSwitcher } from '@/components/DualSwitcher';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -215,15 +215,18 @@ export function WidgetNavigation({
             </SheetTrigger>
             <SheetContent
               side="left"
+              aria-describedby={undefined}
               className="border-borderPrimary w-[280px] bg-black/10 p-0 backdrop-blur-xl"
               closeButtonClassName="text-white"
               closeIconClassName="size-[22px]"
             >
               <div className="flex h-full flex-col">
                 <div className="p-6 pb-4">
-                  <Heading>
-                    <Trans>Menu</Trans>
-                  </Heading>
+                  <SheetTitle asChild>
+                    <Heading>
+                      <Trans>Menu</Trans>
+                    </Heading>
+                  </SheetTitle>
                 </div>
                 <div className="mt-10 flex-1 overflow-y-auto px-3 pb-6">
                   {widgetContent.map(group =>
