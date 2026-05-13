@@ -50,7 +50,16 @@ import type { ModuleId } from '@/modules/geo-config';
 type BalancesAction = {
   label: string;
   tokens: string[];
-  module: 'convert' | 'morpho' | 'rewards' | 'savings' | 'stusds' | 'stake' | 'trade' | 'upgrade' | 'fixedYield';
+  module:
+    | 'convert'
+    | 'morpho'
+    | 'rewards'
+    | 'savings'
+    | 'stusds'
+    | 'stake'
+    | 'trade'
+    | 'upgrade'
+    | 'fixedYield';
   url: string;
   rateKey?: 'vaults' | 'rewards' | 'savings' | 'stusds' | 'staking' | 'fixedYield';
   badge?: string;
@@ -378,7 +387,7 @@ export function BalancesSuggestedActions({
     const activeMarkets = PENDLE_MARKETS.filter(m => !isMarketMatured(m.expiry));
     const activePtSymbols = activeMarkets.map(m => `PT-${m.underlyingSymbol}`);
     return {
-      label: 'Fixed yield markets',
+      label: 'Fixed Yield Markets',
       tokens: activePtSymbols,
       rateKey: 'fixedYield',
       subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
