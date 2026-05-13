@@ -85,7 +85,7 @@ export function useUserDelegates({
   search?: string;
   version?: 1 | 2 | 3;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data: subgraphDelegates,
