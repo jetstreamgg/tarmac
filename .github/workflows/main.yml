@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22]
-        pnpm-version: [10.17.0]
+        node-version: [24]
+        pnpm-version: [11.0.8]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -67,8 +67,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22]
-        pnpm-version: [10.17.0]
+        node-version: [24]
+        pnpm-version: [11.0.8]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -100,8 +100,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22]
-        pnpm-version: [10.17.0]
+        node-version: [24]
+        pnpm-version: [11.0.8]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
@@ -122,8 +122,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [22]
-        pnpm-version: [10.17.0]
+        node-version: [24]
+        pnpm-version: [11.0.8]
         react-version: [19]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
