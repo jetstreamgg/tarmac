@@ -11,9 +11,9 @@ import {
   type Token
 } from '@jetstreamgg/sky-hooks';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@widgets/components/ui/tabs';
-import { Skeleton } from '@widgets/components/ui/skeleton';
 import { TokenInput } from '@widgets/shared/components/ui/token/TokenInput';
 import { TransactionOverview } from '@widgets/shared/components/ui/transaction/TransactionOverview';
+import { Text } from '@widgets/shared/components/ui/Typography';
 import { motion } from 'motion/react';
 import { positionAnimations } from '@widgets/shared/animation/presets';
 import { MotionVStack } from '@widgets/shared/components/ui/layout/MotionVStack';
@@ -47,6 +47,8 @@ type SupplyWithdrawProps = {
   insufficientFunds: boolean;
   /** User-friendly message for simulation/prepare failure (e.g. slippage too tight). */
   prepareErrorMessage?: string;
+  /** User-friendly message for a failed /convert quote request. */
+  quoteErrorMessage?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
 };
 
@@ -71,6 +73,7 @@ export const SupplyWithdraw = ({
   enabled,
   insufficientFunds,
   prepareErrorMessage,
+  quoteErrorMessage,
   onExternalLinkClicked
 }: SupplyWithdrawProps) => {
   // Pendle PTs share decimals with the underlying SY (which equals the
@@ -223,85 +226,89 @@ export const SupplyWithdraw = ({
         </TabsContent>
       </Tabs>
 
-      {prepareErrorMessage && amount > 0n && !insufficientFunds && (
-        <div
-          className="bg-error/10 text-error mt-3 rounded-xl px-3 py-2 text-sm"
-          data-testid="pendle-prepare-error-banner"
-          role="alert"
+      {(prepareErrorMessage || quoteErrorMessage) && amount > 0n && !insufficientFunds && (
+        <Text
+          variant="medium"
+          className="text-error mt-3"
+          dataTestId={quoteErrorMessage ? 'pendle-quote-error-banner' : 'pendle-prepare-error-banner'}
         >
-          {prepareErrorMessage}
-        </div>
+          {quoteErrorMessage ?? prepareErrorMessage}
+        </Text>
       )}
 
       {amount > 0n && !insufficientFunds && (
         <TransactionOverview
           title={t`Transaction overview`}
-          isFetching={isFetchingQuote || !quote}
+          isFetching={isFetchingQuote || (!quote && !quoteErrorMessage)}
           fetchingMessage={t`Fetching quote from Pendle`}
           onExternalLinkClicked={onExternalLinkClicked}
-          transactionData={[
-            {
-              label: flow === PendleFlow.BUY ? t`You supply` : t`You redeem`,
-              value: `${formatBigInt(amount, { unit: originDecimals, maxDecimals: 4 })} ${originSymbol}`
-            },
-            {
-              label: t`You receive`,
-              value: formattedReceive ?? <Skeleton className="bg-textSecondary h-4 w-20" />
-            },
-            {
-              label: flow === PendleFlow.BUY ? t`Fixed APY locked` : t`Effective APY`,
-              value: apyDisplay,
-              className: 'text-bullish'
-            },
-            {
-              label: t`Maturity date`,
-              value: maturityDisplay
-            },
-            {
-              label: t`Min. received`,
-              value: formattedMin ?? <Skeleton className="bg-textSecondary h-4 w-20" />
-            },
-            {
-              label: t`Slippage tolerance`,
-              value: `${(slippage * 100).toFixed(2)}%`
-            },
-            {
-              label: t`Price impact`,
-              value: priceImpactRow,
-              className: positiveImpactClass
-            },
-            ...(breakdown
+          transactionData={
+            quote
               ? [
                   {
-                    label: t`  · Pendle AMM`,
-                    value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`,
-                    className: positiveImpactClass
+                    label: flow === PendleFlow.BUY ? t`You supply` : t`You redeem`,
+                    value: `${formatBigInt(amount, { unit: originDecimals, maxDecimals: 4 })} ${originSymbol}`
                   },
                   {
-                    label: t`  · Aggregator hop`,
-                    value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`,
-                    className: positiveImpactClass
-                  }
-                ]
-              : []),
-            ...(aggregatorName
-              ? [
+                    label: t`You receive`,
+                    value: formattedReceive!
+                  },
                   {
-                    label: t`Routed via`,
-                    value: aggregatorName
+                    label: flow === PendleFlow.BUY ? t`Fixed APY locked` : t`Effective APY`,
+                    value: apyDisplay,
+                    className: 'text-bullish'
+                  },
+                  {
+                    label: t`Maturity date`,
+                    value: maturityDisplay
+                  },
+                  {
+                    label: t`Min. received`,
+                    value: formattedMin!
+                  },
+                  {
+                    label: t`Slippage tolerance`,
+                    value: `${(slippage * 100).toFixed(2)}%`
+                  },
+                  {
+                    label: t`Price impact`,
+                    value: priceImpactRow,
+                    className: positiveImpactClass
+                  },
+                  ...(breakdown
+                    ? [
+                        {
+                          label: t`  · Pendle AMM`,
+                          value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`,
+                          className: positiveImpactClass
+                        },
+                        {
+                          label: t`  · Aggregator hop`,
+                          value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`,
+                          className: positiveImpactClass
+                        }
+                      ]
+                    : []),
+                  ...(aggregatorName
+                    ? [
+                        {
+                          label: t`Routed via`,
+                          value: aggregatorName
+                        }
+                      ]
+                    : []),
+                  {
+                    label: t`Routing fee`,
+                    value:
+                      quote.feeUsd !== undefined ? (
+                        `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
+                      ) : (
+                        <Trans>Included in quote</Trans>
+                      )
                   }
                 ]
-              : []),
-            {
-              label: t`Routing fee`,
-              value:
-                quote?.feeUsd !== undefined ? (
-                  `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
-                ) : (
-                  <Trans>Included in quote</Trans>
-                )
-            }
-          ]}
+              : undefined
+          }
         />
       )}
     </MotionVStack>

@@ -176,7 +176,11 @@ const PendleWidgetWrapped = ({
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
   const debounceSettled = amount === debouncedAmount;
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
     inputToken,
@@ -186,6 +190,34 @@ const PendleWidgetWrapped = ({
     slippage,
     enabled: isConnectedAndEnabled && debouncedAmount > 0n && debounceSettled
   });
+
+  // Map raw Pendle /convert errors (HTTP failures, malformed quotes, no
+  // routes, network errors) to user-friendly copy.
+  const quoteErrorMessage = useMemo<string | undefined>(() => {
+    const raw = quoteError?.message;
+    if (!raw) return undefined;
+    if (/no routes/i.test(raw)) {
+      return t`No route available for this trade size. Try a different amount.`;
+    }
+    if (/malformed quote/i.test(raw)) {
+      return t`Received an invalid quote from Pendle. Please try again.`;
+    }
+    if (/^Pendle \/convert \d+/i.test(raw)) {
+      return t`Pendle's quote service is temporarily unavailable. Please try again.`;
+    }
+    return t`Couldn't fetch a quote from Pendle. Check your connection and try again.`;
+  }, [quoteError]);
+
+  // Surface quote errors as a toast.
+  useEffect(() => {
+    if (quoteErrorMessage) {
+      onNotification?.({
+        title: t`Error fetching quote`,
+        description: quoteErrorMessage,
+        status: TxStatus.ERROR
+      });
+    }
+  }, [quoteErrorMessage, onNotification]);
 
   const insufficientFunds = useMemo(() => {
     if (!isConnectedAndEnabled || amount === 0n) return false;
@@ -375,6 +407,7 @@ const PendleWidgetWrapped = ({
     amount === 0n ||
     insufficientFunds ||
     isAmountWaitingForDebounce ||
+    !!quoteError ||
     !writeHook.prepared ||
     writeHook.isLoading;
 
@@ -488,6 +521,7 @@ const PendleWidgetWrapped = ({
               enabled={isConnectedAndEnabled}
               insufficientFunds={insufficientFunds}
               prepareErrorMessage={prepareErrorMessage}
+              quoteErrorMessage={quoteErrorMessage}
               onExternalLinkClicked={onExternalLinkClicked}
             />
           </CardAnimationWrapper>
