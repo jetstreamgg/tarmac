@@ -196,6 +196,12 @@ const PendleWidgetWrapped = ({
   const quoteErrorMessage = useMemo<string | undefined>(() => {
     const raw = quoteError?.message;
     if (!raw) return undefined;
+    // Pendle rejects inputs valued below $0.01 with a 400. Surfacing the
+    // generic "service unavailable" copy would be misleading — the user
+    // just needs to enter a larger amount.
+    if (/input valuation is too low/i.test(raw)) {
+      return t`Minimum input valuation is $0.01`;
+    }
     if (/no routes/i.test(raw)) {
       return t`No route available for this trade size. Try a different amount.`;
     }
