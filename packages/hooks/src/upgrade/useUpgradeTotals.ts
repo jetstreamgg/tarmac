@@ -47,7 +47,7 @@ export function useUpgradeTotals({
   subgraphUrl?: string;
 } = {}): ReadHook & { data?: UpgradeTotals } {
   const chainId = useChainId();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data,
