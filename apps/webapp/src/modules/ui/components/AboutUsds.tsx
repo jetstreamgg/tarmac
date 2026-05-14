@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { getEtherscanLink, isL2ChainId } from '@/utils';
 import { useChainId } from 'wagmi';
 import { usdsAddress, usdsL2Address } from '@jetstreamgg/sky-hooks';
 import { AboutCard } from './AboutCard';

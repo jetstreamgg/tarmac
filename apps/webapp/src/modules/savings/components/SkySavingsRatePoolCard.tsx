@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
 
 export function SkySavingsRatePoolCard(): React.ReactElement {

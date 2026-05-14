@@ -1,7 +1,7 @@
 import React from 'react';
 import { Intent } from '@/lib/enums';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPortal } from '@/components/ui/tooltip';
-import { getChainIcon, isMainnetId } from '@jetstreamgg/sky-utils';
+import { getChainIcon, isMainnetId } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';

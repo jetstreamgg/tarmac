@@ -3,7 +3,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useMigrationStats } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 
 export function MkrUpgradedPercentage() {
   const chainId = useChainId();

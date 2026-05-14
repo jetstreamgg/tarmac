@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useChains } from 'wagmi';
 import { Intent } from '@/lib/enums';
 import { requiresMainnet } from '@/lib/widget-network-map';
-import { isL2ChainId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, isTestnetId } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';

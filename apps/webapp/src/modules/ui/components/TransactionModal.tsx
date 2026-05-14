@@ -18,7 +18,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow } from '@/components/ui/popover';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { getExplorerName, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { getExplorerName, useIsSafeWallet } from '@/utils';
 import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';

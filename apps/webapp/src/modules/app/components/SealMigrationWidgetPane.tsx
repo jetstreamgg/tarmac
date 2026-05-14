@@ -21,7 +21,7 @@ import {
   WidgetStateChangeParams
 } from '@jetstreamgg/sky-widgets';
 import { useSealCurrentIndex } from '@jetstreamgg/sky-hooks';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 import { useConnection, useChainId, useSwitchChain } from 'wagmi';
 
 import { IntentMapping } from '@/lib/constants';

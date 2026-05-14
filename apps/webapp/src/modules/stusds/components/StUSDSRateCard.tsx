@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
-import { formatStrAsApy } from '@jetstreamgg/sky-utils';
+import { formatStrAsApy } from '@/utils';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 
 export function StUSDSRateCard() {

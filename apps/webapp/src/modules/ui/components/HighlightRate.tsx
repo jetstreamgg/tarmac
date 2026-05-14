@@ -7,7 +7,7 @@ import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { TOKENS } from '@jetstreamgg/sky-hooks';
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 import { useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage, formatStrAsApy } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, formatStrAsApy } from '@/utils';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useStUsdsData } from '@jetstreamgg/sky-hooks';
 import { useMorphoVaultMarketApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';

@@ -52,8 +52,8 @@ vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+vi.mock('@/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils')>();
   return {
     ...actual,
     formatDecimalPercentage: (value: number) => `${value}%`,

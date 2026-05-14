@@ -12,7 +12,7 @@ import { usePrepareNotification } from './usePrepareNotification';
 import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 import { isDeprecatedRewardContract } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 import { useGeoConfig } from '@/modules/geo-config';

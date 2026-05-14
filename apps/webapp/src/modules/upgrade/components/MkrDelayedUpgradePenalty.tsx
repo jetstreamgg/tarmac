@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { useMkrSkyFee } from '@jetstreamgg/sky-hooks';
-import { math } from '@jetstreamgg/sky-utils';
+import { math } from '@/utils';
 import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 
 export function MkrDelayedUpgradePenalty() {

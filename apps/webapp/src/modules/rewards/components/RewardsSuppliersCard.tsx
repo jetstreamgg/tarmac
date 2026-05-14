@@ -3,7 +3,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { useRewardsSuppliersCount } from '../hooks/useRewardsSuppliersCount';
 import { useChainId } from 'wagmi';
-import { formatNumber, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatNumber, isL2ChainId } from '@/utils';
 
 export function RewardsSuppliersCard() {
   const chainId = useChainId();

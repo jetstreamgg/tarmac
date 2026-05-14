@@ -6,7 +6,7 @@ import { PairTokenIcons, PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 import { mainnet } from 'viem/chains';
 import { Text } from '@/modules/layout/components/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDecimalPercentage, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, isL2ChainId } from '@/utils';
 import {
   TOKENS,
   useAvailableTokenRewardContracts,

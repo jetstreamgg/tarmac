@@ -1,4 +1,4 @@
-import { formatBigInt, formatStrAsApy } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatStrAsApy } from '@/utils';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useStUsdsData, useStUsdsCapacityData } from '@jetstreamgg/sky-hooks';

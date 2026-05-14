@@ -4,7 +4,7 @@ import {
   getIlkName,
   useBorrowCapacityData
 } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage, formatNumber, formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, formatNumber, formatBigInt } from '@/utils';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSection } from '@/modules/ui/components/DetailSection';

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatNumber, useFormatDates } from '@jetstreamgg/sky-utils';
+import { formatNumber, useFormatDates } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { PendleTradeAction, usePendleMarketHistory, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';

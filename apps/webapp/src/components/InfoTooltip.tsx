@@ -1,7 +1,7 @@
 import { Info, X } from 'lucide-react';
 import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
 import { Popover, PopoverArrow, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
-import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
+import { useIsTouchDevice } from '@/utils';
 
 export function InfoTooltip({
   content,

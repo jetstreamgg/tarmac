@@ -1,4 +1,4 @@
-import { getEtherscanLink } from '@jetstreamgg/sky-utils';
+import { getEtherscanLink } from '@/utils';
 import { useChainId } from 'wagmi';
 import { stUsdsAddress } from '@jetstreamgg/sky-hooks';
 import { getBannerByIdAndModule, filterBannersByConnectionStatus } from '@/data/banners/helpers';

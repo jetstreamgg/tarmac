@@ -2,7 +2,7 @@ import { t } from '@lingui/core/macro';
 import { erc20Abi, zeroAddress } from 'viem';
 import { useChainId, useConnection, useReadContract } from 'wagmi';
 import { mainnet } from 'viem/chains';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { isTestnetId } from '@/utils';
 import { usePendleUserPtBalances, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 

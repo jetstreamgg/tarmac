@@ -3,7 +3,7 @@ import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalan
 import { t } from '@lingui/core/macro';
 import { useMigrationStats } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 
 export function MkrUpgradedToSky() {
   const chainId = useChainId();

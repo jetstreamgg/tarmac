@@ -29,7 +29,7 @@ import {
   isTestnetId,
   isMainnetId,
   chainId as chainIdConstants
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 import {
   Savings,
   Upgrade,

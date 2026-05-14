@@ -9,7 +9,7 @@ import {
   useMultipleRewardsChartInfo,
   useStakeRewardContracts
 } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage } from '@/utils';
 
 export function StakingRewardRateCard() {
   // Fetch chart data for all stake reward contracts

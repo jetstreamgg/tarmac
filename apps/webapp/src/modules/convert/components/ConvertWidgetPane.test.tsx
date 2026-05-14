@@ -90,8 +90,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+vi.mock('@/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils')>();
   return {
     ...actual,
     isL2ChainId: (chainId: number) => chainId !== 1,

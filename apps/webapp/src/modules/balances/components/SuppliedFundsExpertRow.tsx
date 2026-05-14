@@ -1,7 +1,7 @@
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 import { formatUnits } from 'viem';
 import { PopoverRateInfo, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
 import { Skeleton } from '@/components/ui/skeleton';

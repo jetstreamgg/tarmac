@@ -2,7 +2,7 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ArrowDown } from 'lucide-react';
 import { mainnet } from 'viem/chains';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import {
   formatPendleAggregatorName,
   getTokenDecimals,

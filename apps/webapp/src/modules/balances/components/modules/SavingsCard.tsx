@@ -5,7 +5,7 @@ import { HStack } from '@/modules/layout/components/HStack';
 import { PairTokenIcons, PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage } from '@/utils';
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 
 export function SavingsCard() {

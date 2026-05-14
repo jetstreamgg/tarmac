@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatBigInt, useFormatDates, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatBigInt, useFormatDates, isL2ChainId } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';

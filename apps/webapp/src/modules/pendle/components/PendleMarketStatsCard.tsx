@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage } from '@/utils';
 import { isMarketMatured, usePendleMarketsApiData, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';

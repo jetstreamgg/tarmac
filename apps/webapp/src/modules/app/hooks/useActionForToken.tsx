@@ -5,7 +5,7 @@ import {
   isOptimismChainId,
   isUnichainChainId,
   isL2ChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 import { useCallback } from 'react';
 import {
   RewardContract,

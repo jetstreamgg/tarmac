@@ -11,7 +11,7 @@ import { ConnectedModalTabs } from './ConnectedModalTabs';
 import { useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
-import { useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { useIsSafeWallet } from '@/utils';
 
 interface ConnectedModalProps {
   isOpen: boolean;

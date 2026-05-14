@@ -1,4 +1,4 @@
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import {
   Token,
   getTokenDecimals,

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useConnection } from 'wagmi';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import {
   isMarketMatured,
   PENDLE_MARKETS,

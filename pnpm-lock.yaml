@@ -525,6 +525,9 @@ importers:
       embla-carousel-react:
         specifier: 'catalog:'
         version: 8.6.0(react@19.2.5)
+      ethers:
+        specifier: 'catalog:'
+        version: 6.16.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       lucide-react:
         specifier: 'catalog:'
         version: 0.577.0(react@19.2.5)
@@ -564,6 +567,9 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      tiny-invariant:
+        specifier: 'catalog:'
+        version: 1.3.3
       viem:
         specifier: 'catalog:'
         version: 2.48.1(bufferutil@4.0.9)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.3.6)
@@ -1750,10 +1756,6 @@ packages:
   '@metamask/multichain-api-client@0.10.1':
     resolution: {integrity: sha512-LsqO2SiDcTgOuXyVYEB0zgBaVNhryhP2tYI3L7tLa7PoeDqMkNIreFhDeu8jM5tPWkCimQvMwCkG3DF4P5dD3A==}
     engines: {node: ^18.20 || ^20.17 || >=22}
-
-  '@metamask/multichain-ui@0.4.0':
-    resolution: {integrity: sha512-CaUyPssiJ5bXP5YXBLadAbRwJ+c//cpzYCFS8P8Nq53Qa4lUVhViAzqvM4667SS3YClGNjNY0tWGyGbXkCmWHg==}
-    engines: {node: '>=20.19.0'}
 
   '@metamask/multichain-ui@0.4.1':
     resolution: {integrity: sha512-tJgTot8Pfkda895A6biJu7rE+jlQdVCNVzGgW+2wM9aFG20G+GEbQy3KO7uC4ImUvaKV4SyJ45r6Ir/Yf55mqw==}
@@ -9196,7 +9198,7 @@ snapshots:
       '@metamask/mobile-wallet-protocol-core': 0.4.0
       '@metamask/mobile-wallet-protocol-dapp-client': 0.3.0
       '@metamask/multichain-api-client': 0.10.1
-      '@metamask/multichain-ui': 0.4.0
+      '@metamask/multichain-ui': 0.4.1
       '@metamask/onboarding': 1.0.1
       '@metamask/rpc-errors': 7.0.3
       '@metamask/utils': 11.11.0
@@ -9304,12 +9306,6 @@ snapshots:
       - supports-color
 
   '@metamask/multichain-api-client@0.10.1': {}
-
-  '@metamask/multichain-ui@0.4.0':
-    dependencies:
-      '@paulmillr/qr': 0.2.1
-      qr-code-styling: 1.9.2
-    optional: true
 
   '@metamask/multichain-ui@0.4.1':
     dependencies:

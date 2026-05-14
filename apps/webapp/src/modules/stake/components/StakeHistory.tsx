@@ -6,7 +6,7 @@ import {
   useRewardContractTokens,
   useStakeHistory
 } from '@jetstreamgg/sky-hooks';
-import { formatBigInt, useFormatDates } from '@jetstreamgg/sky-utils';
+import { formatBigInt, useFormatDates } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import {

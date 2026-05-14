@@ -10,7 +10,7 @@ import {
   calculateApyFromStr,
   chainId as chainIdConstants,
   isTestnetId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 import { useStUsdsData, useMorphoVaultMultipleRateApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';

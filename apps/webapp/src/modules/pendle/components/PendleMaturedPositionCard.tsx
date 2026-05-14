@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import {
   type PendleMarketConfig,
   usePendleMaturedPositionEarnings,

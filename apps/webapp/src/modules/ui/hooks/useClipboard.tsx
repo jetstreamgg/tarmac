@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { copyToClipboard } from '@jetstreamgg/sky-utils';
+import { copyToClipboard } from '@/utils';
 
 export function useClipboard(text: string) {
   const [hasCopied, setHasCopied] = useState(false);

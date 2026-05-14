@@ -4,7 +4,7 @@ import { t } from '@lingui/core/macro';
 import { Card, CardTitle } from '@/components/ui/card';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { Supplied, SuppliedEmpty, WithdrawnEmpty, Withdrawn, Rewards, RewardsEmpty } from '@/modules/icons';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';

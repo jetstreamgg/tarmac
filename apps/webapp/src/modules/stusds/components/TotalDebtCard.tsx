@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useCollateralData } from '@jetstreamgg/sky-hooks';
 import { getIlkName } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 

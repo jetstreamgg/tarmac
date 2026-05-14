@@ -3,7 +3,7 @@ import { useChains } from 'wagmi';
 import type { Chain } from 'viem';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
-import { getChainIcon, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { getChainIcon, isL2ChainId } from '@/utils';
 import { ArrowRightLong } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
 import { isMultichain, requiresMainnet } from '@/lib/widget-network-map';

@@ -14,7 +14,7 @@ import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
 import { useChainId } from 'wagmi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage } from '@/utils';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
 /** Small SVG ring that fills clockwise based on a 0-1 value */
