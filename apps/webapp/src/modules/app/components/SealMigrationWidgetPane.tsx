@@ -5,7 +5,6 @@ import { Trans } from '@lingui/react/macro';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNotification } from '../hooks/useNotification';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { Heading, Text } from '@/modules/layout/components/Typography';
@@ -39,7 +38,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const { data: currentUrnIndex } = useSealCurrentIndex();
   // Transaction tracking removed - was using RainbowKit
   const addRecentTransaction = () => {}; // No-op for now
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const onNotification = useNotification();
   const { onExternalLinkClicked, setSelectedSealUrnIndex } = useConfigContext();
   const [shouldHideLink, setShouldHideLink] = useState(false);
@@ -115,7 +113,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
     addRecentTransaction,
     rightHeaderComponent,
     onNotification,
-    enabled: isConnectedAndAcceptedTerms,
     onExternalLinkClicked,
     referralCode,
     onSealUrnChange

@@ -64,6 +64,7 @@ import { useTokenBalances } from '@/hooks';
 import { usePrices } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useTradeAnalytics } from './hooks/useTradeAnalytics';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -90,7 +91,6 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   onAnalyticsEvent,
-  enabled = true,
   tokensLocked = false,
   batchEnabled: initialBatchEnabled = true,
   setBatchEnabled: externalSetBatchEnabled,
@@ -123,6 +123,7 @@ function TradeWidgetWrapped({
   const { address, isConnecting, isConnected } = useConnection();
   const isSafeWallet = useIsSafeWallet();
   const isSmartContractWallet = useIsSmartContractWallet();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
   const locale = linguiCtx.i18n.locale;

@@ -44,6 +44,7 @@ import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetStat
 import { StUSDSTransactionReview } from './components/StUSDSTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useStUsdsTransactions } from './hooks/useStUsdsTransactions';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type StUSDSWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -63,7 +64,6 @@ const StUSDSWidgetWrapped = ({
   onWidgetStateChange,
   onAnalyticsEvent,
   onExternalLinkClicked,
-  enabled = true,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -77,6 +77,7 @@ const StUSDSWidgetWrapped = ({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const { mutate: mutateStUsds, data: stUsdsData, isLoading: isStUsdsDataLoading } = useStUsdsData();

@@ -137,7 +137,6 @@ export type WidgetProps = {
   onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
   onCustomNavigation?: () => void;
   customNavigationLabel?: string;
-  enabled?: boolean;
   referralCode?: number;
   shouldReset?: boolean;
   disallowedFlow?:

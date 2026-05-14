@@ -40,6 +40,7 @@ import { RewardsTransactionReview } from './components/RewardsTransactionReview'
 import { useRewardsTransactions } from './hooks/useRewardsTransactions';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { RewardsClaimAllTransactionStatus } from './components/RewardsClaimAllTransactionStatus';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
@@ -61,7 +62,6 @@ const RewardsWidgetWrapped = ({
   onWidgetStateChange,
   onExternalLinkClicked,
   onAnalyticsEvent,
-  enabled = true,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -70,6 +70,7 @@ const RewardsWidgetWrapped = ({
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [amount, setAmount] = useState(parseUnits(validatedExternalState?.amount || '0', 18));

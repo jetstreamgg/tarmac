@@ -203,7 +203,6 @@ const sharedProps = {
   addRecentTransaction: () => undefined,
   rightHeaderComponent: <span />,
   onNotification: () => undefined,
-  enabled: false,
   referralCode: 0,
   shouldReset: false
 };

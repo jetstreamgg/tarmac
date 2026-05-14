@@ -44,6 +44,7 @@ import { PendlePoweredBy } from './components/PendlePoweredBy';
 import { PendleStatsCard } from './components/PendleStatsCard';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type PendleWidgetProps = WidgetProps & {
   /** Selected Pendle market — passed in by the webapp module after URL-driven selection. */
@@ -64,12 +65,12 @@ const PendleWidgetWrapped = ({
   onAnalyticsEvent,
   onExternalLinkClicked,
   onBackToPendle,
-  enabled = true,
   batchEnabled,
   setBatchEnabled
 }: PendleWidgetProps) => {
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = isConnected && enabled;
 
   const {

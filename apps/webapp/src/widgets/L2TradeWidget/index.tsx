@@ -46,6 +46,7 @@ import { Trans } from '@lingui/react/macro';
 import { getTooltipById } from '../data/tooltips';
 import { useTradeAnalytics } from '../TradeWidget/hooks/useTradeAnalytics';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -72,7 +73,6 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onExternalLinkClicked,
   onAnalyticsEvent,
-  enabled = true,
   referralCode,
   widgetTitle,
   batchEnabled,
@@ -92,6 +92,7 @@ function TradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
   const locale = linguiCtx.i18n.locale;

@@ -51,6 +51,7 @@ import {
   targetTokenForSymbol,
   tokenForSymbol
 } from './lib/helpers';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type UpgradeWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -75,7 +76,6 @@ export function UpgradeWidgetWrapped({
   upgradeOptions = defaultUpgradeOptions,
   batchEnabled,
   setBatchEnabled,
-  enabled = true,
   disallowedFlow,
   onBackToConvert
 }: UpgradeWidgetProps): React.ReactElement {
@@ -88,6 +88,7 @@ export function UpgradeWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === UpgradeFlow.REVERT ? 1 : 0;

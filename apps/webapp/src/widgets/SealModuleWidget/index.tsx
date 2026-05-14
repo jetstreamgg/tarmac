@@ -46,6 +46,7 @@ import { ArrowLeft } from 'lucide-react';
 import { UnconnectedState } from './components/UnconnectedState';
 import { useLingui } from '@lingui/react';
 import { OnSealUrnChange } from './lib/types';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 type SealModuleWidgetProps = WidgetProps & {
   onSealUrnChange?: OnSealUrnChange;
@@ -100,7 +101,6 @@ function SealModuleWidgetWrapped({
   onSealUrnChange,
   externalWidgetState,
   onConnect,
-  enabled = true,
   onNotification,
   onWidgetStateChange,
   onExternalLinkClicked,
@@ -129,6 +129,7 @@ function SealModuleWidgetWrapped({
   const chainId = useChainId();
   const { isConnected, isConnecting, address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const {
     acceptedExitFee,

@@ -37,6 +37,7 @@ import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useL2SavingsTransactions } from './hooks/useL2SavingsTransactions';
 import { defaultDepositOptions, defaultWithdrawOptions } from './lib/constants';
 import { calculateOriginOptions, tokenForSymbol } from './lib/helpers';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type SavingsWidgetProps = WidgetProps & {
   disallowedTokens?: { [key in SavingsFlow]: Token[] };
@@ -56,7 +57,6 @@ const SavingsWidgetWrapped = ({
   onWidgetStateChange,
   onAnalyticsEvent,
   onExternalLinkClicked,
-  enabled = true,
   referralCode,
   disallowedTokens,
   batchEnabled,
@@ -94,6 +94,7 @@ const SavingsWidgetWrapped = ({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === SavingsFlow.WITHDRAW ? 1 : 0;
@@ -535,7 +536,6 @@ const SavingsWidgetWrapped = ({
                   });
                 }
               }}
-              enabled={enabled}
               onExternalLinkClicked={onExternalLinkClicked}
               isConnectedAndEnabled={isConnectedAndEnabled}
               onMenuItemChange={(op: Token | null) => {

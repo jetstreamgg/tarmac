@@ -38,6 +38,7 @@ import {
   type PsmConversionDisabledReason
 } from './hooks/usePsmConversion.helpers';
 import { PsmConversionAction, PsmConversionFlow, PsmConversionScreen } from './lib/constants';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type PsmConversionWidgetProps = WidgetProps & {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -80,7 +81,6 @@ function PsmConversionWidgetWrapped({
   onWidgetStateChange,
   onExternalLinkClicked,
   onAnalyticsEvent,
-  enabled = true,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -112,6 +112,7 @@ function PsmConversionWidgetWrapped({
 
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [enabled, isConnected]);
   const initialAmount = parseUnits(
     validatedExternalState?.amount || '0',

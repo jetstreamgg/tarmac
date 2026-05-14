@@ -35,6 +35,7 @@ import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetStat
 import { MorphoVaultTransactionReview } from './components/MorphoVaultTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -69,7 +70,6 @@ const MorphoVaultWidgetWrapped = ({
   onWidgetStateChange,
   onAnalyticsEvent,
   onExternalLinkClicked,
-  enabled = true,
   batchEnabled,
   setBatchEnabled,
   onBackToVaults
@@ -82,6 +82,7 @@ const MorphoVaultWidgetWrapped = ({
 
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
 

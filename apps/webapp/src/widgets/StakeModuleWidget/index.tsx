@@ -46,6 +46,7 @@ import { Wizard } from './components/Wizard';
 import { ManagePosition } from './components/ManagePosition';
 import { useStakeTransactions } from './hooks/useStakeTransactions';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -66,7 +67,6 @@ function StakeModuleWidgetWrapped({
   onStakeUrnChange,
   externalWidgetState,
   onConnect,
-  enabled = true,
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
@@ -94,6 +94,7 @@ function StakeModuleWidgetWrapped({
   const { i18n } = useLingui();
   const chainId = useChainId();
   const { isConnected, isConnecting, address } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const { data: batchSupported } = useIsBatchSupported();
   const {

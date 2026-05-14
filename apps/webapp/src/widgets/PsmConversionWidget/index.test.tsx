@@ -4,12 +4,29 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { TxStatus } from '@/widgets/shared/constants';
+import { ConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { PsmConversionWidget } from '.';
 
 i18n.load('en', {});
 i18n.activate('en');
 
-const renderWithI18n = (ui: React.ReactElement) => render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
+const connectedContextValue = {
+  isConnectedAndAcceptedTerms: true,
+  isAuthorized: true,
+  setHasAcceptedTerms: () => {},
+  isCheckingTerms: false,
+  termsCheckError: false,
+  retryTermsCheck: () => {},
+  authData: { authIsLoading: false },
+  vpnData: { vpnIsLoading: false }
+};
+
+const renderWithI18n = (ui: React.ReactElement) =>
+  render(
+    <I18nProvider i18n={i18n}>
+      <ConnectedContext.Provider value={connectedContextValue}>{ui}</ConnectedContext.Provider>
+    </I18nProvider>
+  );
 
 const mockPsmState = vi.hoisted(() => ({
   execute: vi.fn(),

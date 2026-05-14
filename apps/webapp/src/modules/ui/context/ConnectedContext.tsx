@@ -29,7 +29,7 @@ interface ConnectedContextType {
   };
 }
 
-const ConnectedContext = createContext<ConnectedContextType>({
+export const ConnectedContext = createContext<ConnectedContextType>({
   isConnectedAndAcceptedTerms: false,
   isAuthorized: false,
   setHasAcceptedTerms: () => {},

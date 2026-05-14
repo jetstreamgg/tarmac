@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
 import { useCallback, useMemo, useState } from 'react';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 
 export type BalancesWidgetProps = WidgetProps & {
   chainIds?: number[];
@@ -40,7 +41,6 @@ export const BalancesWidget = ({
   onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
-  enabled = true,
   onExternalLinkClicked,
   rewardsCardUrl,
   savingsCardUrlMap,
@@ -65,7 +65,6 @@ export const BalancesWidget = ({
           onConnect={onConnect}
           rightHeaderComponent={rightHeaderComponent}
           hideRestrictedModules={hideRestrictedModules}
-          enabled={enabled}
           chainIds={chainIds}
           rewardsCardUrl={rewardsCardUrl}
           savingsCardUrlMap={savingsCardUrlMap}
@@ -91,7 +90,6 @@ const BalancesWidgetWrapped = ({
   onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
-  enabled = true,
   onExternalLinkClicked,
   chainIds,
   rewardsCardUrl,
@@ -109,6 +107,7 @@ const BalancesWidgetWrapped = ({
   hideWalletCard
 }: BalancesWidgetProps) => {
   const { isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [allFundsEmpty, setAllFundsEmpty] = useState(false);
   const handleAllFundsEmpty = useCallback((isEmpty: boolean) => setAllFundsEmpty(isEmpty), []);

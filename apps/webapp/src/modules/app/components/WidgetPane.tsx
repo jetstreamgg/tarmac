@@ -30,7 +30,6 @@ import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
 import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import React, { useEffect } from 'react';
 import { useNotification } from '../hooks/useNotification';
 
@@ -76,7 +75,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // No-op: ConnectedModal now uses subgraph data instead of localStorage
   const addRecentTransaction = () => {};
 
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const onNotification = useNotification();
   const { onExternalLinkClicked } = useConfigContext();
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
@@ -108,7 +106,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     addRecentTransaction,
     rightHeaderComponent,
     onNotification,
-    enabled: isConnectedAndAcceptedTerms,
     onExternalLinkClicked,
     referralCode,
     shouldReset: searchParams.get(QueryParams.Reset) === 'true'

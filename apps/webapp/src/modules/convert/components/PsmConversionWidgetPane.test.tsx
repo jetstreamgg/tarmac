@@ -63,7 +63,6 @@ describe('PsmConversionWidgetPane', () => {
     addRecentTransaction: vi.fn(),
     rightHeaderComponent: <div />,
     onNotification: vi.fn(),
-    enabled: true,
     referralCode: 0,
     shouldReset: false
   };

@@ -8,6 +8,7 @@ import { mnemonicToAccount } from 'viem/accounts';
 import { normalize } from 'viem/ens';
 import { I18nWidgetProvider } from '../../src/widgets/context/I18nWidgetProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ConnectedContext } from '../../src/modules/ui/context/ConnectedContext';
 import { getTenderlyChains } from './tenderlyChain';
 
 // TODO move this file (along with its counterpart in hooks) into a tests helper package or something
@@ -33,23 +34,39 @@ const config = createConfig({
 
 const queryClient = new QueryClient();
 
+// Fake ConnectedContext value for widget unit/integration tests: treat the test
+// wallet as connected + terms-accepted. Preserves the pre-migration behavior of
+// widgets that used to default `enabled = true` from their props.
+const testConnectedContextValue = {
+  isConnectedAndAcceptedTerms: true,
+  isAuthorized: true,
+  setHasAcceptedTerms: () => {},
+  isCheckingTerms: false,
+  termsCheckError: false,
+  retryTermsCheck: () => {},
+  authData: { authIsLoading: false },
+  vpnData: { vpnIsLoading: false }
+};
+
 export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <I18nWidgetProvider locale="en">
-          <MakerHooksProvider
-            config={{
-              delegates: {
-                ens: normalize('vitalik.eth')
-              },
-              ipfs: {
-                gateway: 'dweb.link'
-              }
-            }}
-          >
-            {children}
-          </MakerHooksProvider>
+          <ConnectedContext.Provider value={testConnectedContextValue}>
+            <MakerHooksProvider
+              config={{
+                delegates: {
+                  ens: normalize('vitalik.eth')
+                },
+                ipfs: {
+                  gateway: 'dweb.link'
+                }
+              }}
+            >
+              {children}
+            </MakerHooksProvider>
+          </ConnectedContext.Provider>
         </I18nWidgetProvider>
       </QueryClientProvider>
     </WagmiProvider>
