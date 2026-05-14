@@ -6,7 +6,7 @@ import {
   PENDLE_MARKETS,
   usePendleUserPtBalances,
   type PendleMarketConfig
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { useConnection } from 'wagmi';
 import { Heading } from '@/modules/layout/components/Typography';
 import { PendleMaturedPositionCard } from './PendleMaturedPositionCard';

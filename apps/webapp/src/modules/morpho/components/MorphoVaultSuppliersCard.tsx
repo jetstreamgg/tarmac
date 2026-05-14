@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Trans } from '@lingui/react/macro';
 import { Text } from '@/modules/layout/components/Typography';
-import { useMorphoVaultSupplierAddresses } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultSupplierAddresses } from '@/hooks';
 import { formatNumber } from '@/utils';
 
 type MorphoVaultSuppliersCardProps = {

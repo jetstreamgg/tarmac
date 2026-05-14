@@ -1,7 +1,7 @@
 import { formatBigInt, formatStrAsApy } from '@/utils';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useStUsdsData, useStUsdsCapacityData } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData, useStUsdsCapacityData } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';

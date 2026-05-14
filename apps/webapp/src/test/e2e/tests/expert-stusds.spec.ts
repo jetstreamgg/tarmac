@@ -6,7 +6,7 @@ import { mineBlock } from '../utils/mineBlock.ts';
 import { NetworkName } from '../utils/constants.ts';
 import { getTestWalletAddress } from '../utils/testWallets.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { mcdDaiAddress } from '@jetstreamgg/sky-hooks';
+import { mcdDaiAddress } from '@/hooks';
 
 const setTestBalance = async (tokenAddress: string, amount: string, decimals = 18) => {
   const workerIndex = Number(process.env.VITE_TEST_WORKER_INDEX ?? 1);

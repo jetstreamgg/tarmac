@@ -59,7 +59,7 @@ import {
   PENDLE_MARKETS,
   isMarketMatured,
   usePendleUserPtBalances
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';

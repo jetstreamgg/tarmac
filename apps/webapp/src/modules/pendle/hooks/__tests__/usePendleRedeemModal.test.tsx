@@ -7,7 +7,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mainnet } from 'viem/chains';
 import { pendleAnalyticsData } from '@jetstreamgg/sky-widgets';
-import type { PendleConvertQuote, PendleMarketConfig } from '@jetstreamgg/sky-hooks';
+import type { PendleConvertQuote, PendleMarketConfig } from '@/hooks';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 i18n.load('en', {});
@@ -46,8 +46,8 @@ const hoisted = vi.hoisted(() => ({
   matured: true
 }));
 
-vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     isMarketMatured: () => hoisted.matured,

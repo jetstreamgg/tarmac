@@ -36,8 +36,8 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
-vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     useOverallSkyData: () => ({ data: undefined, isLoading: false }),

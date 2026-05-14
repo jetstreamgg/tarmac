@@ -1,6 +1,6 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import { useUsdsDaiData } from '@jetstreamgg/sky-hooks';
+import { useUsdsDaiData } from '@/hooks';
 import { TokenIconWithBalance } from './TokenIconWithBalance';
 
 export function UsdsTotalSupplyCard(): React.ReactElement {

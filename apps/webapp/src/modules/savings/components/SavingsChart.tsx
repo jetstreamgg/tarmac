@@ -1,4 +1,4 @@
-import { useSavingsChartInfo } from '@jetstreamgg/sky-hooks';
+import { useSavingsChartInfo } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

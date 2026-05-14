@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { formatNumber, useFormatDates } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { PendleTradeAction, usePendleMarketHistory, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
+import { PendleTradeAction, usePendleMarketHistory, type PendleMarketConfig } from '@/hooks';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 

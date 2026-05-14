@@ -1,6 +1,6 @@
-import { useSavingsData } from '@jetstreamgg/sky-hooks';
+import { useSavingsData } from '@/hooks';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
-import { useTokenBalance, usdcL2Address, sUsdsL2Address, TOKENS } from '@jetstreamgg/sky-hooks';
+import { useTokenBalance, usdcL2Address, sUsdsL2Address, TOKENS } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { isL2ChainId, formatBigInt } from '@/utils';
 

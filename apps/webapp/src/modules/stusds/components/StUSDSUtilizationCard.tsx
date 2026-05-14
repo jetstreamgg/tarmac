@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { UtilizationBar, PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
-import { useStUsdsCapacityData } from '@jetstreamgg/sky-hooks';
+import { useStUsdsCapacityData } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 
 export function StUSDSUtilizationCard() {

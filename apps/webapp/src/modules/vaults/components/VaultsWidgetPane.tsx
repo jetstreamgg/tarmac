@@ -9,7 +9,7 @@ import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWi
 import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
 import { useSearchParams } from 'react-router-dom';
 import { MorphoVaultStatsCard } from '@/modules/expert/components/MorphoVaultStatsCard';
-import { MORPHO_VAULTS, useAllMorphoVaultsUserAssets } from '@jetstreamgg/sky-hooks';
+import { MORPHO_VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useMemo } from 'react';
 import { positionAnimations } from '@jetstreamgg/sky-widgets';

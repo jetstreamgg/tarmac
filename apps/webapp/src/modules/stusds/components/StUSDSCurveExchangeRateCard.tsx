@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
-import { useCurveRate } from '@jetstreamgg/sky-hooks';
+import { useCurveRate } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CurveLogo } from '@/modules/icons/CurveLogo';

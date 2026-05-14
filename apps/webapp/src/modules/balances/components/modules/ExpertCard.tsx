@@ -11,7 +11,7 @@ import {
   chainId as chainIdConstants,
   isTestnetId
 } from '@/utils';
-import { useStUsdsData, useMorphoVaultMultipleRateApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData, useMorphoVaultMultipleRateApiData, MORPHO_VAULTS } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
 

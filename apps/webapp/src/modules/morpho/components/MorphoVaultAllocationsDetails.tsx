@@ -1,4 +1,4 @@
-import { useMorphoVaultMarketApiData, useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultMarketApiData, useOverallSkyData } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';

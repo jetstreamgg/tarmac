@@ -6,7 +6,7 @@ import { PairTokenIcons, PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDecimalPercentage } from '@/utils';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { useOverallSkyData } from '@/hooks';
 
 export function SavingsCard() {
   const { data: overallSkyData, isLoading: overallSkyDataLoading } = useOverallSkyData();

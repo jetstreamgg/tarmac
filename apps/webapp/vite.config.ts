@@ -143,7 +143,13 @@ export default ({ mode }: { mode: modeEnum }) => {
       modulePreload: { polyfill: false }
     },
     test: {
-      exclude: [...configDefaults.exclude, '**/test/e2e/**'],
+      exclude: [
+        ...configDefaults.exclude,
+        '**/test/e2e/**',
+        // Inlined hooks (formerly @jetstreamgg/sky-hooks) are vnet-backed integration tests.
+        // They run via vitest.hooks.config.ts, not the fast suite below.
+        path.resolve(__dirname, 'src/hooks/**/*.test.{ts,tsx}')
+      ],
       globals: true,
       environment: 'happy-dom',
       setupFiles: [path.resolve(__dirname, 'src/test/setup.ts')]

@@ -17,7 +17,7 @@ import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 //   sUsdsAddress,
 //   sUsdsImplementationAbi,
 //   usdsAddress
-// } from '@jetstreamgg/sky-hooks';
+// } from '@/hooks';
 // import { mainnet } from 'viem/chains';
 // import { useConnection } from 'wagmi';
 // import { Button } from '@/components/ui/button';

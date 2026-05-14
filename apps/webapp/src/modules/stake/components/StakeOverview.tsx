@@ -3,7 +3,7 @@ import {
   useCollateralData,
   getIlkName,
   useBorrowCapacityData
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatDecimalPercentage, formatNumber, formatBigInt } from '@/utils';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';

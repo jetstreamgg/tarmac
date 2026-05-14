@@ -22,7 +22,7 @@ import {
   PENDLE_MARKETS,
   isMarketMatured,
   usePendleMarketsApiData
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import {
   formatDecimalPercentage,
   calculateApyFromStr,

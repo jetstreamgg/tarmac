@@ -6,7 +6,7 @@ import {
   useUrnAddress,
   useVault,
   ZERO_ADDRESS
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatBigInt, formatPercent, math } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';

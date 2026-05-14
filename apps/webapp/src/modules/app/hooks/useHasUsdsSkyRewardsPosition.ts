@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useRewardsWithUserBalance, usdsSkyRewardAddress } from '@jetstreamgg/sky-hooks';
+import { useRewardsWithUserBalance, usdsSkyRewardAddress } from '@/hooks';
 import { isMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**

@@ -14,7 +14,7 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { Trans } from '@lingui/react/macro';
 import { formatNumber } from '@/utils';
 import { useEffect, useState } from 'react';
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 const secondaryTagline: Record<string, string> = {

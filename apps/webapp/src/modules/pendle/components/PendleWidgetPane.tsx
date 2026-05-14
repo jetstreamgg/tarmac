@@ -9,7 +9,7 @@ import {
   PENDLE_MARKETS,
   usePendleUserPtBalances,
   type PendleMarketConfig
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { isTestnetId } from '@/utils';
 import {
   CardAnimationWrapper,

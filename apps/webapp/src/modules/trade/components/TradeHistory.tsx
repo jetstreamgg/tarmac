@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getTokenDecimals, TokenForChain, useTradeHistory } from '@jetstreamgg/sky-hooks';
+import { getTokenDecimals, TokenForChain, useTradeHistory } from '@/hooks';
 import { formatNumber, useFormatDates, isCowSupportedChainId } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';

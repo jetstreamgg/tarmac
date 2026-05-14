@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { getEtherscanLink, isL2ChainId } from '@/utils';
 import { useChainId } from 'wagmi';
-import { psm3L2Address, usdsPsmWrapperAddress } from '@jetstreamgg/sky-hooks';
+import { psm3L2Address, usdsPsmWrapperAddress } from '@/hooks';
 import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
 import { AboutCard } from './AboutCard';
 import { t } from '@lingui/core/macro';

@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
-import { useCurveRate, useStUsdsData, calculateRateDifferencePercent } from '@jetstreamgg/sky-hooks';
+import { useCurveRate, useStUsdsData, calculateRateDifferencePercent } from '@/hooks';
 import { PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
 
 export function StUSDSRateDifferenceCard() {

@@ -2,7 +2,7 @@ import {
   MORPHO_VAULTS,
   useMorphoVaultMultipleChartInfo,
   useMorphoVaultsCombinedTvl
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

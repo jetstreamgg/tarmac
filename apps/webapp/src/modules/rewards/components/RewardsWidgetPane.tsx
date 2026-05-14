@@ -6,7 +6,7 @@ import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { RewardContract, useRewardsUserHistory } from '@jetstreamgg/sky-hooks';
+import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import {
   RewardsAction,
   RewardsFlow,

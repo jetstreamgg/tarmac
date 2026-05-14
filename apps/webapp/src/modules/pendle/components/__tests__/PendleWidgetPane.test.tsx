@@ -53,8 +53,8 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
-vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     PENDLE_MARKETS: [hoisted.activeMarket, hoisted.maturedMarket],

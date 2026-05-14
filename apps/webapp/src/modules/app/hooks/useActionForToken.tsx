@@ -11,7 +11,7 @@ import {
   RewardContract,
   useAvailableTokenRewardContractsForChains,
   useTotalUserStaked
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useSearchParams } from 'react-router-dom';
 import { IntentMapping, QueryParams, ConvertIntentMapping } from '@/lib/constants';

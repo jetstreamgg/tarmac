@@ -20,7 +20,7 @@ import {
   TxStatus,
   WidgetStateChangeParams
 } from '@jetstreamgg/sky-widgets';
-import { useSealCurrentIndex } from '@jetstreamgg/sky-hooks';
+import { useSealCurrentIndex } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { useConnection, useChainId, useSwitchChain } from 'wagmi';
 

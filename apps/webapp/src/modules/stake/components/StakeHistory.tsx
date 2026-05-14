@@ -5,7 +5,7 @@ import {
   useDelegateName,
   useRewardContractTokens,
   useStakeHistory
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatBigInt, useFormatDates } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';

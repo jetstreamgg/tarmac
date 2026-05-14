@@ -528,12 +528,21 @@ importers:
       ethers:
         specifier: 'catalog:'
         version: 6.16.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      graphql:
+        specifier: 'catalog:'
+        version: 16.13.2
+      graphql-request:
+        specifier: 'catalog:'
+        version: 7.4.0(graphql@16.13.2)
       lucide-react:
         specifier: 'catalog:'
         version: 0.577.0(react@19.2.5)
       motion:
         specifier: 'catalog:'
         version: 12.38.0(@emotion/is-prop-valid@1.3.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      openapi-fetch:
+        specifier: 'catalog:'
+        version: 0.17.0
       porto:
         specifier: 'catalog:'
         version: 0.2.37(@tanstack/react-query@5.99.0(react@19.2.5))(@types/react@19.2.14)(@wagmi/core@3.4.4(@tanstack/query-core@5.99.0)(@types/react@19.2.14)(immer@11.1.4)(ox@0.14.17(typescript@6.0.3)(zod@4.3.6))(react@19.2.5)(typescript@6.0.3)(use-sync-external-store@1.5.0(react@19.2.5))(viem@2.48.1(bufferutil@4.0.9)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.3.6)))(immer@11.1.4)(react@19.2.5)(typescript@6.0.3)(use-sync-external-store@1.5.0(react@19.2.5))(viem@2.48.1(bufferutil@4.0.9)(typescript@6.0.3)(utf-8-validate@5.0.10)(zod@4.3.6))(wagmi@3.6.3)
@@ -598,6 +607,9 @@ importers:
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.2.2(vite@8.0.8(@types/node@24.3.0)(esbuild@0.27.2)(jiti@1.21.7)(terser@5.37.0)(yaml@2.8.3))
+      '@testing-library/dom':
+        specifier: 'catalog:'
+        version: 10.4.1
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -607,6 +619,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.5(vitest@4.1.5)
+      '@wagmi/cli':
+        specifier: 'catalog:'
+        version: 2.10.0(bufferutil@4.0.9)(typescript@6.0.3)(utf-8-validate@5.0.10)
       happy-dom:
         specifier: 'catalog:'
         version: 20.9.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -8187,7 +8202,6 @@ snapshots:
       '@babel/helper-validator-identifier': 7.28.5
       js-tokens: 4.0.0
       picocolors: 1.1.1
-    optional: true
 
   '@babel/compat-data@7.28.0': {}
 
@@ -8266,13 +8280,13 @@ snapshots:
 
   '@babel/template@7.27.2':
     dependencies:
-      '@babel/code-frame': 7.27.1
+      '@babel/code-frame': 7.29.0
       '@babel/parser': 7.29.2
       '@babel/types': 7.29.0
 
   '@babel/traverse@7.28.3':
     dependencies:
-      '@babel/code-frame': 7.27.1
+      '@babel/code-frame': 7.29.0
       '@babel/generator': 7.29.1
       '@babel/helper-globals': 7.28.0
       '@babel/parser': 7.29.2
@@ -11465,7 +11479,7 @@ snapshots:
 
   '@testing-library/dom@10.4.1':
     dependencies:
-      '@babel/code-frame': 7.27.1
+      '@babel/code-frame': 7.29.0
       '@babel/runtime': 7.26.10
       '@types/aria-query': 5.0.4
       aria-query: 5.3.0

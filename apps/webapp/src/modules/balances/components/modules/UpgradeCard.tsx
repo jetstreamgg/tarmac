@@ -8,7 +8,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { isL2ChainId, math } from '@/utils';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
-import { useMkrSkyFee } from '@jetstreamgg/sky-hooks';
+import { useMkrSkyFee } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function UpgradeCard() {

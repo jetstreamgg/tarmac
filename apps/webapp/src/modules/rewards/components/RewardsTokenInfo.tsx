@@ -1,4 +1,4 @@
-import { RewardContract, useRewardContractInfo, useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
+import { RewardContract, useRewardContractInfo, useRewardsChartInfo } from '@/hooks';
 import { formatBigInt, formatNumber } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';

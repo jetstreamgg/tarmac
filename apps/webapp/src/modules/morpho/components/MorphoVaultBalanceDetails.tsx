@@ -1,4 +1,4 @@
-import { useMorphoVaultOnChainData, useTokenBalance, Token } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultOnChainData, useTokenBalance, Token } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';

@@ -1,6 +1,6 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import { useStUsdsData } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 

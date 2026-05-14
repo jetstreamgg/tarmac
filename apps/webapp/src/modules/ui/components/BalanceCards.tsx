@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
 import { Text } from '@/modules/layout/components/Typography';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { Token } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 interface BalanceCardProps {

@@ -1,4 +1,4 @@
-import { useTokenChartInfo, usdsAddress, skyAddress } from '@jetstreamgg/sky-hooks';
+import { useTokenChartInfo, usdsAddress, skyAddress } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState } from 'react';

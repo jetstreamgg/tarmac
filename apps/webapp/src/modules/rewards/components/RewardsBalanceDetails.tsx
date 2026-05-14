@@ -11,7 +11,7 @@ import {
   useUserRewardsBalance,
   ZERO_ADDRESS,
   TOKENS
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatNumber } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useConnection, useChainId } from 'wagmi';

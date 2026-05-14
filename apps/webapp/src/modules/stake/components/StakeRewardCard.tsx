@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useRewardContractTokens } from '@jetstreamgg/sky-hooks';
+import { useRewardContractTokens } from '@/hooks';
 
 interface StakeRewardCardProps {
   selectedReward: string;

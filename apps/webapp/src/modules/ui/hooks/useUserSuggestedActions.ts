@@ -16,7 +16,7 @@ import {
   TOKENS,
   filterDeprecatedRewardContracts,
   isDeprecatedRewardContract
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';

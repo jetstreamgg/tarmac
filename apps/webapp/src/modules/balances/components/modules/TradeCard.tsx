@@ -4,7 +4,7 @@ import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { HStack } from '@/modules/layout/components/HStack';
-import { TOKENS } from '@jetstreamgg/sky-hooks';
+import { TOKENS } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { defaultConfig } from '@jetstreamgg/sky-widgets';
 import { restrictedTradeTokenList } from '@/modules/config/tokenListConfig';

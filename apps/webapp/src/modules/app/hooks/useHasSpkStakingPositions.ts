@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useStakeHistory, lsSkySpkRewardAddress, TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
+import { useStakeHistory, lsSkySpkRewardAddress, TransactionTypeEnum } from '@/hooks';
 import { isMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**

@@ -14,7 +14,7 @@ import {
   useStakeRewardContracts,
   lsSkyUsdsRewardAddress,
   lsSkySpkRewardAddress
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatAddress, formatDecimalPercentage, formatNumber } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';

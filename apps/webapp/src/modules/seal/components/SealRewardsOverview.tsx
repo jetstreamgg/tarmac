@@ -11,7 +11,7 @@ import {
   useRewardsChartInfo,
   useSaRewardContracts,
   useSealHistoricData
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatAddress, formatNumber } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';

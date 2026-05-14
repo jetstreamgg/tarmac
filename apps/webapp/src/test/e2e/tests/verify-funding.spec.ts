@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures-parallel';
-import { usdsAddress, mcdDaiAddress, mkrAddress, skyAddress } from '@jetstreamgg/sky-hooks';
+import { usdsAddress, mcdDaiAddress, mkrAddress, skyAddress } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 
 test('Verify account is funded correctly', async ({ isolatedPage, testAccount }) => {

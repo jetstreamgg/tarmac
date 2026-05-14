@@ -5,7 +5,7 @@ import {
   MorphoVaultFlow,
   MorphoVaultAction
 } from '@jetstreamgg/sky-widgets';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { Token } from '@/hooks';
 import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';

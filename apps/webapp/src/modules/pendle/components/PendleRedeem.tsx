@@ -9,7 +9,7 @@ import {
   type PendleConvertQuote,
   type PendleMarketConfig,
   type Token
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { TokenDropdown, TransactionOverview } from '@jetstreamgg/sky-widgets';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HStack } from '@/modules/layout/components/HStack';

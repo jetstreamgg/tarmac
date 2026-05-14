@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { TransactionTypeEnum, useSealHistory } from '@jetstreamgg/sky-hooks';
+import { TransactionTypeEnum, useSealHistory } from '@/hooks';
 import { formatBigInt, useFormatDates } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';

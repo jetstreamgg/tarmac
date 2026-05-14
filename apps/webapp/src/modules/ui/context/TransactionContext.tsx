@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { TxStatus } from '@jetstreamgg/sky-widgets';
-import { toError } from '@jetstreamgg/sky-hooks';
+import { toError } from '@/hooks';
 import { getTransactionLink, useIsSafeWallet } from '@/utils';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';

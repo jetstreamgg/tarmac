@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { type PendleMarketConfig, usePendleMarketsApiData } from '@jetstreamgg/sky-hooks';
+import { type PendleMarketConfig, usePendleMarketsApiData } from '@/hooks';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { formatTimeLeft } from '../utils/formatTimeLeft';

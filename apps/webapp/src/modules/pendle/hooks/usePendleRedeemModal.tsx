@@ -11,7 +11,7 @@ import {
   useQuotePendleConvert,
   type PendleMarketConfig,
   type Token
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import {
   PendleConfigMenu,
   pendleAnalyticsData,

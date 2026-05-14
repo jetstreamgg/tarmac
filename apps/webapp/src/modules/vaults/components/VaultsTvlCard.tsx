@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { useMorphoVaultsCombinedTvl } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultsCombinedTvl } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';

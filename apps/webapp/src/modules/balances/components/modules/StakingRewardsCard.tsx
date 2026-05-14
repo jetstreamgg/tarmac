@@ -11,7 +11,7 @@ import {
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useStakeRewardContracts
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export function StakingRewardsCard() {

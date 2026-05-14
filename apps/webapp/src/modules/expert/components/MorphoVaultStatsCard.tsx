@@ -3,7 +3,7 @@ import {
   Token,
   getTokenDecimals,
   useMorphoVaultMarketApiData
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';

@@ -13,7 +13,7 @@ import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
 import { isL2ChainId } from '@/utils';
-import { isDeprecatedRewardContract } from '@jetstreamgg/sky-hooks';
+import { isDeprecatedRewardContract } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useGeoConfig } from '@/modules/geo-config';
 

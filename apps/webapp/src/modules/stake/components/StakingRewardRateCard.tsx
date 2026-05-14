@@ -8,7 +8,7 @@ import {
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useStakeRewardContracts
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatDecimalPercentage } from '@/utils';
 
 export function StakingRewardRateCard() {

@@ -6,8 +6,8 @@ import { absBigInt } from '../../utils/math';
 import { SavingsSupply, CurveSavingsSupply, CurveSavingsWithdraw, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
-import { useStUsdsHistory, StUsdsProviderType } from '@jetstreamgg/sky-hooks';
-import { TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
+import { useStUsdsHistory, StUsdsProviderType } from '@/hooks';
+import { TransactionTypeEnum } from '@/hooks';
 
 export function StUSDSHistory() {
   const subgraphUrl = useSubgraphUrl();

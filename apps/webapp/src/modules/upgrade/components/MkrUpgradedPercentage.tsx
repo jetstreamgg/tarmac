@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
-import { useMigrationStats } from '@jetstreamgg/sky-hooks';
+import { useMigrationStats } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { isL2ChainId } from '@/utils';
 

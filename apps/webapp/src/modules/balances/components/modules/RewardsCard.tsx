@@ -13,7 +13,7 @@ import {
   useHighestRateFromChartData,
   useRewardsChartInfo,
   filterDeprecatedRewardContracts
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export function RewardsCard() {

@@ -11,7 +11,7 @@ import {
   useVault,
   useSkyPrice,
   ZERO_ADDRESS
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
