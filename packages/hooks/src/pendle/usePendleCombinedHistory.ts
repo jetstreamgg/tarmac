@@ -12,23 +12,12 @@ function mapAction(action: PendleHistoryAction): PendleHistoryItem['type'] {
 }
 
 function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
-  // We display rows in PT-Market terms ("X PT-USDe") for now: it's unambiguous
-  // about what asset was transacted (a Principal Token) regardless of which
-  // wallet token funded the buy or received the sell — Pendle's router permits
-  // aggregator hops, so the wallet-side token (USDS, USDC, …) often differs
-  // from the market's underlying and isn't exposed by either Pendle endpoint.
-  //
-  // PT decimals = underlying decimals (Pendle convention); for redeems the
-  // 1 PT = 1 underlying invariant means ptAmount and the actual underlying
-  // received are the same number.
-  //
-  // Go through `toFixed(decimals)` rather than `value * 10**decimals` — the
-  // multiplication overflows Number.MAX_SAFE_INTEGER for any 18-decimal
-  // amount over ~9e-3 and silently corrupts the low digits. `toFixed` also
-  // guarantees a decimal string (no scientific notation) and clamps the
-  // fractional length to what parseUnits accepts.
+  // toString gives the shortest round-tripping form (6143.99 → "6143.99",
+  // not toFixed's "6143.989999999..."). Fall back to toFixed only when
+  // toString emits scientific notation, which parseUnits rejects.
   const decimals = row.market.underlyingDecimals;
-  const assets = parseUnits(row.ptAmount.toFixed(decimals), decimals);
+  const str = row.ptAmount.toString();
+  const assets = parseUnits(/e/i.test(str) ? row.ptAmount.toFixed(decimals) : str, decimals);
   return {
     blockTimestamp: new Date(row.timestamp),
     transactionHash: row.txHash,
@@ -37,6 +26,8 @@ function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
     chainId: 1,
     assets,
     underlyingDecimals: decimals,
+    // "X PT-USDe", not "X USDe" — Pendle's router permits aggregator hops,
+    // so the wallet-side token often differs from the market's underlying.
     underlyingSymbol: row.market.name,
     marketName: row.market.name,
     marketAddress: row.market.marketAddress
