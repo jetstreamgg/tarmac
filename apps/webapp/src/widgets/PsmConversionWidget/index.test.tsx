@@ -88,9 +88,20 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('motion/react', () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>
-}));
+vi.mock('motion/react', () => {
+  const passthrough = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
+  const motion: any = new Proxy(
+    {},
+    {
+      get: (_t, prop: string) => (prop === 'create' ? () => passthrough : passthrough)
+    }
+  );
+  return {
+    AnimatePresence: passthrough,
+    motion,
+    cubicBezier: () => () => 0
+  };
+});
 
 vi.mock('@/widgets/shared/animation/Wrappers', () => ({
   CardAnimationWrapper: ({ children }: { children: React.ReactNode }) => <>{children}</>

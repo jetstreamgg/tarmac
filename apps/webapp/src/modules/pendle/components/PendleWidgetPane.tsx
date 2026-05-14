@@ -107,7 +107,6 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
           <PendleWidget
             {...sharedProps}
             market={selectedMarket!}
-            onExternalLinkClicked={sharedProps.onExternalLinkClicked}
             onBackToPendle={handleBack}
             onAnalyticsEvent={onAnalyticsEvent}
             batchEnabled={batchEnabled}

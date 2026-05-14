@@ -34,9 +34,9 @@ import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useSavingsTransactions } from './hooks/useSavingsTransactions';
 import { tokenForSymbol } from '../L2SavingsWidget/lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type SavingsWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
 };
@@ -51,7 +51,6 @@ const SavingsWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
-  onExternalLinkClicked,
   referralCode,
   batchEnabled,
   setBatchEnabled
@@ -65,6 +64,7 @@ const SavingsWidgetWrapped = ({
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const { mutate: mutateSavings, data: savingsData, isLoading: isSavingsDataLoading } = useSavingsData();
   const { data: allowance, mutate: mutateAllowance } = useSavingsAllowance();

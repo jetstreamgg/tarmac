@@ -38,10 +38,10 @@ import { useL2SavingsTransactions } from './hooks/useL2SavingsTransactions';
 import { defaultDepositOptions, defaultWithdrawOptions } from './lib/constants';
 import { calculateOriginOptions, tokenForSymbol } from './lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type SavingsWidgetProps = WidgetProps & {
   disallowedTokens?: { [key in SavingsFlow]: Token[] };
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
 };
@@ -56,12 +56,12 @@ const SavingsWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
-  onExternalLinkClicked,
   referralCode,
   disallowedTokens,
   batchEnabled,
   setBatchEnabled
 }: SavingsWidgetProps) => {
+  const { onExternalLinkClicked } = useConfigContext();
   const {
     setButtonText,
     setIsDisabled,

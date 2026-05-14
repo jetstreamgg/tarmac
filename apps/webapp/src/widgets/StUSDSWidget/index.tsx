@@ -45,9 +45,9 @@ import { StUSDSTransactionReview } from './components/StUSDSTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useStUsdsTransactions } from './hooks/useStUsdsTransactions';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type StUSDSWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   onBackToExpert?: () => void;
@@ -63,7 +63,6 @@ const StUSDSWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
-  onExternalLinkClicked,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -78,6 +77,7 @@ const StUSDSWidgetWrapped = ({
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const { mutate: mutateStUsds, data: stUsdsData, isLoading: isStUsdsDataLoading } = useStUsdsData();

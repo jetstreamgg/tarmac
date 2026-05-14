@@ -45,11 +45,11 @@ import { PendleStatsCard } from './components/PendleStatsCard';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type PendleWidgetProps = WidgetProps & {
   /** Selected Pendle market — passed in by the webapp module after URL-driven selection. */
   market: PendleMarketConfig;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /** When provided, renders a "Back to Pendle" link above the heading. The webapp module
    * uses this to clear the market query params and return to the overview list. */
   onBackToPendle?: () => void;
@@ -63,7 +63,6 @@ const PendleWidgetWrapped = ({
   rightHeaderComponent,
   onNotification,
   onAnalyticsEvent,
-  onExternalLinkClicked,
   onBackToPendle,
   batchEnabled,
   setBatchEnabled
@@ -71,6 +70,7 @@ const PendleWidgetWrapped = ({
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = isConnected && enabled;
 
   const {

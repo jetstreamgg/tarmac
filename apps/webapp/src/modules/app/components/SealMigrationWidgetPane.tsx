@@ -39,7 +39,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   // Transaction tracking removed - was using RainbowKit
   const addRecentTransaction = () => {}; // No-op for now
   const onNotification = useNotification();
-  const { onExternalLinkClicked, setSelectedSealUrnIndex } = useConfigContext();
+  const { setSelectedSealUrnIndex } = useConfigContext();
   const [shouldHideLink, setShouldHideLink] = useState(false);
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
@@ -113,7 +113,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
     addRecentTransaction,
     rightHeaderComponent,
     onNotification,
-    onExternalLinkClicked,
     referralCode,
     onSealUrnChange
   };

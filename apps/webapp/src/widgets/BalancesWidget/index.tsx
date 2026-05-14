@@ -16,6 +16,7 @@ import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
 import { useCallback, useMemo, useState } from 'react';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type BalancesWidgetProps = WidgetProps & {
   chainIds?: number[];
@@ -27,7 +28,6 @@ export type BalancesWidgetProps = WidgetProps & {
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
   fixedYieldCardUrl?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   showAllNetworks?: boolean;
   setShowAllNetworks?: (showAllNetworks: boolean) => void;
@@ -41,7 +41,6 @@ export const BalancesWidget = ({
   onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
-  onExternalLinkClicked,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
@@ -73,7 +72,6 @@ export const BalancesWidget = ({
           stusdsCardUrl={stusdsCardUrl}
           vaultsCardUrl={vaultsCardUrl}
           fixedYieldCardUrl={fixedYieldCardUrl}
-          onExternalLinkClicked={onExternalLinkClicked}
           showAllNetworks={showAllNetworks}
           hideZeroBalances={hideZeroBalances}
           setShowAllNetworks={setShowAllNetworks}
@@ -90,7 +88,6 @@ const BalancesWidgetWrapped = ({
   onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
-  onExternalLinkClicked,
   chainIds,
   rewardsCardUrl,
   savingsCardUrlMap,
@@ -108,6 +105,7 @@ const BalancesWidgetWrapped = ({
 }: BalancesWidgetProps) => {
   const { isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [allFundsEmpty, setAllFundsEmpty] = useState(false);
   const handleAllFundsEmpty = useCallback((isEmpty: boolean) => setAllFundsEmpty(isEmpty), []);

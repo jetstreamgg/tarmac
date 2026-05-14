@@ -65,11 +65,11 @@ import { usePrices } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useTradeAnalytics } from './hooks/useTradeAnalytics';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
   tokensLocked?: boolean;
   batchEnabled?: boolean;
@@ -89,13 +89,13 @@ function TradeWidgetWrapped({
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onExternalLinkClicked,
   onAnalyticsEvent,
   tokensLocked = false,
   batchEnabled: initialBatchEnabled = true,
   setBatchEnabled: externalSetBatchEnabled,
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
+  const { onExternalLinkClicked } = useConfigContext();
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const [tradeAnyway, setTradeAnyway] = useState(false);

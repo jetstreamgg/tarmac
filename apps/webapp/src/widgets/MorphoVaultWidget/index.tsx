@@ -36,6 +36,7 @@ import { MorphoVaultTransactionReview } from './components/MorphoVaultTransactio
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -46,8 +47,6 @@ export type MorphoVaultWidgetProps = WidgetProps & {
   assetToken: Token;
   /** Vault name for display purposes */
   vaultName?: string;
-  /** Callback when external link is clicked */
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /** Whether batch transactions are enabled */
   batchEnabled?: boolean;
   /** Callback to set batch enabled state */
@@ -69,7 +68,6 @@ const MorphoVaultWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
-  onExternalLinkClicked,
   batchEnabled,
   setBatchEnabled,
   onBackToVaults
@@ -83,6 +81,7 @@ const MorphoVaultWidgetWrapped = ({
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
 

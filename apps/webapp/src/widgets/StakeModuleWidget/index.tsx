@@ -47,6 +47,7 @@ import { ManagePosition } from './components/ManagePosition';
 import { useStakeTransactions } from './hooks/useStakeTransactions';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -54,7 +55,6 @@ export type OnStakeUrnChange = (
 
 type StakeModuleWidgetProps = WidgetProps & {
   onStakeUrnChange?: OnStakeUrnChange;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onShowHelpModal?: () => void;
   addRecentTransaction: any;
   batchEnabled?: boolean;
@@ -70,7 +70,6 @@ function StakeModuleWidgetWrapped({
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
-  onExternalLinkClicked,
   onShowHelpModal,
   addRecentTransaction,
   referralCode,
@@ -78,6 +77,7 @@ function StakeModuleWidgetWrapped({
   setBatchEnabled,
   disclaimer
 }: StakeModuleWidgetProps) {
+  const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);
 

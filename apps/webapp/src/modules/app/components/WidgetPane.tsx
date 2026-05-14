@@ -33,8 +33,6 @@ import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPan
 import React, { useEffect } from 'react';
 import { useNotification } from '../hooks/useNotification';
 
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
 import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
@@ -76,7 +74,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const addRecentTransaction = () => {};
 
   const onNotification = useNotification();
-  const { onExternalLinkClicked } = useConfigContext();
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
@@ -106,7 +103,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     addRecentTransaction,
     rightHeaderComponent,
     onNotification,
-    onExternalLinkClicked,
     referralCode,
     shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };

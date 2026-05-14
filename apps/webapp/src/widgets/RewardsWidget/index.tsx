@@ -41,10 +41,10 @@ import { useRewardsTransactions } from './hooks/useRewardsTransactions';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { RewardsClaimAllTransactionStatus } from './components/RewardsClaimAllTransactionStatus';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   disclaimer?: React.ReactNode;
@@ -60,7 +60,6 @@ const RewardsWidgetWrapped = ({
   onStateValidated,
   onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
   onAnalyticsEvent,
   referralCode,
   batchEnabled,
@@ -71,6 +70,7 @@ const RewardsWidgetWrapped = ({
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [amount, setAmount] = useState(parseUnits(validatedExternalState?.amount || '0', 18));

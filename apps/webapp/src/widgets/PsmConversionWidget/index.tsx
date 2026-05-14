@@ -39,9 +39,9 @@ import {
 } from './hooks/usePsmConversion.helpers';
 import { PsmConversionAction, PsmConversionFlow, PsmConversionScreen } from './lib/constants';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type PsmConversionWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
@@ -79,13 +79,13 @@ function PsmConversionWidgetWrapped({
   onStateValidated,
   onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
   onAnalyticsEvent,
   referralCode,
   batchEnabled,
   setBatchEnabled,
   onBackToConvert
 }: PsmConversionWidgetProps): React.ReactElement {
+  const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = useMemo(() => {
     const state = getValidatedState(externalWidgetState, supportedTokens);
     if (!state) {

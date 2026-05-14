@@ -52,9 +52,9 @@ import {
   tokenForSymbol
 } from './lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type UpgradeWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   upgradeOptions?: Token[];
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
@@ -71,7 +71,6 @@ export function UpgradeWidgetWrapped({
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onExternalLinkClicked,
   onAnalyticsEvent,
   upgradeOptions = defaultUpgradeOptions,
   batchEnabled,
@@ -79,6 +78,7 @@ export function UpgradeWidgetWrapped({
   disallowedFlow,
   onBackToConvert
 }: UpgradeWidgetProps): React.ReactElement {
+  const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);
 

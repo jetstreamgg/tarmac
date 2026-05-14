@@ -47,10 +47,10 @@ import { UnconnectedState } from './components/UnconnectedState';
 import { useLingui } from '@lingui/react';
 import { OnSealUrnChange } from './lib/types';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 type SealModuleWidgetProps = WidgetProps & {
   onSealUrnChange?: OnSealUrnChange;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onNavigateToStakeWidget?: () => void;
   addRecentTransaction: any;
   termsLink?: { url: string; name: string };
@@ -64,7 +64,6 @@ export const SealModuleWidget = ({
   onConnect,
   onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
   onNavigateToStakeWidget,
   addRecentTransaction,
   termsLink,
@@ -83,7 +82,6 @@ export const SealModuleWidget = ({
             onConnect={onConnect}
             onNotification={onNotification}
             onWidgetStateChange={onWidgetStateChange}
-            onExternalLinkClicked={onExternalLinkClicked}
             addRecentTransaction={addRecentTransaction}
             termsLink={termsLink}
             referralCode={referralCode}
@@ -103,13 +101,13 @@ function SealModuleWidgetWrapped({
   onConnect,
   onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
   addRecentTransaction,
   termsLink,
   referralCode,
   onNavigateToStakeWidget,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) {
+  const { onExternalLinkClicked } = useConfigContext();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {

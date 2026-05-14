@@ -212,9 +212,7 @@ describe('StUSDS widget tests', () => {
   });
 
   it('handles external link clicks', async () => {
-    const mockExternalLink = vi.fn();
-
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} onExternalLinkClicked={mockExternalLink} />);
+    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
 
     // Widget should render without errors
     const supplyTab = await screen.findByText('Supply');

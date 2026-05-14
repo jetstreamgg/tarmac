@@ -47,11 +47,11 @@ import { getTooltipById } from '../data/tooltips';
 import { useTradeAnalytics } from '../TradeWidget/hooks/useTradeAnalytics';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
@@ -71,7 +71,6 @@ function TradeWidgetWrapped({
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onExternalLinkClicked,
   onAnalyticsEvent,
   referralCode,
   widgetTitle,
@@ -93,6 +92,7 @@ function TradeWidgetWrapped({
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
   const locale = linguiCtx.i18n.locale;
