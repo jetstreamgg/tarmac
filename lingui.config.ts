@@ -7,7 +7,7 @@ const config: LinguiConfig = {
   catalogs: [
     {
       path: '<rootDir>/apps/webapp/src/locales/{locale}',
-      include: ['apps/webapp/src', 'packages/widgets/src']
+      include: ['apps/webapp/src']
     }
   ],
   format: formatter({ lineNumbers: false }),

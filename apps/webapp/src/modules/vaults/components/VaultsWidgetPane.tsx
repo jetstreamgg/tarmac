@@ -1,4 +1,4 @@
-import { CardAnimationWrapper, WidgetContainer } from '@jetstreamgg/sky-widgets';
+import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { VaultsIntent } from '@/lib/enums';
@@ -12,7 +12,7 @@ import { MorphoVaultStatsCard } from '@/modules/expert/components/MorphoVaultSta
 import { MORPHO_VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
 import { useMemo } from 'react';
-import { positionAnimations } from '@jetstreamgg/sky-widgets';
+import { positionAnimations } from '@/widgets';
 
 export function VaultsWidgetPane(sharedProps: SharedProps) {
   const { selectedVaultsOption, setSelectedVaultsOption } = useConfigContext();

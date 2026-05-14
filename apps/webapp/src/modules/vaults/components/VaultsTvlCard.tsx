@@ -4,7 +4,7 @@ import { Trans } from '@lingui/react/macro';
 import { useMorphoVaultsCombinedTvl } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 
 export function VaultsTvlCard(): React.ReactElement {
   const { totalAssetsUsd, isLoading, error } = useMorphoVaultsCombinedTvl();

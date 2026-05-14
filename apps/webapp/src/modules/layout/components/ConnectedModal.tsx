@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTitle, DialogClose } from '@/components/ui
 import { Button } from '@/components/ui/button';
 import { t } from '@lingui/core/macro';
 import { Close } from '@/modules/icons';
-import { WalletCard } from '@jetstreamgg/sky-widgets';
+import { WalletCard } from '@/widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { WalletIcon } from '@/modules/ui/components/WalletIcon';
 import { useConnection } from 'wagmi';

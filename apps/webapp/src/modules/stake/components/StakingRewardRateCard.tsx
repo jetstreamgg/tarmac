@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { HStack } from '@/modules/layout/components/HStack';
-import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import {

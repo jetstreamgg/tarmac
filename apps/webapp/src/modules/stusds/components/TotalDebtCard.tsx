@@ -4,7 +4,7 @@ import { useLingui } from '@lingui/react';
 import { useCollateralData } from '@/hooks';
 import { getIlkName } from '@/hooks';
 import { formatBigInt } from '@/utils';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function TotalDebtCard() {

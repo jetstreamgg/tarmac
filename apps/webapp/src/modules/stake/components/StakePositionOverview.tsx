@@ -27,7 +27,7 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { StakeDelegateCard } from './StakeDelegateCard';
 import { StakeRewardCard } from './StakeRewardCard';
 // import { useMemo } from 'react';
-import { formatUrnIndex, getTooltipById, PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { formatUrnIndex, getTooltipById, PopoverInfo } from '@/widgets';
 import { useChainId } from 'wagmi';
 import { formatPercent } from '@/utils';
 

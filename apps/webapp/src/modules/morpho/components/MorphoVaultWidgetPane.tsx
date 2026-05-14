@@ -4,7 +4,7 @@ import {
   WidgetStateChangeParams,
   MorphoVaultFlow,
   MorphoVaultAction
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { Token } from '@/hooks';
 import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';

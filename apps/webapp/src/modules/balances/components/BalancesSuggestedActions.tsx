@@ -43,7 +43,7 @@ import {
 } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
-import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@jetstreamgg/sky-widgets';
+import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
 import { useGeoConfig } from '@/modules/geo-config';
 import type { ModuleId } from '@/modules/geo-config';
 

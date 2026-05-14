@@ -15,9 +15,6 @@
 
 @import 'tailwindcss';
 
-/* This forces tailwind to scan imported components for classes  */
-@source '../node_modules/@jetstreamgg/sky-widgets';
-
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
@@ -41,6 +38,7 @@
   --color-surfaceHover: rgba(68, 45, 125, 0.202);
   --color-surfaceAlt: var(--transparent-white-20);
   --color-panel: var(--transparent-black-20);
+  --color-widget: transparent;
   --color-selectBackground: var(--transparent-white-25);
   --color-selectActive: var(--transparent-white-40);
   --color-primary: transparent;

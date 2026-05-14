@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { useMorphoVaultMarketApiData } from '@/hooks';
-import { MorphoRateBreakdownPopover } from '@jetstreamgg/sky-widgets';
+import { MorphoRateBreakdownPopover } from '@/widgets';
 
 type MorphoVaultRateCardProps = {
   vaultAddress: `0x${string}`;

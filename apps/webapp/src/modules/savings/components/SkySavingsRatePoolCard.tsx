@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { useOverallSkyData } from '@/hooks';
 import { formatNumber } from '@/utils';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { PairTokenIcons } from '@/widgets';
 
 export function SkySavingsRatePoolCard(): React.ReactElement {
   const { data, isLoading, error } = useOverallSkyData();

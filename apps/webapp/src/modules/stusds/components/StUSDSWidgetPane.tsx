@@ -4,7 +4,7 @@ import {
   StUSDSAction,
   WidgetStateChangeParams,
   StUSDSFlow
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useSavingsHistory } from '@/hooks';
 import { ExpertIntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';

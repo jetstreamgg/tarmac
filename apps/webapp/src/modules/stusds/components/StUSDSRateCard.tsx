@@ -4,7 +4,7 @@ import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
 import { useStUsdsData } from '@/hooks';
 import { formatStrAsApy } from '@/utils';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 
 export function StUSDSRateCard() {
   const { i18n } = useLingui();

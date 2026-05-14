@@ -6,7 +6,7 @@ import { useCurveRate } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CurveLogo } from '@/modules/icons/CurveLogo';
-import { PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
+import { PopoverInfo, getTooltipById } from '@/widgets';
 
 export function StUSDSCurveExchangeRateCard() {
   const { i18n } = useLingui();

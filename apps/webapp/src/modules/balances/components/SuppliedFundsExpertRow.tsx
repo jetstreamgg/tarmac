@@ -3,7 +3,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { formatNumber } from '@/utils';
 import { formatUnits } from 'viem';
-import { PopoverRateInfo, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo, MorphoVaultBadge } from '@/widgets';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';

@@ -17,7 +17,7 @@ import {
   pendleAnalyticsData,
   usePendleSlippage,
   usePendleTokens
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
 

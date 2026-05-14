@@ -19,7 +19,7 @@ import {
   SealModuleWidget,
   TxStatus,
   WidgetStateChangeParams
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useSealCurrentIndex } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { useConnection, useChainId, useSwitchChain } from 'wagmi';

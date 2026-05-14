@@ -3,7 +3,7 @@ import { useAvailableTokenRewardContracts, RewardContract } from '@/hooks';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useChainId } from 'wagmi';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { TOKENS } from '@/hooks';
 import { useOverallSkyData } from '@/hooks';
 import { useRewardsChartInfo } from '@/hooks';
@@ -13,7 +13,7 @@ import { useStUsdsData } from '@/hooks';
 import { useMorphoVaultMarketApiData, MORPHO_VAULTS } from '@/hooks';
 
 // TODO export PairTokenIcons from widgets?
-// import { PairTokenIcons } from '@widgets/shared/components/ui/token/PairTokenIcon';
+// import { PairTokenIcons } from '@/widgets/shared/components/ui/token/PairTokenIcon';
 import { TokenIcon } from './TokenIcon';
 
 function PairTokenIcons({

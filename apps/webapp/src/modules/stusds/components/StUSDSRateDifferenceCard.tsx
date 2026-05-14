@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
 import { useCurveRate, useStUsdsData, calculateRateDifferencePercent } from '@/hooks';
-import { PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
+import { PopoverInfo, getTooltipById } from '@/widgets';
 
 export function StUSDSRateDifferenceCard() {
   const { i18n } = useLingui();

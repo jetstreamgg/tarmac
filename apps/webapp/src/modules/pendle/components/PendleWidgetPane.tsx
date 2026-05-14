@@ -16,7 +16,7 @@ import {
   PendleWidget,
   WidgetContainer,
   positionAnimations
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { FixedIntent } from '@/lib/enums';
 import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';

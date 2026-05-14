@@ -13,7 +13,7 @@ import {
   RewardsWidget,
   TxStatus,
   WidgetStateChangeParams
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId } from 'wagmi';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';

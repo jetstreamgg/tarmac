@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { formatBigInt } from '@/utils';
 import { useStUsdsCapacityData } from '@/hooks';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function StUSDSCapCard() {

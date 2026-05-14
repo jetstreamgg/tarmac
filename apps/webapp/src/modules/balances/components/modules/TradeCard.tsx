@@ -6,7 +6,7 @@ import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { HStack } from '@/modules/layout/components/HStack';
 import { TOKENS } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { defaultConfig } from '@jetstreamgg/sky-widgets';
+import { defaultConfig } from '@/widgets';
 import { restrictedTradeTokenList } from '@/modules/config/tokenListConfig';
 import { mainnet } from 'viem/chains';
 import { useChainId } from 'wagmi';

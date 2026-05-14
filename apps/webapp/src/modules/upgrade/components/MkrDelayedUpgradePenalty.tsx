@@ -3,7 +3,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { useMkrSkyFee } from '@/hooks';
 import { math } from '@/utils';
-import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo } from '@/widgets';
 
 export function MkrDelayedUpgradePenalty() {
   const { data: mkrSkyFee, isLoading, error } = useMkrSkyFee();

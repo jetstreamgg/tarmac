@@ -39,8 +39,8 @@ const USDS_TOKEN = {
   address: { [mainnet.id]: '0xdc035d45d973e3ec169d2276ddab16f1e407384f' as `0x${string}` }
 };
 
-vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     useTokenImage: () => '',

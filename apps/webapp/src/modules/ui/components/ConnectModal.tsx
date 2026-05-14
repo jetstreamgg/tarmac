@@ -15,7 +15,7 @@ import { t } from '@lingui/core/macro';
 import { useIsSafeWallet } from '@/utils';
 import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';
-import { ConnectWallet } from '@jetstreamgg/sky-widgets';
+import { ConnectWallet } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { reportError } from '@/modules/sentry/reportError';

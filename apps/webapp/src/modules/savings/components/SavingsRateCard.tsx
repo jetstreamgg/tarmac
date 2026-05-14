@@ -3,7 +3,7 @@ import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { useOverallSkyData } from '@/hooks';
 import { formatDecimalPercentage } from '@/utils';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 
 export function SavingsRateCard(): React.ReactElement {
   const { data, isLoading, error } = useOverallSkyData();

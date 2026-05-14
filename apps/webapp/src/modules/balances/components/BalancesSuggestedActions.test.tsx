@@ -64,8 +64,8 @@ vi.mock('@/utils', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     Morpho: () => <div>morpho</div>,

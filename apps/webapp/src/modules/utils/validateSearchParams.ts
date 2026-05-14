@@ -1,5 +1,5 @@
 import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@/hooks';
-import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/sky-widgets';
+import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
 import {
   QueryParams,
   IntentMapping,

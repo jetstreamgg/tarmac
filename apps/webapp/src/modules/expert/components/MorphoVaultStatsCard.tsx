@@ -11,7 +11,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChainId } from 'wagmi';
-import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
+import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
 
 type MorphoVaultStatsCardProps = {

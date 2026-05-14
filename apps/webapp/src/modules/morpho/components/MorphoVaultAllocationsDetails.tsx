@@ -10,7 +10,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { PairTokenIcons } from '@/widgets';
 import { useChainId } from 'wagmi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';

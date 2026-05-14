@@ -1,6 +1,6 @@
 import { Trans } from '@lingui/react/macro';
 import { motion } from 'motion/react';
-import { positionAnimations } from '@jetstreamgg/sky-widgets';
+import { positionAnimations } from '@/widgets';
 import {
   isMarketMatured,
   PENDLE_MARKETS,

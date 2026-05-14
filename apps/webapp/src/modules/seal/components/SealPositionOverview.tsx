@@ -23,7 +23,7 @@ import { SealDelegateCard } from './SealDelegateCard';
 import { SealRewardCard } from './SealRewardCard';
 import { useMemo } from 'react';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { formatUrnIndex } from '@jetstreamgg/sky-widgets';
+import { formatUrnIndex } from '@/widgets';
 
 const RISK_COLORS = {
   [RiskLevel.LIQUIDATION]: { text: 'text-red-400', bg: 'bg-red-400' },

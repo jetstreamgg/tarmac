@@ -4,7 +4,7 @@ import {
   TradeAction,
   WidgetStateChangeParams,
   L2TradeWidget
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';

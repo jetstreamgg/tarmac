@@ -6,7 +6,7 @@ import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo } from '@/widgets';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 

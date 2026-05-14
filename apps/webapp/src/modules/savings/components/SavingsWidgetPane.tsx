@@ -5,7 +5,7 @@ import {
   SavingsAction,
   WidgetStateChangeParams,
   SavingsFlow
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useSavingsHistory } from '@/hooks';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@/utils';
