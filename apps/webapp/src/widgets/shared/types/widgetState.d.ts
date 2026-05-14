@@ -1,21 +1,21 @@
-import { SavingsAction, SavingsFlow, SavingsScreen } from '@/widgets/widgets/SavingsWidget/lib/constants';
+import { SavingsAction, SavingsFlow, SavingsScreen } from '@/widgets/SavingsWidget/lib/constants';
 import {
   UpgradeAction,
   UpgradeFlow,
   UpgradeScreen,
   upgradeTokens
-} from '@/widgets/widgets/UpgradeWidget/lib/constants';
-import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/widgets/RewardsWidget/lib/constants';
-import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/widgets/TradeWidget/lib/constants';
+} from '@/widgets/UpgradeWidget/lib/constants';
+import { RewardsAction, RewardsFlow, RewardsScreen } from '@/widgets/RewardsWidget/lib/constants';
+import { TradeAction, TradeFlow, TradeScreen } from '@/widgets/TradeWidget/lib/constants';
 import {
   PsmConversionAction,
   PsmConversionFlow,
   PsmConversionScreen
-} from '@/widgets/widgets/PsmConversionWidget/lib/constants';
-import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/widgets/PendleWidget/lib/constants';
+} from '@/widgets/PsmConversionWidget/lib/constants';
+import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { RewardContract } from '@/hooks';
 import { TxStatus, NotificationType } from '../constants';
-import { SealFlow } from '@/widgets/widgets/SealModuleWidget/lib/constants';
+import { SealFlow } from '@/widgets/SealModuleWidget/lib/constants';
 import { WidgetAnalyticsEvent } from './analyticsEvents';
 
 export type WidgetState = {

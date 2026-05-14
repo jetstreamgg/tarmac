@@ -1,38 +1,35 @@
-export { SavingsWidget } from './widgets/SavingsWidget';
-export { StUSDSWidget } from './widgets/StUSDSWidget';
-export { L2SavingsWidget as BaseSavingsWidget } from './widgets/L2SavingsWidget';
-export { L2SavingsWidget as ArbitrumSavingsWidget } from './widgets/L2SavingsWidget';
-export { L2SavingsWidget } from './widgets/L2SavingsWidget';
-export { UpgradeWidget } from './widgets/UpgradeWidget';
-export { RewardsWidget } from './widgets/RewardsWidget';
-export { TradeWidget } from './widgets/TradeWidget';
-export { L2TradeWidget as BaseTradeWidget } from './widgets/L2TradeWidget';
-export { L2TradeWidget as ArbitrumTradeWidget } from './widgets/L2TradeWidget';
-export { L2TradeWidget } from './widgets/L2TradeWidget';
-export { PsmConversionWidget } from './widgets/PsmConversionWidget';
-export { BalancesWidget } from './widgets/BalancesWidget';
-export { SealModuleWidget } from './widgets/SealModuleWidget/index';
-export type { BalancesWidgetProps } from './widgets/BalancesWidget';
-export { StakeModuleWidget } from './widgets/StakeModuleWidget/index';
-export { MorphoVaultWidget } from './widgets/MorphoVaultWidget';
-export type { MorphoVaultWidgetProps } from './widgets/MorphoVaultWidget';
-export { PendleWidget } from './widgets/PendleWidget';
-export type { PendleWidgetProps } from './widgets/PendleWidget';
-export { usePendleTokens } from './widgets/PendleWidget/hooks/usePendleTokens';
-export type { PendleTokens } from './widgets/PendleWidget/hooks/usePendleTokens';
-export { usePendleSlippage } from './widgets/PendleWidget/hooks/usePendleSlippage';
-export type { PendleSlippageMode } from './widgets/PendleWidget/hooks/usePendleSlippage';
-export { PendleConfigMenu } from './widgets/PendleWidget/components/PendleConfigMenu';
-export { pendleAnalyticsData } from './widgets/PendleWidget/lib/pendleAnalyticsData';
-export type {
-  PendleAnalyticsDataInput,
-  PendleAnalyticsSide
-} from './widgets/PendleWidget/lib/pendleAnalyticsData';
+export { SavingsWidget } from './SavingsWidget';
+export { StUSDSWidget } from './StUSDSWidget';
+export { L2SavingsWidget as BaseSavingsWidget } from './L2SavingsWidget';
+export { L2SavingsWidget as ArbitrumSavingsWidget } from './L2SavingsWidget';
+export { L2SavingsWidget } from './L2SavingsWidget';
+export { UpgradeWidget } from './UpgradeWidget';
+export { RewardsWidget } from './RewardsWidget';
+export { TradeWidget } from './TradeWidget';
+export { L2TradeWidget as BaseTradeWidget } from './L2TradeWidget';
+export { L2TradeWidget as ArbitrumTradeWidget } from './L2TradeWidget';
+export { L2TradeWidget } from './L2TradeWidget';
+export { PsmConversionWidget } from './PsmConversionWidget';
+export { BalancesWidget } from './BalancesWidget';
+export { SealModuleWidget } from './SealModuleWidget/index';
+export type { BalancesWidgetProps } from './BalancesWidget';
+export { StakeModuleWidget } from './StakeModuleWidget/index';
+export { MorphoVaultWidget } from './MorphoVaultWidget';
+export type { MorphoVaultWidgetProps } from './MorphoVaultWidget';
+export { PendleWidget } from './PendleWidget';
+export type { PendleWidgetProps } from './PendleWidget';
+export { usePendleTokens } from './PendleWidget/hooks/usePendleTokens';
+export type { PendleTokens } from './PendleWidget/hooks/usePendleTokens';
+export { usePendleSlippage } from './PendleWidget/hooks/usePendleSlippage';
+export type { PendleSlippageMode } from './PendleWidget/hooks/usePendleSlippage';
+export { PendleConfigMenu } from './PendleWidget/components/PendleConfigMenu';
+export { pendleAnalyticsData } from './PendleWidget/lib/pendleAnalyticsData';
+export type { PendleAnalyticsDataInput, PendleAnalyticsSide } from './PendleWidget/lib/pendleAnalyticsData';
 export { TokenDropdown } from './shared/components/ui/token/TokenDropdown';
 export { TransactionOverview } from './shared/components/ui/transaction/TransactionOverview';
-export { MorphoVaultBadge } from './widgets/MorphoVaultWidget/components/MorphoVaultBadge';
-export { MorphoRateBreakdownPopover } from './widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover';
-export type { TradeToken, NativeCurrency } from './widgets/TradeWidget/lib/types';
+export { MorphoVaultBadge } from './MorphoVaultWidget/components/MorphoVaultBadge';
+export { MorphoRateBreakdownPopover } from './MorphoVaultWidget/components/MorphoRateBreakdownPopover';
+export type { TradeToken, NativeCurrency } from './TradeWidget/lib/types';
 export { TxStatus, NotificationType } from './shared/constants';
 export type {
   WidgetState,
@@ -42,18 +39,14 @@ export type {
 } from './shared/types/widgetState';
 export { WidgetAnalyticsEventType } from './shared/types/analyticsEvents';
 export type { WidgetAnalyticsEvent } from './shared/types/analyticsEvents';
-export * from './widgets/SavingsWidget/lib/constants';
-export * from './widgets/StUSDSWidget/lib/constants';
-export * from './widgets/TradeWidget/lib/constants';
-export * from './widgets/UpgradeWidget/lib/constants';
-export { RewardsFlow, RewardsScreen, RewardsAction } from './widgets/RewardsWidget/lib/constants';
-export * from './widgets/SealModuleWidget/lib/constants';
-export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './widgets/StakeModuleWidget/lib/constants';
-export {
-  MorphoVaultFlow,
-  MorphoVaultAction,
-  MorphoVaultScreen
-} from './widgets/MorphoVaultWidget/lib/constants';
+export * from './SavingsWidget/lib/constants';
+export * from './StUSDSWidget/lib/constants';
+export * from './TradeWidget/lib/constants';
+export * from './UpgradeWidget/lib/constants';
+export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
+export * from './SealModuleWidget/lib/constants';
+export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
+export { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './MorphoVaultWidget/lib/constants';
 export {
   PendleFlow,
   PendleAction,
@@ -63,8 +56,8 @@ export {
   PENDLE_SELL_SLIPPAGE_STORAGE_KEY,
   PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY,
   PENDLE_DEFAULT_REDEEM_SLIPPAGE
-} from './widgets/PendleWidget/lib/constants';
-export { formatUrnIndex } from './widgets/SealModuleWidget/lib/utils';
+} from './PendleWidget/lib/constants';
+export { formatUrnIndex } from './SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';
 export { NoResults } from './shared/components/icons/NoResults';
@@ -97,6 +90,6 @@ export {
   Cancel
 } from './shared/components/icons/Icons';
 export { Morpho } from './shared/components/icons/Morpho';
-export { WalletCard } from './widgets/BalancesWidget/components/WalletCard';
-export { ModuleCardVariant, ModulesBalances } from './widgets/BalancesWidget/components/ModulesBalances';
-export { BalancesHistory } from './widgets/BalancesWidget/components/BalancesHistory';
+export { WalletCard } from './BalancesWidget/components/WalletCard';
+export { ModuleCardVariant, ModulesBalances } from './BalancesWidget/components/ModulesBalances';
+export { BalancesHistory } from './BalancesWidget/components/BalancesHistory';

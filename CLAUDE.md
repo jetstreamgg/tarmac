@@ -133,7 +133,7 @@ pnpm messages        # Extract and compile translations
 
 ### New Widget
 
-1. Create the widget in `apps/webapp/src/widgets/widgets/<WidgetName>/`.
+1. Create the widget in `apps/webapp/src/widgets/<WidgetName>/`.
 2. Follow existing widget patterns with `WidgetProps` interface.
 3. Re-export from `apps/webapp/src/widgets/index.ts` if it needs a barrel entry.
 4. Add tests alongside the source and documentation if relevant.

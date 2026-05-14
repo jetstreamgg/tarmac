@@ -14,7 +14,7 @@ import { formatBigInt, formatNumber } from '@/utils';
 import { Link } from 'react-router-dom';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 import { PriceData } from '@/hooks';
-import { MorphoVaultBadge } from '@/widgets/widgets/MorphoVaultWidget/components/MorphoVaultBadge';
+import { MorphoVaultBadge } from '@/widgets/MorphoVaultWidget/components/MorphoVaultBadge';
 import { Trans } from '@lingui/react/macro';
 
 export type ProductBalance = {
