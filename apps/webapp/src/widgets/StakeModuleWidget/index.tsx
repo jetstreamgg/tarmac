@@ -51,6 +51,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -71,7 +72,6 @@ function StakeModuleWidgetWrapped({
   onAnalyticsEvent,
   onShowHelpModal,
   addRecentTransaction,
-  referralCode,
   disclaimer
 }: StakeModuleWidgetProps) {
   const onConnect = useCustomConnectModal();
@@ -263,9 +263,9 @@ function StakeModuleWidgetWrapped({
   // Generate calldata when all steps are complete
   useEffect(() => {
     if (allStepsComplete && address && urnIndexForTransaction !== undefined) {
-      setCalldata(generateAllCalldata(address, urnIndexForTransaction, referralCode));
+      setCalldata(generateAllCalldata(address, urnIndexForTransaction, REFERRAL_CODE));
     }
-  }, [allStepsComplete, address, urnIndexForTransaction, generateAllCalldata, referralCode]);
+  }, [allStepsComplete, address, urnIndexForTransaction, generateAllCalldata]);
 
   const isDelegateSkippable = selectedDelegate?.toLowerCase() === activeUrnVoteDelegate?.toLowerCase();
 

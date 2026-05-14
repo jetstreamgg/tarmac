@@ -68,7 +68,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
-  const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   // Map Intent → ModuleId for geo-config filtering
   // TODO(geo-gating): Pendle is intentionally absent from this map. Adding gating
@@ -92,7 +91,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const sharedProps = {
     addRecentTransaction,
     rightHeaderComponent,
-    referralCode,
     shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };
 

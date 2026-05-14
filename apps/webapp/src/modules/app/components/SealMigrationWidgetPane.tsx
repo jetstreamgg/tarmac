@@ -36,7 +36,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { switchChain } = useSwitchChain();
   const { isConnected } = useConnection();
-  const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   const rightHeaderComponent = <DetailsSwitcher />;
 
@@ -101,7 +100,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const sharedProps = {
     addRecentTransaction,
     rightHeaderComponent,
-    referralCode,
     onSealUrnChange
   };
 

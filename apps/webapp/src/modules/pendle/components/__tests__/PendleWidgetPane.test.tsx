@@ -201,7 +201,6 @@ function renderComponent(ui: ReactNode) {
 const sharedProps = {
   addRecentTransaction: () => undefined,
   rightHeaderComponent: <span />,
-  referralCode: 0,
   shouldReset: false
 };
 

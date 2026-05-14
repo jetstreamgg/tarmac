@@ -45,6 +45,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
@@ -60,7 +61,6 @@ const RewardsWidgetWrapped = ({
   onStateValidated,
   onWidgetStateChange,
   onAnalyticsEvent,
-  referralCode,
   disclaimer
 }: RewardsWidgetProps) => {
   const onConnect = useCustomConnectModal();
@@ -164,7 +164,7 @@ const RewardsWidgetWrapped = ({
   const { batchSupply, withdraw, claim, claimAll } = useRewardsTransactions({
     selectedRewardContract,
     amount,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     rewardsBalance,
     needsAllowance,
     shouldUseBatch,

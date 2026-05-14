@@ -4,7 +4,6 @@ import { Intent } from '@/lib/enums';
 export type SharedProps = {
   addRecentTransaction: (transaction: any) => void; // Replace 'any' with the actual transaction type if known
   rightHeaderComponent: JSX.Element;
-  referralCode: number;
   shouldReset: boolean;
 };
 

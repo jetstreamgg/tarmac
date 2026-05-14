@@ -56,7 +56,6 @@ describe('PsmConversionWidgetPane', () => {
   const sharedProps = {
     addRecentTransaction: vi.fn(),
     rightHeaderComponent: <div />,
-    referralCode: 0,
     shouldReset: false
   };
 

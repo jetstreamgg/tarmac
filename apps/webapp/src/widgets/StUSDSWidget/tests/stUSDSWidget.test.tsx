@@ -130,11 +130,9 @@ describe('StUSDS widget tests', () => {
   });
 
   it('handles referral code integration', async () => {
-    const referralCode = 12345;
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
-    renderWithWagmiWrapper(<StUSDSWidget referralCode={referralCode} />);
-
-    // Widget should render without errors with referral code
+    // Widget should render without errors; referralCode now sourced from REFERRAL_CODE constant.
     const supplyTab = await screen.findByText('Supply');
     expect(supplyTab).toBeTruthy();
   });

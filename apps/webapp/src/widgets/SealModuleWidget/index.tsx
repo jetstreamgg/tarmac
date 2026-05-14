@@ -67,7 +67,6 @@ export const SealModuleWidget = ({
   onNavigateToStakeWidget,
   addRecentTransaction,
   termsLink,
-  referralCode,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) => {
   const { i18n } = useLingui();
@@ -82,7 +81,6 @@ export const SealModuleWidget = ({
             onWidgetStateChange={onWidgetStateChange}
             addRecentTransaction={addRecentTransaction}
             termsLink={termsLink}
-            referralCode={referralCode}
             onNavigateToStakeWidget={onNavigateToStakeWidget}
             mkrSkyUpgradeUrl={mkrSkyUpgradeUrl}
           />
@@ -99,7 +97,6 @@ function SealModuleWidgetWrapped({
   onWidgetStateChange,
   addRecentTransaction,
   termsLink,
-  referralCode,
   onNavigateToStakeWidget,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) {
@@ -317,10 +314,10 @@ function SealModuleWidgetWrapped({
   // Generate calldata when all steps are complete
   useEffect(() => {
     if (allStepsComplete && address && urnIndexForTransaction !== undefined) {
-      const cd = generateAllCalldata(address, urnIndexForTransaction, referralCode);
+      const cd = generateAllCalldata(address, urnIndexForTransaction);
       setCalldata(cd);
     }
-  }, [allStepsComplete, address, generateAllCalldata, referralCode, widgetState?.flow, chainId]);
+  }, [allStepsComplete, address, generateAllCalldata, widgetState?.flow, chainId]);
 
   // Update button state according to action and tx
   // Ref: https://lingui.dev/tutorials/react-patterns#memoization-pitfall

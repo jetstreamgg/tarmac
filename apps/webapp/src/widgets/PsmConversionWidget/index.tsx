@@ -38,6 +38,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type PsmConversionWidgetProps = WidgetProps & {
   onBackToConvert?: () => void;
@@ -74,7 +75,6 @@ function PsmConversionWidgetWrapped({
   onStateValidated,
   onWidgetStateChange,
   onAnalyticsEvent,
-  referralCode,
   onBackToConvert
 }: PsmConversionWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
@@ -192,7 +192,7 @@ function PsmConversionWidgetWrapped({
   const conversion = usePsmConversion({
     direction,
     amount: originAmount,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     enabled: isConnectedAndEnabled,
     shouldUseBatch: !!batchEnabled,
     onMutate: () => {

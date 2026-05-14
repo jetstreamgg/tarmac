@@ -42,6 +42,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type SavingsWidgetProps = WidgetProps & {
   disallowedTokens?: { [key in SavingsFlow]: Token[] };
@@ -55,7 +56,6 @@ const SavingsWidgetWrapped = ({
   onStateValidated,
   onWidgetStateChange,
   onAnalyticsEvent,
-  referralCode,
   disallowedTokens
 }: SavingsWidgetProps) => {
   const onConnect = useCustomConnectModal();
@@ -199,7 +199,7 @@ const SavingsWidgetWrapped = ({
     amount: debouncedAmount,
     isMaxWithdraw,
     supplyMinAmountOut,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     sUsdsBalance: sUsdsBalance?.value,
     minAmountOutForWithdrawAll,
     maxAmountInForWithdraw,

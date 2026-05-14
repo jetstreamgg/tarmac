@@ -38,6 +38,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type SavingsWidgetProps = WidgetProps;
 
@@ -48,8 +49,7 @@ const SavingsWidgetWrapped = ({
   externalWidgetState,
   onStateValidated,
   onWidgetStateChange,
-  onAnalyticsEvent,
-  referralCode
+  onAnalyticsEvent
 }: SavingsWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
@@ -135,7 +135,7 @@ const SavingsWidgetWrapped = ({
   const { batchSavingsSupply, batchUpgradeAndSupply, savingsWithdraw } = useSavingsTransactions({
     amount: debouncedAmount,
     max,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     originToken,
     shouldUseBatch,
     assetDecimals,

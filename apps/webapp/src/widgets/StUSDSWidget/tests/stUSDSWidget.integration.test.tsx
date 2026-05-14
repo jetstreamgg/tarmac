@@ -196,18 +196,12 @@ describe('StUSDS Widget Integration Tests', () => {
 
   it('handles referral code integration properly', async () => {
     const mockAddTransaction = vi.fn();
-    const referralCode = 12345;
 
-    renderWithWagmiWrapper(
-      <StUSDSWidget addRecentTransaction={mockAddTransaction} referralCode={referralCode} />
-    );
+    renderWithWagmiWrapper(<StUSDSWidget addRecentTransaction={mockAddTransaction} />);
 
-    // Widget should render and handle referral code
+    // Widget should render; referralCode is now sourced from REFERRAL_CODE constant.
     const supplyTab = await screen.findByText('Supply');
     expect(supplyTab).toBeTruthy();
-
-    // The referral code should be passed to the deposit hook
-    // This is tested through the hook integration
   });
 
   it('handles error states properly', async () => {

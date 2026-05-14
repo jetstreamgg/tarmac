@@ -51,6 +51,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -71,7 +72,6 @@ function TradeWidgetWrapped({
   onCustomNavigation,
   customNavigationLabel,
   onAnalyticsEvent,
-  referralCode,
   widgetTitle,
   tokensLocked = false,
   onBackToConvert
@@ -532,7 +532,7 @@ function TradeWidgetWrapped({
     originToken,
     targetToken,
     targetAmount: debouncedTargetAmount,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     maxAmountInForWithdraw,
     shouldUseBatch,
     addRecentTransaction,
