@@ -73,7 +73,6 @@ function StakeModuleWidgetWrapped({
   onExternalLinkClicked,
   onShowHelpModal,
   addRecentTransaction,
-  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -901,7 +900,6 @@ function StakeModuleWidgetWrapped({
                       batchEnabled={batchEnabled}
                       setBatchEnabled={setBatchEnabled}
                       isBatchTransaction={shouldUseBatch}
-                      legalBatchTxUrl={legalBatchTxUrl}
                       disclaimer={disclaimer}
                       onNoChangesDetected={setHasNoChanges}
                     />
@@ -919,7 +917,6 @@ function StakeModuleWidgetWrapped({
                       batchEnabled={batchEnabled}
                       setBatchEnabled={setBatchEnabled}
                       isBatchTransaction={shouldUseBatch}
-                      legalBatchTxUrl={legalBatchTxUrl}
                     />
                   )}
                 </MotionVStack>

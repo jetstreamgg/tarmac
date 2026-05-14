@@ -31,7 +31,6 @@ type PendleTransactionReviewProps = {
   isBatchTransaction: boolean;
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
-  legalBatchTxUrl?: string;
 };
 
 export const PendleTransactionReview = ({
@@ -43,8 +42,7 @@ export const PendleTransactionReview = ({
   needsAllowance,
   isBatchTransaction,
   batchEnabled,
-  setBatchEnabled,
-  legalBatchTxUrl
+  setBatchEnabled
 }: PendleTransactionReviewProps) => {
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
@@ -146,11 +144,5 @@ export const PendleTransactionReview = ({
     setTxDescription
   ]);
 
-  return (
-    <TransactionReview
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
-    />
-  );
+  return <TransactionReview batchEnabled={batchEnabled} setBatchEnabled={setBatchEnabled} />;
 };

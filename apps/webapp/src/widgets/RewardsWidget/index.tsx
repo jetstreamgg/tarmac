@@ -62,7 +62,6 @@ const RewardsWidgetWrapped = ({
   onExternalLinkClicked,
   onAnalyticsEvent,
   enabled = true,
-  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -534,7 +533,6 @@ const RewardsWidgetWrapped = ({
               rewardAmount={widgetState.action === RewardsAction.CLAIM ? claimAmount : amount}
               selectedRewardContract={selectedRewardContract}
               needsAllowance={needsAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

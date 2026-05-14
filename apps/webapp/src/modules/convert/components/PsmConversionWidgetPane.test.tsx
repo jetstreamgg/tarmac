@@ -66,8 +66,7 @@ describe('PsmConversionWidgetPane', () => {
     onNotification: vi.fn(),
     enabled: true,
     referralCode: 0,
-    shouldReset: false,
-    legalBatchTxUrl: 'https://example.com/legal'
+    shouldReset: false
   };
 
   beforeEach(() => {

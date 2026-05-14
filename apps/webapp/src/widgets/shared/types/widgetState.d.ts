@@ -141,7 +141,6 @@ export type WidgetProps = {
   enabled?: boolean;
   referralCode?: number;
   shouldReset?: boolean;
-  legalBatchTxUrl?: string;
   disallowedFlow?:
     | BalancesFlow
     | SavingsFlow

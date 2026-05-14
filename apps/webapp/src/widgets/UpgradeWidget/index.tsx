@@ -75,7 +75,6 @@ export function UpgradeWidgetWrapped({
   upgradeOptions = defaultUpgradeOptions,
   batchEnabled,
   setBatchEnabled,
-  legalBatchTxUrl,
   enabled = true,
   disallowedFlow,
   onBackToConvert
@@ -515,7 +514,6 @@ export function UpgradeWidgetWrapped({
               targetToken={targetToken}
               targetAmount={targetAmount}
               needsAllowance={!hasAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
               isBatchFlowSupported={!shouldAvoidBundledFlow}
             />
           </CardAnimationWrapper>

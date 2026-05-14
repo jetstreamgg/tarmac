@@ -16,8 +16,7 @@ export const L2TradeTransactionReview = ({
   originAmount,
   targetToken,
   targetAmount,
-  needsAllowance,
-  legalBatchTxUrl
+  needsAllowance
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
@@ -27,7 +26,6 @@ export const L2TradeTransactionReview = ({
   targetToken: Token;
   targetAmount: bigint;
   needsAllowance: boolean;
-  legalBatchTxUrl?: string;
 }) => {
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
@@ -70,11 +68,5 @@ export const L2TradeTransactionReview = ({
     setTxDescription(i18n._(l2TradeDescription({ originToken, targetToken })));
   }, [flow, action, screen, i18n.locale, isBatchTransaction, batchEnabled, batchSupported]);
 
-  return (
-    <TransactionReview
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
-    />
-  );
+  return <TransactionReview batchEnabled={batchEnabled} setBatchEnabled={setBatchEnabled} />;
 };

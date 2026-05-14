@@ -60,8 +60,7 @@ const SavingsWidgetWrapped = ({
   referralCode,
   disallowedTokens,
   batchEnabled,
-  setBatchEnabled,
-  legalBatchTxUrl
+  setBatchEnabled
 }: SavingsWidgetProps) => {
   const {
     setButtonText,
@@ -499,7 +498,6 @@ const SavingsWidgetWrapped = ({
               originToken={originToken}
               originAmount={debouncedAmount}
               needsAllowance={needsAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

@@ -70,7 +70,6 @@ const MorphoVaultWidgetWrapped = ({
   onAnalyticsEvent,
   onExternalLinkClicked,
   enabled = true,
-  legalBatchTxUrl,
   batchEnabled,
   setBatchEnabled,
   onBackToVaults
@@ -535,7 +534,6 @@ const MorphoVaultWidgetWrapped = ({
               amount={debouncedAmount}
               needsAllowance={needsAllowance}
               needsAllowanceReset={needsAllowanceReset}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

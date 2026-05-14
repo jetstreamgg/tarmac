@@ -66,8 +66,7 @@ const PendleWidgetWrapped = ({
   onBackToPendle,
   enabled = true,
   batchEnabled,
-  setBatchEnabled,
-  legalBatchTxUrl
+  setBatchEnabled
 }: PendleWidgetProps) => {
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
@@ -502,7 +501,6 @@ const PendleWidgetWrapped = ({
               isBatchTransaction={shouldUseBatch}
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

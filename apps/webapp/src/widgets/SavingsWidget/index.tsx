@@ -52,7 +52,6 @@ const SavingsWidgetWrapped = ({
   onAnalyticsEvent,
   onExternalLinkClicked,
   enabled = true,
-  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled
@@ -460,7 +459,6 @@ const SavingsWidgetWrapped = ({
               needsAllowance={needsAllowance}
               isUpgradeSupplyFlow={isUpgradeSupplyFlow}
               shouldUseBatch={shouldUseBatch}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

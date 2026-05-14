@@ -11,7 +11,6 @@ export type SharedProps = {
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   referralCode: number;
   shouldReset: boolean;
-  legalBatchTxUrl: string;
 };
 
 export type WidgetSubItem = {

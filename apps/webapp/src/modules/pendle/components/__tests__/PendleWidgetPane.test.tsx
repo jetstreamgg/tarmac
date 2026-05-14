@@ -206,8 +206,7 @@ const sharedProps = {
   onNotification: () => undefined,
   enabled: false,
   referralCode: 0,
-  shouldReset: false,
-  legalBatchTxUrl: ''
+  shouldReset: false
 };
 
 const cardAddresses = (container: HTMLElement): string[] =>

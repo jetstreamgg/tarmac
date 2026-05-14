@@ -74,7 +74,6 @@ function TradeWidgetWrapped({
   onExternalLinkClicked,
   onAnalyticsEvent,
   enabled = true,
-  legalBatchTxUrl,
   referralCode,
   widgetTitle,
   batchEnabled,
@@ -880,7 +879,6 @@ function TradeWidgetWrapped({
               targetToken={targetToken as Token}
               targetAmount={debouncedTargetAmount}
               needsAllowance={needsAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

@@ -81,7 +81,6 @@ function PsmConversionWidgetWrapped({
   onExternalLinkClicked,
   onAnalyticsEvent,
   enabled = true,
-  legalBatchTxUrl,
   referralCode,
   batchEnabled,
   setBatchEnabled,
@@ -682,7 +681,6 @@ function PsmConversionWidgetWrapped({
               targetToken={conversion.targetToken}
               targetAmount={conversion.targetAmount}
               needsAllowance={conversion.needsAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
               isBatchFlowSupported={!!batchSupported}
             />
           </CardAnimationWrapper>
