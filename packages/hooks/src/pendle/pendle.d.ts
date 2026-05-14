@@ -1,4 +1,5 @@
 import { ReadHook } from '../hooks';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { PendleHistoryAction } from './constants';
 
 /**
@@ -333,6 +334,15 @@ export type PendlePnlSpendUnitData = {
  * affecting action (mintPy, swapPtToYt, redeemPy, …). We type only the fields
  * we read; `action` is a free string so unknown action values pass through
  * untouched and get filtered client-side.
+ *
+ * `txValueAsset` is the magnitude of the underlying-token movement caused by
+ * this transaction (positive on both spend and receive sides — sign is
+ * implied by the action). For a redeemPy row this is the amount of underlying
+ * the user received; zero on YT-only redeems where no underlying actually
+ * moved.
+ *
+ * `ptData.unit` is the running PT balance AFTER the action, NOT the delta —
+ * do not display it as a trade amount.
  */
 export type PendlePnlTransactionRaw = {
   timestamp: string;
@@ -340,6 +350,7 @@ export type PendlePnlTransactionRaw = {
   market: string;
   txHash: `0x${string}`;
   ptData?: PendlePnlSpendUnitData;
+  txValueAsset?: number;
 };
 
 export type PendlePnlTransactionsResponseRaw = {
@@ -362,10 +373,23 @@ export type PendleHistoryRow = {
   txHash: `0x${string}`;
   timestamp: string;
   action: PendleHistoryAction;
-  /** PT amount in PT units (e.g. 1000, not raw bigint). Always positive. */
+  /**
+   * PT amount this transaction acted on, in PT units. Reliable for trade rows
+   * (BUY_PT/SELL_PT — sourced from v5 notional.pt). Unreliable for redeem rows
+   * because the v1 PnL feed reports `ptData.unit` as the running balance after
+   * the action, not the delta — surfaced as 0 so consumers don't accidentally
+   * display the balance as a trade amount.
+   */
   ptAmount: number;
-  /** USD-denominated trade value as reported by Pendle. 0 for redeem rows. */
+  /** USD-denominated trade value as reported by v5. 0 for redeem rows. */
   valueUsd: number;
+  /**
+   * Underlying-token amount the user spent (BUY) or received (SELL/REDEEM),
+   * in the underlying token's units (e.g. USDG, USDe). Approximate for
+   * BUY/SELL on non-pegged markets — v5 only reports USD, so this equals
+   * `valueUsd` there; exact for REDEEM since it comes from v1's txValueAsset.
+   */
+  underlyingAmount: number;
 };
 
 export type PendleMarketHistoryHook = ReadHook & {
@@ -384,6 +408,46 @@ export type PendleCombinedHistoryRow = PendleHistoryRow & {
 
 export type PendleCombinedMarketHistoryHook = ReadHook & {
   data?: PendleCombinedHistoryRow[];
+};
+
+/**
+ * Adapter shape for the cross-module combined history used by the user
+ * activity modal. Mirrors the field set the BalancesHistoryItem renderer
+ * expects (blockTimestamp/transactionHash/module/type/chainId) and carries
+ * the Pendle-specific bits the display helpers consume.
+ *
+ * `ptAmount` is the raw PT integer (PT decimals = underlying decimals per
+ * Pendle convention), so `formatBigInt(amount, { unit: decimals })` renders
+ * the same number a user would see on a block explorer or the per-market
+ * history table. `marketName` ("PT-USDe", …) is the unit shown in the row's
+ * right-hand text.
+ */
+export interface PendleHistoryItem {
+  blockTimestamp: Date;
+  transactionHash: string;
+  module: ModuleEnum.PENDLE;
+  type: TransactionTypeEnum.PENDLE_BUY | TransactionTypeEnum.PENDLE_SELL | TransactionTypeEnum.PENDLE_REDEEM;
+  /** Always mainnet — Pendle's API doesn't serve other chains we support. */
+  chainId: 1;
+  /**
+   * Underlying-token amount the user spent (BUY) or received (SELL/REDEEM),
+   * in the underlying's native decimals. Naming matches the `assets` field on
+   * Savings/Morpho rows so getAmount can read it via the same `'assets' in
+   * item` discriminator.
+   */
+  assets: bigint;
+  /** Underlying-token decimals — used by formatBigInt at render time. */
+  underlyingDecimals: number;
+  /** Underlying-token display symbol (e.g. "USDe", "USDG"). */
+  underlyingSymbol: string;
+  /** Market name for breadcrumb context; not used in the row's right-hand unit. */
+  marketName: string;
+  /** Source market address — useful for downstream linking; not currently rendered. */
+  marketAddress: `0x${string}`;
+}
+
+export type PendleHistoryHook = ReadHook & {
+  data?: PendleHistoryItem[];
 };
 
 /** Per-market user PT balance + USD valuation, scoped to markets we support. */

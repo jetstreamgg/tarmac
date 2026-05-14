@@ -50,13 +50,19 @@ function makeTrade(
   };
 }
 
-function makeRedeem(txHash: `0x${string}`, timestamp: string, ptUnit: number): PendlePnlTransactionRaw {
+function makeRedeem(
+  txHash: `0x${string}`,
+  timestamp: string,
+  ptUnit: number,
+  txValueAsset: number = ptUnit
+): PendlePnlTransactionRaw {
   return {
     timestamp,
     action: 'redeemPy',
     market: `1-${MARKET}`,
     txHash,
-    ptData: { unit: ptUnit }
+    ptData: { unit: ptUnit },
+    txValueAsset
   };
 }
 
@@ -96,12 +102,33 @@ describe('usePendleMarketHistory — merge, dedupe, sort, fallback', () => {
     // Sorted desc by timestamp: redeem (June) first, buy (January) second.
     expect(result.current.data?.[0].action).toBe(PendleHistoryAction.REDEEM_PY);
     expect(result.current.data?.[0].txHash).toBe(HASH_REDEEM);
+    // Redeem rows sourced from v1's txValueAsset. 1 PT = 1 underlying at
+    // redemption, so ptAmount and underlyingAmount are the same number.
+    // valueUsd stays 0 — computeMaturedEarnings only reads it for trades.
     expect(result.current.data?.[0].ptAmount).toBe(800);
     expect(result.current.data?.[0].valueUsd).toBe(0);
+    expect(result.current.data?.[0].underlyingAmount).toBe(800);
     expect(result.current.data?.[1].action).toBe(PendleHistoryAction.BUY_PT);
     expect(result.current.data?.[1].txHash).toBe(HASH_BUY);
     expect(result.current.data?.[1].ptAmount).toBe(1000);
     expect(result.current.data?.[1].valueUsd).toBe(1000);
+    expect(result.current.data?.[1].underlyingAmount).toBe(1000);
+  });
+
+  it('drops redeem rows where txValueAsset is zero (YT-only no-op redeems)', async () => {
+    // PnL feed reports a redeemPy entry but no underlying actually moved —
+    // surface nothing rather than a confusing "0 USDe" row.
+    const noopRedeem = makeRedeem(HASH_REDEEM, '2026-06-01T00:00:00Z', 0, 0);
+
+    vi.mocked(fetchPendleMarketTransactions).mockResolvedValueOnce([]);
+    vi.mocked(fetchPendlePnlTransactions).mockResolvedValueOnce([noopRedeem]);
+
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET), {
+      wrapper: makeWrapper()
+    });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data).toEqual([]);
   });
 
   it('filters out non-PT trade actions from the v5 feed (e.g. BUY_YT)', async () => {

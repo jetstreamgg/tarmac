@@ -55,14 +55,16 @@ function makeRedeem(
   marketAddress: `0x${string}`,
   txHash: `0x${string}`,
   timestamp: string,
-  ptUnit: number
+  ptUnit: number,
+  txValueAsset: number = ptUnit
 ): PendlePnlTransactionRaw {
   return {
     timestamp,
     action: 'redeemPy',
     market: `1-${marketAddress}`,
     txHash,
-    ptData: { unit: ptUnit }
+    ptData: { unit: ptUnit },
+    txValueAsset
   };
 }
 

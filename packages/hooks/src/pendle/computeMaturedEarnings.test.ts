@@ -58,7 +58,8 @@ function makeTrade(
     timestamp: new Date((EXPIRY - opts.secondsBeforeExpiry) * 1000).toISOString(),
     action,
     ptAmount: opts.pt ?? opts.value,
-    valueUsd: opts.value
+    valueUsd: opts.value,
+    underlyingAmount: opts.value
   };
 }
 

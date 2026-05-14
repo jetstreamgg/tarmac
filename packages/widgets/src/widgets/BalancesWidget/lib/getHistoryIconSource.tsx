@@ -13,6 +13,10 @@ export const getHistoryIconSource = ({
     case ModuleEnum.STUSDS:
     case ModuleEnum.MORPHO:
       return type === TransactionTypeEnum.SUPPLY ? src + 'savings-supply.svg' : src + 'savings-withdraw.svg';
+    case ModuleEnum.PENDLE:
+      return type === TransactionTypeEnum.PENDLE_BUY
+        ? src + 'savings-supply.svg'
+        : src + 'savings-withdraw.svg';
     case ModuleEnum.UPGRADE:
       return type === TransactionTypeEnum.DAI_TO_USDS || type === TransactionTypeEnum.MKR_TO_SKY
         ? src + 'upgrade.svg'

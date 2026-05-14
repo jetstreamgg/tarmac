@@ -1,0 +1,155 @@
+/**
+ * @vitest-environment happy-dom
+ */
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { PendleHistoryAction } from './constants';
+import type { PendleCombinedHistoryRow, PendleMarketConfig } from './pendle';
+
+vi.mock('./useAllPendleMarketsHistory', () => ({
+  useAllPendleMarketsHistory: vi.fn()
+}));
+
+import { useAllPendleMarketsHistory } from './useAllPendleMarketsHistory';
+import { usePendleCombinedHistory } from './usePendleCombinedHistory';
+
+const PT_USDE: PendleMarketConfig = {
+  name: 'PT-USDe',
+  marketAddress: '0xa3336f04f7afbf26714331e395054f33b77c9b8d',
+  ptToken: '0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0',
+  ytToken: '0x4265ebF36F738D4D623C201BecBbc0f92bE57198',
+  syToken: '0xf0bAcD9C3D94fC924DBcaaF644208C4E3f4d3bB4',
+  underlyingToken: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
+  underlyingSymbol: 'USDe',
+  underlyingDecimals: 18,
+  expiry: 1778112000,
+  usdsEquivalence: 'pegged'
+};
+
+const PT_USDG: PendleMarketConfig = {
+  name: 'PT-USDG',
+  marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
+  ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
+  ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',
+  syToken: '0xc1799CaB1F201946f7CFaFBaF1BCC089b2F08927',
+  underlyingToken: '0xe343167631d89B6Ffc58B88d6b7fB0228795491D',
+  underlyingSymbol: 'USDG',
+  underlyingDecimals: 6,
+  expiry: 1779926400,
+  usdsEquivalence: 'pegged'
+};
+
+function row(
+  market: PendleMarketConfig,
+  action: PendleHistoryAction,
+  timestamp: string,
+  amount: number,
+  txHash: `0x${string}` = '0xabc'
+): PendleCombinedHistoryRow {
+  return {
+    id: `${txHash}:${action}`,
+    txHash,
+    timestamp,
+    action,
+    // For trades: ptAmount comes from v5 notional.pt. For redeems: 1 PT = 1
+    // underlying at redemption, so ptAmount == underlyingAmount.
+    ptAmount: amount,
+    valueUsd: action === PendleHistoryAction.REDEEM_PY ? 0 : amount,
+    underlyingAmount: amount,
+    market
+  };
+}
+
+describe('usePendleCombinedHistory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('maps the three Pendle actions to the right TransactionTypeEnum values', () => {
+    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
+      data: [
+        row(PT_USDE, PendleHistoryAction.BUY_PT, '2026-02-03T08:10:59Z', 1000, '0x1'),
+        row(PT_USDE, PendleHistoryAction.SELL_PT, '2026-03-01T00:00:00Z', 250, '0x2'),
+        row(PT_USDE, PendleHistoryAction.REDEEM_PY, '2026-04-22T19:11:11Z', 6143.99, '0x3')
+      ],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+      dataSources: []
+    });
+
+    const { result } = renderHook(() => usePendleCombinedHistory());
+    expect(result.current.data).toBeDefined();
+    expect(result.current.data!.map(r => r.type)).toEqual([
+      TransactionTypeEnum.PENDLE_BUY,
+      TransactionTypeEnum.PENDLE_SELL,
+      TransactionTypeEnum.PENDLE_REDEEM
+    ]);
+    expect(result.current.data!.every(r => r.module === ModuleEnum.PENDLE)).toBe(true);
+    expect(result.current.data!.every(r => r.chainId === 1)).toBe(true);
+  });
+
+  it('converts ptAmount float to assets bigint using the source market decimals', () => {
+    // PT-USDe has 18-decimal underlying. 6143.99 → 6143.99 * 1e18 (rounded).
+    // PT-USDG has 6-decimal underlying. 100.5 → 100.5 * 1e6 = 100_500_000.
+    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
+      data: [
+        row(PT_USDE, PendleHistoryAction.REDEEM_PY, '2026-04-22T19:11:11Z', 6143.99, '0x1'),
+        row(PT_USDG, PendleHistoryAction.BUY_PT, '2026-04-01T00:00:00Z', 100.5, '0x2')
+      ],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+      dataSources: []
+    });
+
+    const { result } = renderHook(() => usePendleCombinedHistory());
+    const usde = result.current.data![0];
+    const usdg = result.current.data![1];
+    expect(usde.underlyingDecimals).toBe(18);
+    expect(usde.assets).toBe(BigInt(Math.round(6143.99 * 1e18)));
+    expect(usde.marketName).toBe('PT-USDe');
+    expect(usdg.underlyingDecimals).toBe(6);
+    expect(usdg.assets).toBe(100_500_000n);
+    expect(usdg.marketName).toBe('PT-USDG');
+    // Display unit is the PT-Market name — unambiguous about what asset is
+    // being transacted (PT) regardless of what wallet token funded it.
+    expect(usde.underlyingSymbol).toBe('PT-USDe');
+    expect(usdg.underlyingSymbol).toBe('PT-USDG');
+  });
+
+  it('preserves blockTimestamp as a Date and threads txHash + marketAddress through', () => {
+    const r = row(PT_USDE, PendleHistoryAction.BUY_PT, '2026-02-03T08:10:59Z', 1000, '0xdeadbeef');
+    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
+      data: [r],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+      dataSources: []
+    });
+
+    const { result } = renderHook(() => usePendleCombinedHistory());
+    const item = result.current.data![0];
+    expect(item.blockTimestamp).toBeInstanceOf(Date);
+    expect(item.blockTimestamp.toISOString()).toBe('2026-02-03T08:10:59.000Z');
+    expect(item.transactionHash).toBe('0xdeadbeef');
+    expect(item.marketAddress).toBe(PT_USDE.marketAddress);
+  });
+
+  it('passes through undefined data + loading/error flags', () => {
+    const mutate = vi.fn();
+    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      mutate,
+      dataSources: []
+    });
+
+    const { result } = renderHook(() => usePendleCombinedHistory());
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.mutate).toBe(mutate);
+  });
+});

@@ -20,7 +20,12 @@ export const getPositive = ({ type }: { type: TransactionTypeEnum }) => {
     case TransactionTypeEnum.SEAL:
     case TransactionTypeEnum.STAKE:
     case TransactionTypeEnum.STAKE_REPAY:
+    // Pendle rows render the PT amount, so sign follows PT direction:
+    // Buy adds PT to the user's position (+), Sell/Redeem remove it (−).
+    case TransactionTypeEnum.PENDLE_BUY:
       return true;
+    case TransactionTypeEnum.PENDLE_SELL:
+    case TransactionTypeEnum.PENDLE_REDEEM:
     case TransactionTypeEnum.USDS_TO_DAI:
     case TransactionTypeEnum.SKY_TO_MKR:
     case TransactionTypeEnum.TRADE:

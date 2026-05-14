@@ -1,4 +1,5 @@
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { PendleHistoryItem } from '../pendle/pendle';
 import { BaseTradeHistoryItem } from '../psm/useBaseTradeHistory';
 import { RewardUserHistoryItem } from '../rewards/rewards';
 import { SavingsSupply } from '../savings/savings';
@@ -23,4 +24,5 @@ export type CombinedHistoryItem =
   | RewardUserHistoryItem
   | SealHistoryItem
   | StUsdsHistoryItem
-  | BaseTradeHistoryItem;
+  | BaseTradeHistoryItem
+  | PendleHistoryItem;

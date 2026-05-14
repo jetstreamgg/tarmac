@@ -5,12 +5,14 @@ export const getToken = ({
   type,
   tradeFromToken,
   savingsToken,
-  rewardToken
+  rewardToken,
+  pendleUnderlyingSymbol
 }: {
   type: TransactionTypeEnum;
   tradeFromToken?: string;
   savingsToken?: string;
   rewardToken?: string;
+  pendleUnderlyingSymbol?: string;
 }) => {
   switch (type) {
     case TransactionTypeEnum.SUPPLY: //TODO: account for other reward contracts
@@ -39,6 +41,10 @@ export const getToken = ({
     case TransactionTypeEnum.SEAL:
     case TransactionTypeEnum.UNSEAL:
       return t`MKR`;
+    case TransactionTypeEnum.PENDLE_BUY:
+    case TransactionTypeEnum.PENDLE_SELL:
+    case TransactionTypeEnum.PENDLE_REDEEM:
+      return pendleUnderlyingSymbol || '';
     default:
       return '';
   }

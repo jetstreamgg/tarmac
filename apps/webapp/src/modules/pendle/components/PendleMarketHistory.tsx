@@ -26,11 +26,14 @@ export function PendleMarketHistory({ market }: PendleMarketHistoryProps) {
     ) : (
       <ArrowDown width={10} height={14} className="mr-4.75 shrink-0 fill-white" />
     );
+    // ptAmount is populated for every row: trades via v5 notional.pt, redeems
+    // via the 1 PT = 1 underlying invariant (txValueAsset).
+    const textLeft = `${formatNumber(tx.ptAmount, { compact: true })} ${market.name}`;
     return {
       id: tx.id,
       type,
       highlightText: isBuy,
-      textLeft: `${formatNumber(tx.ptAmount, { compact: true })} ${market.name}`,
+      textLeft,
       iconLeft,
       formattedDate: formattedDates.length > index ? formattedDates[index] : '',
       rawDate: new Date(tx.timestamp),

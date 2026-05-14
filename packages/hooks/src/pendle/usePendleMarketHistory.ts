@@ -14,28 +14,40 @@ import { fetchPendleMarketTransactions, fetchPendlePnlTransactions } from './pen
 const SURFACED_TRADE_ACTIONS = new Set<string>([PendleHistoryAction.BUY_PT, PendleHistoryAction.SELL_PT]);
 
 function normalizeTrade(tx: PendleTransactionRaw): PendleHistoryRow {
+  // v5 doesn't expose the underlying-asset leg separately — only `value` (USD)
+  // and `notional.pt`. For our pegged stablecoin markets USD ≈ underlying,
+  // which is the only context this approximation is consumed in. The
+  // PendleHistoryRow doc comment notes the caveat for any future non-pegged
+  // market that's added.
   return {
     id: tx.id,
     txHash: tx.txHash,
     timestamp: tx.timestamp,
     action: tx.action,
     ptAmount: tx.notional?.pt ?? 0,
-    valueUsd: tx.value
+    valueUsd: tx.value,
+    underlyingAmount: tx.value
   };
 }
 
 function normalizeRedeem(tx: PendlePnlTransactionRaw): PendleHistoryRow {
-  const ptAmount = tx.ptData?.unit ?? 0;
+  // 1 PT = 1 underlying at redemption (and any time the user calls redeemPy
+  // with a PT+YT pair), so the underlying amount received equals the PT
+  // amount redeemed. v1's `ptData.unit` is the post-action running balance,
+  // not a trade delta, so we don't read it — txValueAsset is both the
+  // underlying out and the PT in for this row.
+  const amount = tx.txValueAsset ?? 0;
   return {
     id: `${tx.txHash}:${PendleHistoryAction.REDEEM_PY}`,
     txHash: tx.txHash,
     timestamp: tx.timestamp,
     action: PendleHistoryAction.REDEEM_PY,
-    ptAmount,
-    // Redeems are post-maturity principal returns, not market trades — Pendle
-    // doesn't report a `value` for them and computeMaturedEarnings doesn't
-    // read this field for redeems (it filters by action first).
-    valueUsd: 0
+    ptAmount: amount,
+    // Redeems are principal returns, not market trades — Pendle doesn't
+    // report a `value` for them and computeMaturedEarnings doesn't read this
+    // field for redeems (it filters by action first).
+    valueUsd: 0,
+    underlyingAmount: amount
   };
 }
 
@@ -68,6 +80,10 @@ export async function loadPendleMarketHistoryRows(
   if (pnlSettled.status === 'fulfilled') {
     redeemRows = pnlSettled.value
       .filter(tx => tx.action === PendleHistoryAction.REDEEM_PY)
+      // Drop YT-only redeems where no underlying actually moved — they'd
+      // render as "0 USDe Redeem" rows that confuse users without telling
+      // them anything actionable.
+      .filter(tx => (tx.txValueAsset ?? 0) > 0)
       .map(normalizeRedeem);
   } else {
     // Don't fail the whole query if the secondary feed is down — log and

@@ -55,7 +55,8 @@ const BUY_TRADE: PendleHistoryRow = {
   timestamp: new Date(NINETY_DAYS_BEFORE_EXPIRY).toISOString(),
   action: PendleHistoryAction.BUY_PT,
   ptAmount: 1000,
-  valueUsd: 1000
+  valueUsd: 1000,
+  underlyingAmount: 1000
 };
 
 // 1010 USDG with 6 decimals
