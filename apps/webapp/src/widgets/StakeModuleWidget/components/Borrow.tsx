@@ -15,14 +15,8 @@ import { t } from '@lingui/core/macro';
 import { useContext, useEffect, useMemo } from 'react';
 import { StakeModuleWidgetContext } from '../context/context';
 import { TransactionOverview } from '@/widgets/shared/components/ui/transaction/TransactionOverview';
-import {
-  WAD_PRECISION,
-  capitalizeFirstLetter,
-  formatBigInt,
-  formatPercent,
-  useDebounce,
-  math
-} from '@/utils';
+import { WAD_PRECISION, capitalizeFirstLetter, formatBigInt, formatPercent, math } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { formatUnits } from 'viem';
 import { RiskSlider } from '@/widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor, getCeilingTextColor } from '../lib/utils';

@@ -8,7 +8,8 @@ import {
   useTokenBalance,
   getTokenDecimals
 } from '@/hooks';
-import { useDebounce, math } from '@/utils';
+import { math } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';
@@ -30,11 +31,7 @@ import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
 import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetState';
 import { usePreviewSwapExactIn, usePreviewSwapExactOut } from '@/hooks';
-import {
-  useReadSsrAuthOracleGetChi,
-  useReadSsrAuthOracleGetRho,
-  useReadSsrAuthOracleGetSsr
-} from '@/hooks';
+import { useReadSsrAuthOracleGetChi, useReadSsrAuthOracleGetRho, useReadSsrAuthOracleGetSsr } from '@/hooks';
 import { SavingsTransactionReview } from '../SavingsWidget/components/SavingsTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useL2SavingsTransactions } from './hooks/useL2SavingsTransactions';

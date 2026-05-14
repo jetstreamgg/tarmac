@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatDate, getDateLocale } from '../formatDate';
+import { formatDate, getDateLocale } from '../../utils/formatDate';
 
 export const useFormatDate = (date: Date, locale?: string, format?: string) => {
   const [formattedDate, setFormattedDate] = useState<string>('');

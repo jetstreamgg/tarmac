@@ -17,7 +17,8 @@ import {
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
-import { isTestnetId, useDebounce, useIsSafeWallet } from '@/utils';
+import { isTestnetId } from '@/utils';
+import { useDebounce, useIsSafeWallet } from '@/hooks';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/widgets/components/ui/button';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';

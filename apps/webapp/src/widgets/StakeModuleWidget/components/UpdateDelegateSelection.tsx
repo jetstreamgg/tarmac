@@ -19,7 +19,7 @@ import { OnStakeUrnChange } from '..';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { JazziconComponent } from './Jazzicon';
 import { cn } from '@/widgets/lib/utils';
-import { useDebounce } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { Search } from '@/widgets/shared/components/icons/Search';
 import { Input } from '@/widgets/components/ui/input';
 import { Close } from '@/widgets/shared/components/icons/Close';

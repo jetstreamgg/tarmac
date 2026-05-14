@@ -12,13 +12,8 @@ const Jazzicon =
 import { CopyToClipboard } from '@/widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
-import {
-  isBaseChainId,
-  isArbitrumChainId,
-  isOptimismChainId,
-  isUnichainChainId,
-  useIsSafeWallet
-} from '@/utils';
+import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { cn } from '@/widgets/lib/utils';
 import { SwitchAccountButton } from './SwitchAccountButton';
 

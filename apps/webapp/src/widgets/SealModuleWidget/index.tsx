@@ -36,7 +36,8 @@ import {
   useUrnSelectedRewardContract,
   useUrnSelectedVoteDelegate
 } from '@/hooks';
-import { formatBigInt, getTransactionLink, useDebounce, useIsSafeWallet } from '@/utils';
+import { formatBigInt, getTransactionLink } from '@/utils';
+import { useDebounce, useIsSafeWallet } from '@/hooks';
 import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetState';
 import { SealModuleTransactionStatus } from './components/SealModuleTransactionStatus';
 import { Button } from '@/widgets/components/ui/button';

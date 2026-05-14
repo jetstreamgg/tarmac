@@ -8,7 +8,8 @@ import {
   useIsBatchSupported,
   useRewardsChartInfo
 } from '@/hooks';
-import { useDebounce, formatBigInt, formatDecimalPercentage } from '@/utils';
+import { formatBigInt, formatDecimalPercentage } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '../shared/components/ui/widget/WidgetContainer';
 import { RewardsFlow, RewardsAction, RewardsScreen } from './lib/constants';

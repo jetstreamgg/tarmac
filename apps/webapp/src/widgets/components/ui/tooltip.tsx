@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { useIsTouchDevice } from '@/utils';
+import { useIsTouchDevice } from '@/hooks';
 
 import { cn } from '@/widgets/lib/utils';
 

@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { formatBigInt, useFormatDates } from '@/utils';
+import { formatBigInt } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';

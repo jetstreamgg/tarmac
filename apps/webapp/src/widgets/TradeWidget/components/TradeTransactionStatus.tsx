@@ -9,9 +9,9 @@ import {
   ExplorerName,
   getExplorerName,
   isL2ChainId,
-  useIsSafeWallet,
   isCowSupportedChainId
 } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { TxCardCopyText } from '@/widgets/shared/types/txCardCopyText';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { TransactionStatus } from '@/widgets/shared/components/ui/transaction/TransactionStatus';

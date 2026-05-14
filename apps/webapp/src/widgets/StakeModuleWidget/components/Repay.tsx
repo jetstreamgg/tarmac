@@ -22,9 +22,9 @@ import {
   capitalizeFirstLetter,
   formatBigInt,
   formatBigIntAsCeiledAbsoluteWithSymbol,
-  formatPercent,
-  useDebounce
+  formatPercent
 } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { formatUnits } from 'viem';
 import { RiskSlider } from '@/widgets/shared/components/ui/RiskSlider';
 import { getRiskTextColor } from '../lib/utils';

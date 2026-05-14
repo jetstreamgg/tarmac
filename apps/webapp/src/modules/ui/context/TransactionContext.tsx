@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { TxStatus } from '@/widgets';
 import { toError } from '@/hooks';
-import { getTransactionLink, useIsSafeWallet } from '@/utils';
+import { getTransactionLink } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';

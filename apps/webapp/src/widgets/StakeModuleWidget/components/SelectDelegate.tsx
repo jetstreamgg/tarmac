@@ -2,7 +2,7 @@ import { Input } from '@/widgets/components/ui/input';
 import { VStack } from '@/widgets/shared/components/ui/layout/VStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { ZERO_ADDRESS, useStakeUserDelegates, useStakeUrnSelectedVoteDelegate } from '@/hooks';
-import { useDebounce } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { useContext, useEffect, useState, useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
 import { DelegateCard } from './DelegateCard';

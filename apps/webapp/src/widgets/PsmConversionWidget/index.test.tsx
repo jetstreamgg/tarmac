@@ -34,7 +34,8 @@ vi.mock('@/hooks', async importOriginal => {
       data: { value: 100_000_000n },
       refetch: mockPsmState.refetchBalance
     }),
-    useIsBatchSupported: () => ({ data: false })
+    useIsBatchSupported: () => ({ data: false }),
+    useIsSafeWallet: () => false
   };
 });
 
@@ -45,8 +46,7 @@ vi.mock('@/utils', async importOriginal => {
     ...actual,
     formatBigInt: (value: bigint) => value.toString(),
     getTransactionLink: (_chainId: number, _address: string | undefined, hash: string) =>
-      `https://explorer.test/${hash}`,
-    useIsSafeWallet: () => false
+      `https://explorer.test/${hash}`
   };
 });
 

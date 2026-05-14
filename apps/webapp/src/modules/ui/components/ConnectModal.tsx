@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { Close } from '@/modules/icons';
 import { t } from '@lingui/core/macro';
-import { useIsSafeWallet } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { WalletIcon } from './WalletIcon';
 import { WALLET_ICONS } from '@/lib/constants';
 import { ConnectWallet } from '@/widgets';

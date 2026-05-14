@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { TransactionTypeEnum, useSealHistory } from '@/hooks';
-import { formatBigInt, useFormatDates } from '@/utils';
+import { formatBigInt } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';

@@ -31,7 +31,7 @@ import {
   getIlkName,
   useIsBatchSupported
 } from '@/hooks';
-import { useDebounce } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetState';
 import { Button } from '@/widgets/components/ui/button';
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';

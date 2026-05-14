@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { formatNumber, useFormatDates } from '@/utils';
+import { formatNumber } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { PendleTradeAction, usePendleMarketHistory, type PendleMarketConfig } from '@/hooks';

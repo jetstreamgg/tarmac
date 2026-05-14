@@ -473,3 +473,9 @@ export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';
 export { useIsBatchSupported } from './shared/useIsBatchSupported';
+
+// UI utility hooks
+export * from './ui';
+
+// Wallet classification hooks
+export * from './wallet';

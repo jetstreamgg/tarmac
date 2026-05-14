@@ -2,7 +2,8 @@ import { useCallback, useContext } from 'react';
 import { WidgetProps, WidgetState } from '../types/widgetState';
 import { WidgetAnalyticsEventType } from '../types/analyticsEvents';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { getTransactionLink, useIsSafeWallet } from '@/utils';
+import { getTransactionLink } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { useConnection, useChainId } from 'wagmi';
 import { InitialScreen, NotificationType, TxStatus } from '../constants';
 

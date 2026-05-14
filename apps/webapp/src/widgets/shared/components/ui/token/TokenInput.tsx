@@ -24,7 +24,7 @@ import { TokenSelector } from './TokenSelector';
 import { useChainId } from 'wagmi';
 import { Search } from '../../icons/Search';
 import { Close } from '../../icons/Close';
-import { useIsTouchDevice } from '@/utils';
+import { useIsTouchDevice } from '@/hooks';
 
 export interface TokenInputProps {
   label?: string;
@@ -305,7 +305,7 @@ export function TokenInput({
           }}
         >
           <MotionCardContent className={`p-0 ${token ? '' : 'max-h-[59px]'}`}>
-            <Text className="text-text text-sm font-normal leading-none">{label}</Text>
+            <Text className="text-text text-sm leading-none font-normal">{label}</Text>
             <AnimatePresence mode="popLayout" initial={false}>
               {token ? (
                 <motion.div
@@ -315,7 +315,7 @@ export function TokenInput({
                 >
                   <motion.div variants={positionAnimations}>
                     {readOnly ? (
-                      <HStack className="items-center justify-between pb-1 pt-4">
+                      <HStack className="items-center justify-between pt-4 pb-1">
                         <div
                           className="text-text flex h-6 grow items-center truncate text-base lg:h-7 lg:text-lg"
                           data-testid={dataTestId}
@@ -390,7 +390,7 @@ export function TokenInput({
                             </div>
                           ) : null}
                           <Text
-                            className="text-textDesaturated text-nowrap text-sm leading-none"
+                            className="text-textDesaturated text-sm leading-none text-nowrap"
                             dataTestId={`${dataTestId}-balance`}
                           >
                             {limitText && isConnectedAndEnabled ? limitText : balanceText}
@@ -438,7 +438,7 @@ export function TokenInput({
       </PopoverAnchor>
       <PopoverPortal container={cardRef.current}>
         <PopoverContent
-          className="bg-container rounded-[20px] border-0 p-2 pr-0 pt-5 backdrop-blur-[50px]"
+          className="bg-container rounded-[20px] border-0 p-2 pt-5 pr-0 backdrop-blur-[50px]"
           sideOffset={4}
           avoidCollisions={true}
           style={{ width: `${width}px` }}
@@ -451,13 +451,13 @@ export function TokenInput({
         >
           <VStack className="w-full space-y-2">
             <motion.div variants={positionAnimations}>
-              <Text className="text-selectActive ml-5 text-sm font-medium leading-none">
+              <Text className="text-selectActive ml-5 text-sm leading-none font-medium">
                 <Trans>Select token</Trans>
               </Text>
             </motion.div>
             {enableSearch && (
               <motion.div variants={positionAnimations} className="px-2">
-                <HStack gap={2} className="bg-white/2 items-center rounded-xl p-3">
+                <HStack gap={2} className="items-center rounded-xl bg-white/2 p-3">
                   <Search className="text-textSecondary h-4 w-4" />
                   <div className="grow">
                     <Input

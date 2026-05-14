@@ -13,7 +13,8 @@ import {
   useIsBatchSupported
 } from '@/hooks';
 import { useContext, useEffect, useMemo, useState, ReactNode } from 'react';
-import { formatBigInt, formatNumber, math, useDebounce } from '@/utils';
+import { formatBigInt, formatNumber, math } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { TxStatus, EPOCH_LENGTH } from '@/widgets/shared/constants';

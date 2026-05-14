@@ -7,7 +7,8 @@ import {
   Token,
   useTokenBalance
 } from '@/hooks';
-import { isTestnetId, useDebounce } from '@/utils';
+import { isTestnetId } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';

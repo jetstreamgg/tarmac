@@ -95,7 +95,14 @@ vi.mock('@/utils', async importOriginal => {
   return {
     ...actual,
     isL2ChainId: (chainId: number) => chainId !== 1,
-    isMainnetId: (chainId: number) => chainId === 1,
+    isMainnetId: (chainId: number) => chainId === 1
+  };
+});
+
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return {
+    ...actual,
     useIsSafeWallet: () => false
   };
 });

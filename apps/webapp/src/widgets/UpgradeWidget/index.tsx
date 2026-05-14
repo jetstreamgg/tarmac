@@ -22,7 +22,8 @@ import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { UpgradeTransactionStatus } from './components/UpgradeTransactionStatus';
 import { useConnection, useChainId } from 'wagmi';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDebounce, math, useIsMetaMaskWallet } from '@/utils';
+import { math } from '@/utils';
+import { useDebounce, useIsMetaMaskWallet } from '@/hooks';
 import { TxStatus } from '@/widgets/shared/constants';
 import { formatUnits, parseUnits } from 'viem';
 import {

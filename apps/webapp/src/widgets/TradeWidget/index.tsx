@@ -31,15 +31,8 @@ import {
   gpv2VaultRelayerAddress
 } from '@/hooks';
 import { ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  formatBigInt,
-  getTransactionLink,
-  useIsSafeWallet,
-  useDebounce,
-  useIsSmartContractWallet,
-  getCowExplorerLink,
-  isL2ChainId
-} from '@/utils';
+import { formatBigInt, getTransactionLink, getCowExplorerLink, isL2ChainId } from '@/utils';
+import { useIsSafeWallet, useDebounce, useIsSmartContractWallet } from '@/hooks';
 import { useConnection, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
 import { TxStatus, notificationTypeMaping } from '@/widgets/shared/constants';

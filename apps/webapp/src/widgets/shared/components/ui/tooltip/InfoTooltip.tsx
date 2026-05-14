@@ -14,7 +14,7 @@ import {
   PopoverTrigger
 } from '../../../../components/ui/popover';
 import { Text } from '@/widgets/shared/components/ui/Typography';
-import { useIsTouchDevice } from '@/utils';
+import { useIsTouchDevice } from '@/hooks';
 
 export function InfoTooltip({
   content,

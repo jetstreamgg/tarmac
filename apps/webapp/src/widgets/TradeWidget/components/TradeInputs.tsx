@@ -13,7 +13,7 @@ import { motion } from 'motion/react';
 import { positionAnimations } from '@/widgets/shared/animation/presets';
 import { CostWarning } from './CostWarning';
 import { getQuoteErrorForType } from '../lib/utils';
-import { useMediaQuery } from '@/utils';
+import { useMediaQuery } from '@/hooks';
 
 type TokenBalanceData = Omit<GetBalanceData, 'symbol'> & {
   symbol?: string;
@@ -222,7 +222,7 @@ export function TradeInputs({
           <Button
             aria-label="Switch token inputs"
             size="icon"
-            className="border-background text-tabPrimary focus:outline-hidden my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent disabled:bg-transparent"
+            className="border-background text-tabPrimary my-0 h-9 w-9 rounded-full bg-transparent hover:bg-transparent focus:bg-transparent focus:outline-hidden active:bg-transparent disabled:bg-transparent"
             onClick={() => {
               const auxOriginToken = originToken;
               setLastUpdated(TradeSide.IN);

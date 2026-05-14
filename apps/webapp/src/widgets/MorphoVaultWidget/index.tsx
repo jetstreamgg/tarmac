@@ -8,7 +8,7 @@ import {
   useMorphoVaultMarketApiData,
   usdtAddress
 } from '@/hooks';
-import { useDebounce } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';
 import { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './lib/constants';

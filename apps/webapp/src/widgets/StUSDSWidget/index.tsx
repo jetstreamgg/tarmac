@@ -12,7 +12,7 @@ import {
   useStUsdsWithdrawBalances,
   stUsdsAddress
 } from '@/hooks';
-import { useDebounce } from '@/utils';
+import { useDebounce } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';

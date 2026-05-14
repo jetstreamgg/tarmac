@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useCombinedHistory, useAllNetworksCombinedHistory } from '@/hooks';
-import { useFormatDates } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { useLingui } from '@lingui/react';
 import { CustomPagination } from '@/widgets/shared/components/ui/pagination/CustomPagination';
 import { BalancesHistoryItem } from './BalancesHistoryItem';

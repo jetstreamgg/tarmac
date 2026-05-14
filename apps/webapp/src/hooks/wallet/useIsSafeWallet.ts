@@ -1,5 +1,5 @@
 import { useConnection, useChainId } from 'wagmi';
-import { chainId } from '../chainId';
+import { chainId } from '../../utils/chainId';
 import { useQuery } from '@tanstack/react-query';
 
 const SAFE_TRANSACTION_SERVICE_URL: Record<number, string> = {
