@@ -313,43 +313,6 @@ export type PendleMarketHistoryHook = ReadHook & {
   data?: PendleTransactionRaw[];
 };
 
-// ---------------------------------------------------------------------------
-// Pendle API transport types (/v1/dashboard/positions/database/{userAddress})
-// ---------------------------------------------------------------------------
-
-export type PendleDashboardLegPositionRaw = {
-  valuation: number;
-  balance: string;
-};
-
-export type PendleDashboardLpPositionRaw = PendleDashboardLegPositionRaw & {
-  activeBalance: string;
-};
-
-export type PendleDashboardOpenPositionRaw = {
-  /** "<chainId>-<marketAddress>" — e.g. "1-0xeab7..." */
-  marketId: string;
-  pt: PendleDashboardLegPositionRaw;
-  yt: PendleDashboardLegPositionRaw;
-  lp: PendleDashboardLpPositionRaw;
-  crossPtPositions: unknown[];
-};
-
-export type PendleDashboardChainPositionsRaw = {
-  chainId: number;
-  totalOpen: number;
-  totalClosed: number;
-  totalSy: number;
-  openPositions: PendleDashboardOpenPositionRaw[];
-  closedPositions: unknown[];
-  syPositions: unknown[];
-  updatedAt: string;
-};
-
-export type PendleDashboardPositionsResponseRaw = {
-  positions: PendleDashboardChainPositionsRaw[];
-};
-
 /** Per-market user PT balance + USD valuation, scoped to markets we support. */
 export type PendleMarketUserAsset = {
   /** Market contract address */
@@ -358,7 +321,7 @@ export type PendleMarketUserAsset = {
   ptBalance: bigint;
   /** User's PT balance normalized to 18 decimals (WAD) */
   ptBalanceNormalized: bigint;
-  /** USD valuation of the PT position, as reported by Pendle's dashboard API */
+  /** USD valuation of the PT position (USDS-equivalent peg × USDS price) */
   valuationUsd: number;
 };
 

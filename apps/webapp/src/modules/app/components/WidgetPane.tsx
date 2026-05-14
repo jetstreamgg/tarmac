@@ -57,8 +57,7 @@ import {
   useAvailableTokenRewardContracts,
   MORPHO_VAULTS,
   PENDLE_MARKETS,
-  isMarketMatured,
-  usePendleUserPtBalances
+  isMarketMatured
 } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -171,16 +170,15 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   }));
 
-  // Pendle markets are mainnet-only. Matured markets are hidden unless the connected
-  // user holds a non-zero PT balance for them (mirrors deprecated-rewards behavior).
-  const { data: pendlePtBalances } = usePendleUserPtBalances();
-  const pendleSubItems = PENDLE_MARKETS.filter(market => {
-    if (!isMarketMatured(market.expiry)) return true;
-    const heldBalance = pendlePtBalances?.[market.marketAddress];
-    return heldBalance !== undefined && heldBalance > 0n;
-  }).map(market => ({
+  const pendleSubItems = PENDLE_MARKETS.filter(market => !isMarketMatured(market.expiry)).map(market => ({
     label: `PT-${market.underlyingSymbol}`,
-    icon: <TokenIcon token={{ symbol: 'USDS' }} className="h-3 w-3" showChainIcon={false} />,
+    icon: (
+      <TokenIcon
+        token={{ symbol: `PT-${market.underlyingSymbol}` }}
+        className="h-3 w-3"
+        showChainIcon={false}
+      />
+    ),
     params: {
       [QueryParams.FixedModule]: FixedIntentMapping[FixedIntent.MARKET_INTENT],
       [QueryParams.Market]: market.marketAddress
