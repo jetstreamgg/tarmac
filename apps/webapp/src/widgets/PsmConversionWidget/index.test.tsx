@@ -5,6 +5,7 @@ import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';
 import { TxStatus } from '@/widgets/shared/constants';
 import { ConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { ConnectModalContext } from '@/modules/ui/context/ConnectModalContext';
 import { PsmConversionWidget } from '.';
 
 i18n.load('en', {});
@@ -21,10 +22,18 @@ const connectedContextValue = {
   vpnData: { vpnIsLoading: false }
 };
 
+const connectModalContextValue = {
+  isOpen: false,
+  openConnectModal: () => {},
+  closeConnectModal: () => {}
+};
+
 const renderWithI18n = (ui: React.ReactElement) =>
   render(
     <I18nProvider i18n={i18n}>
-      <ConnectedContext.Provider value={connectedContextValue}>{ui}</ConnectedContext.Provider>
+      <ConnectedContext.Provider value={connectedContextValue}>
+        <ConnectModalContext.Provider value={connectModalContextValue}>{ui}</ConnectModalContext.Provider>
+      </ConnectedContext.Provider>
     </I18nProvider>
   );
 
@@ -240,7 +249,6 @@ vi.mock('./hooks/usePsmConversion', () => ({
 
 describe('PsmConversionWidget', () => {
   const widgetProps = {
-    onConnect: () => null,
     externalWidgetState: {
       token: 'USDC',
       amount: '10'

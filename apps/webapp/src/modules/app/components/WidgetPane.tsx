@@ -11,7 +11,6 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import {
   COMING_SOON_MAP,
   QueryParams,
@@ -48,12 +47,7 @@ import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
 import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
-import {
-  useAvailableTokenRewardContracts,
-  MORPHO_VAULTS,
-  PENDLE_MARKETS,
-  isMarketMatured
-} from '@/hooks';
+import { useAvailableTokenRewardContracts, MORPHO_VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -68,7 +62,6 @@ type WidgetPaneProps = {
 
 export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const chainId = useChainId();
-  const onConnect = useCustomConnectModal();
 
   // No-op: ConnectedModal now uses subgraph data instead of localStorage
   const addRecentTransaction = () => {};
@@ -99,7 +92,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sharedProps = {
-    onConnect,
     addRecentTransaction,
     rightHeaderComponent,
     onNotification,

@@ -181,7 +181,7 @@ describe('StakeModuleWidget tests', () => {
   });
 
   it('loads the widget with default state', async () => {
-    renderWithWagmiWrapper(<StakeModuleWidget onConnect={() => true} addRecentTransaction={() => {}} />);
+    renderWithWagmiWrapper(<StakeModuleWidget addRecentTransaction={() => {}} />);
 
     // The widget should show the "Staking Engine" heading
     const heading = await screen.findByText('Staking Engine');
@@ -205,7 +205,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        onConnect={() => true}
         addRecentTransaction={() => {}}
         externalWidgetState={{
           flow: StakeFlow.OPEN
@@ -232,7 +231,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        onConnect={() => true}
         addRecentTransaction={() => {}}
         externalWidgetState={{
           flow: StakeFlow.MANAGE,
@@ -289,7 +287,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        onConnect={() => true}
         addRecentTransaction={addRecentTransactionMock}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
@@ -339,7 +336,6 @@ describe('StakeModuleWidget tests', () => {
 
     const { rerender } = renderWithWagmiWrapper(
       <StakeModuleWidget
-        onConnect={() => true}
         addRecentTransaction={() => {}}
         onNotification={onNotificationMock}
         onWidgetStateChange={onWidgetStateChangeMock}
@@ -358,8 +354,7 @@ describe('StakeModuleWidget tests', () => {
     rerender(
       <WagmiWrapper>
         <StakeModuleWidget
-          onConnect={() => true}
-          addRecentTransaction={() => {}}
+            addRecentTransaction={() => {}}
           onNotification={onNotificationMock}
           onWidgetStateChange={onWidgetStateChangeMock}
           externalWidgetState={{
@@ -373,8 +368,7 @@ describe('StakeModuleWidget tests', () => {
     rerender(
       <WagmiWrapper>
         <StakeModuleWidget
-          onConnect={() => true}
-          addRecentTransaction={() => {}}
+            addRecentTransaction={() => {}}
           onNotification={onNotificationMock}
           onWidgetStateChange={onWidgetStateChangeMock}
           externalWidgetState={{
@@ -413,7 +407,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        onConnect={() => true}
         addRecentTransaction={() => {}}
         onStakeUrnChange={onStakeUrnChangeMock}
         externalWidgetState={{

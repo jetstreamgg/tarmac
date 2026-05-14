@@ -66,6 +66,7 @@ import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents
 import { useTradeAnalytics } from './hooks/useTradeAnalytics';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -78,7 +79,6 @@ export type TradeWidgetProps = WidgetProps & {
 };
 
 function TradeWidgetWrapped({
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   customTokenList = [],
@@ -95,6 +95,7 @@ function TradeWidgetWrapped({
   setBatchEnabled: externalSetBatchEnabled,
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
+  const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);

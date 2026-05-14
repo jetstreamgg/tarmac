@@ -48,6 +48,7 @@ import { useLingui } from '@lingui/react';
 import { OnSealUrnChange } from './lib/types';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 type SealModuleWidgetProps = WidgetProps & {
   onSealUrnChange?: OnSealUrnChange;
@@ -61,7 +62,6 @@ export const SealModuleWidget = ({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
-  onConnect,
   onNotification,
   onWidgetStateChange,
   onNavigateToStakeWidget,
@@ -79,7 +79,6 @@ export const SealModuleWidget = ({
             rightHeaderComponent={rightHeaderComponent}
             onSealUrnChange={onSealUrnChange}
             externalWidgetState={externalWidgetState}
-            onConnect={onConnect}
             onNotification={onNotification}
             onWidgetStateChange={onWidgetStateChange}
             addRecentTransaction={addRecentTransaction}
@@ -98,7 +97,6 @@ function SealModuleWidgetWrapped({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
-  onConnect,
   onNotification,
   onWidgetStateChange,
   addRecentTransaction,
@@ -107,6 +105,7 @@ function SealModuleWidgetWrapped({
   onNavigateToStakeWidget,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) {
+  const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const containerRef = useRef<HTMLDivElement>(null);
 

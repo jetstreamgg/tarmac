@@ -51,7 +51,7 @@ describe('Trade widget tests', () => {
   });
 
   it('loads data when wrapped in wagmi config', async () => {
-    renderWithWagmiWrapper(<TradeWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<TradeWidget />);
 
     const tradeButton = await screen.findByText('Trade');
     expect(tradeButton).toBeTruthy();

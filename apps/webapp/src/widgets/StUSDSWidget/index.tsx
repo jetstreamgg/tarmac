@@ -46,6 +46,7 @@ import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useStUsdsTransactions } from './hooks/useStUsdsTransactions';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type StUSDSWidgetProps = WidgetProps & {
   batchEnabled?: boolean;
@@ -55,7 +56,6 @@ export type StUSDSWidgetProps = WidgetProps & {
 
 // HOC Widget
 const StUSDSWidgetWrapped = ({
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
@@ -68,6 +68,7 @@ const StUSDSWidgetWrapped = ({
   setBatchEnabled,
   onBackToExpert
 }: StUSDSWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const validatedExternalState = getValidatedState(externalWidgetState);
 
   useEffect(() => {

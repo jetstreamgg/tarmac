@@ -53,6 +53,7 @@ import {
 } from './lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type UpgradeWidgetProps = WidgetProps & {
   upgradeOptions?: Token[];
@@ -63,7 +64,6 @@ export type UpgradeWidgetProps = WidgetProps & {
 
 export function UpgradeWidgetWrapped({
   addRecentTransaction,
-  onConnect,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
@@ -78,6 +78,7 @@ export function UpgradeWidgetWrapped({
   disallowedFlow,
   onBackToConvert
 }: UpgradeWidgetProps): React.ReactElement {
+  const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);

@@ -39,6 +39,7 @@ import { defaultDepositOptions, defaultWithdrawOptions } from './lib/constants';
 import { calculateOriginOptions, tokenForSymbol } from './lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type SavingsWidgetProps = WidgetProps & {
   disallowedTokens?: { [key in SavingsFlow]: Token[] };
@@ -48,7 +49,6 @@ export type SavingsWidgetProps = WidgetProps & {
 
 // HOC Widget
 const SavingsWidgetWrapped = ({
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
@@ -61,6 +61,7 @@ const SavingsWidgetWrapped = ({
   batchEnabled,
   setBatchEnabled
 }: SavingsWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const {
     setButtonText,

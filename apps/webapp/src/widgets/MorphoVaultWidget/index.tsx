@@ -37,6 +37,7 @@ import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -60,7 +61,6 @@ const MorphoVaultWidgetWrapped = ({
   assetAddress,
   assetToken,
   vaultName = 'Vault',
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
@@ -72,6 +72,7 @@ const MorphoVaultWidgetWrapped = ({
   setBatchEnabled,
   onBackToVaults
 }: MorphoVaultWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const validatedExternalState = getValidatedState(externalWidgetState, [assetToken.symbol]);
 
   useEffect(() => {

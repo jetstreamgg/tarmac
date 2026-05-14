@@ -9,6 +9,7 @@ import { normalize } from 'viem/ens';
 import { I18nWidgetProvider } from '../../src/widgets/context/I18nWidgetProvider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConnectedContext } from '../../src/modules/ui/context/ConnectedContext';
+import { ConnectModalContext } from '../../src/modules/ui/context/ConnectModalContext';
 import { getTenderlyChains } from './tenderlyChain';
 
 // TODO move this file (along with its counterpart in hooks) into a tests helper package or something
@@ -48,24 +49,35 @@ const testConnectedContextValue = {
   vpnData: { vpnIsLoading: false }
 };
 
+// Fake ConnectModalContext value: useCustomConnectModal() throws without a
+// provider, and widgets now call it inline rather than receiving onConnect as
+// a prop.
+const testConnectModalContextValue = {
+  isOpen: false,
+  openConnectModal: () => {},
+  closeConnectModal: () => {}
+};
+
 export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <I18nWidgetProvider locale="en">
           <ConnectedContext.Provider value={testConnectedContextValue}>
-            <MakerHooksProvider
-              config={{
-                delegates: {
-                  ens: normalize('vitalik.eth')
-                },
-                ipfs: {
-                  gateway: 'dweb.link'
-                }
-              }}
-            >
-              {children}
-            </MakerHooksProvider>
+            <ConnectModalContext.Provider value={testConnectModalContextValue}>
+              <MakerHooksProvider
+                config={{
+                  delegates: {
+                    ens: normalize('vitalik.eth')
+                  },
+                  ipfs: {
+                    gateway: 'dweb.link'
+                  }
+                }}
+              >
+                {children}
+              </MakerHooksProvider>
+            </ConnectModalContext.Provider>
           </ConnectedContext.Provider>
         </I18nWidgetProvider>
       </QueryClientProvider>

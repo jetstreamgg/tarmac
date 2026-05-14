@@ -1,9 +1,4 @@
-import {
-  type TokenForChain,
-  getTokenDecimals,
-  useTokenBalance,
-  useIsBatchSupported
-} from '@/hooks';
+import { type TokenForChain, getTokenDecimals, useTokenBalance, useIsBatchSupported } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
@@ -40,6 +35,7 @@ import {
 import { PsmConversionAction, PsmConversionFlow, PsmConversionScreen } from './lib/constants';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type PsmConversionWidgetProps = WidgetProps & {
   batchEnabled?: boolean;
@@ -72,7 +68,6 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetToken
 };
 
 function PsmConversionWidgetWrapped({
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
@@ -85,6 +80,7 @@ function PsmConversionWidgetWrapped({
   setBatchEnabled,
   onBackToConvert
 }: PsmConversionWidgetProps): React.ReactElement {
+  const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = useMemo(() => {
     const state = getValidatedState(externalWidgetState, supportedTokens);

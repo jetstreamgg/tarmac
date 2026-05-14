@@ -35,6 +35,7 @@ import { useSavingsTransactions } from './hooks/useSavingsTransactions';
 import { tokenForSymbol } from '../L2SavingsWidget/lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type SavingsWidgetProps = WidgetProps & {
   batchEnabled?: boolean;
@@ -43,7 +44,6 @@ export type SavingsWidgetProps = WidgetProps & {
 
 // HOC Widget
 const SavingsWidgetWrapped = ({
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
@@ -55,6 +55,7 @@ const SavingsWidgetWrapped = ({
   batchEnabled,
   setBatchEnabled
 }: SavingsWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const validatedExternalState = getValidatedState(externalWidgetState, ['USDS', 'DAI']);
 
   useEffect(() => {

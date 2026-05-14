@@ -42,6 +42,7 @@ import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { RewardsClaimAllTransactionStatus } from './components/RewardsClaimAllTransactionStatus';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
@@ -52,7 +53,6 @@ export type RewardsWidgetProps = WidgetProps & {
 
 // HOC Widget
 const RewardsWidgetWrapped = ({
-  onConnect,
   addRecentTransaction,
   rightHeaderComponent,
   onRewardContractChange,
@@ -66,6 +66,7 @@ const RewardsWidgetWrapped = ({
   setBatchEnabled,
   disclaimer
 }: RewardsWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();

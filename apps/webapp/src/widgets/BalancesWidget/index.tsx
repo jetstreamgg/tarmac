@@ -17,6 +17,7 @@ import { CardAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
 import { useCallback, useMemo, useState } from 'react';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type BalancesWidgetProps = WidgetProps & {
   chainIds?: number[];
@@ -38,7 +39,6 @@ export type BalancesWidgetProps = WidgetProps & {
 };
 
 export const BalancesWidget = ({
-  onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
   rewardsCardUrl,
@@ -61,7 +61,6 @@ export const BalancesWidget = ({
     <ErrorBoundary componentName="BalancesWidget">
       <WidgetProvider locale={i18n.locale}>
         <BalancesWidgetWrapped
-          onConnect={onConnect}
           rightHeaderComponent={rightHeaderComponent}
           hideRestrictedModules={hideRestrictedModules}
           chainIds={chainIds}
@@ -85,7 +84,6 @@ export const BalancesWidget = ({
 };
 
 const BalancesWidgetWrapped = ({
-  onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
   chainIds,
@@ -103,6 +101,7 @@ const BalancesWidgetWrapped = ({
   onExploreVaults,
   hideWalletCard
 }: BalancesWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const { isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const { onExternalLinkClicked } = useConfigContext();

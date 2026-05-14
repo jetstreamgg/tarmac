@@ -28,7 +28,7 @@ describe('StUSDS widget tests', () => {
   });
 
   it('loads data when wrapped in wagmi config', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const supplyTab = await screen.findByText('Supply');
     const withdrawTab = await screen.findByText('Withdraw');
@@ -38,7 +38,7 @@ describe('StUSDS widget tests', () => {
   });
 
   it('displays stUSDS header', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const header = await screen.findByRole('heading', { name: 'stUSDS' });
     const description = await screen.findByText(
@@ -50,14 +50,14 @@ describe('StUSDS widget tests', () => {
   });
 
   it('shows supply input by default', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const supplyInput = await screen.findByText('How much USDS would you like to supply?');
     expect(supplyInput).toBeTruthy();
   });
 
   it('switches to withdraw tab when clicked', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const withdrawTab = await screen.findByText('Withdraw');
     fireEvent.click(withdrawTab);
@@ -67,21 +67,21 @@ describe('StUSDS widget tests', () => {
   });
 
   it('displays connect wallet button when not connected', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const connectButton = await screen.findByText('Connect Wallet');
     expect(connectButton).toBeTruthy();
   });
 
   it('shows "Supplied balance" balance label', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const balanceLabel = await screen.findByText('Supplied balance');
     expect(balanceLabel).toBeTruthy();
   });
 
   it('displays available liquidity information', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const availableLiquidityLabel = await screen.findByText('Available liquidity');
     expect(availableLiquidityLabel).toBeTruthy();
@@ -93,7 +93,7 @@ describe('StUSDS widget tests', () => {
       amount: '10'
     };
 
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} externalWidgetState={externalState} />);
+    renderWithWagmiWrapper(<StUSDSWidget externalWidgetState={externalState} />);
 
     // Should start with supply tab active
     const supplyInput = await screen.findByText('How much USDS would you like to supply?');
@@ -106,7 +106,7 @@ describe('StUSDS widget tests', () => {
       amount: '5'
     };
 
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} externalWidgetState={externalState} />);
+    renderWithWagmiWrapper(<StUSDSWidget externalWidgetState={externalState} />);
 
     // Should start with withdraw tab active
     const withdrawInput = await screen.findByText('How much USDS would you like to withdraw?');
@@ -114,7 +114,7 @@ describe('StUSDS widget tests', () => {
   });
 
   it('shows transaction review screen after entering amount', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     const supplyInput = await screen.findByTestId('supply-input-stusds');
     const inputField = supplyInput.querySelector('input');
@@ -132,7 +132,7 @@ describe('StUSDS widget tests', () => {
   it('handles referral code integration', async () => {
     const referralCode = 12345;
 
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} referralCode={referralCode} />);
+    renderWithWagmiWrapper(<StUSDSWidget referralCode={referralCode} />);
 
     // Widget should render without errors with referral code
     const supplyTab = await screen.findByText('Supply');
@@ -140,7 +140,7 @@ describe('StUSDS widget tests', () => {
   });
 
   it('displays error states properly', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     // Switch to withdraw tab
     const withdrawTab = await screen.findByText('Withdraw');
@@ -162,7 +162,7 @@ describe('StUSDS widget tests', () => {
 
   // Commenting out since the widget doesn't render any progress bars
   // it('shows loading states correctly', async () => {
-  //   renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+  //   renderWithWagmiWrapper(<StUSDSWidget />);
 
   //   // Initially should show loading states
   //   const loadingElements = screen.queryAllByRole('progressbar');
@@ -172,7 +172,7 @@ describe('StUSDS widget tests', () => {
   it('handles widget state changes', async () => {
     const mockStateChange = vi.fn();
 
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} onWidgetStateChange={mockStateChange} />);
+    renderWithWagmiWrapper(<StUSDSWidget onWidgetStateChange={mockStateChange} />);
 
     const supplyInput = await screen.findByTestId('supply-input-stusds');
     const inputField = supplyInput.querySelector('input');
@@ -188,7 +188,7 @@ describe('StUSDS widget tests', () => {
 
   // Commenting out as utilization is low in the testnet
   // it('displays high utilization warning on withdraw', async () => {
-  //   renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+  //   renderWithWagmiWrapper(<StUSDSWidget />);
 
   //   // Switch to withdraw tab
   //   const withdrawTab = await screen.findByText('Withdraw');
@@ -204,7 +204,7 @@ describe('StUSDS widget tests', () => {
   it('handles transaction success/failure properly', async () => {
     const mockNotification = vi.fn();
 
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} onNotification={mockNotification} />);
+    renderWithWagmiWrapper(<StUSDSWidget onNotification={mockNotification} />);
 
     // Widget should be set up to handle notifications
     const supplyTab = await screen.findByText('Supply');
@@ -212,7 +212,7 @@ describe('StUSDS widget tests', () => {
   });
 
   it('handles external link clicks', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     // Widget should render without errors
     const supplyTab = await screen.findByText('Supply');
@@ -220,10 +220,10 @@ describe('StUSDS widget tests', () => {
   });
 
   it('resets properly when shouldReset is true', async () => {
-    const { rerender } = renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} shouldReset={false} />);
+    const { rerender } = renderWithWagmiWrapper(<StUSDSWidget shouldReset={false} />);
 
     // Re-render with shouldReset=true
-    rerender(<StUSDSWidget onConnect={() => true} shouldReset={true} />);
+    rerender(<StUSDSWidget shouldReset={true} />);
 
     // Should still render properly after reset
     const supplyTab = await screen.findByText('Supply');

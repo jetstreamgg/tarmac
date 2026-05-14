@@ -48,6 +48,7 @@ import { useStakeTransactions } from './hooks/useStakeTransactions';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -66,7 +67,6 @@ function StakeModuleWidgetWrapped({
   rightHeaderComponent,
   onStakeUrnChange,
   externalWidgetState,
-  onConnect,
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
@@ -77,6 +77,7 @@ function StakeModuleWidgetWrapped({
   setBatchEnabled,
   disclaimer
 }: StakeModuleWidgetProps) {
+  const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);

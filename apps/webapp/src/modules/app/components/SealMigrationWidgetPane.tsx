@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Seal } from '../../icons';
 import { Intent } from '@/lib/enums';
 import { Trans } from '@lingui/react/macro';
-import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { useNotification } from '../hooks/useNotification';
@@ -11,13 +10,7 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { ArrowLeft } from 'lucide-react';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-  SealAction,
-  SealFlow,
-  SealModuleWidget,
-  TxStatus,
-  WidgetStateChangeParams
-} from '@/widgets';
+import { SealAction, SealFlow, SealModuleWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
 import { useSealCurrentIndex } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { useConnection, useChainId, useSwitchChain } from 'wagmi';
@@ -34,7 +27,6 @@ type WidgetPaneProps = {
 };
 
 export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
-  const onConnect = useCustomConnectModal();
   const { data: currentUrnIndex } = useSealCurrentIndex();
   // Transaction tracking removed - was using RainbowKit
   const addRecentTransaction = () => {}; // No-op for now
@@ -109,7 +101,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   }, []);
 
   const sharedProps = {
-    onConnect,
     addRecentTransaction,
     rightHeaderComponent,
     onNotification,

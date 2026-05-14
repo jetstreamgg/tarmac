@@ -59,7 +59,6 @@ vi.mock('react-router-dom', () => ({
 
 describe('PsmConversionWidgetPane', () => {
   const sharedProps = {
-    onConnect: vi.fn(),
     addRecentTransaction: vi.fn(),
     rightHeaderComponent: <div />,
     onNotification: vi.fn(),

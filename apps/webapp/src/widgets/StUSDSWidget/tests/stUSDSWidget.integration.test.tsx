@@ -33,7 +33,6 @@ describe('StUSDS Widget Integration Tests', () => {
 
     renderWithWagmiWrapper(
       <StUSDSWidget
-        onConnect={() => true}
         addRecentTransaction={mockAddTransaction}
         onNotification={mockNotification}
         onWidgetStateChange={mockStateChange}
@@ -82,7 +81,6 @@ describe('StUSDS Widget Integration Tests', () => {
 
     renderWithWagmiWrapper(
       <StUSDSWidget
-        onConnect={() => true}
         addRecentTransaction={mockAddTransaction}
         onNotification={mockNotification}
         onWidgetStateChange={mockStateChange}
@@ -134,7 +132,6 @@ describe('StUSDS Widget Integration Tests', () => {
 
     renderWithWagmiWrapper(
       <StUSDSWidget
-        onConnect={() => true}
         addRecentTransaction={mockAddTransaction}
         onNotification={mockNotification}
       />
@@ -149,7 +146,7 @@ describe('StUSDS Widget Integration Tests', () => {
   });
 
   it('validates balance checks correctly', async () => {
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     // Switch to withdraw tab
     const withdrawTab = await screen.findByText('Withdraw');
@@ -181,7 +178,6 @@ describe('StUSDS Widget Integration Tests', () => {
 
     const { rerender } = renderWithWagmiWrapper(
       <StUSDSWidget
-        onConnect={() => true}
         onWidgetStateChange={mockStateChange}
         externalWidgetState={{
           flow: StUSDSFlow.SUPPLY,
@@ -201,7 +197,6 @@ describe('StUSDS Widget Integration Tests', () => {
     // Change external state
     rerender(
       <StUSDSWidget
-        onConnect={() => true}
         onWidgetStateChange={mockStateChange}
         externalWidgetState={{
           flow: StUSDSFlow.WITHDRAW,
@@ -221,7 +216,6 @@ describe('StUSDS Widget Integration Tests', () => {
 
     renderWithWagmiWrapper(
       <StUSDSWidget
-        onConnect={() => true}
         addRecentTransaction={mockAddTransaction}
         referralCode={referralCode}
       />
@@ -238,7 +232,7 @@ describe('StUSDS Widget Integration Tests', () => {
   it('handles error states properly', async () => {
     const mockNotification = vi.fn();
 
-    renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} onNotification={mockNotification} />);
+    renderWithWagmiWrapper(<StUSDSWidget onNotification={mockNotification} />);
 
     // Test error handling by triggering balance error
     const withdrawTab = await screen.findByText('Withdraw');
@@ -264,7 +258,6 @@ describe('StUSDS Widget Integration Tests', () => {
 
     renderWithWagmiWrapper(
       <StUSDSWidget
-        onConnect={() => true}
         onNotification={mockNotification}
         addRecentTransaction={mockAddTransaction}
       />
@@ -280,7 +273,7 @@ describe('StUSDS Widget Integration Tests', () => {
   // Commenting out since these buttons are not visible when not connected
   // and we're currently not handling connection states in these tests
   // it('shows percentage buttons when connected', async () => {
-  //   renderWithWagmiWrapper(<StUSDSWidget onConnect={() => true} />);
+  //   renderWithWagmiWrapper(<StUSDSWidget />);
 
   //   // Should show percentage buttons for supply
   //   await waitFor(() => {

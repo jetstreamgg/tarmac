@@ -127,7 +127,6 @@ export type WidgetStateChangeParams = {
 };
 
 export type WidgetProps = {
-  onConnect?: () => void;
   addRecentTransaction?: (transaction: { hash: string; description: string }) => void;
   rightHeaderComponent?: React.ReactElement;
   externalWidgetState?: ExternalWidgetState;
