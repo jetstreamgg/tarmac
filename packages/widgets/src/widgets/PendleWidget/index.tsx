@@ -176,7 +176,11 @@ const PendleWidgetWrapped = ({
   const shouldUseBatch = !!batchEnabled && !!batchSupported && needsAllowance;
 
   const debounceSettled = amount === debouncedAmount;
-  const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
+  const {
+    data: quote,
+    isLoading: isFetchingQuote,
+    error: quoteError
+  } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
     inputToken,
@@ -186,6 +190,40 @@ const PendleWidgetWrapped = ({
     slippage,
     enabled: isConnectedAndEnabled && debouncedAmount > 0n && debounceSettled
   });
+
+  // Map raw Pendle /convert errors (HTTP failures, malformed quotes, no
+  // routes, network errors) to user-friendly copy.
+  const quoteErrorMessage = useMemo<string | undefined>(() => {
+    const raw = quoteError?.message;
+    if (!raw) return undefined;
+    // Pendle rejects inputs valued below $0.01 with a 400. Surfacing the
+    // generic "service unavailable" copy would be misleading — the user
+    // just needs to enter a larger amount.
+    if (/input valuation is too low/i.test(raw)) {
+      return t`Minimum input valuation is $0.01`;
+    }
+    if (/no routes/i.test(raw)) {
+      return t`No route available for this trade size. Try a different amount.`;
+    }
+    if (/malformed quote/i.test(raw)) {
+      return t`Received an invalid quote from Pendle. Please try again.`;
+    }
+    if (/^Pendle \/convert \d+/i.test(raw)) {
+      return t`Pendle's quote service is temporarily unavailable. Please try again.`;
+    }
+    return t`Couldn't fetch a quote from Pendle. Check your connection and try again.`;
+  }, [quoteError]);
+
+  // Surface quote errors as a toast.
+  useEffect(() => {
+    if (quoteErrorMessage) {
+      onNotification?.({
+        title: t`Error fetching quote`,
+        description: quoteErrorMessage,
+        status: TxStatus.ERROR
+      });
+    }
+  }, [quoteErrorMessage, onNotification]);
 
   const insufficientFunds = useMemo(() => {
     if (!isConnectedAndEnabled || amount === 0n) return false;
@@ -237,10 +275,12 @@ const PendleWidgetWrapped = ({
 
   const writeHook = batchConvert;
 
-  // Map raw viem/Pendle revert messages to user-friendly copy. Returns
-  // undefined when there's no error to show. Keeping this inline (not a
-  // separate util) since it's tightly coupled to the messages we surface.
+  // Map raw viem/Pendle revert messages to user-friendly copy. Only surfaces
+  // prepare-time errors (simulation / quote-verify); write/mining errors —
+  // including wallet rejection — are handled by the txStatus → ERROR screen
+  // flow, so once we have a usable simulation we suppress this message.
   const prepareErrorMessage = useMemo<string | undefined>(() => {
+    if (writeHook.prepared) return undefined;
     const raw = writeHook.error?.message;
     if (!raw) return undefined;
     if (/INSUFFICIENT_TOKEN_OUT|Slippage:/i.test(raw)) {
@@ -250,7 +290,7 @@ const PendleWidgetWrapped = ({
       return t`Quote expired. Refreshing — please wait a moment.`;
     }
     return t`Unable to prepare transaction. Please try again or adjust your inputs.`;
-  }, [writeHook.error]);
+  }, [writeHook.error, writeHook.prepared]);
 
   // Surface prepare/verify errors as a toast (in addition to inline display).
   useEffect(() => {
@@ -373,7 +413,7 @@ const PendleWidgetWrapped = ({
     amount === 0n ||
     insufficientFunds ||
     isAmountWaitingForDebounce ||
-    !!prepareErrorMessage ||
+    !!quoteError ||
     !writeHook.prepared ||
     writeHook.isLoading;
 
@@ -487,6 +527,7 @@ const PendleWidgetWrapped = ({
               enabled={isConnectedAndEnabled}
               insufficientFunds={insufficientFunds}
               prepareErrorMessage={prepareErrorMessage}
+              quoteErrorMessage={quoteErrorMessage}
               onExternalLinkClicked={onExternalLinkClicked}
             />
           </CardAnimationWrapper>
