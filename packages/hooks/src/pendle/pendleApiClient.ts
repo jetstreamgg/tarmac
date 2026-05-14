@@ -8,6 +8,8 @@ import type {
   PendleMarketSummaryRaw,
   PendleMarketsAllResponseRaw,
   PendleMarketTransactionsResponseRaw,
+  PendlePnlTransactionRaw,
+  PendlePnlTransactionsResponseRaw,
   PendleTransactionRaw
 } from './pendle';
 
@@ -102,6 +104,46 @@ export async function fetchPendleMarketTransactions(
     throw new Error(`Pendle /transactions ${response.status}`);
   }
   const json = (await response.json()) as PendleMarketTransactionsResponseRaw;
+  return json.results || [];
+}
+
+/**
+ * GET /v1/pnl/transactions?user=<u>&market=<m>&chainId=<id>&limit=100
+ *
+ * Returns the user's PnL-affecting actions for the market across every action
+ * type Pendle indexes (mintPy, swapPtToYt, redeemPy, …). The v5 trades
+ * endpoint doesn't index post-maturity redeems, so we use this feed strictly
+ * as a secondary source for redeemPy rows. Caller filters client-side.
+ *
+ * The PnL feed lags chain tip by a few minutes per Pendle's docs — acceptable
+ * for redeems (post-maturity, rare event); the primary trade feed remains v5
+ * so fresh trades aren't held back by this endpoint's lag.
+ *
+ * Docs: https://api-v2.pendle.finance/core/docs#tag/pnl/get/v1/pnl/transactions
+ * (operationId TransactionsController_getTransactions, 8 compute units).
+ * Wire-shape caveat: the schema names the PT leg `SpendUnitData` with a
+ * `delta` field, but the actual response uses `unit` — see normalizeRedeem
+ * in usePendleMarketHistory.ts.
+ */
+export async function fetchPendlePnlTransactions(
+  chainId: number,
+  marketAddress: `0x${string}`,
+  userAddress: `0x${string}`
+): Promise<PendlePnlTransactionRaw[]> {
+  const apiChainId = resolveApiChainId(chainId);
+  const params = new URLSearchParams({
+    user: userAddress.toLowerCase(),
+    market: marketAddress.toLowerCase(),
+    chainId: String(apiChainId),
+    limit: '100'
+  });
+  const url = `${PENDLE_API_BASE_URL}/v1/pnl/transactions?${params.toString()}`;
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Pendle /pnl/transactions ${response.status}`);
+  }
+  const json = (await response.json()) as PendlePnlTransactionsResponseRaw;
   return json.results || [];
 }
 

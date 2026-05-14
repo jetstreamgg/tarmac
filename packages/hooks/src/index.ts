@@ -142,7 +142,7 @@ export {
   PENDLE_MARKETS,
   getPendleMarketByAddress,
   PendleConvertSide,
-  PendleTradeAction
+  PendleHistoryAction
 } from './pendle/constants';
 export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
@@ -174,6 +174,9 @@ export type {
   PendleUserPtBalancesHook,
   PendleTransactionRaw,
   PendleMarketTransactionsResponseRaw,
+  PendlePnlTransactionRaw,
+  PendlePnlTransactionsResponseRaw,
+  PendleHistoryRow,
   PendleMarketHistoryHook,
   PendleMarketUserAsset,
   AllPendleUserAssetsData,

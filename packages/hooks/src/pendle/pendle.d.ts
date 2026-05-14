@@ -1,5 +1,5 @@
 import { ReadHook } from '../hooks';
-import { PendleTradeAction } from './constants';
+import { PendleHistoryAction } from './constants';
 
 /**
  * Configuration for a Pendle market.
@@ -295,7 +295,7 @@ export type PendleTransactionRaw = {
   txHash: `0x${string}`;
   value: number;
   type: 'TRADES';
-  action: PendleTradeAction;
+  action: PendleHistoryAction.BUY_PT | PendleHistoryAction.SELL_PT;
   txOrigin: `0x${string}`;
   impliedApy: number;
   notional?: Record<string, number>;
@@ -309,8 +309,67 @@ export type PendleMarketTransactionsResponseRaw = {
   results: PendleTransactionRaw[];
 };
 
+// ---------------------------------------------------------------------------
+// Pendle API transport types (/v1/pnl/transactions)
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-leg shape returned by /v1/pnl/transactions. The PT/YT/LP legs each carry
+ * `unit` (token amount in native decimals) plus a cost-basis breakdown we
+ * don't read. For redeemPy rows the PT leg holds the redeemed amount;
+ * `ytData` / `lpData` carry the corresponding legs on action types we don't
+ * surface today.
+ *
+ * Verified against the live API (Pendle's OpenAPI calls this SpendUnitData
+ * but the wire field is `unit`, not `delta`).
+ */
+export type PendlePnlSpendUnitData = {
+  /** Token amount in the unit's native decimals (always non-negative). */
+  unit: number;
+};
+
+/**
+ * One entry in /v1/pnl/transactions `results`. The endpoint covers every PnL-
+ * affecting action (mintPy, swapPtToYt, redeemPy, …). We type only the fields
+ * we read; `action` is a free string so unknown action values pass through
+ * untouched and get filtered client-side.
+ */
+export type PendlePnlTransactionRaw = {
+  timestamp: string;
+  action: string;
+  market: string;
+  txHash: `0x${string}`;
+  ptData?: PendlePnlSpendUnitData;
+};
+
+export type PendlePnlTransactionsResponseRaw = {
+  total: number;
+  results: PendlePnlTransactionRaw[];
+};
+
+/**
+ * Normalized history row exposed to the UI and to computeMaturedEarnings.
+ * Spans the v5 trade feed and the v1 PnL feed, discriminated by `action`.
+ *
+ * `valueUsd` is USD-denominated for trade rows (Pendle's `value` field) and
+ * `0` for redeem rows — the latter exists post-maturity and the redeemed
+ * principal isn't a market trade. computeMaturedEarnings filters by action
+ * before consuming `valueUsd`, so redeem rows don't contribute to cost basis.
+ */
+export type PendleHistoryRow = {
+  /** v5: tx.id; v1: `${txHash}:redeemPy` (the PnL feed has no id of its own). */
+  id: string;
+  txHash: `0x${string}`;
+  timestamp: string;
+  action: PendleHistoryAction;
+  /** PT amount in PT units (e.g. 1000, not raw bigint). Always positive. */
+  ptAmount: number;
+  /** USD-denominated trade value as reported by Pendle. 0 for redeem rows. */
+  valueUsd: number;
+};
+
 export type PendleMarketHistoryHook = ReadHook & {
-  data?: PendleTransactionRaw[];
+  data?: PendleHistoryRow[];
 };
 
 // ---------------------------------------------------------------------------

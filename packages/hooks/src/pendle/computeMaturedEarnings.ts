@@ -58,12 +58,12 @@
 //      a tradeoff (transfers-out are rare; redeems are common,
 //      especially post-maturity). On-chain redeem-event detection would
 //      let us distinguish the two; out of scope per PRD.
-import { PendleTradeAction } from './constants';
-import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
+import { PendleHistoryAction } from './constants';
+import type { PendleHistoryRow, PendleMarketConfig } from './pendle';
 
 export type ComputeMaturedEarningsInput = {
-  /** Trade history from Pendle's API, scoped to the user. `undefined` while loading. */
-  history: PendleTransactionRaw[] | undefined;
+  /** Normalized market-history rows from usePendleMarketHistory, scoped to the user. `undefined` while loading. */
+  history: PendleHistoryRow[] | undefined;
   /** On-chain redeem preview amount in the market's underlying-token units. `undefined` while loading. */
   previewAmount: bigint | undefined;
   /** sUSDS→USDS conversion factor from `previewRedeem(1e18)`. Only consulted on the sUSDS path. */
@@ -131,17 +131,15 @@ export function computeMaturedEarnings({
   if (!effectiveTier) return EMPTY;
   if (!history || previewAmount === undefined) return EMPTY;
 
-  const buys = history.filter(t => t.action === PendleTradeAction.BUY_PT);
-  const sells = history.filter(t => t.action === PendleTradeAction.SELL_PT);
+  const buys = history.filter(t => t.action === PendleHistoryAction.BUY_PT);
+  const sells = history.filter(t => t.action === PendleHistoryAction.SELL_PT);
 
-  // Reconciliation gate: sum notional.pt across Pendle's view of buys/sells
-  // and compare to what the user actually holds on-chain. A trade missing the
-  // notional.pt field (older API versions, malformed entries) contributes 0
-  // to the sum — the safe-fallback failure mode, since underestimating PT-in
-  // means the gate hides the line. Same outcome we want when the API is
-  // genuinely incomplete.
-  const ptBought = buys.reduce((s, t) => s + (t.notional?.pt ?? 0), 0);
-  const ptSold = sells.reduce((s, t) => s + (t.notional?.pt ?? 0), 0);
+  // Reconciliation gate: sum PT across Pendle's view of buys/sells and compare
+  // to what the user actually holds on-chain. usePendleMarketHistory zeros out
+  // ptAmount when Pendle's API omits the notional.pt field — the safe-fallback
+  // failure mode, since underestimating PT-in means the gate hides the line.
+  const ptBought = buys.reduce((s, t) => s + t.ptAmount, 0);
+  const ptSold = sells.reduce((s, t) => s + t.ptAmount, 0);
   const netPtFromPendle = ptBought - ptSold;
   if (ptBalanceFloat <= 0) return EMPTY;
   // Asymmetric check (see top-of-file decision 1). Only hide on EXCESS PT,
@@ -149,8 +147,8 @@ export function computeMaturedEarnings({
   // and interpreted as redeems (decision 5).
   if (netPtFromPendle < ptBalanceFloat * (1 - RECONCILIATION_TOLERANCE)) return EMPTY;
 
-  const totalSpentUsd = buys.reduce((s, t) => s + t.value, 0);
-  const totalRecoveredUsd = sells.reduce((s, t) => s + t.value, 0);
+  const totalSpentUsd = buys.reduce((s, t) => s + t.valueUsd, 0);
+  const totalRecoveredUsd = sells.reduce((s, t) => s + t.valueUsd, 0);
   const netCostUsd = totalSpentUsd - totalRecoveredUsd;
   if (netCostUsd <= 0) return EMPTY;
 
