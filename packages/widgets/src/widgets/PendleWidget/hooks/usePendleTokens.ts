@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { TOKENS, type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
+import { TENDERLY_CHAIN_ID, TOKENS, type PendleMarketConfig, type Token } from '@jetstreamgg/sky-hooks';
 import { mainnet } from 'viem/chains';
 
 export type PendleTokens = {
@@ -23,7 +23,10 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
       symbol: market.underlyingSymbol,
       decimals: market.underlyingDecimals,
       color: '#00C2A1',
-      address: { [mainnet.id]: market.underlyingToken }
+      address: {
+        [mainnet.id]: market.underlyingToken,
+        [TENDERLY_CHAIN_ID]: market.underlyingToken
+      }
     }),
     [market.underlyingSymbol, market.underlyingDecimals, market.underlyingToken]
   );
@@ -34,7 +37,10 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
       symbol: `PT-${market.underlyingSymbol}`,
       decimals: market.underlyingDecimals,
       color: '#1BE3C2',
-      address: { [mainnet.id]: market.ptToken }
+      address: {
+        [mainnet.id]: market.ptToken,
+        [TENDERLY_CHAIN_ID]: market.ptToken
+      }
     }),
     [market.underlyingSymbol, market.underlyingDecimals, market.ptToken]
   );
