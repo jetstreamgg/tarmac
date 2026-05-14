@@ -27,7 +27,6 @@ interface BalancesHistoryItemProps {
   chainId?: number;
   savingsToken?: string;
   tradeFromToken?: string;
-  pendleUnderlyingSymbol?: string;
   rewardContract?: `0x${string}`;
   item: CombinedHistoryItem;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
@@ -41,7 +40,6 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
   chainId,
   savingsToken,
   tradeFromToken,
-  pendleUnderlyingSymbol,
   rewardContract,
   item,
   onExternalLinkClicked
@@ -129,7 +127,6 @@ export const BalancesHistoryItem: React.FC<BalancesHistoryItemProps> = ({
                       type,
                       tradeFromToken,
                       savingsToken,
-                      pendleUnderlyingSymbol,
                       rewardToken: rewardContractTokens?.rewardsToken.symbol,
                       chainId: chainId || 1
                     })}

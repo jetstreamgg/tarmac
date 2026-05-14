@@ -52,11 +52,8 @@ function row(
     txHash,
     timestamp,
     action,
-    // For trades: ptAmount comes from v5 notional.pt. For redeems: 1 PT = 1
-    // underlying at redemption, so ptAmount == underlyingAmount.
     ptAmount: amount,
     valueUsd: action === PendleHistoryAction.REDEEM_PY ? 0 : amount,
-    underlyingAmount: amount,
     market
   };
 }
@@ -91,8 +88,11 @@ describe('usePendleCombinedHistory', () => {
   });
 
   it('converts ptAmount float to assets bigint using the source market decimals', () => {
-    // PT-USDe has 18-decimal underlying. 6143.99 → 6143.99 * 1e18 (rounded).
-    // PT-USDG has 6-decimal underlying. 100.5 → 100.5 * 1e6 = 100_500_000.
+    // PT-USDe has 18-decimal underlying. 6143.99 → 6143_990000000000000000n.
+    // PT-USDG has 6-decimal underlying. 100.5 → 100_500_000n.
+    // The 18-decimal path is the regression bookmark: the prior implementation
+    // multiplied through Number (6143.99 * 1e18 → ~6.14399e21, well past
+    // Number.MAX_SAFE_INTEGER) and yielded a bigint with corrupted low digits.
     vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
       data: [
         row(PT_USDE, PendleHistoryAction.REDEEM_PY, '2026-04-22T19:11:11Z', 6143.99, '0x1'),
@@ -108,7 +108,7 @@ describe('usePendleCombinedHistory', () => {
     const usde = result.current.data![0];
     const usdg = result.current.data![1];
     expect(usde.underlyingDecimals).toBe(18);
-    expect(usde.assets).toBe(BigInt(Math.round(6143.99 * 1e18)));
+    expect(usde.assets).toBe(6_143_990_000_000_000_000_000n);
     expect(usde.marketName).toBe('PT-USDe');
     expect(usdg.underlyingDecimals).toBe(6);
     expect(usdg.assets).toBe(100_500_000n);

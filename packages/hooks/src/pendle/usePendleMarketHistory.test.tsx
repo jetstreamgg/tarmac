@@ -102,17 +102,14 @@ describe('usePendleMarketHistory — merge, dedupe, sort, fallback', () => {
     // Sorted desc by timestamp: redeem (June) first, buy (January) second.
     expect(result.current.data?.[0].action).toBe(PendleHistoryAction.REDEEM_PY);
     expect(result.current.data?.[0].txHash).toBe(HASH_REDEEM);
-    // Redeem rows sourced from v1's txValueAsset. 1 PT = 1 underlying at
-    // redemption, so ptAmount and underlyingAmount are the same number.
-    // valueUsd stays 0 — computeMaturedEarnings only reads it for trades.
+    // Redeem rows sourced from v1's txValueAsset. valueUsd stays 0 —
+    // computeMaturedEarnings only reads it for trades.
     expect(result.current.data?.[0].ptAmount).toBe(800);
     expect(result.current.data?.[0].valueUsd).toBe(0);
-    expect(result.current.data?.[0].underlyingAmount).toBe(800);
     expect(result.current.data?.[1].action).toBe(PendleHistoryAction.BUY_PT);
     expect(result.current.data?.[1].txHash).toBe(HASH_BUY);
     expect(result.current.data?.[1].ptAmount).toBe(1000);
     expect(result.current.data?.[1].valueUsd).toBe(1000);
-    expect(result.current.data?.[1].underlyingAmount).toBe(1000);
   });
 
   it('drops redeem rows where txValueAsset is zero (YT-only no-op redeems)', async () => {

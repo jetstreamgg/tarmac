@@ -1,18 +1,18 @@
-import { TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
+import { CombinedHistoryItem, TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
 import { t } from '@lingui/core/macro';
 
 export const getToken = ({
+  item,
   type,
   tradeFromToken,
   savingsToken,
-  rewardToken,
-  pendleUnderlyingSymbol
+  rewardToken
 }: {
+  item: CombinedHistoryItem;
   type: TransactionTypeEnum;
   tradeFromToken?: string;
   savingsToken?: string;
   rewardToken?: string;
-  pendleUnderlyingSymbol?: string;
 }) => {
   switch (type) {
     case TransactionTypeEnum.SUPPLY: //TODO: account for other reward contracts
@@ -44,7 +44,7 @@ export const getToken = ({
     case TransactionTypeEnum.PENDLE_BUY:
     case TransactionTypeEnum.PENDLE_SELL:
     case TransactionTypeEnum.PENDLE_REDEEM:
-      return pendleUnderlyingSymbol || '';
+      return 'underlyingSymbol' in item ? item.underlyingSymbol : '';
     default:
       return '';
   }

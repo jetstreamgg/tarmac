@@ -10,7 +10,6 @@ export const getHistoryRightText = ({
   tradeFromToken,
   savingsToken,
   rewardToken,
-  pendleUnderlyingSymbol,
   chainId
 }: {
   item: CombinedHistoryItem;
@@ -18,7 +17,6 @@ export const getHistoryRightText = ({
   tradeFromToken?: string;
   savingsToken?: string;
   rewardToken?: string;
-  pendleUnderlyingSymbol?: string;
   chainId: number;
 }) => {
   if ([TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.STAKE_SELECT_DELEGATE].includes(type)) {
@@ -35,6 +33,6 @@ export const getHistoryRightText = ({
   return (
     getAmount({ item, type, chainId }) +
     ' ' +
-    getToken({ type, tradeFromToken, savingsToken, rewardToken, pendleUnderlyingSymbol })
+    getToken({ item, type, tradeFromToken, savingsToken, rewardToken })
   );
 };

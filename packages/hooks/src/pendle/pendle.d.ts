@@ -383,13 +383,6 @@ export type PendleHistoryRow = {
   ptAmount: number;
   /** USD-denominated trade value as reported by v5. 0 for redeem rows. */
   valueUsd: number;
-  /**
-   * Underlying-token amount the user spent (BUY) or received (SELL/REDEEM),
-   * in the underlying token's units (e.g. USDG, USDe). Approximate for
-   * BUY/SELL on non-pegged markets — v5 only reports USD, so this equals
-   * `valueUsd` there; exact for REDEEM since it comes from v1's txValueAsset.
-   */
-  underlyingAmount: number;
 };
 
 export type PendleMarketHistoryHook = ReadHook & {

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { parseUnits } from 'viem';
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { PendleHistoryAction } from './constants';
 import type { PendleCombinedHistoryRow, PendleHistoryHook, PendleHistoryItem } from './pendle';
@@ -20,8 +21,14 @@ function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
   // PT decimals = underlying decimals (Pendle convention); for redeems the
   // 1 PT = 1 underlying invariant means ptAmount and the actual underlying
   // received are the same number.
+  //
+  // Go through `toFixed(decimals)` rather than `value * 10**decimals` — the
+  // multiplication overflows Number.MAX_SAFE_INTEGER for any 18-decimal
+  // amount over ~9e-3 and silently corrupts the low digits. `toFixed` also
+  // guarantees a decimal string (no scientific notation) and clamps the
+  // fractional length to what parseUnits accepts.
   const decimals = row.market.underlyingDecimals;
-  const assets = BigInt(Math.round(row.ptAmount * 10 ** decimals));
+  const assets = parseUnits(row.ptAmount.toFixed(decimals), decimals);
   return {
     blockTimestamp: new Date(row.timestamp),
     transactionHash: row.txHash,
