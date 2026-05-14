@@ -372,6 +372,20 @@ export type PendleMarketHistoryHook = ReadHook & {
   data?: PendleHistoryRow[];
 };
 
+/**
+ * Normalized history row tagged with its source market. Returned by
+ * useAllPendleMarketsHistory, which merges per-market feeds across every
+ * entry in PENDLE_MARKETS so the overview can show activity for matured
+ * markets the user can no longer click into.
+ */
+export type PendleCombinedHistoryRow = PendleHistoryRow & {
+  market: PendleMarketConfig;
+};
+
+export type PendleCombinedMarketHistoryHook = ReadHook & {
+  data?: PendleCombinedHistoryRow[];
+};
+
 /** Per-market user PT balance + USD valuation, scoped to markets we support. */
 export type PendleMarketUserAsset = {
   /** Market contract address */

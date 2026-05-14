@@ -40,6 +40,59 @@ function normalizeRedeem(tx: PendlePnlTransactionRaw): PendleHistoryRow {
 }
 
 /**
+ * Fetch + normalize + dedupe + sort the combined v5 trades + v1 PnL feeds for
+ * one (market, user) pair. Throws on v5 failure (the primary feed is load-
+ * bearing); logs and degrades to trades-only on v1 failure.
+ *
+ * Exported so the combined-history hook can fan it out across PENDLE_MARKETS.
+ */
+export async function loadPendleMarketHistoryRows(
+  marketAddress: `0x${string}`,
+  userAddress: `0x${string}`
+): Promise<PendleHistoryRow[]> {
+  const [tradesSettled, pnlSettled] = await Promise.allSettled([
+    fetchPendleMarketTransactions(mainnet.id, marketAddress, userAddress),
+    fetchPendlePnlTransactions(mainnet.id, marketAddress, userAddress)
+  ]);
+
+  if (tradesSettled.status === 'rejected') {
+    // Primary feed failed — surface the error rather than half-empty data.
+    throw tradesSettled.reason;
+  }
+
+  const tradeRows = tradesSettled.value
+    .filter(tx => SURFACED_TRADE_ACTIONS.has(tx.action))
+    .map(normalizeTrade);
+
+  let redeemRows: PendleHistoryRow[] = [];
+  if (pnlSettled.status === 'fulfilled') {
+    redeemRows = pnlSettled.value
+      .filter(tx => tx.action === PendleHistoryAction.REDEEM_PY)
+      .map(normalizeRedeem);
+  } else {
+    // Don't fail the whole query if the secondary feed is down — log and
+    // continue with trades-only. Indexer lag and intermittent 5xx on the
+    // PnL endpoint are expected; the user can refetch.
+    console.warn('Pendle /pnl/transactions failed, falling back to v5 trades only:', pnlSettled.reason);
+  }
+
+  // Dedupe by txHash — defensive only. A trade tx and a redeem tx should
+  // never share a hash (different router calls), but if Pendle ever
+  // reports the same hash on both feeds, prefer the v5 trade row.
+  const seen = new Set<string>();
+  const merged: PendleHistoryRow[] = [];
+  for (const row of [...tradeRows, ...redeemRows]) {
+    const key = row.txHash.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(row);
+  }
+
+  merged.sort((a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp)));
+  return merged;
+}
+
+/**
  * Hook for fetching the latest market activity for a Pendle market scoped to
  * the connected user. We never show unscoped market activity, so the query
  * is disabled until a wallet is connected.
@@ -65,47 +118,7 @@ export function usePendleMarketHistory(marketAddress: `0x${string}` | undefined)
     queryKey: ['pendle-market-history', marketAddress?.toLowerCase(), userAddress?.toLowerCase()],
     queryFn: async (): Promise<PendleHistoryRow[]> => {
       if (!marketAddress || !userAddress) return [];
-
-      const [tradesSettled, pnlSettled] = await Promise.allSettled([
-        fetchPendleMarketTransactions(mainnet.id, marketAddress, userAddress),
-        fetchPendlePnlTransactions(mainnet.id, marketAddress, userAddress)
-      ]);
-
-      if (tradesSettled.status === 'rejected') {
-        // Primary feed failed — surface the error rather than half-empty data.
-        throw tradesSettled.reason;
-      }
-
-      const tradeRows = tradesSettled.value
-        .filter(tx => SURFACED_TRADE_ACTIONS.has(tx.action))
-        .map(normalizeTrade);
-
-      let redeemRows: PendleHistoryRow[] = [];
-      if (pnlSettled.status === 'fulfilled') {
-        redeemRows = pnlSettled.value
-          .filter(tx => tx.action === PendleHistoryAction.REDEEM_PY)
-          .map(normalizeRedeem);
-      } else {
-        // Don't fail the whole query if the secondary feed is down — log and
-        // continue with trades-only. Indexer lag and intermittent 5xx on the
-        // PnL endpoint are expected; the user can refetch.
-        console.warn('Pendle /pnl/transactions failed, falling back to v5 trades only:', pnlSettled.reason);
-      }
-
-      // Dedupe by txHash — defensive only. A trade tx and a redeem tx should
-      // never share a hash (different router calls), but if Pendle ever
-      // reports the same hash on both feeds, prefer the v5 trade row.
-      const seen = new Set<string>();
-      const merged: PendleHistoryRow[] = [];
-      for (const row of [...tradeRows, ...redeemRows]) {
-        const key = row.txHash.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        merged.push(row);
-      }
-
-      merged.sort((a, b) => Number(new Date(b.timestamp)) - Number(new Date(a.timestamp)));
-      return merged;
+      return loadPendleMarketHistoryRows(marketAddress, userAddress);
     },
     enabled: !!marketAddress && !!userAddress,
     staleTime: 60_000,

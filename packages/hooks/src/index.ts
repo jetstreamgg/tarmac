@@ -149,6 +149,7 @@ export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
 export { useAllPendleUserAssets } from './pendle/useAllPendleUserAssets';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
+export { useAllPendleMarketsHistory } from './pendle/useAllPendleMarketsHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
 export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
@@ -178,6 +179,8 @@ export type {
   PendlePnlTransactionsResponseRaw,
   PendleHistoryRow,
   PendleMarketHistoryHook,
+  PendleCombinedHistoryRow,
+  PendleCombinedMarketHistoryHook,
   PendleMarketUserAsset,
   AllPendleUserAssetsData,
   AllPendleUserAssetsHook
