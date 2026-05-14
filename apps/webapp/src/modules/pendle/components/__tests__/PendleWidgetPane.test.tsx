@@ -201,7 +201,6 @@ function renderComponent(ui: ReactNode) {
 const sharedProps = {
   onConnect: () => undefined,
   addRecentTransaction: () => undefined,
-  locale: 'en',
   rightHeaderComponent: <span />,
   onNotification: () => undefined,
   enabled: false,

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Seal } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
@@ -36,7 +35,6 @@ type WidgetPaneProps = {
 };
 
 export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
-  const { i18n } = useLingui();
   const onConnect = useCustomConnectModal();
   const { data: currentUrnIndex } = useSealCurrentIndex();
   // Transaction tracking removed - was using RainbowKit
@@ -45,7 +43,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const onNotification = useNotification();
   const { onExternalLinkClicked, setSelectedSealUrnIndex } = useConfigContext();
   const [shouldHideLink, setShouldHideLink] = useState(false);
-  const locale = i18n.locale;
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -116,7 +113,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const sharedProps = {
     onConnect,
     addRecentTransaction,
-    locale,
     rightHeaderComponent,
     onNotification,
     enabled: isConnectedAndAcceptedTerms,

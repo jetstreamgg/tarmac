@@ -57,7 +57,6 @@ type SealModuleWidgetProps = WidgetProps & {
 };
 
 export const SealModuleWidget = ({
-  locale,
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
@@ -71,9 +70,10 @@ export const SealModuleWidget = ({
   referralCode,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) => {
+  const { i18n } = useLingui();
   return (
     <ErrorBoundary componentName="SealModuleWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider locale={i18n.locale}>
         <SealModuleWidgetProvider>
           <SealModuleWidgetWrapped
             rightHeaderComponent={rightHeaderComponent}

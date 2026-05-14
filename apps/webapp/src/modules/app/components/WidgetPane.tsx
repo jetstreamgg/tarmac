@@ -11,7 +11,6 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { useLingui } from '@lingui/react';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import {
   COMING_SOON_MAP,
@@ -71,7 +70,6 @@ type WidgetPaneProps = {
 };
 
 export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
-  const { i18n } = useLingui();
   const chainId = useChainId();
   const onConnect = useCustomConnectModal();
 
@@ -82,7 +80,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const onNotification = useNotification();
   const { onExternalLinkClicked } = useConfigContext();
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
-  const locale = i18n.locale;
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
   const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
@@ -109,7 +106,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const sharedProps = {
     onConnect,
     addRecentTransaction,
-    locale,
     rightHeaderComponent,
     onNotification,
     enabled: isConnectedAndAcceptedTerms,

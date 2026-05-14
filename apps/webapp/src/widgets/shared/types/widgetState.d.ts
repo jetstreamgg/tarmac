@@ -128,7 +128,6 @@ export type WidgetStateChangeParams = {
 
 export type WidgetProps = {
   onConnect?: () => void;
-  locale?: string;
   addRecentTransaction?: (transaction: { hash: string; description: string }) => void;
   rightHeaderComponent?: React.ReactElement;
   externalWidgetState?: ExternalWidgetState;

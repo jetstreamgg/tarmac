@@ -1,8 +1,15 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { I18nProvider } from '@lingui/react';
+import { i18n } from '@lingui/core';
 import { TxStatus } from '@/widgets/shared/constants';
 import { PsmConversionWidget } from '.';
+
+i18n.load('en', {});
+i18n.activate('en');
+
+const renderWithI18n = (ui: React.ReactElement) => render(<I18nProvider i18n={i18n}>{ui}</I18nProvider>);
 
 const mockPsmState = vi.hoisted(() => ({
   execute: vi.fn(),
@@ -237,7 +244,7 @@ describe('PsmConversionWidget', () => {
   });
 
   it('hides the two-step indicator for single-transaction PSM conversions', async () => {
-    render(<PsmConversionWidget {...widgetProps} />);
+    renderWithI18n(<PsmConversionWidget {...widgetProps} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
     expect(await screen.findByText('review-step-indicator:false')).toBeTruthy();
@@ -251,7 +258,7 @@ describe('PsmConversionWidget', () => {
     const addRecentTransaction = vi.fn();
     const onWidgetStateChange = vi.fn();
 
-    render(
+    renderWithI18n(
       <PsmConversionWidget
         {...widgetProps}
         addRecentTransaction={addRecentTransaction}

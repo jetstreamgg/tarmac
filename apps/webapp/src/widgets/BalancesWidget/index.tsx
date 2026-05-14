@@ -2,6 +2,7 @@ import { Heading, Text } from '@/widgets/shared/components/ui/Typography';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { WidgetProvider } from '@/widgets/context/WidgetContext';
 import { WidgetProps, WidgetStateChangeParams } from '@/widgets/shared/types/widgetState';
 import { useConnection } from 'wagmi';
@@ -37,7 +38,6 @@ export type BalancesWidgetProps = WidgetProps & {
 
 export const BalancesWidget = ({
   onConnect,
-  locale,
   rightHeaderComponent,
   hideRestrictedModules = false,
   enabled = true,
@@ -57,9 +57,10 @@ export const BalancesWidget = ({
   onExploreVaults,
   hideWalletCard
 }: BalancesWidgetProps) => {
+  const { i18n } = useLingui();
   return (
     <ErrorBoundary componentName="BalancesWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider locale={i18n.locale}>
         <BalancesWidgetWrapped
           onConnect={onConnect}
           rightHeaderComponent={rightHeaderComponent}

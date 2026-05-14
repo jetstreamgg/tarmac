@@ -61,7 +61,6 @@ describe('PsmConversionWidgetPane', () => {
   const sharedProps = {
     onConnect: vi.fn(),
     addRecentTransaction: vi.fn(),
-    locale: 'en',
     rightHeaderComponent: <div />,
     onNotification: vi.fn(),
     enabled: true,

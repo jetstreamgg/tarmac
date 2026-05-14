@@ -64,7 +64,6 @@ function TradeWidgetWrapped({
   rightHeaderComponent,
   customTokenList = [],
   disallowedPairs = defaultConfig.tradeDisallowedPairs,
-  locale,
   externalWidgetState,
   onStateValidated,
   onNotification,
@@ -95,6 +94,7 @@ function TradeWidgetWrapped({
   const { address, isConnecting, isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
+  const locale = linguiCtx.i18n.locale;
 
   const { data: chi } = useReadSsrAuthOracleGetChi();
   const { data: rho } = useReadSsrAuthOracleGetRho();

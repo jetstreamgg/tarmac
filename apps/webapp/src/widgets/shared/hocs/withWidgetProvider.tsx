@@ -1,9 +1,9 @@
 import { ComponentType } from 'react';
+import { useLingui } from '@lingui/react';
 import { WidgetProvider } from '@/widgets/context/WidgetContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export interface WithWidgetProviderProps {
-  locale?: string;
   shouldReset?: boolean;
   onWidgetStateChange?: (data: any) => void;
 }
@@ -13,7 +13,8 @@ export const withWidgetProvider = <P extends object>(
   componentName: string
 ) => {
   return function WithWidgetProviderComponent(props: P & WithWidgetProviderProps) {
-    const { locale, shouldReset = false, onWidgetStateChange, ...componentProps } = props;
+    const { shouldReset = false, onWidgetStateChange, ...componentProps } = props;
+    const { i18n } = useLingui();
     const key = shouldReset ? 'reset' : undefined;
 
     // Handle the conditional onWidgetStateChange logic
@@ -21,11 +22,10 @@ export const withWidgetProvider = <P extends object>(
 
     return (
       <ErrorBoundary componentName={componentName}>
-        <WidgetProvider key={key} locale={locale}>
+        <WidgetProvider key={key} locale={i18n.locale}>
           <WrappedComponent
             key={key}
             {...(componentProps as P)}
-            locale={locale}
             onWidgetStateChange={processedOnWidgetStateChange}
           />
         </WidgetProvider>
