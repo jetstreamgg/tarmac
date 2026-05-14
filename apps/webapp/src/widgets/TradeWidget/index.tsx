@@ -68,6 +68,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -84,7 +85,6 @@ function TradeWidgetWrapped({
   disallowedPairs = defaultConfig.tradeDisallowedPairs,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
@@ -95,6 +95,7 @@ function TradeWidgetWrapped({
   const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const [tradeAnyway, setTradeAnyway] = useState(false);

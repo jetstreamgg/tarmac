@@ -50,6 +50,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -66,7 +67,6 @@ function TradeWidgetWrapped({
   disallowedPairs = defaultConfig.tradeDisallowedPairs,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
@@ -78,6 +78,7 @@ function TradeWidgetWrapped({
 }: TradeWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const validatedExternalState = getValidatedState(externalWidgetState);

@@ -4,7 +4,6 @@ import { Intent } from '@/lib/enums';
 import { Trans } from '@lingui/react/macro';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { useNotification } from '../hooks/useNotification';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { ArrowLeft } from 'lucide-react';
@@ -30,7 +29,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const { data: currentUrnIndex } = useSealCurrentIndex();
   // Transaction tracking removed - was using RainbowKit
   const addRecentTransaction = () => {}; // No-op for now
-  const onNotification = useNotification();
   const { setSelectedSealUrnIndex } = useConfigContext();
   const [shouldHideLink, setShouldHideLink] = useState(false);
   const chainId = useChainId();
@@ -103,7 +101,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const sharedProps = {
     addRecentTransaction,
     rightHeaderComponent,
-    onNotification,
     referralCode,
     onSealUrnChange
   };

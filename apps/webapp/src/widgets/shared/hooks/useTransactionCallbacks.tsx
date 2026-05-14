@@ -1,5 +1,5 @@
 import { useCallback, useContext } from 'react';
-import { WidgetProps, WidgetState } from '../types/widgetState';
+import { WidgetProps, WidgetState, OnNotificationCallback } from '../types/widgetState';
 import { WidgetAnalyticsEventType } from '../types/analyticsEvents';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { getTransactionLink } from '@/utils';
@@ -9,8 +9,10 @@ import { InitialScreen, NotificationType, TxStatus } from '../constants';
 
 type UseTransactionCallbacksParameters = Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
->;
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
+> & {
+  onNotification?: OnNotificationCallback;
+};
 
 interface TransactionStartParameters {
   hash?: string;

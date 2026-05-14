@@ -48,6 +48,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type StUSDSWidgetProps = WidgetProps & {
   onBackToExpert?: () => void;
@@ -59,7 +60,6 @@ const StUSDSWidgetWrapped = ({
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
   referralCode,
@@ -67,6 +67,7 @@ const StUSDSWidgetWrapped = ({
 }: StUSDSWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const validatedExternalState = getValidatedState(externalWidgetState);
 
   useEffect(() => {

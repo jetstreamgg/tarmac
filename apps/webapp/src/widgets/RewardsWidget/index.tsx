@@ -44,6 +44,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
@@ -57,7 +58,6 @@ const RewardsWidgetWrapped = ({
   onRewardContractChange,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
   referralCode,
@@ -65,6 +65,7 @@ const RewardsWidgetWrapped = ({
 }: RewardsWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();

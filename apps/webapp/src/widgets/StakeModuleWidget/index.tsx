@@ -50,6 +50,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -66,7 +67,6 @@ function StakeModuleWidgetWrapped({
   rightHeaderComponent,
   onStakeUrnChange,
   externalWidgetState,
-  onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
   onShowHelpModal,
@@ -77,6 +77,7 @@ function StakeModuleWidgetWrapped({
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
+  const onNotification = useNotification();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);
 

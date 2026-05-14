@@ -1,6 +1,6 @@
 import { Token, TOKENS, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut } from '@/hooks';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { SavingsAction } from '@/widgets/SavingsWidget/lib/constants';
 import { useContext } from 'react';
 import { useChainId } from 'wagmi';
@@ -8,8 +8,9 @@ import { useL2SavingsTransactionCallbacks } from './useL2SavingsTransactionCallb
 
 interface UseL2SavingsTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
 > {
+  onNotification?: OnNotificationCallback;
   originToken: Token;
   amount: bigint;
   isMaxWithdraw: boolean;

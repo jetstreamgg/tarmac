@@ -49,6 +49,7 @@ import { OnSealUrnChange } from './lib/types';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 type SealModuleWidgetProps = WidgetProps & {
   onSealUrnChange?: OnSealUrnChange;
@@ -62,7 +63,6 @@ export const SealModuleWidget = ({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
-  onNotification,
   onWidgetStateChange,
   onNavigateToStakeWidget,
   addRecentTransaction,
@@ -79,7 +79,6 @@ export const SealModuleWidget = ({
             rightHeaderComponent={rightHeaderComponent}
             onSealUrnChange={onSealUrnChange}
             externalWidgetState={externalWidgetState}
-            onNotification={onNotification}
             onWidgetStateChange={onWidgetStateChange}
             addRecentTransaction={addRecentTransaction}
             termsLink={termsLink}
@@ -97,7 +96,6 @@ function SealModuleWidgetWrapped({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
-  onNotification,
   onWidgetStateChange,
   addRecentTransaction,
   termsLink,
@@ -107,6 +105,7 @@ function SealModuleWidgetWrapped({
 }: SealModuleWidgetProps) {
   const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
+  const onNotification = useNotification();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {

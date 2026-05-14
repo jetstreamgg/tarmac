@@ -6,7 +6,7 @@ import {
   QueryParams,
   CHAIN_WIDGET_MAP
 } from '@/lib/constants';
-import { useGeoConfig } from '@/modules/geo-config';
+import { useGeoConfig } from '@/modules/geo-config/hooks/useGeoConfig';
 import { Intent, ConvertIntent } from '@/lib/enums';
 import {
   useTokens,

@@ -7,14 +7,15 @@ import { notificationTypeMaping } from '@/widgets/shared/constants';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { useCallback, useContext, useMemo } from 'react';
 import { useChainId } from 'wagmi';
 
 interface UseL2TradeTransactionCallbacksParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'
+  'addRecentTransaction' | 'onWidgetStateChange'
 > {
+  onNotification?: OnNotificationCallback;
   originAmount: bigint;
   originToken: TokenForChain | undefined;
   targetAmount: bigint;

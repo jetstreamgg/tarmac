@@ -28,15 +28,10 @@ describe('StUSDS Widget Integration Tests', () => {
 
   it('completes full supply flow', async () => {
     const mockAddTransaction = vi.fn();
-    const mockNotification = vi.fn();
     const mockStateChange = vi.fn();
 
     renderWithWagmiWrapper(
-      <StUSDSWidget
-        addRecentTransaction={mockAddTransaction}
-        onNotification={mockNotification}
-        onWidgetStateChange={mockStateChange}
-      />
+      <StUSDSWidget addRecentTransaction={mockAddTransaction} onWidgetStateChange={mockStateChange} />
     );
 
     // 1. Start with supply tab
@@ -76,15 +71,10 @@ describe('StUSDS Widget Integration Tests', () => {
 
   it('completes full withdraw flow', async () => {
     const mockAddTransaction = vi.fn();
-    const mockNotification = vi.fn();
     const mockStateChange = vi.fn();
 
     renderWithWagmiWrapper(
-      <StUSDSWidget
-        addRecentTransaction={mockAddTransaction}
-        onNotification={mockNotification}
-        onWidgetStateChange={mockStateChange}
-      />
+      <StUSDSWidget addRecentTransaction={mockAddTransaction} onWidgetStateChange={mockStateChange} />
     );
 
     // 1. Switch to withdraw tab
@@ -128,14 +118,8 @@ describe('StUSDS Widget Integration Tests', () => {
 
   it('handles approval flow correctly', async () => {
     const mockAddTransaction = vi.fn();
-    const mockNotification = vi.fn();
 
-    renderWithWagmiWrapper(
-      <StUSDSWidget
-        addRecentTransaction={mockAddTransaction}
-        onNotification={mockNotification}
-      />
-    );
+    renderWithWagmiWrapper(<StUSDSWidget addRecentTransaction={mockAddTransaction} />);
 
     // Test approval flow by ensuring the widget can handle approval states
     const supplyTab = await screen.findByText('Supply');
@@ -215,10 +199,7 @@ describe('StUSDS Widget Integration Tests', () => {
     const referralCode = 12345;
 
     renderWithWagmiWrapper(
-      <StUSDSWidget
-        addRecentTransaction={mockAddTransaction}
-        referralCode={referralCode}
-      />
+      <StUSDSWidget addRecentTransaction={mockAddTransaction} referralCode={referralCode} />
     );
 
     // Widget should render and handle referral code
@@ -230,9 +211,7 @@ describe('StUSDS Widget Integration Tests', () => {
   });
 
   it('handles error states properly', async () => {
-    const mockNotification = vi.fn();
-
-    renderWithWagmiWrapper(<StUSDSWidget onNotification={mockNotification} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     // Test error handling by triggering balance error
     const withdrawTab = await screen.findByText('Withdraw');
@@ -253,15 +232,9 @@ describe('StUSDS Widget Integration Tests', () => {
   });
 
   it('handles transaction success/failure flows', async () => {
-    const mockNotification = vi.fn();
     const mockAddTransaction = vi.fn();
 
-    renderWithWagmiWrapper(
-      <StUSDSWidget
-        onNotification={mockNotification}
-        addRecentTransaction={mockAddTransaction}
-      />
-    );
+    renderWithWagmiWrapper(<StUSDSWidget addRecentTransaction={mockAddTransaction} />);
 
     // Widget should be set up to handle success/failure callbacks
     const supplyTab = await screen.findByText('Supply');

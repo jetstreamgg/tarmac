@@ -1,5 +1,5 @@
 import { TokenForChain, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut } from '@/hooks';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { useL2TradeTransactionCallbacks } from './useL2TradeTransactionCallbacks';
 import { useContext } from 'react';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
@@ -8,8 +8,9 @@ import { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 
 interface UseL2TradeTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'
+  'addRecentTransaction' | 'onWidgetStateChange'
 > {
+  onNotification?: OnNotificationCallback;
   originAmount: bigint;
   originToken: TokenForChain | undefined;
   targetAmount: bigint;

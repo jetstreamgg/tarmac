@@ -104,12 +104,14 @@ export type ExternalWidgetState = BalancesWidgetState &
   StakeWidgetState &
   SealWidgetState;
 
-type WidgetMessage = {
+export type WidgetMessage = {
   title: string;
   description: string;
   status: TxStatus;
   type?: NotificationType;
 };
+
+export type OnNotificationCallback = (message: WidgetMessage) => void;
 
 export type WidgetStateChangeParams = {
   hash?: string;
@@ -131,7 +133,6 @@ export type WidgetProps = {
   rightHeaderComponent?: React.ReactElement;
   externalWidgetState?: ExternalWidgetState;
   onStateValidated?: (state: State) => void;
-  onNotification?: (message: WidgetMessage) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
   onCustomNavigation?: () => void;

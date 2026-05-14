@@ -30,7 +30,6 @@ import { IconProps } from '@/modules/icons/Icon';
 import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
 import React, { useEffect } from 'react';
-import { useNotification } from '../hooks/useNotification';
 
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
@@ -66,7 +65,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // No-op: ConnectedModal now uses subgraph data instead of localStorage
   const addRecentTransaction = () => {};
 
-  const onNotification = useNotification();
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
@@ -94,7 +92,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const sharedProps = {
     addRecentTransaction,
     rightHeaderComponent,
-    onNotification,
     referralCode,
     shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };

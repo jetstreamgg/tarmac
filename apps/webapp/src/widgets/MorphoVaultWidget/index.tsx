@@ -39,6 +39,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -62,13 +63,13 @@ const MorphoVaultWidgetWrapped = ({
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
   onBackToVaults
 }: MorphoVaultWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const validatedExternalState = getValidatedState(externalWidgetState, [assetToken.symbol]);
 
   useEffect(() => {

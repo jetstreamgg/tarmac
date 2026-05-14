@@ -8,13 +8,14 @@ import {
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { useContext } from 'react';
 import { SavingsAction, SavingsFlow } from '../lib/constants';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
 interface UseSavingsTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
 > {
+  onNotification?: OnNotificationCallback;
   amount: bigint;
   max: boolean;
   referralCode: number | undefined;

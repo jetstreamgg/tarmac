@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MakerHooksProvider } from '../../src/widgets/context/context';
 import { mock } from 'wagmi/connectors';
 import { createConfig, WagmiProvider, http } from 'wagmi';
@@ -62,24 +63,26 @@ export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <I18nWidgetProvider locale="en">
-          <ConnectedContext.Provider value={testConnectedContextValue}>
-            <ConnectModalContext.Provider value={testConnectModalContextValue}>
-              <MakerHooksProvider
-                config={{
-                  delegates: {
-                    ens: normalize('vitalik.eth')
-                  },
-                  ipfs: {
-                    gateway: 'dweb.link'
-                  }
-                }}
-              >
-                {children}
-              </MakerHooksProvider>
-            </ConnectModalContext.Provider>
-          </ConnectedContext.Provider>
-        </I18nWidgetProvider>
+        <MemoryRouter>
+          <I18nWidgetProvider locale="en">
+            <ConnectedContext.Provider value={testConnectedContextValue}>
+              <ConnectModalContext.Provider value={testConnectModalContextValue}>
+                <MakerHooksProvider
+                  config={{
+                    delegates: {
+                      ens: normalize('vitalik.eth')
+                    },
+                    ipfs: {
+                      gateway: 'dweb.link'
+                    }
+                  }}
+                >
+                  {children}
+                </MakerHooksProvider>
+              </ConnectModalContext.Provider>
+            </ConnectedContext.Provider>
+          </I18nWidgetProvider>
+        </MemoryRouter>
       </QueryClientProvider>
     </WagmiProvider>
   );

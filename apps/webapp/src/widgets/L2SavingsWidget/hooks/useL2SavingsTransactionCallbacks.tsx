@@ -5,7 +5,7 @@ import { useLingui } from '@lingui/react/macro';
 import { formatUnits } from 'viem';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useMemo, useRef } from 'react';
 import { useChainId } from 'wagmi';
@@ -13,8 +13,9 @@ import { SavingsAction, SavingsFlow } from '@/widgets/SavingsWidget/lib/constant
 
 interface UseL2SavingsTransactionCallbacksParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
 > {
+  onNotification?: OnNotificationCallback;
   amount: bigint;
   originToken: Token;
   needsAllowance: boolean;

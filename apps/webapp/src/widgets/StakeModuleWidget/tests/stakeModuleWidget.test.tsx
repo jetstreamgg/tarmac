@@ -331,13 +331,11 @@ describe('StakeModuleWidget tests', () => {
       isLoading: false
     } as any);
 
-    const onNotificationMock = vi.fn();
     const onWidgetStateChangeMock = vi.fn();
 
     const { rerender } = renderWithWagmiWrapper(
       <StakeModuleWidget
         addRecentTransaction={() => {}}
-        onNotification={onNotificationMock}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
           flow: StakeFlow.OPEN
@@ -352,30 +350,24 @@ describe('StakeModuleWidget tests', () => {
 
     // Rerender with loading status
     rerender(
-      <WagmiWrapper>
-        <StakeModuleWidget
-            addRecentTransaction={() => {}}
-          onNotification={onNotificationMock}
-          onWidgetStateChange={onWidgetStateChangeMock}
-          externalWidgetState={{
-            flow: StakeFlow.OPEN
-          }}
-        />
-      </WagmiWrapper>
+      <StakeModuleWidget
+        addRecentTransaction={() => {}}
+        onWidgetStateChange={onWidgetStateChangeMock}
+        externalWidgetState={{
+          flow: StakeFlow.OPEN
+        }}
+      />
     );
 
     // Rerender with success status
     rerender(
-      <WagmiWrapper>
-        <StakeModuleWidget
-            addRecentTransaction={() => {}}
-          onNotification={onNotificationMock}
-          onWidgetStateChange={onWidgetStateChangeMock}
-          externalWidgetState={{
-            flow: StakeFlow.OPEN
-          }}
-        />
-      </WagmiWrapper>
+      <StakeModuleWidget
+        addRecentTransaction={() => {}}
+        onWidgetStateChange={onWidgetStateChangeMock}
+        externalWidgetState={{
+          flow: StakeFlow.OPEN
+        }}
+      />
     );
 
     await waitFor(() => {

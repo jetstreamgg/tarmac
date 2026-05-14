@@ -48,6 +48,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type PendleWidgetProps = WidgetProps & {
   /** Selected Pendle market — passed in by the webapp module after URL-driven selection. */
@@ -60,12 +61,12 @@ export type PendleWidgetProps = WidgetProps & {
 const PendleWidgetWrapped = ({
   market,
   rightHeaderComponent,
-  onNotification,
   onAnalyticsEvent,
   onBackToPendle
 }: PendleWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();

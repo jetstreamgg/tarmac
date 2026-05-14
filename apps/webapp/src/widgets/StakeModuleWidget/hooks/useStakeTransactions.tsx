@@ -1,4 +1,4 @@
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { useStakeTransactionCallbacks } from './useStakeTransactionCallbacks';
 import {
   useBatchStakeClaimAllRewards,
@@ -12,8 +12,9 @@ import { useConnection } from 'wagmi';
 
 interface UseStakeTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
 > {
+  onNotification?: OnNotificationCallback;
   lockAmount: bigint;
   usdsAmount: bigint;
   calldata: `0x${string}`[];

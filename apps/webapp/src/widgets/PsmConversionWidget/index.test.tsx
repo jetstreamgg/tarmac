@@ -97,6 +97,10 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
+vi.mock('@/modules/app/hooks/useNotification', () => ({
+  useNotification: () => vi.fn()
+}));
+
 vi.mock('motion/react', () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
   const motion: any = new Proxy(

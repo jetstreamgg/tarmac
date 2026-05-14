@@ -37,6 +37,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type PsmConversionWidgetProps = WidgetProps & {
   onBackToConvert?: () => void;
@@ -71,7 +72,6 @@ function PsmConversionWidgetWrapped({
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
   referralCode,
@@ -80,6 +80,7 @@ function PsmConversionWidgetWrapped({
   const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const validatedExternalState = useMemo(() => {
     const state = getValidatedState(externalWidgetState, supportedTokens);
     if (!state) {

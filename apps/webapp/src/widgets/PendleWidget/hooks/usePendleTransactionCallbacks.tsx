@@ -9,12 +9,13 @@ import {
   type Token
 } from '@/hooks';
 import { TxStatus } from '@/widgets/shared/constants';
-import { WidgetProps, WidgetState } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, WidgetState, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { PendleFlow, PendleScreen } from '../lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '../lib/pendleAnalyticsData';
 
-type UsePendleTransactionCallbacksParameters = Pick<WidgetProps, 'onNotification' | 'onAnalyticsEvent'> & {
+type UsePendleTransactionCallbacksParameters = Pick<WidgetProps, 'onAnalyticsEvent'> & {
+  onNotification?: OnNotificationCallback;
   flow: PendleFlow;
   side: PendleConvertSide;
   market: PendleMarketConfig;

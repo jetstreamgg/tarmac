@@ -55,6 +55,7 @@ import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 export type UpgradeWidgetProps = WidgetProps & {
   upgradeOptions?: Token[];
@@ -66,7 +67,6 @@ export function UpgradeWidgetWrapped({
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
@@ -78,6 +78,7 @@ export function UpgradeWidgetWrapped({
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
+  const onNotification = useNotification();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);
 

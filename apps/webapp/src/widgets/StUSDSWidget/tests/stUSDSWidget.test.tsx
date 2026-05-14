@@ -202,9 +202,7 @@ describe('StUSDS widget tests', () => {
   // });
 
   it('handles transaction success/failure properly', async () => {
-    const mockNotification = vi.fn();
-
-    renderWithWagmiWrapper(<StUSDSWidget onNotification={mockNotification} />);
+    renderWithWagmiWrapper(<StUSDSWidget />);
 
     // Widget should be set up to handle notifications
     const supplyTab = await screen.findByText('Supply');

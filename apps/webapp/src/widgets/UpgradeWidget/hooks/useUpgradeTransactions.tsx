@@ -1,12 +1,13 @@
 import { useBatchUpgraderManager } from './useBatchUpgraderManager';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { Token } from '@/hooks';
 import { useUpgradeTransactionCallbacks } from './useUpgradeTransactionCallbacks';
 
 interface UseUpgradeTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
 > {
+  onNotification?: OnNotificationCallback;
   originToken: Token;
   targetToken: Token;
   originAmount: bigint;

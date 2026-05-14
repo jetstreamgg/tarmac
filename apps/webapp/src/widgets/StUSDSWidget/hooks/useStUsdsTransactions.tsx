@@ -6,15 +6,16 @@ import {
   StUsdsDirection
 } from '@/hooks';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { useContext } from 'react';
 import { StUSDSAction } from '../lib/constants';
 import { useStUsdsTransactionCallbacks } from './useStUsdsTransactionCallbacks';
 
 interface UseStUsdsTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
 > {
+  onNotification?: OnNotificationCallback;
   amount: bigint;
   referralCode: number | undefined;
   max: boolean;
