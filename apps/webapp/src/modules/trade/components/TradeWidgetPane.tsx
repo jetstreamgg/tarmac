@@ -20,7 +20,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
@@ -36,7 +35,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isCowSupported = isCowSupportedChainId(chainId);
 
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { isRegionRestricted } = useGeoConfig();
   const tradeTokenList = isRegionRestricted
@@ -231,8 +229,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         },
         chainId
       )}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       tokensLocked={shouldLockTokens}
       onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />

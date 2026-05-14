@@ -43,11 +43,10 @@ import { RewardsClaimAllTransactionStatus } from './components/RewardsClaimAllTr
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type RewardsWidgetProps = WidgetProps & {
   onRewardContractChange?: (rewardContract?: RewardContract) => void;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   disclaimer?: React.ReactNode;
 };
 
@@ -62,11 +61,10 @@ const RewardsWidgetWrapped = ({
   onWidgetStateChange,
   onAnalyticsEvent,
   referralCode,
-  batchEnabled,
-  setBatchEnabled,
   disclaimer
 }: RewardsWidgetProps) => {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();

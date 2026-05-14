@@ -40,11 +40,10 @@ import { calculateOriginOptions, tokenForSymbol } from './lib/helpers';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type SavingsWidgetProps = WidgetProps & {
   disallowedTokens?: { [key in SavingsFlow]: Token[] };
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 // HOC Widget
@@ -57,11 +56,10 @@ const SavingsWidgetWrapped = ({
   onWidgetStateChange,
   onAnalyticsEvent,
   referralCode,
-  disallowedTokens,
-  batchEnabled,
-  setBatchEnabled
+  disallowedTokens
 }: SavingsWidgetProps) => {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
   const {
     setButtonText,

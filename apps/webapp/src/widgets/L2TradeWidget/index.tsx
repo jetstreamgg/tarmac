@@ -49,13 +49,12 @@ import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
   widgetTitle?: ReactNode;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   tokensLocked?: boolean;
   onBackToConvert?: () => void;
 };
@@ -74,12 +73,11 @@ function TradeWidgetWrapped({
   onAnalyticsEvent,
   referralCode,
   widgetTitle,
-  batchEnabled,
-  setBatchEnabled,
   tokensLocked = false,
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const validatedExternalState = getValidatedState(externalWidgetState);

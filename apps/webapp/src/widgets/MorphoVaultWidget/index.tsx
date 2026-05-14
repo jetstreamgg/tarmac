@@ -38,6 +38,7 @@ import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -48,10 +49,6 @@ export type MorphoVaultWidgetProps = WidgetProps & {
   assetToken: Token;
   /** Vault name for display purposes */
   vaultName?: string;
-  /** Whether batch transactions are enabled */
-  batchEnabled?: boolean;
-  /** Callback to set batch enabled state */
-  setBatchEnabled?: (enabled: boolean) => void;
   /** Callback to navigate back to vaults view */
   onBackToVaults?: () => void;
 };
@@ -68,11 +65,10 @@ const MorphoVaultWidgetWrapped = ({
   onNotification,
   onWidgetStateChange,
   onAnalyticsEvent,
-  batchEnabled,
-  setBatchEnabled,
   onBackToVaults
 }: MorphoVaultWidgetProps) => {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const validatedExternalState = getValidatedState(externalWidgetState, [assetToken.symbol]);
 
   useEffect(() => {

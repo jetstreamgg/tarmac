@@ -54,11 +54,10 @@ import {
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type UpgradeWidgetProps = WidgetProps & {
   upgradeOptions?: Token[];
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
 };
 
@@ -73,12 +72,11 @@ export function UpgradeWidgetWrapped({
   customNavigationLabel,
   onAnalyticsEvent,
   upgradeOptions = defaultUpgradeOptions,
-  batchEnabled,
-  setBatchEnabled,
   disallowedFlow,
   onBackToConvert
 }: UpgradeWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);

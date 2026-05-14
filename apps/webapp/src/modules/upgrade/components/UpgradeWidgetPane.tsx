@@ -22,7 +22,6 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
@@ -49,7 +48,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   // Get source_token from URL params
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
 
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
 
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
@@ -275,8 +273,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       onCustomNavigation={onNavigate}
       upgradeOptions={upgradeOptions}
       disallowedFlow={disallowedFlow}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />
   );

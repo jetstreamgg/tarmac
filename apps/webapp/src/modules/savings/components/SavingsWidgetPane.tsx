@@ -17,7 +17,6 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
@@ -27,7 +26,6 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
 
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('savings', chainId);
 
   const isL2 = isL2ChainId(chainId);
@@ -138,8 +136,6 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
         token: linkedActionConfig?.sourceToken,
         flow
       }}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
     />
   );
 }

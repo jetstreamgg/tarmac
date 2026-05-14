@@ -49,6 +49,7 @@ import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -58,8 +59,6 @@ type StakeModuleWidgetProps = WidgetProps & {
   onStakeUrnChange?: OnStakeUrnChange;
   onShowHelpModal?: () => void;
   addRecentTransaction: any;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   disclaimer?: React.ReactNode;
 };
 
@@ -73,11 +72,10 @@ function StakeModuleWidgetWrapped({
   onShowHelpModal,
   addRecentTransaction,
   referralCode,
-  batchEnabled,
-  setBatchEnabled,
   disclaimer
 }: StakeModuleWidgetProps) {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);

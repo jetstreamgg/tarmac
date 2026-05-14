@@ -47,6 +47,7 @@ import { PendleTransactionStatus } from './components/PendleTransactionStatus';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type PendleWidgetProps = WidgetProps & {
   /** Selected Pendle market — passed in by the webapp module after URL-driven selection. */
@@ -54,8 +55,6 @@ export type PendleWidgetProps = WidgetProps & {
   /** When provided, renders a "Back to Pendle" link above the heading. The webapp module
    * uses this to clear the market query params and return to the overview list. */
   onBackToPendle?: () => void;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
 };
 
 const PendleWidgetWrapped = ({
@@ -63,11 +62,10 @@ const PendleWidgetWrapped = ({
   rightHeaderComponent,
   onNotification,
   onAnalyticsEvent,
-  onBackToPendle,
-  batchEnabled,
-  setBatchEnabled
+  onBackToPendle
 }: PendleWidgetProps) => {
   const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();

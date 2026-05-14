@@ -36,10 +36,9 @@ import { PsmConversionAction, PsmConversionFlow, PsmConversionScreen } from './l
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type PsmConversionWidgetProps = WidgetProps & {
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
 };
 
@@ -76,12 +75,11 @@ function PsmConversionWidgetWrapped({
   onWidgetStateChange,
   onAnalyticsEvent,
   referralCode,
-  batchEnabled,
-  setBatchEnabled,
   onBackToConvert
 }: PsmConversionWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const validatedExternalState = useMemo(() => {
     const state = getValidatedState(externalWidgetState, supportedTokens);
     if (!state) {

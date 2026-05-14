@@ -4,7 +4,6 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import {
@@ -21,7 +20,6 @@ import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const {
     selectedRewardContract,
     setSelectedRewardContract,
@@ -140,8 +138,6 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
       externalWidgetState={{ selectedRewardContract, amount: linkedActionConfig?.inputAmount, flow }}
       onWidgetStateChange={onRewardsWidgetStateChange}
       onAnalyticsEvent={onAnalyticsEvent}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       disclaimer={<RewardsUsdsSkyDisclaimer />}
     />
   );

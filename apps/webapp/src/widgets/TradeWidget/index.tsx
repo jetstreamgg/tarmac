@@ -66,6 +66,7 @@ import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents
 import { useTradeAnalytics } from './hooks/useTradeAnalytics';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type TradeWidgetProps = WidgetProps & {
@@ -73,8 +74,6 @@ export type TradeWidgetProps = WidgetProps & {
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
   widgetTitle?: ReactNode;
   tokensLocked?: boolean;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
 };
 
@@ -91,23 +90,18 @@ function TradeWidgetWrapped({
   customNavigationLabel,
   onAnalyticsEvent,
   tokensLocked = false,
-  batchEnabled: initialBatchEnabled = true,
-  setBatchEnabled: externalSetBatchEnabled,
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
   const onConnect = useCustomConnectModal();
   const { onExternalLinkClicked } = useConfigContext();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const [tradeAnyway, setTradeAnyway] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [ethFlowTxStatus, setEthFlowTxStatus] = useState<EthFlowTxStatus>(EthFlowTxStatus.IDLE);
-  const [internalBatchEnabled, setInternalBatchEnabled] = useState(initialBatchEnabled);
   const [isUsdtResetFlow, setIsUsdtResetFlow] = useState(false);
 
-  // Use external setter if provided, otherwise use internal state
-  const batchEnabled = externalSetBatchEnabled ? initialBatchEnabled : internalBatchEnabled;
-  const setBatchEnabled = externalSetBatchEnabled || setInternalBatchEnabled;
   const validatedExternalState = getValidatedState(externalWidgetState);
 
   useEffect(() => {

@@ -15,7 +15,6 @@ const setSearchParamsMock = vi.fn(
 );
 
 const setSelectedConvertOptionMock = vi.fn();
-const setBatchEnabledMock = vi.fn();
 const onAnalyticsEventMock = vi.fn();
 
 let capturedWidgetProps: Record<string, any> | undefined;
@@ -35,10 +34,6 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({
     setSelectedConvertOption: setSelectedConvertOptionMock
   })
-}));
-
-vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
-  useBatchToggle: () => [true, setBatchEnabledMock]
 }));
 
 vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
@@ -73,7 +68,6 @@ describe('PsmConversionWidgetPane', () => {
     capturedWidgetProps = undefined;
     setSearchParamsMock.mockClear();
     setSelectedConvertOptionMock.mockClear();
-    setBatchEnabledMock.mockClear();
     onAnalyticsEventMock.mockClear();
   });
 
@@ -84,8 +78,6 @@ describe('PsmConversionWidgetPane', () => {
       amount: '10',
       token: 'USDC'
     });
-    expect(capturedWidgetProps?.batchEnabled).toBe(true);
-    expect(capturedWidgetProps?.setBatchEnabled).toBe(setBatchEnabledMock);
     expect(capturedWidgetProps?.onAnalyticsEvent).toBe(onAnalyticsEventMock);
   });
 

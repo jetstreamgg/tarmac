@@ -14,7 +14,6 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { ExpertIntent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useChainId } from 'wagmi';
 
@@ -26,7 +25,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const chainId = useChainId();
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('expert', chainId);
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as StUSDSFlow | undefined;
@@ -123,8 +121,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
         amount: linkedActionConfig?.inputAmount,
         flow
       }}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       onBackToExpert={handleBack}
     />
   );

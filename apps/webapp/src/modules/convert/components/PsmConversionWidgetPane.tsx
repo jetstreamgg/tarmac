@@ -5,7 +5,6 @@ import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { ConvertIntent } from '@/lib/enums';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useChainId } from 'wagmi';
 
@@ -13,7 +12,6 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
   const chainId = useChainId();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setSelectedConvertOption } = useConfigContext();
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
@@ -81,8 +79,6 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
       onWidgetStateChange={onPsmConversionWidgetStateChange}
       onAnalyticsEvent={onAnalyticsEvent}
       externalWidgetState={externalWidgetState}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       onBackToConvert={handleBackToConvert}
     />
   );

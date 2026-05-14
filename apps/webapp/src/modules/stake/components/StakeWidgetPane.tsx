@@ -14,7 +14,6 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@/hooks';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
@@ -32,7 +31,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   const chainId = useChainId();
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onAnalyticsEvent = useWidgetAnalytics('stake', chainId);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
@@ -203,8 +201,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
           stakeTab,
           flow
         }}
-        batchEnabled={batchEnabled}
-        setBatchEnabled={setBatchEnabled}
       />
       <StakeHelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </>
