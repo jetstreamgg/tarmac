@@ -26,8 +26,7 @@ export default [
       '**/sw.js',
       '**/generated.ts',
       '**/playwright-report/**',
-      'packages/components',
-      'packages/utils/src/locales/*'
+      'apps/webapp/src/locales/*'
     ]
   },
   ...compat.extends(

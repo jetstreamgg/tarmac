@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '../../../../../packages/widgets/src/shared/components/icons/Icon';
+import { Icon, IconProps } from '@/widgets/shared/components/icons/Icon';
 
 export const BaseChain = (props: IconProps) => (
   <Icon {...props} width="28" height="28" viewBox="0 0 28 28" fill="none">

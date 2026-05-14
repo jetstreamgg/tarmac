@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '../../../../../packages/widgets/src/shared/components/icons/Icon';
+import { Icon, IconProps } from '@/widgets/shared/components/icons/Icon';
 
 export const ArbitrumChain = (props: IconProps) => (
   <Icon {...props} width="17" height="17" viewBox="0 0 17 17" fill="none">

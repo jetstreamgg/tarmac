@@ -350,7 +350,7 @@ if (fs.existsSync(balancesFilePath)) {
   isBaseChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 
 import {
   L2GeneralFaqItems,
@@ -404,7 +404,7 @@ if (fs.existsSync(savingsFilePath)) {
   isL2ChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 
 import {
   L2GeneralFaqItems,
@@ -459,7 +459,7 @@ if (fs.existsSync(tradeFilePath)) {
   isL2ChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 
 import {
   L2GeneralFaqItems,

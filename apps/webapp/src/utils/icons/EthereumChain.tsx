@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '../../../../../packages/widgets/src/shared/components/icons/Icon';
+import { Icon, IconProps } from '@/widgets/shared/components/icons/Icon';
 
 export const EthereumChain = (props: IconProps) => (
   <Icon {...props} width="28" height="28" viewBox="0 0 24 24" fill="none">

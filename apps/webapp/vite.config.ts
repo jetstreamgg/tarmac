@@ -156,16 +156,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
-        // If we're in dev mode, alias the packages to their local TypeScript source code for faster HMR
-        ...(mode === modeEnum.development
-          ? {
-              '@jetstreamgg/sky-hooks': path.resolve(__dirname, '../../packages/hooks/src'),
-              '@jetstreamgg/sky-utils': path.resolve(__dirname, '../../packages/utils/src'),
-              '@jetstreamgg/sky-widgets': path.resolve(__dirname, '../../packages/widgets/src'),
-              '@widgets': path.resolve(__dirname, '../../packages/widgets/src')
-            }
-          : {})
+        '@': path.resolve(__dirname, './src')
       },
       // Dedupe wagmi/viem to prevent multiple instances causing WagmiProviderNotFoundError
       dedupe: ['wagmi', '@wagmi/core', 'viem', '@tanstack/react-query', 'react', 'react-dom']
@@ -173,9 +164,7 @@ export default ({ mode }: { mode: modeEnum }) => {
     optimizeDeps: {
       // Optimize safe-apps-provider dependency to get rid of the Safe connector issue
       // and be able to connect Safe apps
-      include: ['wagmi > @safe-global/safe-apps-provider'],
-      // Exclude utils package from dependency pre-bundling to avoid issues with dynamic imports in i18n
-      exclude: ['@jetstreamgg/sky-utils']
+      include: ['wagmi > @safe-global/safe-apps-provider']
     },
     plugins: [
       simpleHtmlPlugin({
