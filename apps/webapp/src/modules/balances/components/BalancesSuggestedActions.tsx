@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId, useChains } from 'wagmi';
-import { QueryParams, mapQueryParamToIntent } from '@/lib/constants';
+import { QueryParams, mapQueryParamToIntent, FIXED_YIELD_MODULE_ENABLED } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -399,7 +399,7 @@ export function BalancesSuggestedActions({
   const actions = useMemo(() => {
     let result =
       widget === 'stables'
-        ? [...STABLE_ACTIONS, fixedYieldAction]
+        ? [...STABLE_ACTIONS, ...(FIXED_YIELD_MODULE_ENABLED ? [fixedYieldAction] : [])]
         : widget === 'sky'
           ? SKY_ACTIONS
           : TOKEN_ACTIONS;
