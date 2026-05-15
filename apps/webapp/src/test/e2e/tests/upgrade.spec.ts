@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures-parallel';
-import { daiUsdsAddress, mcdDaiAddress } from '@jetstreamgg/sky-hooks';
+import { daiUsdsAddress, mcdDaiAddress } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { interceptAndRejectTransactions } from '../utils/rejectTransaction.ts';
 import { performAction } from '../utils/approveOrPerformAction.ts';

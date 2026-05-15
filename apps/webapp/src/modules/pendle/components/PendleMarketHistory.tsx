@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { usePendleMarketHistory, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
+import { usePendleMarketHistory, type PendleMarketConfig } from '@/hooks';
 import { PendleHistoryRowsTable, type PendleHistoryDisplayRow } from './PendleHistoryRowsTable';
 
 type PendleMarketHistoryProps = {

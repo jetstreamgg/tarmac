@@ -2,16 +2,16 @@ import { Intent } from '@/lib/enums';
 import { ModuleCard } from '../ModuleCard';
 import { t } from '@lingui/core/macro';
 import { HStack } from '@/modules/layout/components/HStack';
-import { PairTokenIcons, PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PairTokenIcons, PopoverRateInfo } from '@/widgets';
 import { mainnet } from 'viem/chains';
 import { Text } from '@/modules/layout/components/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDecimalPercentage, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, isL2ChainId } from '@/utils';
 import {
   useHighestRateFromChartData,
   useMultipleRewardsChartInfo,
   useStakeRewardContracts
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export function StakingRewardsCard() {

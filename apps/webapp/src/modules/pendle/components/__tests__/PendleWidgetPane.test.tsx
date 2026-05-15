@@ -53,8 +53,8 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
-vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     PENDLE_MARKETS: [hoisted.activeMarket, hoisted.maturedMarket],
@@ -76,16 +76,16 @@ vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+vi.mock('@/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils')>();
   return {
     ...actual,
     isTestnetId: () => false
   };
 });
 
-vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>,

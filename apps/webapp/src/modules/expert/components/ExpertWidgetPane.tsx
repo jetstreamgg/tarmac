@@ -1,4 +1,4 @@
-import { CardAnimationWrapper, WidgetContainer } from '@jetstreamgg/sky-widgets';
+import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ExpertIntent } from '@/lib/enums';

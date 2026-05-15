@@ -8,7 +8,7 @@ import {
   SuccessCheckSolidColor,
   FailedX,
   Cancel
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -18,8 +18,9 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow } from '@/components/ui/popover';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { getExplorerName, useIsSafeWallet } from '@jetstreamgg/sky-utils';
-import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
+import { getExplorerName } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
+import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
 

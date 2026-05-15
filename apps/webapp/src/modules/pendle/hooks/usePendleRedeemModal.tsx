@@ -11,13 +11,13 @@ import {
   useQuotePendleConvert,
   type PendleMarketConfig,
   type Token
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import {
   PendleConfigMenu,
   pendleAnalyticsData,
   usePendleSlippage,
   usePendleTokens
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { PendleRedeem } from '../components/PendleRedeem';
 

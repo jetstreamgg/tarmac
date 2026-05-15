@@ -1,0 +1,4913 @@
+msgid ""
+msgstr ""
+"POT-Creation-Date: 2025-10-08 11:30+0200\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: @lingui/cli\n"
+"Language: en\n"
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Plural-Forms: \n"
+
+#. js-lingui-explicit-id
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "_-Z5u4"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "  · Aggregator hop"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "  · Pendle AMM"
+msgstr ""
+
+#. placeholder {0}: formatTimeLeft(remaining)
+#: apps/webapp/src/modules/pendle/components/PendleMarketStatsCard.tsx
+msgid "· {0} left"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleMarketStatsCard.tsx
+msgid "· matured"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "(toggled on by default)"
+msgstr ""
+
+#. placeholder {0}: banner.title
+#. placeholder {0}: borrowTooltipContent?.title || 'Borrow Utilization'
+#. placeholder {0}: borrowTooltipContent?.tooltip || 'The percentage of the debt ceiling currently being utilized for USDS borrowing.'
+#: apps/webapp/src/modules/morpho/components/MorphoVaultChart.tsx
+#: apps/webapp/src/modules/pendle/components/PendleAbout.tsx
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSChart.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSCurveExchangeRateCard.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSNativeExchangeRateCard.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSRateDifferenceCard.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSUtilizationCard.tsx
+#: apps/webapp/src/modules/ui/components/TermsDialog.tsx
+msgid "{0}"
+msgstr ""
+
+#. placeholder {0}: rewardContract.name
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+msgid "{0} — Rewards statistics"
+msgstr ""
+
+#. placeholder {0}: flow === UpgradeFlow.UPGRADE ? 'Upgraded' : 'Reverted'
+#. placeholder {0}: flow === UpgradeFlow.UPGRADE ? (needsAllowance ? 'Approving and upgrading' : 'Upgrading') : needsAllowance ? 'Approving and reverting' : 'Reverting'
+#. placeholder {1}: originToken.symbol
+#. placeholder {2}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "{0} {1} to {2}"
+msgstr ""
+
+#. placeholder {0}: needsAllowance ? 'Approved and supplied' : 'Supplied'
+#. placeholder {0}: needsAllowance ? 'Approving and supplying' : 'Supplying'
+#. placeholder {1}: selectedRewardContract.supplyToken.symbol
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "{0} {1} to Sky Token Rewards module"
+msgstr ""
+
+#. placeholder {0}: selectedOutputToken.symbol
+#. placeholder {0}: targetToken.symbol
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+#: apps/webapp/src/widgets/PendleWidget/hooks/usePendleTransactionCallbacks.tsx
+msgid "{0} delivered to your wallet."
+msgstr ""
+
+#. placeholder {0}: formatTimeLeft(remainingSeconds)
+#: apps/webapp/src/modules/pendle/components/TimeToMaturityCard.tsx
+msgid "{0} remaining"
+msgstr ""
+
+#. placeholder {0}: SealToken.MKR
+#. placeholder {0}: SealToken.SKY
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+msgid "{0} sealed"
+msgstr ""
+
+#. placeholder {0}: StakeToken.SKY
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+msgid "{0} staked"
+msgstr ""
+
+#. placeholder {0}: flow === MorphoVaultFlow.SUPPLY ? 'Approved and supplied to' : 'Withdrawn from'
+#. placeholder {0}: flow === MorphoVaultFlow.SUPPLY ? 'Approving and supplying to' : 'Withdrawing from'
+#. placeholder {0}: flow === MorphoVaultFlow.SUPPLY ? 'Supplying to' : 'Withdrawing from'
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "{0} the Morpho Vault"
+msgstr ""
+
+#. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Approving and supplying to' : isL2Chain ? 'Approving and withdrawing from' : 'Withdrawing from'
+#. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Approved and supplied to' : isL2Chain ? 'Approved and withdrawn from' : 'Withdrawn from'
+#. placeholder {0}: flow === SavingsFlow.SUPPLY ? 'Supplying to' : 'Withdrawing from'
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "{0} the Sky Savings Rate module"
+msgstr ""
+
+#. placeholder {0}: flow === StUSDSFlow.SUPPLY ? 'Approved and supplied to' : needsAllowance ? 'Approved and withdrawn from' : 'Withdrawn from'
+#. placeholder {0}: flow === StUSDSFlow.SUPPLY ? 'Approving and supplying to' : 'Approving and withdrawing from'
+#. placeholder {0}: flow === StUSDSFlow.SUPPLY ? 'Supplying to' : 'Withdrawing from'
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "{0} the stUSDS module"
+msgstr ""
+
+#. placeholder {0}: intent && primaryToken && `${capitalizeFirstLetter(i18n._(intentTxt[intent]))} your `
+#. placeholder {1}: formatNumber(parseInt(balance))
+#. placeholder {2}: linkedModule && expertModuleTagline[linkedModule] ? expertModuleTagline[linkedModule] : secondaryTagline[la]
+#: apps/webapp/src/modules/ui/components/LinkedActionCard.tsx
+msgid "{0}<0>{1} {primaryToken} </0> to <1>{secondaryToken} </1>{2}"
+msgstr ""
+
+#: apps/webapp/src/widgets/shared/components/ui/card/StatsAccordionCard.tsx
+msgid "{accordionTitle}"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "{actionLabel} {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/history/RewardsCharts.tsx
+msgid "{chart}"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsDialog.tsx
+msgid "{declineButtonText}"
+msgstr ""
+
+#: apps/webapp/src/utils/bannerContentParser.tsx
+msgid "{description}"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+msgid "{label}"
+msgstr ""
+
+#: apps/webapp/src/utils/bannerContentParser.tsx
+msgid "{parts}"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/ModuleCard.tsx
+msgid "{title}"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutCard.tsx
+msgid "{tokenSymbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+msgid "{vaultName}"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+msgid "{vaultName} info"
+msgstr ""
+
+#: apps/webapp/src/modules/upgrade/components/MkrUpgradedPercentage.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeStats.tsx
+msgid "% of MKR upgraded"
+msgstr ""
+
+#. placeholder {0}: targetToken.symbol
+#. placeholder {1}: originToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "1 {0} = {executionPrice} {1}"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "1:1 conversion"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+#: apps/webapp/src/modules/ui/components/AboutPsmConversion.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "1:1 Conversion"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "1:1 conversion is available on Ethereum mainnet and supported Layer 2 networks."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutPsmConversion.tsx
+msgid "1:1 Conversion uses contracts deployed by Sky Protocol that enable swapping USDC and USDS at a fixed rate through the Peg Stability Module (PSM) <0/>. This means that unlike market trades, PSM conversions are not exposed to slippage and MEV risks, enabling seamless swapping between supported stablecoins."
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/PsmConversionDetails.tsx
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+#: apps/webapp/src/modules/vaults/components/VaultsDetailsPane.tsx
+msgid "About"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+msgid "About Chronicle points"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertDetailsPane.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+#: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
+msgid "About Native Sky Protocol Tokens"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/seal/components/SealPositionDetails.tsx
+#: apps/webapp/src/modules/ui/components/AboutSealModule.tsx
+msgid "About Seal Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/trade/components/TradeDetails.tsx
+msgid "About Sky Ecosystem Tokens"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
+#: apps/webapp/src/modules/ui/components/AboutStakeModule.tsx
+msgid "About Staking Rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "About the Seal Engine"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+msgid "About the Spark Token"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Absolute Cap"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Access a variable reward rate on USDS by participating in SKY-backed borrowing"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Access Morpho vault rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+msgid "Access Restricted"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/RewardsCard.tsx
+msgid "Access rewards without giving up control"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Access Sky Savings Rate with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/StakingRewardsCard.tsx
+msgid "Access Staking rewards (or Borrow) with SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Access stUSDS rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/SavingsCard.tsx
+msgid "Access the Sky Savings Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/ExpertCard.tsx
+msgid "Access the stUSDS Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+msgid "Access via VPN is not permitted. Please disconnect your VPN and refresh the page to continue."
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectedModal.tsx
+msgid "Account"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakePositionRewardsCard.tsx
+msgid "Accrued staking rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultRewardsDetails.tsx
+#: apps/webapp/src/modules/ui/components/BalanceCards.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
+msgid "Accumulated Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleReadyToRedeemTable.tsx
+msgid "Action"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectedModalTabs.tsx
+msgid "Activity"
+msgstr ""
+
+#. placeholder {0}: targetToken?.symbol || ''
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Add {0} to wallet"
+msgstr ""
+
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+msgid "Address Verification Error"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleWidgetPane.tsx
+msgid "All markets"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsOverview.tsx
+msgid "All rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsWidgetPane.tsx
+msgid "All vaults"
+msgstr ""
+
+#. placeholder {0}: allocationsData.assetSymbol
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Allocation ({0})"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Almost done!"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultHistory.tsx
+#: apps/webapp/src/modules/pendle/components/PendleMarketHistory.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: apps/webapp/src/modules/savings/components/SavingsHistory.tsx
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSHistory.tsx
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Amount"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Amount exceeds debt"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "An error occurred during the Curve pool supply."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "An error occurred during the Curve withdrawal."
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "An error occurred during the revert flow."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "An error occurred during the supply flow."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "An error occurred during the trade flow."
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "An error occurred during the upgrade flow."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "An error occurred during the withdraw flow."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "An error occurred during the withdrawal flow."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "An error occurred when allowing this app to access the tokens in your wallet."
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "An error occurred while allowing the app to access your {symbol}."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "An error occurred while changing your position"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "An error occurred while claiming your {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "An error occurred while claiming your rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "An error occurred while claiming your rewards."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "An error occurred while opening your position"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "An error occurred while preparing the transaction"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+msgid "An error occurred while submitting your signature. Please ensure your wallet is connected to either Ethereum mainnet, Base, Arbitrum, Optimism or Unichain and try again. If the issue persists, reach out for assistance in the official <0>Sky Discord</0>"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "An error occurred while trading your tokens"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "An error occurred while withdrawing {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Approval failed"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionReview.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionStatus.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/BatchTransactionStatus.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/TransactionReview.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/TransactionStatus.tsx
+msgid "Approve"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+msgid "Approve {0} first, then complete the conversion to {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Approve {0} so the conversion can proceed."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+msgid "Approve and convert {0} to {1} in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Approve conversion"
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/components/UpgradeAndSupplySteps.tsx
+msgid "Approve DAI"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "Approve repay amount"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Approve successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Approve token access"
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/components/UpgradeAndSupplySteps.tsx
+msgid "Approve USDS"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeTransactionStatus.tsx
+msgid "Approve USDT"
+msgstr ""
+
+#. placeholder {0}: current.originToken?.symbol || ''
+#. placeholder {0}: originToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Approving {0}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(debouncedOriginAmount, { locale, unit: getTokenDecimals(originToken, chainId) })
+#. placeholder {1}: originToken?.symbol ?? ''
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Approving {0} {1}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(debouncedUsdsAmount)
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "Approving {0} USDS"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Approving {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+msgid "Approving {approvalAmount} {approvalSymbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Approving and selling PT-{underlyingSymbol} for {underlyingSymbol} via Pendle"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Approving and supplying {underlyingSymbol} to the Pendle fixed-yield market"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendleConfigMenu.tsx
+msgid "Auto"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Available borrow capacity"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoMarketLiquidityCard.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSLiquidityCard.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSStatsCard.tsx
+msgid "Available liquidity"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+msgid "Available markets"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Available USDC liquidity"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "Back"
+msgstr ""
+
+#. placeholder {0}: market.name
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Back to {0}"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+msgid "Back to {vaultName}"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Back to Convert"
+msgstr ""
+
+#: apps/webapp/src/pages/BatchTransactionsLegal.tsx
+msgid "Back to Home Page"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Back to Pendle"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+msgid "Back to Rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+msgid "Back to Savings"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Back to stUSDS"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/hooks/useL2TradeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Back to Trade"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Back to Upgrade"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleReadyToRedeemTable.tsx
+msgid "Balance"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "balances"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/index.tsx
+msgid "Balances"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Be sure to check your transaction status on CoW Explorer to verify the cancellation was successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Begin the revert process"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Begin the supply process"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "Begin the trade process"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Begin the upgrade process"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Begin the withdraw process"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Borrow"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Borrow Rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "Borrow USDS against your MKR and SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Borrow Utilization"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "Borrowed"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Borrowing"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Both native and Curve routes are temporarily unavailable"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Bundle transactions"
+msgstr ""
+
+#. placeholder {0}: batchEnabled ? 'enabled' : 'disabled'
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+msgid "Bundled transactions {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Bundled transactions are set 'on' by default to complete transactions in a single step. Combining actions improves the user experience and reduces gas fees. Manually toggle off to cancel this feature."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleMarketHistory.tsx
+msgid "Buy"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "By connecting, you agree to our Terms of Service"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Cancel error"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Cancel order"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Cancel successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Canceling order"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Cancelled"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSNativeExchangeRateCard.tsx
+msgid "Capacity temporarily full"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Capped OSM SKY price"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/context/ChainModalContext.tsx
+msgid "Chain not supported"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/StakeModuleTransactionStatus.tsx
+msgid "Change Position"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
+msgid "Change your delegate"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Change your position"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Changing position"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/components/L2TradeInputs.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeInputs.tsx
+msgid "Choose a token to receive"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/components/L2TradeInputs.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeInputs.tsx
+msgid "Choose a token to trade, and enter an amount"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Choose a token to upgrade, and enter an amount"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Choose from the Staking Reward options."
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Choose Reward"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
+msgid "Choose your delegate"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SelectRewardContract.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SelectRewardContract.tsx
+msgid "Choose your reward token"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutCle.tsx
+msgid "Chronicle"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutCle.tsx
+msgid "Chronicle Points are not a native feature of the Sky Protocol. Skybase International does not control or guarantee the availability, distribution or allocation of Chronicle Points or any other Chronicle funds. The Chronicle project operates independently of Sky.money and Skybase International. Please be aware that any engagement with Chronicle is at your own risk, and we bear no responsibility for any outcomes associated with this third-party system, or any funds associated with it."
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Claim"
+msgstr ""
+
+#. placeholder {0}: rewardsBalance < MIN_CLAIM_DISPLAY ? `<${formatBigInt(MIN_CLAIM_DISPLAY, { maxDecimals: 2 })}` : formatBigInt(rewardsBalance, { maxDecimals: 2 })
+#. placeholder {1}: rewardContract.rewardToken.symbol
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCardCore.tsx
+msgid "Claim {0} {1}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+msgid "Claim failed"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Claim rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+msgid "Claim successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Claim your rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsDetailsPane.tsx
+msgid "Claimable rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Claimed from multiple rewards pools"
+msgstr ""
+
+#. placeholder {0}: selectedRewardContract.name
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Claimed from the {0} rewards pool"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "Claimed from the Morpho Vault rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Claiming {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "Claiming {claimAmountText}"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Claiming all rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Claiming from multiple rewards pools"
+msgstr ""
+
+#. placeholder {0}: selectedRewardContract.name
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Claiming from the {0} rewards pool"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "Claiming from the Morpho Vault rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Claiming rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
+msgid "Close your position(s)"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Collateral value"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Collateralization ratio"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertDetailsPane.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+#: apps/webapp/src/modules/seal/components/SealPositionDetails.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+#: apps/webapp/src/modules/trade/components/TradeDetails.tsx
+#: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
+msgid "Combined actions"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/ModuleCard.tsx
+msgid "Coming Soon"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Confirm"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Confirm 2 transactions"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+msgid "Confirm 3 transactions"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Confirm approval & restake"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Confirm bundled transaction"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Confirm claim & restake"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Confirm conversion"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Confirm position"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Confirm restake"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Confirm revert"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Confirm Staking Position"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Confirm supply"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Confirm the change in your position"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/BatchTransactionStatus.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/TransactionStatus.tsx
+msgid "Confirm this transaction in your wallet."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+msgid "Confirm trade"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Confirm trade details"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Confirm upgrade"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Confirm withdrawal"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Confirm your claim"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Confirm your position"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Confirm your trade"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Confirm your transaction"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Confirm your transfer"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Connect"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/AssetsNoWalletConnected.tsx
+msgid "Connect a wallet to view and manage your funds"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+#: apps/webapp/src/widgets/shared/components/ui/ConnectWalletCopy.tsx
+msgid "Connect to explore Sky Protocol features"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Connect via QR"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "Connect wallet"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/CustomConnectButton.tsx
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+#: apps/webapp/src/widgets/BalancesWidget/index.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Connect Wallet"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Connect your wallet"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+msgid "Connect your wallet to start using Sky-curated Morpho Vaults. Deposit USDS, USDT, or USDC and start earning."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Connected"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Connecting..."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Continue"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Conversion complete"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Conversion failed"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Conversion successful"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "convert"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Convert"
+msgstr ""
+
+#. placeholder {0}: current.originToken?.symbol || ''
+#. placeholder {1}: current.targetToken?.symbol || ''
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Convert {0} into {1}"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+msgid "Convert {0} to {1} at a 1:1 rate."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Convert again"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+msgid "Convert USDC to USDS with 1:1 rate, with no swap fees and no slippage"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Convert your USDC to USDS, or USDS to USDC at 1:1 rate with no fees and slippage"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Converted {formattedOriginAmount} {0} into {formattedTargetAmount} {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Converting {0} to {1}"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Converting {formattedOriginAmount} {0} into {formattedTargetAmount} {1}."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/CopyToClipboard.tsx
+msgid "Copied"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryRow.tsx
+msgid "Copy transaction hash"
+msgstr ""
+
+#. placeholder {0}: mainnetChain.name
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+msgid "Could not switch networks automatically. Switch to {0} in your wallet and try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Couldn't fetch a quote from Pendle. Check your connection and try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Creating order"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Creating order to trade {originAmount} {0} for {targetAmount} {1}"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+msgid "Creation of new positions has been disabled. Management of existing positions remains available."
+msgstr ""
+
+#. placeholder {0}: mkr.symbol
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+msgid "Current {0} price"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Current market price exceeds your slippage tolerance. Increase slippage via the gear icon, or wait for the quote to refresh."
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+msgid "Current MKR price"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+msgid "Current SKY price"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSCurveExchangeRateCard.tsx
+msgid "Curve Exchange Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSRateDifferenceCard.tsx
+msgid "Curve vs. Native Rate difference"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendleConfigMenu.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
+msgid "Custom"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryRow.tsx
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTableHeader.tsx
+msgid "Date"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Debt ceiling"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+msgid "Debt ceiling utilization"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(simulatedVault?.dust || 0n)
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Debt must be paid off entirely, or left with a minimum of {0}"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Delayed Upgrade Fee"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Delayed Upgrade Penalty"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealDelegateCard.tsx
+#: apps/webapp/src/modules/stake/components/StakeDelegateCard.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "Delegate"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Delegate (optional)"
+msgstr ""
+
+#: apps/webapp/src/modules/upgrade/components/UpgradeHistory.tsx
+msgid "Details"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectedModal.tsx
+msgid "Disconnect wallet"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+msgid "Disconnect Wallet"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/DelegateCheckbox.tsx
+msgid "Do you want to delegate voting power?"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+msgid "Doing multicall"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Done"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Earn with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+msgid "Earn with your Stables"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Earns the full Sky Savings Rate. Distributed via Merkl."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Effective APY"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Effective rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Enter a larger amount to continue."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Free.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Free.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Lock.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Enter amount"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Enter an amount of USDS to revert"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionInputs.tsx
+msgid "Enter the amount to convert"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/shared/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Error"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Error claiming from multiple rewards pools"
+msgstr ""
+
+#. placeholder {0}: selectedRewardContract.name
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Error claiming from the {0} rewards pool"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Error fetching quote"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Error preparing transaction"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Estimated price impact"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "Exceeds remaining capacity."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Exchange Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+msgid "Exchange Rates"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+msgid "Exit fee"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+msgid "Exit fee percentage"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+msgid "Exit Seal Engine"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Expected input"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Expected output"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/ExpertCard.tsx
+#: apps/webapp/src/modules/expert/components/ExpertWidgetPane.tsx
+msgid "Expert"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertDetailsPane.tsx
+msgid "Expert activity"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertDetailsPane.tsx
+msgid "Expert overview"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/index.tsx
+msgid "Explore new Vaults and start earning"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+msgid "Exposure"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Failed to connect. Please try again."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/context/ChainModalContext.tsx
+msgid "Failed to switch network"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+#: apps/webapp/src/modules/convert/components/ConvertOverviewDetails.tsx
+#: apps/webapp/src/modules/convert/components/PsmConversionDetails.tsx
+#: apps/webapp/src/modules/expert/components/ExpertDetailsPane.tsx
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+#: apps/webapp/src/modules/seal/components/SealOverview.tsx
+#: apps/webapp/src/modules/seal/components/SealPositionDetails.tsx
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+#: apps/webapp/src/modules/trade/components/TradeDetails.tsx
+#: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
+#: apps/webapp/src/modules/vaults/components/VaultsDetailsPane.tsx
+msgid "FAQs"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Fetching position details"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+msgid "Fetching price"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Fetching quote from Pendle"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/components/ProviderIndicator.tsx
+msgid "Fetching rates"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Fetching transaction details"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleMarketInfoCard.tsx
+msgid "Fixed APY"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Fixed APY locked"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+#: apps/webapp/src/modules/pendle/components/PendleWidgetPane.tsx
+msgid "Fixed Yield"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+msgid "Fixed yield markets are only available on Ethereum mainnet. Switch networks to view available markets."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleWidgetPane.tsx
+msgid "Fixed yield markets are only on Ethereum mainnet. Switch networks to view markets."
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsTvlCard.tsx
+msgid "From: <0>{formattedMinRate}</0> To: <1>{formattedMaxRate}</1>"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/SuppliedFundsSavingsRow.tsx
+msgid "Funds by network"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/SuppliedFundsExpertRow.tsx
+#: apps/webapp/src/widgets/shared/components/ui/card/InteractiveStatsCardWithProductAccordion.tsx
+msgid "Funds by product"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Get Chronicle Points with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Get rewards with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+msgid "Get Sky Ecosystem tokens with best possible rates"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+#: apps/webapp/src/modules/convert/components/ConvertOverviewDetails.tsx
+msgid "Get Sky Protocol Tokens"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Get SPK rewards with USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Get the Sky Savings Rate"
+msgstr ""
+
+#. placeholder {0}: l2Chain?.name || ''
+#: apps/webapp/src/modules/balances/components/ModuleCard.tsx
+msgid "Go to {0} {module}"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Go to Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Go to Savings"
+msgstr ""
+
+#: apps/webapp/src/components/DetailsSwitcher.tsx
+msgid "Hide details"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "High risk"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertWidgetPane.tsx
+msgid "Higher-risk options for more experienced users"
+msgstr ""
+
+#. placeholder {0}: assetToken.symbol
+#. placeholder {0}: originToken.symbol
+#. placeholder {0}: originToken?.symbol
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/ManagePosition.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+msgid "How much {0} would you like to supply?"
+msgstr ""
+
+#. placeholder {0}: assetToken.symbol
+#. placeholder {0}: originToken?.symbol
+#. placeholder {0}: rewardContract?.supplyToken.name ?? ''
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/ManagePosition.tsx
+msgid "How much {0} would you like to withdraw?"
+msgstr ""
+
+#. placeholder {0}: market.underlyingSymbol
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "How much PT-{0} would you like to withdraw?"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Lock.tsx
+msgid "How much SKY would you like to stake?"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Free.tsx
+msgid "How much SKY would you like to unstake?"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "How much USDS would you like to supply?"
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "How much USDS would you like to withdraw?"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+msgid "How much would you like to borrow? (Optional)"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "How much would you like to repay?"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "How much would you like to supply?"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Free.tsx
+msgid "How much would you like to unseal?"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/UnconnectedState.tsx
+msgid "How to stake"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "How to Stake in 4 steps:"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+msgid "I have read and understand the"
+msgstr ""
+
+#. placeholder {0}: assetToken.symbol
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "I understand that {0} deposited into this vault is used to fund borrowing, and that I will not be able to withdraw as long as the available liquidity is 0"
+msgstr ""
+
+#. placeholder {0}: assetToken.symbol
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "I understand that {0} deposited into this vault is used to fund borrowing, and that I will not be able to withdraw if the available liquidity becomes exhausted"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Idle liquidity"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "in order to provide access to Seal Rewards and encourage a deeper commitment to Sky Ecosystem governance."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "In progress"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Included in quote"
+msgstr ""
+
+#. placeholder {0}: token.symbol
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Input is estimated. You will spend at most {slippageAdjustedQuote} {0} or the transaction will revert."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Installed Wallets"
+msgstr ""
+
+#. placeholder {0}: targetTokenSymbol || ''
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Insufficient {0} liquidity"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/components/L2TradeInputs.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionInputs.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/ManagePosition.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Free.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Free.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Lock.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeInputs.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Insufficient funds"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(nstBalance, { unit: inputToken ? getTokenDecimals(inputToken, chainId) : 18, maxDecimals: 4 })
+#. placeholder {0}: formatBigInt(userUsdsBalance, { unit: inputToken ? getTokenDecimals(inputToken, chainId) : 18, maxDecimals: 4 })
+#. placeholder {0}: formatUnits( savingsBalance || 0n, usds ? getTokenDecimals(usds, chainId) : 18 )
+#. placeholder {1}: assetToken.symbol
+#. placeholder {1}: inputToken?.symbol
+#. placeholder {1}: usds?.symbol
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "Insufficient funds. Your balance is {0} {1}."
+msgstr ""
+
+#. placeholder {0}: formatUnits(inputBalance ?? 0n, originDecimals)
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Insufficient funds. Your balance is {0}."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Insufficient liquidity"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "Insufficient liquidity in module"
+msgstr ""
+
+#. placeholder {0}: formatUnits(maxWithdraw || 0n, tokenDecimals)
+#. placeholder {1}: assetToken.symbol
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "Insufficient liquidity. Maximum available is {0} {1}."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Insufficient pool liquidity"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutMorphoVaults.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/UrnsList.tsx
+msgid "Learn more"
+msgstr ""
+
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+#: apps/webapp/src/pages/BatchTransactionsLegal.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/TransactionReview.tsx
+msgid "Legal Notice"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+msgid "Legal Terms"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+msgid "Liquidated"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Liquidation"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Liquidation price"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Free.tsx
+msgid "Liquidation price is higher than the capped OSM SKY price"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Liquidation ratio"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Liquidation risk meter"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Free.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Free.tsx
+msgid "Liquidation risk too high"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/MorphoVaultStatsCard.tsx
+msgid "Liquidity"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "Liquidity data is temporarily unavailable. Withdrawals may be limited by available liquidity."
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSNativeExchangeRateCard.tsx
+msgid "Liquidity temporarily utilized"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Loading"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleWidgetPane.tsx
+msgid "Lock in fixed yield by buying Principal Tokens (PT) at a discount. Each PT redeems 1:1 for the underlying asset at maturity."
+msgstr ""
+
+#. placeholder {0}: market.underlyingSymbol
+#. placeholder {1}: market.underlyingSymbol
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Lock in fixed yield by buying PT-{0}. Each PT redeems 1:1 for {1} at maturity."
+msgstr ""
+
+#. placeholder {0}: rewardContract?.supplyToken.symbol?.toUpperCase() ?? 'tokens'
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Looks like you need {0} to get rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Looks like you need USDS"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Low risk"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Mainnet wrapper fees are active right now, so this flow is temporarily disabled."
+msgstr ""
+
+#. placeholder {0}: formatUrnIndex(activeUrn?.urnIndex || 0n)
+#: apps/webapp/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
+msgid "Manage Position {0}"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Manage your position(s)"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/index.tsx
+msgid "Manage your Sky Ecosystem funds across supported networks"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultInfoDetails.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover.tsx
+msgid "Management Fee"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+msgid "Market info"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Markets"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/TimeToMaturityCard.tsx
+msgid "Matured"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleMaturedPositionCard.tsx
+msgid "Matured on {maturityLabel}"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleMarketStatsCard.tsx
+msgid "Maturity"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Maturity date"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Max borrowable amount"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendleConfigMenu.tsx
+msgid "Max slippage:"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendleConfigMenu.tsx
+msgid "Maximum acceptable difference between the quoted PT amount and what the trade actually executes at. Higher tolerance means a higher chance of fill but a worse price."
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSCapCard.tsx
+msgid "Maximum capacity"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Maximum input"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+msgid "Menu"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+#: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
+msgid "Metrics"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Min borrowable amount"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Min. received"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Minimum input valuation is $0.01"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Minimum output"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getToken.ts
+msgid "MKR"
+msgstr ""
+
+#: apps/webapp/src/modules/upgrade/components/MkrDelayedUpgradePenalty.tsx
+msgid "MKR Delayed Upgrade Penalty"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/DelegateCard.tsx
+msgid "MKR delegated by you"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+msgid "MKR Liquidation price"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
+msgid "MKR supplied to the Seal Engine"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "Multicall failed"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleWidgetPane.tsx
+msgid "My positions"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsOverview.tsx
+msgid "My rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsWidgetPane.tsx
+msgid "My vaults"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSNativeExchangeRateCard.tsx
+msgid "Native Exchange Rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover.tsx
+msgid "Native Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSNativeExchangeRateCard.tsx
+msgid "Native route temporarily unavailable"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover.tsx
+msgid "Net Rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Network costs (est.)"
+msgstr ""
+
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+msgid "Network Error"
+msgstr ""
+
+#. placeholder {0}: mainnetChain.name
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+msgid "Network switch cancelled. Switch to {0} to continue with Upgrade."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ChainModal.tsx
+msgid "Network switching is managed by your Safe app. Switch networks there, then visit this app again from the Safe apps menu."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "New positions disabled"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Next, confirm the transaction in your wallet."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+#: apps/webapp/src/modules/pendle/components/PendleWidgetPane.tsx
+msgid "No active fixed yield markets at the moment. Check back soon."
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "No allocations found"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/TokenBalances.tsx
+msgid "No balances found"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "No changes"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getHistoryRightText.ts
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "No delegate"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
+msgid "No delegates found"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/BalancesHistory.tsx
+msgid "No history found"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getHistoryRightText.ts
+msgid "No reward"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "No route available for this trade size. Try a different amount."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
+msgid "No transactions found"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Not available"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+msgid "Not enough collateral to borrow"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Not enough USDS in your wallet"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/UnsupportedNetworkPage.tsx
+msgid "Only Ethereum Mainnet and Base are supported at this time.<0/>Please switch networks to continue."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Open a new position"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/StakeModuleTransactionStatus.tsx
+msgid "Open a position"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Open position"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/UnconnectedState.tsx
+msgid "Open Position"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendleConfigMenu.tsx
+msgid "Open slippage settings"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Open your position"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Opening position"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "or a contract that you own"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Order cancellation attempt failed"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Order cancelled"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Order created"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Order creation failed"
+msgstr ""
+
+#. placeholder {0}: token.symbol
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Output is estimated. You will receive at least {slippageAdjustedQuote} {0} or the transaction will revert."
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "pendle"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Pendle's quote service is temporarily unavailable. Please try again."
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultInfoDetails.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoRateBreakdownPopover.tsx
+msgid "Performance Fee"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SelectRewardContract.tsx
+msgid "Please <0>choose another reward.</0> The SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero. The pool of SPK will remain forever so that you can claim your rewards anytime."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
+msgid "Please <0>withdraw your USDS.</0> SKY Rewards are disabled as a Reward option, and the SKY rate set to zero. The pool of SKY will remain forever so that you can claim your rewards anytime."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Please allow this app to access the tokens in your wallet."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Please allow this app to access your {0} and revert it to {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "Please allow this app to access your {0} and trade it for {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Please allow this app to access your {0} and upgrade it to {1}."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Please allow this app to access your {ptSymbol} and sell it via Pendle."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and supply it to the Curve pool."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and supply it to the Morpho Vault."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and supply it to the Pendle market."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and supply it to the Sky Savings Rate module."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and supply it to the Sky Token Rewards module."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and supply it to the stUSDS module."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and withdraw it from the Sky Savings Rate module."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol} and withdraw it from the stUSDS module."
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Please allow this app to access your {symbol}."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Please allow this app to access your stUSDS and withdraw it from the Curve pool."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Please confirm that you want to claim all your rewards directly to your wallet."
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Please confirm that you want to claim the rewards directly in your wallet."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Please confirm that you want to claim your {symbol} rewards directly to your wallet."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Please confirm that you want to claim your rewards directly to your wallet."
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+msgid "Please connect your wallet to Ethereum Mainnet to start the migration of your positions."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
+msgid "Please connect your wallet to view your history"
+msgstr ""
+
+#: apps/webapp/src/pages/BatchTransactionsLegal.tsx
+msgid "Please note that all security checks, user confirmations, and error handling are managed by your chosen wallet's delegate contract. As outlined in our <0>Terms of Use</0>, your use of a non-custodial digital wallet—including wallets supporting EIP-7702 and smart account functionality—is governed by the terms of service of your third-party wallet provider. We do not control or take responsibility for the security, functionality, or behavior of third-party wallets, including their handling of bundled transactions or delegate contracts. To ensure a secure and transparent experience, please ensure you are using a trusted and up-to-date wallet before proceeding."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsDialog.tsx
+msgid "Please scroll to the bottom and read the entire terms; the accept button will become enabled afterward."
+msgstr ""
+
+#: apps/webapp/src/widgets/shared/components/ui/transaction/BatchTransactionStatus.tsx
+#: apps/webapp/src/widgets/shared/components/ui/transaction/TransactionStatus.tsx
+msgid "Please try again"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/Error.tsx
+#: apps/webapp/src/widgets/shared/components/Error.tsx
+msgid "Please try the action again or reach out on Discord for assistance if the problem persists."
+msgstr ""
+
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+#: apps/webapp/src/modules/ui/components/TermsDialog.tsx
+msgid "Please wait..."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Position overview"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+msgid "Position summary"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendlePoweredBy.tsx
+msgid "Powered by"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Preparing to withdraw {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Presign transaction error"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+msgid "Price impact"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Processing"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "Processing conversion"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/shared/constants.ts
+msgid "Processing transaction"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleBalanceDetails.tsx
+msgid "PT balance"
+msgstr ""
+
+#. placeholder {0}: market.underlyingSymbol
+#: apps/webapp/src/widgets/PendleWidget/hooks/usePendleTransactionCallbacks.tsx
+msgid "PT-{0} delivered to your wallet."
+msgstr ""
+
+#: apps/webapp/src/widgets/shared/components/ui/NoFundsCopy.tsx
+msgid "Put your funds to work"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Quote expired. Refreshing — please wait a moment."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Quote unavailable"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
+#: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "Rate"
+msgstr ""
+
+#. placeholder {0}: formatDecimalPercentage(maxRate)
+#. placeholder {0}: formatDecimalPercentage(parseFloat(rate))
+#: apps/webapp/src/widgets/BalancesWidget/components/FixedYieldBalanceCard.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCardCore.tsx
+msgid "Rate: {0}"
+msgstr ""
+
+#. placeholder {0}: (weightedAverageRate * 100).toFixed(2)
+#. placeholder {0}: stUsdsRate.toFixed(2)
+#: apps/webapp/src/widgets/BalancesWidget/components/ExpertBalanceCard.tsx
+#: apps/webapp/src/widgets/BalancesWidget/components/VaultsBalanceCard.tsx
+msgid "Rate: {0}%"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Rate: {rate}"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "Rate: {savingsRate}"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsTvlCard.tsx
+msgid "Rates"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/SuppliedFundsExpertRow.tsx
+msgid "Rates up to:"
+msgstr ""
+
+#. placeholder {0}: formatDecimalPercentage(maxRate)
+#: apps/webapp/src/widgets/BalancesWidget/components/FixedYieldBalanceCard.tsx
+msgid "Rates up to: {0}"
+msgstr ""
+
+#. placeholder {0}: (morphoMaxRate * 100).toFixed(2)
+#: apps/webapp/src/widgets/BalancesWidget/components/VaultsBalanceCard.tsx
+msgid "Rates up to: {0}%"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleReadyToRedeemTable.tsx
+msgid "Receive"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Received an invalid quote from Pendle. Please try again."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleReadyToRedeemTable.tsx
+msgid "Redeem"
+msgstr ""
+
+#. placeholder {0}: market.underlyingSymbol
+#: apps/webapp/src/modules/pendle/components/PendleMaturedPositionCard.tsx
+msgid "Redeem {displayedAmount} {0}"
+msgstr ""
+
+#. placeholder {0}: market.underlyingSymbol
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+msgid "Redeem PT-{0}"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+msgid "Redemption complete"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Relative Cap"
+msgstr ""
+
+#. placeholder {0}: token.symbol
+#: apps/webapp/src/modules/ui/components/BalanceCards.tsx
+msgid "Remaining {0} balance"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSRemainingCapacityCard.tsx
+msgid "Remaining capacity"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+msgid "Repaid"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Repay"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "Repaying"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Repaying USDS in the Seal Rewards module"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionReview.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionStatus.tsx
+msgid "Reset allowance"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeTransactionStatus.tsx
+msgid "Reset USDT Approval"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Retry"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeTransactionReview.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeTransactionStatus.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Revert"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Revert {0} into {1}"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Revert failed"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Revert successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/index.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Review"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+msgid "Review conversion"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Review trade"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealRewardCard.tsx
+#: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakeRewardCard.tsx
+#: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
+msgid "Reward"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/RewardsCard.tsx
+msgid "Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsSuppliersCard.tsx
+msgid "Rewards Suppliers"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Rewards Supply"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Rewards Withdraw "
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Risk level"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Routed via"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Routing fee"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve - native deposits unavailable"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve - native withdrawals unavailable"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve for a better rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve with a {rateText}% premium, as the liquidity is exhausted"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve with a {rateText}% premium, as the supply capacity is reached"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve with a {rateText}% premium. Avoid the premium by supplying {maxAmountText} USDS (the remaining native capacity) or less."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve with a {rateText}% premium. Avoid the premium by withdrawing {maxAmountText} USDS (the available native liquidity) or less."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve, as the liquidity is exhausted"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Routing through Curve, as the supply capacity is reached"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "savings"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/SavingsCard.tsx
+msgid "Savings"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/BalanceCards.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsStatsCard.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SavingsStatsCard.tsx
+msgid "Savings balance"
+msgstr ""
+
+#: apps/webapp/src/modules/savings/components/SavingsSuppliersCard.tsx
+msgid "Savings Suppliers"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Savings Supply"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Savings Withdraw"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "seal"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+msgid "Seal"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Seal and Borrow"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "Seal Engine"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+msgid "Seal Engine is deprecated"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+msgid "Seal reward"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutSealModule.tsx
+msgid "Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engine of the decentralised, non-custodial Sky Protocol. Currently, all Seal Rewards take the form of USDS. Eventually, subject to Sky Ecosystem governance approval, Seal Rewards may also be available in the form of Sky Star tokens."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "Seal your tokens and continue to collect rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+msgid "Sealed"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Sealing MKR in the Seal Rewards module"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Sealing SKY in the Seal Rewards module"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Select a delegate"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Select a token"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Select all"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Select delegate"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Select reward"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Select rewards to claim"
+msgstr ""
+
+#: apps/webapp/src/widgets/shared/components/ui/token/TokenDropdown.tsx
+#: apps/webapp/src/widgets/shared/components/ui/token/TokenInput.tsx
+#: apps/webapp/src/widgets/shared/components/ui/token/TokenSelector.tsx
+msgid "Select token"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleMarketHistory.tsx
+msgid "Sell"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Selling PT-{underlyingSymbol} for {underlyingSymbol} via Pendle"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(debouncedOriginAmount, { locale, unit: getTokenDecimals(originToken, chainId) })
+#. placeholder {1}: originToken?.symbol ?? ''
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Sending {0} {1} to the EthFlow contract"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Sending {originAmount} {0} to the contract"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Sending ETH"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Signing failed"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SelectDelegate.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Skip"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getToken.ts
+msgid "SKY"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/DelegateCard.tsx
+msgid "SKY delegated by you"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutSky.tsx
+msgid "SKY is a native governance token of the decentralised Sky Ecosystem and the upgraded version of MKR. You can upgrade your MKR to SKY at the rate of 1:24,000, trade SKY for USDS and, soon, use it to accumulate Activation Token Rewards and participate in Sky Ecosystem governance."
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+msgid "SKY Liquidation price"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "SKY price"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+msgid "SKY Price"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+msgid "Sky Protocol activity"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+#: apps/webapp/src/widgets/shared/components/ui/ConnectWalletCopy.tsx
+msgid "Sky Protocol features"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+msgid "Sky Protocol overview"
+msgstr ""
+
+#: apps/webapp/src/modules/savings/components/SavingsRateCard.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+msgid "Sky Savings Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+msgid "Sky Savings Rate info"
+msgstr ""
+
+#: apps/webapp/src/modules/savings/components/SkySavingsRatePoolCard.tsx
+msgid "Sky Savings Rate TVL"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+msgid "Sky Token Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
+msgid "Sky Token Rewards activity"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsOverview.tsx
+msgid "Sky Token Rewards overview"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsTvlCard.tsx
+msgid "Sky-curated vaults TVL"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/PendleConfigMenu.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeConfigMenu.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "Slippage"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "Slippage exceeded"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+msgid "Slippage tolerance"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Sold PT-{underlyingSymbol} for {underlyingSymbol} via Pendle"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/Error.tsx
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+#: apps/webapp/src/widgets/shared/components/Error.tsx
+msgid "Something went wrong"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Something went wrong when trying to post the order to the Order Book. Please try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Something went wrong when trying to send the presign transaction. Please try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Something went wrong when trying to sign the message. Please try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/hooks/useL2TradeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Something went wrong with your transaction. Please try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+msgid "Something went wrong with your withdraw. Please try again."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+msgid "Something went wrong with your withdrawal. Please try again."
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+msgid "Soon"
+msgstr ""
+
+#. placeholder {0}: l2Chain.name
+#: apps/webapp/src/modules/balances/components/ModuleCard.tsx
+msgid "Soon on {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Source"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutSpk.tsx
+msgid "SPK is the native governance and staking token of Spark. Designed with a long-term vision for sustainability, decentralization, and ecosystem alignment, SPK enables protocol governance, protocol security via staking, and reward distribution to participants."
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "stake"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Stake"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
+msgid "Stake and borrow"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Stake and Borrow"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Stake SKY to earn rewards, delegate votes, and borrow USDS"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Stake your {formattedBalance} {upperSymbol} in the Staking Engine {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/BalancesDetails.tsx
+msgid "Stake, Borrow, and Earn with SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "Staked"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/StakingRewardsCard.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Borrow.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "Staking"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/index.tsx
+msgid "Staking Engine"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Staking Engine Overview"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Staking positions"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "Staking reward"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakingRewardRateCard.tsx
+msgid "Staking Reward Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutStakeModule.tsx
+msgid "Staking Rewards can be accessed when SKY is supplied to the Staking Engine of the decentralized, non-custodial Sky Protocol. Staking Rewards rates are determined by Sky Ecosystem Governance through the process of decentralized onchain voting."
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Staking Rewards overview"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Start earning Chronicle Points"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Start getting rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Start saving"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Arbitrum' : ''
+#. placeholder {0}: isDifferentChain ? 'on Base' : ''
+#. placeholder {0}: isDifferentChain ? 'on Optimism' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Start saving with your {formattedBalance} {upperSymbol} {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/TimeToMaturityCard.tsx
+msgid "started · {startDateLabel}"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "stusds"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "stUSDS"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+msgid "stUSDS module info"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSRateCard.tsx
+msgid "stUSDS Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertOverview.tsx
+msgid "stUSDS Suppliers"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "stUSDS Supply"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "stUSDS Withdraw"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/shared/constants.ts
+msgid "Success"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Success!"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Successfully claimed your rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Successfully withdrawn"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/ConnectModal.tsx
+msgid "Suggested Wallets"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Supplied {underlyingSymbol} to the Pendle fixed-yield market"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultBalanceDetails.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSBalanceDetails.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultStatsCard.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/SelectedRewardsCard.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSStatsCard.tsx
+msgid "Supplied balance"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
+msgid "Supplied Balance"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectedModalTabs.tsx
+#: apps/webapp/src/widgets/BalancesWidget/components/BalancesContent.tsx
+msgid "Supplied funds"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/SuppliedFundsExpertRow.tsx
+#: apps/webapp/src/widgets/BalancesWidget/components/ExpertBalanceCard.tsx
+msgid "Supplied to Expert"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/FixedYieldBalanceCard.tsx
+msgid "Supplied to Fixed Yield"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/RewardsBalanceCard.tsx
+msgid "Supplied to Rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/SuppliedFundsSavingsRow.tsx
+#: apps/webapp/src/widgets/BalancesWidget/components/SavingsBalanceCard.tsx
+msgid "Supplied to Savings"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/StakeBalanceCard.tsx
+msgid "Supplied to Staking Engine"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/VaultsBalanceCard.tsx
+msgid "Supplied to Vaults"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultSuppliersCard.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
+#: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSSuppliersCard.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SaRewardsCard.tsx
+msgid "Suppliers"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultHistory.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: apps/webapp/src/modules/savings/components/SavingsHistory.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionReview.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionStatus.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/PendleTransactionReview.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/PendleTransactionStatus.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/ManagePosition.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsTransactionReview.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsTransactionStatus.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SavingsTransactionReview.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SavingsTransactionStatus.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSTransactionReview.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSTransactionStatus.tsx
+msgid "Supply"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSHistory.tsx
+msgid "Supply (Curve)"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/hooks/usePendleTransactionCallbacks.tsx
+msgid "Supply complete"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Supply failed"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Supply SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Supply SKY to the Staking Engine to create one or more positions through which you access Staking Rewards <0/> and more.<1/><2/>At this step, you can also choose to Borrow <3/> USDS against your SKY (optional). There is a minimum borrow amount set as a risk parameter by Sky Ecosystem Governance. Borrowing carries risk of liquidation <4/>."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Supply successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/components/UpgradeAndSupplySteps.tsx
+msgid "Supply USDS"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { locale, unit: originToken && getTokenDecimals(originToken, chainId) })
+#. placeholder {0}: formatBigInt(amount, { locale })
+#. placeholder {1}: originToken.symbol
+#. placeholder {1}: selectedRewardContract?.supplyToken.name ?? ''
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+msgid "Supplying {0} {1}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { unit: assetDecimals })
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+msgid "Supplying {0} {assetSymbol}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Supplying {0} USDS"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Supplying {0} USDS via Curve"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Supplying {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Supplying {underlyingSymbol} to the Pendle fixed-yield market"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSTransactionReview.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSTransactionStatus.tsx
+msgid "Swap"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionInputs.tsx
+msgid "Switch conversion direction"
+msgstr ""
+
+#: apps/webapp/src/components/NetworkSwitcher.tsx
+#: apps/webapp/src/modules/ui/components/ChainModal.tsx
+msgid "Switch network"
+msgstr ""
+
+#: apps/webapp/src/components/NetworkSwitcher.tsx
+#: apps/webapp/src/modules/app/components/WidgetNavigation.tsx
+msgid "Switching network..."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/OpenNewUrn.tsx
+msgid "Terms of Use."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsDialog.tsx
+msgid "Terms version: {termsVersion}"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "The Curve pool does not have enough liquidity for this swap. Please try a smaller amount."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "The mainnet Peg Stability Module is currently unavailable."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "The multicall transaction was successful"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "The Peg Stability Module converts at a fixed 1:1 rate with no slippage."
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/SealBalanceWarningCard.tsx
+msgid "The Seal Engine is deprecated"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+msgid "The Seal Engine is deprecated. Please close your positions and open new positions in the Staking Engine."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/UrnsList.tsx
+msgid "The Seal Engine is now deprecated. Please close your positions and open new positions in the Staking Engine."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "The swap would result in less output than the minimum acceptable amount. Try reducing the amount or waiting for better rates."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "The transaction was successful."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/index.tsx
+msgid "The vault does not have enough available USDS for withdrawal. Please try a smaller amount or wait for liquidity to become available."
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "then get rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "There are currently no claimable rewards."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
+msgid "There was an error fetching this data"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsWidgetPane.tsx
+msgid "Third-party vault integrations with Sky Ecosystem tokens"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionStatus.tsx
+msgid "This approval lets the Peg Stability Module spend your {0}."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "This conversion direction is temporarily halted on mainnet."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "This conversion is not available on the current network."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+msgid "This flow requires an approval transaction before the conversion transaction."
+msgstr ""
+
+#: apps/webapp/src/components/NetworkSwitcher.tsx
+msgid "This module is only available on Ethereum mainnet"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+#: apps/webapp/src/modules/pendle/components/TimeToMaturityCard.tsx
+msgid "Time to maturity"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Toggle bundled transactions"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleReadyToRedeemTable.tsx
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Token"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Token access approval in progress."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Token access approved"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Tokens to receive"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "Total"
+msgstr ""
+
+#. placeholder {0}: rewardContract.rewardToken.symbol
+#: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
+msgid "Total {0} Points rewarded"
+msgstr ""
+
+#. placeholder {0}: rewardContract.rewardToken.symbol
+#: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
+msgid "Total {0} rewarded"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/DelegateCard.tsx
+msgid "Total MKR delegated"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeStats.tsx
+msgid "Total MKR upgraded"
+msgstr ""
+
+#: apps/webapp/src/modules/upgrade/components/MkrUpgradedToSky.tsx
+msgid "Total MKR upgraded to SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/UsdsSkyTotalsChart.tsx
+msgid "Total SKY"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/DelegateCard.tsx
+msgid "Total SKY delegated"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Total SKY staked"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/TotalDebtCard.tsx
+msgid "Total Staking Engine debt"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/UsdsTotalSupplyCard.tsx
+msgid "Total supply of USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertTvlCard.tsx
+#: apps/webapp/src/modules/rewards/components/TotalRewardsTvl.tsx
+msgid "Total TVL"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/UsdsSkyTotalsChart.tsx
+msgid "Total USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Total USDS borrowed"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultTvlCard.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSTvlCard.tsx
+msgid "Total Value Locked"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "trade"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/TradeCard.tsx
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/L2TradeWidget/components/L2TradeTransactionReview.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/components/L2TradeTransactionStatus.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeHeader.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeTransactionStatus.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Trade"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Trade and access Morpho vault"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Trade and access stUSDS"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Trade and get rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Trade and start saving"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Trade completed"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/hooks/useL2TradeTransactionCallbacks.tsx
+msgid "Trade failed"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeHeader.tsx
+msgid "Trade popular tokens for Sky Ecosystem tokens"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/hooks/useL2TradeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "Trade successful"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Trade USDC for USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Trade USDT for USDS"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Arbitrum' : ''
+#. placeholder {0}: isDifferentChain ? 'on Base' : ''
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Trade your {formattedBalance} {upperSymbol} for USDS {0}"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Trade your {formattedBalance} {upperSymbol} for USDS to get rewards {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/TradeCard.tsx
+msgid "Trade your crypto tokens"
+msgstr ""
+
+#: apps/webapp/src/modules/trade/components/TradeHistory.tsx
+msgid "Trades"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Trading"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(originAmount, { locale, unit: originToken && getTokenDecimals(originToken, chainId) })
+#. placeholder {1}: originToken?.symbol ?? ''
+#: apps/webapp/src/widgets/L2TradeWidget/hooks/useL2TradeTransactionCallbacks.tsx
+msgid "Trading {0} {1}"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Trading {0} for {1}"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Transaction completed successfully."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+#: apps/webapp/src/widgets/PendleWidget/hooks/usePendleTransactionCallbacks.tsx
+msgid "Transaction failed"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Transaction failed. Please try again."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Transaction is being processed..."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/TradeWidget/components/TradeDetails.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Transaction overview"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "Transaction was cancelled."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
+msgid "Transactions"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "Transfer the voting power of your MKR and SKY tokens to a recognized delegate"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Transferring {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/ExpertChart.tsx
+#: apps/webapp/src/modules/expert/components/MorphoVaultStatsCard.tsx
+#: apps/webapp/src/modules/expert/components/StusdsStatsCard.tsx
+#: apps/webapp/src/modules/pendle/components/PendleMarketInfoCard.tsx
+#: apps/webapp/src/modules/pendle/components/PendleMarketStatsCard.tsx
+#: apps/webapp/src/modules/rewards/components/history/RewardsOverviewCharts.tsx
+#: apps/webapp/src/modules/rewards/components/RewardsTokenInfo.tsx
+#: apps/webapp/src/modules/savings/components/SavingsChart.tsx
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+#: apps/webapp/src/modules/vaults/components/VaultsChart.tsx
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsStatsCard.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultStatsCard.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/PendleStatsCard.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsStatsCard.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/SelectedRewardsCard.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SavingsStatsCard.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/components/SaRewardsCard.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/SaRewardsCard.tsx
+msgid "TVL"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealChart.tsx
+msgid "TVL (Sealed)"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeChart.tsx
+msgid "TVL (Staked)"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
+msgid "TVL (Total Value Locked)"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryRow.tsx
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTableHeader.tsx
+msgid "Tx hash"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryTable.tsx
+msgid "Type"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+msgid "Unable to determine the supported mainnet for Upgrade."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/BalanceCards.tsx
+msgid "Unable to fetch balance"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/TokenBalances.tsx
+msgid "Unable to fetch balances"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/StatsCard.tsx
+msgid "Unable to fetch data"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/components/BalancesHistory.tsx
+msgid "Unable to fetch history"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/Chart.tsx
+msgid "Unable to load chart data, please try again later."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/hooks/usePendleRedeemModal.tsx
+#: apps/webapp/src/widgets/PendleWidget/index.tsx
+msgid "Unable to prepare transaction. Please try again or adjust your inputs."
+msgstr ""
+
+#: apps/webapp/src/widgets/shared/components/ui/UnclaimedRewards.tsx
+msgid "Unclaimed rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Unknown status"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Unknown status."
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+msgid "Unseal"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Unseal and pay back"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealHistory.tsx
+msgid "Unseal kick"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/PositionSummary.tsx
+msgid "Unsealing"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Unstake"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/OpenNewUrn.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Unstake and pay back"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+msgid "Unstaked"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/PositionSummary.tsx
+msgid "Unstaking"
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "Unsupported network"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakingRewardRateCard.tsx
+msgid "up to"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "upgrade"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/UpgradeCard.tsx
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeTransactionReview.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeTransactionStatus.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Upgrade"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Upgrade {0} into {1}"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Upgrade and access Morpho vault"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Upgrade and access stUSDS"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Upgrade and get rewards"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Upgrade and Save"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+#: apps/webapp/src/widgets/SavingsWidget/components/UpgradeAndSupplySteps.tsx
+msgid "Upgrade DAI to USDS"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Upgrade failed"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/hooks/useUserSuggestedActions.ts
+msgid "Upgrade MKR to SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
+msgid "Upgrade stats"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "Upgrade successful"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Upgrade your {formattedBalance} {upperSymbol} to SKY {0}"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS {0}"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "Upgrade your {formattedBalance} {upperSymbol} to USDS to get rewards {0}"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/modules/UpgradeCard.tsx
+msgid "Upgrade your DAI and MKR"
+msgstr ""
+
+#: apps/webapp/src/modules/convert/components/ConvertWidgetPane.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/index.tsx
+msgid "Upgrade your DAI to USDS and MKR to SKY"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getToken.ts
+msgid "USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/BalanceCards.tsx
+msgid "USDS borrowed"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutUsds.tsx
+msgid "USDS is the stablecoin of the decentralised Sky Protocol. It can be used in several ways, including to participate in the Sky Savings Rate and get Sky Token Rewards without giving up control. It is the upgraded version of DAI."
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsBalanceDetails.tsx
+msgid "USDS not supplied"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsBalanceDetails.tsx
+msgid "USDS supplied"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "USDT allowance will be reset to 0 and then set to the required amount in a single bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/components/TradeSummary.tsx
+msgid "USDT allowance will be reset to 0 and then set to the required amount in two sequential transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+msgid "Use USDS or USDC to access the Sky Savings Rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+msgid "Use USDS to access Sky Token Rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/index.tsx
+msgid "Use USDS to access the Sky Savings Rate"
+msgstr ""
+
+#: apps/webapp/src/modules/expert/components/StusdsStatsCard.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSUtilizationCard.tsx
+msgid "Utilization"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHistory.tsx
+msgid "Value"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultBadge.tsx
+msgid "Vault powered by Morpho"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultRateCard.tsx
+msgid "Vault Rate"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Vault Supply"
+msgstr ""
+
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+msgid "Vault Withdraw"
+msgstr ""
+
+#: apps/webapp/src/lib/constants.ts
+msgid "vaults"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/ConnectCard.tsx
+#: apps/webapp/src/modules/vaults/components/VaultsWidgetPane.tsx
+msgid "Vaults"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Vaults / Markets"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsDetailsPane.tsx
+msgid "Vaults activity"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/VaultsDetailsPane.tsx
+msgid "Vaults overview"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultAllocationsDetails.tsx
+msgid "Vaults V1"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutCle.tsx
+msgid "View Chronicle"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/AboutCard.tsx
+msgid "View contract"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/DelegateCard.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/DelegateCard.tsx
+msgid "View delegate profile"
+msgstr ""
+
+#: apps/webapp/src/components/DetailsSwitcher.tsx
+msgid "View details"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+msgid "View on {explorerName}"
+msgstr ""
+
+#: apps/webapp/src/modules/balances/components/ModuleCard.tsx
+msgid "View on Mainnet"
+msgstr ""
+
+#. placeholder {0}: isDifferentChain ? 'on Mainnet' : ''
+#: apps/webapp/src/modules/app/hooks/useActionForToken.tsx
+msgid "View rewards options for your {upperSymbol} {0}"
+msgstr ""
+
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+msgid "View supporting wallets"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryRow.tsx
+msgid "View transaction on {explorerName}"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/historyTable/HistoryRow.tsx
+msgid "View transaction on CoW Explorer"
+msgstr ""
+
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+msgid "VPN Detected"
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TransactionModal.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/components/SealModuleTransactionStatus.tsx
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/shared/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Waiting for confirmation"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Waiting for the order to be executed by a solver to trade {originAmount} {0} for {targetAmount} {1}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "We could not approve your token allowance."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+msgid "We could not claim your rewards."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "We could not complete the transaction."
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealRewardsOverview.tsx
+msgid "We couldn't load the Seal module rewards. Please try again later."
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeRewardsOverview.tsx
+msgid "We couldn't load the Stake module rewards. Please try again later."
+msgstr ""
+
+#: apps/webapp/src/modules/ui/components/TermsModal.tsx
+msgid "We couldn't verify your terms acceptance. Please check your connection and try again."
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "With Sky, you always remain in control of your assets."
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "With: USDS Get: SKY"
+msgstr ""
+
+#: apps/webapp/src/modules/app/hooks/useNotification.tsx
+msgid "With: USDS Get: USDS"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsHistory.tsx
+#: apps/webapp/src/widgets/BalancesWidget/lib/getTitle.ts
+#: apps/webapp/src/widgets/L2SavingsWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionReview.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/MorphoVaultTransactionStatus.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/PendleTransactionReview.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/PendleTransactionStatus.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/ManagePosition.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsTransactionReview.tsx
+#: apps/webapp/src/widgets/RewardsWidget/components/RewardsTransactionStatus.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SavingsTransactionReview.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SavingsTransactionStatus.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSTransactionReview.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSTransactionStatus.tsx
+msgid "Withdraw"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Withdraw failed"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Withdraw successful"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultHistory.tsx
+#: apps/webapp/src/modules/savings/components/SavingsHistory.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSHistory.tsx
+msgid "Withdrawal"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSHistory.tsx
+msgid "Withdrawal (Curve)"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/hooks/usePendleTransactionCallbacks.tsx
+msgid "Withdrawal complete"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "Withdrawals are temporarily unavailable due to liquidity constraints."
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { locale, unit: originToken && getTokenDecimals(originToken, chainId) })
+#. placeholder {0}: formatBigInt(amount, { locale })
+#. placeholder {1}: originToken.symbol
+#. placeholder {1}: selectedRewardContract?.supplyToken.name ?? ''
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+msgid "Withdrawing {0} {1}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { unit: assetDecimals })
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+msgid "Withdrawing {0} {assetSymbol}"
+msgstr ""
+
+#. placeholder {0}: selectedRewardContract.supplyToken.symbol
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Withdrawing {0} from Sky Token Rewards module"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Withdrawing {0} USDS"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "Withdrawing {0} USDS via Curve"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "Withdrawing {amount} {ptSymbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Withdrawing {amount} {symbol}"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "Withdrawing before maturity uses the current market price, not the originally locked APY."
+msgstr ""
+
+#. placeholder {0}: originToken?.symbol ?? ''
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "You approved {0}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(lockAmount)
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+msgid "You approved {0} SKY"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+msgid "You approved USDS"
+msgstr ""
+
+#. placeholder {0}: selectedRewards.length
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "You are claiming {0} token rewards"
+msgstr ""
+
+#. placeholder {0}: selectedRewards[0].tokenSymbol
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "You are claiming your {0} rewards."
+msgstr ""
+
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionReview.tsx
+msgid "You are converting through the Peg Stability Module at a fixed 1:1 rate."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/components/DelegateCheckbox.tsx
+msgid "You are delegating voting power for this position"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "You are now trading {originAmount} {0}. You will receive {targetAmount} {1}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+msgid "You borrowed"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/SelectDelegate.tsx
+msgid "You can optionally select a delegate or skip this step"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(usdsBalance?.value || 0n, { unit: getTokenDecimals(usds, chainId) })
+#. placeholder {1}: formatBigInt(existingVault?.dust || 0n, { unit: getTokenDecimals(usds, chainId) })
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "You cannot repay your full USDS balance of {0} USDS because doing so would leave less than {1} USDS outstanding."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "You cannot withdraw your full balance due to current liquidity limits."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/index.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/hooks/useStakeTransactionCallbacks.tsx
+msgid "You claimed your rewards"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(originAmount, { unit: getTokenDecimals(current.originToken, chainId) })
+#. placeholder {1}: current.originToken?.symbol || ''
+#. placeholder {2}: formatBigInt( getPsmTargetAmount(direction, originAmount), { unit: getTokenDecimals(current.targetToken, chainId) } )
+#. placeholder {3}: current.targetToken?.symbol || ''
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+msgid "You converted {0} {1} into {2} {3}"
+msgstr ""
+
+#: apps/webapp/src/modules/app/components/SealMigrationWidgetPane.tsx
+msgid "You don't have any open positions."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/Repay.tsx
+msgid "You have no debt to repay"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You just opened your position"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You just updated your position"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "You may choose to transfer the voting power your staked SKY provides to a recognized delegate <0/> or a contract you own."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "You receive"
+msgstr ""
+
+#. placeholder {0}: targetToken.symbol
+#. placeholder {1}: originToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "You received {targetAmount} {0} for {originAmount} {1}."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleRedeem.tsx
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "You redeem"
+msgstr ""
+
+#. placeholder {0}: formatUnits(originAmount, 18)
+#. placeholder {1}: originToken.symbol
+#. placeholder {2}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "You reverted {0} {1} into {2}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/Repay.tsx
+msgid "You sealed"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "You successfully cancelled the order"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "You successfully traded {originAmount} {0} for {targetAmount} {1}"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You successfully withdrew {amount} {symbol}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { locale, unit: originToken && getTokenDecimals(originToken, chainId) })
+#. placeholder {0}: formatBigInt(amount, { locale })
+#. placeholder {1}: originToken.symbol
+#. placeholder {1}: selectedRewardContract?.supplyToken.name ?? ''
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+msgid "You supplied {0} {1}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { unit: assetDecimals })
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+msgid "You supplied {0} {assetSymbol}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "You supplied {0} USDS"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "You supplied {0} USDS for stUSDS via Curve"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/components/SupplyWithdraw.tsx
+msgid "You supply"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(executedSellAmount, { locale, unit: getTokenDecimals(originToken, chainId) })
+#. placeholder {0}: formatBigInt(originAmount, { locale, unit: originToken && getTokenDecimals(originToken, chainId) })
+#. placeholder {1}: originToken?.symbol ?? ''
+#. placeholder {2}: formatBigInt(executedBuyAmount, { locale, unit: getTokenDecimals(targetToken, chainId) })
+#. placeholder {2}: formatBigInt(targetAmount, { locale, unit: targetToken && getTokenDecimals(targetToken, chainId) })
+#. placeholder {3}: targetToken?.symbol ?? ''
+#: apps/webapp/src/widgets/L2TradeWidget/hooks/useL2TradeTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/TradeWidget/index.tsx
+msgid "You traded {0} {1} for {2} {3}"
+msgstr ""
+
+#. placeholder {0}: formatUnits(originAmount, 18)
+#. placeholder {1}: originToken.symbol
+#. placeholder {2}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/hooks/useUpgradeTransactionCallbacks.tsx
+msgid "You upgraded {0} {1} into {2}"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You will change your Staking Rewards Engine position."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You will open a new Staking Rewards Engine position."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/components/PsmConversionInputs.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "You will receive"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You will revert your {0} to {1}."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You will sell your {ptSymbol} for {underlyingSymbol} via Pendle."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "You will supply"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Curve pool for stUSDS."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Morpho Vault."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Pendle fixed-yield market."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Sky Savings Rate module."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the Sky Token Rewards module."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You will supply your {symbol} to the stUSDS module to earn a rate through SKY-backed borrowing."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "You will trade your {0} for {1}."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You will upgrade your {0} to {1}."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "You will withdraw"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You will withdraw your {symbol} from the Morpho Vault."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You will withdraw your {symbol} from the Sky Savings Rate module."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You will withdraw your {symbol} from the Sky Token Rewards module."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You will withdraw your {symbol} from the stUSDS module. Withdrawals may be delayed during periods of high utilization."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You will withdraw your stUSDS for {symbol} via the Curve pool."
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { locale, unit: originToken && getTokenDecimals(originToken, chainId) })
+#. placeholder {0}: formatBigInt(amount, { locale })
+#. placeholder {1}: originToken.symbol
+#. placeholder {1}: selectedRewardContract?.supplyToken.name ?? ''
+#: apps/webapp/src/widgets/L2SavingsWidget/hooks/useL2SavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/RewardsWidget/hooks/useRewardsTransactionCallbacks.tsx
+msgid "You withdrew {0} {1}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount, { unit: assetDecimals })
+#: apps/webapp/src/widgets/MorphoVaultWidget/hooks/useMorphoVaultTransactionCallbacks.tsx
+msgid "You withdrew {0} {assetSymbol}"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/SavingsWidget/hooks/useSavingsTransactionCallbacks.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "You withdrew {0} USDS"
+msgstr ""
+
+#. placeholder {0}: formatBigInt(amount)
+#: apps/webapp/src/widgets/StUSDSWidget/hooks/useStUsdsTransactionCallbacks.tsx
+msgid "You withdrew {0} USDS from stUSDS via Curve"
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access your {0} and revert it to {1} in multiple transactions."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access your {0} and revert it to {1} in one bundled transaction."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "You're allowing this app to access your {0} and trade it for {1} in multiple transactions."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "You're allowing this app to access your {0} and trade it for {1} in one bundled transaction."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access your {0} and upgrade it to {1} in multiple transactions."
+msgstr ""
+
+#. placeholder {0}: originToken.symbol
+#. placeholder {1}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You're allowing this app to access your {0} and upgrade it to {1} in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {ptSymbol} and sell it for {underlyingSymbol} via Pendle in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {ptSymbol} and sell it for {underlyingSymbol} via Pendle in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and change your position in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and change your position in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and open a new position in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and open a new position in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Curve pool for stUSDS in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Curve pool for stUSDS in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Morpho Vault in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Morpho Vault in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Pendle market in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Pendle market in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Savings Rate module in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Savings Rate module in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Token Rewards module in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the Sky Token Rewards module in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the stUSDS module in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and supply it to the stUSDS module in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and withdraw from the Sky Savings Rate module in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and withdraw from the Sky Savings Rate module in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and withdraw from the stUSDS module in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your {symbol} and withdraw from the stUSDS module in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your stUSDS and withdraw {symbol} via the Curve pool in multiple transactions."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You're allowing this app to access your stUSDS and withdraw {symbol} via the Curve pool in one bundled transaction."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You’ve added {symbol} to the Sky Token Rewards module."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "You've borrowed {borrowAmount} USDS by sealing {collateralToLock} {0}. Your new position is open."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "You've borrowed {borrowAmount} USDS by sealing {collateralToLock} {0}. Your position is updated."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've borrowed {borrowAmount} USDS by staking {collateralToLock} {0}. Your new position is open."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've borrowed {borrowAmount} USDS by staking {collateralToLock} {0}. Your position is updated."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've borrowed {borrowAmount} USDS. Your position is updated."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You’ve claimed {amount} {symbol} rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You've claimed {claimAmountText} rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "You’ve claimed all your rewards"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You’ve claimed your rewards"
+msgstr ""
+
+#. placeholder {0}: formatNumber(earnings)
+#: apps/webapp/src/modules/pendle/components/PendleMaturedPositionCard.tsx
+msgid "You've earned {0} {currency}"
+msgstr ""
+
+#. placeholder {0}: formatNumber(earnings)
+#. placeholder {1}: formatDecimalPercentage(apy)
+#: apps/webapp/src/modules/pendle/components/PendleMaturedPositionCard.tsx
+msgid "You've earned {0} {currency} with {1} APY"
+msgstr ""
+
+#. placeholder {0}: targetToken.symbol
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "You've received {amount} {0}."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've repaid {borrowToRepay} USDS to exit your position."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "You've sealed {collateralToLock} {0}. Your new position is open."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "You've sealed {collateralToLock} {0}. Your position is updated."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've staked {collateralToLock} {0}. Your new position is open."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've staked {collateralToLock} {0}. Your position is updated."
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+msgid "You've successfully claimed your rewards."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You've supplied {amount} {symbol} to the Curve pool for stUSDS"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You've supplied {amount} {symbol} to the Morpho Vault"
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You've supplied {amount} {symbol} to the Pendle market."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You've supplied {amount} {symbol} to the Sky Savings Rate module"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You've supplied {amount} {symbol} to the stUSDS module"
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "You've unsealed {collateralToFree} {0} and repaid {borrowToRepay} USDS to exit your position."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "You've unsealed {collateralToFree} {0} to exit your position."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've unstaked {collateralToFree} {0} and repaid {borrowToRepay} USDS to exit your position."
+msgstr ""
+
+#. placeholder {0}: selectedToken ?? ''
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "You've unstaked {collateralToFree} {0} to exit your position."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+msgid "You've withdrawn {amount} {ptSymbol} as {underlyingSymbol}."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You've withdrawn {amount} {symbol} from the Curve pool."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+msgid "You've withdrawn {amount} {symbol} from the Morpho Vault."
+msgstr ""
+
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+msgid "You've withdrawn {amount} {symbol} from the Sky Savings Rate module."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "You've withdrawn {amount} {symbol} from the stUSDS module."
+msgstr ""
+
+#. placeholder {0}: selectedRewardContract?.rewardToken.symbol ?? ''
+#. placeholder {1}: selectedRewardContract?.supplyToken.symbol ?? ''
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+msgid "Your {0} rewards {1} balance"
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+msgid "Your {vaultName} vault transaction history"
+msgstr ""
+
+#. placeholder {0}: Array.isArray(termsLink) && termsLink.length > 0 ? ( <ExternalLink skipConfirm className="text-textEmphasis" showIcon={false} href={sanitizeUrl(termsLink[0].url)} > {termsLink[0].name} </ExternalLink> ) : ( 'Terms of Use' )
+#: apps/webapp/src/modules/auth/components/UnauthorizedPage.tsx
+msgid "Your access is restricted. For more information, please refer to our {0}."
+msgstr ""
+
+#: apps/webapp/src/modules/morpho/components/MorphoVaultDetails.tsx
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+msgid "Your balances"
+msgstr ""
+
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Your cancellation request has been placed"
+msgstr ""
+
+#: apps/webapp/src/modules/vaults/components/ClaimableRewardsTable.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Your claim is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+#: apps/webapp/src/modules/pendle/components/PendleReadyToRedeemList.tsx
+msgid "Your matured positions"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "Your MKR and SKY tokens, as well as any rewards that you accumulate, are supplied to a non-custodial smart contract, such that no intermediary takes custody of those tokens. With Sky, you always remain in control of your assets."
+msgstr ""
+
+#. placeholder {0}: formatUrnIndex(BigInt(positionIndex))
+#: apps/webapp/src/modules/seal/components/SealPositionOverview.tsx
+#: apps/webapp/src/modules/stake/components/StakePositionOverview.tsx
+msgid "Your position {0}"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/UrnsList.tsx
+#: apps/webapp/src/widgets/StakeModuleWidget/components/UrnsList.tsx
+msgid "Your positions"
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Your revert is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+msgid "Your Rewards balances"
+msgstr ""
+
+#: apps/webapp/src/modules/rewards/components/RewardsDetailsView.tsx
+msgid "Your Rewards transaction history"
+msgstr ""
+
+#: apps/webapp/src/modules/savings/components/SavingsDetails.tsx
+msgid "Your Savings transaction history"
+msgstr ""
+
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+msgid "Your Savings USDS balance"
+msgstr ""
+
+#: apps/webapp/src/modules/seal/components/SealPositionDetails.tsx
+msgid "Your Seal position transaction history"
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/components/About.tsx
+msgid "Your sealed tokens enable you to create one or more positions through which you access rewards. You can:"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeHelpModal.tsx
+msgid "Your SKY tokens, as well as any rewards that you accumulate, are supplied to a non-custodial smart contract such that no intermediary takes custody of those tokens."
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakeOverview.tsx
+msgid "Your Staking Engine transaction history"
+msgstr ""
+
+#: apps/webapp/src/modules/stake/components/StakePositionDetails.tsx
+msgid "Your Staking position transaction history"
+msgstr ""
+
+#: apps/webapp/src/modules/stusds/components/StUSDSDetails.tsx
+msgid "Your stUSDS transaction history"
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+msgid "Your supplied USDS balance"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Your supply is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Your supply to the Curve pool is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Your token approval and revert are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Your token approval and supply are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+msgid "Your token approval and trade are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Your token approval and upgrade are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Your token approval and withdrawal are being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/L2TradeWidget/lib/constants.ts
+#: apps/webapp/src/widgets/TradeWidget/lib/constants.ts
+msgid "Your trade is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/modules/trade/components/TradeDetails.tsx
+msgid "Your Trade transaction history"
+msgstr ""
+
+#: apps/webapp/src/modules/pendle/components/PendleDetailsPane.tsx
+msgid "Your transaction history"
+msgstr ""
+
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Your transaction is being processed on the blockchain to change your position. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StakeModuleWidget/lib/constants.ts
+msgid "Your transaction is being processed on the blockchain to create your position. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/SealModuleWidget/lib/constants.ts
+msgid "Your transaction is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/RewardsWidget/lib/constants.ts
+msgid "Your transfer is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/UpgradeWidget/lib/constants.ts
+msgid "Your upgrade is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/modules/upgrade/components/UpgradeDetails.tsx
+msgid "Your Upgrade/Revert transaction history"
+msgstr ""
+
+#. placeholder {0}: assetToken.symbol
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+msgid "Your vault {0} balance"
+msgstr ""
+
+#. placeholder {0}: assetToken.symbol
+#. placeholder {0}: conversion.originToken.symbol
+#. placeholder {0}: conversion.targetToken.symbol
+#: apps/webapp/src/widgets/L2SavingsWidget/components/L2SavingsSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/L2TradeWidget/index.tsx
+#: apps/webapp/src/widgets/MorphoVaultWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/PsmConversionWidget/index.tsx
+#: apps/webapp/src/widgets/RewardsWidget/index.tsx
+#: apps/webapp/src/widgets/SavingsWidget/components/SupplyWithdraw.tsx
+#: apps/webapp/src/widgets/StUSDSWidget/components/StUSDSSupplyWithdraw.tsx
+#: apps/webapp/src/widgets/UpgradeWidget/components/UpgradeRevert.tsx
+msgid "Your wallet {0} balance"
+msgstr ""
+
+#: apps/webapp/src/components/BatchTransactionsToggle.tsx
+msgid "Your wallet does not currently support bundled transactions"
+msgstr ""
+
+#: apps/webapp/src/modules/layout/components/UnsupportedNetworkPage.tsx
+msgid "Your wallet is connected to an unsupported network"
+msgstr ""
+
+#: apps/webapp/src/widgets/MorphoVaultWidget/lib/constants.ts
+#: apps/webapp/src/widgets/PendleWidget/lib/constants.ts
+#: apps/webapp/src/widgets/SavingsWidget/lib/constants.ts
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Your withdrawal is being processed on the blockchain. Please wait."
+msgstr ""
+
+#: apps/webapp/src/widgets/StUSDSWidget/lib/constants.ts
+msgid "Your withdrawal via Curve is being processed on the blockchain. Please wait."
+msgstr ""

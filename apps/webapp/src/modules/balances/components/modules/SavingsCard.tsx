@@ -2,11 +2,11 @@ import { Intent } from '@/lib/enums';
 import { ModuleCard } from '../ModuleCard';
 import { t } from '@lingui/core/macro';
 import { HStack } from '@/modules/layout/components/HStack';
-import { PairTokenIcons, PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PairTokenIcons, PopoverRateInfo } from '@/widgets';
 import { Text } from '@/modules/layout/components/Typography';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { formatDecimalPercentage } from '@/utils';
+import { useOverallSkyData } from '@/hooks';
 
 export function SavingsCard() {
   const { data: overallSkyData, isLoading: overallSkyDataLoading } = useOverallSkyData();

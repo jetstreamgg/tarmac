@@ -4,8 +4,7 @@
     // ...
     "allowImportingTsExtensions": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@jetstreamgg/sky-*": ["../../packages/*/src"]
+      "@/*": ["./src/*"]
     }
     // ...
   },

@@ -1,12 +1,12 @@
 import { Trans } from '@lingui/react/macro';
 import { motion } from 'motion/react';
-import { positionAnimations } from '@jetstreamgg/sky-widgets';
+import { positionAnimations } from '@/widgets';
 import {
   isMarketMatured,
   PENDLE_MARKETS,
   usePendleUserPtBalances,
   type PendleMarketConfig
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { useConnection } from 'wagmi';
 import { Heading } from '@/modules/layout/components/Typography';
 import { PendleMaturedPositionCard } from './PendleMaturedPositionCard';

@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
-import { usePendleMarketsApiData, type PendleMarketConfig } from '@jetstreamgg/sky-hooks';
+import { formatDecimalPercentage } from '@/utils';
+import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 

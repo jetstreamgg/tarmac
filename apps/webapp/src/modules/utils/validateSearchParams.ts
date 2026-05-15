@@ -1,5 +1,5 @@
-import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@jetstreamgg/sky-hooks';
-import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/sky-widgets';
+import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@/hooks';
+import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -16,7 +16,7 @@ import {
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
 import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 import { Chain } from 'viem';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 

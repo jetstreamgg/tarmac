@@ -4,7 +4,7 @@ import {
   StakeFlow,
   StakeModuleWidget,
   StakeAction
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -13,7 +13,7 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useStakeHistory } from '@jetstreamgg/sky-hooks';
+import { useStakeHistory } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';

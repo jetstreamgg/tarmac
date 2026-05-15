@@ -1,8 +1,8 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { useMorphoVaultMarketApiData, Token } from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@/utils';
+import { useMorphoVaultMarketApiData, Token } from '@/hooks';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { useChainId } from 'wagmi';
 

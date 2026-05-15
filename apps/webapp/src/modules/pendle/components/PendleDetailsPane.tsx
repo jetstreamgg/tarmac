@@ -8,8 +8,8 @@ import {
   PENDLE_MARKETS,
   usePendleUserPtBalances,
   type PendleMarketConfig
-} from '@jetstreamgg/sky-hooks';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
+} from '@/hooks';
+import { isTestnetId } from '@/utils';
 import { mainnet } from 'viem/chains';
 import { FixedIntent } from '@/lib/enums';
 import { FixedIntentMapping, QueryParams } from '@/lib/constants';

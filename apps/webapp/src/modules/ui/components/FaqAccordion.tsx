@@ -8,7 +8,7 @@ import {
   PopoverInfo,
   getTooltipById,
   resolvePopoverTooltipKey
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 
 interface Item {
   question: string;

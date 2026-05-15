@@ -3,7 +3,7 @@ import { SiteConfig } from '../types/site-config';
 import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
 import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
-import { RewardContract } from '@jetstreamgg/sky-hooks';
+import { RewardContract } from '@/hooks';
 import { SealToken } from '@/modules/seal/constants';
 import { StakeToken } from '@/modules/stake/constants';
 

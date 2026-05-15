@@ -5,15 +5,15 @@
       "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
     },
     "apps/webapp": {
-      "entry": ["src/pages/main.tsx"],
-      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
-    },
-    "packages/hooks": {
-      "entry": ["src/index.{js,ts,tsx}", "wagmi.config.ts"],
-      "ignore": ["src/generated.ts"]
-    },
-    "packages/utils": {
-      "ignore": ["src/locales/**/*"]
+      "entry": [
+        "src/pages/main.tsx",
+        "src/hooks/index.ts",
+        "src/utils/index.ts",
+        "src/widgets/index.ts",
+        "wagmi.config.ts"
+      ],
+      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
+      "ignore": ["src/hooks/generated.ts", "src/locales/**/*"]
     }
   }
 }

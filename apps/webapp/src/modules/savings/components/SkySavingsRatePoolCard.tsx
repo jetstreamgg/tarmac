@@ -1,9 +1,9 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
-import { formatNumber } from '@jetstreamgg/sky-utils';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { useOverallSkyData } from '@/hooks';
+import { formatNumber } from '@/utils';
+import { PairTokenIcons } from '@/widgets';
 
 export function SkySavingsRatePoolCard(): React.ReactElement {
   const { data, isLoading, error } = useOverallSkyData();

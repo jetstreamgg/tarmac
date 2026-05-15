@@ -1,9 +1,9 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useStUsdsData } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { useStUsdsData } from '@/hooks';
+import { formatBigInt } from '@/utils';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function StUSDSLiquidityCard() {

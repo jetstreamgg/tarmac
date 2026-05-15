@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { formatNumber, useFormatDates } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { PendleHistoryAction } from '@jetstreamgg/sky-hooks';
+import { PendleHistoryAction, useFormatDates } from '@/hooks';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 

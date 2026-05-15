@@ -3,7 +3,7 @@ import { toastWithClose } from '@/components/ui/use-toast';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
-import { useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { useIsSafeWallet } from '@/hooks';
 import { useEffect } from 'react';
 import { useConnection } from 'wagmi';
 

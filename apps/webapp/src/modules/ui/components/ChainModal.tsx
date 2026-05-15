@@ -13,7 +13,7 @@ import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
 import { useSearchParams } from 'react-router-dom';
 import { mapIntentToQueryParam, QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { useIsSafeWallet } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
 
 enum ChainModalVariant {
@@ -76,7 +76,7 @@ export function ChainModal({
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-2',
               variant === ChainModalVariant.widget &&
-                'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 border-transparent px-[9px] bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
+                'from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 border-transparent bg-radial-(--gradient-position) px-[9px] bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15'
             )}
             data-testid={dataTestId}
           >
@@ -146,7 +146,7 @@ export function ChainModal({
                 className={cn(
                   'flex w-full justify-between p-1.5',
                   chainId === chain.id &&
-                    'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100'
+                    'from-primary-start/100 to-primary-end/100 bg-radial-(--gradient-position)'
                 )}
                 variant={chainId === chain.id ? 'default' : 'ghost'}
               >
@@ -172,7 +172,7 @@ export function ChainModal({
         <DialogClose asChild>
           <Button
             variant="outline"
-            className="text-text absolute right-4 top-4 h-8 w-8 rounded-full p-0"
+            className="text-text absolute top-4 right-4 h-8 w-8 rounded-full p-0"
             data-testid="chain-modal-close"
           >
             <Close />

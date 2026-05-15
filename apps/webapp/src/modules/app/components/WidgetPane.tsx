@@ -46,7 +46,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
-import { isL2ChainId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, isTestnetId } from '@/utils';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
@@ -58,7 +58,7 @@ import {
   MORPHO_VAULTS,
   PENDLE_MARKETS,
   isMarketMatured
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
