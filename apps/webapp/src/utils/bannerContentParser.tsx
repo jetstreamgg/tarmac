@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text } from '@/modules/layout/components/Typography';
-import { PopoverRateInfo, resolvePopoverTooltipKey } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo, resolvePopoverTooltipKey } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
 
 /**

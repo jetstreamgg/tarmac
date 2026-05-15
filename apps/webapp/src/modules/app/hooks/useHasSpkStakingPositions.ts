@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useStakeHistory, lsSkySpkRewardAddress, TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
-import { isMainnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
+import { useStakeHistory, lsSkySpkRewardAddress, TransactionTypeEnum } from '@/hooks';
+import { isMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**
  * Hook to check if the connected user has any staking positions with SPK as the reward token.

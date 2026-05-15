@@ -2,15 +2,15 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { ArrowDown } from 'lucide-react';
 import { mainnet } from 'viem/chains';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import {
   formatPendleAggregatorName,
   getTokenDecimals,
   type PendleConvertQuote,
   type PendleMarketConfig,
   type Token
-} from '@jetstreamgg/sky-hooks';
-import { TokenDropdown, TransactionOverview } from '@jetstreamgg/sky-widgets';
+} from '@/hooks';
+import { TokenDropdown, TransactionOverview } from '@/widgets';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Text } from '@/modules/layout/components/Typography';

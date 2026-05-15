@@ -1,9 +1,9 @@
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import {
   Token,
   getTokenDecimals,
   useMorphoVaultMarketApiData
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -11,7 +11,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useChainId } from 'wagmi';
-import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@jetstreamgg/sky-widgets';
+import { MorphoRateBreakdownPopover, MorphoVaultBadge } from '@/widgets';
 import { Trans } from '@lingui/react/macro';
 
 type MorphoVaultStatsCardProps = {

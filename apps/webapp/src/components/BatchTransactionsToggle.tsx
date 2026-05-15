@@ -4,7 +4,7 @@ import { Zap } from '@/modules/icons/Zap';
 import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
-import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
+import { useIsBatchSupported } from '@/hooks';
 import { useConnection } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { BATCH_TX_LEGAL_NOTICE_URL, BATCH_TX_SUPPORTED_WALLETS_URL } from '@/lib/constants';

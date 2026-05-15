@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trans } from '@lingui/react/macro';
-import { BalancesHistory, ModuleCardVariant, ModulesBalances } from '@jetstreamgg/sky-widgets';
+import { BalancesHistory, ModuleCardVariant, ModulesBalances } from '@/widgets';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChainId } from 'wagmi';
 import { useModuleUrls } from '@/modules/app/hooks/useModuleUrls';

@@ -1,4 +1,4 @@
-import { PsmConversionWidget, WidgetStateChangeParams } from '@jetstreamgg/sky-widgets';
+import { PsmConversionWidget, WidgetStateChangeParams } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';

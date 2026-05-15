@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
-import { getEtherscanLink } from '@jetstreamgg/sky-utils';
+import { getEtherscanLink } from '@/utils';
 import { useChainId } from 'wagmi';
-import { spkAddress } from '@jetstreamgg/sky-hooks';
+import { spkAddress } from '@/hooks';
 import { AboutCard } from './AboutCard';
 
 export const AboutSpk = ({ height }: { height?: number | undefined }) => {

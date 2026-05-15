@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { toError } from '@jetstreamgg/sky-hooks';
+import { toError } from '@/hooks';
 
 export type ReportContext = {
   module: string;

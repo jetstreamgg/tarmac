@@ -3,7 +3,7 @@ import {
   SavingsFlow,
   BalancesWidget,
   BalancesWidgetProps
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { useSearchParams } from 'react-router-dom';
 import { useCallback } from 'react';
 import { SharedProps } from '@/modules/app/types/Widgets';

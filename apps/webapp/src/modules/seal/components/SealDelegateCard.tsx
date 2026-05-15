@@ -1,9 +1,9 @@
-import { formatAddress } from '@jetstreamgg/sky-utils';
+import { formatAddress } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Text } from '@/modules/layout/components/Typography';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useDelegates } from '@jetstreamgg/sky-hooks';
+import { useDelegates } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 interface SealDelegateCardProps {

@@ -1,7 +1,7 @@
 import { Info, X } from 'lucide-react';
 import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } from './ui/tooltip';
 import { Popover, PopoverArrow, PopoverClose, PopoverContent, PopoverTrigger } from './ui/popover';
-import { useIsTouchDevice } from '@jetstreamgg/sky-utils';
+import { useIsTouchDevice } from '@/hooks';
 
 export function InfoTooltip({
   content,
@@ -33,7 +33,7 @@ export function InfoTooltip({
         className={`bg-containerDark rounded-xl backdrop-blur-[50px] ${contentClassname}`}
       >
         {shouldShowCloseButton && (
-          <PopoverClose onClick={e => e.stopPropagation()} className="absolute right-4 top-4 z-10">
+          <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
             <X className="h-5 w-5 cursor-pointer text-white" />
           </PopoverClose>
         )}

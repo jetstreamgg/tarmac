@@ -1,0 +1,442 @@
+import {
+  TOKENS,
+  useAvailableTokenRewardContracts,
+  useMultiChainSavingsBalances,
+  useRewardsSuppliedBalance,
+  useStUsdsData,
+  useTotalUserSealed,
+  useTotalUserStaked,
+  useAllMorphoVaultsUserAssets,
+  usePrices,
+  useAllPendleUserAssets
+} from '@/hooks';
+import { RewardsBalanceCard } from './RewardsBalanceCard';
+import { SavingsBalanceCard } from './SavingsBalanceCard';
+import { SealBalanceCard } from './SealBalanceCard';
+import { StakeBalanceCard } from './StakeBalanceCard';
+import { ExpertBalanceCard } from './ExpertBalanceCard';
+import { FixedYieldBalanceCard } from './FixedYieldBalanceCard';
+import { VaultsBalanceCard } from './VaultsBalanceCard';
+import { chainId, isMainnetId, isTestnetId } from '@/utils';
+import { useChainId, useConnection } from 'wagmi';
+import { useEffect, useMemo } from 'react';
+import { SuppliedFundsEmptyState } from './SuppliedFundsEmptyState';
+
+export enum ModuleCardVariant {
+  default = 'default',
+  alt = 'alt'
+}
+
+export interface CardProps {
+  url?: string;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  chainIds?: number[];
+  loading?: boolean;
+  error?: string;
+  totalUserRewardsSupplied?: bigint;
+  savingsBalances?: { chainId: number; balance: bigint }[];
+  sealBalance?: bigint;
+  stakeBalance?: bigint;
+  variant?: ModuleCardVariant;
+}
+
+interface ModulesBalancesProps {
+  rewardsCardUrl?: string;
+  savingsCardUrlMap?: Record<number, string>;
+  sealCardUrl?: string;
+  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
+  chainIds?: number[];
+  stakeCardUrl?: string;
+  stusdsCardUrl?: string;
+  vaultsCardUrl?: string;
+  fixedYieldCardUrl?: string;
+  variant?: ModuleCardVariant;
+  hideZeroBalances?: boolean;
+  showAllNetworks?: boolean;
+  hideRestrictedModules?: boolean;
+  onAllFundsEmpty?: (isEmpty: boolean) => void;
+}
+
+export const ModulesBalances = ({
+  rewardsCardUrl,
+  savingsCardUrlMap,
+  sealCardUrl,
+  onExternalLinkClicked,
+  chainIds,
+  stakeCardUrl,
+  stusdsCardUrl,
+  vaultsCardUrl,
+  fixedYieldCardUrl,
+  variant = ModuleCardVariant.default,
+  hideZeroBalances = false,
+  showAllNetworks = true,
+  hideRestrictedModules = false,
+  onAllFundsEmpty
+}: ModulesBalancesProps): React.ReactElement => {
+  const { address } = useConnection();
+  const currentChainId = useChainId();
+  const mainnetChainId = isTestnetId(currentChainId) ? chainId.tenderly : chainId.mainnet;
+  const rewardContracts = useAvailableTokenRewardContracts(mainnetChainId);
+
+  const usdsSkyRewardContract = rewardContracts.find(
+    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.sky.symbol
+  );
+  const usdsCleRewardContract = rewardContracts.find(
+    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.cle.symbol
+  );
+  const usdsSpkRewardContract = rewardContracts.find(
+    f => f.supplyToken.symbol === TOKENS.usds.symbol && f.rewardToken.symbol === TOKENS.spk.symbol
+  );
+
+  const {
+    data: usdsSkySuppliedBalance,
+    isLoading: usdsSkySuppliedBalanceLoading,
+    error: usdsSkySuppliedBalanceError
+  } = useRewardsSuppliedBalance({
+    chainId: mainnetChainId,
+    address,
+    contractAddress: usdsSkyRewardContract?.contractAddress as `0x${string}`
+  });
+
+  const {
+    data: usdsSpkSuppliedBalance,
+    isLoading: usdsSpkSuppliedBalanceLoading,
+    error: usdsSpkSuppliedBalanceError
+  } = useRewardsSuppliedBalance({
+    chainId: mainnetChainId,
+    address,
+    contractAddress: usdsSpkRewardContract?.contractAddress as `0x${string}`
+  });
+
+  const {
+    data: usdsCleSuppliedBalance,
+    isLoading: usdsCleSuppliedBalanceIsLoading,
+    error: usdsCleSuppliedBalanceError
+  } = useRewardsSuppliedBalance({
+    chainId: mainnetChainId,
+    address,
+    contractAddress: usdsCleRewardContract?.contractAddress as `0x${string}`
+  });
+
+  const rewardsLoading =
+    usdsSkySuppliedBalanceLoading || usdsSpkSuppliedBalanceLoading || usdsCleSuppliedBalanceIsLoading;
+
+  const suppliedBalanceError =
+    usdsSkySuppliedBalanceError || usdsCleSuppliedBalanceError || usdsSpkSuppliedBalanceError;
+
+  const totalUserRewardsSupplied =
+    usdsSkySuppliedBalance !== undefined &&
+    usdsCleSuppliedBalance !== undefined &&
+    usdsSpkSuppliedBalance !== undefined
+      ? usdsSkySuppliedBalance + usdsCleSuppliedBalance + usdsSpkSuppliedBalance
+      : 0n;
+
+  const { data: totalUserSealed, isLoading: sealLoading, error: totalUserSealedError } = useTotalUserSealed();
+  const {
+    data: totalUserStaked,
+    isLoading: stakeLoading,
+    error: totalUserStakedError
+  } = useTotalUserStaked();
+
+  const { data: stUsdsData, isLoading: stUsdsLoading, error: stUsdsError } = useStUsdsData();
+
+  // Get aggregate Morpho vault data across all vaults
+  const {
+    data: morphoAssetsData,
+    isLoading: morphoLoading,
+    error: morphoError
+  } = useAllMorphoVaultsUserAssets();
+  const totalMorphoUserAssets = morphoAssetsData.total;
+
+  // Get aggregate Pendle market data across all markets
+  const { data: pendleAssetsData, isLoading: pendleLoading, error: pendleError } = useAllPendleUserAssets();
+  const totalPendleUserAssets = pendleAssetsData.total;
+
+  // Expert balance = total across expert modules (stUSDS only for now)
+  const totalExpertSavingsBalance = stUsdsData?.userSuppliedUsds || 0n;
+  const expertLoading = stUsdsLoading;
+
+  const { data: pricesData, isLoading: pricesLoading } = usePrices();
+
+  const {
+    data: multichainSavingsBalances,
+    isLoading: savingsLoading,
+    error: multichainSavingsBalancesError
+  } = useMultiChainSavingsBalances({ chainIds });
+
+  const sortedSavingsBalances = Object.entries(multichainSavingsBalances ?? {})
+    .sort(([, a], [, b]) => (b > a ? 1 : b < a ? -1 : 0))
+    .map(([chainId, balance]) => ({
+      chainId: Number(chainId),
+      balance
+    }));
+
+  const savingsBalancesWithBalanceFilter = hideZeroBalances
+    ? sortedSavingsBalances.filter(({ balance }) => balance > 0n)
+    : sortedSavingsBalances;
+
+  const filteredAndSortedSavingsBalances = showAllNetworks
+    ? savingsBalancesWithBalanceFilter
+    : savingsBalancesWithBalanceFilter.filter(({ chainId }) => chainId === currentChainId);
+
+  const totalSavingsBalance = filteredAndSortedSavingsBalances?.reduce(
+    (acc, { balance }) => acc + balance,
+    0n
+  );
+
+  const hideRewards = Boolean(
+    hideRestrictedModules ||
+    suppliedBalanceError ||
+    (totalUserRewardsSupplied === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  const hideSeal = Boolean(
+    totalUserSealedError ||
+    (totalUserSealed === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  const hideStake = Boolean(
+    totalUserStakedError ||
+    (totalUserStaked === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  const hideExpert = Boolean(
+    hideRestrictedModules ||
+    !stusdsCardUrl || // Hide if no URL is provided (feature flag disabled)
+    stUsdsError ||
+    (totalExpertSavingsBalance === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  const hideVaults = Boolean(
+    morphoError ||
+    (totalMorphoUserAssets === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  const hideSavings = Boolean(
+    hideRestrictedModules ||
+    multichainSavingsBalancesError ||
+    (totalSavingsBalance === 0n && hideZeroBalances)
+  );
+
+  const hideFixedYield = Boolean(
+    pendleError ||
+    (totalPendleUserAssets === 0n && hideZeroBalances) ||
+    (!showAllNetworks && !isMainnetId(currentChainId))
+  );
+
+  // Fallback display order used while prices are loading to prevent layout shifts
+  const fallbackOrder: Record<string, number> = {
+    rewards: 0,
+    savings: 1,
+    fixedYield: 2,
+    staking: 3,
+    vaults: 4,
+    stusds: 5,
+    seal: 6
+  };
+
+  // Compute USD value for each module to sort by value descending
+  const bigintToUsd = (balance: bigint, priceStr: string) =>
+    parseFloat((Number(balance) / 1e18).toString()) * parseFloat(priceStr);
+
+  const anyBalanceLoading =
+    rewardsLoading ||
+    savingsLoading ||
+    stakeLoading ||
+    expertLoading ||
+    morphoLoading ||
+    pendleLoading ||
+    sealLoading;
+  const canSortByValue = !anyBalanceLoading && !pricesLoading && !!pricesData;
+
+  const moduleUsdValues = useMemo(() => {
+    if (!canSortByValue || !pricesData) return {};
+
+    const values: Record<string, number> = {};
+    values.rewards =
+      totalUserRewardsSupplied && pricesData.USDS
+        ? bigintToUsd(totalUserRewardsSupplied, pricesData.USDS.price)
+        : 0;
+    values.savings =
+      totalSavingsBalance && pricesData.USDS ? bigintToUsd(totalSavingsBalance, pricesData.USDS.price) : 0;
+    values.staking =
+      totalUserStaked && pricesData.SKY ? bigintToUsd(totalUserStaked, pricesData.SKY.price) : 0;
+    values.vaults =
+      totalMorphoUserAssets && pricesData.USDS
+        ? bigintToUsd(totalMorphoUserAssets, pricesData.USDS.price)
+        : 0;
+    values.fixedYield = pendleAssetsData.totalUsd;
+    values.stusds =
+      totalExpertSavingsBalance && pricesData.USDS
+        ? bigintToUsd(totalExpertSavingsBalance, pricesData.USDS.price)
+        : 0;
+    values.seal = totalUserSealed && pricesData.MKR ? bigintToUsd(totalUserSealed, pricesData.MKR.price) : 0;
+
+    return values;
+  }, [
+    canSortByValue,
+    pricesData,
+    totalUserRewardsSupplied,
+    totalSavingsBalance,
+    totalUserStaked,
+    totalMorphoUserAssets,
+    pendleAssetsData.totalUsd,
+    totalExpertSavingsBalance,
+    totalUserSealed
+  ]);
+
+  const sortedModules = useMemo(() => {
+    const modules: Array<{
+      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults' | 'fixedYield';
+      hidden: boolean;
+    }> = [
+      { id: 'rewards', hidden: hideRewards },
+      { id: 'savings', hidden: hideSavings },
+      { id: 'fixedYield', hidden: hideFixedYield },
+      { id: 'staking', hidden: hideStake },
+      { id: 'vaults', hidden: hideVaults },
+      { id: 'stusds', hidden: hideExpert },
+      { id: 'seal', hidden: hideSeal }
+    ];
+
+    const visible = modules.filter(m => !m.hidden);
+
+    if (canSortByValue) {
+      // Sort by USD value descending, fall back to default order for ties
+      return visible.sort((a, b) => {
+        const diff = (moduleUsdValues[b.id] ?? 0) - (moduleUsdValues[a.id] ?? 0);
+        return diff !== 0 ? diff : fallbackOrder[a.id] - fallbackOrder[b.id];
+      });
+    }
+
+    // While loading, use stable fallback order to prevent layout shifts
+    return visible.sort((a, b) => fallbackOrder[a.id] - fallbackOrder[b.id]);
+  }, [
+    hideRewards,
+    hideSavings,
+    hideExpert,
+    hideStake,
+    hideSeal,
+    hideVaults,
+    hideFixedYield,
+    canSortByValue,
+    moduleUsdValues
+  ]);
+
+  // Check if all supplied funds are zero (before any filtering)
+  const totalRawSavingsBalance = sortedSavingsBalances.reduce((acc, { balance }) => acc + balance, 0n);
+  const isAllLoaded =
+    !rewardsLoading &&
+    !savingsLoading &&
+    !sealLoading &&
+    !stakeLoading &&
+    !expertLoading &&
+    !morphoLoading &&
+    !pendleLoading;
+  const allFundsEmpty =
+    isAllLoaded &&
+    (hideRestrictedModules || totalUserRewardsSupplied === 0n) &&
+    (hideRestrictedModules || totalRawSavingsBalance === 0n) &&
+    (totalUserSealed ?? 0n) === 0n &&
+    (totalUserStaked ?? 0n) === 0n &&
+    (hideRestrictedModules || totalExpertSavingsBalance === 0n) &&
+    totalMorphoUserAssets === 0n &&
+    totalPendleUserAssets === 0n;
+
+  useEffect(() => {
+    onAllFundsEmpty?.(allFundsEmpty);
+  }, [allFundsEmpty, onAllFundsEmpty]);
+
+  if (allFundsEmpty) {
+    return <SuppliedFundsEmptyState />;
+  }
+
+  // Render functions for each module type
+  const renderModule = (
+    moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults' | 'fixedYield'
+  ) => {
+    switch (moduleId) {
+      case 'rewards':
+        return (
+          <RewardsBalanceCard
+            key="rewards"
+            url={rewardsCardUrl}
+            onExternalLinkClicked={onExternalLinkClicked}
+            loading={rewardsLoading}
+            totalUserRewardsSupplied={totalUserRewardsSupplied}
+            variant={variant}
+          />
+        );
+      case 'savings':
+        return (
+          <SavingsBalanceCard
+            key="savings"
+            urlMap={savingsCardUrlMap ?? {}}
+            onExternalLinkClicked={onExternalLinkClicked}
+            loading={savingsLoading}
+            savingsBalances={filteredAndSortedSavingsBalances}
+            variant={variant}
+          />
+        );
+      case 'stusds':
+        return (
+          <ExpertBalanceCard
+            key="stusds"
+            url={stusdsCardUrl}
+            onExternalLinkClicked={onExternalLinkClicked}
+            loading={expertLoading}
+            variant={variant}
+          />
+        );
+      case 'staking':
+        return (
+          <StakeBalanceCard
+            key="staking"
+            loading={stakeLoading}
+            stakeBalance={totalUserStaked}
+            onExternalLinkClicked={onExternalLinkClicked}
+            url={stakeCardUrl}
+            variant={variant}
+          />
+        );
+      case 'seal':
+        return (
+          <SealBalanceCard
+            key="seal"
+            onExternalLinkClicked={onExternalLinkClicked}
+            url={sealCardUrl}
+            loading={sealLoading}
+            sealBalance={totalUserSealed}
+            variant={variant}
+          />
+        );
+      case 'vaults':
+        return (
+          <VaultsBalanceCard
+            key="vaults"
+            url={vaultsCardUrl}
+            onExternalLinkClicked={onExternalLinkClicked}
+            variant={variant}
+            hideZeroBalances={hideZeroBalances}
+          />
+        );
+      case 'fixedYield':
+        return (
+          <FixedYieldBalanceCard
+            key="fixedYield"
+            url={fixedYieldCardUrl}
+            onExternalLinkClicked={onExternalLinkClicked}
+            variant={variant}
+            hideZeroBalances={hideZeroBalances}
+          />
+        );
+    }
+  };
+
+  return <div className="flex flex-col gap-2">{sortedModules.map(module => renderModule(module.id))}</div>;
+};

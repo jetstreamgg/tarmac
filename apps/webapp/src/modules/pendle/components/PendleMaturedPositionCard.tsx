@@ -1,10 +1,10 @@
 import { Trans } from '@lingui/react/macro';
-import { formatBigInt, formatDecimalPercentage, formatNumber } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import {
   type PendleMarketConfig,
   usePendleMaturedPositionEarnings,
   usePendleRedeemPreview
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';

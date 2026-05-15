@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { t } from '@lingui/core/macro';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { UnauthorizedPage } from '../../auth/components/UnauthorizedPage';
-import { useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { useIsSafeWallet } from '@/hooks';
 import { CustomAvatar } from '@/modules/ui/components/Avatar';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useState } from 'react';

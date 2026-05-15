@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { Token } from '@jetstreamgg/sky-hooks';
-import { useChainImage, useTokenImage } from '@jetstreamgg/sky-widgets';
+import { Token } from '@/hooks';
+import { useChainImage, useTokenImage } from '@/widgets';
 
 export function TokenIcon({
   token,

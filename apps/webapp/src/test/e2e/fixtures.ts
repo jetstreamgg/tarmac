@@ -12,7 +12,7 @@ import {
   usdcL2Address,
   usdsAddress,
   usdsL2Address
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { NetworkName } from './utils/constants';
 import { getTestWalletAddress } from './utils/testWallets';

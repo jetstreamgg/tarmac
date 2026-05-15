@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { getTokenDecimals, TokenForChain, useTradeHistory } from '@jetstreamgg/sky-hooks';
-import { formatNumber, useFormatDates, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
+import { getTokenDecimals, TokenForChain, useTradeHistory } from '@/hooks';
+import { formatNumber, isCowSupportedChainId } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';

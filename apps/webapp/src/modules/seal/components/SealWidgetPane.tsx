@@ -4,7 +4,7 @@ import {
   WidgetStateChangeParams,
   SealFlow,
   SealAction
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';

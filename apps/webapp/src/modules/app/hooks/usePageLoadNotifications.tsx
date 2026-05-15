@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useTokenBalance, TOKENS } from '@jetstreamgg/sky-hooks';
+import { useTokenBalance, TOKENS } from '@/hooks';
 import { parseEther } from 'viem';
 import {
   GOVERNANCE_MIGRATION_NOTIFICATION_KEY,

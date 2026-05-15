@@ -1,4 +1,4 @@
-import { useStUsdsChartInfo } from '@jetstreamgg/sky-hooks';
+import { useStUsdsChartInfo } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

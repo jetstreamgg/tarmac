@@ -4,7 +4,7 @@ import {
   TradeAction,
   WidgetStateChangeParams,
   L2TradeWidget
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
@@ -18,7 +18,7 @@ import { useSearchParams } from 'react-router-dom';
 import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
+import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';

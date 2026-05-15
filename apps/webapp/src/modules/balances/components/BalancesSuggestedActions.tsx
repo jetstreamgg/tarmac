@@ -22,14 +22,14 @@ import {
   PENDLE_MARKETS,
   isMarketMatured,
   usePendleMarketsApiData
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import {
   formatDecimalPercentage,
   calculateApyFromStr,
   isTestnetId,
   isMainnetId,
   chainId as chainIdConstants
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 import {
   Savings,
   Upgrade,
@@ -43,7 +43,7 @@ import {
 } from '@/modules/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { type IconProps } from '@/modules/icons/Icon';
-import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@jetstreamgg/sky-widgets';
+import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
 import { useGeoConfig } from '@/modules/geo-config';
 import type { ModuleId } from '@/modules/geo-config';
 

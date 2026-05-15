@@ -9,14 +9,14 @@ import {
   PENDLE_MARKETS,
   usePendleUserPtBalances,
   type PendleMarketConfig
-} from '@jetstreamgg/sky-hooks';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
+} from '@/hooks';
+import { isTestnetId } from '@/utils';
 import {
   CardAnimationWrapper,
   PendleWidget,
   WidgetContainer,
   positionAnimations
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { FixedIntent } from '@/lib/enums';
 import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';

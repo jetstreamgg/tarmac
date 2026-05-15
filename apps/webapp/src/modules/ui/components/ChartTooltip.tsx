@@ -1,4 +1,4 @@
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 
 interface CustomTooltipProps {
   active?: boolean;

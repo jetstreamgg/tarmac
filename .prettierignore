@@ -5,4 +5,4 @@ node_modules
 .github
 pnpm-lock.yaml
 coverage
-packages/utils/src/locales/*
+apps/webapp/src/locales/*

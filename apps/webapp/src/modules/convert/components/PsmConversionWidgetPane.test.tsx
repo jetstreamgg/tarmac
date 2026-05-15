@@ -20,8 +20,8 @@ const onAnalyticsEventMock = vi.fn();
 
 let capturedWidgetProps: Record<string, any> | undefined;
 
-vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     PsmConversionWidget: (props: Record<string, any>) => {

@@ -6,8 +6,8 @@ import {
   useUrnAddress,
   useVault,
   ZERO_ADDRESS
-} from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatPercent, math } from '@jetstreamgg/sky-utils';
+} from '@/hooks';
+import { formatBigInt, formatPercent, math } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { SealToken } from '../constants';
@@ -23,7 +23,7 @@ import { SealDelegateCard } from './SealDelegateCard';
 import { SealRewardCard } from './SealRewardCard';
 import { useMemo } from 'react';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { formatUrnIndex } from '@jetstreamgg/sky-widgets';
+import { formatUrnIndex } from '@/widgets';
 
 const RISK_COLORS = {
   [RiskLevel.LIQUIDATION]: { text: 'text-red-400', bg: 'bg-red-400' },

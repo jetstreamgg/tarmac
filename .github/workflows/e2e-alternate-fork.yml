@@ -50,11 +50,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build packages
-        run: pnpm build:packages
-        env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
-
       - name: Create Alternate VNets
         run: |
           echo "🔧 Creating Alternate VNets..."
@@ -135,11 +130,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Build packages
-        run: pnpm build:packages
-        env:
-          NODE_OPTIONS: "--max-old-space-size=4096"
 
       - name: Install Playwright browsers
         run: pnpm -F webapp exec playwright install --with-deps chromium

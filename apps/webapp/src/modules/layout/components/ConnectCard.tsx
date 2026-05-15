@@ -8,7 +8,7 @@ import { useChainId } from 'wagmi';
 import { getBannerById } from '@/data/banners/banners';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
-import { Morpho } from '@jetstreamgg/sky-widgets';
+import { Morpho } from '@/widgets';
 
 // Type for banner configuration
 type BannerConfig = {

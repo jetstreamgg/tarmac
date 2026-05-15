@@ -3,7 +3,7 @@ import { performAction } from '../utils/approveOrPerformAction.ts';
 import { distributeRewards } from '../utils/distributeRewards.ts';
 import { parseNumberFromString } from '@/lib/helpers/string/parseNumberFromString.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
-import { usdsAddress, usdsSkyRewardAddress } from '@jetstreamgg/sky-hooks';
+import { usdsAddress, usdsSkyRewardAddress } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { NetworkName } from '../utils/constants.ts';
 import { approveToken } from '../utils/approveToken.ts';

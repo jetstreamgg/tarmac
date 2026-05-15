@@ -1,6 +1,6 @@
 // Default configuration used site-wide
 
-import { defaultConfig as widgetsConfig } from '@jetstreamgg/sky-widgets';
+import { defaultConfig as widgetsConfig } from '@/widgets';
 import { SiteConfig } from './types/site-config';
 // stores all the RPCs the application will use, and also the user configured-ones
 export const defaultConfig: SiteConfig = {

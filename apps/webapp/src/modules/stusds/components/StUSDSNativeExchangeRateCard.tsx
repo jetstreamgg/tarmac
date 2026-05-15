@@ -2,10 +2,10 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
-import { useStUsdsData, useStUsdsCapacityData } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { useStUsdsData, useStUsdsCapacityData } from '@/hooks';
+import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
+import { PopoverInfo, getTooltipById } from '@/widgets';
 
 export function StUSDSNativeExchangeRateCard() {
   const { i18n } = useLingui();
