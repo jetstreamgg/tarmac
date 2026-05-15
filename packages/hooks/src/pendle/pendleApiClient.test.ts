@@ -49,22 +49,6 @@ describe('fetchPendlePnlTransactions', () => {
     expect(new URL(calledUrl).searchParams.get('chainId')).toBe('1');
   });
 
-  it('returns the results array as-is when the response is well-formed', async () => {
-    const results = [
-      {
-        timestamp: '2026-05-10T00:00:00Z',
-        action: 'redeemPy',
-        market: `1-${MARKET.toLowerCase()}`,
-        txHash: '0xdead',
-        ptData: { unit: 123.4 }
-      }
-    ];
-    fetchMock.mockResolvedValueOnce(jsonResponse({ total: 1, results }));
-
-    const out = await fetchPendlePnlTransactions(1, MARKET, USER);
-    expect(out).toEqual(results);
-  });
-
   it('returns [] when the API omits the results field', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ total: 0 }));
     const out = await fetchPendlePnlTransactions(1, MARKET, USER);

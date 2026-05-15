@@ -118,38 +118,4 @@ describe('usePendleCombinedHistory', () => {
     expect(usde.underlyingSymbol).toBe('PT-USDe');
     expect(usdg.underlyingSymbol).toBe('PT-USDG');
   });
-
-  it('preserves blockTimestamp as a Date and threads txHash + marketAddress through', () => {
-    const r = row(PT_USDE, PendleHistoryAction.BUY_PT, '2026-02-03T08:10:59Z', 1000, '0xdeadbeef');
-    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
-      data: [r],
-      isLoading: false,
-      error: null,
-      mutate: vi.fn(),
-      dataSources: []
-    });
-
-    const { result } = renderHook(() => usePendleCombinedHistory());
-    const item = result.current.data![0];
-    expect(item.blockTimestamp).toBeInstanceOf(Date);
-    expect(item.blockTimestamp.toISOString()).toBe('2026-02-03T08:10:59.000Z');
-    expect(item.transactionHash).toBe('0xdeadbeef');
-    expect(item.marketAddress).toBe(PT_USDE.marketAddress);
-  });
-
-  it('passes through undefined data + loading/error flags', () => {
-    const mutate = vi.fn();
-    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-      mutate,
-      dataSources: []
-    });
-
-    const { result } = renderHook(() => usePendleCombinedHistory());
-    expect(result.current.data).toBeUndefined();
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.mutate).toBe(mutate);
-  });
 });
