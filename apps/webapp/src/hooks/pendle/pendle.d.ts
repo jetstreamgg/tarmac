@@ -291,8 +291,10 @@ export type PendleMarketsAllResponseRaw = {
  * we surface (buyPt, sellPt, redeemPy). `action` stays a free string so
  * unknown values pass through untouched and get filtered client-side.
  *
- * `market` comes back as a "<chainId>-<address>" string and needs parsing
- * before lookup against PENDLE_MARKETS.
+ * `market` comes back as a raw address ("0xc5b32…") on this endpoint —
+ * other Pendle endpoints prefix it with "<chainId>-", so the resolver in
+ * usePendleAllPnlTransactions accepts both forms when looking up
+ * PENDLE_MARKETS.
  *
  * `txValueAsset` is the magnitude of the underlying-token movement caused
  * by this transaction (positive on both spend and receive sides — sign is

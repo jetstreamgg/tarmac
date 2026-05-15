@@ -36,9 +36,9 @@ function resolveMarket(wireMarket: string): PendleMarketConfig | undefined {
 /**
  * Pure transformer: PnL wire rows → normalized rows tagged with their source
  * market, filtered to PENDLE_MARKETS and surfaced actions, sorted desc by
- * timestamp. Exported for unit tests; consumers should read via the hook.
+ * timestamp.
  */
-export function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleCombinedHistoryRow[] {
+function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleCombinedHistoryRow[] {
   const out: PendleCombinedHistoryRow[] = [];
   for (const tx of rows) {
     const action = mapWireAction(tx.action);
@@ -69,10 +69,9 @@ export function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleC
 }
 
 /**
- * Builds the shared TanStack query key. The key shape is intentionally
- * user-only (no chainId/limit/etc.) so Stage 2's optimistic-row insertion can
- * write into the cache via `setQueryData(pendlePnlQueryKey(user), …)` without
- * having to know about ephemeral request params.
+ * Builds the shared TanStack query key. User-only (no chainId/limit/etc.) so
+ * the cache stays stable across ephemeral request params and consumers can
+ * target it cleanly when they need to invalidate or pre-populate it.
  */
 export function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
   return ['pendle-pnl-transactions', user?.toLowerCase()];

@@ -98,9 +98,10 @@ export async function fetchPendleMarketsByIds(
  * unimplemented — no expected user has >1000 PnL events; revisit if a real
  * user hits the cap.
  *
- * Lag: the PnL feed lags chain tip by a few minutes per Pendle's docs —
- * fresh trades will appear in history only after the indexer catches up.
- * (Stage 2 of the rewrite closes this with optimistic-row insertion.)
+ * Lag: the PnL feed lags chain tip by ~20s empirically (n=2, May 2026 —
+ * Pendle's docs claim "few minutes" but the observed lag is much tighter).
+ * Fresh trades appear only after the indexer catches up; PendleWidgetPane
+ * fires a delayed refresh after tx success to surface the new row.
  */
 export async function fetchPendlePnlTransactionsForUser(
   userAddress: `0x${string}`,

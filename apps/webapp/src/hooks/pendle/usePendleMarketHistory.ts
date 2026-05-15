@@ -14,9 +14,10 @@ import { usePendleAllPnlTransactions } from './usePendleAllPnlTransactions';
  * TanStack query for both views.
  *
  * Pendle's API doesn't serve Tenderly, so the transport layer rewrites
- * Tenderly chain IDs to mainnet. The PnL feed lags chain tip by a few
- * minutes per Pendle's docs; Stage 2 of the rewrite will close that with
- * optimistic-row insertion in the same shared cache.
+ * Tenderly chain IDs to mainnet. The PnL feed lags chain tip by ~20s
+ * (empirical, n=2, May 2026 — Pendle's docs claim "few minutes" but the
+ * observed lag is much tighter); PendleWidgetPane fires a delayed refresh
+ * after tx success to bridge that window.
  */
 export function usePendleMarketHistory(marketAddress: `0x${string}` | undefined): PendleMarketHistoryHook {
   const { data: allRows, isLoading, error, refetch } = usePendleAllPnlTransactions();
