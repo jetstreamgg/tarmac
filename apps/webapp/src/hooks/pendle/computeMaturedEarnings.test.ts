@@ -65,6 +65,22 @@ function makeTrade(
 const buy = (opts: Parameters<typeof makeTrade>[1]) => makeTrade(PendleHistoryAction.BUY_PT, opts);
 const sell = (opts: Parameters<typeof makeTrade>[1]) => makeTrade(PendleHistoryAction.SELL_PT, opts);
 
+// REDEEM_PY rows from Pendle's /v1/pnl/transactions feed. Per the normalizer
+// in usePendleMarketHistory, ptAmount carries the underlying received (1 PT =
+// 1 underlying at maturity) and valueUsd is set to 0 (Pendle doesn't report
+// a USD value for redeems — computeMaturedEarnings derives the realized value
+// from ptAmount + the market's chi conversion).
+function redeem(opts: { secondsBeforeExpiry: number; pt: number }): PendleHistoryRow {
+  return {
+    id: nextId(),
+    txHash: `0xredeem-${_idCounter}`,
+    timestamp: new Date((EXPIRY - opts.secondsBeforeExpiry) * 1000).toISOString(),
+    action: PendleHistoryAction.REDEEM_PY,
+    ptAmount: opts.pt,
+    valueUsd: 0
+  };
+}
+
 // Underlying-token units → bigint, respecting market decimals.
 function toUnderlying(amount: number, market: PendleMarketConfig): bigint {
   return BigInt(Math.round(amount * 10 ** market.underlyingDecimals));
@@ -263,15 +279,19 @@ describe('computeMaturedEarnings — reconciliation gate (slice 02)', () => {
     ).toEqual(EMPTY);
   });
 
-  it('tolerates shortfall (netPT > balance): interpreted as redeem, with prorated cost basis', () => {
-    // Review-fix slice 02 changed the contract: shortfall is no longer hidden.
-    // Pendle's TRADES API doesn't index post-maturity redeems, so a balance
-    // below Pendle's view is most likely a redeem (not a gift-out). We
-    // interpret it that way and prorate the cost basis. Bought 100 PT for
-    // $100, balance = 80 (assume 20 redeemed). remainingFraction = 0.8 →
-    // proratedNetCost = $80 → preview 82 USDG → earnings = $2.
+  it('reconciles shortfall when REDEEM_PY events explain it (no proration needed)', () => {
+    // Slice 03 changed the contract: shortfall must be EXPLAINED by REDEEM_PY
+    // events from Pendle's /v1/pnl/transactions feed. The asymmetric proration
+    // heuristic (review-fix slice 02) is replaced with symmetric reconciliation
+    // because the v1 feed gives us actual redeem rows. Bought 100 PT for $100,
+    // redeemed 20 PT (now indexed), balance = 80. netPt = 100 − 20 = 80 →
+    // exact reconcile. realized = 20 × $1 = $20. finalValue (preview 82) = $82.
+    // earnings = finalValue + realized − netCost = 82 + 20 − 100 = $2.
     const result = computeMaturedEarnings({
-      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 100, pt: 100 })],
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 100, pt: 100 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 20 })
+      ],
       previewAmount: toUnderlying(82, PEGGED_MARKET),
       chi: undefined,
       market: PEGGED_MARKET,
@@ -430,21 +450,25 @@ describe('computeMaturedEarnings — PT decimals = underlying decimals (review-f
   });
 });
 
-describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () => {
-  // Pendle's TRADES API doesn't index post-maturity redeems (redeemPyToToken
-  // calls reduce on-chain balance but don't appear as SELL_PT). The
-  // reconciliation gate is asymmetric:
-  //   - balance > netPt * 1.01: surplus has unknown cost basis → hide.
-  //   - balance < netPt: interpret as redeem, prorate cost basis to remaining.
-  //   - within ±1% drift: Math.min(1, ratio) cap collapses to un-prorated math.
-  // See PR #1546 review by iceanddust (commit 574da455 + this commit).
+describe('computeMaturedEarnings — redeem handling with v1 PnL feed (slice 04)', () => {
+  // Slice 04 (this work): Pendle's /v1/pnl/transactions feed surfaces
+  // REDEEM_PY rows that the v5 /transactions feed never did. With real redeem
+  // data, the reconciliation gate is now SYMMETRIC: drift in either direction
+  // beyond 1% hides the line. There's no proration heuristic — earnings are
+  // computed directly from realized (redeems) + unrealized (remaining preview)
+  // minus net cost. Slice-02's asymmetric gate + Math.min(1, ratio) cap are
+  // both retired. See computeMaturedEarnings.ts header for the full rationale.
 
-  it('partial redeem (200 PT redeemed of 1000): earnings shown with prorated cost basis', () => {
-    // Bought 1000 PT for $1000, no sells, on-chain balance = 800 (200 redeemed).
-    // Preview shows 810 USDG for the 800 remaining.
-    // remainingFraction = 800/1000 = 0.8 → proratedNetCost = $800 → earnings = $10.
+  it('partial redeem (200 PT of 1000) explained by a REDEEM_PY event: earnings shown without proration', () => {
+    // Bought 1000 PT for $1000, redeemed 200 PT (now indexed via /v1/pnl).
+    // netPt = 1000 − 0 − 200 = 800. Balance 800 → exact reconcile.
+    // Preview 810 USDG for the 800 remaining + 200 USDG realized from redeem.
+    // earnings = finalValue + realized − netCost = 810 + 200 − 1000 = $10.
     const result = computeMaturedEarnings({
-      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 200 })
+      ],
       previewAmount: toUnderlying(810, PEGGED_MARKET),
       chi: undefined,
       market: PEGGED_MARKET,
@@ -457,11 +481,15 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     expect(result.apy!).toBeGreaterThan(0);
   });
 
-  it('large partial redeem (800 PT redeemed of 1000): earnings shown with prorated cost basis', () => {
-    // 80% redeemed. remainingFraction = 200/1000 = 0.2 → proratedNetCost = $200
-    // → preview 205 USDG → earnings = $5.
+  it('large partial redeem (800 PT of 1000) explained by REDEEM_PY: earnings shown', () => {
+    // 80% redeemed. netPt = 1000 − 0 − 800 = 200. Balance 200 → reconcile.
+    // realized = 800 × $1 = $800. finalValue = preview 205 USDG = $205.
+    // earnings = 205 + 800 − 1000 = $5.
     const result = computeMaturedEarnings({
-      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 800 })
+      ],
       previewAmount: toUnderlying(205, PEGGED_MARKET),
       chi: undefined,
       market: PEGGED_MARKET,
@@ -473,13 +501,16 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     expect(result.apy).toBeDefined();
   });
 
-  it('redeem to dust (balance ≈ 0.001 PT of 1000 originally): finite math, no NaN', () => {
-    // ratio = 0.001/1000 = 1e-6 → proratedNetCost = $1000 × 1e-6 = $0.001.
-    // previewAmount for 0.001 PT ≈ 0.001 USDG → finalValue ≈ 0.001.
-    // earnings ≈ 0. The contract here is "math doesn't blow up at the
-    // boundary"; the exact value is incidental.
+  it('redeem to dust (REDEEM_PY for 999.999 of 1000): finite math, no NaN', () => {
+    // netPt = 1000 − 0 − 999.999 = 0.001. Balance 0.001 → reconcile.
+    // realized = 999.999 × $1 = $999.999. finalValue ≈ $0.001.
+    // earnings ≈ 0.001 + 999.999 − 1000 = 0. Math doesn't blow up at the
+    // boundary; the exact value is incidental.
     const result = computeMaturedEarnings({
-      history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 999.999 })
+      ],
       previewAmount: toUnderlying(0.001, PEGGED_MARKET),
       chi: undefined,
       market: PEGGED_MARKET,
@@ -490,14 +521,13 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     expect(Number.isFinite(result.earnings!)).toBe(true);
     expect(Number.isNaN(result.earnings!)).toBe(false);
     expect(result.earnings!).toBeCloseTo(0, 4);
-    // APY guard: proratedNetCost > 0 so APY is defined; its value isn't the
-    // assertion target — what matters is no Infinity/NaN.
+    // APY guard: netCost > 0 so APY is defined; what matters is no Infinity/NaN.
     expect(Number.isFinite(result.apy!)).toBe(true);
   });
 
-  it('excess PT on-chain (netPt < balance × 0.99): still hides (unchanged direction)', () => {
-    // Bought 500 PT for $500, but on-chain balance = 1000 (someone sent 500
-    // PT in). netPt = 500, balance = 1000. 500 < 1000 × 0.99 = 990 → hide.
+  it('excess PT on-chain (balance > netPt + 1%): hides regardless of redeem events', () => {
+    // Bought 500 PT for $500, no redeems, but on-chain balance = 1000 (gifted
+    // PT). netPt = 500, balance = 1000. |500−1000|/500 = 100% drift → hide.
     expect(
       computeMaturedEarnings({
         history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 500, pt: 500 })],
@@ -510,11 +540,9 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     ).toEqual(EMPTY);
   });
 
-  it('within-tolerance excess drift (0.5%): Math.min cap → no proration → un-prorated math', () => {
-    // ptBought=1000, balance=1005. ratio=1.005, capped at 1 → no proration.
-    // Preview 1010 → earnings = 1010 − 1000 = $10. This is the load-bearing
-    // case for the Math.min(1, ratio) cap: without it, balance-slightly-above-
-    // netPt would inflate the cost basis and reduce displayed earnings.
+  it('within-tolerance excess drift (0.5%, no redeem): allows', () => {
+    // ptBought=1000, balance=1005, no redeems. |1000−1005|/1000 = 0.5% < 1% → allow.
+    // earnings = preview(1010) + 0 − 1000 = $10.
     const result = computeMaturedEarnings({
       history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
       previewAmount: toUnderlying(1010, PEGGED_MARKET),
@@ -526,9 +554,10 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     expect(result.earnings).toBeCloseTo(10, 4);
   });
 
-  it('tolerance boundary excess side (1.0% drift, balance=1010): still allowed, no proration', () => {
-    // netPt=1000, balance=1010. 1000 < 1010 × 0.99 = 999.9? false → allow.
-    // ratio = 1.01 → Math.min cap → 1. earnings = preview(1015) − cost(1000) = $15.
+  it('tolerance boundary excess side (1.0% drift, balance=1010): still allowed', () => {
+    // netPt=1000, balance=1010. |drift|/netPt = 1.0% → at the boundary.
+    // Symmetric gate uses > 1% → 1.0% exact is allowed.
+    // earnings = preview(1015) − cost(1000) = $15.
     const result = computeMaturedEarnings({
       history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
       previewAmount: toUnderlying(1015, PEGGED_MARKET),
@@ -540,10 +569,11 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     expect(result.earnings).toBeCloseTo(15, 4);
   });
 
-  it('tolerance boundary shortfall side (1.0% drift, balance=990): allowed with proration', () => {
-    // netPt=1000, balance=990. ratio = 0.99 → proratedNetCost = $990.
-    // Preview 1000 → earnings = 1000 − 990 = $10. The 1% gate is asymmetric:
-    // shortfall always allowed, even at the boundary.
+  it('tolerance boundary shortfall side (1.0% drift, balance=990, no redeem): allowed', () => {
+    // netPt=1000, balance=990. |drift|/netPt = 1.0% → boundary, allowed.
+    // No redeems → no realized component. earnings = finalValue + 0 − netCost.
+    // Preview 1000 → earnings = 1000 + 0 − 1000 = $0. (Within-tolerance drift
+    // is absorbed as dust; we don't speculate about the missing 10 PT.)
     const result = computeMaturedEarnings({
       history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
       previewAmount: toUnderlying(1000, PEGGED_MARKET),
@@ -552,19 +582,20 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
       effectiveTier: 'pegged',
       ptBalanceFloat: 990
     });
-    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.earnings).toBeCloseTo(0, 4);
   });
 
-  it('buy + sell + redeem (earnings shown, APY hidden because of the sell)', () => {
-    // Bought 1000 PT for $1000, sold 200 PT for $200, then redeemed 100 PT
-    // (vanishes from history; only on-chain balance drops). netPt = 800;
-    // balance = 700. ratio = 700/800 = 0.875. netCostUsd = $800 → proratedNetCost
-    // = $800 × 0.875 = $700. Preview for 700 PT → 710 USDG → earnings = $10.
-    // APY hidden because sells.length > 0 (decision 3).
+  it('buy + sell + redeem with REDEEM_PY event: earnings shown, APY hidden because of the sell', () => {
+    // Bought 1000 PT for $1000, sold 200 PT for $200, redeemed 100 PT.
+    // netPt = 1000 − 200 − 100 = 700. Balance 700 → reconcile.
+    // netCostUsd = $1000 − $200 = $800. realized from redeem = 100 × $1 = $100.
+    // Preview for 700 PT → 710 USDG.
+    // earnings = 710 + 100 − 800 = $10. APY hidden (sells.length > 0).
     const result = computeMaturedEarnings({
       history: [
         buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
-        sell({ secondsBeforeExpiry: 60 * DAY, value: 200, pt: 200 })
+        sell({ secondsBeforeExpiry: 60 * DAY, value: 200, pt: 200 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 100 })
       ],
       previewAmount: toUnderlying(710, PEGGED_MARKET),
       chi: undefined,
@@ -575,6 +606,273 @@ describe('computeMaturedEarnings — redeem handling (review-fix slice 02)', () 
     expect(result.earnings).toBeCloseTo(10, 4);
     expect(result.currency).toBe('USDS');
     expect(result.apy).toBeUndefined();
+  });
+
+  it('unexplained shortfall (balance < netPt − 1%, NO redeem events): hides (transfer-out)', () => {
+    // Slice 03 behavior change: without REDEEM_PY rows to explain it, a
+    // shortfall is now treated as a transfer-out (unknown cost basis) and
+    // hidden. Slice-02 used to interpret this as a redeem and prorate cost
+    // basis — that heuristic is removed now that the v1 feed gives us real
+    // redeem events. Documents the new strictness.
+    expect(
+      computeMaturedEarnings({
+        history: [buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 })],
+        previewAmount: toUnderlying(810, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 800
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('redeem accounting at discount-bought price: realized + unrealized split is correct', () => {
+    // Bought 1000 PT at $0.95/PT (paid $950 total) for a 5% discount.
+    // Redeemed 200 PT (face value: $200 received). Hold 800 PT.
+    // Preview 810 USDG for the remaining 800.
+    //   netPt = 1000 − 0 − 200 = 800 → reconcile.
+    //   realized = 200 × $1 = $200.
+    //   earnings = 810 + 200 − 950 = $60.
+    // Old slice-02 proration would have given $50 (proratedCost = $950 × 0.8 =
+    // $760, earnings = $810 − $760 = $50) — UNDERSTATES by missing the
+    // realized gain on the redeemed portion. This is the headline improvement
+    // of slice 03 over slice 02.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 950, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 200 })
+      ],
+      previewAmount: toUnderlying(810, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    expect(result.earnings).toBeCloseTo(60, 4);
+    expect(result.currency).toBe('USDS');
+    expect(result.apy).toBeDefined();
+  });
+
+  it('multiple redeems sum to total redeemed PT', () => {
+    // Three separate redeem rows totaling 300 PT. netPt = 1000 − 300 = 700.
+    // Balance 700 → reconcile. realized = 300 × $1 = $300.
+    // earnings = preview(710) + 300 − 1000 = $10.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 30 * DAY, pt: 100 }),
+        redeem({ secondsBeforeExpiry: 15 * DAY, pt: 100 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 100 })
+      ],
+      previewAmount: toUnderlying(710, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 700
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+  });
+
+  it('sUSDS market: chi applies to realized-from-redeem value (current chi, not historical)', () => {
+    // Bought 1000 PT-sUSDS for $1000 USD. Redeemed 200 PT → user received 200
+    // sUSDS. Current chi = 1.05 → 200 sUSDS now displays as 210 USDS.
+    // Hold 800 PT → preview 800 sUSDS → 840 USDS at current chi.
+    //   netPt = 1000 − 200 = 800 → reconcile.
+    //   realizedFromRedeem = 200 × 1.05 = $210 USDS.
+    //   finalValue = 800 × 1.05 = $840 USDS.
+    //   earnings = 840 + 210 − 1000 = $50.
+    // Same chi conversion applied to both realized and unrealized — consistent
+    // with how finalValue treats preview (current chi, not historical).
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000, market: SUSDS_MARKET }),
+        redeem({ secondsBeforeExpiry: 0, pt: 200 })
+      ],
+      previewAmount: toUnderlying(800, SUSDS_MARKET),
+      chi: CHI_1_05,
+      market: SUSDS_MARKET,
+      effectiveTier: 'sUSDS',
+      ptBalanceFloat: 800
+    });
+    expect(result.earnings).toBeCloseTo(50, 4);
+    expect(result.currency).toBe('USDS');
+  });
+
+  it('full redeem (balance=0 after redeeming all PT): hides via ptBalanceFloat<=0 gate', () => {
+    // User redeemed every PT they bought. balance = 0 → early return EMPTY.
+    // Even though realized earnings could be computed, the card needs a
+    // remaining position to anchor the display. Documents the gate.
+    expect(
+      computeMaturedEarnings({
+        history: [
+          buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+          redeem({ secondsBeforeExpiry: 0, pt: 1000 })
+        ],
+        previewAmount: 0n,
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 0
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('redeem with 0 ptAmount (degenerate v1 row): treated as 0 PT, no balance impact', () => {
+    // Defensive: if the v1 normalizer hands us a REDEEM_PY row with ptAmount=0
+    // (e.g. txValueAsset missing from the wire), it should sum to 0 in netPt
+    // — same safe-fallback shape as ptAmount=0 on BUY_PT rows. Bought 1000 PT,
+    // bogus redeem row, balance still 1000. Reconciles cleanly; earnings unchanged.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 0 })
+      ],
+      previewAmount: toUnderlying(1010, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 1000
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+  });
+
+  it('buy + redeem + transfer-out: balance < (netPt − redeemed), unexplained → hides', () => {
+    // Bought 1000 PT, redeemed 200 PT (real REDEEM_PY row), then transferred
+    // out 100 more PT (no redeem row). netPt = 1000 − 200 = 800. Balance 700.
+    // |800 − 700| / 800 = 12.5% drift → hide. The redeem event explains part
+    // of the gap; the unexplained 100 PT triggers the gate.
+    expect(
+      computeMaturedEarnings({
+        history: [
+          buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+          redeem({ secondsBeforeExpiry: 0, pt: 200 })
+        ],
+        previewAmount: toUnderlying(710, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 700
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('heterogeneous buy prices + partial redeem: averaged costPerPt drives APY ratio', () => {
+    // 500 PT at $475 (early, $0.95/PT) + 500 PT at $510 (later, $1.02/PT) =
+    // 1000 PT for $985 total. costPerPt = 985/1000 = 0.985.
+    // Redeemed 200 PT (face value $200), balance 800.
+    //   netPt = 800 → reconciles. realized = 200 × $1 = $200.
+    //   finalValue = preview(810) = $810.
+    //   earnings = 810 + 200 − 985 = $25.
+    //   costOfRemaining = 0.985 × 800 = $788. APY = (810/788)^(365/90) − 1.
+    // Validates that the average-cost-per-PT model handles non-uniform entry
+    // prices without distorting the realized/unrealized split.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 475, pt: 500 }),
+        buy({ secondsBeforeExpiry: 30 * DAY, value: 510, pt: 500 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 200 })
+      ],
+      previewAmount: toUnderlying(810, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    expect(result.earnings).toBeCloseTo(25, 4);
+    expect(result.apy).toBeDefined();
+    expect(result.apy!).toBeGreaterThan(0);
+    // Sanity: APY should be higher than the at-cost equivalent (which would be
+    // (810/800)^(365/100) − 1 ≈ 4.6%). Discount entry → higher implied yield.
+    expect(result.apy!).toBeGreaterThan(0.04);
+  });
+
+  it('pre-maturity redeem (PT+YT pair, secondsBeforeExpiry > 0): handled the same as post-maturity', () => {
+    // Pendle allows redeemPy(PT+YT) before maturity at face value when the
+    // user holds matching amounts of both. From this function's perspective,
+    // the redeem is just a PT exit at 1:1 underlying — timing relative to
+    // expiry doesn't change the math. Redeem 60 days before expiry, otherwise
+    // identical to the "partial redeem (200 of 1000)" test → same earnings.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 90 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 60 * DAY, pt: 200 })
+      ],
+      previewAmount: toUnderlying(810, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.apy).toBeDefined();
+  });
+
+  it('history with only REDEEM_PY rows (no BUY_PT): netCost = 0 → hides', () => {
+    // Defensive: if the v5 feed paginated out our buys but the v1 feed still
+    // surfaces a redeem, we'd have a netCost of 0 and no honest math.
+    // Function early-returns via the `netCostUsd <= 0` guard.
+    expect(
+      computeMaturedEarnings({
+        history: [redeem({ secondsBeforeExpiry: 0, pt: 200 })],
+        previewAmount: toUnderlying(810, PEGGED_MARKET),
+        chi: undefined,
+        market: PEGGED_MARKET,
+        effectiveTier: 'pegged',
+        ptBalanceFloat: 800
+      })
+    ).toEqual(EMPTY);
+  });
+
+  it('buy + redeem (no sells): APY remains visible (redeems are not market exits)', () => {
+    // Decision 3 explicitly states REDEEM_PY rows do not trigger the APY-hide
+    // policy that SELL_PT rows do. A redeem closes a portion of the position
+    // at maturity face value — the natural end-of-life, not a market-timing
+    // exit. So buy + redeem keeps APY; buy + sell + redeem hides it.
+    const result = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 180 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 500 })
+      ],
+      previewAmount: toUnderlying(510, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 500
+    });
+    expect(result.earnings).toBeCloseTo(10, 4);
+    expect(result.apy).toBeDefined();
+    expect(result.apy!).toBeGreaterThan(0);
+  });
+
+  it('redeem timestamp does not affect daysHeld (APY uses earliest BUY)', () => {
+    // daysHeld is anchored to the earliest BUY_PT timestamp; redeem events at
+    // any time within or past the maturity window must not shift it. Two
+    // identical positions, one with an old redeem and one with a fresh redeem,
+    // should report the same APY.
+    const earlyRedeem = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 180 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 90 * DAY, pt: 200 })
+      ],
+      previewAmount: toUnderlying(810, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    const lateRedeem = computeMaturedEarnings({
+      history: [
+        buy({ secondsBeforeExpiry: 180 * DAY, value: 1000, pt: 1000 }),
+        redeem({ secondsBeforeExpiry: 0, pt: 200 })
+      ],
+      previewAmount: toUnderlying(810, PEGGED_MARKET),
+      chi: undefined,
+      market: PEGGED_MARKET,
+      effectiveTier: 'pegged',
+      ptBalanceFloat: 800
+    });
+    expect(earlyRedeem.apy).toBeCloseTo(lateRedeem.apy!, 6);
+    expect(earlyRedeem.earnings).toBeCloseTo(lateRedeem.earnings!, 6);
   });
 });
 
