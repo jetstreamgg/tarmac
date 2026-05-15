@@ -5,13 +5,13 @@ Hook for handling the withdrawal of USDS tokens from the savings contract.
 ## Import
 
 ```ts
-import { useSavingsWithdraw } from '@jetstreamgg/sky-hooks';
+import { useSavingsWithdraw } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsWithdraw } from '@jetstreamgg/sky-hooks';
+import { useSavingsWithdraw } from '@/hooks';
 
 function WithdrawComponent() {
   const { execute, data, error, isLoading, mutate } = useSavingsWithdraw({
@@ -38,7 +38,7 @@ function WithdrawComponent() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
+import { type ReadHookParams } from '@/hooks';
 ```
 
 ### Props
@@ -70,7 +70,7 @@ type Props = ReadHookParams & {
 ## Return Type
 
 ```ts
-import { type ReadHook } from '@jetstreamgg/sky-hooks';
+import { type ReadHook } from '@/hooks';
 ```
 
 Returns an object containing:

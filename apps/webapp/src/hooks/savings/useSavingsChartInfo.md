@@ -5,13 +5,13 @@ Hook for fetching and transforming the savings chart information from the BA Lab
 ## Import
 
 ```ts
-import { useSavingsChartInfo } from '@jetstreamgg/sky-hooks';
+import { useSavingsChartInfo } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsChartInfo } from '@jetstreamgg/sky-hooks';
+import { useSavingsChartInfo } from '@/hooks';
 
 function SavingsChartComponent() {
   const { data, error, isLoading, mutate } = useSavingsChartInfo();
@@ -37,7 +37,7 @@ function SavingsChartComponent() {
 ## Return Type
 
 ```ts
-import { type SavingsChartInfoParsed } from '@jetstreamgg/sky-hooks';
+import { type SavingsChartInfoParsed } from '@/hooks';
 ```
 
 Returns an object containing:

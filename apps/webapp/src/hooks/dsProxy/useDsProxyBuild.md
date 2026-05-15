@@ -5,13 +5,13 @@ Hook for building a DS Proxy for a given account.
 ## Import
 
 ```ts
-import { useDsProxyBuild } from '@jetstreamgg/sky-hooks';
+import { useDsProxyBuild } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useDsProxyBuild } from '@jetstreamgg/sky-hooks';
+import { useDsProxyBuild } from '@/hooks';
 
 function App() {
   const { execute, isLoading, error, data } = useDsProxyBuild({
@@ -35,7 +35,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type WriteHookParams } from '@jetstreamgg/sky-hooks';
+import { type WriteHookParams } from '@/hooks';
 ```
 
 ### Props
@@ -58,7 +58,7 @@ type Props = WriteHookParams & {
 ## Return Type
 
 ```ts
-import { type WriteHook } from '@jetstreamgg/sky-hooks';
+import { type WriteHook } from '@/hooks';
 ```
 
 Returns an object containing:

@@ -5,13 +5,13 @@ Hook for fetching content from an ENS (Ethereum Name Service) subdomain. It retu
 ## Import
 
 ```ts
-import { useEnsContent } from '@jetstreamgg/sky-hooks';
+import { useEnsContent } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useEnsContent } from '@jetstreamgg/sky-hooks';
+import { useEnsContent } from '@/hooks';
 
 function App() {
   const { data, error, isLoading } = useEnsContent({
@@ -29,7 +29,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
+import { type ReadHookParams } from '@/hooks';
 ```
 
 ### Props
@@ -54,7 +54,7 @@ type Props = ReadHookParams<string> & {
 ## Return Type
 
 ```ts
-import { type ReadHook } from '@jetstreamgg/sky-hooks';
+import { type ReadHook } from '@/hooks';
 ```
 
 Returns an object containing:

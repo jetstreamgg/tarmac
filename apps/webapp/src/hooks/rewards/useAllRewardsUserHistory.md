@@ -5,13 +5,13 @@ Hook for fetching a user's history with all reward contract.
 ## Import
 
 ```ts
-import { useAllRewardsUserHistory } from '@jetstreamgg/sky-hooks';
+import { useAllRewardsUserHistory } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useAllRewardsUserHistory } from '@jetstreamgg/sky-hooks';
+import { useAllRewardsUserHistory } from '@/hooks';
 
 function App() {
   const { data, error, isLoading } = useAllRewardsUserHistory('0xUserAddress...');
@@ -36,7 +36,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
+import { type ReadHookParams } from '@/hooks';
 ```
 
 ### Props
@@ -58,7 +58,7 @@ type Props = ReadHookParams<RewardUserHistory[]> & {
 ## Return Type
 
 ```ts
-import { type RewardUserHistory } from '@jetstreamgg/sky-hooks';
+import { type RewardUserHistory } from '@/hooks';
 ```
 
 Returns an object containing:

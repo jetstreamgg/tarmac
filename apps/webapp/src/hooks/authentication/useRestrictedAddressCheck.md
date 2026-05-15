@@ -5,13 +5,13 @@ Hook for checking if an address is allowed based on an authentication URL.
 ## Import
 
 ```ts
-import { useRestrictedAddressCheck } from '@jetstreamgg/sky-hooks';
+import { useRestrictedAddressCheck } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useRestrictedAddressCheck } from '@jetstreamgg/sky-hooks';
+import { useRestrictedAddressCheck } from '@/hooks';
 
 function App() {
   const { data, error, isLoading } = useRestrictedAddressCheck({
@@ -30,7 +30,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
+import { type ReadHookParams } from '@/hooks';
 ```
 
 ### Props
@@ -51,7 +51,7 @@ type Props = ReadHookParams<AuthResponse> & { address?: string; authUrl: string;
 ## Return Type
 
 ```ts
-import { type AuthResponse } from '@jetstreamgg/sky-hooks';
+import { type AuthResponse } from '@/hooks';
 ```
 
 Returns an object containing:

@@ -5,13 +5,13 @@ The **Balances Widget** is a React component that allows users to manage their t
 ## Installation
 
 ```shell
-npm install @jetstreamgg/sky-widgets
+npm install @/widgets
 ```
 
 ## Example Usage
 
 ```jsx
-import { BalancesWidget } from '@jetstreamgg/sky-widgets';
+import { BalancesWidget } from '@/widgets';
 
 function BalancesPage() {
   return (
