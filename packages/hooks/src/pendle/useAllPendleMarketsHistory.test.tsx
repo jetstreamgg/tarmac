@@ -119,7 +119,10 @@ describe('useAllPendleMarketsHistory', () => {
 
     const { result } = renderHook(() => useAllPendleMarketsHistory(), { wrapper: makeWrapper() });
 
-    await waitFor(() => expect(result.current.data).toBeDefined());
+    // Wait for every per-market query to settle — useQueries can surface
+    // partial data while the rest are still loading.
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data).toBeDefined();
 
     // 1 buy + 1 redeem per market.
     expect(result.current.data).toHaveLength(PENDLE_MARKETS.length * 2);
@@ -149,23 +152,25 @@ describe('useAllPendleMarketsHistory', () => {
     });
     vi.mocked(fetchPendlePnlTransactions).mockResolvedValue([]);
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     const { result } = renderHook(() => useAllPendleMarketsHistory(), { wrapper: makeWrapper() });
 
-    await waitFor(() => expect(result.current.data).toBeDefined());
+    // Each useQueries result carries its own error, so we let all of them
+    // settle before asserting on the merged shape.
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.data).toBeDefined();
 
     // The surviving market(s) yield rows; the failing one drops silently.
     expect(result.current.data!.length).toBeGreaterThan(0);
     expect(result.current.data!.every(r => r.market.marketAddress !== failing.marketAddress)).toBe(true);
     expect(result.current.data!.some(r => r.market.marketAddress === surviving.marketAddress)).toBe(true);
-    expect(warnSpy).toHaveBeenCalled();
+    // Partial success isn't an error — error stays null while any market
+    // resolves; only an all-markets outage promotes it to truthy.
+    expect(result.current.error).toBeFalsy();
   });
 
-  it('throws when every market fails (real outage; show the error)', async () => {
+  it('surfaces an error when every market fails (real outage; show the error)', async () => {
     vi.mocked(fetchPendleMarketTransactions).mockRejectedValue(new Error('500'));
     vi.mocked(fetchPendlePnlTransactions).mockResolvedValue([]);
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const { result } = renderHook(() => useAllPendleMarketsHistory(), { wrapper: makeWrapper() });
 
