@@ -174,8 +174,6 @@ export type {
   PendleMarketsStatsHook,
   PendleUserPtBalances,
   PendleUserPtBalancesHook,
-  PendleTransactionRaw,
-  PendleMarketTransactionsResponseRaw,
   PendlePnlTransactionRaw,
   PendlePnlTransactionsResponseRaw,
   PendleHistoryRow,

@@ -7,6 +7,7 @@ import { mainnet } from 'viem/chains';
 import {
   isMarketMatured,
   PENDLE_MARKETS,
+  useAllPendleMarketsHistory,
   usePendleUserPtBalances,
   type PendleMarketConfig
 } from '@/hooks';
@@ -17,6 +18,7 @@ import {
   WidgetContainer,
   positionAnimations
 } from '@/widgets';
+import { TxStatus } from '@/widgets/shared/constants';
 import { FixedIntent } from '@/lib/enums';
 import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
@@ -25,6 +27,18 @@ import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { PendleMarketStatsCard } from './PendleMarketStatsCard';
 import { PendleReadyToRedeemList } from './PendleReadyToRedeemList';
+
+// Pendle's /v1/pnl/transactions indexer lag is empirically ~19s after the
+// block is mined (n=2 against a real wallet, May 2026 — both samples in
+// 17.3–21.3s, suggesting a steady ~20s poll on Pendle's side rather than a
+// long tail). 25s gives a 4–8s safety margin; rare outliers beyond that are
+// covered by `refetchOnWindowFocus` and `staleTime: 0` on the shared query.
+// Much higher than the global REFRESH_DELAY (1s) the other widgets use
+// because those histories are powered by our Envio Hyperindex (or the Morpho
+// API for vaults), which surface new rows within a block. Pendle's PnL
+// endpoint is a third-party indexer we don't control — re-measure if it
+// changes.
+const PENDLE_HISTORY_REFRESH_MS = 25_000;
 
 const findMarket = (address: string | null): PendleMarketConfig | undefined => {
   if (!address) return undefined;
@@ -43,6 +57,18 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
   const selectedMarket = useMemo(() => findMarket(selectedMarketAddress), [selectedMarketAddress]);
 
   const { data: ptBalances } = usePendleUserPtBalances();
+  const { mutate: refreshPendleHistory } = useAllPendleMarketsHistory();
+
+  // Wrap the parent-supplied notification handler so a successful tx also
+  // schedules a Pendle history refresh. The widget's onSuccess fires
+  // onNotification with TxStatus.SUCCESS once the receipt lands; Pendle's
+  // PnL indexer needs ~20s after that to expose the new row.
+  const handleNotification: SharedProps['onNotification'] = notification => {
+    sharedProps.onNotification(notification);
+    if (notification.status === TxStatus.SUCCESS) {
+      setTimeout(refreshPendleHistory, PENDLE_HISTORY_REFRESH_MS);
+    }
+  };
 
   // A market URL is only valid when it points at an active (non-matured)
   // entry in PENDLE_MARKETS. Matured markets only surface as redeem rows on
@@ -106,6 +132,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
         {showSelectedMarket ? (
           <PendleWidget
             {...sharedProps}
+            onNotification={handleNotification}
             market={selectedMarket!}
             onExternalLinkClicked={sharedProps.onExternalLinkClicked}
             onBackToPendle={handleBack}

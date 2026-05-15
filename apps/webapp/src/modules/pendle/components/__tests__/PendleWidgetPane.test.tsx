@@ -72,6 +72,13 @@ vi.mock('@/hooks', async importOriginal => {
       error: undefined,
       mutate: () => undefined,
       dataSources: []
+    }),
+    useAllPendleMarketsHistory: () => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      mutate: () => undefined,
+      dataSources: []
     })
   };
 });
