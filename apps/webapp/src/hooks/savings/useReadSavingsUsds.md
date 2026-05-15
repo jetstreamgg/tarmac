@@ -5,13 +5,13 @@ Hook for reading data from the Savings DAI contract using the proxy address and 
 ## Import
 
 ```ts
-import { useReadSavingsUsds, sUsdsAddress, sUsdsImplementationAbi } from '@jetstreamgg/sky-hooks';
+import { useReadSavingsUsds, sUsdsAddress, sUsdsImplementationAbi } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useReadSavingsUsds } from '@jetstreamgg/sky-hooks';
+import { useReadSavingsUsds } from '@/hooks';
 
 function SavingsDaiComponent() {
   const { data, error, isLoading, refetch } = useReadSavingsUsds({
@@ -55,7 +55,7 @@ type Props = ReadContractParams<typeof savingsdaiAbi, 'maxWithdraw'>;
 ## Return Type
 
 ```ts
-import { type ReadHook } from '@jetstreamgg/sky-hooks';
+import { type ReadHook } from '@/hooks';
 ```
 
 Returns an object containing:

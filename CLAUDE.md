@@ -127,7 +127,7 @@ pnpm messages        # Extract and compile translations
 
 ### New Smart Contract
 
-1. Add contract address and ABI to `apps/webapp/src/hooks/contracts.ts` (or `l2Contracts.ts` for L2 contracts), re-exporting from `apps/webapp/src/hooks/index.ts` as needed.
+1. Add contract address and ABI to `apps/webapp/src/hooks/contracts.ts` (mainnet contracts go in the `contracts` array; L2 contracts go in the `l2Contracts` array in the same file), re-exporting from `apps/webapp/src/hooks/index.ts` as needed.
 2. Run `pnpm -F webapp generate` to regenerate `apps/webapp/src/hooks/generated.ts`. Use `pnpm -F webapp generate:retry` to retry on flakey Etherscan responses.
 3. Create the hook in the appropriate subfolder of `apps/webapp/src/hooks/`.
 

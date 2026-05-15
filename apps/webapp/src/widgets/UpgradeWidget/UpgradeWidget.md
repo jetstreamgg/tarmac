@@ -5,13 +5,13 @@ The **Upgrade Widget** is a React component that allows users to upgrade or down
 ## Installation
 
 ```shell
-npm install @jetstreamgg/sky-widgets
+npm install @/widgets
 ```
 
 ## Example Usage
 
 ```jsx
-import { UpgradeWidget } from '@jetstreamgg/sky-widgets';
+import { UpgradeWidget } from '@/widgets';
 
 function UpgradePage() {
   return (

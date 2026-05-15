@@ -6,13 +6,13 @@ Fetches either the Ethereum or Base savings history, depending on wagmi's chainI
 ## Import
 
 ```ts
-import { useSavingsHistory } from '@jetstreamgg/sky-hooks';
+import { useSavingsHistory } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useSavingsHistory } from '@jetstreamgg/sky-hooks';
+import { useSavingsHistory } from '@/hooks';
 
 function SavingsHistoryComponent() {
   const { data, error, isLoading, mutate } = useSavingsHistory({
@@ -53,7 +53,7 @@ type Props = {
 ## Return Type
 
 ```ts
-import { type SavingsHistory } from '@jetstreamgg/sky-hooks';
+import { type SavingsHistory } from '@/hooks';
 ```
 
 Returns an object containing:

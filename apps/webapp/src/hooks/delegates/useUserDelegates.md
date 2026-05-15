@@ -5,13 +5,13 @@ Hook for fetching user-specific delegate information based on various parameters
 ## Import
 
 ```ts
-import { useUserDelegates } from '@jetstreamgg/sky-hooks';
+import { useUserDelegates } from '@/hooks';
 ```
 
 ## Usage
 
 ```tsx
-import { useUserDelegates } from '@jetstreamgg/sky-hooks';
+import { useUserDelegates } from '@/hooks';
 
 function App() {
   const { data, error, isLoading } = useUserDelegates({
@@ -40,7 +40,7 @@ function App() {
 ## Parameters
 
 ```ts
-import { type ReadHookParams } from '@jetstreamgg/sky-hooks';
+import { type ReadHookParams } from '@/hooks';
 ```
 
 ### Props
@@ -68,7 +68,7 @@ type Props = ReadHookParams<DelegateInfo[]> & {
 ## Return Type
 
 ```ts
-import { type DelegateInfo } from '@jetstreamgg/sky-hooks';
+import { type DelegateInfo } from '@/hooks';
 ```
 
 Returns an object containing:
