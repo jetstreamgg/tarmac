@@ -12,14 +12,13 @@ import { useIsSafeWallet } from '@/hooks';
 import { useConnection, useChainId } from 'wagmi';
 import { InitialScreen, NotificationType, TxStatus } from '../constants';
 
-type UseTransactionCallbacksParameters = Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange'> & {
+type UseTransactionCallbacksParameters = Pick<WidgetProps, 'onWidgetStateChange'> & {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
 };
 
 interface TransactionStartParameters {
   hash?: string;
-  recentTransactionDescription: string;
 }
 
 interface TransactionSuccessParameters {
@@ -37,7 +36,6 @@ interface TransactionErrorParameters {
 }
 
 export const useTransactionCallbacks = ({
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
@@ -65,27 +63,14 @@ export const useTransactionCallbacks = ({
   }, [setWidgetState, setTxStatus, setExternalLink, onAnalyticsEvent, widgetState]);
 
   const handleOnStart = useCallback(
-    ({ hash, recentTransactionDescription }: TransactionStartParameters) => {
+    ({ hash }: TransactionStartParameters) => {
       if (hash) {
-        addRecentTransaction?.({
-          hash,
-          description: recentTransactionDescription
-        });
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },
-    [
-      addRecentTransaction,
-      address,
-      chainId,
-      isSafeWallet,
-      onWidgetStateChange,
-      setExternalLink,
-      setTxStatus,
-      widgetState
-    ]
+    [address, chainId, isSafeWallet, onWidgetStateChange, setExternalLink, setTxStatus, widgetState]
   );
 
   const handleOnSuccess = useCallback(

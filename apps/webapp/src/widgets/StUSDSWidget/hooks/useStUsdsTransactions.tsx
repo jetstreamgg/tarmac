@@ -15,10 +15,7 @@ import { useContext } from 'react';
 import { StUSDSAction } from '../lib/constants';
 import { useStUsdsTransactionCallbacks } from './useStUsdsTransactionCallbacks';
 
-interface UseStUsdsTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseStUsdsTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
@@ -50,7 +47,6 @@ export const useStUsdsTransactions = ({
   mutateStUsds,
   mutateCurveUsdsAllowance,
   mutateCurveStUsdsAllowance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -63,7 +59,6 @@ export const useStUsdsTransactions = ({
     amount,
     needsAllowance,
     shouldUseBatch,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

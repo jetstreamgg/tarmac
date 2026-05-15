@@ -12,10 +12,7 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared
 import { useMemo, useRef } from 'react';
 import { SavingsAction, SavingsFlow } from '../lib/constants';
 
-interface UseSavingsTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseSavingsTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
@@ -39,14 +36,12 @@ export const useSavingsTransactionCallbacks = ({
   mutateAllowance,
   mutateSavings,
   mutateOriginBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
 }: UseSavingsTransactionCallbacksParameters) => {
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -87,10 +82,7 @@ export const useSavingsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Supplying ${formatBigInt(amount)} USDS`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         supplyStepRef.current = 0;
@@ -170,7 +162,7 @@ export const useSavingsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: t`Withdrawing ${formatBigInt(amount)} USDS` });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         handleOnSuccess({

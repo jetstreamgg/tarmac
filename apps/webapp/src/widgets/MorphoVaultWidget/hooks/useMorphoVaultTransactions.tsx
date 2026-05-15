@@ -9,10 +9,7 @@ import {
 } from '@/widgets/shared/types/widgetState';
 import { useMorphoVaultTransactionCallbacks } from './useMorphoVaultTransactionCallbacks';
 
-interface UseMorphoVaultTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseMorphoVaultTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   /** Amount of underlying assets to deposit/withdraw */
@@ -57,7 +54,6 @@ export const useMorphoVaultTransactions = ({
   mutateAllowance,
   mutateVaultData,
   mutateAssetBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
@@ -76,7 +72,6 @@ export const useMorphoVaultTransactions = ({
     mutateAllowance,
     mutateVaultData,
     mutateAssetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

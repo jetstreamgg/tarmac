@@ -15,10 +15,7 @@ import {
 } from '@/widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
-interface UseSavingsTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseSavingsTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
@@ -48,7 +45,6 @@ export const useSavingsTransactions = ({
   mutateAllowance,
   mutateSavings,
   mutateOriginBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
@@ -64,7 +60,6 @@ export const useSavingsTransactions = ({
     mutateAllowance,
     mutateSavings,
     mutateOriginBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

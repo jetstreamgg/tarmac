@@ -181,7 +181,7 @@ describe('StakeModuleWidget tests', () => {
   });
 
   it('loads the widget with default state', async () => {
-    renderWithWagmiWrapper(<StakeModuleWidget addRecentTransaction={() => {}} />);
+    renderWithWagmiWrapper(<StakeModuleWidget />);
 
     // The widget should show the "Staking Engine" heading
     const heading = await screen.findByText('Staking Engine');
@@ -205,7 +205,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        addRecentTransaction={() => {}}
         externalWidgetState={{
           flow: StakeFlow.OPEN
         }}
@@ -231,7 +230,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        addRecentTransaction={() => {}}
         externalWidgetState={{
           flow: StakeFlow.MANAGE,
           stakeTab: StakeAction.LOCK,
@@ -283,11 +281,9 @@ describe('StakeModuleWidget tests', () => {
     } as any);
 
     const onWidgetStateChangeMock = vi.fn();
-    const addRecentTransactionMock = vi.fn();
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        addRecentTransaction={addRecentTransactionMock}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
           flow: StakeFlow.OPEN
@@ -335,7 +331,6 @@ describe('StakeModuleWidget tests', () => {
 
     const { rerender } = renderWithWagmiWrapper(
       <StakeModuleWidget
-        addRecentTransaction={() => {}}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
           flow: StakeFlow.OPEN
@@ -351,7 +346,6 @@ describe('StakeModuleWidget tests', () => {
     // Rerender with loading status
     rerender(
       <StakeModuleWidget
-        addRecentTransaction={() => {}}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
           flow: StakeFlow.OPEN
@@ -362,7 +356,6 @@ describe('StakeModuleWidget tests', () => {
     // Rerender with success status
     rerender(
       <StakeModuleWidget
-        addRecentTransaction={() => {}}
         onWidgetStateChange={onWidgetStateChangeMock}
         externalWidgetState={{
           flow: StakeFlow.OPEN
@@ -399,7 +392,6 @@ describe('StakeModuleWidget tests', () => {
 
     renderWithWagmiWrapper(
       <StakeModuleWidget
-        addRecentTransaction={() => {}}
         onStakeUrnChange={onStakeUrnChangeMock}
         externalWidgetState={{
           flow: StakeFlow.MANAGE

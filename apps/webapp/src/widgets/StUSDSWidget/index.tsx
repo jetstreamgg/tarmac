@@ -58,7 +58,6 @@ export type StUSDSWidgetProps = WidgetProps & {
 
 // HOC Widget
 const StUSDSWidgetWrapped = ({
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
@@ -187,7 +186,6 @@ const StUSDSWidgetWrapped = ({
     mutateStUsds,
     mutateCurveUsdsAllowance,
     mutateCurveStUsdsAllowance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

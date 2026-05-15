@@ -27,8 +27,6 @@ type WidgetPaneProps = {
 
 export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   const { data: currentUrnIndex } = useSealCurrentIndex();
-  // Transaction tracking removed - was using RainbowKit
-  const addRecentTransaction = () => {}; // No-op for now
   const { setSelectedSealUrnIndex } = useConfigContext();
   const [shouldHideLink, setShouldHideLink] = useState(false);
   const chainId = useChainId();
@@ -98,7 +96,6 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   }, []);
 
   const sharedProps = {
-    addRecentTransaction,
     rightHeaderComponent,
     onSealUrnChange
   };

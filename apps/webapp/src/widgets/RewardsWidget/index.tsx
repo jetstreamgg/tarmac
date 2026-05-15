@@ -55,7 +55,6 @@ export type RewardsWidgetProps = WidgetProps & {
 
 // HOC Widget
 const RewardsWidgetWrapped = ({
-  addRecentTransaction,
   rightHeaderComponent,
   onRewardContractChange,
   externalWidgetState,
@@ -169,7 +168,6 @@ const RewardsWidgetWrapped = ({
     rewardsBalance,
     needsAllowance,
     shouldUseBatch,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

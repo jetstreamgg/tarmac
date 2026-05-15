@@ -299,32 +299,20 @@ describe('PsmConversionWidget', () => {
   });
 
   it('forwards transaction starts into the shared transaction callbacks', async () => {
-    const addRecentTransaction = vi.fn();
     const onWidgetStateChange = vi.fn();
 
-    renderWithI18n(
-      <PsmConversionWidget
-        {...widgetProps}
-        addRecentTransaction={addRecentTransaction}
-        onWidgetStateChange={onWidgetStateChange}
-      />
-    );
+    renderWithI18n(<PsmConversionWidget {...widgetProps} onWidgetStateChange={onWidgetStateChange} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm conversion' }));
 
     await waitFor(() => {
-      expect(addRecentTransaction).toHaveBeenCalledWith({
-        hash: '0x123',
-        description: 'Convert USDC into USDS'
-      });
+      expect(onWidgetStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hash: '0x123',
+          txStatus: TxStatus.LOADING
+        })
+      );
     });
-
-    expect(onWidgetStateChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        hash: '0x123',
-        txStatus: TxStatus.LOADING
-      })
-    );
   });
 });

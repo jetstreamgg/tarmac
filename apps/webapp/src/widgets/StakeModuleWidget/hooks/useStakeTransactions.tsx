@@ -10,10 +10,7 @@ import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { StakeAction, StakeFlow } from '../lib/constants';
 import { useConnection } from 'wagmi';
 
-interface UseStakeTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseStakeTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   lockAmount: bigint;
@@ -63,7 +60,6 @@ export const useStakeTransactions = ({
   setRestakeSkyAmount,
   mutateStakeSkyAllowance,
   mutateStakeUsdsAllowance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -92,7 +88,6 @@ export const useStakeTransactions = ({
       setRestakeSkyAmount,
       mutateStakeSkyAllowance,
       mutateStakeUsdsAllowance,
-      addRecentTransaction,
       onWidgetStateChange,
       onNotification,
       onAnalyticsEvent,

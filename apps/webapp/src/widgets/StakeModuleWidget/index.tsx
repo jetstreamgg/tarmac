@@ -61,7 +61,6 @@ export type OnStakeUrnChange = (
 type StakeModuleWidgetProps = WidgetProps & {
   onStakeUrnChange?: OnStakeUrnChange;
   onShowHelpModal?: () => void;
-  addRecentTransaction: any;
   disclaimer?: React.ReactNode;
 };
 
@@ -71,7 +70,6 @@ function StakeModuleWidgetWrapped({
   externalWidgetState,
   onWidgetStateChange,
   onShowHelpModal,
-  addRecentTransaction,
   disclaimer
 }: StakeModuleWidgetProps) {
   const onConnect = useCustomConnectModal();
@@ -210,7 +208,6 @@ function StakeModuleWidgetWrapped({
     setRestakeSkyAmount,
     mutateStakeSkyAllowance,
     mutateStakeUsdsAllowance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

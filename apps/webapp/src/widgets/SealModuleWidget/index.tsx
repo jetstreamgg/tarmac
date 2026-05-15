@@ -36,7 +36,7 @@ import {
   useUrnSelectedRewardContract,
   useUrnSelectedVoteDelegate
 } from '@/hooks';
-import { formatBigInt, getTransactionLink } from '@/utils';
+import { getTransactionLink } from '@/utils';
 import { useDebounce, useIsSafeWallet } from '@/hooks';
 import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetState';
 import { SealModuleTransactionStatus } from './components/SealModuleTransactionStatus';
@@ -54,7 +54,6 @@ import { useNotification } from '@/modules/app/hooks/useNotification';
 type SealModuleWidgetProps = WidgetProps & {
   onSealUrnChange?: OnSealUrnChange;
   onNavigateToStakeWidget?: () => void;
-  addRecentTransaction: any;
   termsLink?: { url: string; name: string };
   mkrSkyUpgradeUrl?: string;
 };
@@ -65,7 +64,6 @@ export const SealModuleWidget = ({
   externalWidgetState,
   onWidgetStateChange,
   onNavigateToStakeWidget,
-  addRecentTransaction,
   termsLink,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) => {
@@ -79,7 +77,6 @@ export const SealModuleWidget = ({
             onSealUrnChange={onSealUrnChange}
             externalWidgetState={externalWidgetState}
             onWidgetStateChange={onWidgetStateChange}
-            addRecentTransaction={addRecentTransaction}
             termsLink={termsLink}
             onNavigateToStakeWidget={onNavigateToStakeWidget}
             mkrSkyUpgradeUrl={mkrSkyUpgradeUrl}
@@ -95,7 +92,6 @@ function SealModuleWidgetWrapped({
   onSealUrnChange,
   externalWidgetState,
   onWidgetStateChange,
-  addRecentTransaction,
   termsLink,
   onNavigateToStakeWidget,
   mkrSkyUpgradeUrl
@@ -196,10 +192,6 @@ function SealModuleWidgetWrapped({
   const repayUsdsApprove = useSealUsdsApprove({
     amount: debouncedUsdsAmount,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Approving ${formatBigInt(debouncedUsdsAmount)} USDS`
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -233,7 +225,6 @@ function SealModuleWidgetWrapped({
     calldata,
     enabled: widgetState.action === SealAction.MULTICALL && !!allStepsComplete,
     onStart: (hash: string) => {
-      addRecentTransaction?.({ hash, description: t`Doing multicall` });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -266,10 +257,6 @@ function SealModuleWidgetWrapped({
     to: address,
     enabled: indexToClaim !== undefined && !!rewardContractToClaim && !!address,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: 'Claiming rewards'
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });

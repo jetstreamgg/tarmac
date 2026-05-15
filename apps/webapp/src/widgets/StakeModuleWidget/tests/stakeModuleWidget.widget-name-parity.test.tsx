@@ -21,7 +21,7 @@ describe('StakeModuleWidget widget-name parity', () => {
   });
 
   it("calls useWidgetAnalytics with the hardcoded widgetName 'stake'", async () => {
-    render(<StakeModuleWidget addRecentTransaction={() => {}} />, { wrapper: WagmiWrapper });
+    render(<StakeModuleWidget />, { wrapper: WagmiWrapper });
     await waitFor(() => {
       expect(captured.args).toBeDefined();
     });

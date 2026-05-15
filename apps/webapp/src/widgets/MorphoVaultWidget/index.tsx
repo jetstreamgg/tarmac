@@ -60,7 +60,6 @@ const MorphoVaultWidgetWrapped = ({
   assetAddress,
   assetToken,
   vaultName = 'Vault',
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
@@ -193,7 +192,6 @@ const MorphoVaultWidgetWrapped = ({
     mutateAllowance,
     mutateVaultData,
     mutateAssetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

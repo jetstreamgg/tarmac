@@ -80,7 +80,6 @@ export type TradeWidgetProps = WidgetProps & {
 };
 
 function TradeWidgetWrapped({
-  addRecentTransaction,
   rightHeaderComponent,
   customTokenList = [],
   disallowedPairs = defaultConfig.tradeDisallowedPairs,
@@ -488,13 +487,6 @@ function TradeWidgetWrapped({
     amount: quoteData?.quote.sellAmountToSign,
     tokenAddress: originTokenAddress,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Approving ${formatBigInt(debouncedOriginAmount, {
-          locale,
-          unit: getTokenDecimals(originToken, chainId)
-        })} ${originToken?.symbol ?? ''}`
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -711,13 +703,6 @@ function TradeWidgetWrapped({
     order: quoteData,
     enabled: originToken?.isNative ? true : false,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Sending ${formatBigInt(debouncedOriginAmount, {
-          locale,
-          unit: getTokenDecimals(originToken, chainId)
-        })} ${originToken?.symbol ?? ''} to the EthFlow contract`
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       setEthFlowTxStatus(EthFlowTxStatus.SENDING_ETH);
@@ -840,10 +825,6 @@ function TradeWidgetWrapped({
     enabled: isSmartContractWallet,
     onStart: (hash: string) => {
       setCancelLoading(true);
-      addRecentTransaction?.({
-        hash,
-        description: t`Canceling order`
-      });
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },

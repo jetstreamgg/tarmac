@@ -45,7 +45,6 @@ export type SavingsWidgetProps = WidgetProps;
 
 // HOC Widget
 const SavingsWidgetWrapped = ({
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
@@ -146,7 +145,6 @@ const SavingsWidgetWrapped = ({
     mutateAllowance,
     mutateSavings,
     mutateOriginBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

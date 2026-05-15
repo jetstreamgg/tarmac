@@ -63,7 +63,6 @@ export type TradeWidgetProps = WidgetProps & {
 };
 
 function TradeWidgetWrapped({
-  addRecentTransaction,
   rightHeaderComponent,
   customTokenList = [],
   disallowedPairs = defaultConfig.tradeDisallowedPairs,
@@ -536,7 +535,6 @@ function TradeWidgetWrapped({
     referralCode: REFERRAL_CODE,
     maxAmountInForWithdraw,
     shouldUseBatch,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

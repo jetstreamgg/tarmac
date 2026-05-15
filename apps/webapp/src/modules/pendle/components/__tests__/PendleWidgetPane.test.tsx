@@ -188,7 +188,6 @@ function renderComponent(ui: ReactNode) {
 }
 
 const sharedProps = {
-  addRecentTransaction: () => undefined,
   rightHeaderComponent: <span />,
   shouldReset: false
 };

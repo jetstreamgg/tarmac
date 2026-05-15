@@ -15,10 +15,7 @@ import { useMemo, useRef } from 'react';
 import { useChainId } from 'wagmi';
 import { SavingsAction, SavingsFlow } from '@/widgets/SavingsWidget/lib/constants';
 
-interface UseL2SavingsTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseL2SavingsTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
@@ -35,7 +32,6 @@ export const useL2SavingsTransactionCallbacks = ({
   originToken,
   needsAllowance,
   shouldUseBatch,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -45,7 +41,6 @@ export const useL2SavingsTransactionCallbacks = ({
 }: UseL2SavingsTransactionCallbacksParameters) => {
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -91,13 +86,7 @@ export const useL2SavingsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Supplying ${formatBigInt(amount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken.symbol}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         supplyStepRef.current = 0;
@@ -185,13 +174,7 @@ export const useL2SavingsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Withdrawing ${formatBigInt(amount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken.symbol}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         withdrawStepRef.current = 0;

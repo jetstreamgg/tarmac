@@ -64,7 +64,6 @@ export type UpgradeWidgetProps = WidgetProps & {
 };
 
 export function UpgradeWidgetWrapped({
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
@@ -229,7 +228,6 @@ export function UpgradeWidgetWrapped({
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

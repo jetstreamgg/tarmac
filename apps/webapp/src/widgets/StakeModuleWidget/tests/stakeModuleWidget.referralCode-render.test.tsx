@@ -21,7 +21,7 @@ import { StakeModuleWidget } from '..';
 
 describe('StakeModuleWidget referralCode render-layer parity', () => {
   it('renders without errors; refCode contract-arg assertion is covered at Gate 2 in context.test.tsx', async () => {
-    const { container } = render(<StakeModuleWidget addRecentTransaction={() => {}} />, {
+    const { container } = render(<StakeModuleWidget />, {
       wrapper: WagmiWrapper
     });
     // Gate 3 smoke: the widget must render to confirm REFERRAL_CODE is imported and reachable.

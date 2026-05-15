@@ -70,7 +70,6 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetToken
 };
 
 function PsmConversionWidgetWrapped({
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
@@ -172,7 +171,6 @@ function PsmConversionWidgetWrapped({
   const stepRef = useRef(0);
 
   const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -228,14 +226,7 @@ function PsmConversionWidgetWrapped({
       });
     },
     onStart: hash => {
-      const current = transactionStateRef.current;
-      handleOnStart({
-        hash,
-        recentTransactionDescription:
-          current.action === PsmConversionAction.APPROVE
-            ? t`Approving ${current.originToken?.symbol || ''}`
-            : t`Convert ${current.originToken?.symbol || ''} into ${current.targetToken?.symbol || ''}`
-      });
+      handleOnStart({ hash });
     },
     onSuccess: hash => {
       const current = transactionStateRef.current;

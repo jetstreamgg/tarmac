@@ -13,10 +13,7 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared
 import { useMemo, useRef } from 'react';
 import { StakeFlow } from '../lib/constants';
 
-interface UseStakeTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseStakeTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   lockAmount: bigint;
@@ -55,7 +52,6 @@ export const useStakeTransactionCallbacks = ({
   setRestakeSkyAmount,
   mutateStakeSkyAllowance,
   mutateStakeUsdsAllowance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -80,7 +76,6 @@ export const useStakeTransactionCallbacks = ({
 
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -171,7 +166,7 @@ export const useStakeTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: t`Doing multicall` });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         stepRef.current = 0;
@@ -246,7 +241,7 @@ export const useStakeTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: 'Claiming rewards' });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         //TODO: Update copy

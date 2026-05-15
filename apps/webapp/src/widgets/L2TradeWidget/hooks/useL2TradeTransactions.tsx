@@ -6,10 +6,7 @@ import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { TradeAction } from '@/widgets/TradeWidget/lib/constants';
 import { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 
-interface UseL2TradeTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseL2TradeTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   originAmount: bigint;
   originToken: TokenForChain | undefined;
@@ -34,7 +31,6 @@ export const useL2TradeTransactions = ({
   referralCode,
   maxAmountInForWithdraw,
   shouldUseBatch,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -54,7 +50,6 @@ export const useL2TradeTransactions = ({
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

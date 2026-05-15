@@ -12,10 +12,7 @@ import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared
 import { useMemo, useRef } from 'react';
 import { MorphoVaultAction, MorphoVaultFlow } from '../lib/constants';
 
-interface UseMorphoVaultTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseMorphoVaultTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
@@ -50,14 +47,12 @@ export const useMorphoVaultTransactionCallbacks = ({
   mutateAllowance,
   mutateVaultData,
   mutateAssetBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
 }: UseMorphoVaultTransactionCallbacksParameters) => {
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -105,10 +100,7 @@ export const useMorphoVaultTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Supplying ${formatBigInt(amount, { unit: assetDecimals })} ${assetSymbol}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         supplyStepRef.current = 0;
@@ -185,10 +177,7 @@ export const useMorphoVaultTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Withdrawing ${formatBigInt(amount, { unit: assetDecimals })} ${assetSymbol}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         handleOnSuccess({

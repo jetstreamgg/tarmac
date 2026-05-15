@@ -62,9 +62,6 @@ type WidgetPaneProps = {
 export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const chainId = useChainId();
 
-  // No-op: ConnectedModal now uses subgraph data instead of localStorage
-  const addRecentTransaction = () => {};
-
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
@@ -89,7 +86,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sharedProps = {
-    addRecentTransaction,
     rightHeaderComponent,
     shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };

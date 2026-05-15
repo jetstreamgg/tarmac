@@ -16,10 +16,7 @@ import { useChainId } from 'wagmi';
 import { RewardsAction } from '../lib/constants';
 import { useRewardsTransactionCallbacks } from './useRewardsTransactionCallbacks';
 
-interface UseRewardsTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange'
-> {
+interface UseRewardsTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
   onNotification?: OnNotificationCallback;
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   selectedRewardContract: RewardContract | undefined;
@@ -42,7 +39,6 @@ export const useRewardsTransactions = ({
   rewardsBalance,
   needsAllowance,
   shouldUseBatch,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -68,7 +64,6 @@ export const useRewardsTransactions = ({
     mutateTokenBalance,
     mutateRewardsBalance,
     mutateUserSuppliedBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,
