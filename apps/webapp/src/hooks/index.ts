@@ -372,7 +372,8 @@ export {
   TRUST_LEVELS,
   URL_SKY_SUBGRAPH,
   ZERO_ADDRESS,
-  ZERO_BYTES32
+  ZERO_BYTES32,
+  TENDERLY_CHAIN_ID
 } from './constants';
 
 export { SupportedCollateralTypes } from './vaults/vaults.constants';
