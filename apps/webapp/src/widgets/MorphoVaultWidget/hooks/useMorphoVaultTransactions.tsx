@@ -1,19 +1,20 @@
-import {
-  useBatchMorphoVaultDeposit,
-  useMorphoVaultWithdraw,
-  useMorphoVaultRedeem
-} from '@/hooks';
+import { useBatchMorphoVaultDeposit, useMorphoVaultWithdraw, useMorphoVaultRedeem } from '@/hooks';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { useContext } from 'react';
 import { MorphoVaultAction, MorphoVaultFlow } from '../lib/constants';
-import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { useMorphoVaultTransactionCallbacks } from './useMorphoVaultTransactionCallbacks';
 
 interface UseMorphoVaultTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange'
 > {
   onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   /** Amount of underlying assets to deposit/withdraw */
   amount: bigint;
   /** User's vault shares (used for redeem) */

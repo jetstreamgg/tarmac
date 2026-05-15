@@ -40,6 +40,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -64,19 +65,19 @@ const MorphoVaultWidgetWrapped = ({
   externalWidgetState,
   onStateValidated,
   onWidgetStateChange,
-  onAnalyticsEvent,
   onBackToVaults
 }: MorphoVaultWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('vaults', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState, [assetToken.symbol]);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const { onExternalLinkClicked } = useConfigContext();

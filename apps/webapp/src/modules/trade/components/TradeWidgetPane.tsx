@@ -1,10 +1,4 @@
-import {
-  TradeWidget,
-  TxStatus,
-  TradeAction,
-  WidgetStateChangeParams,
-  L2TradeWidget
-} from '@/widgets';
+import { TradeWidget, TxStatus, TradeAction, WidgetStateChangeParams, L2TradeWidget } from '@/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
@@ -20,7 +14,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
@@ -35,7 +28,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isCowSupported = isCowSupportedChainId(chainId);
 
-  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { isRegionRestricted } = useGeoConfig();
   const tradeTokenList = isRegionRestricted
     ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
@@ -215,7 +207,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
       customTokenList={tradeTokenList}
       onWidgetStateChange={onTradeWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       externalWidgetState={externalWidgetState}

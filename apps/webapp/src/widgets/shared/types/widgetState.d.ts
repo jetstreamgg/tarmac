@@ -113,6 +113,8 @@ export type WidgetMessage = {
 
 export type OnNotificationCallback = (message: WidgetMessage) => void;
 
+export type OnAnalyticsEventCallback = (event: WidgetAnalyticsEvent) => void;
+
 export type WidgetStateChangeParams = {
   hash?: string;
   txStatus: TxStatus;
@@ -134,7 +136,6 @@ export type WidgetProps = {
   externalWidgetState?: ExternalWidgetState;
   onStateValidated?: (state: State) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
-  onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
   onCustomNavigation?: () => void;
   customNavigationLabel?: string;
   shouldReset?: boolean;

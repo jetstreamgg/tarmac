@@ -15,7 +15,6 @@ const setSearchParamsMock = vi.fn(
 );
 
 const setSelectedConvertOptionMock = vi.fn();
-const onAnalyticsEventMock = vi.fn();
 
 let capturedWidgetProps: Record<string, any> | undefined;
 
@@ -34,10 +33,6 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({
     setSelectedConvertOption: setSelectedConvertOptionMock
   })
-}));
-
-vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
-  useWidgetAnalytics: () => onAnalyticsEventMock
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -66,7 +61,6 @@ describe('PsmConversionWidgetPane', () => {
     capturedWidgetProps = undefined;
     setSearchParamsMock.mockClear();
     setSelectedConvertOptionMock.mockClear();
-    onAnalyticsEventMock.mockClear();
   });
 
   it('passes URL-derived external state into the widget', () => {
@@ -76,7 +70,6 @@ describe('PsmConversionWidgetPane', () => {
       amount: '10',
       token: 'USDC'
     });
-    expect(capturedWidgetProps?.onAnalyticsEvent).toBe(onAnalyticsEventMock);
   });
 
   it('syncs updated widget state back into URL params in psm context', () => {

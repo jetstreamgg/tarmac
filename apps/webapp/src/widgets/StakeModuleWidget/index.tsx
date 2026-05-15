@@ -51,6 +51,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { REFERRAL_CODE } from '@/lib/constants';
 
 export type OnStakeUrnChange = (
@@ -69,7 +70,6 @@ function StakeModuleWidgetWrapped({
   onStakeUrnChange,
   externalWidgetState,
   onWidgetStateChange,
-  onAnalyticsEvent,
   onShowHelpModal,
   addRecentTransaction,
   disclaimer
@@ -78,6 +78,8 @@ function StakeModuleWidgetWrapped({
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
   const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('stake', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -92,7 +94,6 @@ function StakeModuleWidgetWrapped({
     setShowStepIndicator
   } = useContext(WidgetContext);
   const { i18n } = useLingui();
-  const chainId = useChainId();
   const { isConnected, isConnecting, address } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);

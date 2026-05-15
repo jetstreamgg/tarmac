@@ -6,7 +6,11 @@ import {
   useRewardsWithdraw
 } from '@/hooks';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { useContext } from 'react';
 import { useChainId } from 'wagmi';
 import { RewardsAction } from '../lib/constants';
@@ -14,9 +18,10 @@ import { useRewardsTransactionCallbacks } from './useRewardsTransactionCallbacks
 
 interface UseRewardsTransactionsParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange'
 > {
   onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   selectedRewardContract: RewardContract | undefined;
   referralCode: number | undefined;
   amount: bigint;

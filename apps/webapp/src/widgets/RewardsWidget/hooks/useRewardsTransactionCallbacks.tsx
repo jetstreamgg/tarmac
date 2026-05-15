@@ -12,16 +12,22 @@ import { useConnection, useChainId } from 'wagmi';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps, WidgetState, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  WidgetState,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useContext, useMemo, useRef } from 'react';
 import { RewardsAction, RewardsFlow, RewardsScreen } from '../lib/constants';
 
 interface UseRewardsTransactionCallbacksParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange'
 > {
   onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   selectedRewardContract: RewardContract | undefined;
   amount: bigint;
   rewardsBalance: bigint | undefined;

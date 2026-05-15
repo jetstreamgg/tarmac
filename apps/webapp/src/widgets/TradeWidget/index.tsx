@@ -69,6 +69,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
@@ -88,7 +89,6 @@ function TradeWidgetWrapped({
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onAnalyticsEvent,
   tokensLocked = false,
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
@@ -96,6 +96,8 @@ function TradeWidgetWrapped({
   const { onExternalLinkClicked } = useConfigContext();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const [tradeAnyway, setTradeAnyway] = useState(false);
@@ -114,7 +116,6 @@ function TradeWidgetWrapped({
   );
   const [formattedExecutedBuyAmount, setFormattedExecutedBuyAmount] = useState<string | undefined>(undefined);
 
-  const chainId = useChainId();
   const isChainL2 = isL2ChainId(chainId);
   const { address, isConnecting, isConnected } = useConnection();
   const isSafeWallet = useIsSafeWallet();

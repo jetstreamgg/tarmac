@@ -45,6 +45,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { REFERRAL_CODE } from '@/lib/constants';
 
 export type RewardsWidgetProps = WidgetProps & {
@@ -60,14 +61,14 @@ const RewardsWidgetWrapped = ({
   externalWidgetState,
   onStateValidated,
   onWidgetStateChange,
-  onAnalyticsEvent,
   disclaimer
 }: RewardsWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onNotification = useNotification();
-  const validatedExternalState = getValidatedState(externalWidgetState);
   const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('rewards', chainId);
+  const validatedExternalState = getValidatedState(externalWidgetState);
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const { onExternalLinkClicked } = useConfigContext();

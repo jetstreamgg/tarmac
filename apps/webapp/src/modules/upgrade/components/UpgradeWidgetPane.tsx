@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
-import { useConfig as useWagmiConfig, useChainId } from 'wagmi';
+import { useConfig as useWagmiConfig } from 'wagmi';
 import { TOKENS, useUpgradeHistory } from '@/hooks';
 import {
   TxStatus,
@@ -22,7 +22,6 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -31,7 +30,6 @@ const targetTokenFromSourceToken = (sourceToken?: string) => {
 };
 
 export function UpgradeWidgetPane(sharedProps: SharedProps) {
-  const chainId = useChainId();
   const subgraphUrl = useSubgraphUrl();
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedConvertOption } =
     useConfigContext();
@@ -47,8 +45,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
 
   // Get source_token from URL params
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
-
-  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
 
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
@@ -268,7 +264,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
             : undefined) as keyof typeof upgradeTokens | undefined
       }}
       onWidgetStateChange={onUpgradeWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={upgradeOptions}

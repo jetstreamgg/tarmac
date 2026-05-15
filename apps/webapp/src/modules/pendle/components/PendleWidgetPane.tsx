@@ -4,24 +4,13 @@ import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
-import {
-  isMarketMatured,
-  PENDLE_MARKETS,
-  usePendleUserPtBalances,
-  type PendleMarketConfig
-} from '@/hooks';
+import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { isTestnetId } from '@/utils';
-import {
-  CardAnimationWrapper,
-  PendleWidget,
-  WidgetContainer,
-  positionAnimations
-} from '@/widgets';
+import { CardAnimationWrapper, PendleWidget, WidgetContainer, positionAnimations } from '@/widgets';
 import { FixedIntent } from '@/lib/enums';
 import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { PendleMarketStatsCard } from './PendleMarketStatsCard';
 import { PendleReadyToRedeemList } from './PendleReadyToRedeemList';
 
@@ -35,7 +24,6 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
-  const onAnalyticsEvent = useWidgetAnalytics('fixed', chainId);
 
   const selectedMarketAddress = searchParams.get(QueryParams.Market);
   const selectedMarket = useMemo(() => findMarket(selectedMarketAddress), [selectedMarketAddress]);
@@ -102,12 +90,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
         className="h-full"
       >
         {showSelectedMarket ? (
-          <PendleWidget
-            {...sharedProps}
-            market={selectedMarket!}
-            onBackToPendle={handleBack}
-            onAnalyticsEvent={onAnalyticsEvent}
-          />
+          <PendleWidget {...sharedProps} market={selectedMarket!} onBackToPendle={handleBack} />
         ) : (
           <WidgetContainer
             header={

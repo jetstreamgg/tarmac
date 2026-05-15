@@ -56,6 +56,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type UpgradeWidgetProps = WidgetProps & {
   upgradeOptions?: Token[];
@@ -70,7 +71,6 @@ export function UpgradeWidgetWrapped({
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onAnalyticsEvent,
   upgradeOptions = defaultUpgradeOptions,
   disallowedFlow,
   onBackToConvert
@@ -79,6 +79,8 @@ export function UpgradeWidgetWrapped({
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const { onExternalLinkClicked } = useConfigContext();
   const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);
 
@@ -86,7 +88,6 @@ export function UpgradeWidgetWrapped({
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);

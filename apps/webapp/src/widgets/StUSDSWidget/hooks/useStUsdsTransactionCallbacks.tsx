@@ -4,7 +4,11 @@ import { t } from '@lingui/core/macro';
 import { formatUnits } from 'viem';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useMemo, useRef } from 'react';
 import { useChainId } from 'wagmi';
@@ -12,9 +16,10 @@ import { StUSDSAction, StUSDSFlow } from '../lib/constants';
 
 interface UseStUsdsTransactionCallbacksParameters extends Pick<
   WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
+  'addRecentTransaction' | 'onWidgetStateChange'
 > {
   onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
   needsAllowance: boolean;
   shouldUseBatch: boolean;

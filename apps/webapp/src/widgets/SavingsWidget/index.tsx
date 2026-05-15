@@ -38,6 +38,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { REFERRAL_CODE } from '@/lib/constants';
 
 export type SavingsWidgetProps = WidgetProps;
@@ -48,19 +49,19 @@ const SavingsWidgetWrapped = ({
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onWidgetStateChange,
-  onAnalyticsEvent
+  onWidgetStateChange
 }: SavingsWidgetProps) => {
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('savings', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState, ['USDS', 'DAI']);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const { onExternalLinkClicked } = useConfigContext();

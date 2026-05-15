@@ -11,6 +11,7 @@ import { I18nWidgetProvider } from '../../src/widgets/context/I18nWidgetProvider
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConnectedContext } from '../../src/modules/ui/context/ConnectedContext';
 import { ConnectModalContext } from '../../src/modules/ui/context/ConnectModalContext';
+import { AnalyticsFlowProvider } from '../../src/modules/analytics/context/AnalyticsFlowContext';
 import { getTenderlyChains } from './tenderlyChain';
 
 // TODO move this file (along with its counterpart in hooks) into a tests helper package or something
@@ -67,18 +68,20 @@ export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
           <I18nWidgetProvider locale="en">
             <ConnectedContext.Provider value={testConnectedContextValue}>
               <ConnectModalContext.Provider value={testConnectModalContextValue}>
-                <MakerHooksProvider
-                  config={{
-                    delegates: {
-                      ens: normalize('vitalik.eth')
-                    },
-                    ipfs: {
-                      gateway: 'dweb.link'
-                    }
-                  }}
-                >
-                  {children}
-                </MakerHooksProvider>
+                <AnalyticsFlowProvider>
+                  <MakerHooksProvider
+                    config={{
+                      delegates: {
+                        ens: normalize('vitalik.eth')
+                      },
+                      ipfs: {
+                        gateway: 'dweb.link'
+                      }
+                    }}
+                  >
+                    {children}
+                  </MakerHooksProvider>
+                </AnalyticsFlowProvider>
               </ConnectModalContext.Provider>
             </ConnectedContext.Provider>
           </I18nWidgetProvider>

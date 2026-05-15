@@ -5,14 +5,10 @@ import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { ConvertIntent } from '@/lib/enums';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
-import { useChainId } from 'wagmi';
 
 export function PsmConversionWidgetPane(sharedProps: SharedProps) {
-  const chainId = useChainId();
   const [searchParams, setSearchParams] = useSearchParams();
   const { setSelectedConvertOption } = useConfigContext();
-  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
   const sourceTokenParam = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
@@ -77,7 +73,6 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
     <PsmConversionWidget
       {...sharedProps}
       onWidgetStateChange={onPsmConversionWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       externalWidgetState={externalWidgetState}
       onBackToConvert={handleBackToConvert}
     />

@@ -2,19 +2,19 @@ import { useRef } from 'react';
 import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { getTransactionLink } from '@/utils';
-import {
-  PendleConvertSide,
-  type PendleConvertQuote,
-  type PendleMarketConfig,
-  type Token
-} from '@/hooks';
+import { PendleConvertSide, type PendleConvertQuote, type PendleMarketConfig, type Token } from '@/hooks';
 import { TxStatus } from '@/widgets/shared/constants';
-import { WidgetProps, WidgetState, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetState,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { PendleFlow, PendleScreen } from '../lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '../lib/pendleAnalyticsData';
 
-type UsePendleTransactionCallbacksParameters = Pick<WidgetProps, 'onAnalyticsEvent'> & {
+type UsePendleTransactionCallbacksParameters = {
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   onNotification?: OnNotificationCallback;
   flow: PendleFlow;
   side: PendleConvertSide;

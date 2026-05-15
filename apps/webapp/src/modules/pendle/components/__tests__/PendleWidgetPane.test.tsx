@@ -13,10 +13,6 @@ i18n.activate('en');
 const ACTIVE_MARKET_ADDRESS = '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33' as const;
 const MATURED_MARKET_ADDRESS = '0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1' as const;
 
-const onAnalyticsEventMock = vi.fn();
-
-let capturedWidgetProps: Record<string, any> | undefined;
-
 const hoisted = vi.hoisted(() => ({
   activeMarket: {
     name: 'PT-USDG',
@@ -89,10 +85,7 @@ vi.mock('@/widgets', async importOriginal => {
   return {
     ...actual,
     CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>,
-    PendleWidget: (props: Record<string, any>) => {
-      capturedWidgetProps = props;
-      return <div data-testid="pendle-widget-stub" />;
-    },
+    PendleWidget: () => <div data-testid="pendle-widget-stub" />,
     WidgetContainer: ({
       children,
       header,
@@ -143,10 +136,6 @@ vi.mock('motion/react', async importOriginal => {
 vi.mock('@/modules/layout/components/Typography', () => ({
   Heading: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: ReactNode }) => <div>{children}</div>
-}));
-
-vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
-  useWidgetAnalytics: () => onAnalyticsEventMock
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
@@ -213,8 +202,6 @@ describe('PendleWidgetPane', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('widget=fixed');
     setSearchParamsMock.mockClear();
-    onAnalyticsEventMock.mockClear();
-    capturedWidgetProps = undefined;
     // Reset connection + balances between tests.
     hoisted.userAddress = undefined;
     hoisted.ptBalances = undefined;
@@ -244,18 +231,6 @@ describe('PendleWidgetPane', () => {
 
     // eslint-disable-next-line testing-library/no-container
     expect(container.querySelector('[data-testid="pendle-widget-stub"]')).not.toBeNull();
-
-    unmount();
-  });
-
-  it('passes the useWidgetAnalytics callback through to PendleWidget as onAnalyticsEvent', () => {
-    mockSearchParams = new URLSearchParams(
-      `widget=fixed&fixed_module=market&market=${ACTIVE_MARKET_ADDRESS}`
-    );
-
-    const { unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
-
-    expect(capturedWidgetProps?.onAnalyticsEvent).toBe(onAnalyticsEventMock);
 
     unmount();
   });

@@ -1,5 +1,10 @@
 import { useCallback, useContext } from 'react';
-import { WidgetProps, WidgetState, OnNotificationCallback } from '../types/widgetState';
+import {
+  WidgetProps,
+  WidgetState,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '../types/widgetState';
 import { WidgetAnalyticsEventType } from '../types/analyticsEvents';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { getTransactionLink } from '@/utils';
@@ -7,11 +12,9 @@ import { useIsSafeWallet } from '@/hooks';
 import { useConnection, useChainId } from 'wagmi';
 import { InitialScreen, NotificationType, TxStatus } from '../constants';
 
-type UseTransactionCallbacksParameters = Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onAnalyticsEvent'
-> & {
+type UseTransactionCallbacksParameters = Pick<WidgetProps, 'addRecentTransaction' | 'onWidgetStateChange'> & {
   onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
 };
 
 interface TransactionStartParameters {

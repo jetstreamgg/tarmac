@@ -51,6 +51,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { REFERRAL_CODE } from '@/lib/constants';
 
 export type TradeWidgetProps = WidgetProps & {
@@ -71,7 +72,6 @@ function TradeWidgetWrapped({
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onAnalyticsEvent,
   widgetTitle,
   tokensLocked = false,
   onBackToConvert
@@ -79,6 +79,8 @@ function TradeWidgetWrapped({
   const onConnect = useCustomConnectModal();
   const [batchEnabled, setBatchEnabled] = useBatchToggle();
   const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const validatedExternalState = getValidatedState(externalWidgetState);
@@ -89,7 +91,6 @@ function TradeWidgetWrapped({
 
   const [lastUpdated, setLastUpdated] = useState<TradeSide>(TradeSide.IN);
 
-  const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const { onExternalLinkClicked } = useConfigContext();

@@ -1,10 +1,4 @@
-import {
-  StUSDSWidget,
-  TxStatus,
-  StUSDSAction,
-  WidgetStateChangeParams,
-  StUSDSFlow
-} from '@/widgets';
+import { StUSDSWidget, TxStatus, StUSDSAction, WidgetStateChangeParams, StUSDSFlow } from '@/widgets';
 import { useSavingsHistory } from '@/hooks';
 import { ExpertIntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
@@ -14,8 +8,6 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { ExpertIntent } from '@/lib/enums';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
-import { useChainId } from 'wagmi';
 
 export function StUSDSWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -23,9 +15,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     useConfigContext();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const chainId = useChainId();
-  const onAnalyticsEvent = useWidgetAnalytics('expert', chainId);
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as StUSDSFlow | undefined;
 
@@ -116,7 +105,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     <StUSDSWidget
       {...sharedProps}
       onWidgetStateChange={onStUSDSWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
         flow
