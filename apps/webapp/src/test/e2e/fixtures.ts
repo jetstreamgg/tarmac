@@ -17,6 +17,7 @@ import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { NetworkName } from './utils/constants';
 import { getTestWalletAddress } from './utils/testWallets';
 import { optimism, unichain, arbitrum, base } from 'viem/chains';
+import { formatCspViolations, installCspViolationCollector, readCspViolations } from './utils/cspViolations';
 
 type WorkerFixture = {
   snapshotId: string | SnapshotInfo[];
@@ -139,10 +140,19 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
     // Set worker index in the environment with VITE_ prefix
     process.env.VITE_TEST_WORKER_INDEX = String(workerInfo.workerIndex);
 
+    await installCspViolationCollector(page.context());
+
     await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
     await page.route('**/ip/status', mockVpnCheck);
 
     await use(page);
+
+    const cspViolations = await readCspViolations(page);
+    if (cspViolations.length > 0) {
+      throw new Error(
+        `CSP blocked resources (update CONTENT_SECURITY_POLICY in vite.config.ts):\n${formatCspViolations(cspViolations)}`
+      );
+    }
   }
 });
 
