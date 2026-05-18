@@ -18,7 +18,8 @@ import {
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping,
-  FixedIntentMapping
+  FixedIntentMapping,
+  FIXED_YIELD_MODULE_ENABLED
 } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
@@ -78,8 +79,11 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   // If the intent maps to a restricted module, fall back to Balances
   const restrictedModuleId = intentToModule[intent];
+  const isFixedYieldDisabled = intent === Intent.FIXED_INTENT && !FIXED_YIELD_MODULE_ENABLED;
   const effectiveIntent =
-    restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
+    (restrictedModuleId && !isModuleEnabled(restrictedModuleId)) || isFixedYieldDisabled
+      ? Intent.BALANCES_INTENT
+      : intent;
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
@@ -203,16 +207,20 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         ? 'Use USDS or USDC to access the Sky Savings Rate'
         : 'Use USDS to access the Sky Savings Rate'
     ],
-    [
-      Intent.FIXED_INTENT,
-      'Fixed Yield',
-      Pendle,
-      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
-      false,
-      undefined,
-      'Lock in fixed yield via Pendle PT markets',
-      pendleSubItems
-    ],
+    ...(FIXED_YIELD_MODULE_ENABLED
+      ? [
+          [
+            Intent.FIXED_INTENT,
+            'Fixed Yield',
+            Pendle,
+            withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
+            false,
+            undefined,
+            'Lock in fixed yield via Pendle PT markets',
+            pendleSubItems
+          ]
+        ]
+      : []),
     [
       Intent.STAKE_INTENT,
       'Stake & Borrow',
