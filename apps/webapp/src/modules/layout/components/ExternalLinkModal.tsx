@@ -6,13 +6,14 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Text } from './Typography';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { Button } from '@/components/ui/button';
 import { Warning } from '@/modules/icons/Warning';
 import { ExternalLink } from './ExternalLink';
 import { sanitizeUrl } from '@/lib/utils';
+import { getTermsLinkConfig, reportTermsLinkConfigErrorOnce } from '@/modules/config/termsLink';
 
 export const ExternalLinkModal: React.FC = () => {
   const {
@@ -35,12 +36,16 @@ export const ExternalLinkModal: React.FC = () => {
     window.open(externalLinkModalUrl, '_blank', 'noopener,noreferrer');
   }, [externalLinkModalUrl, setExternalLinkModalOpened]);
 
-  let termsLink: any[] = [];
-  try {
-    termsLink = JSON.parse(import.meta.env.VITE_TERMS_LINK);
-  } catch (error) {
-    console.error('Error parsing terms link: ', error);
-  }
+  const { primaryTermsLink } = getTermsLinkConfig();
+
+  useEffect(() => {
+    reportTermsLinkConfigErrorOnce({
+      module: 'ui',
+      flow: 'external-link-modal',
+      action: 'parse-terms-link',
+      type: 'config_error'
+    });
+  }, []);
 
   return (
     <Dialog open={externalLinkModalOpened} onOpenChange={handleCancel}>
@@ -57,14 +62,14 @@ export const ExternalLinkModal: React.FC = () => {
             You are about to leave our website and enter a site controlled by an independent third party
             within the Sky Ecosystem. We disclaim any liability for your interaction with this, and any other,
             external sites hosted under sky.money subdomains. For more information, please visit our{' '}
-            {Array.isArray(termsLink) && termsLink.length > 0 ? (
+            {primaryTermsLink ? (
               <ExternalLink
                 skipConfirm
                 className="text-textEmphasis"
                 showIcon={false}
-                href={sanitizeUrl(termsLink[0].url)}
+                href={sanitizeUrl(primaryTermsLink.url)}
               >
-                {termsLink[0].name}
+                {primaryTermsLink.name}
               </ExternalLink>
             ) : (
               'Terms of Use'

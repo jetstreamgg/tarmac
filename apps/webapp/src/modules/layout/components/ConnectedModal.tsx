@@ -47,6 +47,7 @@ export function ConnectedModal({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
+        aria-describedby={undefined}
         className="bg-containerDark flex max-h-[calc(100dvh-32px)] flex-col gap-6 overflow-hidden p-4 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}

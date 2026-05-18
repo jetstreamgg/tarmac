@@ -13,6 +13,8 @@ import { sanitizeUrl } from '@/lib/utils';
 import { DialogTitle } from '@/components/ui/dialog';
 import { TermsDialog } from './TermsDialog';
 import { getTermsContent } from './terms-loader';
+import { reportError } from '@/modules/sentry/reportError';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 export function TermsModal() {
   const { closeModal, isModalOpen, openModal } = useTermsModal();
@@ -45,12 +47,23 @@ export function TermsModal() {
         setHasAcceptedTerms(true);
         closeModal();
       } else {
-        console.error('Failed to send signature');
+        reportError(new Error(`Failed to send signature: ${response.status}`), {
+          module: 'auth',
+          flow: 'terms-signature',
+          action: 'submit',
+          type: 'http_error',
+          statusCode: response.status
+        });
         setSignStatus('error');
         // TODO show error message to user
       }
     } catch (error) {
-      console.error('Error sending signature:', error);
+      reportError(error, {
+        module: 'auth',
+        flow: 'terms-signature',
+        action: 'submit',
+        type: 'request_error'
+      });
       setSignStatus('error');
       // TODO show error message to user
     }
@@ -60,8 +73,18 @@ export function TermsModal() {
     mutation: {
       onSuccess: data => onSuccess(data),
       onError: error => {
+        if (isUserRejectedRequestError(error)) {
+          setSignStatus('idle');
+          return;
+        }
+
         setSignStatus('error');
-        console.log('error signing message: ', error);
+        reportError(error, {
+          module: 'auth',
+          flow: 'terms-signature',
+          action: 'sign',
+          type: 'wallet_signature_error'
+        });
       }
     }
   });

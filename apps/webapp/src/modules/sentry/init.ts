@@ -91,16 +91,24 @@ export function initSentry(): void {
       // These are client-side network interruptions (mobile flap, page navigating away
       // mid-poll, DNS hiccup) — not actionable on our side. Edge-side blocks return an
       // HTTP response, so this filter cannot silence real server regressions. Scoped
-      // via the `endpoint` tag set in ConnectedContext so unrelated fetch failures
-      // elsewhere in the app still reach Sentry. One substring per browser engine:
+      // via the legacy `endpoint` tag and the newer `module`/`flow` tags set by
+      // reportError() so unrelated fetch failures elsewhere in the app still reach
+      // Sentry. One substring per browser engine:
       // Chromium "Failed to fetch", WebKit "Load failed", Gecko "NetworkError when
       // attempting to fetch resource.".
       const endpointTag = event.tags?.endpoint;
+      const errorModule = event.tags?.module;
+      const errorFlow = event.tags?.flow;
       const isNetworkLayerFetchError =
         message.includes('Failed to fetch') ||
         message.includes('Load failed') ||
         message.includes('NetworkError when attempting to fetch');
-      if (isNetworkLayerFetchError && (endpointTag === 'ip-status' || endpointTag === 'terms-check')) {
+      if (
+        isNetworkLayerFetchError &&
+        (endpointTag === 'ip-status' ||
+          endpointTag === 'terms-check' ||
+          (errorModule === 'auth' && (errorFlow === 'vpn-check' || errorFlow === 'terms-check')))
+      ) {
         return null;
       }
 

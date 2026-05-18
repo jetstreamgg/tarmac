@@ -84,7 +84,7 @@ export function useRewardsUserHistory({
 }): ReadHook & { data?: RewardUserHistoryItem[] } {
   const currentChainId = useChainId();
   const { address: userAddress } = useConnection();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(currentChainId) || '';
   //this hook is only used for mainnet, update this if this ever changes
   const chainIdToUse = isTestnetId(currentChainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
 

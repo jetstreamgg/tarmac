@@ -6,6 +6,8 @@ import { VStack } from '@/modules/layout/components/VStack';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Failure } from '@/modules/icons';
+import { reportError } from '@/modules/sentry/reportError';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 type ChainModalContextType = {
   handleSwitchChain: ({
@@ -49,12 +51,26 @@ export const ChainModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           onSuccess,
           onSettled,
           onError: error => {
-            console.error('[ChainModalContext] switchChain failed:', error);
+            if (isUserRejectedRequestError(error)) {
+              return;
+            }
 
             // Get chain name from the chainId
             const targetChain = chains.find(chain => chain.id === chainId);
             const chainName = targetChain?.name || `chain ID ${chainId}`;
             const walletName = connector?.name || 'Your wallet';
+
+            reportError(error, {
+              module: 'ui',
+              flow: 'switch-chain',
+              action: 'submit',
+              type: 'chain_switch_error',
+              extra: {
+                chainId,
+                chainName,
+                walletName
+              }
+            });
 
             // Check if it's specifically an unsupported chain error
             const errorMessage = error.message || '';
