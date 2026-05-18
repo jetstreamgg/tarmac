@@ -8,13 +8,10 @@ The on-chain exit fee is **0** — users withdraw 100% of their position.
 
 There are two SEAL Engine deployments. Check both — your position may be in either.
 
-| Contract              | Address                                      | Denomination |
-| --------------------- | -------------------------------------------- | ------------ |
-| LockstakeEngine (v2)  | `0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3` | SKY          |
-| LockstakeEngine (v1)  | `0x2b16C07D5fD5cC701a0a871eae2aad6DA5fc8f12` | MKR (legacy) |
-| LockstakeMigrator     | `0x473d02f88B53C310dD1f1f7A689b0723F3eF90B`  | v1 → v2      |
-
-**Legacy MKR holders must migrate to v2 first** via `LockstakeMigrator` (1 MKR → 24,000 SKY), then withdraw from v2.
+| Contract             | Address                                      | Denomination |
+| -------------------- | -------------------------------------------- | ------------ |
+| LockstakeEngine (v2) | `0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3` | SKY          |
+| LockstakeEngine (v1) | `0x2b16C07D5fD5cC701a0a871eae2aad6DA5fc8f12` | MKR (legacy) |
 
 ## Step 1 — Find your urn index
 
@@ -46,17 +43,9 @@ free(
 
 Use the `ink` value from `urns(...)` as `wad` to withdraw everything. Tokens are sent directly to the `to` address.
 
-## Legacy v1 (MKR) flow
-
-If your position is in the v1 engine:
-
-1. Call `LockstakeMigrator.migrate(<index>)` (or the appropriate migration entrypoint — check the migrator's Etherscan ABI).
-2. Your position is moved to v2 as SKY at the 1:24,000 conversion ratio.
-3. Follow the v2 withdrawal flow above against `LockstakeEngine v2`.
-
 ## Notes & gotchas
 
-- `wad` values are 18-decimal **SKY** in v2, not MKR. 1 MKR-equivalent position = 24,000e18 SKY.
+- `wad` values are 18-decimal — SKY in v2, MKR in v1.
 - `free` reverts if any USDS debt remains — always `wipeAll` first.
 - If `urnFarms(<urnAddress>)` is non-zero, `free` auto-withdraws from the farm; no explicit `selectFarm(0x0)` is required.
 - To claim pending rewards before withdrawing, call `getReward(<owner>, <index>, <farm>, <to>)`.
