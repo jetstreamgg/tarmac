@@ -4,17 +4,24 @@ import { t } from '@lingui/core/macro';
 import { getTransactionLink } from '@/utils';
 import {
   PendleConvertSide,
+  useAllPendleMarketsHistory,
   type PendleConvertQuote,
   type PendleMarketConfig,
   type Token
 } from '@/hooks';
 import { TxStatus } from '@/widgets/shared/constants';
-import { WidgetProps, WidgetState } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetState,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
-import { PendleFlow, PendleScreen } from '../lib/constants';
+import { PENDLE_HISTORY_REFRESH_MS, PendleFlow, PendleScreen } from '../lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '../lib/pendleAnalyticsData';
 
-type UsePendleTransactionCallbacksParameters = Pick<WidgetProps, 'onNotification' | 'onAnalyticsEvent'> & {
+type UsePendleTransactionCallbacksParameters = {
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
+  onNotification?: OnNotificationCallback;
   flow: PendleFlow;
   side: PendleConvertSide;
   market: PendleMarketConfig;
@@ -65,6 +72,8 @@ export function usePendleTransactionCallbacks({
 }: UsePendleTransactionCallbacksParameters) {
   // Tracks which step of a non-batch sequence we're on (approve → main).
   const supplyStepRef = useRef(0);
+
+  const { mutate: refreshPendleHistory } = useAllPendleMarketsHistory();
 
   const mainAction: 'supply' | 'withdraw' = side === PendleConvertSide.BUY ? 'supply' : 'withdraw';
   const analyticsSide: PendleAnalyticsSide = side === PendleConvertSide.BUY ? 'buy' : 'sell';
@@ -127,6 +136,9 @@ export function usePendleTransactionCallbacks({
       if (hash) {
         setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       }
+      // Pendle's PnL indexer needs ~20s after the receipt lands to expose the
+      // new row — see PENDLE_HISTORY_REFRESH_MS for measurements.
+      setTimeout(refreshPendleHistory, PENDLE_HISTORY_REFRESH_MS);
       onNotification?.({
         title: flow === PendleFlow.BUY ? t`Supply complete` : t`Withdrawal complete`,
         description:

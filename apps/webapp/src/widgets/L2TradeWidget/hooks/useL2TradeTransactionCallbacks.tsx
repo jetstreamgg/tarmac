@@ -7,14 +7,12 @@ import { notificationTypeMaping } from '@/widgets/shared/constants';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import { WidgetProps, OnNotificationCallback } from '@/widgets/shared/types/widgetState';
 import { useCallback, useContext, useMemo } from 'react';
 import { useChainId } from 'wagmi';
 
-interface UseL2TradeTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification'
-> {
+interface UseL2TradeTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
   originAmount: bigint;
   originToken: TokenForChain | undefined;
   targetAmount: bigint;
@@ -35,7 +33,6 @@ export const useL2TradeTransactionCallbacks = ({
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -44,7 +41,6 @@ export const useL2TradeTransactionCallbacks = ({
 }: UseL2TradeTransactionCallbacksParameters) => {
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -72,13 +68,7 @@ export const useL2TradeTransactionCallbacks = ({
         handleOnMutate();
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Trading ${formatBigInt(originAmount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken?.symbol ?? ''}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         handleOnSuccess({
@@ -149,13 +139,7 @@ export const useL2TradeTransactionCallbacks = ({
         handleOnMutate();
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Trading ${formatBigInt(originAmount, {
-            locale,
-            unit: originToken && getTokenDecimals(originToken, chainId)
-          })} ${originToken?.symbol ?? ''}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         handleOnSuccess({

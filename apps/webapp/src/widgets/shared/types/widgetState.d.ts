@@ -104,12 +104,16 @@ export type ExternalWidgetState = BalancesWidgetState &
   StakeWidgetState &
   SealWidgetState;
 
-type WidgetMessage = {
+export type WidgetMessage = {
   title: string;
   description: string;
   status: TxStatus;
   type?: NotificationType;
 };
+
+export type OnNotificationCallback = (message: WidgetMessage) => void;
+
+export type OnAnalyticsEventCallback = (event: WidgetAnalyticsEvent) => void;
 
 export type WidgetStateChangeParams = {
   hash?: string;
@@ -127,21 +131,13 @@ export type WidgetStateChangeParams = {
 };
 
 export type WidgetProps = {
-  onConnect?: () => void;
-  locale?: string;
-  addRecentTransaction?: (transaction: { hash: string; description: string }) => void;
   rightHeaderComponent?: React.ReactElement;
   externalWidgetState?: ExternalWidgetState;
   onStateValidated?: (state: State) => void;
-  onNotification?: (message: WidgetMessage) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
-  onAnalyticsEvent?: (event: WidgetAnalyticsEvent) => void;
   onCustomNavigation?: () => void;
   customNavigationLabel?: string;
-  enabled?: boolean;
-  referralCode?: number;
   shouldReset?: boolean;
-  legalBatchTxUrl?: string;
   disallowedFlow?:
     | BalancesFlow
     | SavingsFlow

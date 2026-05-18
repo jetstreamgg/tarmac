@@ -121,7 +121,7 @@ describe('Rewards widget tests', () => {
     vi.restoreAllMocks();
   });
   it('loads data when wrapped in wagmi config', async () => {
-    renderWithWagmiWrapper(<RewardsWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<RewardsWidget />);
 
     const item = await screen.findByText('Sky Token Rewards');
 

@@ -28,7 +28,7 @@ describe('Savings widget tests', () => {
   });
 
   it('loads data when wrapped in wagmi config', async () => {
-    renderWithWagmiWrapper(<SavingsWidget onConnect={() => true} />);
+    renderWithWagmiWrapper(<SavingsWidget />);
 
     const item = await screen.findByText('Supply');
 

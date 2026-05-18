@@ -21,8 +21,7 @@ export const RewardsTransactionReview = ({
   rewardToken,
   rewardAmount,
   needsAllowance,
-  selectedRewardContract,
-  legalBatchTxUrl
+  selectedRewardContract
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
@@ -31,7 +30,6 @@ export const RewardsTransactionReview = ({
   rewardAmount: bigint;
   needsAllowance: boolean;
   selectedRewardContract: RewardContract;
-  legalBatchTxUrl?: string;
 }) => {
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
@@ -85,11 +83,5 @@ export const RewardsTransactionReview = ({
     selectedRewardContract
   ]);
 
-  return (
-    <TransactionReview
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
-    />
-  );
+  return <TransactionReview batchEnabled={batchEnabled} setBatchEnabled={setBatchEnabled} />;
 };

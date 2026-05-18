@@ -58,11 +58,7 @@ export interface SealModuleWidgetContextProps {
   calldata: `0x${string}`[];
   setCalldata: Dispatch<SetStateAction<`0x${string}`[]>>;
 
-  generateAllCalldata: (
-    ownerAddress: `0x${string}`,
-    urnIndex: bigint,
-    referralCode?: number
-  ) => `0x${string}`[];
+  generateAllCalldata: (ownerAddress: `0x${string}`, urnIndex: bigint) => `0x${string}`[];
 
   currentStep: SealStep;
   setCurrentStep: Dispatch<SetStateAction<SealStep>>;

@@ -44,33 +44,30 @@ import { PendlePoweredBy } from './components/PendlePoweredBy';
 import { PendleStatsCard } from './components/PendleStatsCard';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type PendleWidgetProps = WidgetProps & {
   /** Selected Pendle market — passed in by the webapp module after URL-driven selection. */
   market: PendleMarketConfig;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   /** When provided, renders a "Back to Pendle" link above the heading. The webapp module
    * uses this to clear the market query params and return to the overview list. */
   onBackToPendle?: () => void;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
 };
 
-const PendleWidgetWrapped = ({
-  market,
-  onConnect,
-  rightHeaderComponent,
-  onNotification,
-  onAnalyticsEvent,
-  onExternalLinkClicked,
-  onBackToPendle,
-  enabled = true,
-  batchEnabled,
-  setBatchEnabled,
-  legalBatchTxUrl
-}: PendleWidgetProps) => {
+const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: PendleWidgetProps) => {
+  const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
   const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('fixed', chainId);
   const { address, isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = isConnected && enabled;
 
   const {
@@ -502,7 +499,6 @@ const PendleWidgetWrapped = ({
               isBatchTransaction={shouldUseBatch}
               batchEnabled={batchEnabled}
               setBatchEnabled={setBatchEnabled}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

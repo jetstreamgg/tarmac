@@ -7,7 +7,7 @@ interface ConnectModalContextType {
   closeConnectModal: () => void;
 }
 
-const ConnectModalContext = createContext<ConnectModalContextType | undefined>(undefined);
+export const ConnectModalContext = createContext<ConnectModalContextType | undefined>(undefined);
 
 export function ConnectModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);

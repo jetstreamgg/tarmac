@@ -46,6 +46,13 @@ import { Wizard } from './components/Wizard';
 import { ManagePosition } from './components/ManagePosition';
 import { useStakeTransactions } from './hooks/useStakeTransactions';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type OnStakeUrnChange = (
   urn: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined } | undefined
@@ -53,11 +60,7 @@ export type OnStakeUrnChange = (
 
 type StakeModuleWidgetProps = WidgetProps & {
   onStakeUrnChange?: OnStakeUrnChange;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onShowHelpModal?: () => void;
-  addRecentTransaction: any;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   disclaimer?: React.ReactNode;
 };
 
@@ -65,20 +68,16 @@ function StakeModuleWidgetWrapped({
   rightHeaderComponent,
   onStakeUrnChange,
   externalWidgetState,
-  onConnect,
-  enabled = true,
-  onNotification,
   onWidgetStateChange,
-  onAnalyticsEvent,
-  onExternalLinkClicked,
   onShowHelpModal,
-  addRecentTransaction,
-  legalBatchTxUrl,
-  referralCode,
-  batchEnabled,
-  setBatchEnabled,
   disclaimer
 }: StakeModuleWidgetProps) {
+  const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const { onExternalLinkClicked } = useConfigContext();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('stake', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -93,8 +92,8 @@ function StakeModuleWidgetWrapped({
     setShowStepIndicator
   } = useContext(WidgetContext);
   const { i18n } = useLingui();
-  const chainId = useChainId();
   const { isConnected, isConnecting, address } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const { data: batchSupported } = useIsBatchSupported();
   const {
@@ -209,7 +208,6 @@ function StakeModuleWidgetWrapped({
     setRestakeSkyAmount,
     mutateStakeSkyAllowance,
     mutateStakeUsdsAllowance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,
@@ -263,9 +261,9 @@ function StakeModuleWidgetWrapped({
   // Generate calldata when all steps are complete
   useEffect(() => {
     if (allStepsComplete && address && urnIndexForTransaction !== undefined) {
-      setCalldata(generateAllCalldata(address, urnIndexForTransaction, referralCode));
+      setCalldata(generateAllCalldata(address, urnIndexForTransaction, REFERRAL_CODE));
     }
-  }, [allStepsComplete, address, urnIndexForTransaction, generateAllCalldata, referralCode]);
+  }, [allStepsComplete, address, urnIndexForTransaction, generateAllCalldata]);
 
   const isDelegateSkippable = selectedDelegate?.toLowerCase() === activeUrnVoteDelegate?.toLowerCase();
 
@@ -901,7 +899,6 @@ function StakeModuleWidgetWrapped({
                       batchEnabled={batchEnabled}
                       setBatchEnabled={setBatchEnabled}
                       isBatchTransaction={shouldUseBatch}
-                      legalBatchTxUrl={legalBatchTxUrl}
                       disclaimer={disclaimer}
                       onNoChangesDetected={setHasNoChanges}
                     />
@@ -919,7 +916,6 @@ function StakeModuleWidgetWrapped({
                       batchEnabled={batchEnabled}
                       setBatchEnabled={setBatchEnabled}
                       isBatchTransaction={shouldUseBatch}
-                      legalBatchTxUrl={legalBatchTxUrl}
                     />
                   )}
                 </MotionVStack>

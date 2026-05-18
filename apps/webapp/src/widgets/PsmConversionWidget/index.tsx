@@ -1,9 +1,4 @@
-import {
-  type TokenForChain,
-  getTokenDecimals,
-  useTokenBalance,
-  useIsBatchSupported
-} from '@/hooks';
+import { type TokenForChain, getTokenDecimals, useTokenBalance, useIsBatchSupported } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { formatUnits, parseUnits } from 'viem';
 import { useChainId, useConnection } from 'wagmi';
@@ -38,11 +33,15 @@ import {
   type PsmConversionDisabledReason
 } from './hooks/usePsmConversion.helpers';
 import { PsmConversionAction, PsmConversionFlow, PsmConversionScreen } from './lib/constants';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type PsmConversionWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
 };
 
@@ -71,22 +70,18 @@ const getDisabledReasonText = (reason?: PsmConversionDisabledReason, targetToken
 };
 
 function PsmConversionWidgetWrapped({
-  onConnect,
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
-  onAnalyticsEvent,
-  enabled = true,
-  legalBatchTxUrl,
-  referralCode,
-  batchEnabled,
-  setBatchEnabled,
   onBackToConvert
 }: PsmConversionWidgetProps): React.ReactElement {
+  const onConnect = useCustomConnectModal();
+  const { onExternalLinkClicked } = useConfigContext();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
   const validatedExternalState = useMemo(() => {
     const state = getValidatedState(externalWidgetState, supportedTokens);
     if (!state) {
@@ -111,8 +106,8 @@ function PsmConversionWidgetWrapped({
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [enabled, isConnected]);
   const initialAmount = parseUnits(
     validatedExternalState?.amount || '0',
@@ -176,7 +171,6 @@ function PsmConversionWidgetWrapped({
   const stepRef = useRef(0);
 
   const { handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -197,7 +191,7 @@ function PsmConversionWidgetWrapped({
   const conversion = usePsmConversion({
     direction,
     amount: originAmount,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     enabled: isConnectedAndEnabled,
     shouldUseBatch: !!batchEnabled,
     onMutate: () => {
@@ -232,14 +226,7 @@ function PsmConversionWidgetWrapped({
       });
     },
     onStart: hash => {
-      const current = transactionStateRef.current;
-      handleOnStart({
-        hash,
-        recentTransactionDescription:
-          current.action === PsmConversionAction.APPROVE
-            ? t`Approving ${current.originToken?.symbol || ''}`
-            : t`Convert ${current.originToken?.symbol || ''} into ${current.targetToken?.symbol || ''}`
-      });
+      handleOnStart({ hash });
     },
     onSuccess: hash => {
       const current = transactionStateRef.current;
@@ -682,7 +669,6 @@ function PsmConversionWidgetWrapped({
               targetToken={conversion.targetToken}
               targetAmount={conversion.targetAmount}
               needsAllowance={conversion.needsAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
               isBatchFlowSupported={!!batchSupported}
             />
           </CardAnimationWrapper>

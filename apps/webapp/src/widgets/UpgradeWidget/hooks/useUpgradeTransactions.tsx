@@ -1,12 +1,15 @@
 import { useBatchUpgraderManager } from './useBatchUpgraderManager';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { Token } from '@/hooks';
 import { useUpgradeTransactionCallbacks } from './useUpgradeTransactionCallbacks';
 
-interface UseUpgradeTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseUpgradeTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   originToken: Token;
   targetToken: Token;
   originAmount: bigint;
@@ -29,7 +32,6 @@ export const useUpgradeTransactions = ({
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -46,7 +48,6 @@ export const useUpgradeTransactions = ({
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

@@ -4,15 +4,18 @@ import { formatUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useMemo, useRef } from 'react';
 import { UpgradeAction, UpgradeFlow } from '../lib/constants';
 
-interface UseUpgradeTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseUpgradeTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   originAmount: bigint;
   originToken: Token;
   targetToken: Token;
@@ -36,7 +39,6 @@ export const useUpgradeTransactionCallbacks = ({
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
@@ -45,7 +47,6 @@ export const useUpgradeTransactionCallbacks = ({
 
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -98,12 +99,7 @@ export const useUpgradeTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: isUpgrade
-            ? t`Upgrade ${originToken.symbol} into ${targetToken.symbol}`
-            : t`Revert ${originToken.symbol} into ${targetToken.symbol}`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         stepRef.current = 0;

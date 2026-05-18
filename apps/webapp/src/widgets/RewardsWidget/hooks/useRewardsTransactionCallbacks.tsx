@@ -12,15 +12,19 @@ import { useConnection, useChainId } from 'wagmi';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps, WidgetState } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  WidgetState,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useContext, useMemo, useRef } from 'react';
 import { RewardsAction, RewardsFlow, RewardsScreen } from '../lib/constants';
 
-interface UseRewardsTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseRewardsTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   selectedRewardContract: RewardContract | undefined;
   amount: bigint;
   rewardsBalance: bigint | undefined;
@@ -43,7 +47,6 @@ export const useRewardsTransactionCallbacks = ({
   mutateTokenBalance,
   mutateRewardsBalance,
   mutateUserSuppliedBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -64,7 +67,6 @@ export const useRewardsTransactionCallbacks = ({
 
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -141,12 +143,7 @@ export const useRewardsTransactionCallbacks = ({
         });
       },
       onStart: (hash?: string) => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Supplying ${formatBigInt(amount, { locale })} ${
-            selectedRewardContract?.supplyToken.name ?? ''
-          }`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: (hash: string | undefined) => {
         supplyStepRef.current = 0;
@@ -225,12 +222,7 @@ export const useRewardsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: t`Withdrawing ${formatBigInt(amount, { locale })} ${
-            selectedRewardContract?.supplyToken.name ?? ''
-          }`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         handleOnSuccess({
@@ -324,7 +316,7 @@ export const useRewardsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: 'Claiming tokens' });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         handleOnSuccess({

@@ -35,6 +35,8 @@ export enum Environment {
   Development = 'development'
 }
 
+export const FIXED_YIELD_MODULE_ENABLED = import.meta.env.VITE_FIXED_YIELD_MODULE_ENABLED === 'true';
+
 export const IntentMapping = {
   [Intent.BALANCES_INTENT]: 'balances',
   [Intent.UPGRADE_INTENT]: 'upgrade',
@@ -79,7 +81,7 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.EXPERT_INTENT,
     Intent.VAULTS_INTENT,
     Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
+    ...(FIXED_YIELD_MODULE_ENABLED ? [Intent.FIXED_INTENT] : [])
   ],
   [tenderly.id]: [
     Intent.BALANCES_INTENT,
@@ -92,7 +94,7 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.EXPERT_INTENT,
     Intent.VAULTS_INTENT,
     Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
+    ...(FIXED_YIELD_MODULE_ENABLED ? [Intent.FIXED_INTENT] : [])
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
@@ -188,6 +190,8 @@ export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.
 
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
+
+export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) || 0;
 
 export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';

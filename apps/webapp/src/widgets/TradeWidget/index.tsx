@@ -64,50 +64,46 @@ import { useTokenBalances } from '@/hooks';
 import { usePrices } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useTradeAnalytics } from './hooks/useTradeAnalytics';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type TradeWidgetProps = WidgetProps & {
   customTokenList?: TokenForChain[];
   disallowedPairs?: Record<string, SUPPORTED_TOKEN_SYMBOLS[]>;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   widgetTitle?: ReactNode;
   tokensLocked?: boolean;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
 };
 
 function TradeWidgetWrapped({
-  onConnect,
-  addRecentTransaction,
   rightHeaderComponent,
   customTokenList = [],
   disallowedPairs = defaultConfig.tradeDisallowedPairs,
-  locale,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onExternalLinkClicked,
-  onAnalyticsEvent,
-  enabled = true,
   tokensLocked = false,
-  batchEnabled: initialBatchEnabled = true,
-  setBatchEnabled: externalSetBatchEnabled,
   onBackToConvert
 }: TradeWidgetProps): React.ReactElement {
+  const onConnect = useCustomConnectModal();
+  const { onExternalLinkClicked } = useConfigContext();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { mutate: addToWallet } = useAddTokenToWallet();
   const [showAddToken, setShowAddToken] = useState(false);
   const [tradeAnyway, setTradeAnyway] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [ethFlowTxStatus, setEthFlowTxStatus] = useState<EthFlowTxStatus>(EthFlowTxStatus.IDLE);
-  const [internalBatchEnabled, setInternalBatchEnabled] = useState(initialBatchEnabled);
   const [isUsdtResetFlow, setIsUsdtResetFlow] = useState(false);
 
-  // Use external setter if provided, otherwise use internal state
-  const batchEnabled = externalSetBatchEnabled ? initialBatchEnabled : internalBatchEnabled;
-  const setBatchEnabled = externalSetBatchEnabled || setInternalBatchEnabled;
   const validatedExternalState = getValidatedState(externalWidgetState);
 
   useEffect(() => {
@@ -119,13 +115,14 @@ function TradeWidgetWrapped({
   );
   const [formattedExecutedBuyAmount, setFormattedExecutedBuyAmount] = useState<string | undefined>(undefined);
 
-  const chainId = useChainId();
   const isChainL2 = isL2ChainId(chainId);
   const { address, isConnecting, isConnected } = useConnection();
   const isSafeWallet = useIsSafeWallet();
   const isSmartContractWallet = useIsSmartContractWallet();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
+  const locale = linguiCtx.i18n.locale;
 
   const wrappedNativeTokenAddress = useMemo(
     () => defaultConfig.tradeTokenList[chainId].find(token => token.isWrappedNative)?.address,
@@ -490,13 +487,6 @@ function TradeWidgetWrapped({
     amount: quoteData?.quote.sellAmountToSign,
     tokenAddress: originTokenAddress,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Approving ${formatBigInt(debouncedOriginAmount, {
-          locale,
-          unit: getTokenDecimals(originToken, chainId)
-        })} ${originToken?.symbol ?? ''}`
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -713,13 +703,6 @@ function TradeWidgetWrapped({
     order: quoteData,
     enabled: originToken?.isNative ? true : false,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Sending ${formatBigInt(debouncedOriginAmount, {
-          locale,
-          unit: getTokenDecimals(originToken, chainId)
-        })} ${originToken?.symbol ?? ''} to the EthFlow contract`
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       setEthFlowTxStatus(EthFlowTxStatus.SENDING_ETH);
@@ -842,10 +825,6 @@ function TradeWidgetWrapped({
     enabled: isSmartContractWallet,
     onStart: (hash: string) => {
       setCancelLoading(true);
-      addRecentTransaction?.({
-        hash,
-        description: t`Canceling order`
-      });
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
     },

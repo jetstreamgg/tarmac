@@ -33,38 +33,37 @@ import { SavingsTransactionReview } from './components/SavingsTransactionReview'
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useSavingsTransactions } from './hooks/useSavingsTransactions';
 import { tokenForSymbol } from '../L2SavingsWidget/lib/helpers';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { REFERRAL_CODE } from '@/lib/constants';
 
-export type SavingsWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
-};
+export type SavingsWidgetProps = WidgetProps;
 
 // HOC Widget
 const SavingsWidgetWrapped = ({
-  onConnect,
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
-  onWidgetStateChange,
-  onAnalyticsEvent,
-  onExternalLinkClicked,
-  enabled = true,
-  legalBatchTxUrl,
-  referralCode,
-  batchEnabled,
-  setBatchEnabled
+  onWidgetStateChange
 }: SavingsWidgetProps) => {
+  const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('savings', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState, ['USDS', 'DAI']);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const { mutate: mutateSavings, data: savingsData, isLoading: isSavingsDataLoading } = useSavingsData();
   const { data: allowance, mutate: mutateAllowance } = useSavingsAllowance();
@@ -136,7 +135,7 @@ const SavingsWidgetWrapped = ({
   const { batchSavingsSupply, batchUpgradeAndSupply, savingsWithdraw } = useSavingsTransactions({
     amount: debouncedAmount,
     max,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     originToken,
     shouldUseBatch,
     assetDecimals,
@@ -146,7 +145,6 @@ const SavingsWidgetWrapped = ({
     mutateAllowance,
     mutateSavings,
     mutateOriginBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent
@@ -460,7 +458,6 @@ const SavingsWidgetWrapped = ({
               needsAllowance={needsAllowance}
               isUpgradeSupplyFlow={isUpgradeSupplyFlow}
               shouldUseBatch={shouldUseBatch}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

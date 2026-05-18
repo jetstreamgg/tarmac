@@ -6,15 +6,18 @@ import {
   StUsdsDirection
 } from '@/hooks';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { useContext } from 'react';
 import { StUSDSAction } from '../lib/constants';
 import { useStUsdsTransactionCallbacks } from './useStUsdsTransactionCallbacks';
 
-interface UseStUsdsTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseStUsdsTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
   referralCode: number | undefined;
   max: boolean;
@@ -44,7 +47,6 @@ export const useStUsdsTransactions = ({
   mutateStUsds,
   mutateCurveUsdsAllowance,
   mutateCurveStUsdsAllowance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -57,7 +59,6 @@ export const useStUsdsTransactions = ({
     amount,
     needsAllowance,
     shouldUseBatch,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

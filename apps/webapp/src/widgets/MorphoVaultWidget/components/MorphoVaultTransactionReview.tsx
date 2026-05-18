@@ -24,8 +24,7 @@ export const MorphoVaultTransactionReview = ({
   assetToken,
   amount,
   needsAllowance,
-  needsAllowanceReset,
-  legalBatchTxUrl
+  needsAllowanceReset
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
@@ -34,7 +33,6 @@ export const MorphoVaultTransactionReview = ({
   amount: bigint;
   needsAllowance: boolean;
   needsAllowanceReset: boolean;
-  legalBatchTxUrl?: string;
 }) => {
   const { i18n } = useLingui();
   const { data: batchSupported } = useIsBatchSupported();
@@ -133,7 +131,6 @@ export const MorphoVaultTransactionReview = ({
     <TransactionReview
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
       customSteps={resetSteps}
     />
   );

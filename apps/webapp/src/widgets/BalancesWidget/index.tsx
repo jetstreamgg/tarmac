@@ -2,6 +2,7 @@ import { Heading, Text } from '@/widgets/shared/components/ui/Typography';
 import { WidgetContainer } from '@/widgets/shared/components/ui/widget/WidgetContainer';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
+import { useLingui } from '@lingui/react';
 import { WidgetProvider } from '@/widgets/context/WidgetContext';
 import { WidgetProps, WidgetStateChangeParams } from '@/widgets/shared/types/widgetState';
 import { useConnection } from 'wagmi';
@@ -14,6 +15,9 @@ import { ErrorBoundary } from '@/widgets/shared/components/ErrorBoundary';
 import { AnimatePresence } from 'motion/react';
 import { CardAnimationWrapper } from '@/widgets/shared/animation/Wrappers';
 import { useCallback, useMemo, useState } from 'react';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 
 export type BalancesWidgetProps = WidgetProps & {
   chainIds?: number[];
@@ -25,7 +29,6 @@ export type BalancesWidgetProps = WidgetProps & {
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
   fixedYieldCardUrl?: string;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   showAllNetworks?: boolean;
   setShowAllNetworks?: (showAllNetworks: boolean) => void;
@@ -36,12 +39,8 @@ export type BalancesWidgetProps = WidgetProps & {
 };
 
 export const BalancesWidget = ({
-  onConnect,
-  locale,
   rightHeaderComponent,
   hideRestrictedModules = false,
-  enabled = true,
-  onExternalLinkClicked,
   rewardsCardUrl,
   savingsCardUrlMap,
   sealCardUrl,
@@ -57,14 +56,13 @@ export const BalancesWidget = ({
   onExploreVaults,
   hideWalletCard
 }: BalancesWidgetProps) => {
+  const { i18n } = useLingui();
   return (
     <ErrorBoundary componentName="BalancesWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider locale={i18n.locale}>
         <BalancesWidgetWrapped
-          onConnect={onConnect}
           rightHeaderComponent={rightHeaderComponent}
           hideRestrictedModules={hideRestrictedModules}
-          enabled={enabled}
           chainIds={chainIds}
           rewardsCardUrl={rewardsCardUrl}
           savingsCardUrlMap={savingsCardUrlMap}
@@ -73,7 +71,6 @@ export const BalancesWidget = ({
           stusdsCardUrl={stusdsCardUrl}
           vaultsCardUrl={vaultsCardUrl}
           fixedYieldCardUrl={fixedYieldCardUrl}
-          onExternalLinkClicked={onExternalLinkClicked}
           showAllNetworks={showAllNetworks}
           hideZeroBalances={hideZeroBalances}
           setShowAllNetworks={setShowAllNetworks}
@@ -87,11 +84,8 @@ export const BalancesWidget = ({
 };
 
 const BalancesWidgetWrapped = ({
-  onConnect,
   rightHeaderComponent,
   hideRestrictedModules = false,
-  enabled = true,
-  onExternalLinkClicked,
   chainIds,
   rewardsCardUrl,
   savingsCardUrlMap,
@@ -107,7 +101,10 @@ const BalancesWidgetWrapped = ({
   onExploreVaults,
   hideWalletCard
 }: BalancesWidgetProps) => {
+  const onConnect = useCustomConnectModal();
   const { isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const [allFundsEmpty, setAllFundsEmpty] = useState(false);
   const handleAllFundsEmpty = useCallback((isEmpty: boolean) => setAllFundsEmpty(isEmpty), []);

@@ -19,7 +19,6 @@ export const ManagePosition = ({
   batchEnabled,
   setBatchEnabled,
   isBatchTransaction,
-  legalBatchTxUrl,
   disclaimer,
   onNoChangesDetected
 }: {
@@ -36,7 +35,6 @@ export const ManagePosition = ({
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
-  legalBatchTxUrl?: string;
   disclaimer?: React.ReactNode;
   onNoChangesDetected?: (hasNoChanges: boolean) => void;
 }) => {
@@ -59,7 +57,6 @@ export const ManagePosition = ({
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
       isBatchTransaction={isBatchTransaction}
-      legalBatchTxUrl={legalBatchTxUrl}
       onNoChangesDetected={onNoChangesDetected}
     />
   );

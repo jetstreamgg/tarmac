@@ -15,7 +15,6 @@ export function PsmConversionReview({
   targetToken,
   targetAmount,
   needsAllowance,
-  legalBatchTxUrl,
   isBatchFlowSupported
 }: {
   batchEnabled?: boolean;
@@ -26,7 +25,6 @@ export function PsmConversionReview({
   targetToken: TokenForChain;
   targetAmount: bigint;
   needsAllowance: boolean;
-  legalBatchTxUrl?: string;
   isBatchFlowSupported?: boolean;
 }) {
   const chainId = useChainId();
@@ -98,7 +96,6 @@ export function PsmConversionReview({
     <TransactionReview
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
       isBatchFlowSupported={isBatchFlowSupported}
     />
   );

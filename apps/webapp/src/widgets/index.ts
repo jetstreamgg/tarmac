@@ -1,3 +1,33 @@
+// Constants and types exported first so they resolve correctly when widget
+// modules transitively re-enter this barrel mid-load via `from '@/widgets'`.
+export { TxStatus, NotificationType } from './shared/constants';
+export { WidgetAnalyticsEventType } from './shared/types/analyticsEvents';
+export type { WidgetAnalyticsEvent } from './shared/types/analyticsEvents';
+export type {
+  WidgetState,
+  WidgetProps,
+  WidgetStateChangeParams,
+  ExternalWidgetState
+} from './shared/types/widgetState';
+export * from './SavingsWidget/lib/constants';
+export * from './StUSDSWidget/lib/constants';
+export * from './TradeWidget/lib/constants';
+export * from './UpgradeWidget/lib/constants';
+export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
+export * from './SealModuleWidget/lib/constants';
+export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
+export { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './MorphoVaultWidget/lib/constants';
+export {
+  PendleFlow,
+  PendleAction,
+  PendleScreen,
+  PendleSlippageType,
+  PENDLE_BUY_SLIPPAGE_STORAGE_KEY,
+  PENDLE_SELL_SLIPPAGE_STORAGE_KEY,
+  PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY,
+  PENDLE_DEFAULT_REDEEM_SLIPPAGE
+} from './PendleWidget/lib/constants';
+
 export { SavingsWidget } from './SavingsWidget';
 export { StUSDSWidget } from './StUSDSWidget';
 export { L2SavingsWidget as BaseSavingsWidget } from './L2SavingsWidget';
@@ -30,33 +60,6 @@ export { TransactionOverview } from './shared/components/ui/transaction/Transact
 export { MorphoVaultBadge } from './MorphoVaultWidget/components/MorphoVaultBadge';
 export { MorphoRateBreakdownPopover } from './MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './TradeWidget/lib/types';
-export { TxStatus, NotificationType } from './shared/constants';
-export type {
-  WidgetState,
-  WidgetProps,
-  WidgetStateChangeParams,
-  ExternalWidgetState
-} from './shared/types/widgetState';
-export { WidgetAnalyticsEventType } from './shared/types/analyticsEvents';
-export type { WidgetAnalyticsEvent } from './shared/types/analyticsEvents';
-export * from './SavingsWidget/lib/constants';
-export * from './StUSDSWidget/lib/constants';
-export * from './TradeWidget/lib/constants';
-export * from './UpgradeWidget/lib/constants';
-export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
-export * from './SealModuleWidget/lib/constants';
-export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
-export { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './MorphoVaultWidget/lib/constants';
-export {
-  PendleFlow,
-  PendleAction,
-  PendleScreen,
-  PendleSlippageType,
-  PENDLE_BUY_SLIPPAGE_STORAGE_KEY,
-  PENDLE_SELL_SLIPPAGE_STORAGE_KEY,
-  PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY,
-  PENDLE_DEFAULT_REDEEM_SLIPPAGE
-} from './PendleWidget/lib/constants';
 export { formatUrnIndex } from './SealModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';
