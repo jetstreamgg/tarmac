@@ -13,13 +13,18 @@ export enum PendleConvertSide {
 }
 
 /**
- * Subset of `action` values from the /transactions endpoint we surface in
- * trade history. The endpoint also returns BUY_YT, SELL_YT, LONG_YIELD,
- * SHORT_YIELD, ADD_LIQUIDITY, REMOVE_LIQUIDITY — those are filtered out.
+ * Action discriminant for normalized market-history rows. Every row originates
+ * from /v1/pnl/transactions; the wire `action` values (buyPt, sellPt, redeemPy)
+ * are mapped to these canonical uppercase values at the transport boundary in
+ * usePendleAllPnlTransactions. The PnL endpoint surfaces a 28-value action
+ * enum (mintPy, buyYt, sellYt, addLiquidity*, removeLiquidity*, swapPtToYt,
+ * swapYtToPt, transfer*, redeem*Rewards, *LimitOrder, …); everything outside
+ * the three values below is filtered out client-side.
  */
-export enum PendleTradeAction {
+export enum PendleHistoryAction {
   BUY_PT = 'BUY_PT',
-  SELL_PT = 'SELL_PT'
+  SELL_PT = 'SELL_PT',
+  REDEEM_PY = 'REDEEM_PY'
 }
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { computeMaturedEarnings } from './computeMaturedEarnings';
-import { PendleTradeAction } from './constants';
-import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
+import { PendleHistoryAction } from './constants';
+import type { PendleHistoryRow, PendleMarketConfig } from './pendle';
 
 const DAY = 86_400;
 const EXPIRY = 2_000_000_000;
@@ -44,33 +44,26 @@ function nextId() {
 }
 
 function makeTrade(
-  action: PendleTradeAction,
+  action: PendleHistoryAction.BUY_PT | PendleHistoryAction.SELL_PT,
   opts: {
     secondsBeforeExpiry: number;
     value: number;
     pt?: number;
     market?: PendleMarketConfig;
-    notional?: PendleTransactionRaw['notional'];
   }
-): PendleTransactionRaw {
-  const market = opts.market ?? PEGGED_MARKET;
+): PendleHistoryRow {
   return {
     id: nextId(),
-    market: market.marketAddress,
-    timestamp: new Date((EXPIRY - opts.secondsBeforeExpiry) * 1000).toISOString(),
-    chainId: 1,
     txHash: '0xabc',
-    value: opts.value,
-    type: 'TRADES',
+    timestamp: new Date((EXPIRY - opts.secondsBeforeExpiry) * 1000).toISOString(),
     action,
-    txOrigin: '0x0',
-    impliedApy: 0,
-    notional: 'notional' in opts ? opts.notional : { pt: opts.pt ?? opts.value }
+    ptAmount: opts.pt ?? opts.value,
+    valueUsd: opts.value
   };
 }
 
-const buy = (opts: Parameters<typeof makeTrade>[1]) => makeTrade(PendleTradeAction.BUY_PT, opts);
-const sell = (opts: Parameters<typeof makeTrade>[1]) => makeTrade(PendleTradeAction.SELL_PT, opts);
+const buy = (opts: Parameters<typeof makeTrade>[1]) => makeTrade(PendleHistoryAction.BUY_PT, opts);
+const sell = (opts: Parameters<typeof makeTrade>[1]) => makeTrade(PendleHistoryAction.SELL_PT, opts);
 
 // Underlying-token units → bigint, respecting market decimals.
 function toUnderlying(amount: number, market: PendleMarketConfig): bigint {
@@ -290,16 +283,17 @@ describe('computeMaturedEarnings — reconciliation gate (slice 02)', () => {
     expect(result.apy).toBeDefined();
   });
 
-  it('hides earnings when notional.pt is missing on some BUY trades (safe fallback)', () => {
-    // Two buys totaling 1000 PT, but the API omitted notional on one of them.
-    // The omitted entry contributes 0 to the sum → netPtFromPendle = 500 vs
+  it('hides earnings when ptAmount is zero on some BUY rows (upstream fallback for missing notional)', () => {
+    // Two buys totaling 1000 PT in cost basis terms, but Pendle's API omitted
+    // notional on one row, so the normalizer set ptAmount=0 for it. The zeroed
+    // entry contributes 0 to the PT sum → netPtFromPendle = 500 vs
     // ptBalanceFloat = 1000 → 50% drift → empty. Asserts the conservative
-    // failure mode when API data is malformed.
+    // failure mode when upstream API data is malformed.
     expect(
       computeMaturedEarnings({
         history: [
           buy({ secondsBeforeExpiry: 90 * DAY, value: 500, pt: 500 }),
-          buy({ secondsBeforeExpiry: 60 * DAY, value: 500, notional: undefined })
+          buy({ secondsBeforeExpiry: 60 * DAY, value: 500, pt: 0 })
         ],
         previewAmount: toUnderlying(1010, PEGGED_MARKET),
         chi: undefined,
@@ -849,18 +843,18 @@ describe('computeMaturedEarnings — additional scenarios', () => {
     expect(reversed).toEqual(ordered);
   });
 
-  it('notional present but without `pt` key: treated as 0 PT (safe fallback)', () => {
-    // API returns notional with other tokens (e.g. `sy`) but no `pt` field.
-    // `t.notional?.pt ?? 0` → 0. netPt = 0 vs balance = 1000 → reconciliation
-    // gate fails (excess direction), line hides. Companion to the existing
-    // "notional missing entirely" test in the reconciliation block.
+  it('ptAmount of 0 on a buy row: treated as 0 PT (safe fallback)', () => {
+    // The upstream normalizer hands us ptAmount=0 when Pendle's notional lacks
+    // a `pt` key. netPt = 0 vs balance = 1000 → reconciliation gate fails
+    // (excess direction), line hides. Companion to the existing zeroed-on-some-
+    // trades test in the reconciliation block.
     expect(
       computeMaturedEarnings({
         history: [
           buy({
             secondsBeforeExpiry: 90 * DAY,
             value: 1000,
-            notional: { sy: 1000 } // pt key absent
+            pt: 0
           })
         ],
         previewAmount: toUnderlying(1010, PEGGED_MARKET),

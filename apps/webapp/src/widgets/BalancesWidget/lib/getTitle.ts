@@ -54,6 +54,12 @@ export const getTitle = ({ type, module }: { type: TransactionTypeEnum; module: 
       return t`Select reward`;
     case TransactionTypeEnum.UNSTAKE_KICK:
       return t`Liquidation`;
+    case TransactionTypeEnum.PENDLE_BUY:
+      return t`Fixed Yield Buy`;
+    case TransactionTypeEnum.PENDLE_SELL:
+      return t`Fixed Yield Sell`;
+    case TransactionTypeEnum.PENDLE_REDEEM:
+      return t`Fixed Yield Redeem`;
     default:
       return capitalizeFirstLetter((type || module).toLowerCase().replace('_', ' '));
   }

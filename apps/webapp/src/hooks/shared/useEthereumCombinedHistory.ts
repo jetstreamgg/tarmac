@@ -7,6 +7,7 @@ import { useSealHistory } from '../seal/useSealHistory';
 import { useStakeHistory } from '../stake/useStakeHistory';
 import { useStUsdsHistory } from '../stusds/useStUsdsHistory';
 import { useMorphoVaultHistory } from '../morpho';
+import { usePendleCombinedHistory } from '../pendle/usePendleCombinedHistory';
 
 export function useEthereumCombinedHistory() {
   const savingsHistory = useEthereumSavingsHistory();
@@ -17,6 +18,7 @@ export function useEthereumCombinedHistory() {
   const stakeHistory = useStakeHistory();
   const stUsdsHistory = useStUsdsHistory();
   const morphoVaultsHistory = useMorphoVaultHistory();
+  const pendleHistory = usePendleCombinedHistory();
 
   const combinedData = useMemo(() => {
     return [
@@ -27,7 +29,8 @@ export function useEthereumCombinedHistory() {
       ...(sealHistory.data || []),
       ...(stakeHistory.data || []),
       ...(stUsdsHistory.data || []),
-      ...(morphoVaultsHistory.data || [])
+      ...(morphoVaultsHistory.data || []),
+      ...(pendleHistory.data || [])
     ].sort((a, b) => b.blockTimestamp.getTime() - a.blockTimestamp.getTime());
   }, [
     savingsHistory.data,
@@ -37,7 +40,8 @@ export function useEthereumCombinedHistory() {
     sealHistory.data,
     stakeHistory.data,
     stUsdsHistory.data,
-    morphoVaultsHistory.data
+    morphoVaultsHistory.data,
+    pendleHistory.data
   ]);
 
   return {
@@ -50,7 +54,8 @@ export function useEthereumCombinedHistory() {
       sealHistory.isLoading ||
       stakeHistory.isLoading ||
       stUsdsHistory.isLoading ||
-      morphoVaultsHistory.isLoading,
+      morphoVaultsHistory.isLoading ||
+      pendleHistory.isLoading,
     error:
       savingsHistory.error ||
       upgradeHistory.error ||
@@ -59,7 +64,8 @@ export function useEthereumCombinedHistory() {
       sealHistory.error ||
       stakeHistory.error ||
       stUsdsHistory.error ||
-      morphoVaultsHistory.error,
+      morphoVaultsHistory.error ||
+      pendleHistory.error,
     mutate: () => {
       savingsHistory.mutate();
       upgradeHistory.mutate();
@@ -69,6 +75,7 @@ export function useEthereumCombinedHistory() {
       stakeHistory.mutate();
       stUsdsHistory.mutate();
       morphoVaultsHistory.mutate();
+      pendleHistory.mutate();
     }
   };
 }

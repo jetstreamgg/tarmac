@@ -42,5 +42,10 @@ export const getAmount = ({
         compact: true,
         unit: getTokenDecimals('token' in item ? item.token : undefined, chainId)
       });
+    case ModuleEnum.PENDLE:
+      return formatBigInt(absBigInt('assets' in item ? item.assets : 0n), {
+        compact: true,
+        unit: 'underlyingDecimals' in item ? item.underlyingDecimals : 18
+      });
   }
 };

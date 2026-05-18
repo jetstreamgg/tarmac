@@ -143,13 +143,15 @@ export {
   PENDLE_MARKETS,
   getPendleMarketByAddress,
   PendleConvertSide,
-  PendleTradeAction
+  PendleHistoryAction
 } from './pendle/constants';
 export { isMarketMatured, formatPendleAggregatorName } from './pendle/helpers';
 export { usePendleMarketsApiData } from './pendle/usePendleMarketsApiData';
 export { usePendleUserPtBalances } from './pendle/usePendleUserPtBalances';
 export { useAllPendleUserAssets } from './pendle/useAllPendleUserAssets';
 export { usePendleMarketHistory } from './pendle/usePendleMarketHistory';
+export { useAllPendleMarketsHistory } from './pendle/useAllPendleMarketsHistory';
+export { usePendleCombinedHistory } from './pendle/usePendleCombinedHistory';
 export { useQuotePendleConvert } from './pendle/useQuotePendleConvert';
 export { useBatchPendleConvert } from './pendle/useBatchPendleConvert';
 export { usePendleRedeemPreview } from './pendle/usePendleRedeemPreview';
@@ -173,9 +175,14 @@ export type {
   PendleMarketsStatsHook,
   PendleUserPtBalances,
   PendleUserPtBalancesHook,
-  PendleTransactionRaw,
-  PendleMarketTransactionsResponseRaw,
+  PendlePnlTransactionRaw,
+  PendlePnlTransactionsResponseRaw,
+  PendleHistoryRow,
   PendleMarketHistoryHook,
+  PendleCombinedHistoryRow,
+  PendleCombinedMarketHistoryHook,
+  PendleHistoryItem,
+  PendleHistoryHook,
   PendleMarketUserAsset,
   AllPendleUserAssetsData,
   AllPendleUserAssetsHook
