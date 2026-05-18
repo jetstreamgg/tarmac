@@ -36,6 +36,13 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
+vi.mock('@/modules/geo-config', () => ({
+  useGeoConfig: () => ({
+    isModuleEnabled: () => true,
+    isRegionRestricted: false
+  })
+}));
+
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
@@ -48,7 +55,8 @@ vi.mock('@/hooks', async importOriginal => {
     useHighestRateFromChartData: () => undefined,
     filterDeprecatedRewardContracts: () => [],
     useStakeRewardContracts: () => ({ data: [], isLoading: false }),
-    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false })
+    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false }),
+    usePendleMarketsApiData: () => ({ data: undefined, isLoading: false, error: null, refetch: () => {} })
   };
 });
 

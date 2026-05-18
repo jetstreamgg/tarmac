@@ -122,6 +122,13 @@ vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   })
 }));
 
+vi.mock('@/modules/geo-config', () => ({
+  useGeoConfig: () => ({
+    isModuleEnabled: () => true,
+    isRegionRestricted: false
+  })
+}));
+
 vi.mock('@/modules/upgrade/components/UpgradeWidgetPane', () => ({
   UpgradeWidgetPane: () => <div>upgrade-widget</div>
 }));
