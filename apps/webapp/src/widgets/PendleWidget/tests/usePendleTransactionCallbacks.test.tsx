@@ -4,6 +4,12 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { i18n } from '@lingui/core';
 import { mainnet } from 'viem/chains';
+
+vi.mock('@/hooks', async () => {
+  const actual = await vi.importActual<typeof import('@/hooks')>('@/hooks');
+  return { ...actual, useAllPendleMarketsHistory: () => ({ mutate: vi.fn() }) };
+});
+
 import { PendleConvertSide } from '@/hooks';
 import type { PendleConvertQuote, PendleMarketConfig, Token } from '@/hooks';
 import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
