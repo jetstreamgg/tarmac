@@ -19,7 +19,10 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+    await isolatedPage
+      .getByTestId('widget-navigation')
+      .getByRole('tab', { name: 'Savings', exact: true })
+      .click();
   });
 
   test('Sequential: supply USDS completes successfully in two steps', async ({ isolatedPage }) => {
@@ -29,7 +32,10 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+    await isolatedPage
+      .getByTestId('widget-navigation')
+      .getByRole('tab', { name: 'Savings', exact: true })
+      .click();
 
     await isolatedPage.getByTestId('supply-input-savings').fill('2');
 
@@ -67,7 +73,10 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+    await isolatedPage
+      .getByTestId('widget-navigation')
+      .getByRole('tab', { name: 'Savings', exact: true })
+      .click();
 
     // ── First attempt: approve succeeds, supply tx is rejected ──
     await isolatedPage.getByTestId('supply-input-savings').fill('3');
