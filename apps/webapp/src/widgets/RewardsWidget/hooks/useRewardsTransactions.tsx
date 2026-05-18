@@ -6,16 +6,19 @@ import {
   useRewardsWithdraw
 } from '@/hooks';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { useContext } from 'react';
 import { useChainId } from 'wagmi';
 import { RewardsAction } from '../lib/constants';
 import { useRewardsTransactionCallbacks } from './useRewardsTransactionCallbacks';
 
-interface UseRewardsTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseRewardsTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   selectedRewardContract: RewardContract | undefined;
   referralCode: number | undefined;
   amount: bigint;
@@ -36,7 +39,6 @@ export const useRewardsTransactions = ({
   rewardsBalance,
   needsAllowance,
   shouldUseBatch,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -62,7 +64,6 @@ export const useRewardsTransactions = ({
     mutateTokenBalance,
     mutateRewardsBalance,
     mutateUserSuppliedBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

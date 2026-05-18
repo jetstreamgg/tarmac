@@ -36,7 +36,7 @@ import {
   useUrnSelectedRewardContract,
   useUrnSelectedVoteDelegate
 } from '@/hooks';
-import { formatBigInt, getTransactionLink } from '@/utils';
+import { getTransactionLink } from '@/utils';
 import { useDebounce, useIsSafeWallet } from '@/hooks';
 import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetState';
 import { SealModuleTransactionStatus } from './components/SealModuleTransactionStatus';
@@ -46,46 +46,38 @@ import { ArrowLeft } from 'lucide-react';
 import { UnconnectedState } from './components/UnconnectedState';
 import { useLingui } from '@lingui/react';
 import { OnSealUrnChange } from './lib/types';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useNotification } from '@/modules/app/hooks/useNotification';
 
 type SealModuleWidgetProps = WidgetProps & {
   onSealUrnChange?: OnSealUrnChange;
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onNavigateToStakeWidget?: () => void;
-  addRecentTransaction: any;
   termsLink?: { url: string; name: string };
   mkrSkyUpgradeUrl?: string;
 };
 
 export const SealModuleWidget = ({
-  locale,
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
-  onConnect,
-  onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
   onNavigateToStakeWidget,
-  addRecentTransaction,
   termsLink,
-  referralCode,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) => {
+  const { i18n } = useLingui();
   return (
     <ErrorBoundary componentName="SealModuleWidget">
-      <WidgetProvider locale={locale}>
+      <WidgetProvider locale={i18n.locale}>
         <SealModuleWidgetProvider>
           <SealModuleWidgetWrapped
             rightHeaderComponent={rightHeaderComponent}
             onSealUrnChange={onSealUrnChange}
             externalWidgetState={externalWidgetState}
-            onConnect={onConnect}
-            onNotification={onNotification}
             onWidgetStateChange={onWidgetStateChange}
-            onExternalLinkClicked={onExternalLinkClicked}
-            addRecentTransaction={addRecentTransaction}
             termsLink={termsLink}
-            referralCode={referralCode}
             onNavigateToStakeWidget={onNavigateToStakeWidget}
             mkrSkyUpgradeUrl={mkrSkyUpgradeUrl}
           />
@@ -99,17 +91,14 @@ function SealModuleWidgetWrapped({
   rightHeaderComponent,
   onSealUrnChange,
   externalWidgetState,
-  onConnect,
-  enabled = true,
-  onNotification,
   onWidgetStateChange,
-  onExternalLinkClicked,
-  addRecentTransaction,
   termsLink,
-  referralCode,
   onNavigateToStakeWidget,
   mkrSkyUpgradeUrl
 }: SealModuleWidgetProps) {
+  const onConnect = useCustomConnectModal();
+  const { onExternalLinkClicked } = useConfigContext();
+  const onNotification = useNotification();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -129,6 +118,7 @@ function SealModuleWidgetWrapped({
   const chainId = useChainId();
   const { isConnected, isConnecting, address } = useConnection();
   const isSafeWallet = useIsSafeWallet();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const {
     acceptedExitFee,
@@ -202,10 +192,6 @@ function SealModuleWidgetWrapped({
   const repayUsdsApprove = useSealUsdsApprove({
     amount: debouncedUsdsAmount,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: t`Approving ${formatBigInt(debouncedUsdsAmount)} USDS`
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -239,7 +225,6 @@ function SealModuleWidgetWrapped({
     calldata,
     enabled: widgetState.action === SealAction.MULTICALL && !!allStepsComplete,
     onStart: (hash: string) => {
-      addRecentTransaction?.({ hash, description: t`Doing multicall` });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -272,10 +257,6 @@ function SealModuleWidgetWrapped({
     to: address,
     enabled: indexToClaim !== undefined && !!rewardContractToClaim && !!address,
     onStart: (hash: string) => {
-      addRecentTransaction?.({
-        hash,
-        description: 'Claiming rewards'
-      });
       setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
       setTxStatus(TxStatus.LOADING);
       onWidgetStateChange?.({ hash, widgetState, txStatus: TxStatus.LOADING });
@@ -320,10 +301,10 @@ function SealModuleWidgetWrapped({
   // Generate calldata when all steps are complete
   useEffect(() => {
     if (allStepsComplete && address && urnIndexForTransaction !== undefined) {
-      const cd = generateAllCalldata(address, urnIndexForTransaction, referralCode);
+      const cd = generateAllCalldata(address, urnIndexForTransaction);
       setCalldata(cd);
     }
-  }, [allStepsComplete, address, generateAllCalldata, referralCode, widgetState?.flow, chainId]);
+  }, [allStepsComplete, address, generateAllCalldata, widgetState?.flow, chainId]);
 
   // Update button state according to action and tx
   // Ref: https://lingui.dev/tutorials/react-patterns#memoization-pitfall

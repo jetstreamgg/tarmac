@@ -51,35 +51,35 @@ import {
   targetTokenForSymbol,
   tokenForSymbol
 } from './lib/helpers';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type UpgradeWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   upgradeOptions?: Token[];
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToConvert?: () => void;
 };
 
 export function UpgradeWidgetWrapped({
-  addRecentTransaction,
-  onConnect,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
   onCustomNavigation,
   customNavigationLabel,
-  onExternalLinkClicked,
-  onAnalyticsEvent,
   upgradeOptions = defaultUpgradeOptions,
-  batchEnabled,
-  setBatchEnabled,
-  legalBatchTxUrl,
-  enabled = true,
   disallowedFlow,
   onBackToConvert
 }: UpgradeWidgetProps): React.ReactElement {
+  const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const { onExternalLinkClicked } = useConfigContext();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState);
   const shouldAllowExternalUpdate = useRef(true);
 
@@ -87,8 +87,8 @@ export function UpgradeWidgetWrapped({
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnected, isConnecting } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const initialTabIndex = validatedExternalState?.flow === UpgradeFlow.REVERT ? 1 : 0;
@@ -228,7 +228,6 @@ export function UpgradeWidgetWrapped({
     mutateAllowance,
     mutateOriginBalance,
     mutateTargetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent
@@ -515,7 +514,6 @@ export function UpgradeWidgetWrapped({
               targetToken={targetToken}
               targetAmount={targetAmount}
               needsAllowance={!hasAllowance}
-              legalBatchTxUrl={legalBatchTxUrl}
               isBatchFlowSupported={!shouldAvoidBundledFlow}
             />
           </CardAnimationWrapper>

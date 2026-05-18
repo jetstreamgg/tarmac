@@ -15,8 +15,6 @@ const setSearchParamsMock = vi.fn(
 );
 
 const setSelectedConvertOptionMock = vi.fn();
-const setBatchEnabledMock = vi.fn();
-const onAnalyticsEventMock = vi.fn();
 
 let capturedWidgetProps: Record<string, any> | undefined;
 
@@ -37,14 +35,6 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   })
 }));
 
-vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
-  useBatchToggle: () => [true, setBatchEnabledMock]
-}));
-
-vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
-  useWidgetAnalytics: () => onAnalyticsEventMock
-}));
-
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
@@ -59,15 +49,8 @@ vi.mock('react-router-dom', () => ({
 
 describe('PsmConversionWidgetPane', () => {
   const sharedProps = {
-    onConnect: vi.fn(),
-    addRecentTransaction: vi.fn(),
-    locale: 'en',
     rightHeaderComponent: <div />,
-    onNotification: vi.fn(),
-    enabled: true,
-    referralCode: 0,
-    shouldReset: false,
-    legalBatchTxUrl: 'https://example.com/legal'
+    shouldReset: false
   };
 
   beforeEach(() => {
@@ -77,8 +60,6 @@ describe('PsmConversionWidgetPane', () => {
     capturedWidgetProps = undefined;
     setSearchParamsMock.mockClear();
     setSelectedConvertOptionMock.mockClear();
-    setBatchEnabledMock.mockClear();
-    onAnalyticsEventMock.mockClear();
   });
 
   it('passes URL-derived external state into the widget', () => {
@@ -88,9 +69,6 @@ describe('PsmConversionWidgetPane', () => {
       amount: '10',
       token: 'USDC'
     });
-    expect(capturedWidgetProps?.batchEnabled).toBe(true);
-    expect(capturedWidgetProps?.setBatchEnabled).toBe(setBatchEnabledMock);
-    expect(capturedWidgetProps?.onAnalyticsEvent).toBe(onAnalyticsEventMock);
   });
 
   it('syncs updated widget state back into URL params in psm context', () => {

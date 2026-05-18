@@ -189,6 +189,8 @@ export const IS_DEVELOPMENT_ENV = import.meta.env.VITE_ENV_NAME === Environment.
 // Feature flag for batch transactions
 export const BATCH_TX_ENABLED = import.meta.env.VITE_BATCH_TX_ENABLED === 'true';
 
+export const REFERRAL_CODE: number = Number(import.meta.env.VITE_REFERRAL_CODE) || 0;
+
 export const BATCH_TX_LEGAL_NOTICE_URL = '/batch-transactions-legal-notice';
 export const BATCH_TX_SUPPORTED_WALLETS_URL = 'https://swiss-knife.xyz/7702beat';
 

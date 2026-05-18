@@ -8,13 +8,16 @@ import {
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { useContext } from 'react';
 import { SavingsAction, SavingsFlow } from '../lib/constants';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { useSavingsTransactionCallbacks } from './useSavingsTransactionCallbacks';
 
-interface UseSavingsTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseSavingsTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
   max: boolean;
   referralCode: number | undefined;
@@ -42,7 +45,6 @@ export const useSavingsTransactions = ({
   mutateAllowance,
   mutateSavings,
   mutateOriginBalance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent
@@ -58,7 +60,6 @@ export const useSavingsTransactions = ({
     mutateAllowance,
     mutateSavings,
     mutateOriginBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent

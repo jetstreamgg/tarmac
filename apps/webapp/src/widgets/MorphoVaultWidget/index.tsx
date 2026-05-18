@@ -35,6 +35,12 @@ import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetStat
 import { MorphoVaultTransactionReview } from './components/MorphoVaultTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useMorphoVaultTransactions } from './hooks/useMorphoVaultTransactions';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export type MorphoVaultWidgetProps = WidgetProps & {
   /** The Morpho vault contract address */
@@ -45,12 +51,6 @@ export type MorphoVaultWidgetProps = WidgetProps & {
   assetToken: Token;
   /** Vault name for display purposes */
   vaultName?: string;
-  /** Callback when external link is clicked */
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  /** Whether batch transactions are enabled */
-  batchEnabled?: boolean;
-  /** Callback to set batch enabled state */
-  setBatchEnabled?: (enabled: boolean) => void;
   /** Callback to navigate back to vaults view */
   onBackToVaults?: () => void;
 };
@@ -60,29 +60,26 @@ const MorphoVaultWidgetWrapped = ({
   assetAddress,
   assetToken,
   vaultName = 'Vault',
-  onConnect,
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
-  onAnalyticsEvent,
-  onExternalLinkClicked,
-  enabled = true,
-  legalBatchTxUrl,
-  batchEnabled,
-  setBatchEnabled,
   onBackToVaults
 }: MorphoVaultWidgetProps) => {
+  const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('vaults', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState, [assetToken.symbol]);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
   const linguiCtx = useLingui();
 
@@ -195,7 +192,6 @@ const MorphoVaultWidgetWrapped = ({
     mutateAllowance,
     mutateVaultData,
     mutateAssetBalance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent
@@ -535,7 +531,6 @@ const MorphoVaultWidgetWrapped = ({
               amount={debouncedAmount}
               needsAllowance={needsAllowance}
               needsAllowanceReset={needsAllowanceReset}
-              legalBatchTxUrl={legalBatchTxUrl}
             />
           </CardAnimationWrapper>
         ) : (

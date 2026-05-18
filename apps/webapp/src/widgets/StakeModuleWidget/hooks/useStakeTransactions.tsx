@@ -1,19 +1,18 @@
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
-import { useStakeTransactionCallbacks } from './useStakeTransactionCallbacks';
 import {
-  useBatchStakeClaimAllRewards,
-  useBatchStakeMulticall,
-  useStakeClaimRewards
-} from '@/hooks';
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
+import { useStakeTransactionCallbacks } from './useStakeTransactionCallbacks';
+import { useBatchStakeClaimAllRewards, useBatchStakeMulticall, useStakeClaimRewards } from '@/hooks';
 import { useContext } from 'react';
 import { WidgetContext } from '@/widgets/context/WidgetContext';
 import { StakeAction, StakeFlow } from '../lib/constants';
 import { useConnection } from 'wagmi';
 
-interface UseStakeTransactionsParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseStakeTransactionsParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   lockAmount: bigint;
   usdsAmount: bigint;
   calldata: `0x${string}`[];
@@ -61,7 +60,6 @@ export const useStakeTransactions = ({
   setRestakeSkyAmount,
   mutateStakeSkyAllowance,
   mutateStakeUsdsAllowance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -90,7 +88,6 @@ export const useStakeTransactions = ({
       setRestakeSkyAmount,
       mutateStakeSkyAllowance,
       mutateStakeUsdsAllowance,
-      addRecentTransaction,
       onWidgetStateChange,
       onNotification,
       onAnalyticsEvent,

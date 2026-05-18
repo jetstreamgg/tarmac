@@ -4,16 +4,19 @@ import { t } from '@lingui/core/macro';
 import { formatUnits } from 'viem';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useMemo, useRef } from 'react';
 import { useChainId } from 'wagmi';
 import { StUSDSAction, StUSDSFlow } from '../lib/constants';
 
-interface UseStUsdsTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseStUsdsTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   amount: bigint;
   needsAllowance: boolean;
   shouldUseBatch: boolean;
@@ -28,7 +31,6 @@ export const useStUsdsTransactionCallbacks = ({
   amount,
   needsAllowance,
   shouldUseBatch,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -42,7 +44,6 @@ export const useStUsdsTransactionCallbacks = ({
 
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -96,12 +97,7 @@ export const useStUsdsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: isCurve
-            ? t`Supplying ${formatBigInt(amount)} USDS via Curve`
-            : t`Supplying ${formatBigInt(amount)} USDS`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         supplyStepRef.current = 0;
@@ -190,12 +186,7 @@ export const useStUsdsTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({
-          hash,
-          recentTransactionDescription: isCurve
-            ? t`Withdrawing ${formatBigInt(amount)} USDS via Curve`
-            : t`Withdrawing ${formatBigInt(amount)} USDS`
-        });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         withdrawStepRef.current = 0;

@@ -11,10 +11,7 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { useLingui } from '@lingui/react';
-import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import {
-  BATCH_TX_LEGAL_NOTICE_URL,
   COMING_SOON_MAP,
   QueryParams,
   IntentMapping,
@@ -32,11 +29,7 @@ import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
 import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import React, { useEffect } from 'react';
-import { useNotification } from '../hooks/useNotification';
-
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
@@ -53,12 +46,7 @@ import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
 import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
-import {
-  useAvailableTokenRewardContracts,
-  MORPHO_VAULTS,
-  PENDLE_MARKETS,
-  isMarketMatured
-} from '@/hooks';
+import { useAvailableTokenRewardContracts, MORPHO_VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -72,21 +60,11 @@ type WidgetPaneProps = {
 };
 
 export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
-  const { i18n } = useLingui();
   const chainId = useChainId();
-  const onConnect = useCustomConnectModal();
 
-  // No-op: ConnectedModal now uses subgraph data instead of localStorage
-  const addRecentTransaction = () => {};
-
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const onNotification = useNotification();
-  const { onExternalLinkClicked } = useConfigContext();
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
-  const locale = i18n.locale;
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
-  const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   // Map Intent → ModuleId for geo-config filtering
   // TODO(geo-gating): Pendle is intentionally absent from this map. Adding gating
@@ -108,16 +86,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sharedProps = {
-    onConnect,
-    addRecentTransaction,
-    locale,
     rightHeaderComponent,
-    onNotification,
-    enabled: isConnectedAndAcceptedTerms,
-    onExternalLinkClicked,
-    referralCode,
-    shouldReset: searchParams.get(QueryParams.Reset) === 'true',
-    legalBatchTxUrl: BATCH_TX_LEGAL_NOTICE_URL
+    shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };
 
   const { trackWidgetSelected } = useAppAnalytics();

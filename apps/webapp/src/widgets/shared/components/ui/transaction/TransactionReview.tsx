@@ -15,20 +15,19 @@ import { TxStatus } from '@/widgets/shared/constants';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
+import { BATCH_TX_LEGAL_NOTICE_URL } from '@/lib/constants';
 
 export function TransactionReview({
   batchEnabled,
   setBatchEnabled,
   transactionDetail,
   customSteps,
-  legalBatchTxUrl,
   isBatchFlowSupported = true
 }: {
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   transactionDetail?: React.ReactElement;
   customSteps?: React.ReactElement;
-  legalBatchTxUrl?: string;
   isBatchFlowSupported?: boolean;
 }) {
   const { txTitle, txSubtitle, stepTwoTitle, showStepIndicator, txStatus } = useContext(WidgetContext);
@@ -96,19 +95,15 @@ export function TransactionReview({
                               Bundled transactions are set &apos;on&apos; by default to complete transactions
                               in a single step. Combining actions improves the user experience and reduces gas
                               fees. Manually toggle off to cancel this feature.
-                              {legalBatchTxUrl && (
-                                <>
-                                  <br />
-                                  <br />
-                                  <ExternalLink
-                                    href={legalBatchTxUrl}
-                                    className="text-textEmphasis hover:text-textEmphasis self-start text-sm hover:underline"
-                                    showIcon={false}
-                                  >
-                                    <Trans>Legal Notice</Trans>
-                                  </ExternalLink>
-                                </>
-                              )}
+                              <br />
+                              <br />
+                              <ExternalLink
+                                href={BATCH_TX_LEGAL_NOTICE_URL}
+                                className="text-textEmphasis hover:text-textEmphasis self-start text-sm hover:underline"
+                                showIcon={false}
+                              >
+                                <Trans>Legal Notice</Trans>
+                              </ExternalLink>
                             </Text>
                           </>
                         }

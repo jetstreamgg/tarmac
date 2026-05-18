@@ -28,7 +28,7 @@ describe('Upgrade widget tests', () => {
     vi.restoreAllMocks();
   });
   it('loads data when wrapped in wagmi config', async () => {
-    renderWithWagmiWrapper(<UpgradeWidgetWrapped onConnect={() => true} />);
+    renderWithWagmiWrapper(<UpgradeWidgetWrapped />);
 
     const items = await screen.findAllByText('Upgrade');
 

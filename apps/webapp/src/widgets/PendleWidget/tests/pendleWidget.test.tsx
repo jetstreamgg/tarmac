@@ -28,7 +28,7 @@ describe('Pendle widget tests', () => {
   });
 
   it('renders the supply tab by default with the market header', async () => {
-    renderWithWagmiWrapper(<PendleWidget market={market} onConnect={() => true} />);
+    renderWithWagmiWrapper(<PendleWidget market={market} />);
 
     expect(await screen.findByText('Supply')).toBeTruthy();
     expect(screen.getByText('Withdraw')).toBeTruthy();
@@ -37,14 +37,14 @@ describe('Pendle widget tests', () => {
   });
 
   it('renders the "Powered by Pendle" label with an external link', async () => {
-    renderWithWagmiWrapper(<PendleWidget market={market} onConnect={() => true} />);
+    renderWithWagmiWrapper(<PendleWidget market={market} />);
 
     const link = await screen.findByRole('link', { name: /Pendle/i });
     expect(link.getAttribute('href')).toContain('pendle.finance');
   });
 
   it('shows an enabled "Connect Wallet" button when not connected', async () => {
-    renderWithWagmiWrapper(<PendleWidget market={market} onConnect={() => true} />);
+    renderWithWagmiWrapper(<PendleWidget market={market} />);
 
     const button = (await screen.findByTestId('widget-button')) as HTMLButtonElement;
     // WagmiWrapper's mock connection isn't connected; the action button should

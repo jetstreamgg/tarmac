@@ -1,8 +1,41 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { I18nProvider } from '@lingui/react';
+import { i18n } from '@lingui/core';
 import { TxStatus } from '@/widgets/shared/constants';
+import { ConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { ConnectModalContext } from '@/modules/ui/context/ConnectModalContext';
 import { PsmConversionWidget } from '.';
+
+i18n.load('en', {});
+i18n.activate('en');
+
+const connectedContextValue = {
+  isConnectedAndAcceptedTerms: true,
+  isAuthorized: true,
+  setHasAcceptedTerms: () => {},
+  isCheckingTerms: false,
+  termsCheckError: false,
+  retryTermsCheck: () => {},
+  authData: { authIsLoading: false },
+  vpnData: { vpnIsLoading: false }
+};
+
+const connectModalContextValue = {
+  isOpen: false,
+  openConnectModal: () => {},
+  closeConnectModal: () => {}
+};
+
+const renderWithI18n = (ui: React.ReactElement) =>
+  render(
+    <I18nProvider i18n={i18n}>
+      <ConnectedContext.Provider value={connectedContextValue}>
+        <ConnectModalContext.Provider value={connectModalContextValue}>{ui}</ConnectModalContext.Provider>
+      </ConnectedContext.Provider>
+    </I18nProvider>
+  );
 
 const mockPsmState = vi.hoisted(() => ({
   execute: vi.fn(),
@@ -64,9 +97,28 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('motion/react', () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>
+vi.mock('@/modules/app/hooks/useNotification', () => ({
+  useNotification: () => vi.fn()
 }));
+
+vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
+  useWidgetAnalytics: () => vi.fn()
+}));
+
+vi.mock('motion/react', () => {
+  const passthrough = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
+  const motion: any = new Proxy(
+    {},
+    {
+      get: (_t, prop: string) => (prop === 'create' ? () => passthrough : passthrough)
+    }
+  );
+  return {
+    AnimatePresence: passthrough,
+    motion,
+    cubicBezier: () => () => 0
+  };
+});
 
 vi.mock('@/widgets/shared/animation/Wrappers', () => ({
   CardAnimationWrapper: ({ children }: { children: React.ReactNode }) => <>{children}</>
@@ -205,7 +257,6 @@ vi.mock('./hooks/usePsmConversion', () => ({
 
 describe('PsmConversionWidget', () => {
   const widgetProps = {
-    onConnect: () => null,
     externalWidgetState: {
       token: 'USDC',
       amount: '10'
@@ -237,7 +288,7 @@ describe('PsmConversionWidget', () => {
   });
 
   it('hides the two-step indicator for single-transaction PSM conversions', async () => {
-    render(<PsmConversionWidget {...widgetProps} />);
+    renderWithI18n(<PsmConversionWidget {...widgetProps} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
     expect(await screen.findByText('review-step-indicator:false')).toBeTruthy();
@@ -248,32 +299,20 @@ describe('PsmConversionWidget', () => {
   });
 
   it('forwards transaction starts into the shared transaction callbacks', async () => {
-    const addRecentTransaction = vi.fn();
     const onWidgetStateChange = vi.fn();
 
-    render(
-      <PsmConversionWidget
-        {...widgetProps}
-        addRecentTransaction={addRecentTransaction}
-        onWidgetStateChange={onWidgetStateChange}
-      />
-    );
+    renderWithI18n(<PsmConversionWidget {...widgetProps} onWidgetStateChange={onWidgetStateChange} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Review' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Confirm conversion' }));
 
     await waitFor(() => {
-      expect(addRecentTransaction).toHaveBeenCalledWith({
-        hash: '0x123',
-        description: 'Convert USDC into USDS'
-      });
+      expect(onWidgetStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hash: '0x123',
+          txStatus: TxStatus.LOADING
+        })
+      );
     });
-
-    expect(onWidgetStateChange).toHaveBeenCalledWith(
-      expect.objectContaining({
-        hash: '0x123',
-        txStatus: TxStatus.LOADING
-      })
-    );
   });
 });

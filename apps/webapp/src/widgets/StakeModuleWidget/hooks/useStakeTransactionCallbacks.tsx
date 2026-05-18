@@ -4,15 +4,18 @@ import { t } from '@lingui/core/macro';
 import { formatUnits } from 'viem';
 import { useTransactionCallbacks } from '@/widgets/shared/hooks/useTransactionCallbacks';
 import { TransactionCallbacks } from '@/widgets/shared/types/transactionCallbacks';
-import { WidgetProps } from '@/widgets/shared/types/widgetState';
+import {
+  WidgetProps,
+  OnNotificationCallback,
+  OnAnalyticsEventCallback
+} from '@/widgets/shared/types/widgetState';
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { useMemo, useRef } from 'react';
 import { StakeFlow } from '../lib/constants';
 
-interface UseStakeTransactionCallbacksParameters extends Pick<
-  WidgetProps,
-  'addRecentTransaction' | 'onWidgetStateChange' | 'onNotification' | 'onAnalyticsEvent'
-> {
+interface UseStakeTransactionCallbacksParameters extends Pick<WidgetProps, 'onWidgetStateChange'> {
+  onNotification?: OnNotificationCallback;
+  onAnalyticsEvent?: OnAnalyticsEventCallback;
   lockAmount: bigint;
   setIndexToClaim: React.Dispatch<React.SetStateAction<bigint | undefined>>;
   setRewardContractsToClaim: React.Dispatch<React.SetStateAction<`0x${string}`[] | undefined>>;
@@ -49,7 +52,6 @@ export const useStakeTransactionCallbacks = ({
   setRestakeSkyAmount,
   mutateStakeSkyAllowance,
   mutateStakeUsdsAllowance,
-  addRecentTransaction,
   onWidgetStateChange,
   onNotification,
   onAnalyticsEvent,
@@ -74,7 +76,6 @@ export const useStakeTransactionCallbacks = ({
 
   // Don't pass onAnalyticsEvent to the shared hook — we fire rich events directly below
   const { handleOnMutate, handleOnStart, handleOnSuccess, handleOnError } = useTransactionCallbacks({
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification
   });
@@ -165,7 +166,7 @@ export const useStakeTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: t`Doing multicall` });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         stepRef.current = 0;
@@ -240,7 +241,7 @@ export const useStakeTransactionCallbacks = ({
         });
       },
       onStart: hash => {
-        handleOnStart({ hash, recentTransactionDescription: 'Claiming rewards' });
+        handleOnStart({ hash });
       },
       onSuccess: hash => {
         //TODO: Update copy

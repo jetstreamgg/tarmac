@@ -44,39 +44,40 @@ import { useNotifyWidgetState } from '@/widgets/shared/hooks/useNotifyWidgetStat
 import { StUSDSTransactionReview } from './components/StUSDSTransactionReview';
 import { withWidgetProvider } from '@/widgets/shared/hocs/withWidgetProvider';
 import { useStUsdsTransactions } from './hooks/useStUsdsTransactions';
+import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useNotification } from '@/modules/app/hooks/useNotification';
+import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
+import { REFERRAL_CODE } from '@/lib/constants';
 
 export type StUSDSWidgetProps = WidgetProps & {
-  onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  batchEnabled?: boolean;
-  setBatchEnabled?: (enabled: boolean) => void;
   onBackToExpert?: () => void;
 };
 
 // HOC Widget
 const StUSDSWidgetWrapped = ({
-  onConnect,
-  addRecentTransaction,
   rightHeaderComponent,
   externalWidgetState,
   onStateValidated,
-  onNotification,
   onWidgetStateChange,
-  onAnalyticsEvent,
-  onExternalLinkClicked,
-  enabled = true,
-  referralCode,
-  batchEnabled,
-  setBatchEnabled,
   onBackToExpert
 }: StUSDSWidgetProps) => {
+  const onConnect = useCustomConnectModal();
+  const [batchEnabled, setBatchEnabled] = useBatchToggle();
+  const onNotification = useNotification();
+  const chainId = useChainId();
+  const onAnalyticsEvent = useWidgetAnalytics('expert', chainId);
   const validatedExternalState = getValidatedState(externalWidgetState);
 
   useEffect(() => {
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  const chainId = useChainId();
   const { address, isConnecting, isConnected } = useConnection();
+  const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
+  const { onExternalLinkClicked } = useConfigContext();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
   const { mutate: mutateStUsds, data: stUsdsData, isLoading: isStUsdsDataLoading } = useStUsdsData();
@@ -177,7 +178,7 @@ const StUSDSWidgetWrapped = ({
 
   const { batchStUsdsDeposit, stUsdsWithdraw } = useStUsdsTransactions({
     amount,
-    referralCode,
+    referralCode: REFERRAL_CODE,
     max,
     needsAllowance,
     shouldUseBatch,
@@ -185,7 +186,6 @@ const StUSDSWidgetWrapped = ({
     mutateStUsds,
     mutateCurveUsdsAllowance,
     mutateCurveStUsdsAllowance,
-    addRecentTransaction,
     onWidgetStateChange,
     onNotification,
     onAnalyticsEvent,

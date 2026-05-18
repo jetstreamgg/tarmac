@@ -22,7 +22,6 @@ export const Wizard = ({
   batchEnabled,
   setBatchEnabled,
   isBatchTransaction,
-  legalBatchTxUrl,
   onNoChangesDetected
 }: {
   isConnectedAndEnabled: boolean;
@@ -36,7 +35,6 @@ export const Wizard = ({
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
-  legalBatchTxUrl?: string;
   onNoChangesDetected?: (hasNoChanges: boolean) => void;
 }) => {
   const chainId = useChainId();
@@ -73,7 +71,6 @@ export const Wizard = ({
           batchEnabled={batchEnabled}
           setBatchEnabled={setBatchEnabled}
           isBatchTransaction={isBatchTransaction}
-          legalBatchTxUrl={legalBatchTxUrl}
           onNoChangesDetected={onNoChangesDetected}
         />
       )}

@@ -149,7 +149,6 @@ export const PositionSummary = ({
   batchEnabled,
   setBatchEnabled,
   isBatchTransaction,
-  legalBatchTxUrl,
   onNoChangesDetected
 }: {
   needsAllowance: boolean;
@@ -157,7 +156,6 @@ export const PositionSummary = ({
   batchEnabled?: boolean;
   setBatchEnabled?: (enabled: boolean) => void;
   isBatchTransaction: boolean;
-  legalBatchTxUrl?: string;
   onNoChangesDetected?: (hasNoChanges: boolean) => void;
 }) => {
   const ilkName = getIlkName(2);
@@ -610,7 +608,6 @@ export const PositionSummary = ({
     <TransactionReview
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}
-      legalBatchTxUrl={legalBatchTxUrl}
       transactionDetail={
         <MotionVStack gap={2} variants={positionAnimations} className="mt-6 space-y-3">
           <motion.div
