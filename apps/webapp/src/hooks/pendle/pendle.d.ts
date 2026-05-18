@@ -281,76 +281,48 @@ export type PendleMarketsAllResponseRaw = {
 };
 
 // ---------------------------------------------------------------------------
-// Pendle API transport types (/v5/{chainId}/transactions/{marketAddress})
-// ---------------------------------------------------------------------------
-
-/**
- * One entry in the transactions `results` array. `market` comes back as a
- * "<chainId>-<address>" string. `value` and `impliedApy` are decimal numbers.
- */
-export type PendleTransactionRaw = {
-  id: string;
-  market: string;
-  timestamp: string;
-  chainId: number;
-  txHash: `0x${string}`;
-  value: number;
-  type: 'TRADES';
-  action: PendleHistoryAction.BUY_PT | PendleHistoryAction.SELL_PT;
-  txOrigin: `0x${string}`;
-  impliedApy: number;
-  notional?: Record<string, number>;
-};
-
-export type PendleMarketTransactionsResponseRaw = {
-  total: number;
-  resumeToken?: string;
-  limit: number;
-  skip: number;
-  results: PendleTransactionRaw[];
-};
-
-// ---------------------------------------------------------------------------
 // Pendle API transport types (/v1/pnl/transactions)
 // ---------------------------------------------------------------------------
 
 /**
- * Per-leg shape returned by /v1/pnl/transactions. The PT/YT/LP legs each carry
- * `unit` (token amount in native decimals) plus a cost-basis breakdown we
- * don't read. For redeemPy rows the PT leg holds the redeemed amount;
- * `ytData` / `lpData` carry the corresponding legs on action types we don't
- * surface today.
+ * One entry in /v1/pnl/transactions `results`. The endpoint covers every
+ * PnL-affecting action (mintPy, buyPt, sellPt, redeemPy, swapPtToYt, …) and
+ * is unfiltered by market — callers narrow to PENDLE_MARKETS and the actions
+ * we surface (buyPt, sellPt, redeemPy). `action` stays a free string so
+ * unknown values pass through untouched and get filtered client-side.
  *
- * Verified against the live API (Pendle's OpenAPI calls this SpendUnitData
- * but the wire field is `unit`, not `delta`).
- */
-export type PendlePnlSpendUnitData = {
-  /** Token amount in the unit's native decimals (always non-negative). */
-  unit: number;
-};
-
-/**
- * One entry in /v1/pnl/transactions `results`. The endpoint covers every PnL-
- * affecting action (mintPy, swapPtToYt, redeemPy, …). We type only the fields
- * we read; `action` is a free string so unknown action values pass through
- * untouched and get filtered client-side.
+ * `market` comes back as a raw address ("0xc5b32…") on this endpoint —
+ * other Pendle endpoints prefix it with "<chainId>-", so the resolver in
+ * usePendleAllPnlTransactions accepts both forms when looking up
+ * PENDLE_MARKETS.
  *
- * `txValueAsset` is the magnitude of the underlying-token movement caused by
- * this transaction (positive on both spend and receive sides — sign is
- * implied by the action). For a redeemPy row this is the amount of underlying
- * the user received; zero on YT-only redeems where no underlying actually
- * moved.
+ * `txValueAsset` is the magnitude of the underlying-token movement caused
+ * by this transaction (positive on both spend and receive sides — sign is
+ * implied by the action). Zero on YT-only redeems where no underlying
+ * actually moved.
  *
- * `ptData.unit` is the running PT balance AFTER the action, NOT the delta —
- * do not display it as a trade amount.
+ * `effectivePtExchangeRate` is the PT-per-underlying rate the trade executed
+ * at. Multiplying `txValueAsset * effectivePtExchangeRate` reproduces v5's
+ * `notional.pt` for buyPt/sellPt rows (verified against a live wallet).
+ *
+ * `assetUsd` is the underlying token's USD price at trade time;
+ * `txValueAsset * assetUsd` yields the USD-denominated trade value.
+ *
+ * Fields not consumed (ptData/ytData/lpData, profit, priceInAsset) are
+ * intentionally omitted — the wire shape diverges from Pendle's OpenAPI
+ * for ptData.unit (claimed delta, actually a running balance / 0 / per-tx
+ * delta depending on action), and leaving them off keeps us from being
+ * tempted to read unreliable values.
  */
 export type PendlePnlTransactionRaw = {
+  chainId: number;
+  market: string;
   timestamp: string;
   action: string;
-  market: string;
   txHash: `0x${string}`;
-  ptData?: PendlePnlSpendUnitData;
-  txValueAsset?: number;
+  txValueAsset: number;
+  assetUsd: number;
+  effectivePtExchangeRate: number;
 };
 
 export type PendlePnlTransactionsResponseRaw = {
@@ -360,28 +332,31 @@ export type PendlePnlTransactionsResponseRaw = {
 
 /**
  * Normalized history row exposed to the UI and to computeMaturedEarnings.
- * Spans the v5 trade feed and the v1 PnL feed, discriminated by `action`.
+ * All rows originate from /v1/pnl/transactions and are discriminated by
+ * `action` after the transport boundary maps wire values (buyPt/sellPt/
+ * redeemPy) to the canonical PendleHistoryAction enum.
  *
- * `valueUsd` is USD-denominated for trade rows (Pendle's `value` field) and
- * `0` for redeem rows — the latter exists post-maturity and the redeemed
- * principal isn't a market trade. computeMaturedEarnings filters by action
- * before consuming `valueUsd`, so redeem rows don't contribute to cost basis.
+ * `valueUsd` is USD-denominated (txValueAsset × assetUsd) for every row.
+ * computeMaturedEarnings filters by action before consuming `valueUsd`, so
+ * redeem rows don't contribute to cost basis even though they carry a value.
  */
 export type PendleHistoryRow = {
-  /** v5: tx.id; v1: `${txHash}:redeemPy` (the PnL feed has no id of its own). */
+  /** `${txHash}:${action}` — the PnL feed has no id of its own, and the
+   * action discriminates the rare multi-action tx (e.g. buy + sell in one zap). */
   id: string;
   txHash: `0x${string}`;
   timestamp: string;
   action: PendleHistoryAction;
   /**
-   * PT amount this transaction acted on, in PT units. Reliable for trade rows
-   * (BUY_PT/SELL_PT — sourced from v5 notional.pt). Unreliable for redeem rows
-   * because the v1 PnL feed reports `ptData.unit` as the running balance after
-   * the action, not the delta — surfaced as 0 so consumers don't accidentally
-   * display the balance as a trade amount.
+   * PT amount this transaction acted on, in PT units.
+   *   - Trades (BUY_PT/SELL_PT): `txValueAsset * effectivePtExchangeRate`,
+   *     verified to match v5's `notional.pt` to ≥4 decimals across a real
+   *     wallet's history.
+   *   - Redeems (REDEEM_PY): `txValueAsset` (1 PT ≈ 1 underlying at
+   *     redemption — the underlying received equals the PT redeemed).
    */
   ptAmount: number;
-  /** USD-denominated trade value as reported by v5. 0 for redeem rows. */
+  /** USD-denominated trade value (txValueAsset × assetUsd from the PnL feed). */
   valueUsd: number;
 };
 

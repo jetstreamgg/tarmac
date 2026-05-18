@@ -11,6 +11,7 @@ export { useSavingsApprove } from './savings/useSavingsApprove';
 export { useSavingsHistory } from './savings/useSavingsHistory';
 export { useEthereumSavingsHistory } from './savings/useEthereumSavingsHistory';
 export { useSavingsChartInfo } from './savings/useSavingsChartInfo';
+export { useSkySavingsRateHistoricData } from './savings/useSkySavingsRateHistoricData';
 export { useReadSavingsUsds, sUsdsAddress, sUsdsImplementationAbi } from './savings/useReadSavingsUsds';
 export { useTotalSavingsSuppliers } from './savings/useTotalSavingsSuppliers';
 export { useSsrSharesToAssets } from './savings/useSsrSharesToAssets';
@@ -174,8 +175,6 @@ export type {
   PendleMarketsStatsHook,
   PendleUserPtBalances,
   PendleUserPtBalancesHook,
-  PendleTransactionRaw,
-  PendleMarketTransactionsResponseRaw,
   PendlePnlTransactionRaw,
   PendlePnlTransactionsResponseRaw,
   PendleHistoryRow,

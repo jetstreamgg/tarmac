@@ -11,7 +11,10 @@ export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkN
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+    await isolatedPage
+      .getByTestId('widget-navigation')
+      .getByRole('tab', { name: 'Savings', exact: true })
+      .click();
     await switchToL2(isolatedPage, networkName);
 
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
@@ -72,7 +75,10 @@ export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkN
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+    await isolatedPage
+      .getByTestId('widget-navigation')
+      .getByRole('tab', { name: 'Savings', exact: true })
+      .click();
     await switchToL2(isolatedPage, networkName);
 
     //supply USDS
