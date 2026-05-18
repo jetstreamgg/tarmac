@@ -26,9 +26,12 @@ export function usePendleMarketHistory(marketAddress: `0x${string}` | undefined)
   const data = useMemo<PendleHistoryRow[] | undefined>(() => {
     if (!allRows) return undefined;
     if (!targetMarket) return [];
-    return allRows
-      .filter(r => r.market.marketAddress.toLowerCase() === targetMarket)
-      .map(({ market: _market, ...rest }) => rest);
+    return (
+      allRows
+        .filter(r => r.market.marketAddress.toLowerCase() === targetMarket)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        .map(({ market: _market, ...rest }) => rest)
+    );
   }, [allRows, targetMarket]);
 
   return {
