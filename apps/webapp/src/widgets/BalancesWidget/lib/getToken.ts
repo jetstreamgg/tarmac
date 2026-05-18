@@ -1,12 +1,14 @@
-import { TransactionTypeEnum } from '@/hooks';
+import { CombinedHistoryItem, TransactionTypeEnum } from '@/hooks';
 import { t } from '@lingui/core/macro';
 
 export const getToken = ({
+  item,
   type,
   tradeFromToken,
   savingsToken,
   rewardToken
 }: {
+  item: CombinedHistoryItem;
   type: TransactionTypeEnum;
   tradeFromToken?: string;
   savingsToken?: string;
@@ -39,6 +41,10 @@ export const getToken = ({
     case TransactionTypeEnum.SEAL:
     case TransactionTypeEnum.UNSEAL:
       return t`MKR`;
+    case TransactionTypeEnum.PENDLE_BUY:
+    case TransactionTypeEnum.PENDLE_SELL:
+    case TransactionTypeEnum.PENDLE_REDEEM:
+      return 'underlyingSymbol' in item ? item.underlyingSymbol : '';
     default:
       return '';
   }

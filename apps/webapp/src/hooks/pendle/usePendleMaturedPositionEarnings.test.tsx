@@ -3,8 +3,8 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { PendleTradeAction } from './constants';
-import type { PendleMarketConfig, PendleTransactionRaw } from './pendle';
+import { PendleHistoryAction } from './constants';
+import type { PendleHistoryRow, PendleMarketConfig } from './pendle';
 
 // Mock the upstream hooks and wagmi so this test exercises ONLY the wiring
 // from inputs → computeMaturedEarnings → outputs. The math branches are
@@ -49,18 +49,13 @@ const PEGGED_MARKET: PendleMarketConfig = {
 // computeMaturedEarnings.test.ts so the wiring assertion lines up 1:1 with a
 // known pure-function result.
 const NINETY_DAYS_BEFORE_EXPIRY = (PEGGED_MARKET.expiry - 90 * 86_400) * 1000;
-const BUY_TRADE: PendleTransactionRaw = {
+const BUY_TRADE: PendleHistoryRow = {
   id: 'tx-1',
-  market: PEGGED_MARKET.marketAddress,
-  timestamp: new Date(NINETY_DAYS_BEFORE_EXPIRY).toISOString(),
-  chainId: 1,
   txHash: '0xabc',
-  value: 1000,
-  type: 'TRADES',
-  action: PendleTradeAction.BUY_PT,
-  txOrigin: '0x0',
-  impliedApy: 0,
-  notional: { pt: 1000 }
+  timestamp: new Date(NINETY_DAYS_BEFORE_EXPIRY).toISOString(),
+  action: PendleHistoryAction.BUY_PT,
+  ptAmount: 1000,
+  valueUsd: 1000
 };
 
 // 1010 USDG with 6 decimals

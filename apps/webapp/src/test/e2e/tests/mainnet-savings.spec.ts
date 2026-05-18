@@ -65,7 +65,10 @@ test('Supply and withdraw from Savings', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
 
@@ -111,7 +114,10 @@ test('Savings transaction overview shows correct sUSDS preview values', async ({
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   // Supply tab: enter 10 USDS and verify both rows of the transaction overview.
   await isolatedPage.getByTestId('supply-input-savings').click();
@@ -167,7 +173,10 @@ test('supply with insufficient usds balance', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   await isolatedPage.waitForLoadState('domcontentloaded');
   const balanceLabelexpected = await isolatedPage.getByTestId('supply-input-savings-balance');
@@ -184,7 +193,10 @@ test('withdraw with insufficient savings balance', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
   await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
 
   await isolatedPage.getByTestId('withdraw-input-savings-max').click();
@@ -218,7 +230,10 @@ test('Balance changes after a successful supply', async ({ isolatedPage, testAcc
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
   await isolatedPage.waitForLoadState('domcontentloaded');
   await expect(isolatedPage.getByTestId('supply-input-savings-balance')).not.toHaveText(
     'No wallet connected'
@@ -260,7 +275,10 @@ test('Balance changes after a successful withdraw', async ({ isolatedPage }) => 
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   // Supply some USDS
   await isolatedPage.getByTestId('supply-input-savings').click();
@@ -320,7 +338,10 @@ test('supply with enough allowance does not require approval', async ({ isolated
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').fill('100');
@@ -338,7 +359,10 @@ test('supply without allowance requires approval', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').fill('101');
@@ -351,7 +375,10 @@ test('supply without allowance requires approval', async ({ isolatedPage }) => {
 
 test('if not connected it should show a connect button', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   const widgetConnectButton = isolatedPage
     .getByTestId('widget-container')
@@ -372,7 +399,10 @@ test('percentage buttons work', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   // await get balance
   expect(await isolatedPage.getByTestId('supply-input-savings-balance')).toBeVisible({ timeout: 15000 });
@@ -431,7 +461,10 @@ test('enter amount button should be disabled', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   await expect(
     isolatedPage.getByTestId('widget-container').locator('button').filter({ hasText: 'Enter amount' })
@@ -462,7 +495,10 @@ test('A supply error redirects to the error screen', async ({ isolatedPage }) =>
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
   await isolatedPage.getByTestId('supply-input-savings').click();
   await isolatedPage.getByTestId('supply-input-savings').fill('100');
 
@@ -483,7 +519,10 @@ test('A withdraw error redirects to the error screen', async ({ isolatedPage }) 
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   // Supply some USDS
   await isolatedPage.getByTestId('supply-input-savings').click();
@@ -513,7 +552,10 @@ test('Details pane shows right data', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   // Wait for data point to be ready
   await expect(isolatedPage.getByTestId('savings-remaining-balance-details')).toContainText('USDS');
@@ -549,7 +591,10 @@ test('Batch - Supply to Savings', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Savings' }).click();
+  await isolatedPage
+    .getByTestId('widget-navigation')
+    .getByRole('tab', { name: 'Savings', exact: true })
+    .click();
 
   await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
 

@@ -1,5 +1,6 @@
 import { ReadHook } from '../hooks';
-import { PendleTradeAction } from './constants';
+import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { PendleHistoryAction } from './constants';
 
 /**
  * Configuration for a Pendle market.
@@ -280,37 +281,141 @@ export type PendleMarketsAllResponseRaw = {
 };
 
 // ---------------------------------------------------------------------------
-// Pendle API transport types (/v5/{chainId}/transactions/{marketAddress})
+// Pendle API transport types (/v1/pnl/transactions)
 // ---------------------------------------------------------------------------
 
 /**
- * One entry in the transactions `results` array. `market` comes back as a
- * "<chainId>-<address>" string. `value` and `impliedApy` are decimal numbers.
+ * One entry in /v1/pnl/transactions `results`. The endpoint covers every
+ * PnL-affecting action (mintPy, buyPt, sellPt, redeemPy, swapPtToYt, …) and
+ * is unfiltered by market — callers narrow to PENDLE_MARKETS and the actions
+ * we surface (buyPt, sellPt, redeemPy). `action` stays a free string so
+ * unknown values pass through untouched and get filtered client-side.
+ *
+ * `market` comes back as a raw address ("0xc5b32…") on this endpoint —
+ * other Pendle endpoints prefix it with "<chainId>-", so the resolver in
+ * usePendleAllPnlTransactions accepts both forms when looking up
+ * PENDLE_MARKETS.
+ *
+ * `txValueAsset` is the magnitude of the underlying-token movement caused
+ * by this transaction (positive on both spend and receive sides — sign is
+ * implied by the action). Zero on YT-only redeems where no underlying
+ * actually moved.
+ *
+ * `effectivePtExchangeRate` is the PT-per-underlying rate the trade executed
+ * at. Multiplying `txValueAsset * effectivePtExchangeRate` reproduces v5's
+ * `notional.pt` for buyPt/sellPt rows (verified against a live wallet).
+ *
+ * `assetUsd` is the underlying token's USD price at trade time;
+ * `txValueAsset * assetUsd` yields the USD-denominated trade value.
+ *
+ * Fields not consumed (ptData/ytData/lpData, profit, priceInAsset) are
+ * intentionally omitted — the wire shape diverges from Pendle's OpenAPI
+ * for ptData.unit (claimed delta, actually a running balance / 0 / per-tx
+ * delta depending on action), and leaving them off keeps us from being
+ * tempted to read unreliable values.
  */
-export type PendleTransactionRaw = {
-  id: string;
+export type PendlePnlTransactionRaw = {
+  chainId: number;
   market: string;
   timestamp: string;
-  chainId: number;
+  action: string;
   txHash: `0x${string}`;
-  value: number;
-  type: 'TRADES';
-  action: PendleTradeAction;
-  txOrigin: `0x${string}`;
-  impliedApy: number;
-  notional?: Record<string, number>;
+  txValueAsset: number;
+  assetUsd: number;
+  effectivePtExchangeRate: number;
 };
 
-export type PendleMarketTransactionsResponseRaw = {
+export type PendlePnlTransactionsResponseRaw = {
   total: number;
-  resumeToken?: string;
-  limit: number;
-  skip: number;
-  results: PendleTransactionRaw[];
+  results: PendlePnlTransactionRaw[];
+};
+
+/**
+ * Normalized history row exposed to the UI and to computeMaturedEarnings.
+ * All rows originate from /v1/pnl/transactions and are discriminated by
+ * `action` after the transport boundary maps wire values (buyPt/sellPt/
+ * redeemPy) to the canonical PendleHistoryAction enum.
+ *
+ * `valueUsd` is USD-denominated (txValueAsset × assetUsd) for every row.
+ * computeMaturedEarnings filters by action before consuming `valueUsd`, so
+ * redeem rows don't contribute to cost basis even though they carry a value.
+ */
+export type PendleHistoryRow = {
+  /** `${txHash}:${action}` — the PnL feed has no id of its own, and the
+   * action discriminates the rare multi-action tx (e.g. buy + sell in one zap). */
+  id: string;
+  txHash: `0x${string}`;
+  timestamp: string;
+  action: PendleHistoryAction;
+  /**
+   * PT amount this transaction acted on, in PT units.
+   *   - Trades (BUY_PT/SELL_PT): `txValueAsset * effectivePtExchangeRate`,
+   *     verified to match v5's `notional.pt` to ≥4 decimals across a real
+   *     wallet's history.
+   *   - Redeems (REDEEM_PY): `txValueAsset` (1 PT ≈ 1 underlying at
+   *     redemption — the underlying received equals the PT redeemed).
+   */
+  ptAmount: number;
+  /** USD-denominated trade value (txValueAsset × assetUsd from the PnL feed). */
+  valueUsd: number;
 };
 
 export type PendleMarketHistoryHook = ReadHook & {
-  data?: PendleTransactionRaw[];
+  data?: PendleHistoryRow[];
+};
+
+/**
+ * Normalized history row tagged with its source market. Returned by
+ * useAllPendleMarketsHistory, which merges per-market feeds across every
+ * entry in PENDLE_MARKETS so the overview can show activity for matured
+ * markets the user can no longer click into.
+ */
+export type PendleCombinedHistoryRow = PendleHistoryRow & {
+  market: PendleMarketConfig;
+};
+
+export type PendleCombinedMarketHistoryHook = ReadHook & {
+  data?: PendleCombinedHistoryRow[];
+};
+
+/**
+ * Adapter shape for the cross-module combined history used by the user
+ * activity modal. Mirrors the field set the BalancesHistoryItem renderer
+ * expects (blockTimestamp/transactionHash/module/type/chainId) and carries
+ * the Pendle-specific bits the display helpers consume.
+ *
+ * `ptAmount` is the raw PT integer (PT decimals = underlying decimals per
+ * Pendle convention), so `formatBigInt(amount, { unit: decimals })` renders
+ * the same number a user would see on a block explorer or the per-market
+ * history table. `marketName` ("PT-USDe", …) is the unit shown in the row's
+ * right-hand text.
+ */
+export interface PendleHistoryItem {
+  blockTimestamp: Date;
+  transactionHash: string;
+  module: ModuleEnum.PENDLE;
+  type: TransactionTypeEnum.PENDLE_BUY | TransactionTypeEnum.PENDLE_SELL | TransactionTypeEnum.PENDLE_REDEEM;
+  /** Always mainnet — Pendle's API doesn't serve other chains we support. */
+  chainId: 1;
+  /**
+   * Underlying-token amount the user spent (BUY) or received (SELL/REDEEM),
+   * in the underlying's native decimals. Naming matches the `assets` field on
+   * Savings/Morpho rows so getAmount can read it via the same `'assets' in
+   * item` discriminator.
+   */
+  assets: bigint;
+  /** Underlying-token decimals — used by formatBigInt at render time. */
+  underlyingDecimals: number;
+  /** Underlying-token display symbol (e.g. "USDe", "USDG"). */
+  underlyingSymbol: string;
+  /** Market name for breadcrumb context; not used in the row's right-hand unit. */
+  marketName: string;
+  /** Source market address — useful for downstream linking; not currently rendered. */
+  marketAddress: `0x${string}`;
+}
+
+export type PendleHistoryHook = ReadHook & {
+  data?: PendleHistoryItem[];
 };
 
 /** Per-market user PT balance + USD valuation, scoped to markets we support. */

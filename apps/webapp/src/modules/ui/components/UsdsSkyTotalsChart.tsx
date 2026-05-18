@@ -1,67 +1,105 @@
-import { useTokenChartInfo, usdsAddress, skyAddress } from '@/hooks';
-import { isL2ChainId } from '@/utils';
+import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { Trans } from '@lingui/react/macro';
 import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartData';
-import { useChainId } from 'wagmi';
+import { parseUnits } from 'viem';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
+import { PairTokenIcons } from '@/widgets';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+
+// BA Labs /save/ssr/historic/ only accepts specific bucket values for days_ago
+const ssrDaysAgoFromTimeFrame = (tf: TimeFrame): number => {
+  switch (tf) {
+    case 'w':
+      return 7;
+    case 'm':
+      return 30;
+    case 'y':
+      return 365;
+    case 'all':
+    default:
+      return 9999;
+  }
+};
 
 enum ChartName {
-  USDS = 'Total USDS',
-  SKY = 'Total SKY'
+  USDS_DAI = 'Total USDS and DAI',
+  SKY_SAVINGS = 'Total Sky Savings Supply'
 }
 
+const toBigIntWei = (decimalString: string): bigint => {
+  // BA Labs returns decimal strings with high precision; parseUnits requires <=18 dp
+  const fixed = Number(decimalString || '0').toFixed(18);
+  return parseUnits(fixed, 18);
+};
+
 export function UsdsSkyTotalsChart() {
-  const [activeChart, setActiveChart] = useState<ChartName>(ChartName.USDS);
+  const [activeChart, setActiveChart] = useState<ChartName>(ChartName.USDS_DAI);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('w');
-  const chainId = useChainId();
-
-  const isL2 = isL2ChainId(chainId);
-
-  const nstTokenAddress = isL2 ? usdsAddress[1] : usdsAddress[chainId as keyof typeof usdsAddress]; // Display mainnet data on L2s
-  const skyTokenAddress = isL2 ? skyAddress[1] : skyAddress[chainId as keyof typeof skyAddress]; // Display mainnet data on L2s
 
   const limit = getDayCountFromTimeFrame(timeFrame);
 
-  const {
-    data: usdsData,
-    error: usdsError,
-    isLoading: usdsIsLoading
-  } = useTokenChartInfo({ tokenAddress: nstTokenAddress, limit });
+  const { data: usdsDaiData, error: usdsDaiError, isLoading: usdsDaiIsLoading } = useUsdsDaiData({ limit });
 
   const {
-    data: skyData,
-    error: skyError,
-    isLoading: skyIsLoading
-  } = useTokenChartInfo({ tokenAddress: skyTokenAddress, limit });
+    data: ssrData,
+    error: ssrError,
+    isLoading: ssrIsLoading
+  } = useSkySavingsRateHistoricData({ daysAgo: ssrDaysAgoFromTimeFrame(timeFrame) });
+
+  const usdsDaiChartInput = useMemo(
+    () =>
+      (usdsDaiData || []).map(item => ({
+        blockTimestamp: item.blockTimestamp,
+        amount: toBigIntWei(item.total),
+        holders: 0
+      })),
+    [usdsDaiData]
+  );
+
+  const ssrChartInput = useMemo(
+    () =>
+      (ssrData || []).map(item => ({
+        blockTimestamp: item.blockTimestamp,
+        amount: toBigIntWei(item.total),
+        holders: 0
+      })),
+    [ssrData]
+  );
 
   const chartDataMapping = {
-    [ChartName.USDS]: useParseTokenChartData(timeFrame, usdsData || []),
-    [ChartName.SKY]: useParseTokenChartData(timeFrame, skyData || [])
-  };
-
-  const symbolMapping = {
-    [ChartName.USDS]: 'USDS',
-    [ChartName.SKY]: 'SKY'
+    [ChartName.USDS_DAI]: useParseTokenChartData(timeFrame, usdsDaiChartInput),
+    [ChartName.SKY_SAVINGS]: useParseTokenChartData(timeFrame, ssrChartInput)
   };
 
   const isLoadingMapping = {
-    [ChartName.USDS]: usdsIsLoading,
-    [ChartName.SKY]: skyIsLoading
+    [ChartName.USDS_DAI]: usdsDaiIsLoading,
+    [ChartName.SKY_SAVINGS]: ssrIsLoading
   };
 
   const errorMapping = {
-    [ChartName.USDS]: usdsError,
-    [ChartName.SKY]: skyError
+    [ChartName.USDS_DAI]: usdsDaiError,
+    [ChartName.SKY_SAVINGS]: ssrError
   };
 
   const activeData = chartDataMapping[activeChart];
-  const activeSymbol = symbolMapping[activeChart];
   const activeDataLoading = isLoadingMapping[activeChart];
   const activeDataError = errorMapping[activeChart];
+
+  const iconsMapping = {
+    [ChartName.USDS_DAI]: <PairTokenIcons leftToken="USDS" rightToken="DAI" noChain />,
+    [ChartName.SKY_SAVINGS]: (
+      <TokenIcon
+        className="h-6 w-6"
+        token={{ symbol: 'USDS', name: 'usds' }}
+        width={24}
+        showChainIcon={false}
+      />
+    )
+  };
 
   return (
     <div>
@@ -69,11 +107,11 @@ export function UsdsSkyTotalsChart() {
         <div className="mb-4 flex">
           <Tabs value={activeChart} onValueChange={value => setActiveChart(value as ChartName)}>
             <TabsList className="flex">
-              <TabsTrigger position="left" value={ChartName.USDS}>
-                <Trans>Total USDS</Trans>
+              <TabsTrigger position="left" value={ChartName.USDS_DAI}>
+                <Trans>Total USDS and DAI</Trans>
               </TabsTrigger>
-              <TabsTrigger position="right" value={ChartName.SKY}>
-                <Trans>Total SKY</Trans>
+              <TabsTrigger position="right" value={ChartName.SKY_SAVINGS}>
+                <Trans>Total Sky Savings Supply</Trans>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -83,7 +121,8 @@ export function UsdsSkyTotalsChart() {
           data={activeData}
           isLoading={activeDataLoading}
           error={activeDataError}
-          symbol={activeSymbol}
+          symbol=""
+          icons={iconsMapping[activeChart]}
           onTimeFrameChange={tf => {
             setTimeFrame(tf);
           }}

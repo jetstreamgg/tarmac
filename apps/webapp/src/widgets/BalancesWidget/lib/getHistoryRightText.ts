@@ -31,6 +31,8 @@ export const getHistoryRightText = ({
     return '';
   }
   return (
-    getAmount({ item, type, chainId }) + ' ' + getToken({ type, tradeFromToken, savingsToken, rewardToken })
+    getAmount({ item, type, chainId }) +
+    ' ' +
+    getToken({ item, type, tradeFromToken, savingsToken, rewardToken })
   );
 };
