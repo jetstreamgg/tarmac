@@ -72,7 +72,7 @@ function getBootstrapConfig(): { distinctID?: string; sessionID?: string } | und
   return undefined;
 }
 
-export function initializePostHogIfNeeded(forceAccepted = false) {
+function initializePostHogIfNeeded(forceAccepted = false) {
   if (typeof window === 'undefined' || !POSTHOG_ENABLED || !POSTHOG_KEY || hasInitializedPostHog) {
     return;
   }

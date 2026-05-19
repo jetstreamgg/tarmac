@@ -8,7 +8,7 @@ import { mainnet, base } from 'wagmi/chains';
 // import LockstakeSkyAbi from './abis/LockstakeSky.json';
 // --- End ABI imports ---
 
-import { contracts, /*tenderlyContracts,*/ l2Contracts } from './src/hooks';
+import { contracts, l2Contracts } from './src/hooks';
 
 export default defineConfig(() => {
   const hookNames: string[] = [];

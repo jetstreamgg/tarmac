@@ -373,17 +373,6 @@ export const contracts: {
   }
 ];
 
-export const tenderlyContracts: { name: string; address: Record<typeof TENDERLY_CHAIN_ID, `0x${string}`> }[] =
-  [
-    // {
-    //   name: 'cle',
-    //   address: {
-    //     // same token as USDS for now
-    //     [TENDERLY_CHAIN_ID]: '0xdC035D45d973E3EC169d2276DDab16f1e407384F'
-    //   }
-    // }
-  ];
-
 export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string}`> }[] = [
   {
     name: 'usdcL2',

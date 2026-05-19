@@ -1,28 +1,10 @@
 import { Banner, banners } from './banners';
 
 /**
- * Get a banner by ID. If module is provided, searches for banner with both matching ID and module.
- * Otherwise, returns the first banner with matching ID.
- */
-export function getBannerById(banners: Banner[], id: string, module?: string): Banner | undefined {
-  if (module) {
-    return banners.find(banner => banner.id === id && banner.module === module);
-  }
-  return banners.find(banner => banner.id === id);
-}
-
-/**
  * Get a banner by both ID and module (explicit version)
  */
 export function getBannerByIdAndModule(id: string, module: string): Banner | undefined {
   return banners.find(banner => banner.id === id && banner.module === module);
-}
-
-/**
- * Get all banners for a specific module
- */
-export function getBannersByModule(banners: Banner[], module: string): Banner[] {
-  return banners.filter(banner => banner.module === module);
 }
 
 /**

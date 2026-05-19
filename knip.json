@@ -20,10 +20,11 @@
         "wagmi.config.ts",
         "vitest.hooks.config.ts",
         "src/test/e2e/**/*.{ts,tsx}",
-        "scripts/**/*.{js,ts,sh}"
+        "scripts/**/*.{js,ts,sh}",
+        "test/**/*.{ts,tsx}"
       ],
-      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,css}!"],
-      "ignore": ["src/hooks/generated.ts", "src/locales/**/*"],
+      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,css}!", "test/**/*.{ts,tsx}"],
+      "ignore": ["src/hooks/generated.ts", "src/locales/**/*", "src/widgets/data/tooltips/index.ts"],
       "ignoreDependencies": [
         "@base-org/account",
         "@coinbase/wallet-sdk",
