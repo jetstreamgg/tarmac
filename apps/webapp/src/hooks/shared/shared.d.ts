@@ -1,9 +1,9 @@
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
+import { MorphoVaultHistoryItem } from '../morpho/morpho';
 import { PendleHistoryItem } from '../pendle/pendle';
-import { BaseTradeHistoryItem } from '../psm/useBaseTradeHistory';
 import { RewardUserHistoryItem } from '../rewards/rewards';
 import { SavingsSupply } from '../savings/savings';
-import { SealHistoryItem } from '../seal/sealModule';
+import { StakeHistoryItem } from '../stake/stakeModule';
 import { StUsdsHistoryItem } from '../stusds/stusds.d';
 import { ParsedTradeRecord } from '../trade/trade';
 import { DaiUsdsRow, MkrSkyRow } from '../upgrade/upgrade';
@@ -22,7 +22,7 @@ export type CombinedHistoryItem =
   | MkrSkyRow
   | ParsedTradeRecord
   | RewardUserHistoryItem
-  | SealHistoryItem
+  | StakeHistoryItem
   | StUsdsHistoryItem
-  | BaseTradeHistoryItem
+  | MorphoVaultHistoryItem
   | PendleHistoryItem;
