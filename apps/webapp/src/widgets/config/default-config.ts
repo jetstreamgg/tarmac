@@ -27,7 +27,7 @@ const { usds, mkr, sky, susds, eth, weth, usdc, usdt, dai, spk, stusds } = TOKEN
 export const defaultConfig: WidgetsConfig = {
   balancesTokenList: {
     [mainnet.id]: [
-      eth,
+      { ...eth, address: eth.address[mainnet.id] },
       { ...weth, address: wethAddress[mainnet.id] },
       { ...usdc, address: usdcAddress[mainnet.id] },
       { ...usdt, address: usdtAddress[mainnet.id] },
@@ -40,7 +40,7 @@ export const defaultConfig: WidgetsConfig = {
       { ...stusds, address: stUsdsAddress[mainnet.id] }
     ],
     [TENDERLY_CHAIN_ID]: [
-      eth,
+      { ...eth, address: eth.address[TENDERLY_CHAIN_ID] },
       { ...weth, address: wethAddress[TENDERLY_CHAIN_ID] },
       { ...usdc, address: usdcAddress[TENDERLY_CHAIN_ID] },
       { ...usdt, address: usdtAddress[TENDERLY_CHAIN_ID] },
@@ -53,7 +53,7 @@ export const defaultConfig: WidgetsConfig = {
       { ...stusds, address: stUsdsAddress[TENDERLY_CHAIN_ID] }
     ],
     [base.id]: [
-      eth,
+      { ...eth, address: eth.address[base.id] },
       { ...usdc, address: usdcL2Address[base.id] },
       { ...usdt, address: usdtAddress[base.id] },
       { ...weth, address: wethAddress[base.id] },
@@ -62,7 +62,7 @@ export const defaultConfig: WidgetsConfig = {
       { ...susds, address: sUsdsL2Address[base.id] }
     ],
     [arbitrum.id]: [
-      eth,
+      { ...eth, address: eth.address[arbitrum.id] },
       { ...usdc, address: usdcL2Address[arbitrum.id] },
       { ...usdt, address: usdtAddress[arbitrum.id] },
       { ...weth, address: wethAddress[arbitrum.id] },
@@ -71,13 +71,13 @@ export const defaultConfig: WidgetsConfig = {
       { ...susds, address: sUsdsL2Address[arbitrum.id] }
     ],
     [unichain.id]: [
-      eth,
+      { ...eth, address: eth.address[unichain.id] },
       { ...usdc, address: usdcL2Address[unichain.id] },
       { ...usds, address: usdsL2Address[unichain.id] },
       { ...susds, address: sUsdsL2Address[unichain.id] }
     ],
     [optimism.id]: [
-      eth,
+      { ...eth, address: eth.address[optimism.id] },
       { ...usdc, address: usdcL2Address[optimism.id] },
       { ...usds, address: usdsL2Address[optimism.id] },
       { ...susds, address: sUsdsL2Address[optimism.id] }

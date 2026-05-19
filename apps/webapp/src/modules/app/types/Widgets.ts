@@ -1,8 +1,9 @@
 import React from 'react';
 import { Intent } from '@/lib/enums';
+import { IconProps } from '@/widgets/shared/components/icons/Icon';
 
 export type SharedProps = {
-  rightHeaderComponent: JSX.Element;
+  rightHeaderComponent: React.JSX.Element;
   shouldReset: boolean;
 };
 
