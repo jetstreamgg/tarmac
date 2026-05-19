@@ -13,17 +13,23 @@ There are two SEAL Engine deployments. Check both — your position may be in ei
 | LockstakeEngine (v2) | `0xCe01C90dE7FD1bcFa39e237FE6D8D9F569e8A6a3` | SKY          |
 | LockstakeEngine (v1) | `0x2b16C07D5fD5cC701a0a871eae2aad6DA5fc8f12` | MKR (legacy) |
 
-## Step 1 — Find your urn index
+## Step 1 — Find your urn and read your position
 
-On the appropriate engine's Etherscan page, open **Contract → Read Contract** and connect your wallet.
+Each position is held in a per-user "urn" contract. To find yours and check what's locked, you'll read from both the engine and the underlying Vat contract.
 
-1. Call `ownerUrnsCount(<yourAddress>)`. Most users have exactly one urn at index `0`.
-2. If you have multiple urns, repeat the withdrawal steps below for each index.
-3. Call `urns(<yourAddress>, <index>)` to see your locked balance (in 18-decimal units) and any outstanding USDS debt.
+On the appropriate engine's Etherscan page, open **Contract → Read Contract**:
+
+1. Call `ownerUrnsCount(<yourAddress>)`. Most users have exactly one urn at index `0`. If you have multiple, repeat the withdrawal steps below for each index.
+2. Call `ownerUrns(<yourAddress>, <index>)` → returns your **urn address**. Save this value.
+3. Call `vat()` → returns the **Vat address**. Save this value.
+4. Call `ilk()` → returns the **ilk** (bytes32 identifier). Save this value.
+5. Open the **Vat contract** on Etherscan at the address from step 3, go to **Read Contract**, and call `urns(<ilk>, <urnAddress>)` using the values from steps 4 and 2. This returns `(ink, art)`:
+   - `ink` = your locked collateral (18-decimal units — SKY in v2, MKR in v1)
+   - `art` = your outstanding USDS debt (18-decimal units)
 
 ## Step 2 — Repay USDS debt (skip if you have no debt)
 
-If `urns(...)` shows non-zero `art` (debt), repay it before withdrawing collateral. `free` will revert otherwise.
+If `art` from Step 1.5 is non-zero, repay it before withdrawing collateral. `free` will revert otherwise.
 
 1. On the **USDS token contract**, call `approve(<engineAddress>, <amount>)` with an amount ≥ your debt. A safe choice is `2^256 - 1` (max uint256).
 2. On the engine's **Write Contract** tab, call `wipeAll(<yourAddress>, <index>)` to repay the full debt.
@@ -41,7 +47,7 @@ free(
 )
 ```
 
-Use the `ink` value from `urns(...)` as `wad` to withdraw everything. Tokens are sent directly to the `to` address.
+Use the `ink` value from Step 1.5 as `wad` to withdraw everything. Tokens are sent directly to the `to` address.
 
 ## Notes & gotchas
 
