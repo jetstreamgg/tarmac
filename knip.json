@@ -9,7 +9,6 @@
         "eslint-plugin-react",
         "happy-dom",
         "lint-staged",
-        "tailwindcss",
         "vitest"
       ]
     },
