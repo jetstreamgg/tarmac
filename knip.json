@@ -1,19 +1,31 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreBinaries": ["tsx"],
   "workspaces": {
     ".": {
       "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
     },
     "apps/webapp": {
       "entry": [
-        "src/pages/main.tsx",
         "src/hooks/index.ts",
         "src/utils/index.ts",
         "src/widgets/index.ts",
-        "wagmi.config.ts"
+        "wagmi.config.ts",
+        "vitest.hooks.config.ts",
+        "src/test/e2e/**/*.{ts,tsx}",
+        "scripts/**/*.{js,ts,sh}"
       ],
-      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
-      "ignore": ["src/hooks/generated.ts", "src/locales/**/*"]
+      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,css}!"],
+      "ignore": ["src/hooks/generated.ts", "src/locales/**/*"],
+      "ignoreDependencies": [
+        "@base-org/account",
+        "@coinbase/wallet-sdk",
+        "@metamask/connect-evm",
+        "@safe-global/safe-apps-provider",
+        "@safe-global/safe-apps-sdk",
+        "@walletconnect/ethereum-provider",
+        "porto"
+      ]
     }
   }
 }
