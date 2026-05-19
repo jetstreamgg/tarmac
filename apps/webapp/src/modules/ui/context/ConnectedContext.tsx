@@ -1,10 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
-import * as Sentry from '@sentry/react';
 import { useChainId, useConnection } from 'wagmi';
 import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
+import { reportError } from '@/modules/sentry/reportError';
 import { checkTermsWithRetry } from '@/modules/ui/lib/checkTermsWithRetry';
 
 interface ConnectedContextType {
@@ -74,13 +74,23 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   useEffect(() => {
     if (vpnError) {
-      Sentry.captureException(vpnError, { tags: { endpoint: 'ip-status' } });
+      reportError(vpnError, {
+        module: 'auth',
+        flow: 'vpn-check',
+        action: 'fetch',
+        type: 'vpn_check_error'
+      });
     }
   }, [vpnError]);
 
   useEffect(() => {
     if (authError) {
-      Sentry.captureException(authError, { tags: { endpoint: 'address-status' } });
+      reportError(authError, {
+        module: 'auth',
+        flow: 'address-check',
+        action: 'fetch',
+        type: 'address_check_error'
+      });
     }
   }, [authError]);
 
@@ -105,8 +115,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsCheckingTerms(false);
 
     if (result.error) {
-      Sentry.captureException(result.lastError ?? new Error('Terms check failed after retries'), {
-        tags: { endpoint: 'terms-check' }
+      reportError(result.lastError ?? new Error('Terms check failed after retries'), {
+        module: 'auth',
+        flow: 'terms-check',
+        action: 'fetch',
+        type: 'terms_check_error'
       });
       setTermsCheckError(true);
     } else if (result.accessDenied) {

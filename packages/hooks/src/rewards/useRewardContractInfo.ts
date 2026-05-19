@@ -45,7 +45,7 @@ export function useRewardContractInfo({
   chainId: number;
   rewardContractAddress: string;
 }): ReadHook & { data?: RewardContractInfo | null } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data,

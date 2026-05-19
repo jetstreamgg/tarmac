@@ -18,6 +18,8 @@ import { WALLET_ICONS } from '@/lib/constants';
 import { ConnectWallet } from '@jetstreamgg/sky-widgets';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
+import { reportError } from '@/modules/sentry/reportError';
+import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
 
 interface ConnectModalProps {
   open: boolean;
@@ -69,7 +71,14 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         onOpenChange(false);
       },
       onError: error => {
-        console.error('Connection error:', error);
+        if (isUserRejectedRequestError(error)) return;
+
+        reportError(error, {
+          module: 'auth',
+          flow: 'wallet-connect',
+          action: 'connect',
+          type: 'wallet_connection_error'
+        });
       }
     }
   });
@@ -79,7 +88,14 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
         onOpenChange(false);
       },
       onError: error => {
-        console.error('Connection error:', error);
+        if (isUserRejectedRequestError(error)) return;
+
+        reportError(error, {
+          module: 'auth',
+          flow: 'wallet-connect',
+          action: 'switch-connection',
+          type: 'wallet_connection_error'
+        });
       }
     }
   });
@@ -246,6 +262,7 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   return (
     <Dialog open={open && !hasWalletOverlay} onOpenChange={onOpenChange}>
       <DialogContent
+        aria-describedby={undefined}
         className="bg-containerDark max-h-[calc(100dvh-32px)] gap-6 overflow-auto p-4 sm:max-w-[490px] sm:min-w-[490px]"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}

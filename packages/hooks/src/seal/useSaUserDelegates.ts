@@ -22,7 +22,7 @@ export function useSaUserDelegates({
   random?: boolean;
   search?: string;
 }): ReadHook & { data?: DelegateInfo[] } {
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data: userDelegatesData,

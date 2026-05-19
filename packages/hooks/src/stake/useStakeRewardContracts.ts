@@ -97,7 +97,7 @@ export function useStakeRewardContracts({
   const walletChainId = useChainId();
   const chainId = walletChainId === TENDERLY_CHAIN_ID ? walletChainId : mainnet.id;
   const config = useConfig();
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   // Get chainId-specific hardcoded contracts for placeholder
   const hardcodedContracts = getHardcodedRewardContracts(chainId);

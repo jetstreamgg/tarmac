@@ -3,20 +3,20 @@ import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
 import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
 import { formatNumber } from '@jetstreamgg/sky-utils';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 export function SkySavingsRatePoolCard(): React.ReactElement {
   const { data, isLoading, error } = useOverallSkyData();
-  const tvl = data && formatNumber(parseFloat(data.totalSavingsTvl));
+  const tvl = data && formatNumber(parseFloat(data.skySavingsRateTvl));
 
   return (
     <StatsCard
       title={t`Sky Savings Rate TVL`}
       content={
         <div className="mt-2 flex items-center">
-          <PairTokenIcons leftToken="USDS" rightToken="DAI" noChain />
+          <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS', name: 'usds' }} width={24} showChainIcon={false} />
           <Text className="ml-2" variant="large">
-            {tvl} USDS/DAI
+            {tvl}
           </Text>
         </div>
       }

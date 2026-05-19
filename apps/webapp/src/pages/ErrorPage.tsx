@@ -1,9 +1,9 @@
-import * as Sentry from '@sentry/react';
 import React, { useEffect } from 'react';
 import { Layout } from '../modules/layout/components/Layout';
 import { Link, isRouteErrorResponse, useRouteError } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/modules/layout/components/Typography';
+import { reportError } from '@/modules/sentry/reportError';
 
 function ErrorPage(): React.ReactElement {
   const error = useRouteError();
@@ -12,18 +12,24 @@ function ErrorPage(): React.ReactElement {
     if (!error) return;
 
     if (isRouteErrorResponse(error)) {
-      Sentry.captureException(new Error(`${error.status} ${error.statusText}`), {
-        tags: { type: 'route_error' },
+      reportError(new Error(`${error.status} ${error.statusText}`), {
+        module: 'ui',
+        flow: 'router',
+        action: 'load-route',
+        type: 'route_error',
+        statusCode: error.status,
         extra: {
-          routeErrorStatus: error.status,
           routeErrorStatusText: error.statusText
         }
       });
       return;
     }
 
-    Sentry.captureException(error, {
-      tags: { type: 'route_error' }
+    reportError(error, {
+      module: 'ui',
+      flow: 'router',
+      action: 'load-route',
+      type: 'route_error'
     });
   }, [error]);
 

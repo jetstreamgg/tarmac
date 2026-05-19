@@ -15,7 +15,7 @@ export function FooterLinks() {
 
   return (
     <div className={'flex w-full pt-2'}>
-      <div className="flex w-full justify-end gap-3 md:justify-start">
+      <div className="flex w-full items-center justify-end gap-3 md:justify-start">
         {regularLinks.map((link, i) => {
           const url = sanitizeUrl(link.url);
           if (!url) return null;
@@ -42,7 +42,7 @@ export function FooterLinks() {
               key={url || `highlight-${i}`}
               variant="primaryAlt"
               size="xs"
-              className="px-4 py-2"
+              className="py-2 sm:px-4"
               asChild
             >
               <ExternalLink href={url} showIcon={false}>

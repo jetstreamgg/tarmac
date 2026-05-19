@@ -249,6 +249,13 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       ? UpgradeFlow.REVERT // If in linked action, disallow revert
       : undefined;
 
+  const linkedSourceSymbol =
+    linkedActionConfig.showLinkedAction && linkedActionConfig.sourceToken
+      ? linkedActionConfig.sourceToken.toLowerCase()
+      : undefined;
+  const linkedSourceToken = linkedSourceSymbol ? TOKENS[linkedSourceSymbol] : undefined;
+  const upgradeOptions = linkedSourceToken ? [linkedSourceToken] : [TOKENS.dai, TOKENS.mkr];
+
   return (
     <UpgradeWidget
       {...sharedProps}
@@ -266,11 +273,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
-      upgradeOptions={
-        linkedActionConfig.showLinkedAction && linkedActionConfig.sourceToken
-          ? [linkedActionConfig.sourceToken]
-          : [TOKENS.dai, TOKENS.mkr]
-      }
+      upgradeOptions={upgradeOptions}
       disallowedFlow={disallowedFlow}
       batchEnabled={batchEnabled}
       setBatchEnabled={setBatchEnabled}

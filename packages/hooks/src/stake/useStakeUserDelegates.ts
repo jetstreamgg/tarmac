@@ -60,7 +60,7 @@ export function useStakeUserDelegates({
   sortType?: 'totalDelegated' | 'aligned';
 }): ReadHook & { data?: DelegateInfoWithTotal[] } {
   const hasInitiallyOrdered = useRef(false);
-  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl() || '';
+  const urlSubgraph = subgraphUrl ? subgraphUrl : getSubgraphUrl(chainId) || '';
 
   const {
     data: userDelegatesData,

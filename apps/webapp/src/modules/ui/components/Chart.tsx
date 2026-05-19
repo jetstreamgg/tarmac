@@ -197,6 +197,7 @@ interface ChartProps {
   dataTestId?: string;
   displayValue?: number;
   tooltipLabel?: string;
+  icons?: React.ReactNode;
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
@@ -218,7 +219,8 @@ function CardTitleContent({
   isZeroPercentage,
   isLoading,
   hidePercentChange,
-  displayValue
+  displayValue,
+  icons
 }: {
   data: Data[];
   isLarge: boolean;
@@ -231,6 +233,7 @@ function CardTitleContent({
   isLoading: boolean;
   hidePercentChange?: boolean;
   displayValue?: number;
+  icons?: React.ReactNode;
 }) {
   return (
     <LoadingErrorWrapper
@@ -257,6 +260,7 @@ function CardTitleContent({
           animate={AnimationLabels.animate}
         >
           <HStack gap={2} className="h-8 items-end justify-start p-0">
+            {icons && <span className="flex items-center self-center">{icons}</span>}
             <Text className="text-xl lg:text-2xl">
               {prefix || ''}
               {`${formatNumber(displayValue ?? data[data.length - 1]?.value ?? 0, {
@@ -387,7 +391,8 @@ export function Chart({
   error,
   dataTestId,
   displayValue,
-  tooltipLabel
+  tooltipLabel,
+  icons
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { bpi } = useBreakpointIndex();
@@ -451,6 +456,7 @@ export function Chart({
                 isLoading={isLoading}
                 hidePercentChange={hidePercentChange}
                 displayValue={displayValue}
+                icons={icons}
               />
               <Text variant="chartSecondary">{format(new Date(), "EEE, MMM d 'at' h:mm a")}</Text>
             </CardTitle>
