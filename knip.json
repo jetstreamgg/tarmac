@@ -3,7 +3,15 @@
   "ignoreBinaries": ["tsx"],
   "workspaces": {
     ".": {
-      "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
+      "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
+      "ignoreDependencies": [
+        "@vitest/coverage-v8",
+        "eslint-plugin-react",
+        "happy-dom",
+        "lint-staged",
+        "tailwindcss",
+        "vitest"
+      ]
     },
     "apps/webapp": {
       "entry": [
@@ -20,6 +28,7 @@
       "ignoreDependencies": [
         "@base-org/account",
         "@coinbase/wallet-sdk",
+        "@lingui/swc-plugin",
         "@metamask/connect-evm",
         "@safe-global/safe-apps-provider",
         "@safe-global/safe-apps-sdk",
