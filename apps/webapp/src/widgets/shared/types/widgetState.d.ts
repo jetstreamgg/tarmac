@@ -15,7 +15,6 @@ import {
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { RewardContract } from '@/hooks';
 import { TxStatus, NotificationType } from '../constants';
-import { SealFlow } from '@/widgets/SealModuleWidget/lib/constants';
 import { WidgetAnalyticsEvent } from './analyticsEvents';
 
 export type WidgetState = {
@@ -28,7 +27,6 @@ export type WidgetState = {
     | TradeFlow
     | PsmConversionFlow
     | StakeFlow
-    | SealFlow
     | PendleFlow;
   action:
     | InitialAction
@@ -46,7 +44,6 @@ export type WidgetState = {
     | TradeScreen
     | PsmConversionScreen
     | StakeScreen
-    | SealScreen
     | PendleScreen;
 };
 
@@ -62,8 +59,7 @@ type Flow = {
     | RewardsFlow
     | TradeFlow
     | PsmConversionFlow
-    | StakeFlow
-    | SealFlow;
+    | StakeFlow;
 };
 
 type BalancesWidgetState = Flow;
@@ -91,18 +87,12 @@ type StakeWidgetState = Amount & {
   stakeTab?: StakeAction.LOCK | StakeAction.FREE;
 };
 
-type SealWidgetState = Amount & {
-  urnIndex?: number;
-  sealTab?: SealAction.LOCK | SealAction.FREE;
-};
-
 export type ExternalWidgetState = BalancesWidgetState &
   UpgradeWidgetState &
   TradeWidgetState &
   SavingsWidgetState &
   RewardsWidgetState &
-  StakeWidgetState &
-  SealWidgetState;
+  StakeWidgetState;
 
 export type WidgetMessage = {
   title: string;
@@ -126,7 +116,6 @@ export type WidgetStateChangeParams = {
   displayToken?: Token;
   originAmount?: string;
   stakeTab?: StakeAction.LOCK | StakeAction.FREE;
-  sealTab?: SealAction.LOCK | SealAction.FREE;
   urnIndex?: number;
 };
 
@@ -145,6 +134,5 @@ export type WidgetProps = {
     | RewardsFlow
     | TradeFlow
     | PsmConversionFlow
-    | StakeFlow
-    | SealFlow;
+    | StakeFlow;
 };

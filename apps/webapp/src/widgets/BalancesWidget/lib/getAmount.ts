@@ -30,7 +30,6 @@ export const getAmount = ({
       }
       break;
     case ModuleEnum.REWARDS:
-    case ModuleEnum.SEAL:
     case ModuleEnum.STAKE:
       return [TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.SELECT_REWARD].includes(type)
         ? ''

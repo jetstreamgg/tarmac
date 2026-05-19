@@ -135,22 +135,6 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
-    id: 'about-the-seal-engine',
-    title: 'About the Seal Engine',
-    module: 'seal-engine-banners',
-    description:
-      'The Seal Engine is a module of the Sky Protocol. The MKR and or SKY tokens you supply to the Seal Engine are sealed behind an exit fee in order to provide access to Seal Rewards and encourage a deeper commitment to Sky Ecosystem Governance. With Sky, you always remain in control of your funds.',
-    display: ['disconnected']
-  },
-  {
-    id: 'seal-rewards',
-    title: 'Seal Rewards',
-    module: 'seal-engine-banners',
-    description:
-      'Seal Rewards can be accessed when you supply MKR or SKY to the Seal Engine of the decentralised, non-custodial Sky Protocol. Currently, all Seal Rewards take the form of USDS. Eventually, subject to Sky Ecosystem Governance approval, Seal Rewards may also be available in the form of Sky Star tokens.',
-    display: ['disconnected']
-  },
-  {
     id: 'about-balances',
     title: 'About Balances',
     module: 'balances-banners',

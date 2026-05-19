@@ -73,8 +73,6 @@ For upgrade details and step-by-step upgrade instructions, please visit the [MKR
 
 Eligible users of the Sky.money web app can upgrade their MKR to SKY using the Upgrade feature of the app. Some users may also choose to upgrade their MKR using [one of the frontends that support the upgrade](https://upgrademkrtosky.skyeco.com/). Please see the [Terms of Use](https://docs.sky.money/legal-terms) for more information on third-party services.
 
-If you have one or more positions in the Seal Engine, you will need to manually exit and, if you choose, upgrade your MKR to SKY, and then supply your SKY to the Staking Engine. The process via the Sky.money web app makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible.
-
 For upgrade details and step-by-step upgrade instructions, please visit the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com).`,
       index: 6
     },
@@ -140,12 +138,6 @@ SKY is the technical and functional evolution of MKR, inheriting and extending t
 
 MKR holders can upgrade their tokens to SKY at the rate of 1:24,000 (1 MKR = 24,000 SKY). For upgrade details, see the [MKR to SKY Upgrade Hub](https://upgrademkrtosky.skyeco.com). For the most current information on all things Sky, join the community conversations in the [Sky Forum](https://forum.skyeco.com/) and [Sky Discord](https://discord.com/invite/skyecosystem).`,
       index: 14
-    },
-    {
-      question: 'Will the MKR I have locked in the Seal Engine be automatically upgraded to SKY?',
-      answer:
-        'No, but your [sealed](#tooltip-sealed) MKR will be upgraded to SKY during the Seal to Staking migration process. The process via the Sky.money web app makes manually exiting your current Seal positions and creating new positions in the Staking Engine as simple as possible. The Staking Engine offers all of the same features as the Seal Engine, but it has no exit fee and only supports SKY, not MKR.',
-      index: 15
     },
     {
       question: 'Will the exchange I use automatically upgrade all of my MKR to SKY?',

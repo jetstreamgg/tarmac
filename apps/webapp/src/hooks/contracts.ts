@@ -218,14 +218,6 @@ export const contracts: {
       [TENDERLY_CHAIN_ID]: '0xc20059e0317DE91738d13af027DfC4a50781b066'
     }
   },
-  // SealModule
-  {
-    name: 'sealModule',
-    address: {
-      [mainnet.id]: '0x2b16c07d5fd5cc701a0a871eae2aad6da5fc8f12',
-      [TENDERLY_CHAIN_ID]: '0x2b16c07d5fd5cc701a0a871eae2aad6da5fc8f12'
-    }
-  },
   // LockstakeMkr
   {
     name: 'lsMkr',

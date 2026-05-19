@@ -29,8 +29,6 @@ export const getHistoryIconSource = ({
         : type === TransactionTypeEnum.REWARD
           ? src + 'claim.svg'
           : src + 'rewards-withdraw.svg';
-    case ModuleEnum.SEAL:
-      return src + 'seal.svg';
     case ModuleEnum.STAKE:
       return type && [TransactionTypeEnum.STAKE].includes(type)
         ? src + 'stake.svg'

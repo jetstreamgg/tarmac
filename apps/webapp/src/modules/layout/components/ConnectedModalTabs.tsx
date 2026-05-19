@@ -17,7 +17,7 @@ export function ConnectedModalTabs() {
   const { onExternalLinkClicked } = useConfigContext();
   const { isRegionRestricted } = useGeoConfig();
 
-  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, expertOverviewUrl, vaultsUrl, fixedYieldUrl } =
+  const { rewardsUrl, savingsUrlMap, stakeUrl, expertOverviewUrl, vaultsUrl, fixedYieldUrl } =
     useModuleUrls();
 
   return (
@@ -39,7 +39,6 @@ export function ConnectedModalTabs() {
           chainIds={getSupportedChainIds(chainId)}
           rewardsCardUrl={rewardsUrl}
           savingsCardUrlMap={savingsUrlMap}
-          sealCardUrl={sealUrl}
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={expertOverviewUrl}
           vaultsCardUrl={vaultsUrl}

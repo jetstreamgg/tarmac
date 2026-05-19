@@ -149,9 +149,6 @@ export const getSavingsUrl = (
     searchParams
   );
 
-export const getSealUrl = (searchParams: URLSearchParams, chainId: number) =>
-  `/seal-engine${getQueryParams(`/?network=${getMainnetChainName(chainId)}`, searchParams)}`;
-
 export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`,

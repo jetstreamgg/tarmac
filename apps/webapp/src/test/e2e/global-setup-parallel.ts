@@ -729,7 +729,7 @@ export default async function globalSetup() {
     if (networks.includes(NetworkName.mainnet)) {
       console.log('\n6. Increasing stake module debt ceiling...');
       try {
-        const { updateStakeModuleDebtCeiling } = await import('./utils/updateSealDebtCeiling');
+        const { updateStakeModuleDebtCeiling } = await import('./utils/updateStakeDebtCeiling');
         await updateStakeModuleDebtCeiling(BigInt('1000000000000000000000000000000000000000000000000000000'));
         console.log('✅ Stake module debt ceiling increased to 1B USDS');
       } catch (error) {

@@ -24,7 +24,6 @@ export type BalancesWidgetProps = WidgetProps & {
   hideRestrictedModules?: boolean;
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
-  sealCardUrl?: string;
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
@@ -43,7 +42,6 @@ export const BalancesWidget = ({
   hideRestrictedModules = false,
   rewardsCardUrl,
   savingsCardUrlMap,
-  sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
@@ -66,7 +64,6 @@ export const BalancesWidget = ({
           chainIds={chainIds}
           rewardsCardUrl={rewardsCardUrl}
           savingsCardUrlMap={savingsCardUrlMap}
-          sealCardUrl={sealCardUrl}
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
           vaultsCardUrl={vaultsCardUrl}
@@ -89,7 +86,6 @@ const BalancesWidgetWrapped = ({
   chainIds,
   rewardsCardUrl,
   savingsCardUrlMap,
-  sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
@@ -167,7 +163,6 @@ const BalancesWidgetWrapped = ({
               hideRestrictedModules={hideRestrictedModules}
               rewardsCardUrl={rewardsCardUrl}
               savingsCardUrlMap={savingsCardUrlMap}
-              sealCardUrl={sealCardUrl}
               stakeCardUrl={stakeCardUrl}
               stusdsCardUrl={stusdsCardUrl}
               vaultsCardUrl={vaultsCardUrl}

@@ -197,7 +197,7 @@ export function RewardsBalanceCard({
   );
 }
 
-export function SealSealedCard({
+export function StakeSuppliedCard({
   balance,
   isLoading,
   token,
@@ -217,7 +217,7 @@ export function SealSealedCard({
   );
 }
 
-export function SealBorrowedCard({
+export function StakeBorrowedCard({
   balance,
   isLoading,
   token,

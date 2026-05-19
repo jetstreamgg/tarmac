@@ -13,7 +13,6 @@ interface BalancesContentProps {
   chainIds?: number[];
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
-  sealCardUrl?: string;
   stakeCardUrl?: string;
   stusdsCardUrl?: string;
   vaultsCardUrl?: string;
@@ -32,7 +31,6 @@ export const BalancesContent = ({
   chainIds,
   rewardsCardUrl,
   savingsCardUrlMap,
-  sealCardUrl,
   stakeCardUrl,
   stusdsCardUrl,
   vaultsCardUrl,
@@ -83,7 +81,6 @@ export const BalancesContent = ({
         <ModulesBalances
           rewardsCardUrl={rewardsCardUrl}
           savingsCardUrlMap={savingsCardUrlMap}
-          sealCardUrl={sealCardUrl}
           stakeCardUrl={stakeCardUrl}
           stusdsCardUrl={stusdsCardUrl}
           vaultsCardUrl={vaultsCardUrl}

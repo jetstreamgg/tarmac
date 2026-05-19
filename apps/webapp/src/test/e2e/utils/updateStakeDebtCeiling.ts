@@ -1,14 +1,15 @@
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-import { getIlkName, mcdVatAbi, mcdVatAddress, sealModuleAddress } from '@/hooks';
+import { getIlkName, mcdVatAbi, mcdVatAddress } from '@/hooks';
 import { encodeFunctionData, stringToHex } from 'viem';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';
 
+// Legacy SEAL module address; still wired in the mcdVat auth list on mainnet so it
+// can be impersonated on the Tenderly fork to bump the staking ilk's debt ceiling.
+const AUTHORIZED_ADDRESS = '0x2b16c07d5fd5cc701a0a871eae2aad6da5fc8f12';
+
 export const updateStakeModuleDebtCeiling = async (newDebtCeiling: bigint) => {
   const TENDERLY_MAINNET_RPC_URL = await getRpcUrlFromFile(NetworkName.mainnet);
-
-  // The seal module contract is authorized to change the `line` parameter
-  const AUTHORIZED_ADDRESS = sealModuleAddress[TENDERLY_CHAIN_ID];
 
   // Use version 2 for SKY staking (LSEV2_SKY_A ilk)
   const ilkName = getIlkName(2);

@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures-parallel';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.js';
 import { triggerCappedOsmError } from '../utils/setOsmSpotPrice.js';
-import { updateStakeModuleDebtCeiling } from '../utils/updateSealDebtCeiling.js';
+import { updateStakeModuleDebtCeiling } from '../utils/updateStakeDebtCeiling.js';
 import { parseUnits } from 'viem';
 
 /**

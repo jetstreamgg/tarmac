@@ -46,8 +46,6 @@ const StakeRewardsOverviewRow = ({ contractAddress }: { contractAddress: `0x${st
     [historicRewardsTokenData]
   );
 
-  //Get the MKR price from the seal historic data endpoint, since that is used for the total seal TVL
-  //and we want the farm TVLs to sum up to the total seal TVL
   const {
     data: stakeHistoricData,
     isLoading: stakeHistoricIsLoading,

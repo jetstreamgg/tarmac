@@ -40,8 +40,6 @@ const getWidgetName = (intent: Intent): string => {
       return 'Stake';
     case Intent.EXPERT_INTENT:
       return 'Expert';
-    case Intent.SEAL_INTENT:
-      return 'Seal';
     case Intent.VAULTS_INTENT:
       return 'Vaults';
     case Intent.CONVERT_INTENT:

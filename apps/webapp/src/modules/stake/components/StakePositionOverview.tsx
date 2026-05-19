@@ -17,7 +17,7 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { StakeToken } from '../constants';
 import { StakePositionRewardsCard } from './StakePositionRewardsCard';
-import { SealBorrowedCard, SealSealedCard } from '@/modules/ui/components/BalanceCards';
+import { StakeBorrowedCard, StakeSuppliedCard } from '@/modules/ui/components/BalanceCards';
 import { VStack } from '@/modules/layout/components/VStack';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { Heading, Text } from '@/modules/layout/components/Typography';
@@ -60,10 +60,6 @@ export function StakePositionOverview({
   const osmCappedSkyPriceTooltip = getTooltipById('capped-osm-sky-price');
   const formattedActualSkyPrice = skyPrice !== undefined ? formatBigInt(skyPrice) : undefined;
 
-  // const skySealed = useMemo(() => {
-  //   return vault?.collateralAmount ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n) : 0n;
-  // }, [vault?.collateralAmount]);
-
   return (
     <DetailSection
       title={
@@ -85,14 +81,14 @@ export function StakePositionOverview({
       <DetailSectionRow>
         <VStack className="gap-8">
           <HStack gap={2} className="scrollbar-thin w-full overflow-auto">
-            <SealSealedCard
+            <StakeSuppliedCard
               label={t`${StakeToken.SKY} staked`}
               token={{ name: 'Sky', symbol: 'SKY' }}
               balance={vault?.collateralAmount || 0n}
               isLoading={vaultLoading}
               error={vaultError}
             />
-            <SealBorrowedCard
+            <StakeBorrowedCard
               isLoading={vaultLoading}
               error={vaultError}
               balance={formatBigIntAsCeiledAbsoluteWithSymbol(
