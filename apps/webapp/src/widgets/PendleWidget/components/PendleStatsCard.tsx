@@ -8,6 +8,7 @@ import { StatsAccordionCard } from '@/widgets/shared/components/ui/card/StatsAcc
 import { TokenIcon } from '@/widgets/shared/components/ui/token/TokenIcon';
 import { MotionHStack } from '@/widgets/shared/components/ui/layout/MotionHStack';
 import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack';
+import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { Skeleton } from '@/widgets/components/ui/skeleton';
 import { positionAnimations } from '@/widgets/shared/animation/presets';
@@ -35,19 +36,37 @@ export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCa
   const apyDisplay =
     marketData?.impliedApy !== undefined ? formatDecimalPercentage(marketData.impliedApy) : '—';
 
+  const maturityDisplay = new Date(market.expiry * 1000).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
   const accordionContent = (
-    <MotionVStack className="mt-5 justify-between" gap={2} variants={positionAnimations}>
-      <Text className="text-textSecondary text-sm leading-4">
-        <Trans>TVL</Trans>
-      </Text>
-      {isLoading ? (
-        <Skeleton className="bg-textSecondary h-6 w-20" />
-      ) : marketData?.formattedTvl ? (
-        <Text>{marketData.formattedTvl}</Text>
-      ) : (
-        <Text>—</Text>
-      )}
-    </MotionVStack>
+    <HStack className="mt-5 justify-between" gap={2}>
+      <MotionVStack className="items-stretch justify-between" gap={2} variants={positionAnimations}>
+        <Text className="text-textSecondary text-sm leading-4">
+          <Trans>TVL</Trans>
+        </Text>
+        {isLoading ? (
+          <Skeleton className="bg-textSecondary h-6 w-20" />
+        ) : marketData?.formattedTvl ? (
+          <Text>{marketData.formattedTvl}</Text>
+        ) : (
+          <Text>—</Text>
+        )}
+      </MotionVStack>
+      <MotionVStack
+        className="items-stretch justify-between text-right"
+        gap={2}
+        variants={positionAnimations}
+      >
+        <Text className="text-textSecondary text-sm leading-4">
+          <Trans>Maturity</Trans>
+        </Text>
+        <Text className="whitespace-nowrap">{maturityDisplay}</Text>
+      </MotionVStack>
+    </HStack>
   );
 
   return (

@@ -19,6 +19,7 @@ import { positionAnimations } from '@/widgets/shared/animation/presets';
 import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack';
 import { PendleFlow } from '../lib/constants';
 import { VStack } from '@/widgets/shared/components/ui/layout/VStack';
+import { PendleStatsCard } from './PendleStatsCard';
 
 type SupplyWithdrawProps = {
   market: PendleMarketConfig;
@@ -142,6 +143,8 @@ export const SupplyWithdraw = ({
             </TabsTrigger>
           </TabsList>
         </motion.div>
+
+        <PendleStatsCard market={market} onExternalLinkClicked={onExternalLinkClicked} />
 
         <TabsContent value={PendleFlow.BUY}>
           <VStack className="items-stretch" gap={3}>
