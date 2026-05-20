@@ -4,6 +4,7 @@ import { formatDecimalPercentage } from '@/utils';
 import { usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
+import { PopoverRateInfo } from '@/widgets';
 
 type PendleMarketInfoCardProps = {
   market: PendleMarketConfig;
@@ -21,9 +22,12 @@ export const PendleMarketInfoCard = ({ market }: PendleMarketInfoCardProps) => {
           isLoading={isLoading}
           error={error}
           content={
-            <Text className="text-bullish mt-2" variant="large">
-              {data?.impliedApy !== undefined ? formatDecimalPercentage(data.impliedApy) : '—'}
-            </Text>
+            <div className="mt-2 flex flex-row items-center gap-2">
+              <Text className="text-bullish" variant="large">
+                {data?.impliedApy !== undefined ? formatDecimalPercentage(data.impliedApy) : '—'}
+              </Text>
+              {data?.impliedApy !== undefined && <PopoverRateInfo type="fixedYield" />}
+            </div>
           }
         />
       </div>

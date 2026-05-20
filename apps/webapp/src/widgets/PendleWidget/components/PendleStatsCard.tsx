@@ -11,6 +11,7 @@ import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { Skeleton } from '@/widgets/components/ui/skeleton';
 import { positionAnimations } from '@/widgets/shared/animation/presets';
+import { PopoverRateInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
 
 type PendleStatsCardProps = {
   market: PendleMarketConfig;
@@ -63,7 +64,10 @@ export const PendleStatsCard = ({ market, onExternalLinkClicked }: PendleStatsCa
           {isLoading ? (
             <Skeleton className="bg-textSecondary h-5 w-16" />
           ) : (
-            <Text className="text-bullish">{apyDisplay}</Text>
+            <>
+              <Text className="text-bullish">{apyDisplay}</Text>
+              <PopoverRateInfo type="fixedYield" onExternalLinkClicked={onExternalLinkClicked} />
+            </>
           )}
         </MotionHStack>
       }

@@ -3,12 +3,7 @@ import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId, useConnection } from 'wagmi';
-import {
-  isMarketMatured,
-  PENDLE_MARKETS,
-  usePendleUserPtBalances,
-  type PendleMarketConfig
-} from '@/hooks';
+import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { isTestnetId } from '@/utils';
 import { mainnet } from 'viem/chains';
 import { FixedIntent } from '@/lib/enums';
@@ -25,6 +20,7 @@ import { TimeToMaturityCard } from './TimeToMaturityCard';
 import { PendleMarketHistory } from './PendleMarketHistory';
 import { PendleAllMarketsHistory } from './PendleAllMarketsHistory';
 import { PendleReadyToRedeemTable } from './PendleReadyToRedeemTable';
+import { PendleFaq } from './PendleFaq';
 
 const findMarket = (address: string | null): PendleMarketConfig | undefined => {
   if (!address) return undefined;
@@ -91,6 +87,11 @@ export const PendleDetailsPane = () => {
             <PendleMarketHistory market={selectedMarket!} />
           </DetailSectionRow>
         </DetailSection>
+        <DetailSection title={t`FAQs`}>
+          <DetailSectionRow>
+            <PendleFaq />
+          </DetailSectionRow>
+        </DetailSection>
       </DetailSectionWrapper>
     );
   }
@@ -115,6 +116,11 @@ export const PendleDetailsPane = () => {
         <DetailSection title={t`About`}>
           <DetailSectionRow>
             <PendleAbout />
+          </DetailSectionRow>
+        </DetailSection>
+        <DetailSection title={t`FAQs`}>
+          <DetailSectionRow>
+            <PendleFaq />
           </DetailSectionRow>
         </DetailSection>
       </DetailSectionWrapper>
@@ -157,6 +163,11 @@ export const PendleDetailsPane = () => {
       <DetailSection title={t`About`}>
         <DetailSectionRow>
           <PendleAbout />
+        </DetailSectionRow>
+      </DetailSection>
+      <DetailSection title={t`FAQs`}>
+        <DetailSectionRow>
+          <PendleFaq />
         </DetailSectionRow>
       </DetailSection>
     </DetailSectionWrapper>

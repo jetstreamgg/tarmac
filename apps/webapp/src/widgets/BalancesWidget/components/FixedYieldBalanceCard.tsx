@@ -15,6 +15,7 @@ import {
 } from '@/widgets/shared/components/ui/card/InteractiveStatsCardWithMarketAccordion';
 import { Skeleton } from '@/widgets/components/ui/skeleton';
 import { CardProps, ModuleCardVariant } from './ModulesBalances';
+import { RateLineWithArrow } from '@/widgets/shared/components/ui/RateLineWithArrow';
 
 export const FixedYieldBalanceCard = ({
   url,
@@ -110,11 +111,15 @@ export const FixedYieldBalanceCard = ({
         isRateLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : maxRate > 0 ? (
-          <Text variant="small" className="text-bullish">
-            {activeMarketsCount === 1
-              ? t`Rate: ${formatDecimalPercentage(maxRate)}`
-              : t`Rates up to: ${formatDecimalPercentage(maxRate)}`}
-          </Text>
+          <RateLineWithArrow
+            rateText={
+              activeMarketsCount === 1
+                ? t`Rate: ${formatDecimalPercentage(maxRate)}`
+                : t`Rates up to: ${formatDecimalPercentage(maxRate)}`
+            }
+            popoverType="fixedYield"
+            showArrow={false}
+          />
         ) : (
           <></>
         )
@@ -138,9 +143,7 @@ export const FixedYieldBalanceCard = ({
       icon={fixedYieldIcon}
       url={url}
       logoName="fixedYield"
-      content={
-        isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(total)}</Text>
-      }
+      content={isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(total)}</Text>}
     />
   );
 };
