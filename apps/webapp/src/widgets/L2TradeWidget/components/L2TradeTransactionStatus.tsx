@@ -54,7 +54,9 @@ export const L2TradeTransactionStatus = ({
     setTargetAmount
   } = useContext(WidgetContext);
 
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as TradeFlow;
+  const action = widgetState.action as TradeAction;
+  const screen = widgetState.screen as TradeScreen;
 
   const executionPrice =
     originAmount && targetAmount

@@ -29,10 +29,11 @@ export function BalancesWidgetPane(sharedProps: SharedProps & BalancesWidgetProp
     }
 
     // Set flow search param based on widgetState.flow
-    if (widgetState.flow) {
+    const { flow } = widgetState;
+    if (flow) {
       setSearchParams(
         prev => {
-          prev.set(QueryParams.Flow, widgetState.flow);
+          prev.set(QueryParams.Flow, flow);
           return prev;
         },
         { replace: true }

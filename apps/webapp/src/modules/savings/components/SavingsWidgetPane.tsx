@@ -79,10 +79,11 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     }
 
     // Set flow search param based on widgetState.flow
-    if (widgetState.flow) {
+    const { flow } = widgetState;
+    if (flow) {
       setSearchParams(
         prev => {
-          prev.set(QueryParams.Flow, widgetState.flow);
+          prev.set(QueryParams.Flow, flow);
           return prev;
         },
         { replace: true }
@@ -113,7 +114,7 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     if (
       hash &&
       txStatus === TxStatus.SUCCESS &&
-      [SavingsAction.SUPPLY, SavingsAction.WITHDRAW].includes(widgetState.action)
+      [SavingsAction.SUPPLY, SavingsAction.WITHDRAW].includes(widgetState.action as SavingsAction)
     ) {
       setTimeout(() => {
         refreshSavingsHistory();

@@ -56,7 +56,9 @@ export const SavingsTransactionStatus = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as SavingsFlow;
+  const action = widgetState.action as SavingsAction;
+  const screen = widgetState.screen as SavingsScreen;
 
   useEffect(() => {
     setOriginToken(originToken);

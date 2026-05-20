@@ -8,6 +8,7 @@ import {
   getStUSDSSupplyReviewSubtitle,
   getStUSDSWithdrawReviewSubtitle,
   stusdsActionDescription,
+  StUSDSAction,
   StUSDSFlow,
   stusdsSupplyReviewTitle,
   stusdsWithdrawReviewTitle
@@ -41,7 +42,8 @@ export const StUSDSTransactionReview = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action } = widgetState;
+  const flow = widgetState.flow as StUSDSFlow;
+  const action = widgetState.action as StUSDSAction;
 
   useEffect(() => {
     setOriginToken(originToken);

@@ -203,7 +203,9 @@ export const StakeModuleTransactionStatus = ({
   const { skyToLock, usdsToBorrow, skyToFree, usdsToWipe, restakeSkyRewards, restakeSkyAmount } =
     useContext(StakeModuleWidgetContext);
 
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as StakeFlow;
+  const action = widgetState.action as StakeAction;
+  const screen = widgetState.screen as StakeScreen;
 
   const txStatus = txStatus_ as keyof TxCardCopyText;
 

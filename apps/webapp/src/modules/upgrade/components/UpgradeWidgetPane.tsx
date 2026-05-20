@@ -99,10 +99,11 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     }
 
     // Set flow search param based on widgetState.flow
-    if (widgetState.flow) {
+    const { flow } = widgetState;
+    if (flow) {
       setSearchParams(
         prev => {
-          prev.set(QueryParams.Flow, widgetState.flow);
+          prev.set(QueryParams.Flow, flow);
           return prev;
         },
         { replace: true }
@@ -161,7 +162,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     if (
       hash &&
       txStatus === TxStatus.SUCCESS &&
-      [UpgradeAction.UPGRADE, UpgradeAction.REVERT].includes(widgetState.action)
+      [UpgradeAction.UPGRADE, UpgradeAction.REVERT].includes(widgetState.action as UpgradeAction)
     ) {
       setTimeout(() => {
         refreshUpgradeHistory();
