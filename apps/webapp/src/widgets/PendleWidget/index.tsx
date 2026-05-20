@@ -185,7 +185,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     underlyingToken: market.underlyingToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: isConnectedAndEnabled && debouncedAmount > 0n && debounceSettled
+    enabled: debouncedAmount > 0n && debounceSettled
   });
 
   // Map raw Pendle /convert errors (HTTP failures, malformed quotes, no
