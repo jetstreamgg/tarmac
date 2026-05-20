@@ -1,19 +1,40 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreBinaries": ["tsx"],
   "workspaces": {
     ".": {
-      "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"]
+      "entry": ["lingui.config.ts", "scripts/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
+      "ignoreDependencies": [
+        "@vitest/coverage-v8",
+        "eslint-plugin-react",
+        "happy-dom",
+        "lint-staged",
+        "vitest"
+      ]
     },
     "apps/webapp": {
       "entry": [
-        "src/pages/main.tsx",
         "src/hooks/index.ts",
         "src/utils/index.ts",
         "src/widgets/index.ts",
-        "wagmi.config.ts"
+        "wagmi.config.ts",
+        "vitest.hooks.config.ts",
+        "src/test/e2e/**/*.{ts,tsx}",
+        "scripts/**/*.{js,ts,sh}",
+        "test/**/*.{ts,tsx}"
       ],
-      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}!"],
-      "ignore": ["src/hooks/generated.ts", "src/locales/**/*"]
+      "project": ["src/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx,css}!", "test/**/*.{ts,tsx}"],
+      "ignore": ["src/hooks/generated.ts", "src/locales/**/*", "src/widgets/data/tooltips/index.ts"],
+      "ignoreDependencies": [
+        "@base-org/account",
+        "@coinbase/wallet-sdk",
+        "@lingui/swc-plugin",
+        "@metamask/connect-evm",
+        "@safe-global/safe-apps-provider",
+        "@safe-global/safe-apps-sdk",
+        "@walletconnect/ethereum-provider",
+        "porto"
+      ]
     }
   }
 }

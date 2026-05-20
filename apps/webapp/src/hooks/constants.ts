@@ -34,9 +34,6 @@ export const URL_SKY_SUBGRAPH = 'https://proxy.sky.money/indexer';
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;
-export const ARBITRUM_CHAIN_ID = 42161;
-export const OPTIMISM_CHAIN_ID = 10;
-export const UNICHAIN_CHAIN_ID = 130;
 
 export const TENDERLY_CHAIN_ID = 314310;
 

@@ -7,7 +7,7 @@ function gtag(...args: unknown[]) {
   window.dataLayer.push(args);
 }
 
-export function initializeGtag() {
+function initializeGtag() {
   if (typeof window === 'undefined' || !GA_MEASUREMENT_ID) {
     return;
   }

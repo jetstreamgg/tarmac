@@ -17,7 +17,10 @@ export const getAmount = ({
     case ModuleEnum.TRADE:
       return formatBigInt(absBigInt('fromAmount' in item ? item.fromAmount : 0n), {
         compact: true,
-        unit: getTokenDecimals('fromToken' in item ? (item.fromToken as Token) : undefined, chainId)
+        unit: getTokenDecimals(
+          'fromToken' in item ? (item.fromToken as unknown as Token) : undefined,
+          chainId
+        )
       });
     case ModuleEnum.UPGRADE:
       switch (item.type) {

@@ -119,16 +119,3 @@ export function saveConsent(consent: ServiceConsent): void {
   }
 }
 
-/**
- * Clear all consent (delete the cookie).
- */
-export function clearConsent(): void {
-  if (typeof document === 'undefined') return;
-  const domain = getCookieDomain();
-  const domainAttr = domain ? `; domain=${domain}` : '';
-  document.cookie = `${CONSENT_COOKIE_NAME}=; path=/; max-age=0${domainAttr}`;
-
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
-  }
-}

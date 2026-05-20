@@ -18,7 +18,10 @@ export function useAllNetworksCombinedHistory() {
       ...(arbitrumHistory.data || []),
       ...(optimismHistory.data || []),
       ...(unichainHistory.data || [])
-    ].sort((a: CombinedHistoryItem, b: CombinedHistoryItem) => b.blockTimestamp - a.blockTimestamp);
+    ].sort(
+      (a: CombinedHistoryItem, b: CombinedHistoryItem) =>
+        b.blockTimestamp.getTime() - a.blockTimestamp.getTime()
+    );
   }, [
     baseHistory.data,
     ethereumHistory.data,

@@ -84,41 +84,6 @@ export const MORPHO_VAULT_V1_ADAPTER_ABI = [
 ] as const;
 
 /**
- * Minimal ABI for MorphoMarketV1Adapter to read market IDs and real assets.
- * Each adapter can allocate to multiple markets.
- */
-export const MORPHO_MARKET_V1_ADAPTER_ABI = [
-  {
-    inputs: [],
-    name: 'marketIdsLength',
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [{ type: 'uint256' }],
-    name: 'marketIds',
-    outputs: [{ type: 'bytes32' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [],
-    name: 'realAssets',
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  },
-  {
-    inputs: [{ internalType: 'bytes32', name: 'marketId', type: 'bytes32' }],
-    name: 'expectedSupplyAssets',
-    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function'
-  }
-] as const;
-
-/**
  * GraphQL query for Morpho V2 vault adapters.
  * V2 vaults allocate to V1 vaults through adapters.
  */
@@ -157,30 +122,6 @@ export const VAULT_V1_BASIC_DATA_QUERY = `
       symbol
       state {
         netApy
-      }
-    }
-  }
-`;
-
-/**
- * GraphQL query for Morpho market data.
- */
-export const MARKET_DATA_QUERY = `
-  query MarketData($marketId: String!, $chainId: Int!) {
-    marketById(marketId: $marketId, chainId: $chainId) {
-      marketId
-      lltv
-      loanAsset {
-        symbol
-      }
-      collateralAsset {
-        symbol
-      }
-      state {
-        supplyAssets
-        borrowAssets
-        utilization
-        netSupplyApy
       }
     }
   }

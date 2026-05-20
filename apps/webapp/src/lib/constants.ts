@@ -127,16 +127,6 @@ export const EXPERT_WIDGET_OPTIONS: {
   }
 ];
 
-export const VAULTS_WIDGET_OPTIONS: {
-  id: VaultsIntent;
-  name: string;
-}[] = [
-  {
-    id: VaultsIntent.MORPHO_VAULT_INTENT,
-    name: 'Vault'
-  }
-];
-
 export const VALID_LINKED_ACTIONS = [
   IntentMapping[Intent.REWARDS_INTENT],
   IntentMapping[Intent.SAVINGS_INTENT],

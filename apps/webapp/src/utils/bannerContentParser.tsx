@@ -77,12 +77,3 @@ export function parseBannerContent(description: string | React.ReactNode): React
   );
 }
 
-/**
- * Helper to check if a banner description needs tooltip parsing
- */
-export function hasTooltipPlaceholders(description: string): boolean {
-  if (typeof description !== 'string') {
-    return false;
-  }
-  return /\[(.*?)\]\(#tooltip-(.*?)\)/g.test(description);
-}

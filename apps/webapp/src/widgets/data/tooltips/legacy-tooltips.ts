@@ -4,7 +4,7 @@ export interface Tooltip {
   tooltip: string;
 }
 
-export const legacyTooltips: Tooltip[] = [
+const legacyTooltips: Tooltip[] = [
   // Stake Module tooltips
   {
     id: 'collateralization-ratio',
