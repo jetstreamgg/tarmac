@@ -54,7 +54,12 @@ export function initSentry(): void {
       // unhandled rejection. Safe to drop — WalletConnect can't reliably
       // deep-link to wallets from those WebViews anyway (WEBAPP-1Z).
       /Can't find variable: indexedDB/,
-      /indexedDB is not defined/
+      /indexedDB is not defined/,
+      // Stale-chunk after deploy: a long-lived tab has the previous build's
+      // hashed chunk URLs baked into its module graph; the next __vitePreload
+      // 404s. User just needs to refresh — not actionable.
+      /Failed to fetch dynamically imported module.*\/assets\/.+\.js/,
+      /Importing a module script failed.*\/assets\/.+\.js/
     ],
     integrations: [
       Sentry.thirdPartyErrorFilterIntegration({
