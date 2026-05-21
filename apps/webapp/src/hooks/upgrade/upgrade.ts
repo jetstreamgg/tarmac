@@ -8,7 +8,7 @@ export type UpgradeResponse<T> = Omit<T, 'blockTimestamp'> & {
   usr: string;
 };
 
-export type UpgradeResponses = Array<UpgradeResponse>;
+export type UpgradeResponses<T extends DaiUsdsRow | MkrSkyRow> = Array<UpgradeResponse<T>>;
 
 export type UpgradeTotalResponses = {
   total: bigint;

@@ -4,7 +4,7 @@ import { PendleHistoryItem } from '../pendle/pendle';
 import { RewardUserHistoryItem } from '../rewards/rewards';
 import { SavingsSupply } from '../savings/savings';
 import { StakeHistoryItem } from '../stake/stakeModule';
-import { StUsdsHistoryItem } from '../stusds/stusds.d';
+import { StUsdsHistoryItem } from '../stusds/stusds';
 import { ParsedTradeRecord } from '../trade/trade';
 import { DaiUsdsRow, MkrSkyRow } from '../upgrade/upgrade';
 

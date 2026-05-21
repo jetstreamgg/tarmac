@@ -1,6 +1,6 @@
 import { useConnection, useChainId } from 'wagmi';
 import { ReadHook } from '../hooks';
-import { StUsdsHistoryItem } from './stusds.d';
+import { StUsdsHistoryItem } from './stusds';
 import { request, gql } from 'graphql-request';
 import { ModuleEnum, TransactionTypeEnum } from '../constants';
 import { TOKENS } from '../tokens/tokens.constants';

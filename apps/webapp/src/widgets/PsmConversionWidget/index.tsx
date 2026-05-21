@@ -132,9 +132,9 @@ function PsmConversionWidgetWrapped({
   const lastWidgetStateNotificationRef = useRef<
     | {
         txStatus: TxStatus;
-        flow?: string;
-        action?: string;
-        screen?: string;
+        flow: string | null;
+        action: string | null;
+        screen: string | null;
         originToken: string;
         targetToken: string;
         originAmount: string;

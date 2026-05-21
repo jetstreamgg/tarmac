@@ -57,7 +57,9 @@ export const RewardsTransactionStatus = ({
     setOriginToken,
     setOriginAmount
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as RewardsFlow;
+  const action = widgetState.action as RewardsAction;
+  const screen = widgetState.screen as RewardsScreen;
 
   useEffect(() => {
     setOriginToken(rewardToken);

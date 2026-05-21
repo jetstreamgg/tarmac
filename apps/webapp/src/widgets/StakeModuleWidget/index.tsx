@@ -727,8 +727,8 @@ function StakeModuleWidgetWrapped({
 
   const [stepIndex, totalSteps] = useMemo(
     () => [
-      getStepIndex(currentStep, widgetState.flow, !wantsToDelegate) + 1,
-      getTotalSteps(widgetState.flow, !wantsToDelegate)
+      getStepIndex(currentStep, widgetState.flow as StakeFlow, !wantsToDelegate) + 1,
+      getTotalSteps(widgetState.flow as StakeFlow, !wantsToDelegate)
     ],
     [widgetState.flow, currentStep, wantsToDelegate]
   );
@@ -887,7 +887,7 @@ function StakeModuleWidgetWrapped({
                       isConnectedAndEnabled={isConnectedAndEnabled}
                       onExternalLinkClicked={onExternalLinkClicked}
                       currentStep={currentStep}
-                      currentAction={widgetState.action}
+                      currentAction={widgetState.action as StakeAction}
                       onClickTrigger={onClickTab}
                       tabSide={tabSide}
                       onStakeUrnChange={onStakeUrnChange}

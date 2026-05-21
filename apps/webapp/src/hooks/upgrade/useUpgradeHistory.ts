@@ -47,10 +47,13 @@ async function fetchUpgradeHistory(
     }
   `;
 
-  const response: Record<
-    'daiToUsdsUpgrades' | 'usdsToDaiReverts' | 'mkrToSkyUpgrades' | 'skyToMkrReverts' | 'mkrToSkyUpgradeV2S',
-    UpgradeResponses
-  > = await request(urlSubgraph, query);
+  const response: {
+    daiToUsdsUpgrades: UpgradeResponses<DaiUsdsRow>;
+    usdsToDaiReverts: UpgradeResponses<DaiUsdsRow>;
+    mkrToSkyUpgrades: UpgradeResponses<MkrSkyRow>;
+    skyToMkrReverts: UpgradeResponses<MkrSkyRow>;
+    mkrToSkyUpgradeV2S: UpgradeResponses<MkrSkyRow>;
+  } = await request(urlSubgraph, query);
 
   const daiToUsdsUpgrades: DaiUsdsRow[] = response.daiToUsdsUpgrades.map(
     (d: UpgradeResponse<DaiUsdsRow>) => ({

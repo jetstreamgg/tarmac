@@ -8,8 +8,8 @@ export enum WidgetAnalyticsEventType {
 
 export type WidgetAnalyticsEvent = {
   event: WidgetAnalyticsEventType;
-  action: string;
-  flow: string;
+  action: string | null;
+  flow: string | null;
   txHash?: string;
   amount?: number;
   assetSymbol?: string;

@@ -11,7 +11,9 @@ import {
   getMorphoVaultSupplyReviewSubtitle,
   getMorphoVaultWithdrawReviewSubtitle,
   morphoVaultActionDescription,
+  MorphoVaultAction,
   MorphoVaultFlow,
+  MorphoVaultScreen,
   morphoVaultSupplyReviewTitle,
   morphoVaultWithdrawReviewTitle
 } from '../lib/constants';
@@ -47,7 +49,9 @@ export const MorphoVaultTransactionReview = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as MorphoVaultFlow;
+  const action = widgetState.action as MorphoVaultAction;
+  const screen = widgetState.screen as MorphoVaultScreen;
 
   useEffect(() => {
     setOriginToken(assetToken);

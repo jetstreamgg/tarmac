@@ -1,11 +1,5 @@
 import { SUPPORTED_TOKEN_SYMBOLS } from '@/widgets/TradeWidget/lib/constants';
-
-type InputTokenList = {
-  [number]: Token[];
-};
-type TargetTokenList = {
-  [number]: Token[];
-};
+import { TokenForChain } from '@/hooks';
 
 export type WidgetsConfig = {
   balancesTokenList: Record<number, TokenForChain[]>;

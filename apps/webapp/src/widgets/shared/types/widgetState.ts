@@ -13,38 +13,59 @@ import {
   PsmConversionScreen
 } from '@/widgets/PsmConversionWidget/lib/constants';
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
-import { RewardContract } from '@/hooks';
-import { TxStatus, NotificationType } from '../constants';
+import { StakeAction, StakeFlow, StakeScreen } from '@/widgets/StakeModuleWidget/lib/constants';
+import { StUSDSAction, StUSDSFlow, StUSDSScreen } from '@/widgets/StUSDSWidget/lib/constants';
+import {
+  MorphoVaultAction,
+  MorphoVaultFlow,
+  MorphoVaultScreen
+} from '@/widgets/MorphoVaultWidget/lib/constants';
+import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
+import { RewardContract, Token } from '@/hooks';
+import { TxStatus, NotificationType, InitialAction, InitialFlow, InitialScreen } from '../constants';
 import { WidgetAnalyticsEvent } from './analyticsEvents';
 
+export type WidgetFlow =
+  | InitialFlow
+  | BalancesFlow
+  | SavingsFlow
+  | UpgradeFlow
+  | RewardsFlow
+  | TradeFlow
+  | PsmConversionFlow
+  | StakeFlow
+  | StUSDSFlow
+  | MorphoVaultFlow
+  | PendleFlow;
+
+export type WidgetAction =
+  | InitialAction
+  | SavingsAction
+  | UpgradeAction
+  | RewardsAction
+  | TradeAction
+  | PsmConversionAction
+  | StakeAction
+  | StUSDSAction
+  | MorphoVaultAction
+  | PendleAction;
+
+export type WidgetScreen =
+  | InitialScreen
+  | SavingsScreen
+  | UpgradeScreen
+  | RewardsScreen
+  | TradeScreen
+  | PsmConversionScreen
+  | StakeScreen
+  | StUSDSScreen
+  | MorphoVaultScreen
+  | PendleScreen;
+
 export type WidgetState = {
-  flow:
-    | InitialFlow
-    | BalancesFlow
-    | SavingsFlow
-    | UpgradeFlow
-    | RewardsFlow
-    | TradeFlow
-    | PsmConversionFlow
-    | StakeFlow
-    | PendleFlow;
-  action:
-    | InitialAction
-    | SavingsAction
-    | UpgradeAction
-    | RewardsAction
-    | TradeAction
-    | PsmConversionAction
-    | PendleAction;
-  screen:
-    | InitialScreen
-    | SavingsScreen
-    | UpgradeScreen
-    | RewardsScreen
-    | TradeScreen
-    | PsmConversionScreen
-    | StakeScreen
-    | PendleScreen;
+  flow: WidgetFlow | null;
+  action: WidgetAction | null;
+  screen: WidgetScreen | null;
 };
 
 type Amount = {
@@ -52,14 +73,7 @@ type Amount = {
 };
 
 type Flow = {
-  flow?:
-    | BalancesFlow
-    | SavingsFlow
-    | UpgradeFlow
-    | RewardsFlow
-    | TradeFlow
-    | PsmConversionFlow
-    | StakeFlow;
+  flow?: WidgetFlow;
 };
 
 type BalancesWidgetState = Flow;
@@ -122,17 +136,10 @@ export type WidgetStateChangeParams = {
 export type WidgetProps = {
   rightHeaderComponent?: React.ReactElement;
   externalWidgetState?: ExternalWidgetState;
-  onStateValidated?: (state: State) => void;
+  onStateValidated?: (state: ExternalWidgetState | undefined) => void;
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   onCustomNavigation?: () => void;
   customNavigationLabel?: string;
   shouldReset?: boolean;
-  disallowedFlow?:
-    | BalancesFlow
-    | SavingsFlow
-    | UpgradeFlow
-    | RewardsFlow
-    | TradeFlow
-    | PsmConversionFlow
-    | StakeFlow;
+  disallowedFlow?: WidgetFlow;
 };

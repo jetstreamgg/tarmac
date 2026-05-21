@@ -23,16 +23,6 @@ export type TradeRecord = HistoryItem & {
   origin: string;
 };
 
-type TradeRecordRaw = {
-  uid: string;
-  creationDate: string;
-  owner: string;
-  executedSellAmountBeforeFees: string;
-  buyAmount: string;
-  sellToken: `0x${string}`;
-  buyToken: `0x${string}`;
-};
-
 export type ParsedTradeRecord = Pick<TradeRecord, 'id' | 'blockTimestamp' | 'transactionHash' | 'origin'> & {
   fromAmount: bigint;
   fromToken: Token;
