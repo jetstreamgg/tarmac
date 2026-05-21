@@ -19,6 +19,8 @@ import { positionAnimations } from '@/widgets/shared/animation/presets';
 import { MotionVStack } from '@/widgets/shared/components/ui/layout/MotionVStack';
 import { PendleFlow } from '../lib/constants';
 import { VStack } from '@/widgets/shared/components/ui/layout/VStack';
+import { getTooltipById } from '@/widgets/data/tooltips';
+import { PendleStatsCard } from './PendleStatsCard';
 
 type SupplyWithdrawProps = {
   market: PendleMarketConfig;
@@ -143,6 +145,8 @@ export const SupplyWithdraw = ({
           </TabsList>
         </motion.div>
 
+        <PendleStatsCard market={market} onExternalLinkClicked={onExternalLinkClicked} />
+
         <TabsContent value={PendleFlow.BUY}>
           <VStack className="items-stretch" gap={3}>
             <motion.div className="flex w-full flex-col" variants={positionAnimations}>
@@ -251,12 +255,20 @@ export const SupplyWithdraw = ({
                   },
                   {
                     label: t`You receive`,
-                    value: formattedReceive!
+                    value: formattedReceive!,
+                    ...(flow !== PendleFlow.BUY
+                      ? {
+                          tooltipTitle: getTooltipById('early-withdrawal-impact')?.title || '',
+                          tooltipText: getTooltipById('early-withdrawal-impact')?.tooltip || ''
+                        }
+                      : {})
                   },
                   {
                     label: flow === PendleFlow.BUY ? t`Fixed APY locked` : t`Effective APY`,
                     value: apyDisplay,
-                    className: 'text-bullish'
+                    className: 'text-bullish',
+                    tooltipTitle: getTooltipById('effective-apy')?.title || '',
+                    tooltipText: getTooltipById('effective-apy')?.tooltip || ''
                   },
                   {
                     label: t`Maturity date`,

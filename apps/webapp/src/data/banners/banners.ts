@@ -271,22 +271,6 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
-    id: 'about-fixed-yield',
-    title: 'About Fixed Yield',
-    module: 'fixed-yield-banners',
-    description:
-      'Lock in a fixed yield by buying Principal Tokens (PT) at a discount. At maturity each PT redeems 1:1 for the underlying asset — the difference is your fixed yield.',
-    display: ['disconnected']
-  },
-  {
-    id: 'fixed-yield',
-    title: 'Fixed Yield',
-    module: 'fixed-yield-banners',
-    description:
-      'A Principal Token (PT) is a tokenized claim on an underlying yield-bearing asset. PT trades at a discount until maturity, when it redeems 1:1 for the underlying. Holding to maturity locks in a fixed APY; sell early at the prevailing market price if you change your mind.',
-    display: ['connected', 'disconnected']
-  },
-  {
     id: 'usds-risk-capital-vault',
     title: 'USDS Risk Capital Vault',
     module: 'vaults-banners',
@@ -324,6 +308,14 @@ export const banners: Banner[] = [
     module: 'vaults-banners',
     description:
       'Curated by Sky on Morpho, allocates 80% of deposits into sUSDS earning the Sky Savings Rate, and the remaining 20% to markets with volatile bluechip collateral exposure including stUSDS/USDS, cbBTC/USDS, wstETH/USDS and WETH/USDS.',
+    display: ['connected', 'disconnected']
+  },
+  {
+    id: 'fixed-yield',
+    title: 'Fixed Yield',
+    module: 'fixed-yield-banners',
+    description:
+      'Powered by Pendle, allows USDS deposits to lock in a fixed APY until a set maturity date by converting the deposit into PT-sUSDS. The yield is fixed at the moment of supply and guaranteed if held to maturity; early withdrawal is available but settles at the prevailing PT-sUSDS market price.',
     display: ['connected', 'disconnected']
   }
 ];

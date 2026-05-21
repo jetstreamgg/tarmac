@@ -5,6 +5,7 @@ import { mainnet } from 'viem/chains';
 import { isTestnetId } from '@/utils';
 import { usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
+import { getTooltipById } from '@/widgets';
 
 type PendleBalanceDetailsProps = {
   market: PendleMarketConfig;
@@ -40,6 +41,8 @@ export const PendleBalanceDetails = ({ market }: PendleBalanceDetailsProps) => {
     decimals: market.underlyingDecimals
   };
 
+  const ptTooltip = getTooltipById('pt-susds');
+
   return (
     <div className="flex w-full flex-col justify-between gap-3 xl:flex-row">
       <SuppliedBalanceCard
@@ -47,6 +50,7 @@ export const PendleBalanceDetails = ({ market }: PendleBalanceDetailsProps) => {
         isLoading={ptLoading}
         token={ptToken}
         label={t`PT balance`}
+        labelTooltip={ptTooltip ? { title: ptTooltip.title, description: ptTooltip.tooltip } : undefined}
         dataTestId="pendle-supplied-balance-details"
       />
       <UnsuppliedBalanceCard
