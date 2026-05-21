@@ -4,6 +4,7 @@ import { type PendleMarketConfig, usePendleMarketsApiData } from '@/hooks';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Text } from '@/modules/layout/components/Typography';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
+import { getTooltipById, PopoverInfo } from '@/widgets';
 
 const SECONDS_PER_DAY = 86_400;
 
@@ -68,10 +69,21 @@ export const TimeToMaturityCard = ({ market }: TimeToMaturityCardProps) => {
         })
       : null;
 
+  const maturityTooltip = getTooltipById('maturity-date');
+
   return (
     <Card variant="stats" className="w-full">
-      <CardTitle>
-        <Trans>Time to maturity</Trans>
+      <CardTitle className="flex items-center gap-1">
+        <span>
+          <Trans>Time to maturity</Trans>
+        </span>
+        {maturityTooltip && (
+          <PopoverInfo
+            title={maturityTooltip.title}
+            description={maturityTooltip.tooltip}
+            iconClassName="text-textSecondary hover:text-white transition-colors"
+          />
+        )}
       </CardTitle>
       <CardContent>
         <div className="mt-2 flex items-center justify-between">

@@ -186,7 +186,16 @@ export function useQuotePendleConvert({
   ytToken
 }: UseQuotePendleConvertParams): PendleQuoteHook {
   const { address: connectedAddress } = useConnection();
+  // Pendle's API rejects the zero address, so we use the dead address as the
+  // placeholder receiver for disconnected quote previews. The receiver only
+  // affects calldata the API returns, which we discard — buildVerifiedArgs
+  // rebuilds with the real connected address at execute time.
+  const PLACEHOLDER_RECEIVER = '0x000000000000000000000000000000000000dEaD' as const;
 
+  // Quotes don't require a connected wallet — when disconnected we send a
+  // placeholder receiver so users can preview rates before connecting. The
+  // queryKey includes `connectedAddress`, so the query refetches with the
+  // real address as soon as they connect.
   const enabled =
     enabledParam &&
     !!marketAddress &&
@@ -195,7 +204,6 @@ export function useQuotePendleConvert({
     !!underlyingToken &&
     !!amountIn &&
     amountIn !== 0n &&
-    !!connectedAddress &&
     (!maturedExit || !!ytToken);
 
   // Aggregator is needed iff the user's non-PT-side token differs from the
@@ -234,7 +242,7 @@ export function useQuotePendleConvert({
           ]
         : [{ token: inputToken!, amount: amountIn!.toString() }];
       const response = await fetchPendleConvert(mainnet.id, {
-        receiver: connectedAddress!,
+        receiver: connectedAddress ?? PLACEHOLDER_RECEIVER,
         slippage,
         inputs,
         outputs: [outputToken!],
@@ -281,7 +289,9 @@ export function useQuotePendleConvert({
     },
     staleTime: 30_000,
     gcTime: 60_000,
-    refetchInterval: PENDLE_QUOTE_REFETCH_MS,
+    // Disconnected previews fetch once on input change but don't poll — keeps
+    // anonymous-visitor traffic to Pendle bounded.
+    refetchInterval: connectedAddress ? PENDLE_QUOTE_REFETCH_MS : false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
     retry: 1

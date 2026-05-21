@@ -283,6 +283,36 @@ Bundled transaction: Active`
       'Vault rates are variable and depend on market conditions, borrower demand, and the allocation strategy defined by Sky as vault curator on Morpho. Key factors that influence vault rates include the supply and demand dynamics of the underlying lending markets, the utilization rate of each market the vault allocates to, and the specific allocation strategy and risk profile of the vault. Sky.money does not control or guarantee vault performance. The vault rate provided is an estimated annual rate, updated using data from Morpho, a third-party lending protocol. This estimate is for informational purposes only and does not guarantee future results.'
   },
   {
+    id: 'pt-susds',
+    title: 'PT-sUSDS',
+    tooltip:
+      'PT-sUSDS is a Principal Token issued by Pendle that represents the right to redeem an underlying amount of USDS via sUSDS at a specific future maturity date. It is purchased at a discount to its redemption value, and that discount is what produces the fixed APY when held to maturity. PT-sUSDS is a tradable derivative, not a stablecoin — its market price can fluctuate before maturity.'
+  },
+  {
+    id: 'fixed-yield-rate',
+    title: 'Fixed Yield Rate',
+    tooltip:
+      'The Fixed Yield Rate is the annualized return locked in at the moment USDS is supplied, based on the discount at which PT-sUSDS is purchased on the Pendle market. The rate is guaranteed only if PT-sUSDS is held to or past maturity. Sky.money does not control or guarantee the rate, which is determined by the Pendle market and may differ from the rate displayed before transaction submission.'
+  },
+  {
+    id: 'maturity-date',
+    title: 'Maturity Date',
+    tooltip:
+      'The Maturity Date is the date on which each PT-sUSDS becomes redeemable for its full underlying USDS value, locking in the advertised fixed APY. PT-sUSDS can be redeemed at any time on or after this date and does not accrue any additional yield once maturity has passed. Each Pendle market has a fixed maturity date set when the market is created.'
+  },
+  {
+    id: 'effective-apy',
+    title: 'Effective APY',
+    tooltip:
+      'The Effective APY is the realized annualized yield for a specific order, after accounting for the price impact of trading PT-sUSDS on the Pendle market. Larger orders can move the market price, which may reduce the Effective APY relative to the headline Fixed Yield Rate. The Effective APY shown is an estimate based on current market conditions and may change before the transaction is executed.'
+  },
+  {
+    id: 'early-withdrawal-impact',
+    title: 'Early Withdrawal Impact',
+    tooltip:
+      'Withdrawing before the Maturity Date requires selling PT-sUSDS on the Pendle market rather than redeeming it for the fixed amount. The realized APY on an early withdrawal depends on the prevailing PT-sUSDS market price and may be higher or lower than the Fixed Yield Rate locked in at supply. The advertised fixed APY is guaranteed only if PT-sUSDS is held to or past maturity.'
+  },
+  {
     id: 'rewards-rate',
     title: 'Rewards Rate',
     tooltip:
