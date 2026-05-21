@@ -8,6 +8,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
+import { getTooltipById, PopoverInfo, PopoverRateInfo } from '@/widgets';
 
 const secondsToExpiry = (expiry: number): number => Math.max(0, expiry - Math.floor(Date.now() / 1000));
 
@@ -22,6 +23,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
   const remaining = secondsToExpiry(market.expiry);
   const { data: allMarketsData, isLoading } = usePendleMarketsApiData();
   const marketData = allMarketsData?.[market.marketAddress];
+  const maturityTooltip = getTooltipById('maturity-date');
 
   return (
     <Card
@@ -48,7 +50,10 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
         {isLoading ? (
           <Skeleton className="h-4 w-16" />
         ) : marketData?.impliedApy !== undefined ? (
-          <Text className="text-bullish">{formatDecimalPercentage(marketData.impliedApy)}</Text>
+          <HStack className="items-center" gap={2}>
+            <Text className="text-bullish">{formatDecimalPercentage(marketData.impliedApy)}</Text>
+            <PopoverRateInfo type="fixedYield" iconClassName="w-3 h-3" />
+          </HStack>
         ) : (
           <Text>—</Text>
         )}
@@ -68,9 +73,18 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
             )}
           </VStack>
           <VStack className="items-stretch justify-between text-right" gap={2}>
-            <Text className="text-textSecondary text-sm leading-4">
-              <Trans>Maturity</Trans>
-            </Text>
+            <HStack className="items-center justify-end" gap={1}>
+              <Text className="text-textSecondary text-sm leading-4">
+                <Trans>Maturity</Trans>
+              </Text>
+              {maturityTooltip && (
+                <PopoverInfo
+                  title={maturityTooltip.title}
+                  description={maturityTooltip.tooltip}
+                  iconClassName="text-textSecondary hover:text-white transition-colors"
+                />
+              )}
+            </HStack>
             <Text className="whitespace-nowrap">
               {new Date(market.expiry * 1000).toLocaleDateString(undefined, {
                 year: 'numeric',

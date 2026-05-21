@@ -171,7 +171,8 @@ const RATE_TOOLTIP_TYPES: Partial<Record<NonNullable<BalancesAction['rateKey']>,
   rewards: 'str',
   savings: 'ssr',
   stusds: 'stusds',
-  staking: 'srr'
+  staking: 'srr',
+  fixedYield: 'fixedYield'
 };
 
 function resolveAction(

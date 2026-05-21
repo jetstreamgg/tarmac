@@ -18,6 +18,7 @@ import { TimeToMaturityCard } from './TimeToMaturityCard';
 import { PendleMarketHistory } from './PendleMarketHistory';
 import { PendleAllMarketsHistory } from './PendleAllMarketsHistory';
 import { PendleReadyToRedeemTable } from './PendleReadyToRedeemTable';
+import { PendleFaq } from './PendleFaq';
 
 const findMarket = (address: string | null): PendleMarketConfig | undefined => {
   if (!address) return undefined;
@@ -69,6 +70,11 @@ export const PendleDetailsPane = () => {
             <PendleMarketHistory market={selectedMarket!} />
           </DetailSectionRow>
         </DetailSection>
+        <DetailSection title={t`FAQs`}>
+          <DetailSectionRow>
+            <PendleFaq />
+          </DetailSectionRow>
+        </DetailSection>
       </DetailSectionWrapper>
     );
   }
@@ -89,6 +95,11 @@ export const PendleDetailsPane = () => {
         <DetailSection title={t`About`}>
           <DetailSectionRow>
             <PendleAbout />
+          </DetailSectionRow>
+        </DetailSection>
+        <DetailSection title={t`FAQs`}>
+          <DetailSectionRow>
+            <PendleFaq />
           </DetailSectionRow>
         </DetailSection>
       </DetailSectionWrapper>
@@ -112,6 +123,11 @@ export const PendleDetailsPane = () => {
       <DetailSection title={t`About`}>
         <DetailSectionRow>
           <PendleAbout />
+        </DetailSectionRow>
+      </DetailSection>
+      <DetailSection title={t`FAQs`}>
+        <DetailSectionRow>
+          <PendleFaq />
         </DetailSectionRow>
       </DetailSection>
     </DetailSectionWrapper>

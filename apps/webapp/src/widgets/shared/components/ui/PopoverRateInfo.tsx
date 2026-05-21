@@ -33,7 +33,8 @@ const TOOLTIP_ID_MAP = {
   delayedUpgradePenalty: 'delayed-upgrade-penalty',
   remainingCapacity: 'remaining-capacity',
   withdrawalLiquidity: 'withdrawal-liquidity',
-  maximumCapacity: 'maximum-capacity'
+  maximumCapacity: 'maximum-capacity',
+  fixedYield: 'fixed-yield-rate'
 } as const;
 
 type TooltipContent = {
