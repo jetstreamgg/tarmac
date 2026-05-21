@@ -140,15 +140,18 @@ export default ({ mode }: { mode: modeEnum }) => {
       outDir: '../dist',
       emptyOutDir: true,
       modulePreload: { polyfill: false },
-      rollupOptions: {
+      rolldownOptions: {
         output: {
-          manualChunks(id) {
-            // Reown's appkit-ui dynamic-imports each Phosphor icon as its own chunk
-            // (50+ per-icon files). Consolidating them shrinks the stale-chunk
-            // surface area after deploys and trades 50 requests for 1.
-            if (id.includes('@phosphor-icons/webcomponents')) {
-              return 'phosphor-icons';
-            }
+          // Reown's appkit-ui dynamic-imports each Phosphor icon as its own chunk
+          // (50+ per-icon files). Consolidating them shrinks the stale-chunk
+          // surface area after deploys and trades 50 requests for 1.
+          codeSplitting: {
+            groups: [
+              {
+                name: 'phosphor-icons',
+                test: /@phosphor-icons[\\/]webcomponents/
+              }
+            ]
           }
         }
       }
