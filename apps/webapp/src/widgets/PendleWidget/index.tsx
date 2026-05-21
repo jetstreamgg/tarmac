@@ -41,7 +41,6 @@ import { pendleAnalyticsData } from './lib/pendleAnalyticsData';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
 import { PendlePoweredBy } from './components/PendlePoweredBy';
-import { PendleStatsCard } from './components/PendleStatsCard';
 import { PendleTransactionReview } from './components/PendleTransactionReview';
 import { PendleTransactionStatus } from './components/PendleTransactionStatus';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
@@ -186,7 +185,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     underlyingToken: market.underlyingToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
-    enabled: isConnectedAndEnabled && debouncedAmount > 0n && debounceSettled
+    enabled: debouncedAmount > 0n && debounceSettled
   });
 
   // Map raw Pendle /convert errors (HTTP failures, malformed quotes, no
@@ -198,7 +197,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     // generic "service unavailable" copy would be misleading — the user
     // just needs to enter a larger amount.
     if (/input valuation is too low/i.test(raw)) {
-      return t`Minimum input valuation is $0.01`;
+      return t`Enter at least $0.01 to continue.`;
     }
     if (/no routes/i.test(raw)) {
       return t`No route available for this trade size. Try a different amount.`;
@@ -469,9 +468,6 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
       <div className="-mt-4 space-y-0">
         <PendlePoweredBy onExternalLinkClicked={onExternalLinkClicked} />
       </div>
-      {screen === PendleScreen.ACTION && txStatus === TxStatus.IDLE && (
-        <PendleStatsCard market={market} onExternalLinkClicked={onExternalLinkClicked} />
-      )}
       <AnimatePresence mode="popLayout" initial={false}>
         {txStatus !== TxStatus.IDLE ? (
           <CardAnimationWrapper key="pendle-tx-status" className="h-full">
