@@ -3,7 +3,7 @@ import { Intent } from '../../../lib/enums';
 import { IntentMapping } from '@/lib/constants';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { Heading, Text } from '@/modules/layout/components/Typography';
+import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { WidgetContent } from '../types/Widgets';
 import { AnimatePresence, motion } from 'motion/react';
@@ -13,7 +13,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper';
 import { cn } from '@/lib/utils';
 import { Menu, ChevronDown, Loader2 } from 'lucide-react';
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { DualSwitcher } from '@/components/DualSwitcher';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -221,13 +221,6 @@ export function WidgetNavigation({
               closeIconClassName="size-[22px]"
             >
               <div className="flex h-full flex-col">
-                <div className="p-6 pb-4">
-                  <SheetTitle asChild>
-                    <Heading>
-                      <Trans>Menu</Trans>
-                    </Heading>
-                  </SheetTitle>
-                </div>
                 <div className="mt-10 flex-1 overflow-y-auto px-3 pb-6">
                   {widgetContent.map(group =>
                     group.items.map(([widgetIntent, label, icon, , comingSoon, options]) => (
@@ -367,7 +360,13 @@ export function WidgetNavigation({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="bg-textSecondary/20 absolute bottom-4 left-1/2 translate-x-[-21px] rounded-full p-2"
+                  onClick={() => {
+                    tabsListRef.current?.scrollTo({
+                      top: tabsListRef.current.scrollHeight,
+                      behavior: 'smooth'
+                    });
+                  }}
+                  className="bg-textSecondary/20 hover:bg-textSecondary/30 absolute bottom-4 left-1/2 translate-x-[-21px] cursor-pointer rounded-full p-2"
                 >
                   <ChevronDown
                     className="scroll-hint-indicator text-textSecondary"
