@@ -71,6 +71,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     underlyingToken: market.underlyingToken,
     amountIn: isRedeemable ? ptBalance : undefined,
     quote,
+    slippage,
     enabled: isRedeemable,
     shouldUseBatch: true,
     onMutate: () => txCallbacks.onMutate(),
