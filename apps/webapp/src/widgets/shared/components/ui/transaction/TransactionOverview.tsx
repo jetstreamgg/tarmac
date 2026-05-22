@@ -92,7 +92,8 @@ export function TransactionOverview({
                       <HStack className="items-center" gap={1}>
                         <Text
                           className={cn(
-                            `text-${error ? 'error' : 'textSecondary'} flex items-center text-sm`,
+                            'flex items-center text-sm',
+                            error ? 'text-error' : 'text-textSecondary',
                             labelClassName
                           )}
                         >
