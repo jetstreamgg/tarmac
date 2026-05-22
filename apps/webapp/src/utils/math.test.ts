@@ -150,6 +150,26 @@ describe('Risk parameter math functions using ETH-A risk parameters', () => {
     expect(result).eq(expected);
   });
 
+  it('artValue inverts debtValue (round-trip art -> debt -> art)', () => {
+    // Round-trip with the same ETH-A art/rate fixture used above
+    const computedDebt = math.debtValue(art, rate);
+    const recoveredArt = math.artValue(computedDebt, rate);
+
+    // Recovered art equals the original up to wad rounding (matches ethers
+    // FixedNumber.round(18) + toFormat(wad) on the divide).
+    expect(recoveredArt).eq(art);
+  });
+
+  it('artValue rounds half-up at the 18th decimal', () => {
+    // rate = 1.0 exactly at ray means art == debtValue.
+    const rate = 10n ** 27n;
+    const debtValue = 123456789012345678n;
+
+    const result = math.artValue(debtValue, rate);
+
+    expect(result).eq(debtValue);
+  });
+
   it('Handles divide by zero errors gracefully in liquidationPrice', () => {
     const ink = BigInt('0');
     const debtValue = BigInt('0');
@@ -211,6 +231,52 @@ describe('DSR Calculations', () => {
     const received = math.calculateSharesFromAssets(usdsAmount, updatedChi);
 
     expect(received).eq(982576115517862100n);
+  });
+
+  it('Can estimate USDS received from a given amount of sUSDS (calculateAssetsFromShares)', () => {
+    const susdsAmount = 982576115517862100n;
+    const updatedChi = 1017732859782526592471921499n;
+
+    const received = math.calculateAssetsFromShares(susdsAmount, updatedChi);
+
+    // Round-trip of the calculateSharesFromAssets case above. At the values
+    // chosen, ethers FixedNumber half-up rounding lands the inverse exactly on
+    // 1.0 wad — locking that as the baseline.
+    expect(received).eq(1000000000000000000n);
+  });
+
+  it('calculateAssetsFromShares matches dsrBalance for the same inputs', () => {
+    const pie = BigInt('996385765950179275');
+    const chi = BigInt('1003732761911113484874347970');
+
+    expect(math.calculateAssetsFromShares(pie, chi)).eq(math.dsrBalance(pie, chi));
+  });
+
+  it('Can update chi forward over a one-day window', () => {
+    // dsr = 1.000000003170979198376458650 at ray (~10% APR)
+    const dsr = 1000000003170979198376458650n;
+    const oneDay = 60 * 60 * 24;
+    // chi at ray = 1.0 exactly
+    const chi = 10n ** 27n;
+
+    const next = math.updatedChi(dsr, oneDay, chi);
+
+    // exp(ln(dsr) * 86400) ≈ 1.0002740..., scaled through the ethers
+    // FixedNumber path: float pow → fromString(rate.toString(), 18) →
+    // toFormat(RAY) → mul(chi). The trailing 9 zeros come from the
+    // toFormat(18 → 27) step. Captured from the ethers impl.
+    expect(next).eq(1000274010141288600000000000n);
+  });
+
+  it('updatedChi grows chi proportionally when chi != 1', () => {
+    const dsr = 1000000003170979198376458650n;
+    const oneDay = 60 * 60 * 24;
+    // chi at ray = 1.05 exactly
+    const chi = 1050000000000000000000000000n;
+
+    const next = math.updatedChi(dsr, oneDay, chi);
+
+    expect(next).eq(1050287710648353030000000000n);
   });
 });
 
@@ -312,6 +378,35 @@ describe('Debt Ceiling Utilization', () => {
 
     const result = debtCeilingUtilization(debtCeiling, totalDebt);
     expect(result).toBe(0.000001);
+  });
+});
+
+describe('convertRadToWad', () => {
+  it('returns 0 for a zero input', () => {
+    expect(math.convertRadToWad(0n)).eq(0n);
+  });
+
+  it('converts 1.0 at rad to 1.0 at wad', () => {
+    // 1.0 at rad = 10^45
+    const oneRad = 10n ** 45n;
+    expect(math.convertRadToWad(oneRad)).eq(10n ** 18n);
+  });
+
+  it('rounds half-up at the 27th truncated rad digit', () => {
+    // Exactly halfway: 0.5 * 10^27 (the half-up threshold) rounds up to 1 wad-unit
+    const halfThreshold = 5n * 10n ** 26n;
+    expect(math.convertRadToWad(halfThreshold)).eq(1n);
+
+    // Just below: rounds down to 0
+    expect(math.convertRadToWad(halfThreshold - 1n)).eq(0n);
+  });
+
+  it('preserves wad-precision digits when the dropped rad tail is all zeros', () => {
+    // rad value = 1500000000.123456789 at wad scale, padded with 27 trailing
+    // zeros to reach rad scale. Dropping the 27 zero-tail leaves the wad-scale
+    // bigint untouched.
+    const rad = 1500000000123456789000000000000000000000000000n;
+    expect(math.convertRadToWad(rad)).eq(1500000000123456789n);
   });
 });
 
