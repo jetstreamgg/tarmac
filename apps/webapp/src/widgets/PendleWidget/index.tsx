@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { formatUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
@@ -123,7 +123,11 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
   const [selectedWithdrawOutToken, setSelectedWithdrawOutToken] = useState<Token>(underlyingToken);
 
   const handleSupplyTokenChange = (next: Token) => {
-    setAmount(0n);
+    const prevDecimals = getTokenDecimals(selectedSupplyToken, mainnet.id);
+    const nextDecimals = getTokenDecimals(next, mainnet.id);
+    if (amount > 0n && prevDecimals !== nextDecimals) {
+      setAmount(parseUnits(formatUnits(amount, prevDecimals), nextDecimals));
+    }
     setSelectedSupplyToken(next);
   };
 
