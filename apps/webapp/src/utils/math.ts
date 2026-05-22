@@ -1,142 +1,106 @@
-import { FixedNumber } from 'ethers';
-import invariant from 'tiny-invariant';
-import {
-  RAD_FORMAT,
-  RAD_PRECISION,
-  RAY_FORMAT,
-  RAY_PRECISION,
-  SECONDS_PER_YEAR,
-  USDC_FORMAT,
-  USDC_PRECISION,
-  WAD_FORMAT,
-  WAD_PRECISION
-} from './math.constants';
 import { formatUnits, parseUnits } from 'viem';
+import { RAD_PRECISION, RAY_PRECISION, SECONDS_PER_YEAR, USDC_PRECISION, WAD_PRECISION } from './math.constants';
 
 // Maker glossary: https://docs.makerdao.com/other-documentation/system-glossary
 
 export const MKR_TO_SKY_RATE = 24000n; // Immutable in contract
 
-// This multiplies the base by the factor N times, used for doubling, tripling, etc, any number of times
-const fixedMultiplySeries = (base: FixedNumber, factor: FixedNumber, count: FixedNumber) => {
-  invariant(base.format === factor.format && factor.format === count.format);
-  const oneFixed = FixedNumber.fromString('1').toFormat(base.format);
-
-  while (!count.isZero() && !count.isNegative()) {
-    base = base.mul(factor);
-    count = count.sub(oneFixed);
-  }
-
-  return base;
+// Half-up rescale of a bigint `x` interpreted at `from` decimals to `to`
+// decimals. Matches ethers v6 FixedNumber's `round(N).toFormat(...)` for
+// non-negative values (the only kind that flows through this module): add
+// 5*10^(delta-1) then truncate-divide by 10^delta.
+const rescaleHalfUp = (x: bigint, from: number, to: number): bigint => {
+  if (from <= to) return x * 10n ** BigInt(to - from);
+  const delta = BigInt(from - to);
+  const half = 5n * 10n ** (delta - 1n);
+  return (x + half) / 10n ** delta;
 };
+
+// Convert a JS float (the result of `Math.pow`) into a bigint at `decimals`
+// scale, mirroring ethers `FixedNumber.fromString(rate.toString(), 18)
+// .toFormat({decimals})`. JS Number.toString uses exponential notation outside
+// roughly [1e-6, 1e21); the callers here only produce values near 1, so plain
+// decimal notation is what we expect. Throw loudly otherwise — silent fallback
+// would mask precision bugs.
+const floatToScaledBigInt = (n: number, decimals: number): bigint => {
+  const s = n.toString();
+  if (s.includes('e') || s.includes('E')) {
+    throw new Error(`floatToScaledBigInt: exponential notation unsupported (got "${s}")`);
+  }
+  return parseUnits(s as `${number}`, decimals);
+};
+
+const WAD = 10n ** BigInt(WAD_PRECISION);
+const RAY = 10n ** BigInt(RAY_PRECISION);
 
 // Vaults math
 export const annualStabilityFee = (duty: bigint): bigint => {
-  const dutyFixed = FixedNumber.fromValue(duty, RAY_PRECISION, RAY_FORMAT);
-  // Unfortunately FixedNumber doesn't have a .pow() method, so we have to cast as a float and recast as a bigint
-  const rate = dutyFixed.toUnsafeFloat() ** SECONDS_PER_YEAR * 1 - 1;
-  const fee = FixedNumber.fromString(rate.toString(), WAD_PRECISION);
-  return fee.value;
+  const dutyFloat = Number(formatUnits(duty, RAY_PRECISION));
+  // Matches the original `duty ** SECONDS_PER_YEAR * 1 - 1` (the `* 1` is a no-op).
+  const rate = dutyFloat ** SECONDS_PER_YEAR - 1;
+  return floatToScaledBigInt(rate, WAD_PRECISION);
 };
 
-export const liquidationPenalty = (chop: bigint): bigint => {
-  const chopFixed = FixedNumber.fromValue(chop, WAD_PRECISION);
-  const penalty = chopFixed.sub(FixedNumber.fromValue(1));
-  return penalty.value;
-};
+export const liquidationPenalty = (chop: bigint): bigint => chop - WAD;
 
 export const delayedPrice = (par: bigint, spot: bigint, mat: bigint): bigint => {
-  const parFixed = FixedNumber.fromValue(par, RAY_PRECISION, RAY_FORMAT);
-  const spotFixed = FixedNumber.fromValue(spot, RAY_PRECISION, RAY_FORMAT);
-  const matFixed = FixedNumber.fromValue(mat, RAY_PRECISION, RAY_FORMAT);
-
-  const price = spotFixed.mul(parFixed).mul(matFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
-  return price.value;
+  // Three RAY values multiplied via ethers FixedNumber at fixed256x27 truncate
+  // by 10^27 after each mul, then round-half-up to wad.
+  const step1 = (spot * par) / RAY;
+  const step2 = (step1 * mat) / RAY;
+  return rescaleHalfUp(step2, RAY_PRECISION, WAD_PRECISION);
 };
 
 export const debtValue = (art: bigint, rate: bigint): bigint => {
-  const artFixed = FixedNumber.fromValue(art, WAD_PRECISION, RAY_FORMAT);
-  const rateFixed = FixedNumber.fromValue(rate, RAY_PRECISION, RAY_FORMAT);
-
-  // Normalize ray to wad
-  const debtVal = artFixed.mul(rateFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return debtVal.value;
+  // art is wad, rate is ray; ethers promotes art to ray format (×10^9),
+  // multiplies (truncating by 10^27), then round-half-up to wad.
+  return rescaleHalfUp((art * rate) / WAD, RAY_PRECISION, WAD_PRECISION);
 };
 
 export const artValue = (debtValue: bigint, rate: bigint): bigint => {
-  if (rate === BigInt(0)) {
-    return BigInt(0); // Return 0 if any of the inputs are zero to avoid division by zero
-  }
-
-  const debtValueFixed = FixedNumber.fromValue(debtValue, WAD_PRECISION, RAY_FORMAT);
-  const rateFixed = FixedNumber.fromValue(rate, RAY_PRECISION, RAY_FORMAT);
-
-  // Divide debtValue by rate to get art
-  const artFixed = debtValueFixed.div(rateFixed);
-
-  // Normalize ray to wad
-  const art = artFixed.round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return art.value;
+  if (rate === 0n) return 0n;
+  // ethers promotes debtValue to ray format (×10^9), divides (× 10^27 / rate),
+  // then round-half-up to wad. Net intermediate value at ray scale:
+  // (debtValue * 10^36) / rate.
+  return rescaleHalfUp((debtValue * 10n ** 36n) / rate, RAY_PRECISION, WAD_PRECISION);
 };
 
 export const liquidationPrice = (ink: bigint, debtValue: bigint, mat: bigint): bigint => {
-  if (ink === BigInt(0)) {
-    return BigInt(0); // Return 0 if any of the inputs are zero to avoid division by zero
-  }
-
-  const matFixed = FixedNumber.fromValue(mat, RAY_PRECISION, RAY_FORMAT);
-  const inkFixed = FixedNumber.fromValue(ink, WAD_PRECISION, RAY_FORMAT);
-  const debtValueFixed = FixedNumber.fromValue(debtValue, WAD_PRECISION, RAY_FORMAT);
-
-  // Calculate the liquidation price
-  const priceRay = debtValueFixed.mul(matFixed).div(inkFixed);
-
-  // Convert to wad format
-  const priceWad = priceRay.round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return priceWad.value;
+  if (ink === 0n) return 0n;
+  // ethers path at fixed256x27:
+  //   debtValueFixed.mul(matFixed) → (debtValue * mat) / 10^18
+  //   .div(inkFixed)               → ((debtValue * mat) / 10^18) * 10^18 / ink
+  // Then round-half-up to wad.
+  const inner = (debtValue * mat) / WAD;
+  const rayValue = (inner * WAD) / ink;
+  return rescaleHalfUp(rayValue, RAY_PRECISION, WAD_PRECISION);
 };
 
-export const collateralValue = (ink: bigint, price: bigint): bigint => {
-  const inkFixed = FixedNumber.fromValue(ink, WAD_PRECISION);
-  const priceFixed = FixedNumber.fromValue(price, WAD_PRECISION);
-  const colValue = inkFixed.mul(priceFixed);
-
-  return colValue.value;
-};
+export const collateralValue = (ink: bigint, price: bigint): bigint => (ink * price) / WAD;
 
 export const collateralizationRatio = (collateralValue: bigint, debtValue: bigint): bigint => {
-  if (debtValue === BigInt(0)) {
-    return BigInt(0); // Return 0 if debtValue is zero to avoid division by zero
-  }
-  // Overflow error can occur dividing a larged FixedNumber number by an extremely small one
-  // but col ratio does not need to be precise more than a few digits, we round to 4 digits
-  const colValueFixed = FixedNumber.fromValue(collateralValue, WAD_PRECISION).round(4);
-  const debtValueFixed = FixedNumber.fromValue(debtValue, WAD_PRECISION).round(4);
+  if (debtValue === 0n) return 0n;
+  // Pre-round both operands to 4 decimal places at wad to avoid fixed-point
+  // overflow when debt is extremely small compared to collateral. Matches the
+  // original ethers chain: round(4) on each input, div, round(4).
+  const ROUND4_HALF = 5n * 10n ** 13n;
+  const ROUND4_TENS = 10n ** 14n;
+  const round4 = (v: bigint) => ((v + ROUND4_HALF) / ROUND4_TENS) * ROUND4_TENS;
 
-  if (debtValueFixed.eq(FixedNumber.fromValue(0n))) {
-    return BigInt(0); // Return 0 to avoid division by zero
-  }
+  const colRounded = round4(collateralValue);
+  const debtRounded = round4(debtValue);
+  if (debtRounded === 0n) return 0n;
 
-  const ratio = colValueFixed.div(debtValueFixed).round(4);
-  return ratio.value;
+  const ratio = (colRounded * WAD) / debtRounded;
+  return round4(ratio);
 };
 
 export const minSafeCollateralAmount = (debtValue: bigint, mat: bigint, price: bigint): bigint => {
-  if (price === BigInt(0)) {
-    return BigInt(0); // Return 0 if any of the inputs are zero to avoid division by zero
-  }
-
-  const debtValueFixed = FixedNumber.fromValue(debtValue, WAD_PRECISION, RAY_FORMAT);
-  const matFixed = FixedNumber.fromValue(mat, RAY_PRECISION, RAY_FORMAT);
-  const priceFixed = FixedNumber.fromValue(price, WAD_PRECISION, RAY_FORMAT);
-
-  // Normalize ray to wad
-  const amt = debtValueFixed.mul(matFixed).div(priceFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return amt.value;
+  if (price === 0n) return 0n;
+  // Same shape as liquidationPrice but with `price` (wad) in the denominator.
+  const inner = (debtValue * mat) / WAD;
+  const rayValue = (inner * WAD) / price;
+  return rescaleHalfUp(rayValue, RAY_PRECISION, WAD_PRECISION);
 };
 
 export const maxCollateralAvailable = (ink: bigint, minSafeCollateralAmount: bigint): bigint => {
@@ -144,87 +108,56 @@ export const maxCollateralAvailable = (ink: bigint, minSafeCollateralAmount: big
 };
 
 export const daiAvailable = (collateralValue: bigint, debtValue: bigint, mat: bigint): bigint => {
-  if (mat === BigInt(0)) {
-    return BigInt(0); // Return 0 if mat is zero to avoid division by zero
-  }
-
-  const colValueFixed = FixedNumber.fromValue(collateralValue, WAD_PRECISION, RAY_FORMAT);
-  const debtValueFixed = FixedNumber.fromValue(debtValue, WAD_PRECISION, RAY_FORMAT);
-  const matFixed = FixedNumber.fromValue(mat, RAY_PRECISION, RAY_FORMAT);
-
-  const maxSafeDebtValue = colValueFixed.div(matFixed);
-  const dv = debtValueFixed.lt(maxSafeDebtValue)
-    ? maxSafeDebtValue.sub(debtValueFixed)
-    : FixedNumber.fromString('0');
-
-  // Normalize ray to wad
-  const daiAvail = dv.round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return daiAvail.value;
+  if (mat === 0n) return 0n;
+  // At fixed256x27: colValue (wad → ×10^9) divided by mat (ray) = colValue*10^36/mat.
+  // Compare against debtValue promoted to ray scale (debtValue*10^9).
+  const maxSafeDebtRay = (collateralValue * 10n ** 36n) / mat;
+  const debtRay = debtValue * 10n ** 9n;
+  if (debtRay >= maxSafeDebtRay) return 0n;
+  return rescaleHalfUp(maxSafeDebtRay - debtRay, RAY_PRECISION, WAD_PRECISION);
 };
 
 export const updatedChi = (dsr: bigint, time: number, chi: bigint): bigint => {
-  const dsrFixed = FixedNumber.fromValue(dsr, RAY_PRECISION, RAY_FORMAT);
-  const chiFixed = FixedNumber.fromValue(chi, RAY_PRECISION, RAY_FORMAT);
-  // Unfortunately FixedNumber doesn't have a .pow() method, so we have to cast as a float and recast as a bigint
-  const rate = dsrFixed.toUnsafeFloat() ** time;
-
-  const poweredValue = FixedNumber.fromString(rate.toString(), WAD_PRECISION).toFormat(RAY_FORMAT);
-  const updatedChi = poweredValue.mul(chiFixed);
-
-  return updatedChi.value;
+  // ethers FixedNumber lacks .pow(), so the original casts dsr to float, raises
+  // to `time`, then re-imports the float string. We mirror that path: any
+  // change here silently shifts the dsr accrual curve.
+  const dsrFloat = Number(formatUnits(dsr, RAY_PRECISION));
+  const rate = dsrFloat ** time;
+  // ethers does fromString(rate.toString(), 18).toFormat(RAY). For a plain
+  // decimal float string with ≤18 fractional digits, parseUnits at RAY scale
+  // is identical (pad-with-zeros on both sides).
+  const poweredRay = floatToScaledBigInt(rate, RAY_PRECISION);
+  // .mul at fixed256x27: (poweredRay * chi) / 10^27.
+  return (poweredRay * chi) / RAY;
 };
 
 // DSR Math
 // Works the same for total supply, "Pie" and user slice "pie"
 export const dsrBalance = (pie: bigint, chi: bigint): bigint => {
-  const pieFixed = FixedNumber.fromValue(pie, WAD_PRECISION, RAY_FORMAT);
-  const chiFixed = FixedNumber.fromValue(chi, RAY_PRECISION, RAY_FORMAT);
-
-  // Normalize ray to wad
-  const balance = pieFixed.mul(chiFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return balance.value;
+  return rescaleHalfUp((pie * chi) / WAD, RAY_PRECISION, WAD_PRECISION);
 };
 
 export const annualDaiSavingsRate = (dsr: bigint): bigint => {
-  const dsrFixed = FixedNumber.fromValue(dsr, RAY_PRECISION, RAY_FORMAT);
-  // Unfortunately FixedNumber doesn't have a .pow() method, so we have to cast as a float and recast as a bigint
-  const rate = dsrFixed.toUnsafeFloat() ** SECONDS_PER_YEAR * 1 - 1;
-  const fee = FixedNumber.fromString(rate.toString(), WAD_PRECISION);
-
-  return fee.value;
+  const dsrFloat = Number(formatUnits(dsr, RAY_PRECISION));
+  const rate = dsrFloat ** SECONDS_PER_YEAR - 1;
+  return floatToScaledBigInt(rate, WAD_PRECISION);
 };
 
 // Rewards Math
 // Returns a token amount multiplied by price to get value
 export const tokenValue = (amount: bigint, price: bigint, precision = WAD_PRECISION): bigint => {
-  const amt = FixedNumber.fromValue(amount, precision);
-  const prc = FixedNumber.fromValue(price, precision);
-  const val = amt.mul(prc);
-
-  return val.value;
+  return (amount * price) / 10n ** BigInt(precision);
 };
 
 export const getRewardsRate = (rewardsRateValue: bigint, totalSuppliedValue: bigint): bigint => {
   const rewardsValuePerYear = rewardsRateValue * BigInt(SECONDS_PER_YEAR);
-  const rate = calculateRewardsRate(rewardsValuePerYear, totalSuppliedValue);
-
-  return rate;
+  return calculateRewardsRate(rewardsValuePerYear, totalSuppliedValue);
 };
 
 // Both inputs to this function should be normalized by a common denominator, eg. DAI value
 export const calculateRewardsRate = (yearlyRewardsValue: bigint, totalSuppliedValue: bigint): bigint => {
-  if (totalSuppliedValue === BigInt(0)) {
-    return BigInt(0); // Return 0 if any of the inputs are zero to avoid division by zero
-  }
-
-  const yrvFixed = FixedNumber.fromValue(yearlyRewardsValue, WAD_PRECISION);
-  const tsvFixed = FixedNumber.fromValue(totalSuppliedValue, WAD_PRECISION);
-
-  const rate = yrvFixed.div(tsvFixed);
-
-  return rate.value;
+  if (totalSuppliedValue === 0n) return 0n;
+  return (yearlyRewardsValue * WAD) / totalSuppliedValue;
 };
 
 // Calculate Rate
@@ -248,45 +181,39 @@ export const calculateSavingsRate = (rate: bigint): bigint => {
 // Seal Module-specific math
 
 export const debtCeilingUtilization = (debtCeiling: bigint, totalDaiDebt: bigint): number => {
-  if (debtCeiling === BigInt(0)) return 1;
-  const fixedCeiling = FixedNumber.fromValue(debtCeiling, WAD_PRECISION);
-  const fixedDebt = FixedNumber.fromValue(totalDaiDebt, WAD_PRECISION);
-  const utilization = fixedDebt.div(fixedCeiling);
-  const utilizationNumber = Number(formatUnits(utilization.value, 18));
+  if (debtCeiling === 0n) return 1;
+  const utilizationWad = (totalDaiDebt * WAD) / debtCeiling;
+  const utilizationNumber = Number(formatUnits(utilizationWad, WAD_PRECISION));
   return Math.min(utilizationNumber, 1);
 };
 
-export const softDebtCeiling = (surplusBuffer: bigint, assetsOwned: bigint, elixirOwned: bigint): bigint => {
-  const sbFixed = FixedNumber.fromValue(surplusBuffer, WAD_PRECISION);
-  const assetsFixed = FixedNumber.fromValue(assetsOwned, WAD_PRECISION);
-  const elixirFixed = FixedNumber.fromValue(elixirOwned, WAD_PRECISION);
+// 0.66 and 0.4 at wad — pre-encoded to avoid float→string→bigint round-trips.
+const POINT_SIX_SIX_WAD = 660000000000000000n;
+const POINT_FOUR_WAD = 400000000000000000n;
 
-  const sdc = sbFixed
-    .add(assetsFixed.mul(FixedNumber.fromString('0.66')))
-    .add(elixirFixed.mul(FixedNumber.fromString('0.4')));
-  return sdc.value;
+export const softDebtCeiling = (surplusBuffer: bigint, assetsOwned: bigint, elixirOwned: bigint): bigint => {
+  const assetsPart = (assetsOwned * POINT_SIX_SIX_WAD) / WAD;
+  const elixirPart = (elixirOwned * POINT_FOUR_WAD) / WAD;
+  return surplusBuffer + assetsPart + elixirPart;
 };
 
 // Equal to DSR if the total SE debt is below the SE Soft Debt Ceiling, and increases exponentially, with the SF doubling every 20% that the Soft Debt Ceiling is exceeded
-export const mkrVaultStabilityFee = (dsr: bigint, totalSEDebt: bigint, softDebtCeiling: bigint) => {
+export const mkrVaultStabilityFee = (dsr: bigint, totalSEDebt: bigint, softDebtCeiling: bigint): bigint => {
   if (totalSEDebt < softDebtCeiling) return dsr;
-  const dsrFixed = FixedNumber.fromValue(dsr, WAD_PRECISION);
-  const totalDebtFixed = FixedNumber.fromValue(totalSEDebt, WAD_PRECISION);
-  const sdcFixed = FixedNumber.fromValue(softDebtCeiling, WAD_PRECISION);
 
-  // Determine how much larger than the debt ceiling the total debt is
-  const debtDelta = totalDebtFixed.sub(sdcFixed);
+  const debtDelta = totalSEDebt - softDebtCeiling;
+  // 20% of softDebtCeiling. Bigint floor div by 5 is identical to ethers's
+  // (sdc * 2*10^17) / 10^18 path for non-negative inputs.
+  const stepSize = softDebtCeiling / 5n;
+  // The ethers code does .div().floor() at fixed128x18, which collapses to
+  // integer floor division for positive inputs.
+  const steps = stepSize === 0n ? 0n : debtDelta / stepSize;
 
-  // This was established by Rune, not sure if it will be hardcoded or updatable
-  const stepPct = FixedNumber.fromString('.2');
-
-  // Determine the number of steps to double the DSR
-  const stepSize = sdcFixed.mul(stepPct);
-  const steps = debtDelta.div(stepSize).floor();
-
-  // Double the DSR for every step
-  const stabilityFee = fixedMultiplySeries(dsrFixed, FixedNumber.fromString('2'), steps);
-  return stabilityFee.value;
+  let stabilityFee = dsr;
+  for (let i = 0n; i < steps; i++) {
+    stabilityFee = stabilityFee * 2n;
+  }
+  return stabilityFee;
 };
 
 // Removes the decimal part of a wad value
@@ -358,14 +285,13 @@ export const calculateEffectiveSkyRate = (fee: bigint | undefined): string => {
   return effectiveRate.toLocaleString();
 };
 
-export const convertUSDCtoWad = (usdcAmount: bigint) => {
-  const usdcFixed = FixedNumber.fromValue(usdcAmount, USDC_PRECISION, USDC_FORMAT);
-  const usdcWad = usdcFixed.round(USDC_PRECISION).toFormat(WAD_FORMAT);
-
-  return usdcWad.value;
+export const convertUSDCtoWad = (usdcAmount: bigint): bigint => {
+  // ethers path: fromValue(usdcAmount, 6, USDC_FORMAT).round(6).toFormat(WAD_FORMAT).
+  // round(6) is a no-op at fixed256x6, toFormat just pads to 18 decimals.
+  return usdcAmount * 10n ** BigInt(WAD_PRECISION - USDC_PRECISION);
 };
 
-export const convertWadtoUSDC = (wadAmount: bigint) => {
+export const convertWadtoUSDC = (wadAmount: bigint): bigint => {
   // Truncate (floor) instead of rounding to avoid producing a USDC amount
   // that, when converted back to WAD by the PSM contract, exceeds the
   // original WAD balance (causes "Usds/insufficient-balance" on max-amount conversions).
@@ -392,26 +318,15 @@ export const roundUpLastTwelveDigits = (value: bigint | undefined | null): bigin
   return roundedDown + BigInt('1' + '0'.repeat(18 - 6));
 };
 
-export const calculateSharesFromAssets = (usdsAmount: bigint, chi: bigint) => {
-  if (chi === BigInt(0)) {
-    return BigInt(0); // Return 0 to avoid division by zero
-  }
-  const amtFixed = FixedNumber.fromValue(usdsAmount, WAD_PRECISION, RAY_FORMAT);
-  const chiFixed = FixedNumber.fromValue(chi, RAY_PRECISION, RAY_FORMAT);
-
-  const rec = amtFixed.div(chiFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return rec.value;
+export const calculateSharesFromAssets = (usdsAmount: bigint, chi: bigint): bigint => {
+  if (chi === 0n) return 0n;
+  // At fixed256x27: amt (wad ×10^9) / chi (ray) = (usdsAmount * 10^36) / chi.
+  return rescaleHalfUp((usdsAmount * 10n ** 36n) / chi, RAY_PRECISION, WAD_PRECISION);
 };
 
 // This is the same as dsrBalance() but named for consistency with calculateSharesFromAssets()
-export const calculateAssetsFromShares = (susdsAmount: bigint, chi: bigint) => {
-  const amtFixed = FixedNumber.fromValue(susdsAmount, WAD_PRECISION, RAY_FORMAT);
-  const chiFixed = FixedNumber.fromValue(chi, RAY_PRECISION, RAY_FORMAT);
-
-  const rec = amtFixed.mul(chiFixed).round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return rec.value;
+export const calculateAssetsFromShares = (susdsAmount: bigint, chi: bigint): bigint => {
+  return rescaleHalfUp((susdsAmount * chi) / WAD, RAY_PRECISION, WAD_PRECISION);
 };
 
 // Conversions
@@ -431,9 +346,6 @@ export function scaleToBaseDecimals(amount: bigint, tokenDecimals: number, baseD
 
 // Conversions
 export const convertRadToWad = (radValue: bigint): bigint => {
-  const radFixed = FixedNumber.fromValue(radValue, RAD_PRECISION, RAD_FORMAT);
-  // Convert to WAD format (normalize from 27 to 18 decimal places)
-  const wadFixed = radFixed.round(WAD_PRECISION).toFormat(WAD_FORMAT);
-
-  return wadFixed.value;
+  // Half-up rescale dropping the trailing 27 rad digits.
+  return rescaleHalfUp(radValue, RAD_PRECISION, WAD_PRECISION);
 };

@@ -138,13 +138,12 @@ export function TokenInput({
       val = (partsComma[0] + ',' + partsComma[1].substring(0, decimals)) as `${number}`;
     }
 
-    // Prevent overflow by limiting integer part length
-    // ethers.js FixedNumber uses internal 128-bit precision for calculations.
-    // When multiplying two FixedNumbers (like in collateralValue = ink * price),
-    // we need to ensure the result doesn't overflow. Since both operands can have
-    // up to N digits, the result can have up to 2N digits internally.
-    // Using 38 total digits ensures safe multiplication: 38/2 = 19 digits per operand,
-    // which when squared (19^2 ≈ 10^38) stays well within 128-bit bounds (≈ 10^39).
+    // Bigint multiplication (e.g. collateralValue = ink * price) is exact but
+    // unbounded — a 40-digit input quietly produces 80-digit results that
+    // overflow downstream consumers (BPS conversions, formatUnits string
+    // rendering, on-chain uint256 calls). Capping the integer part to 38
+    // total digits keeps the squared result safely under 10^76 and matches
+    // historical bounds.
     const DEFAULT_MAX_TOTAL_DIGITS = 38;
     const maxDigits = maxIntegerDigits ?? Math.max(DEFAULT_MAX_TOTAL_DIGITS - decimals, 1);
     const integerPart = val.split(/[.,]/)[0];
