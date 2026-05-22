@@ -87,6 +87,37 @@ describe('usePendleCombinedHistory', () => {
     expect(result.current.data!.every(r => r.chainId === 1)).toBe(true);
   });
 
+  it('truncates excess fractional digits on the long-product path', () => {
+    // PT-USDG has 6-decimal underlying. txValueAsset * effectivePtExchangeRate
+    // can produce more than 6 fractional digits (e.g. 100.5 * 0.987654321 =
+    // 99.2592292605). The pre-fix code crashed parseUnits on this row.
+    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
+      data: [row(PT_USDG, PendleHistoryAction.BUY_PT, '2026-04-01T00:00:00Z', 99.2592292605, '0x1')],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+      dataSources: []
+    });
+
+    const { result } = renderHook(() => usePendleCombinedHistory());
+    // Truncated to 6 fractional digits: "99.259229" → 99_259_229n.
+    expect(result.current.data![0].assets).toBe(99_259_229n);
+  });
+
+  it('falls back to toFixed for scientific-notation values', () => {
+    // 1e-7 parses to 0.0000001 — toFixed(18) gives "0.000000100000000000".
+    vi.mocked(useAllPendleMarketsHistory).mockReturnValue({
+      data: [row(PT_USDE, PendleHistoryAction.BUY_PT, '2026-04-01T00:00:00Z', 1e-7, '0x1')],
+      isLoading: false,
+      error: null,
+      mutate: vi.fn(),
+      dataSources: []
+    });
+
+    const { result } = renderHook(() => usePendleCombinedHistory());
+    expect(result.current.data![0].assets).toBe(100_000_000_000n); // 1e-7 * 1e18
+  });
+
   it('converts ptAmount float to assets bigint using the source market decimals', () => {
     // PT-USDe has 18-decimal underlying. 6143.99 → 6143_990000000000000000n.
     // PT-USDG has 6-decimal underlying. 100.5 → 100_500_000n.

@@ -11,13 +11,28 @@ function mapAction(action: PendleHistoryAction): PendleHistoryItem['type'] {
   return TransactionTypeEnum.PENDLE_REDEEM;
 }
 
+/**
+ * toString preserves the user-intended form for short values (6143.99 →
+ * "6143.99", parses to 6143_990000000000000000n at 18 decimals) — toFixed
+ * would expose IEEE-754 noise. But toString also emits scientific notation
+ * for extremes, and `txValueAsset * effectivePtExchangeRate` can produce more
+ * fractional digits than the underlying's precision; both crash parseUnits.
+ * Fall back to toFixed for scientific notation; truncate excess fractional
+ * digits otherwise.
+ */
+function safeStringifyForParse(value: number, decimals: number): string {
+  const str = value.toString();
+  if (/e/i.test(str)) return value.toFixed(decimals);
+  const dot = str.indexOf('.');
+  if (dot < 0) return str;
+  // slice(0, dot + decimals + 1) is a no-op when the fractional part is
+  // already short enough; otherwise it truncates to the underlying's precision.
+  return str.slice(0, dot + decimals + 1);
+}
+
 function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
-  // toString gives the shortest round-tripping form (6143.99 → "6143.99",
-  // not toFixed's "6143.989999999..."). Fall back to toFixed only when
-  // toString emits scientific notation, which parseUnits rejects.
   const decimals = row.market.underlyingDecimals;
-  const str = row.ptAmount.toString();
-  const assets = parseUnits(/e/i.test(str) ? row.ptAmount.toFixed(decimals) : str, decimals);
+  const assets = parseUnits(safeStringifyForParse(row.ptAmount, decimals) as `${number}`, decimals);
   return {
     blockTimestamp: new Date(row.timestamp),
     transactionHash: row.txHash,
