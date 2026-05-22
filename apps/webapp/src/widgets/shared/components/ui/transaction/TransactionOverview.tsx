@@ -13,6 +13,7 @@ import { PopoverRateInfo } from '../PopoverRateInfo';
 import { HStack } from '../layout/HStack';
 import { ArrowDown } from '../../icons/ArrowDown';
 import { PopoverInfo } from '../PopoverInfo';
+import { cn } from '@/widgets/lib/utils';
 import React from 'react';
 
 type TransactionOverviewParams = {
@@ -28,6 +29,8 @@ type TransactionOverviewParams = {
         error?: boolean;
         className?: string;
         classNamePrev?: string;
+        labelClassName?: string;
+        containerClassName?: string;
         tooltipTitle?: string;
         tooltipText?: string | React.ReactNode;
       }[]
@@ -77,12 +80,21 @@ export function TransactionOverview({
                     tooltipText,
                     error = false,
                     className = '',
-                    classNamePrev
+                    classNamePrev,
+                    labelClassName,
+                    containerClassName
                   }) => (
-                    <motion.div key={label} className="flex justify-between" variants={positionAnimations}>
+                    <motion.div
+                      key={label}
+                      className={cn('flex justify-between', containerClassName)}
+                      variants={positionAnimations}
+                    >
                       <HStack className="items-center" gap={1}>
                         <Text
-                          className={`text-${error ? 'error' : 'textSecondary'} flex items-center text-sm`}
+                          className={cn(
+                            `text-${error ? 'error' : 'textSecondary'} flex items-center text-sm`,
+                            labelClassName
+                          )}
                         >
                           {label}
                         </Text>
