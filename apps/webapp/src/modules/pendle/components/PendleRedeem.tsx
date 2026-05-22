@@ -51,8 +51,10 @@ export const PendleRedeem = ({
   // Pendle returns the breakdown on no-aggregator routes too; only show it when an aggregator is used.
   const breakdown = aggregatorName ? quote?.priceImpactBreakdown : undefined;
 
-  const isPositiveImpact = (quote?.priceImpact ?? 0) > 0;
-  const positiveImpactClass = isPositiveImpact ? 'text-bullish' : undefined;
+  // Pendle's API uses positive = favorable; we display with the inverse
+  // convention so positive = unfavorable (matching TradeWidget/StUSDSWidget
+  // and broader DeFi conventions). The raw quote.priceImpact stays unflipped
+  // for analytics/debugging.
 
   const transactionData = quote
     ? [
@@ -66,26 +68,36 @@ export const PendleRedeem = ({
         },
         {
           label: t`Price impact`,
-          value: `${isPositiveImpact ? '+' : ''}${formatNumber(quote.priceImpact * 100, { maxDecimals: 3 })}%`,
-          className: positiveImpactClass
+          value: `${formatNumber(-quote.priceImpact * 100, { maxDecimals: 3 })}%`
         },
         ...(breakdown
           ? [
               {
-                label: t`  · Pendle AMM`,
-                value: `${formatNumber(breakdown.internalPriceImpact * 100, { maxDecimals: 3 })}%`,
-                className: positiveImpactClass
+                label: t`Pendle pool`,
+                value: `${formatNumber(-breakdown.internalPriceImpact * 100, { maxDecimals: 3 })}%`,
+                labelClassName: 'pl-4 opacity-70',
+                className: 'opacity-70',
+                containerClassName: '-mt-2'
               },
               {
-                label: t`  · Aggregator hop`,
-                value: `${formatNumber(breakdown.externalPriceImpact * 100, { maxDecimals: 3 })}%`,
-                className: positiveImpactClass
+                // breakdown is only populated when aggregatorName is truthy
+                label: aggregatorName!,
+                value: `${formatNumber(-breakdown.externalPriceImpact * 100, { maxDecimals: 3 })}%`,
+                labelClassName: 'pl-4 opacity-70',
+                className: 'opacity-70',
+                containerClassName: '-mt-2'
               }
             ]
           : []),
-        ...(aggregatorName ? [{ label: t`Routed via`, value: aggregatorName }] : []),
         {
-          label: t`Routing fee`,
+          label: t`Routed via`,
+          // Redeem direction: PT is always burned via the Pendle pool first;
+          // when an aggregator is in the route, it then swaps the underlying
+          // into the user's chosen output token.
+          value: aggregatorName ? `Pendle pool → ${aggregatorName}` : 'Pendle pool'
+        },
+        {
+          label: t`Pendle fee`,
           value:
             quote.feeUsd !== undefined
               ? `$${formatNumber(quote.feeUsd, { maxDecimals: quote.feeUsd >= 1 ? 2 : 4 })}`

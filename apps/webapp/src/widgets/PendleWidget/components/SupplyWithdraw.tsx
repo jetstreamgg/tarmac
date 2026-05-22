@@ -114,12 +114,13 @@ export const SupplyWithdraw = ({
   // BUY → PT. SELL → user-selected output token.
   const targetToken = flow === PendleFlow.BUY ? ptToken : selectedWithdrawOutToken;
 
-  const isPositiveImpact = (quote?.priceImpact ?? 0) > 0;
-  const positiveImpactClass = isPositiveImpact ? 'text-bullish' : undefined;
+  // Pendle's API uses positive = favorable; we display with the inverse
+  // convention so positive = unfavorable (matching TradeWidget/StUSDSWidget
+  // and broader DeFi conventions). The raw quote.priceImpact stays unflipped
+  // for analytics/debugging.
+  const displayPriceImpact = quote?.priceImpact !== undefined ? -quote.priceImpact : undefined;
   const priceImpactRow =
-    quote?.priceImpact !== undefined
-      ? `${isPositiveImpact ? '+' : ''}${(quote.priceImpact * 100).toFixed(3)}%`
-      : '—';
+    displayPriceImpact !== undefined ? `${(displayPriceImpact * 100).toFixed(3)}%` : '—';
 
   const aggregatorName = quote?.aggregatorType ? formatPendleAggregatorName(quote.aggregatorType) : undefined;
   // Pendle's API returns priceImpactBreakDown even on no-aggregator routes
@@ -284,33 +285,41 @@ export const SupplyWithdraw = ({
                   },
                   {
                     label: t`Price impact`,
-                    value: priceImpactRow,
-                    className: positiveImpactClass
+                    value: priceImpactRow
                   },
                   ...(breakdown
                     ? [
                         {
-                          label: t`  · Pendle AMM`,
-                          value: `${(breakdown.internalPriceImpact * 100).toFixed(3)}%`,
-                          className: positiveImpactClass
+                          label: t`Pendle pool`,
+                          value: `${(-breakdown.internalPriceImpact * 100).toFixed(3)}%`,
+                          labelClassName: 'pl-4 opacity-70',
+                          className: 'opacity-70',
+                          containerClassName: '-mt-2'
                         },
                         {
-                          label: t`  · Aggregator hop`,
-                          value: `${(breakdown.externalPriceImpact * 100).toFixed(3)}%`,
-                          className: positiveImpactClass
-                        }
-                      ]
-                    : []),
-                  ...(aggregatorName
-                    ? [
-                        {
-                          label: t`Routed via`,
-                          value: aggregatorName
+                          // breakdown is only populated when aggregatorName is truthy
+                          label: aggregatorName!,
+                          value: `${(-breakdown.externalPriceImpact * 100).toFixed(3)}%`,
+                          labelClassName: 'pl-4 opacity-70',
+                          className: 'opacity-70',
+                          containerClassName: '-mt-2'
                         }
                       ]
                     : []),
                   {
-                    label: t`Routing fee`,
+                    label: t`Routed via`,
+                    // Route order matches actual execution: BUY does the stable
+                    // swap first then mints PT; SELL burns PT first then swaps
+                    // the underlying to the user's chosen output token. With
+                    // no aggregator, the only venue is the Pendle pool.
+                    value: !aggregatorName
+                      ? 'Pendle pool'
+                      : flow === PendleFlow.BUY
+                        ? `${aggregatorName} → Pendle pool`
+                        : `Pendle pool → ${aggregatorName}`
+                  },
+                  {
+                    label: t`Pendle fee`,
                     value:
                       quote.feeUsd !== undefined ? (
                         `$${quote.feeUsd.toFixed(quote.feeUsd >= 1 ? 2 : 4)}`
