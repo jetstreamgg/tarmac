@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
@@ -146,6 +146,14 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
 
+  // Stored `onConfirm` closes over the writeHook captured at launch() time;
+  // updateModalContent can't refresh it (its API only updates content fields).
+  // Indirect through a ref so the modal's Confirm button always invokes the
+  // latest execute — picks up output-token / slippage / quote changes the
+  // user made after the modal opened.
+  const executeRef = useRef<() => void>(() => undefined);
+  executeRef.current = () => writeHook.execute();
+
   const openRedeemModal = useCallback(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
     const data = pendleAnalyticsData({
@@ -170,7 +178,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       rightHeaderComponent,
       confirmLabel: t`Confirm`,
       confirmDisabled,
-      onConfirm: () => writeHook.execute(),
+      onConfirm: () => executeRef.current(),
       sessionId,
       analytics: {
         widgetName: 'fixed',
@@ -184,7 +192,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     });
   }, [
     launch,
-    writeHook,
     market,
     ptToken,
     ptBalance,
