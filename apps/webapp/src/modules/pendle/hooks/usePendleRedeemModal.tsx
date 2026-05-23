@@ -146,11 +146,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
 
-  // Stored `onConfirm` closes over the writeHook captured at launch() time;
-  // updateModalContent can't refresh it (its API only updates content fields).
-  // Indirect through a ref so the modal's Confirm button always invokes the
-  // latest execute — picks up output-token / slippage / quote changes the
-  // user made after the modal opened.
+  // Indirect onConfirm through a ref — the stored onConfirm can't be
+  // live-updated, but the ref always points at the latest writeHook.execute.
   const executeRef = useRef<() => void>(() => undefined);
   executeRef.current = () => writeHook.execute();
 
