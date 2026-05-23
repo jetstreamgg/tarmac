@@ -73,7 +73,7 @@ export const PendleRedeem = ({
         ...(breakdown
           ? [
               {
-                label: t`Pendle pool`,
+                label: t`Pendle redeem`,
                 value: `${formatNumber(-breakdown.internalPriceImpact * 100, { maxDecimals: 3 })}%`,
                 labelClassName: 'pl-4 opacity-70',
                 className: 'opacity-70',
@@ -91,10 +91,10 @@ export const PendleRedeem = ({
           : []),
         {
           label: t`Routed via`,
-          // Redeem direction: PT is always burned via the Pendle pool first;
-          // when an aggregator is in the route, it then swaps the underlying
-          // into the user's chosen output token.
-          value: aggregatorName ? `Pendle pool → ${aggregatorName}` : 'Pendle pool'
+          // Post-maturity, PT is burned via SY at the expiry-frozen rate — no
+          // AMM pool. When an aggregator is in the route, it then swaps the
+          // underlying into the user's chosen output token.
+          value: aggregatorName ? `Pendle redeem → ${aggregatorName}` : 'Pendle redeem'
         },
         {
           label: t`Pendle fee`,
