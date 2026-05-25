@@ -1,10 +1,21 @@
 import { Icon, IconProps } from './Icon';
 
 export const Pendle = (props: IconProps) => (
-  <Icon {...props}>
-    <g opacity="0.8">
-      <rect x="1" y="1" width="20" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M1 15H8V11H14V7H21" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-    </g>
+  <Icon {...props} viewBox="0 0 64 56" fill="none">
+    <path
+      d="M61.1034 4.88042C61.1034 3.68923 60.1377 2.72357 58.9465 2.72357L36.32 2.72357C35.1288 2.72357 34.1631 3.68923 34.1631 4.88042L34.1631 19.3417L61.1034 19.3417L61.1034 4.88042Z"
+      stroke="currentColor"
+      strokeWidth="5"
+    />
+    <path
+      d="M61.1034 21.4986C61.1034 20.3074 60.1377 19.3417 58.9465 19.3417L16.9042 19.3417C15.713 19.3417 14.7474 20.3074 14.7474 21.4986L14.7474 35.7753L61.1034 35.7753L61.1034 21.4986Z"
+      stroke="currentColor"
+      strokeWidth="5"
+    />
+    <path
+      d="M61.1035 37.9308C61.1035 36.7396 60.1379 35.7739 58.9467 35.7739L4.88041 35.7739C3.68922 35.7739 2.72356 36.7396 2.72356 37.9308L2.72356 50.2043C2.72356 51.3955 3.68922 52.3611 4.88042 52.3611L58.9467 52.3611C60.1379 52.3611 61.1035 51.3955 61.1035 50.2043L61.1035 37.9308Z"
+      stroke="currentColor"
+      strokeWidth="5"
+    />
   </Icon>
 );
