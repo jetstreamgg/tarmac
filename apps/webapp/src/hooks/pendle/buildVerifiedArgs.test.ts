@@ -91,7 +91,8 @@ const BUY_KNOWN = {
   outputToken: PT_USDG,
   underlyingToken: USDG,
   amountIn: 100_000_000n,
-  pinnedPendleSwap: PINNED_PENDLE_SWAP
+  pinnedPendleSwap: PINNED_PENDLE_SWAP,
+  slippage: 0.002 // matches the default 99.8M/100M apiMinOut/amountOut in makeBuyQuote
 };
 
 describe('buildVerifiedArgs — Buy', () => {
@@ -261,7 +262,8 @@ describe('buildVerifiedArgs — Withdraw', () => {
     outputToken: USDG,
     underlyingToken: USDG,
     amountIn: 100_000_000n,
-    pinnedPendleSwap: PINNED_PENDLE_SWAP
+    pinnedPendleSwap: PINNED_PENDLE_SWAP,
+    slippage: 0.005 // matches 99.5M/100M
   };
 
   function withdrawVerified(quote: PendleConvertQuote, known = WITHDRAW_KNOWN) {
@@ -317,6 +319,7 @@ describe('buildVerifiedArgs — Buy aggregator branch', () => {
     inputToken: USDS, // user-picked, NOT the underlying
     outputToken: PT_USDG,
     underlyingToken: USDG,
+    slippage: 0.002,
     amountIn: 100_000_000_000_000_000_000n, // 100 USDS (18 decimals)
     pinnedPendleSwap: PINNED_PENDLE_SWAP
   };
@@ -424,7 +427,8 @@ describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
     outputToken: USDS, // user-picked, NOT the underlying
     underlyingToken: USDG,
     amountIn: 100_000_000n,
-    pinnedPendleSwap: PINNED_PENDLE_SWAP
+    pinnedPendleSwap: PINNED_PENDLE_SWAP,
+    slippage: 0.005
   };
 
   function makeAggWithdrawParams(
@@ -548,7 +552,8 @@ describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
     outputToken: USDG,
     underlyingToken: USDG,
     amountIn: 100_000_000n,
-    pinnedPendleSwap: PINNED_PENDLE_SWAP
+    pinnedPendleSwap: PINNED_PENDLE_SWAP,
+    slippage: 0.002
   };
 
   function exitVerified(quote: PendleConvertQuote, known = EXIT_KNOWN) {
@@ -611,7 +616,8 @@ describe('buildVerifiedArgs — Exit aggregator branch', () => {
     outputToken: USDS, // user-picked, NOT the underlying
     underlyingToken: USDG,
     amountIn: 100_000_000n,
-    pinnedPendleSwap: PINNED_PENDLE_SWAP
+    pinnedPendleSwap: PINNED_PENDLE_SWAP,
+    slippage: 0.005
   };
 
   function makeAggExitParams(
@@ -685,6 +691,174 @@ describe('buildVerifiedArgs — Exit aggregator branch', () => {
   it('forces netLpIn to 0 even on aggregator-branch exit', () => {
     const verified = buildVerifiedArgs(makeAggExitQuote(), EXIT_AGG_KNOWN);
     expect(verified.args[3]).toBe(0n);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// apiMinOut floor — uniform across buy / withdraw / exit.
+// ---------------------------------------------------------------------------
+
+describe('buildVerifiedArgs — apiMinOut slippage floor', () => {
+  function makeBuyQuoteWithMinOut(apiMinOut: bigint): PendleConvertQuote {
+    return {
+      method: 'swapExactTokenForPt',
+      amountOut: 100_000_000n,
+      apiMinOut,
+      effectiveApy: 0.05,
+      impliedApy: 0.058,
+      priceImpact: -0.0002,
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        MARKET,
+        apiMinOut.toString(),
+        API_GUESS,
+        {
+          tokenIn: USDG,
+          netTokenIn: '100000000',
+          tokenMintSy: USDG,
+          pendleSwap: ZERO,
+          swapData: API_EMPTY_SWAP
+        },
+        API_EMPTY_LIMIT
+      ],
+      apiContractParamsName: BUY_PARAM_NAMES
+    };
+  }
+
+  it('refuses to sign when apiMinOut is 0 (the original attack)', () => {
+    expect(() => buildVerifiedArgs(makeBuyQuoteWithMinOut(0n), BUY_KNOWN)).toThrow(
+      /below the local slippage floor/
+    );
+  });
+
+  it('refuses to sign when apiMinOut is materially below the floor (50% smuggled in)', () => {
+    expect(() => buildVerifiedArgs(makeBuyQuoteWithMinOut(50_000_000n), BUY_KNOWN)).toThrow(
+      /below the local slippage floor/
+    );
+  });
+
+  // floor at 0.2% slippage + 1 bp tolerance = (100M * 9979) / 10_000 = 99_790_000
+  it('accepts apiMinOut equal to the floor', () => {
+    const verified = buildVerifiedArgs(makeBuyQuoteWithMinOut(99_790_000n), BUY_KNOWN);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[2]).toBe(99_790_000n);
+  });
+
+  it('accepts apiMinOut above the floor', () => {
+    const verified = buildVerifiedArgs(makeBuyQuoteWithMinOut(99_900_000n), BUY_KNOWN);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[2]).toBe(99_900_000n);
+  });
+
+  it('refuses to sign when apiMinOut is 1 wei below the floor', () => {
+    expect(() => buildVerifiedArgs(makeBuyQuoteWithMinOut(99_789_999n), BUY_KNOWN)).toThrow(
+      /below the local slippage floor/
+    );
+  });
+
+  it('absorbs 1 bp of rounding drift via TOLERANCE_BP', () => {
+    const verified = buildVerifiedArgs(makeBuyQuoteWithMinOut(99_795_000n), BUY_KNOWN);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[2]).toBe(99_795_000n);
+  });
+
+  it('refuses to sign when slippage is negative', () => {
+    expect(() =>
+      buildVerifiedArgs(makeBuyQuoteWithMinOut(99_800_000n), { ...BUY_KNOWN, slippage: -0.01 })
+    ).toThrow(/slippage .* outside the allowed/);
+  });
+
+  it('refuses to sign when slippage is NaN', () => {
+    expect(() =>
+      buildVerifiedArgs(makeBuyQuoteWithMinOut(99_800_000n), { ...BUY_KNOWN, slippage: NaN })
+    ).toThrow(/slippage .* outside the allowed/);
+  });
+
+  it('refuses to sign when slippage is >= 1', () => {
+    expect(() =>
+      buildVerifiedArgs(makeBuyQuoteWithMinOut(99_800_000n), { ...BUY_KNOWN, slippage: 1.5 })
+    ).toThrow(/slippage .* outside the allowed/);
+  });
+
+  it('floor check fires on the withdraw path too', () => {
+    const withdrawQuote: PendleConvertQuote = {
+      method: 'swapExactPtForToken',
+      amountOut: 100_000_000n,
+      apiMinOut: 0n,
+      effectiveApy: 0.05,
+      impliedApy: 0.058,
+      priceImpact: -0.0002,
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        MARKET,
+        '100000000',
+        {
+          tokenOut: USDG,
+          minTokenOut: '0',
+          tokenRedeemSy: USDG,
+          pendleSwap: ZERO,
+          swapData: API_EMPTY_SWAP
+        },
+        API_EMPTY_LIMIT
+      ],
+      apiContractParamsName: ['receiver', 'market', 'exactPtIn', 'output', 'limit']
+    };
+    const WITHDRAW_KNOWN_LOCAL = {
+      side: PendleConvertSide.WITHDRAW,
+      receiver: RECEIVER,
+      market: MARKET,
+      inputToken: PT_USDG,
+      outputToken: USDG,
+      underlyingToken: USDG,
+      amountIn: 100_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.005
+    };
+    expect(() => buildVerifiedArgs(withdrawQuote, WITHDRAW_KNOWN_LOCAL)).toThrow(
+      /below the local slippage floor/
+    );
+  });
+
+  it('floor check fires on the exit (matured) path too', () => {
+    const exitQuote: PendleConvertQuote = {
+      method: 'exitPostExpToToken',
+      amountOut: 100_000_000n,
+      apiMinOut: 0n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: -0.0045,
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        MARKET,
+        '100000000',
+        '0',
+        {
+          tokenOut: USDG,
+          minTokenOut: '0',
+          tokenRedeemSy: USDG,
+          pendleSwap: ZERO,
+          swapData: API_EMPTY_SWAP
+        }
+      ],
+      apiContractParamsName: ['receiver', 'market', 'netPtIn', 'netLpIn', 'output']
+    };
+    const EXIT_KNOWN_LOCAL = {
+      side: PendleConvertSide.WITHDRAW,
+      receiver: RECEIVER,
+      market: MARKET,
+      inputToken: PT_USDG,
+      outputToken: USDG,
+      underlyingToken: USDG,
+      amountIn: 100_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    expect(() => buildVerifiedArgs(exitQuote, EXIT_KNOWN_LOCAL)).toThrow(
+      /below the local slippage floor/
+    );
   });
 });
 

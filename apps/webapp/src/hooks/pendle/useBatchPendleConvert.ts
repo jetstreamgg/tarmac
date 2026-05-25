@@ -34,6 +34,12 @@ type UseBatchPendleConvertParams = BatchWriteHookParams & {
   amountIn?: bigint;
   /** The latest quote from useQuotePendleConvert */
   quote?: PendleConvertQuote;
+  /**
+   * The same slippage value passed to useQuotePendleConvert. Threaded into
+   * buildVerifiedArgs so it can floor `apiMinOut` against
+   * `amountOut * (1 - slippage)` and reject quotes that fall below.
+   */
+  slippage: number;
 };
 
 /**
@@ -62,6 +68,7 @@ export function useBatchPendleConvert({
   underlyingToken,
   amountIn,
   quote,
+  slippage,
   enabled: activeTabEnabled = true,
   shouldUseBatch = true,
   onMutate = () => null,
@@ -115,7 +122,8 @@ export function useBatchPendleConvert({
         outputToken,
         underlyingToken,
         amountIn,
-        pinnedPendleSwap
+        pinnedPendleSwap,
+        slippage
       });
       return { verified: v, verifyError: null };
     } catch (e) {
@@ -130,7 +138,8 @@ export function useBatchPendleConvert({
     pinnedPendleSwap,
     amountIn,
     connectedAddress,
-    side
+    side,
+    slippage
   ]);
 
   // Build the call list: optional approve, then convert.

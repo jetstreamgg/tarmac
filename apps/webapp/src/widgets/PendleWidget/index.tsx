@@ -269,6 +269,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     underlyingToken: market.underlyingToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     quote,
+    slippage,
     enabled: isConnectedAndEnabled && debouncedAmount > 0n,
     shouldUseBatch,
     ...txCallbacks
