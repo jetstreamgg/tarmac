@@ -411,13 +411,14 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
   const isAmountWaitingForDebounce = debouncedAmount !== amount;
 
   const convertDisabled =
-    [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
-    amount === 0n ||
-    insufficientFunds ||
-    isAmountWaitingForDebounce ||
-    !!quoteError ||
-    !writeHook.prepared ||
-    writeHook.isLoading;
+    txStatus !== TxStatus.SUCCESS &&
+    ([TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
+      amount === 0n ||
+      insufficientFunds ||
+      isAmountWaitingForDebounce ||
+      !!quoteError ||
+      !writeHook.prepared ||
+      writeHook.isLoading);
 
   useEffect(() => {
     setIsDisabled(isConnectedAndEnabled && convertDisabled);
