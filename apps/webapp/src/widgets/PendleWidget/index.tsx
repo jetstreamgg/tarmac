@@ -117,10 +117,10 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
 
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
-  const { underlyingToken, ptToken, inputTokenList } = usePendleTokens(market);
+  const { underlyingToken, ptToken, supplyTokenList, withdrawTokenList } = usePendleTokens(market);
 
   const [selectedSupplyToken, setSelectedSupplyToken] = useState<Token>(underlyingToken);
-  const [selectedWithdrawOutToken, setSelectedWithdrawOutToken] = useState<Token>(underlyingToken);
+  const [selectedWithdrawOutToken, setSelectedWithdrawOutToken] = useState<Token>(withdrawTokenList[0]);
 
   const handleSupplyTokenChange = (next: Token) => {
     const prevDecimals = getTokenDecimals(selectedSupplyToken, mainnet.id);
@@ -508,7 +508,8 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
             <SupplyWithdraw
               market={market}
               ptToken={ptToken}
-              inputTokenList={inputTokenList}
+              supplyTokenList={supplyTokenList}
+              withdrawTokenList={withdrawTokenList}
               selectedSupplyToken={selectedSupplyToken}
               onSupplyTokenChange={handleSupplyTokenChange}
               selectedWithdrawOutToken={selectedWithdrawOutToken}
