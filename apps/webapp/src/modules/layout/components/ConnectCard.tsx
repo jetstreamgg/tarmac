@@ -115,8 +115,8 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
         ) : isFixedYield ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              Powered by Pendle, deposit USDS to receive PT-sUSDS at a discount and lock in a fixed yield
-              until maturity. The rate is set at deposit and guaranteed if held to maturity.
+              When volatility plays against you, get a fixed yield over a pre-set period. The rate is set
+              when you deposit your USDS, while expected returns are available at maturity date, not before.
             </Trans>
           </Text>
         ) : (
