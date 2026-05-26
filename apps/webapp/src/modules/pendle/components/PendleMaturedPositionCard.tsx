@@ -7,6 +7,8 @@ import {
 } from '@/hooks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { Text } from '@/modules/layout/components/Typography';
 import { usePendleRedeemModal } from '../hooks/usePendleRedeemModal';
@@ -48,10 +50,17 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
         </CardTitle>
       </CardHeader>
       <CardContent variant="stats">
-        <TokenIconWithBalance
-          token={{ symbol: market.underlyingSymbol, name: market.underlyingSymbol }}
-          balance={displayedAmount}
-        />
+        {previewLoading ? (
+          <div className="flex items-center">
+            <TokenIcon className="h-6 w-6" token={{ symbol: market.underlyingSymbol }} width={24} />
+            <Skeleton className="ml-2 h-5 w-32" />
+          </div>
+        ) : (
+          <TokenIconWithBalance
+            token={{ symbol: market.underlyingSymbol, name: market.underlyingSymbol }}
+            balance={displayedAmount}
+          />
+        )}
         {earnings !== undefined && earnings > 0 && currency && (
           <Text variant="small" className="text-textSecondary mt-4">
             {apy !== undefined ? (
@@ -72,9 +81,13 @@ export const PendleMaturedPositionCard = ({ market, ptBalance }: PendleMaturedPo
           disabled={!isRedeemable || !isPrepared || previewLoading}
           data-testid="pendle-matured-redeem-button"
         >
-          <Trans>
-            Redeem {displayedAmount} {market.underlyingSymbol}
-          </Trans>
+          {previewLoading ? (
+            <Trans>Redeem {market.underlyingSymbol}</Trans>
+          ) : (
+            <Trans>
+              Redeem {displayedAmount} {market.underlyingSymbol}
+            </Trans>
+          )}
         </Button>
       </CardContent>
     </Card>
