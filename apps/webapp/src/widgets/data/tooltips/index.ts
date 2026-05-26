@@ -292,13 +292,13 @@ Bundled transaction: Active`
     id: 'fixed-yield-rate',
     title: 'Fixed Yield Rate',
     tooltip:
-      'The Fixed Yield Rate is the annualized return locked in at the moment USDS is supplied, based on the discount at which PT-sUSDS is purchased on the Pendle market. The rate is guaranteed only if PT-sUSDS is held to or past maturity. Sky.money does not control or guarantee the rate, which is determined by the Pendle market and may differ from the rate displayed before transaction submission.'
+      'The Fixed Yield Rate is the annualized return set when you supply USDS, calculated based on the discount at which the resulting PT-sUSDS is purchased on the Pendle market. This rate is guaranteed only if your PT-sUSDS is held to or past maturity. The rate is determined by the Pendle market, not by Sky.money, and may differ from the displayed rate before you complete the transaction.'
   },
   {
     id: 'maturity-date',
     title: 'Maturity Date',
     tooltip:
-      'The Maturity Date is the date on which each PT-sUSDS becomes redeemable for its full underlying USDS value, locking in the advertised fixed APY. PT-sUSDS can be redeemed at any time on or after this date and does not accrue any additional yield once maturity has passed. Each Pendle market has a fixed maturity date set when the market is created.'
+      'The Maturity Date is when your PT-sUSDS becomes redeemable for its full USDS value, securing your fixed return. You can redeem on or after this date. If you hold past this date, your position stops earning yield. If you sell before maturity, your exit value is the prevailing market price. This date is fixed when the Pendle market is created.'
   },
   {
     id: 'effective-apy',
