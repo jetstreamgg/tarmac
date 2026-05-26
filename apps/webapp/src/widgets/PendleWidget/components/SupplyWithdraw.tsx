@@ -25,8 +25,10 @@ import { PendleStatsCard } from './PendleStatsCard';
 type SupplyWithdrawProps = {
   market: PendleMarketConfig;
   ptToken: Token;
-  /** USDS / USDC / underlying — selectable on BUY input and SELL output. */
-  inputTokenList: Token[];
+  /** Tokens selectable on BUY input — underlying + USDS + USDC (de-duped). */
+  supplyTokenList: Token[];
+  /** Tokens selectable on SELL output — supply list minus sUSDS. */
+  withdrawTokenList: Token[];
   /** Currently-selected BUY input token. */
   selectedSupplyToken: Token;
   onSupplyTokenChange: (token: Token) => void;
@@ -57,7 +59,8 @@ type SupplyWithdrawProps = {
 export const SupplyWithdraw = ({
   market,
   ptToken,
-  inputTokenList,
+  supplyTokenList,
+  withdrawTokenList,
   selectedSupplyToken,
   onSupplyTokenChange,
   selectedWithdrawOutToken,
@@ -157,7 +160,7 @@ export const SupplyWithdraw = ({
                 label={t`How much would you like to supply?`}
                 placeholder={t`Enter amount`}
                 token={selectedSupplyToken}
-                tokenList={inputTokenList}
+                tokenList={supplyTokenList}
                 onTokenSelected={t => onSupplyTokenChange(t)}
                 balance={enabled ? inputBalance : undefined}
                 value={amount}
@@ -209,7 +212,7 @@ export const SupplyWithdraw = ({
                 className="w-full"
                 label={t`You receive`}
                 token={targetToken}
-                tokenList={inputTokenList}
+                tokenList={withdrawTokenList}
                 onTokenSelected={t => onWithdrawOutTokenChange(t)}
                 balance={enabled ? outputBalance : undefined}
                 value={quote?.amountOut ?? 0n}

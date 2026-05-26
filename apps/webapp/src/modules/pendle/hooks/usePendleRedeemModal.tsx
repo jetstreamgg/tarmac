@@ -42,8 +42,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const matured = isMarketMatured(market.expiry);
   const isRedeemable = matured && ptBalance > 0n;
 
-  const { underlyingToken, ptToken, inputTokenList } = usePendleTokens(market);
-  const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(underlyingToken);
+  const { ptToken, withdrawTokenList } = usePendleTokens(market);
+  const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
 
   const { slippage, setSlippage, defaultSlippage } = usePendleSlippage('redeem');
@@ -116,7 +116,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       <PendleRedeem
         market={market}
         ptBalance={ptBalance}
-        outputTokenList={inputTokenList}
+        outputTokenList={withdrawTokenList}
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
@@ -128,7 +128,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     [
       market,
       ptBalance,
-      inputTokenList,
+      withdrawTokenList,
       selectedOutputToken,
       quote,
       isFetchingQuote,
