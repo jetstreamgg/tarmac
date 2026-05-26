@@ -2,9 +2,11 @@ import { getStoredConsent, saveConsent } from './consentStorage';
 
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
-function gtag(...args: unknown[]) {
+function gtag(..._args: unknown[]) {
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(args);
+  // gtag.js requires the native Arguments object — pushing a true Array breaks its consent state machine.
+  // eslint-disable-next-line prefer-rest-params
+  window.dataLayer.push(arguments);
 }
 
 export function initializeGtag() {
