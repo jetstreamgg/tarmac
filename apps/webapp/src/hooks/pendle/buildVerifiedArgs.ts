@@ -131,6 +131,8 @@ export type KnownCallValues = {
    * other address is rejected.
    */
   pinnedPendleSwap: `0x${string}`;
+  /** Decimal (0.002 = 0.2%). Used to floor apiMinOut — see verifyApiMinOut. */
+  slippage: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -208,13 +210,32 @@ function resolveAggregatorFields(
 }
 
 /**
- * Extract the `guessPtOut` solver hint from the API's parsed contract params.
- *
- * Position 3 in `swapExactTokenForPt`'s arg list per Pendle's docs. We pass
- * this through verbatim — bad values cause an on-chain revert (no fund loss)
- * since `minPtOut` is recomputed locally and provides the actual protection.
- *
- * Numeric fields come back as decimal wei strings (JSON has no native bigint).
+ * Floor apiMinOut against `amountOut * (1 - slippage)` so a tampered /convert
+ * response can't sneak a too-low minOut into the signed call. Slippage is
+ * re-validated here too — localStorage can be widened past the UI cap.
+ * 1 bp tolerance absorbs honest API/local rounding drift.
+ */
+function verifyApiMinOut(quote: PendleConvertQuote, slippage: number): void {
+  if (!Number.isFinite(slippage) || slippage < 0 || slippage >= 1) {
+    throw new Error(
+      `Pendle: refusing to sign — slippage ${slippage} is outside the allowed [0, 1) range`
+    );
+  }
+  const slippageBp = BigInt(Math.round(slippage * 10_000));
+  const TOLERANCE_BP = 1n;
+  const floorBp = 10_000n - slippageBp - TOLERANCE_BP;
+  if (floorBp <= 0n) return;
+  const expectedMinOut = (quote.amountOut * floorBp) / 10_000n;
+  if (quote.apiMinOut < expectedMinOut) {
+    throw new Error(
+      `Pendle: refusing to sign — apiMinOut ${quote.apiMinOut} is below the local slippage floor ${expectedMinOut} (amountOut=${quote.amountOut}, slippage=${slippage})`
+    );
+  }
+}
+
+/**
+ * Solver hint at position 3. Passed through verbatim — fund safety comes
+ * from the verifyApiMinOut floor on minPtOut, not from these hints.
  */
 function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
   const raw = params[3] as
@@ -273,8 +294,9 @@ function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
  * Trust anchors of the aggregator branch:
  *   (a) pendleSwap is pinned (only Pendle's audited forwarder),
  *   (b) tokenMintSy/tokenRedeemSy is pinned to the underlying,
- *   (c) apiMinOut bounds the worst-case output denominated in the user-picked
- *       token, so a malicious aggregator hop can at worst revert the tx.
+ *   (c) apiMinOut is floored against `amountOut * (1 - slippage)` so a
+ *       compromised or buggy quote cannot sneak a too-low minOut into the
+ *       signed calldata — see verifyApiMinOut.
  */
 export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallValues): VerifiedCall {
   // 1. Per-flow allowlist
@@ -285,7 +307,10 @@ export function buildVerifiedArgs(quote: PendleConvertQuote, known: KnownCallVal
     throw new Error(`Pendle: refusing to sign — selector "${quote.method}" not allowed for ${known.side}`);
   }
 
-  // 2 + 3. Rebuild args from known values + force-empty.
+  // 2. apiMinOut floor — uniform across buy / withdraw / exit.
+  verifyApiMinOut(quote, known.slippage);
+
+  // 3 + 4. Rebuild args from known values + force-empty.
   // Dispatch on the API's method (already gated by the allowlist above).
   if (quote.method === 'swapExactTokenForPt') {
     return buildBuyArgs(quote, known);

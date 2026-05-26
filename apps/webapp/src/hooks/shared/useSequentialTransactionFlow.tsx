@@ -24,15 +24,9 @@ export function useSequentialTransactionFlow(
   const [isExecuting, setIsExecuting] = useState(false);
   const [hasWriteError, setHasWriteError] = useState(false);
 
-  // Store initial transactions to prevent issues with changing array references
+  // Snapshot of `calls` frozen at execute() time — keeps a refetching quote
+  // from swapping in different args after the user clicked Confirm.
   const transactionsRef = useRef(calls);
-
-  // Only update the ref when execution starts
-  useEffect(() => {
-    if (isExecuting && currentIndex === 0) {
-      transactionsRef.current = calls;
-    }
-  }, [isExecuting, currentIndex, calls]);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? transactionsRef.current : calls;
@@ -203,7 +197,7 @@ export function useSequentialTransactionFlow(
 
   // Memoize execute function to prevent recreation on every render
   const execute = useCallback(() => {
-    if (currentIndex >= stableTransactions.length) {
+    if (currentIndex >= calls.length) {
       console.log('ERROR: All transactions have been executed');
       return;
     }
@@ -214,6 +208,7 @@ export function useSequentialTransactionFlow(
     }
 
     if (simulationData?.request) {
+      transactionsRef.current = calls; // freeze args for the whole sequence
       setIsExecuting(true);
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else {
@@ -228,7 +223,7 @@ export function useSequentialTransactionFlow(
   }, [
     enabled,
     currentIndex,
-    stableTransactions.length,
+    calls,
     currentTransaction,
     simulationData,
     writeContract,

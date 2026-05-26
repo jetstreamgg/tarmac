@@ -331,7 +331,7 @@ export const banners: Banner[] = [
     title: 'Fixed Yield',
     module: 'fixed-yield-banners',
     description:
-      'Powered by Pendle, allows USDS deposits to lock in a fixed APY until a set maturity date by converting the deposit into PT-sUSDS. The yield is fixed at the moment of supply and guaranteed if held to maturity; early withdrawal is available but settles at the prevailing PT-sUSDS market price.',
+      "Powered by Pendle, Fixed Yield lets you set your return by a specific maturity date. Supply USDS to fix today's rate until that date. You can sell your position early, but you exit at the market's current price, which may be higher or lower than what you initially paid.",
     display: ['connected', 'disconnected']
   }
 ];

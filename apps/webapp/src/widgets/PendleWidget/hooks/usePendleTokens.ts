@@ -5,13 +5,10 @@ import { mainnet } from 'viem/chains';
 export type PendleTokens = {
   underlyingToken: Token;
   ptToken: Token;
-  /**
-   * The selectable token list for the user-picked side of the convert flow:
-   * BUY input or SELL output. Always begins with the market's underlying
-   * (default selection) and appends USDS / USDC if they aren't already the
-   * underlying. Reuses the global TOKENS registry — no inline definitions.
-   */
-  inputTokenList: Token[];
+  /** Supply (BUY) tokens: market underlying + USDS + USDC (de-duped). */
+  supplyTokenList: Token[];
+  /** Withdraw (SELL) tokens: supply list with sUSDS excluded — sUSDS is not a withdrawal option even when it is the SY underlying. */
+  withdrawTokenList: Token[];
 };
 
 // Pendle markets are dynamic (per-market PT address + arbitrary underlying),
@@ -45,7 +42,7 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
     [market.underlyingSymbol, market.underlyingDecimals, market.ptToken]
   );
 
-  const inputTokenList = useMemo<Token[]>(() => {
+  const supplyTokenList = useMemo<Token[]>(() => {
     const seen = new Set<string>([market.underlyingToken.toLowerCase()]);
     const list: Token[] = [underlyingToken];
     for (const candidate of [TOKENS.usds, TOKENS.usdc]) {
@@ -59,5 +56,11 @@ export const usePendleTokens = (market: PendleMarketConfig): PendleTokens => {
     return list;
   }, [market.underlyingToken, underlyingToken]);
 
-  return { underlyingToken, ptToken, inputTokenList };
+  const withdrawTokenList = useMemo<Token[]>(() => {
+    const sUsdsAddr = TOKENS.susds.address[mainnet.id]?.toLowerCase();
+    if (!sUsdsAddr) return supplyTokenList;
+    return supplyTokenList.filter(t => t.address[mainnet.id]?.toLowerCase() !== sUsdsAddr);
+  }, [supplyTokenList]);
+
+  return { underlyingToken, ptToken, supplyTokenList, withdrawTokenList };
 };

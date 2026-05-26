@@ -216,7 +216,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
             withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
             false,
             undefined,
-            'Lock in fixed yield via Pendle PT markets',
+            'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
             pendleSubItems
           ]
         ]

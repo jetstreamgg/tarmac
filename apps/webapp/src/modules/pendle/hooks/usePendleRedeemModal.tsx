@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t } from '@lingui/core/macro';
 import { mainnet } from 'viem/chains';
 import { formatUnits } from 'viem';
@@ -42,8 +42,8 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   const matured = isMarketMatured(market.expiry);
   const isRedeemable = matured && ptBalance > 0n;
 
-  const { underlyingToken, ptToken, inputTokenList } = usePendleTokens(market);
-  const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(underlyingToken);
+  const { ptToken, withdrawTokenList } = usePendleTokens(market);
+  const [selectedOutputToken, setSelectedOutputToken] = useState<Token>(withdrawTokenList[0]);
   const outputTokenAddress = selectedOutputToken.address[mainnet.id] as `0x${string}`;
 
   const { slippage, setSlippage, defaultSlippage } = usePendleSlippage('redeem');
@@ -71,6 +71,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     underlyingToken: market.underlyingToken,
     amountIn: isRedeemable ? ptBalance : undefined,
     quote,
+    slippage,
     enabled: isRedeemable,
     shouldUseBatch: true,
     onMutate: () => txCallbacks.onMutate(),
@@ -115,7 +116,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       <PendleRedeem
         market={market}
         ptBalance={ptBalance}
-        outputTokenList={inputTokenList}
+        outputTokenList={withdrawTokenList}
         selectedOutputToken={selectedOutputToken}
         onOutputTokenChange={setSelectedOutputToken}
         quote={quote}
@@ -127,7 +128,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     [
       market,
       ptBalance,
-      inputTokenList,
+      withdrawTokenList,
       selectedOutputToken,
       quote,
       isFetchingQuote,
@@ -144,6 +145,11 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
   );
 
   const confirmDisabled = !writeHook.prepared || isFetchingQuote || writeHook.isLoading;
+
+  // Indirect onConfirm through a ref — the stored onConfirm can't be
+  // live-updated, but the ref always points at the latest writeHook.execute.
+  const executeRef = useRef<() => void>(() => undefined);
+  executeRef.current = () => writeHook.execute();
 
   const openRedeemModal = useCallback(() => {
     const toDecimals = getTokenDecimals(selectedOutputToken, mainnet.id);
@@ -169,7 +175,7 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
       rightHeaderComponent,
       confirmLabel: t`Confirm`,
       confirmDisabled,
-      onConfirm: () => writeHook.execute(),
+      onConfirm: () => executeRef.current(),
       sessionId,
       analytics: {
         widgetName: 'fixed',
@@ -183,7 +189,6 @@ export function usePendleRedeemModal(market: PendleMarketConfig, opts: Options =
     });
   }, [
     launch,
-    writeHook,
     market,
     ptToken,
     ptBalance,

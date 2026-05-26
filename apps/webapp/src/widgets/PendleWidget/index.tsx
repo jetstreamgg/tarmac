@@ -1,5 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { formatUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { useLingui } from '@lingui/react';
@@ -117,13 +117,17 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
 
   const balanceChainId = isTestnetId(chainId) ? chainId : mainnet.id;
 
-  const { underlyingToken, ptToken, inputTokenList } = usePendleTokens(market);
+  const { underlyingToken, ptToken, supplyTokenList, withdrawTokenList } = usePendleTokens(market);
 
   const [selectedSupplyToken, setSelectedSupplyToken] = useState<Token>(underlyingToken);
-  const [selectedWithdrawOutToken, setSelectedWithdrawOutToken] = useState<Token>(underlyingToken);
+  const [selectedWithdrawOutToken, setSelectedWithdrawOutToken] = useState<Token>(withdrawTokenList[0]);
 
   const handleSupplyTokenChange = (next: Token) => {
-    setAmount(0n);
+    const prevDecimals = getTokenDecimals(selectedSupplyToken, mainnet.id);
+    const nextDecimals = getTokenDecimals(next, mainnet.id);
+    if (amount > 0n && prevDecimals !== nextDecimals) {
+      setAmount(parseUnits(formatUnits(amount, prevDecimals), nextDecimals));
+    }
     setSelectedSupplyToken(next);
   };
 
@@ -265,6 +269,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     underlyingToken: market.underlyingToken,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     quote,
+    slippage,
     enabled: isConnectedAndEnabled && debouncedAmount > 0n,
     shouldUseBatch,
     ...txCallbacks
@@ -406,13 +411,14 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
   const isAmountWaitingForDebounce = debouncedAmount !== amount;
 
   const convertDisabled =
-    [TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
-    amount === 0n ||
-    insufficientFunds ||
-    isAmountWaitingForDebounce ||
-    !!quoteError ||
-    !writeHook.prepared ||
-    writeHook.isLoading;
+    txStatus !== TxStatus.SUCCESS &&
+    ([TxStatus.INITIALIZED, TxStatus.LOADING].includes(txStatus) ||
+      amount === 0n ||
+      insufficientFunds ||
+      isAmountWaitingForDebounce ||
+      !!quoteError ||
+      !writeHook.prepared ||
+      writeHook.isLoading);
 
   useEffect(() => {
     setIsDisabled(isConnectedAndEnabled && convertDisabled);
@@ -502,7 +508,8 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
             <SupplyWithdraw
               market={market}
               ptToken={ptToken}
-              inputTokenList={inputTokenList}
+              supplyTokenList={supplyTokenList}
+              withdrawTokenList={withdrawTokenList}
               selectedSupplyToken={selectedSupplyToken}
               onSupplyTokenChange={handleSupplyTokenChange}
               selectedWithdrawOutToken={selectedWithdrawOutToken}

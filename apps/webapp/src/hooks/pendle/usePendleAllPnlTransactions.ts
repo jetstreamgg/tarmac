@@ -36,15 +36,20 @@ function resolveMarket(wireMarket: string): PendleMarketConfig | undefined {
 /**
  * Pure transformer: PnL wire rows → normalized rows tagged with their source
  * market, filtered to PENDLE_MARKETS and surfaced actions, sorted desc by
- * timestamp.
+ * timestamp. Rows with missing or non-finite numeric fields are dropped — the
+ * /v1/pnl/transactions feed has been observed to omit values for in-flight or
+ * just-matured markets, and NaN downstream corrupts both display and the
+ * matured-earnings reconciliation gate (NaN <= 0 is false).
  */
-function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleCombinedHistoryRow[] {
+export function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleCombinedHistoryRow[] {
   const out: PendleCombinedHistoryRow[] = [];
   for (const tx of rows) {
     const action = mapWireAction(tx.action);
     if (action === undefined) continue;
     const market = resolveMarket(tx.market);
     if (!market) continue;
+    if (!Number.isFinite(tx.txValueAsset) || !Number.isFinite(tx.assetUsd)) continue;
+    if (action !== PendleHistoryAction.REDEEM_PY && !Number.isFinite(tx.effectivePtExchangeRate)) continue;
     // YT-only redeems where no underlying actually moved would render as a
     // confusing "0 USDe Redeem" row; drop them.
     if (action === PendleHistoryAction.REDEEM_PY && !(tx.txValueAsset > 0)) continue;
