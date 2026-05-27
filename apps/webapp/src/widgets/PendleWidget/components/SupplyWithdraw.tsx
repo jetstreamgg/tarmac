@@ -268,7 +268,7 @@ export const SupplyWithdraw = ({
                       : {})
                   },
                   {
-                    label: flow === PendleFlow.BUY ? t`Fixed APY locked` : t`Effective APY`,
+                    label: t`Effective APY`,
                     value: apyDisplay,
                     className: quote.effectiveApy < 0 ? 'text-error' : 'text-bullish',
                     tooltipTitle: getTooltipById('effective-apy')?.title || '',

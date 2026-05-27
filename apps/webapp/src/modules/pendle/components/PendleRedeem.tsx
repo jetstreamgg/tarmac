@@ -58,18 +58,26 @@ export const PendleRedeem = ({
 
   const transactionData = quote
     ? [
-        {
-          label: t`Min. received`,
-          value: `${formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 4 })} ${selectedOutputToken.symbol}`
-        },
-        {
-          label: t`Slippage tolerance`,
-          value: `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`
-        },
-        {
-          label: t`Price impact`,
-          value: `${formatNumber(-quote.priceImpact * 100, { maxDecimals: 3 })}%`
-        },
+        // Min. received, slippage tolerance, and price impact only matter when
+        // an aggregator hop is in the route. The pure Pendle redeem path burns
+        // PT for the underlying at the SY's expiry-frozen rate — deterministic,
+        // no swap, so these rows would be meaningless or misleading.
+        ...(aggregatorName
+          ? [
+              {
+                label: t`Min. received`,
+                value: `${formatBigInt(quote.apiMinOut, { unit: outDecimals, maxDecimals: 4 })} ${selectedOutputToken.symbol}`
+              },
+              {
+                label: t`Slippage tolerance`,
+                value: `${formatNumber(slippage * 100, { maxDecimals: 2 })}%`
+              },
+              {
+                label: t`Price impact`,
+                value: `${formatNumber(-quote.priceImpact * 100, { maxDecimals: 3 })}%`
+              }
+            ]
+          : []),
         ...(breakdown
           ? [
               {
