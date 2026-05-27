@@ -237,15 +237,27 @@ function TradeWidgetWrapped({
     }
   }, [txStatus, needsAllowance, setShowStepIndicator]);
 
-  useEffect(() => {
+  // Compute updatedChi when rho/dsr/chi change. Render-time prev-tracking
+  // with [null] sentinel — mount-fire needed when all three are loaded.
+  const [prevChiDeps, setPrevChiDeps] = useState<{
+    rho: typeof rho;
+    dsr: typeof dsr;
+    chi: typeof chi;
+  } | null>(null);
+  if (
+    prevChiDeps === null ||
+    prevChiDeps.rho !== rho ||
+    prevChiDeps.dsr !== dsr ||
+    prevChiDeps.chi !== chi
+  ) {
+    setPrevChiDeps({ rho, dsr, chi });
     if (rho && dsr && chi) {
       const timestamp = Math.floor(Date.now() / 1000);
       const elapsedTimeWithEpoch = BigInt(timestamp) + BigInt(EPOCH_LENGTH) - rho;
       const updatedChi = math.updatedChi(dsr, Number(elapsedTimeWithEpoch), chi);
-
       setUpdatedChiForDeposit(updatedChi);
     }
-  }, [rho, dsr, chi]);
+  }
 
   useEffect(() => {
     const bothAmountsZero = originAmount === 0n && targetAmount === 0n;
@@ -633,9 +645,19 @@ function TradeWidgetWrapped({
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
   }, [isConnecting, txStatus]);
 
-  useEffect(() => {
+  // Sync originToken when chainId or initialOriginTokenIndex change.
+  // Multi-dep prev-tracking, no sentinel (init useState matches mount value).
+  const [prevOriginTokenDeps, setPrevOriginTokenDeps] = useState({
+    chainId,
+    initialOriginTokenIndex
+  });
+  if (
+    prevOriginTokenDeps.chainId !== chainId ||
+    prevOriginTokenDeps.initialOriginTokenIndex !== initialOriginTokenIndex
+  ) {
+    setPrevOriginTokenDeps({ chainId, initialOriginTokenIndex });
     setOriginToken(initialOriginToken);
-  }, [chainId, initialOriginTokenIndex]);
+  }
 
   useEffect(() => {
     if (targetTokenList.length === 1) {
@@ -659,9 +681,11 @@ function TradeWidgetWrapped({
     }
   }, [targetToken, originToken]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // mount-fire that initialized widgetState to TRADE.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setOriginAmount(initialOriginAmount);
     setTargetAmount(initialTargetAmount);
     setLastUpdated(TradeSide.IN);
@@ -670,14 +694,12 @@ function TradeWidgetWrapped({
     setTxStatus(TxStatus.IDLE);
     setShowAddToken(false);
     setExternalLink(undefined);
-
-    // Reset widget state to initial screen
     setWidgetState({
       flow: TradeFlow.TRADE,
       action: TradeAction.TRADE,
       screen: TradeScreen.ACTION
     });
-  }, [chainId]);
+  }
 
   const tradeOnClick = () => {
     fireAnalytics({
