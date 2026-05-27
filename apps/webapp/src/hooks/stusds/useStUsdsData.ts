@@ -179,12 +179,17 @@ export function useStUsdsData(address?: `0x${string}`): StUsdsHook {
     return assets > totalDebt ? assets - totalDebt : 0n;
   }, [totalAssets, stakingEngineData?.totalDaiDebt, clipperDue]);
 
-  const liquidityBuffer = useMemo(() => {
-    if (!totalAssets || !str) return 0n;
-    const stakingEngineDebt = stakingEngineData?.totalDaiDebt || 0n;
-    const stakingDuty = stakingEngineRaw?.duty?.value || 0n;
-    return calculateLiquidityBuffer(totalAssets, str, stakingEngineDebt, stakingDuty);
-  }, [totalAssets, str, stakingEngineData?.totalDaiDebt, stakingEngineRaw?.duty]);
+  // No useMemo — the compiler will auto-memoize this single function call
+  // based on its inputs. The wrapper memo was deemed redundant by the compiler.
+  const liquidityBuffer =
+    totalAssets && str
+      ? calculateLiquidityBuffer(
+          totalAssets,
+          str,
+          stakingEngineData?.totalDaiDebt || 0n,
+          stakingEngineRaw?.duty?.value || 0n
+        )
+      : 0n;
 
   const userMaxWithdrawBuffered = useMemo(() => {
     if (!userMaxWithdraw || !availableLiquidity) return 0n;

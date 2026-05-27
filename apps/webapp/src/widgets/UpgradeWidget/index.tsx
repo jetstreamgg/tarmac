@@ -193,14 +193,12 @@ export function UpgradeWidgetWrapped({
   // Fetch the current fee from the contract
   const { data: mkrSkyFee, isLoading: isFeeLoading } = useMkrSkyFee();
 
-  // Calculate target amount with fee applied
-  const targetAmount = useMemo(() => {
-    // Don't calculate if fee is still loading or undefined
-    if (isFeeLoading || mkrSkyFee === undefined) {
-      return 0n;
-    }
-    return math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyFee);
-  }, [originToken, debouncedOriginAmount, mkrSkyFee, isFeeLoading]);
+  // Calculate target amount with fee applied. No useMemo — the compiler
+  // auto-memoizes this primitive expression when its inputs are stable.
+  const targetAmount =
+    isFeeLoading || mkrSkyFee === undefined
+      ? 0n
+      : math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyFee);
 
   const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
     chainId,

@@ -9,6 +9,26 @@ type UseRiskSliderProps = {
   isRepayMode?: boolean;
 };
 
+// Pure helper hoisted out of the hook so it doesn't need useMemo to stabilise.
+function computeCapPercentage(
+  isRepayMode: boolean,
+  maxBorrowableCapped: bigint,
+  maxBorrowableUncapped: bigint,
+  existingDebtValue: bigint
+): number | undefined {
+  if (isRepayMode) return undefined;
+  if (maxBorrowableUncapped === 0n) return undefined;
+  if (maxBorrowableCapped < maxBorrowableUncapped) {
+    return (
+      Number(
+        ((maxBorrowableCapped + existingDebtValue) * 10000n) /
+          (maxBorrowableUncapped + existingDebtValue)
+      ) / 100
+    );
+  }
+  return undefined;
+}
+
 export const useRiskSlider = ({
   vault,
   existingVault,
@@ -132,28 +152,15 @@ export const useRiskSlider = ({
       !!existingOrNewVault?.collateralAmount &&
       existingOrNewVault.collateralAmount > 0n;
 
-  // Calculate cap percentage based on capped vs uncapped max borrowable
-  const capPercentage = useMemo(() => {
-    if (isRepayMode) return undefined;
-
-    const maxBorrowableCapped = vault?.maxSafeBorrowableIntAmount || 0n;
-    const maxBorrowableUncapped = vault?.maxSafeBorrowableIntAmountNoCap || 0n;
-    const existingDebtValue = vaultNoBorrow?.debtValue || 0n;
-
-    if (maxBorrowableUncapped === 0n) return undefined;
-
-    // Cap percentage represents where the debt ceiling limit is on the slider
-    // If capped < uncapped, there's a ceiling
-    if (maxBorrowableCapped < maxBorrowableUncapped) {
-      const ratio =
-        Number(
-          ((maxBorrowableCapped + existingDebtValue) * 10000n) / (maxBorrowableUncapped + existingDebtValue)
-        ) / 100;
-      return ratio;
-    }
-
-    return undefined;
-  }, [vault?.maxSafeBorrowableIntAmount, vault?.maxSafeBorrowableIntAmountNoCap, isRepayMode, vaultNoBorrow]);
+  // Calculate cap percentage based on capped vs uncapped max borrowable.
+  // No useMemo — compiler auto-memoizes when beneficial; the manual memo was
+  // deemed redundant.
+  const capPercentage = computeCapPercentage(
+    isRepayMode,
+    vault?.maxSafeBorrowableIntAmount || 0n,
+    vault?.maxSafeBorrowableIntAmountNoCap || 0n,
+    vaultNoBorrow?.debtValue || 0n
+  );
 
   // Calculate the correct slider position based on current repay/borrow amount
   // This reverses the calculation in handleSliderChange to maintain two-way sync
