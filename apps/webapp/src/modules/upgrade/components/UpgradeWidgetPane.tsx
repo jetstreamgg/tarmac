@@ -39,7 +39,13 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as UpgradeFlow | undefined;
-  const [currentToken, setCurrentToken] = useState<string | undefined>();
+  // Initialize from URL `source_token` param via lazy initializer (replaces a
+  // mount-only useEffect that did `if (sourceToken && !currentToken) setCurrentToken(sourceToken)`).
+  // sourceToken is read from URL params inside the initializer to avoid a
+  // dependency cycle (sourceToken is declared after currentToken in the original).
+  const [currentToken, setCurrentToken] = useState<string | undefined>(
+    () => searchParams.get(QueryParams.SourceToken)?.toUpperCase() || undefined
+  );
 
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
 
@@ -56,13 +62,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     });
     setSelectedConvertOption(undefined);
   };
-
-  // Set initial currentToken from sourceToken
-  useEffect(() => {
-    if (sourceToken && !currentToken) {
-      setCurrentToken(sourceToken);
-    }
-  }, []);
 
   // Update URL when token changes
   useEffect(() => {

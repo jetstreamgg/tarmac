@@ -82,7 +82,10 @@ export function WidgetNavigation({
   const chains = useChains();
   const { isConnected } = useAccount();
   const { showNetworkToast } = useEnhancedNetworkToast();
-  const [previousChainId, setPreviousChainId] = useState<number | undefined>(currentChainId);
+  // Previous chainId tracked via ref to avoid set-state-in-effect. Refs don't
+  // trigger re-renders, which is fine here because the effect that reads this
+  // value is already gated on `currentChainId` changing.
+  const previousChainIdRef = useRef<number | undefined>(currentChainId);
 
   // Use the new network auto-switch hook
   const { handleWidgetNavigation, isAutoSwitching, previousIntent } = useNetworkAutoSwitch({
@@ -117,6 +120,7 @@ export function WidgetNavigation({
 
   // Track network changes and show enhanced toast
   useEffect(() => {
+    const previousChainId = previousChainIdRef.current;
     if (currentChainId && previousChainId && currentChainId !== previousChainId) {
       const prevChain = chains.find(c => c.id === previousChainId);
       const currChain = chains.find(c => c.id === currentChainId);
@@ -135,7 +139,7 @@ export function WidgetNavigation({
         });
       }
     }
-    setPreviousChainId(currentChainId);
+    previousChainIdRef.current = currentChainId;
   }, [
     currentChainId,
     chains,
