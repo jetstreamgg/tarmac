@@ -19,9 +19,9 @@ type MorphoVaultHistoricalApiResponse = {
   data: {
     vaultV2ByAddress: {
       historicalState: {
-        totalAssets: Array<{ x: number; y: string }>;
-        totalAssetsUsd: Array<{ x: number; y: number }>;
-        avgNetApy: Array<{ x: number; y: number }>;
+        totalAssets: Array<{ x: number; y: string | null }>;
+        totalAssetsUsd: Array<{ x: number; y: number | null }>;
+        avgNetApy: Array<{ x: number; y: number | null }>;
       };
     } | null;
   };
@@ -45,27 +45,29 @@ export type MorphoVaultChartDataPoint = {
  * Transform raw API response to parsed chart data.
  */
 function transformMorphoChartData(
-  totalAssets: Array<{ x: number; y: string }>,
-  totalAssetsUsd: Array<{ x: number; y: number }>,
-  avgNetApy: Array<{ x: number; y: number }>
+  totalAssets: Array<{ x: number; y: string | null }>,
+  totalAssetsUsd: Array<{ x: number; y: number | null }>,
+  avgNetApy: Array<{ x: number; y: number | null }>
 ): MorphoVaultChartDataPoint[] {
   // Create maps for easy lookup by timestamp
   const apyMap = new Map<number, number>();
   avgNetApy.forEach(item => {
-    apyMap.set(item.x, item.y);
+    if (item.y !== null) apyMap.set(item.x, item.y);
   });
 
   const usdMap = new Map<number, number>();
   totalAssetsUsd.forEach(item => {
-    usdMap.set(item.x, item.y);
+    if (item.y !== null) usdMap.set(item.x, item.y);
   });
 
-  return totalAssets.map(item => ({
-    blockTimestamp: item.x,
-    amount: BigInt(item.y),
-    amountUsd: usdMap.get(item.x) ?? 0,
-    apy: apyMap.get(item.x)
-  }));
+  return totalAssets
+    .filter((item): item is { x: number; y: string } => item.y !== null)
+    .map(item => ({
+      blockTimestamp: item.x,
+      amount: BigInt(item.y),
+      amountUsd: usdMap.get(item.x) ?? 0,
+      apy: apyMap.get(item.x)
+    }));
 }
 
 /**
