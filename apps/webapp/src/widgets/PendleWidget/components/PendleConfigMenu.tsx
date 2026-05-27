@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Settings as SettingsIcon } from '@/widgets/shared/components/icons/Icons';
@@ -42,19 +42,26 @@ export const PendleConfigMenu = ({ slippage, defaultSlippage, setSlippage }: Pen
 
   // Re-sync the input when slippage is updated from outside the menu
   // (e.g. flow change resets default; Auto tab click sets to default).
-  useEffect(() => {
+  // Render-time prev-tracking replaces a useEffect to avoid set-state-in-effect.
+  // No sentinel needed — useState's lazy initializer already produces the same
+  // value the effect would set on mount, so mount-fire was a no-op.
+  const [prevSlippage, setPrevSlippage] = useState(slippage);
+  const [prevDefaultSlippage, setPrevDefaultSlippage] = useState(defaultSlippage);
+  if (prevSlippage !== slippage || prevDefaultSlippage !== defaultSlippage) {
+    setPrevSlippage(slippage);
+    setPrevDefaultSlippage(defaultSlippage);
     if (slippage === defaultSlippage) {
       setRawInput('');
-      return;
+    } else {
+      // Only overwrite the input if the user's current text doesn't already
+      // map to the same numeric value — otherwise we'd clobber an in-progress
+      // edit (e.g. user mid-typing "0." while slippage emits the same number).
+      const currentNumeric = percentStringToDecimalSlippage(rawInputRef.current);
+      if (Math.abs(currentNumeric - slippage) > 1e-9) {
+        setRawInput(decimalSlippageToPercentString(slippage));
+      }
     }
-    // Only overwrite the input if the user's current text doesn't already
-    // map to the same numeric value — otherwise we'd clobber an in-progress
-    // edit (e.g. user mid-typing "0." while slippage emits the same number).
-    const currentNumeric = percentStringToDecimalSlippage(rawInputRef.current);
-    if (Math.abs(currentNumeric - slippage) > 1e-9) {
-      setRawInput(decimalSlippageToPercentString(slippage));
-    }
-  }, [slippage, defaultSlippage]);
+  }
 
   const isCustom = slippage !== defaultSlippage;
 
