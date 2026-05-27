@@ -146,28 +146,18 @@ const SavingsWidgetWrapped = ({
     setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
   }
 
-  // Compute updatedChi when rho/dsr/chi change. Render-time prev-tracking
-  // with null sentinel so mount-fire (when all three are already loaded)
-  // still computes the initial chi value.
-  const [prevChiDeps, setPrevChiDeps] = useState<{
-    rho: typeof rho;
-    dsr: typeof dsr;
-    chi: typeof chi;
-  } | null>(null);
-  if (
-    prevChiDeps === null ||
-    prevChiDeps.rho !== rho ||
-    prevChiDeps.dsr !== dsr ||
-    prevChiDeps.chi !== chi
-  ) {
-    setPrevChiDeps({ rho, dsr, chi });
+  // Compute updatedChi when rho/dsr/chi change. Kept as useEffect because
+  // the body needs Date.now() — calling it during render would trip the
+  // (now-error) react-hooks/purity rule.
+  useEffect(() => {
     if (rho && dsr && chi) {
       const timestamp = Math.floor(Date.now() / 1000);
       const elapsedTimeWithEpoch = BigInt(timestamp) + BigInt(EPOCH_LENGTH) - rho;
       const updatedChi = math.updatedChi(dsr, Number(elapsedTimeWithEpoch), chi);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above; Date.now() in body forces useEffect
       setUpdatedChiForDeposit(updatedChi);
     }
-  }
+  }, [rho, dsr, chi]);
 
   const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
   if (prevInitialAmount !== initialAmount) {
