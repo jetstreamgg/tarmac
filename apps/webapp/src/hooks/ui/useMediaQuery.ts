@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 /**
  * Custom hook to track media query matches
@@ -10,17 +10,19 @@ import { useEffect, useState } from 'react';
  * const isSmallHeight = useMediaQuery('(max-height: 900px)');
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(query);
-    setMatches(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mediaQuery.addEventListener('change', handleChange);
-
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [query]);
-
-  return matches;
+  // Subscribe via React's sanctioned external-store API — avoids
+  // setState-in-effect by letting React read the value directly.
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      const mediaQuery = window.matchMedia(query);
+      mediaQuery.addEventListener('change', notify);
+      return () => mediaQuery.removeEventListener('change', notify);
+    },
+    [query]
+  );
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(query).matches,
+    () => false
+  );
 }
