@@ -549,6 +549,7 @@ function StakeModuleWidgetWrapped({
 
     // Handle navigation to root (no urn index)
     if (urlUrnIndex === undefined || urlUrnIndex === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetToOverviewState is a multi-setState reset called from the urn-index navigation effect; refactoring this ~80-line effect to render-time is a separate dedicated task
       resetToOverviewState();
       return;
     }

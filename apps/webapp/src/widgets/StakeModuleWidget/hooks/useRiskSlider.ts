@@ -210,36 +210,66 @@ export const useRiskSlider = ({
     vault?.maxSafeBorrowableIntAmountNoCap
   ]);
 
-  // Sync slider in borrow mode
-  useEffect(() => {
-    if (isRepayMode) return;
-
-    // If we have a calculated position (existing debt scenario), use that for two-way sync
-    if (calculatedSliderPosition !== undefined) {
-      if (capPercentage !== undefined && calculatedSliderPosition > capPercentage) {
-        setSliderValue([capPercentage]);
-      } else {
-        setSliderValue([calculatedSliderPosition]);
+  // Sync slider in borrow mode. Render-time prev-tracking with [null]
+  // sentinel — the original useEffect's mount-fire was observable (init
+  // sliderValue=[Math.max(1, riskPercentage)] differs from what these
+  // branches compute from capPercentage/calculatedSliderPosition).
+  const [prevBorrowSyncDeps, setPrevBorrowSyncDeps] = useState<
+    | {
+        riskPercentage: number;
+        capPercentage: number | undefined;
+        isRepayMode: boolean;
+        calculatedSliderPosition: number | undefined;
       }
-    } else {
-      // Otherwise use riskPercentage (new vault scenario)
-      if (capPercentage !== undefined && riskPercentage > capPercentage) {
-        setSliderValue([capPercentage]);
+    | null
+  >(null);
+  if (
+    prevBorrowSyncDeps === null ||
+    prevBorrowSyncDeps.riskPercentage !== riskPercentage ||
+    prevBorrowSyncDeps.capPercentage !== capPercentage ||
+    prevBorrowSyncDeps.isRepayMode !== isRepayMode ||
+    prevBorrowSyncDeps.calculatedSliderPosition !== calculatedSliderPosition
+  ) {
+    setPrevBorrowSyncDeps({ riskPercentage, capPercentage, isRepayMode, calculatedSliderPosition });
+    if (!isRepayMode) {
+      if (calculatedSliderPosition !== undefined) {
+        if (capPercentage !== undefined && calculatedSliderPosition > capPercentage) {
+          setSliderValue([capPercentage]);
+        } else {
+          setSliderValue([calculatedSliderPosition]);
+        }
       } else {
-        setSliderValue([riskPercentage]);
+        if (capPercentage !== undefined && riskPercentage > capPercentage) {
+          setSliderValue([capPercentage]);
+        } else {
+          setSliderValue([riskPercentage]);
+        }
       }
     }
-  }, [riskPercentage, capPercentage, isRepayMode, calculatedSliderPosition]);
+  }
 
-  // Sync slider in repay mode - use calculated position for two-way sync
-  useEffect(() => {
-    if (!isRepayMode) return;
-
-    // Use calculated position if available, otherwise fall back to riskPercentageNoBorrow
-    const position =
-      calculatedSliderPosition !== undefined ? calculatedSliderPosition : riskPercentageNoBorrow;
-    setSliderValue([position]);
-  }, [isRepayMode, calculatedSliderPosition, riskPercentageNoBorrow]);
+  // Sync slider in repay mode — same pattern with its own deps. [null]
+  // sentinel for mount-fire (init differs from computed position).
+  const [prevRepaySyncDeps, setPrevRepaySyncDeps] = useState<
+    {
+      isRepayMode: boolean;
+      calculatedSliderPosition: number | undefined;
+      riskPercentageNoBorrow: number;
+    } | null
+  >(null);
+  if (
+    prevRepaySyncDeps === null ||
+    prevRepaySyncDeps.isRepayMode !== isRepayMode ||
+    prevRepaySyncDeps.calculatedSliderPosition !== calculatedSliderPosition ||
+    prevRepaySyncDeps.riskPercentageNoBorrow !== riskPercentageNoBorrow
+  ) {
+    setPrevRepaySyncDeps({ isRepayMode, calculatedSliderPosition, riskPercentageNoBorrow });
+    if (isRepayMode) {
+      const position =
+        calculatedSliderPosition !== undefined ? calculatedSliderPosition : riskPercentageNoBorrow;
+      setSliderValue([position]);
+    }
+  }
 
   return {
     sliderValue,
