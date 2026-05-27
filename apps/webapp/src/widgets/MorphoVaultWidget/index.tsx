@@ -462,13 +462,15 @@ const MorphoVaultWidgetWrapped = ({
     }
   }, [debouncedBalanceError]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
+  // Reset widget state after switching network. Sentinel preserves the
+  // original mount-fire that initialized widgetState based on tabIndex.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(initialAmount);
     setMax(false);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
-
     if (tabIndex === 0) {
       setWidgetState({
         flow: MorphoVaultFlow.SUPPLY,
@@ -482,11 +484,15 @@ const MorphoVaultWidgetWrapped = ({
         screen: MorphoVaultScreen.ACTION
       });
     }
+  }
 
+  // Refetches on network change in their own effect — side effects, not
+  // state updates, so they don't trip set-state-in-effect.
+  useEffect(() => {
     mutateAssetBalance();
     mutateVaultData();
     mutateAllowance();
-  }, [chainId]);
+  }, [chainId, mutateAssetBalance, mutateVaultData, mutateAllowance]);
 
   return (
     <WidgetContainer
