@@ -23,7 +23,6 @@ import { Upgrade } from './Upgrade';
 import { Balances } from './Balances';
 import { Info } from './Info';
 import { Close } from './Close';
-import { Seal } from './Seal';
 import { BaseChain } from './BaseChain';
 import { MainnetChain } from './MainnetChain';
 import { ArbitrumChain } from './ArbitrumChain';
@@ -69,7 +68,6 @@ export {
   Balances,
   Info,
   Close,
-  Seal,
   BaseChain,
   MainnetChain,
   ArbitrumChain,

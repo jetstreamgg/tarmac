@@ -14,7 +14,6 @@ export * from './StUSDSWidget/lib/constants';
 export * from './TradeWidget/lib/constants';
 export * from './UpgradeWidget/lib/constants';
 export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
-export * from './SealModuleWidget/lib/constants';
 export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
 export { MorphoVaultFlow, MorphoVaultAction, MorphoVaultScreen } from './MorphoVaultWidget/lib/constants';
 export {
@@ -41,7 +40,6 @@ export { L2TradeWidget as ArbitrumTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget } from './L2TradeWidget';
 export { PsmConversionWidget } from './PsmConversionWidget';
 export { BalancesWidget } from './BalancesWidget';
-export { SealModuleWidget } from './SealModuleWidget/index';
 export type { BalancesWidgetProps } from './BalancesWidget';
 export { StakeModuleWidget } from './StakeModuleWidget/index';
 export { MorphoVaultWidget } from './MorphoVaultWidget';
@@ -60,7 +58,7 @@ export { TransactionOverview } from './shared/components/ui/transaction/Transact
 export { MorphoVaultBadge } from './MorphoVaultWidget/components/MorphoVaultBadge';
 export { MorphoRateBreakdownPopover } from './MorphoVaultWidget/components/MorphoRateBreakdownPopover';
 export type { TradeToken, NativeCurrency } from './TradeWidget/lib/types';
-export { formatUrnIndex } from './SealModuleWidget/lib/utils';
+export { formatUrnIndex } from './StakeModuleWidget/lib/utils';
 export { defaultConfig } from './config/default-config';
 export type { WidgetsConfig } from './config/types/widgets-config';
 export { NoResults } from './shared/components/icons/NoResults';

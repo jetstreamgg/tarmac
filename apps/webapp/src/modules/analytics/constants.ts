@@ -80,20 +80,18 @@ const WITHDRAWAL_FLOWS: Record<string, Set<string>> = {
   stusds: new Set(['withdraw'])
 };
 
-// Stake/Seal use tab params instead of flow to determine direction
+// Stake uses tab params instead of flow to determine direction
 const WITHDRAWAL_TABS = new Set(['free']);
 
 export function isWithdrawalFlow(
   widget: string | null,
   expertModule: string | null,
   flow: string | null,
-  stakeTab: string | null,
-  sealTab: string | null
+  stakeTab: string | null
 ): boolean {
   if (!widget) return false;
   const flowWidget = widget === 'expert' ? expertModule : widget;
   if (flow && flowWidget && WITHDRAWAL_FLOWS[flowWidget]?.has(flow)) return true;
   if (widget === 'stake' && stakeTab && WITHDRAWAL_TABS.has(stakeTab)) return true;
-  if (widget === 'seal' && sealTab && WITHDRAWAL_TABS.has(sealTab)) return true;
   return false;
 }

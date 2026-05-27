@@ -218,14 +218,6 @@ export const contracts: {
       [TENDERLY_CHAIN_ID]: '0xc20059e0317DE91738d13af027DfC4a50781b066'
     }
   },
-  // SealModule
-  {
-    name: 'sealModule',
-    address: {
-      [mainnet.id]: '0x2b16c07d5fd5cc701a0a871eae2aad6da5fc8f12',
-      [TENDERLY_CHAIN_ID]: '0x2b16c07d5fd5cc701a0a871eae2aad6da5fc8f12'
-    }
-  },
   // LockstakeMkr
   {
     name: 'lsMkr',
@@ -380,17 +372,6 @@ export const contracts: {
     }
   }
 ];
-
-export const tenderlyContracts: { name: string; address: Record<typeof TENDERLY_CHAIN_ID, `0x${string}`> }[] =
-  [
-    // {
-    //   name: 'cle',
-    //   address: {
-    //     // same token as USDS for now
-    //     [TENDERLY_CHAIN_ID]: '0xdC035D45d973E3EC169d2276DDab16f1e407384F'
-    //   }
-    // }
-  ];
 
 export const l2Contracts: { name: string; address: Record<L2ChainId, `0x${string}`> }[] = [
   {

@@ -4,7 +4,6 @@ import Home from './Home';
 import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';
 import Dev from './Dev';
-import { SealEngine } from './SealEngine';
 import { BatchTransactionsLegal } from './BatchTransactionsLegal';
 import { rewriteLegacyWidgetParams } from '@/modules/utils/validateSearchParams';
 
@@ -24,11 +23,6 @@ const routes: RouteObject[] = [
     path: '/',
     element: <Home />,
     loader: legacyWidgetLoader,
-    errorElement: <ErrorPage />
-  },
-  {
-    path: '/seal-engine',
-    element: <SealEngine />,
     errorElement: <ErrorPage />
   },
   {

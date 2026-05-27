@@ -54,7 +54,9 @@ export const UpgradeTransactionStatus = ({
     setStepTwoTitle,
     setLoadingText
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as UpgradeFlow;
+  const action = widgetState.action as UpgradeAction;
+  const screen = widgetState.screen as UpgradeScreen;
 
   useEffect(() => {
     setOriginToken(originToken);

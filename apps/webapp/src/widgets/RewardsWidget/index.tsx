@@ -473,15 +473,13 @@ const RewardsWidgetWrapped = ({
         <AnimatePresence mode="popLayout" initial={false}>
           {widgetState.action !== RewardsAction.OVERVIEW && (
             <CardAnimationWrapper key="widget-footer" className="w-full">
-              {widgetState.action !== RewardsAction.OVERVIEW && (
-                <WidgetButtons
-                  onClickAction={onClickAction}
-                  onClickBack={onClickBack}
-                  showSecondaryButton={showSecondaryButton}
-                  enabled={enabled}
-                  onExternalLinkClicked={onExternalLinkClicked}
-                />
-              )}
+              <WidgetButtons
+                onClickAction={onClickAction}
+                onClickBack={onClickBack}
+                showSecondaryButton={showSecondaryButton}
+                enabled={enabled}
+                onExternalLinkClicked={onExternalLinkClicked}
+              />
             </CardAnimationWrapper>
           )}
         </AnimatePresence>

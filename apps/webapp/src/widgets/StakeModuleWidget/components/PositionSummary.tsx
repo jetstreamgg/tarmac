@@ -11,7 +11,7 @@ import {
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   useVault,
-  useSealExitFee,
+  useStakeExitFee,
   useDelegateName,
   useDelegateOwner,
   useCollateralData,
@@ -349,7 +349,7 @@ export const PositionSummary = ({
   const isRiskLevelUpdated =
     hasPositions && isUpdatedValue(existingVault?.riskLevel, updatedVault?.riskLevel);
 
-  const { data: exitFee } = useSealExitFee();
+  const { data: exitFee } = useStakeExitFee();
 
   const existingCollateralAmount = existingVault?.collateralAmount || 0n;
   const updatedCollateralAmount = updatedVault?.collateralAmount || 0n;

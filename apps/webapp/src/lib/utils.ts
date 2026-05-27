@@ -3,14 +3,13 @@ import { twMerge } from 'tailwind-merge';
 import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
 import {
   ALLOWED_EXTERNAL_DOMAINS,
-  CHAIN_WIDGET_MAP,
   ExpertIntentMapping,
   VaultsIntentMapping,
   IntentMapping,
   mapIntentToQueryParam,
   QueryParams
 } from './constants';
-import { ExpertIntent, Intent, VaultsIntent } from './enums';
+import { ExpertIntent, Intent } from './enums';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { reportError } from '@/modules/sentry/reportError';
@@ -121,12 +120,7 @@ export function sanitizeUrl(url: string | undefined) {
   }
 }
 
-export function isIntentAllowed(intent: Intent, chainId: number) {
-  const supportedIntents = CHAIN_WIDGET_MAP[chainId] || [];
-  return supportedIntents.includes(intent);
-}
-
-export const getQueryParams = (url: string, searchParams: URLSearchParams) => {
+const getQueryParams = (url: string, searchParams: URLSearchParams) => {
   const { Locale, Details } = QueryParams;
   const retainedParams = [Locale, Details];
 
@@ -149,9 +143,6 @@ export const getSavingsUrl = (
     searchParams
   );
 
-export const getSealUrl = (searchParams: URLSearchParams, chainId: number) =>
-  `/seal-engine${getQueryParams(`/?network=${getMainnetChainName(chainId)}`, searchParams)}`;
-
 export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`,
@@ -160,11 +151,6 @@ export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
 export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`,
-    searchParams
-  );
-export const getMorphoVaultUrl = (searchParams: URLSearchParams, chainId: number) =>
-  getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}&vault_module=${VaultsIntentMapping[VaultsIntent.MORPHO_VAULT_INTENT]}`,
     searchParams
   );
 export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>

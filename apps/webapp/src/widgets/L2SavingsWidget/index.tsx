@@ -509,7 +509,7 @@ const SavingsWidgetWrapped = ({
               originBalance={originBalance?.value || 0n}
               originOptions={calculateOriginOptions(
                 usds,
-                widgetState.action,
+                widgetState.action ?? '',
                 tabIndex === 0 ? SavingsFlow.SUPPLY : SavingsFlow.WITHDRAW,
                 defaultDepositOptions,
                 defaultWithdrawOptions,

@@ -279,38 +279,9 @@ export { usePrices } from './prices/usePrices';
 export { useSkyPrice } from './prices/useSkyPrice';
 export { useLsMkrPrice } from './prices/useLsMkrPrice';
 
-// Seal Module
-export { useOpenUrn } from './seal/useOpenUrn';
-export { useCurrentUrnIndex as useSealCurrentIndex } from './seal/useCurrentUrnIndex';
-export { useUrnAddress } from './seal/useUrnAddress';
-export { useSelectRewardContract } from './seal/useSelectRewardContract';
-export { useSelectVoteDelegate } from './seal/useSelectVoteDelegate';
-export { useUrnSelectedRewardContract } from './seal/useUrnSelectedRewardContract';
-export { useUrnSelectedVoteDelegate } from './seal/useUrnSelectedVoteDelegate';
-export { useLockMkr } from './seal/useLockMkr';
-export { useLockSky } from './seal/useLockSky';
-export { useFreeMkr } from './seal/useFreeMkr';
-export { useSaMkrAllowance, useSaNgtAllowance, useSaNstAllowance } from './seal/useSaAllowance';
-export { useSaMkrApprove, useSaNgtApprove, useSaNstApprove } from './seal/useSaApprove';
-export { useClaimRewards } from './seal/useClaimRewards';
-export { useDrawUsds } from './seal/useDrawUsds';
-export { useSaMulticall } from './seal/useSaMulticall';
-export { useUrnsInfo } from './seal/useUrnsInfo';
-export { useWipe } from './seal/useWipe';
-export { useWipeAll } from './seal/useWipeAll';
-export { useSaUserDelegates } from './seal/useSaUserDelegates';
-export { useSaRewardContracts } from './seal/useSaRewardContracts';
-export { useSealHistory } from './seal/useSealHistory';
 export { useStakeHistory } from './stake/useStakeHistory';
-export { useSealPosition } from './seal/useSealPosition';
-export { useSealExitFee } from './seal/useSealExitFee';
-export { usePositionsAtRisk } from './seal/usePositionsAtRisk';
-export { useTotalUserSealed } from './seal/useTotalUserSealed';
 export { useTotalUserStaked } from './stake/useTotalUserStaked';
-export { useSealRewardsData } from './seal/useSealRewardsData';
-export { useSealHistoricData } from './seal/useSealHistoricData';
 export { useStakeHistoricData } from './stake/useStakeHistoricData';
-export * from './seal/calldata';
 
 // Stake Module
 export { useStakeRewardContracts } from './stake/useStakeRewardContracts';
@@ -327,6 +298,7 @@ export { useClaimRewards as useStakeClaimRewards } from './stake/useClaimRewards
 export { useBatchStakeClaimAllRewards } from './stake/useBatchStakeClaimAllRewards';
 export { useStakeRewardsData } from './stake/useStakeRewardsData';
 export { useStakePosition } from './stake/useStakePosition';
+export { useStakeExitFee } from './stake/useStakeExitFee';
 export { useBatchStakeMulticall } from './stake/useBatchStakeMulticall';
 export { useHighestRateFromChartData } from './stake/useHighestRateFromChartData';
 export { useBorrowCapacityData } from './stake/useBorrowCapacityData';
@@ -422,8 +394,7 @@ export type { CombinedHistoryItem } from './shared/shared';
 export type { TokenChartInfoParsed } from './tokens/useTokenChartInfo';
 export type { RewardsChartInfoParsed } from './rewards/useRewardsChartInfo';
 export type { Vault, CollateralRiskParameters } from './vaults/vault';
-export type { SealHistoryKick } from './seal/sealModule';
-export type { StakeHistoryItem } from './stake/stakeModule';
+export type { StakeHistoryItem, StakeHistoryKick } from './stake/stakeModule';
 export type { DelegateInfo } from './delegates/delegate';
 export type { BorrowCapacityData, BorrowCapacityDataHook } from './stake/useBorrowCapacityData';
 
@@ -451,7 +422,6 @@ export {
   usdcAddress,
   usdtAddress,
   spkAddress,
-  sealModuleAddress,
   stakeModuleAddress,
   stakeModuleAbi,
   mcdVatAbi,
@@ -477,7 +447,7 @@ export {
   usdsRiskCapitalVaultAddress,
   useReadClipperDue
 } from './generated';
-export { contracts, /*tenderlyContracts,*/ l2Contracts } from './contracts';
+export { contracts, l2Contracts } from './contracts';
 
 export { useTransactionFlow } from './shared/useTransactionFlow';
 export { getWriteContractCall } from './shared/getWriteContractCall';

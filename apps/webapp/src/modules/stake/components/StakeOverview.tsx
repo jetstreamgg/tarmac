@@ -32,7 +32,7 @@ export function StakeOverview() {
     (a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
   )[0];
 
-  const skySealed = useMemo(() => {
+  const skyStaked = useMemo(() => {
     return formatNumber(mostRecentData?.totalSky || 0);
   }, [mostRecentData?.totalSky]);
 
@@ -79,7 +79,7 @@ export function StakeOverview() {
                   <TokenIconWithBalance
                     className="mt-2"
                     token={{ name: StakeToken.SKY, symbol: StakeToken.SKY }}
-                    balance={skySealed}
+                    balance={skyStaked}
                   />
                 }
               />

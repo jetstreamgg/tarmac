@@ -78,7 +78,7 @@ export function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleC
  * the cache stays stable across ephemeral request params and consumers can
  * target it cleanly when they need to invalidate or pre-populate it.
  */
-export function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
+function pendlePnlQueryKey(user: `0x${string}` | undefined): unknown[] {
   return ['pendle-pnl-transactions', user?.toLowerCase()];
 }
 

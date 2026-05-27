@@ -2,7 +2,7 @@ import { createContext } from 'react';
 import { GeoConfigContextValue } from '../types';
 
 // Restrictive defaults - block potentially restricted features until config loads
-export const defaultGeoConfigContext: GeoConfigContextValue = {
+const defaultGeoConfigContext: GeoConfigContextValue = {
   config: undefined,
   isLoading: true,
   error: null,

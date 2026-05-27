@@ -33,7 +33,7 @@ describe('termsLink config helpers', () => {
     const { reportTermsLinkConfigErrorOnce } = await import('./termsLink');
     const ctx = {
       module: 'widgets',
-      flow: 'seal',
+      flow: 'stake',
       action: 'parse-terms-link',
       type: 'config_error'
     } as const;
@@ -50,7 +50,7 @@ describe('termsLink config helpers', () => {
     const { reportMissingTermsLinkOnce } = await import('./termsLink');
     const ctx = {
       module: 'widgets',
-      flow: 'seal',
+      flow: 'stake',
       action: 'load-terms-link',
       type: 'missing_terms_link'
     } as const;
@@ -68,7 +68,7 @@ describe('termsLink config helpers', () => {
     const { reportMissingTermsLinkOnce, reportTermsLinkConfigErrorOnce } = await import('./termsLink');
     const ctx = {
       module: 'widgets',
-      flow: 'seal',
+      flow: 'stake',
       action: 'terms-link-error',
       type: 'config_error'
     } as const;

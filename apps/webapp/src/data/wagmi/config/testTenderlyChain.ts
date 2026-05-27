@@ -13,8 +13,6 @@ const useAlternateVnet =
 const vnetData = useAlternateVnet ? tenderlyTestnetDataAlternate : tenderlyTestnetData;
 
 export const TENDERLY_CHAIN_ID = 314310;
-export const TENDERLY_BASE_CHAIN_ID = base.id;
-export const TENDERLY_ARBITRUM_CHAIN_ID = arbitrum.id;
 
 // only works if hardcoded, cannot be set via env variable. Corresponds to the public RPC of `nov-3-mainnet-fork`
 export const TENDERLY_RPC_URL =

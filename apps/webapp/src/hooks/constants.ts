@@ -34,9 +34,6 @@ export const URL_SKY_SUBGRAPH = 'https://proxy.sky.money/indexer';
 export const URL_BA_LABS_API_MAINNET = 'https://info-sky.blockanalitica.com/api/v1';
 
 export const BASE_CHAIN_ID = 8453;
-export const ARBITRUM_CHAIN_ID = 42161;
-export const OPTIMISM_CHAIN_ID = 10;
-export const UNICHAIN_CHAIN_ID = 130;
 
 export const TENDERLY_CHAIN_ID = 314310;
 
@@ -45,7 +42,6 @@ export enum ModuleEnum {
   UPGRADE = 'UPGRADE',
   TRADE = 'TRADE',
   REWARDS = 'REWARDS',
-  SEAL = 'SEAL',
   STAKE = 'STAKE',
   STUSDS = 'STUSDS',
   MORPHO = 'MORPHO',
@@ -64,14 +60,8 @@ export enum TransactionTypeEnum {
   OPEN = 'OPEN',
   SELECT_DELEGATE = 'SELECT_DELEGATE',
   SELECT_REWARD = 'SELECT_REWARD',
-  SEAL = 'SEAL',
-  SEAL_SKY = 'SEAL_SKY',
-  UNSEAL = 'UNSEAL',
-  UNSEAL_SKY = 'UNSEAL_SKY',
   BORROW = 'BORROW',
   REPAY = 'REPAY',
-  SEAL_REWARD = 'SEAL_REWARD',
-  UNSEAL_KICK = 'UNSEAL_KICK',
   STAKE = 'STAKE',
   UNSTAKE = 'UNSTAKE',
   FREE = 'FREE',

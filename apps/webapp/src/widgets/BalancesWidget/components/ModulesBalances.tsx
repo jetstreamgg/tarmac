@@ -4,7 +4,6 @@ import {
   useMultiChainSavingsBalances,
   useRewardsSuppliedBalance,
   useStUsdsData,
-  useTotalUserSealed,
   useTotalUserStaked,
   useAllMorphoVaultsUserAssets,
   usePrices,
@@ -13,7 +12,6 @@ import {
 import { FIXED_YIELD_MODULE_ENABLED } from '@/lib/constants';
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
-import { SealBalanceCard } from './SealBalanceCard';
 import { StakeBalanceCard } from './StakeBalanceCard';
 import { ExpertBalanceCard } from './ExpertBalanceCard';
 import { FixedYieldBalanceCard } from './FixedYieldBalanceCard';
@@ -36,7 +34,6 @@ export interface CardProps {
   error?: string;
   totalUserRewardsSupplied?: bigint;
   savingsBalances?: { chainId: number; balance: bigint }[];
-  sealBalance?: bigint;
   stakeBalance?: bigint;
   variant?: ModuleCardVariant;
 }
@@ -44,7 +41,6 @@ export interface CardProps {
 interface ModulesBalancesProps {
   rewardsCardUrl?: string;
   savingsCardUrlMap?: Record<number, string>;
-  sealCardUrl?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   chainIds?: number[];
   stakeCardUrl?: string;
@@ -61,7 +57,6 @@ interface ModulesBalancesProps {
 export const ModulesBalances = ({
   rewardsCardUrl,
   savingsCardUrlMap,
-  sealCardUrl,
   onExternalLinkClicked,
   chainIds,
   stakeCardUrl,
@@ -132,7 +127,6 @@ export const ModulesBalances = ({
       ? usdsSkySuppliedBalance + usdsCleSuppliedBalance + usdsSpkSuppliedBalance
       : 0n;
 
-  const { data: totalUserSealed, isLoading: sealLoading, error: totalUserSealedError } = useTotalUserSealed();
   const {
     data: totalUserStaked,
     isLoading: stakeLoading,
@@ -192,12 +186,6 @@ export const ModulesBalances = ({
     (!showAllNetworks && !isMainnetId(currentChainId))
   );
 
-  const hideSeal = Boolean(
-    totalUserSealedError ||
-    (totalUserSealed === 0n && hideZeroBalances) ||
-    (!showAllNetworks && !isMainnetId(currentChainId))
-  );
-
   const hideStake = Boolean(
     totalUserStakedError ||
     (totalUserStaked === 0n && hideZeroBalances) ||
@@ -238,8 +226,7 @@ export const ModulesBalances = ({
     fixedYield: 2,
     staking: 3,
     vaults: 4,
-    stusds: 5,
-    seal: 6
+    stusds: 5
   };
 
   // Compute USD value for each module to sort by value descending
@@ -252,8 +239,7 @@ export const ModulesBalances = ({
     stakeLoading ||
     expertLoading ||
     morphoLoading ||
-    pendleLoading ||
-    sealLoading;
+    pendleLoading;
   const canSortByValue = !anyBalanceLoading && !pricesLoading && !!pricesData;
 
   const moduleUsdValues = useMemo(() => {
@@ -277,7 +263,6 @@ export const ModulesBalances = ({
       totalExpertSavingsBalance && pricesData.USDS
         ? bigintToUsd(totalExpertSavingsBalance, pricesData.USDS.price)
         : 0;
-    values.seal = totalUserSealed && pricesData.MKR ? bigintToUsd(totalUserSealed, pricesData.MKR.price) : 0;
 
     return values;
   }, [
@@ -288,13 +273,12 @@ export const ModulesBalances = ({
     totalUserStaked,
     totalMorphoUserAssets,
     pendleAssetsData.totalUsd,
-    totalExpertSavingsBalance,
-    totalUserSealed
+    totalExpertSavingsBalance
   ]);
 
   const sortedModules = useMemo(() => {
     const modules: Array<{
-      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults' | 'fixedYield';
+      id: 'rewards' | 'savings' | 'stusds' | 'staking' | 'vaults' | 'fixedYield';
       hidden: boolean;
     }> = [
       { id: 'rewards', hidden: hideRewards },
@@ -302,8 +286,7 @@ export const ModulesBalances = ({
       { id: 'fixedYield', hidden: hideFixedYield },
       { id: 'staking', hidden: hideStake },
       { id: 'vaults', hidden: hideVaults },
-      { id: 'stusds', hidden: hideExpert },
-      { id: 'seal', hidden: hideSeal }
+      { id: 'stusds', hidden: hideExpert }
     ];
 
     const visible = modules.filter(m => !m.hidden);
@@ -323,7 +306,6 @@ export const ModulesBalances = ({
     hideSavings,
     hideExpert,
     hideStake,
-    hideSeal,
     hideVaults,
     hideFixedYield,
     canSortByValue,
@@ -335,7 +317,6 @@ export const ModulesBalances = ({
   const isAllLoaded =
     !rewardsLoading &&
     !savingsLoading &&
-    !sealLoading &&
     !stakeLoading &&
     !expertLoading &&
     !morphoLoading &&
@@ -344,7 +325,6 @@ export const ModulesBalances = ({
     isAllLoaded &&
     (hideRestrictedModules || totalUserRewardsSupplied === 0n) &&
     (hideRestrictedModules || totalRawSavingsBalance === 0n) &&
-    (totalUserSealed ?? 0n) === 0n &&
     (totalUserStaked ?? 0n) === 0n &&
     (hideRestrictedModules || totalExpertSavingsBalance === 0n) &&
     totalMorphoUserAssets === 0n &&
@@ -360,7 +340,7 @@ export const ModulesBalances = ({
 
   // Render functions for each module type
   const renderModule = (
-    moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'seal' | 'vaults' | 'fixedYield'
+    moduleId: 'rewards' | 'savings' | 'stusds' | 'staking' | 'vaults' | 'fixedYield'
   ) => {
     switch (moduleId) {
       case 'rewards':
@@ -403,17 +383,6 @@ export const ModulesBalances = ({
             stakeBalance={totalUserStaked}
             onExternalLinkClicked={onExternalLinkClicked}
             url={stakeCardUrl}
-            variant={variant}
-          />
-        );
-      case 'seal':
-        return (
-          <SealBalanceCard
-            key="seal"
-            onExternalLinkClicked={onExternalLinkClicked}
-            url={sealCardUrl}
-            loading={sealLoading}
-            sealBalance={totalUserSealed}
             variant={variant}
           />
         );

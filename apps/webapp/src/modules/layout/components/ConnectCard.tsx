@@ -34,7 +34,6 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
     [Intent.SAVINGS_INTENT]: { default: 'about-the-sky-savings-rate' },
     [Intent.UPGRADE_INTENT]: { default: 'ready-to-upgrade-and-explore' },
     [Intent.TRADE_INTENT]: { allL2s: 'trade', default: 'about-trade' },
-    [Intent.SEAL_INTENT]: { default: 'about-the-seal-engine' },
     [Intent.STAKE_INTENT]: { default: 'about-the-staking-engine' },
     [Intent.EXPERT_INTENT]: { default: 'about-expert-modules' },
     [Intent.VAULTS_INTENT]: { default: 'vaults' },

@@ -4,12 +4,12 @@ import { Text } from '@/widgets/shared/components/ui/Typography';
 import {
   TransactionTypeEnum,
   ZERO_ADDRESS,
-  useSealPosition,
+  useStakePosition,
   useStakeUrnAddress,
   useStakeUrnSelectedRewardContract,
   useStakeUrnSelectedVoteDelegate,
   useVault,
-  SealHistoryKick,
+  StakeHistoryKick,
   getIlkName,
   useStakeHistory
 } from '@/hooks';
@@ -52,13 +52,11 @@ export const UrnPosition: React.FC<UrnPositionProps> = ({
     useContext(StakeModuleWidgetContext);
 
   const { data: urnHistory } = useStakeHistory();
-  const { data: urnPosition } = useSealPosition({ urnIndex: Number(index) });
+  const { data: urnPosition } = useStakePosition({ urnIndex: Number(index) });
 
-  // TODO might be better to use a separate hook for this type but need to decide if we want it in history
-  // it does not contain a index like the rest of the seal history items
   const liquidationHistory = urnHistory?.filter(
-    (e): e is SealHistoryKick =>
-      e.type === TransactionTypeEnum.UNSEAL_KICK &&
+    (e): e is StakeHistoryKick =>
+      e.type === TransactionTypeEnum.UNSTAKE_KICK &&
       'urnAddress' in e &&
       typeof e.urnAddress === 'string' &&
       e.urnAddress.toLowerCase() === urnAddress?.toLowerCase()

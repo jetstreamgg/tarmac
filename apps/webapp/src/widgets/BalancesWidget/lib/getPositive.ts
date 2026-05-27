@@ -17,7 +17,6 @@ export const getPositive = ({ type }: { type: TransactionTypeEnum }) => {
     case TransactionTypeEnum.MKR_TO_SKY:
     case TransactionTypeEnum.DAI_TO_USDS:
     case TransactionTypeEnum.REPAY:
-    case TransactionTypeEnum.SEAL:
     case TransactionTypeEnum.STAKE:
     case TransactionTypeEnum.STAKE_REPAY:
       return true;
@@ -35,7 +34,6 @@ export const getPositive = ({ type }: { type: TransactionTypeEnum }) => {
     case TransactionTypeEnum.TRADE:
     case TransactionTypeEnum.SUPPLY:
     case TransactionTypeEnum.BORROW:
-    case TransactionTypeEnum.UNSEAL:
     case TransactionTypeEnum.STAKE_BORROW:
     case TransactionTypeEnum.UNSTAKE:
     default:

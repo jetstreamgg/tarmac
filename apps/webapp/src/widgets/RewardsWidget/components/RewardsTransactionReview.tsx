@@ -8,7 +8,9 @@ import {
   getRewardsSupplyReviewSubtitle,
   getRewardsWithdrawReviewSubtitle,
   rewardsActionDescription,
+  RewardsAction,
   RewardsFlow,
+  RewardsScreen,
   rewardsSupplyReviewTitle,
   rewardsWithdrawReviewTitle
 } from '@/widgets/RewardsWidget/lib/constants';
@@ -43,7 +45,9 @@ export const RewardsTransactionReview = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as RewardsFlow;
+  const action = widgetState.action as RewardsAction;
+  const screen = widgetState.screen as RewardsScreen;
 
   useEffect(() => {
     setOriginToken(rewardToken);

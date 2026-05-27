@@ -1,6 +1,3 @@
-import { msg } from '@lingui/core/macro';
-import { TxCardCopyText } from './types/txCardCopyText';
-
 export enum TxStatus {
   IDLE = 'idle',
   INITIALIZED = 'initialized',
@@ -27,13 +24,6 @@ export enum InitialScreen {
   ACTION = 'action',
   TRANSACTION = 'transaction'
 }
-
-export const approveLoadingButtonText: TxCardCopyText = {
-  [TxStatus.INITIALIZED]: msg`Waiting for confirmation`,
-  [TxStatus.LOADING]: msg`Processing transaction`,
-  [TxStatus.SUCCESS]: msg`Success`,
-  [TxStatus.ERROR]: msg`Error`
-};
 
 export const TENDERLY_CHAIN_ID = 314310;
 

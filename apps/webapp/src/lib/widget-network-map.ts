@@ -5,7 +5,7 @@ import { Intent } from './enums';
  * 'mainnet' - Only available on Ethereum mainnet
  * 'multichain' - Available on multiple chains
  */
-export const WIDGET_NETWORK_REQUIREMENTS: Record<Intent, 'mainnet' | 'multichain'> = {
+const WIDGET_NETWORK_REQUIREMENTS: Record<Intent, 'mainnet' | 'multichain'> = {
   [Intent.BALANCES_INTENT]: 'multichain',
   [Intent.REWARDS_INTENT]: 'mainnet', // Currently mainnet only
   [Intent.SAVINGS_INTENT]: 'multichain',
@@ -13,7 +13,6 @@ export const WIDGET_NETWORK_REQUIREMENTS: Record<Intent, 'mainnet' | 'multichain
   [Intent.TRADE_INTENT]: 'multichain',
   [Intent.STAKE_INTENT]: 'mainnet',
   [Intent.EXPERT_INTENT]: 'mainnet',
-  [Intent.SEAL_INTENT]: 'mainnet',
   [Intent.VAULTS_INTENT]: 'mainnet',
   [Intent.CONVERT_INTENT]: 'multichain',
   [Intent.FIXED_INTENT]: 'mainnet'

@@ -4,7 +4,6 @@ import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
 import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
 import { RewardContract } from '@/hooks';
-import { SealToken } from '@/modules/seal/constants';
 import { StakeToken } from '@/modules/stake/constants';
 
 export type LinkedActionConfig = {
@@ -48,7 +47,6 @@ export const StepMap: Record<LinkedActionSteps, StepIndicatorStates[]> = {
 // Default user config
 export const defaultUserConfig: UserConfig = {
   locale: undefined,
-  sealToken: SealToken.MKR,
   stakeToken: StakeToken.SKY,
   batchEnabled: false, // Default to false to show activation prompt
   expertRiskDisclaimerShown: false,
@@ -70,8 +68,6 @@ export interface ConfigContextProps {
   updateUserConfig: (config: UserConfig) => void;
   selectedRewardContract?: RewardContract;
   setSelectedRewardContract: (rewardContract?: RewardContract) => void;
-  selectedSealUrnIndex: number | undefined;
-  setSelectedSealUrnIndex: (position: number | undefined) => void;
   selectedStakeUrnIndex: number | undefined;
   setSelectedStakeUrnIndex: (position: number | undefined) => void;
   linkedActionConfig: LinkedActionConfig;
@@ -114,8 +110,6 @@ export const ConfigContext = createContext<ConfigContextProps>({
   },
   selectedRewardContract: undefined,
   setSelectedRewardContract: () => {},
-  selectedSealUrnIndex: undefined,
-  setSelectedSealUrnIndex: () => {},
   selectedStakeUrnIndex: undefined,
   setSelectedStakeUrnIndex: () => {},
   updateLinkedActionConfig: () => {},

@@ -60,10 +60,11 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     }
 
     // Set flow search param based on widgetState.flow
-    if (widgetState.flow) {
+    const { flow } = widgetState;
+    if (flow) {
       setSearchParams(
         prev => {
-          prev.set(QueryParams.Flow, widgetState.flow);
+          prev.set(QueryParams.Flow, flow);
           return prev;
         },
         { replace: true }
@@ -113,7 +114,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     if (
       hash &&
       txStatus === TxStatus.SUCCESS &&
-      [RewardsAction.SUPPLY, RewardsAction.WITHDRAW].includes(widgetState.action)
+      [RewardsAction.SUPPLY, RewardsAction.WITHDRAW].includes(widgetState.action as RewardsAction)
     ) {
       setTimeout(() => {
         refreshRewardsHistory();

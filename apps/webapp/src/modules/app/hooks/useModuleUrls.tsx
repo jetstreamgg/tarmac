@@ -5,7 +5,6 @@ import {
   getFixedYieldUrl,
   getRewardsUrl,
   getSavingsUrl,
-  getSealUrl,
   getStakeUrl,
   getStUsdsUrl,
   getVaultsOverviewUrl
@@ -24,7 +23,6 @@ export const useModuleUrls = () => {
   for (const chainId of supportedChainIds) {
     savingsUrlMap[chainId] = getSavingsUrl(searchParams, chainId, chains);
   }
-  const sealUrl = getSealUrl(searchParams, chainId);
   const stakeUrl = getStakeUrl(searchParams, chainId);
   const expertOverviewUrl = getExpertOverviewUrl(searchParams, chainId);
   const stusdsUrl = getStUsdsUrl(searchParams, chainId);
@@ -35,7 +33,6 @@ export const useModuleUrls = () => {
   return {
     rewardsUrl,
     savingsUrlMap,
-    sealUrl,
     stakeUrl,
     expertOverviewUrl,
     stusdsUrl,

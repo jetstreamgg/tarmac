@@ -18,7 +18,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   const [userConfig, setUserConfig] = useState<UserConfig>(defaultUserConfig);
   const [loaded, setLoaded] = useState<boolean>(false);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
-  const [selectedSealUrnIndex, setSelectedSealUrnIndex] = useState<number | undefined>(undefined);
   const [selectedStakeUrnIndex, setSelectedStakeUrnIndex] = useState<number | undefined>(undefined);
   const [linkedActionConfig, setLinkedActionConfig] = useState(defaultLinkedActionConfig);
   const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
@@ -143,8 +142,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         locale,
         selectedRewardContract,
         setSelectedRewardContract,
-        selectedSealUrnIndex,
-        setSelectedSealUrnIndex,
         selectedStakeUrnIndex: selectedStakeUrnIndex,
         setSelectedStakeUrnIndex: setSelectedStakeUrnIndex,
         linkedActionConfig,

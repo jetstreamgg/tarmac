@@ -17,7 +17,10 @@ export const getAmount = ({
     case ModuleEnum.TRADE:
       return formatBigInt(absBigInt('fromAmount' in item ? item.fromAmount : 0n), {
         compact: true,
-        unit: getTokenDecimals('fromToken' in item ? (item.fromToken as Token) : undefined, chainId)
+        unit: getTokenDecimals(
+          'fromToken' in item ? (item.fromToken as unknown as Token) : undefined,
+          chainId
+        )
       });
     case ModuleEnum.UPGRADE:
       switch (item.type) {
@@ -30,7 +33,6 @@ export const getAmount = ({
       }
       break;
     case ModuleEnum.REWARDS:
-    case ModuleEnum.SEAL:
     case ModuleEnum.STAKE:
       return [TransactionTypeEnum.SELECT_DELEGATE, TransactionTypeEnum.SELECT_REWARD].includes(type)
         ? ''

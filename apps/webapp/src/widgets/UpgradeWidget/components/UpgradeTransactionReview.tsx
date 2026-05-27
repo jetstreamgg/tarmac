@@ -8,7 +8,9 @@ import {
   getUpgradeReviewSubtitle,
   getRevertReviewSubtitle,
   upgradeActionDescription,
+  UpgradeAction,
   UpgradeFlow,
+  UpgradeScreen,
   upgradeReviewTitle,
   revertReviewTitle
 } from '@/widgets/UpgradeWidget/lib/constants';
@@ -49,7 +51,9 @@ export const UpgradeTransactionReview = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as UpgradeFlow;
+  const action = widgetState.action as UpgradeAction;
+  const screen = widgetState.screen as UpgradeScreen;
 
   useEffect(() => {
     setOriginToken(originToken);

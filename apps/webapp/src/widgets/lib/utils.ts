@@ -6,7 +6,7 @@ import { defaultConfig } from '../config/default-config';
 import { SUPPORTED_TOKEN_SYMBOLS } from '..';
 import { RewardsFlow } from '../RewardsWidget/lib/constants';
 import { SavingsFlow } from '../SavingsWidget/lib/constants';
-import { SealFlow } from '../SealModuleWidget/lib/constants';
+import { StakeFlow } from '../StakeModuleWidget/lib/constants';
 import { TradeFlow } from '../TradeWidget/lib/constants';
 import { UpgradeFlow } from '../UpgradeWidget/lib/constants';
 import { ExternalWidgetState } from '@/widgets/shared/types/widgetState';
@@ -90,7 +90,7 @@ const createExternalWidgetStateSchema = (allowedTokens?: string[]) =>
           ...Object.values(RewardsFlow),
           ...Object.values(TradeFlow),
           ...Object.values(BalancesFlow),
-          ...Object.values(SealFlow)
+          ...Object.values(StakeFlow)
         ] as [string, ...string[]])
         .optional(),
       token: createTokenValidationRule(allowedTokens),

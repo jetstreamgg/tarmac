@@ -54,7 +54,9 @@ export const StUSDSTransactionStatus = ({
     txStatus,
     widgetState
   } = useContext(WidgetContext);
-  const { flow, action, screen } = widgetState;
+  const flow = widgetState.flow as StUSDSFlow;
+  const action = widgetState.action as StUSDSAction;
+  const screen = widgetState.screen as StUSDSScreen;
 
   useEffect(() => {
     setOriginToken(originToken);
