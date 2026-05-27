@@ -278,13 +278,17 @@ function TradeWidgetWrapped({
     onWidgetStateChange
   });
 
-  //reset executed amounts when txStatus is back to idle
-  useEffect(() => {
+  // Reset executed amounts when txStatus returns to IDLE. Render-time
+  // prev-tracking; no sentinel (useState init for both is undefined, body
+  // only fires when txStatus changes to IDLE).
+  const [prevExecutedTxStatus, setPrevExecutedTxStatus] = useState(txStatus);
+  if (prevExecutedTxStatus !== txStatus) {
+    setPrevExecutedTxStatus(txStatus);
     if (txStatus === TxStatus.IDLE) {
       setFormattedExecutedSellAmount(undefined);
       setFormattedExecutedBuyAmount(undefined);
     }
-  }, [txStatus]);
+  }
 
   const pairValid = !!originToken && !!targetToken && originToken.symbol !== targetToken.symbol;
 
@@ -358,10 +362,28 @@ function TradeWidgetWrapped({
     }
   }, [quoteError]);
 
-  useEffect(() => {
-    // If any of these deps change we set the tradeAnyway to false
+  // Reset tradeAnyway when any of the trade inputs change. No sentinel —
+  // useState init for tradeAnyway is false, mount-fire is no-op.
+  const [prevTradeAnywayDeps, setPrevTradeAnywayDeps] = useState({
+    originTokenAddress,
+    targetTokenAddress,
+    debouncedOriginAmount,
+    debouncedTargetAmount
+  });
+  if (
+    prevTradeAnywayDeps.originTokenAddress !== originTokenAddress ||
+    prevTradeAnywayDeps.targetTokenAddress !== targetTokenAddress ||
+    prevTradeAnywayDeps.debouncedOriginAmount !== debouncedOriginAmount ||
+    prevTradeAnywayDeps.debouncedTargetAmount !== debouncedTargetAmount
+  ) {
+    setPrevTradeAnywayDeps({
+      originTokenAddress,
+      targetTokenAddress,
+      debouncedOriginAmount,
+      debouncedTargetAmount
+    });
     setTradeAnyway(false);
-  }, [originTokenAddress, targetTokenAddress, debouncedOriginAmount, debouncedTargetAmount]);
+  }
 
   const {
     data: { priceImpact, feePercentage }
@@ -391,8 +413,31 @@ function TradeWidgetWrapped({
     allowance > 0n &&
     allowance < quoteData.quote.sellAmountToSign;
 
-  // capture when we're in a USDT reset flow
-  useEffect(() => {
+  // Capture when we're in a USDT reset flow. Render-time prev-tracking
+  // with sentinel — mount-fire flips isUsdtResetFlow based on initial
+  // widgetState.
+  const [prevUsdtResetDeps, setPrevUsdtResetDeps] = useState<
+    | {
+        needsUsdtReset: boolean;
+        action: typeof widgetState.action;
+        screen: typeof widgetState.screen;
+        txStatus: TxStatus;
+      }
+    | null
+  >(null);
+  if (
+    prevUsdtResetDeps === null ||
+    prevUsdtResetDeps.needsUsdtReset !== needsUsdtReset ||
+    prevUsdtResetDeps.action !== widgetState.action ||
+    prevUsdtResetDeps.screen !== widgetState.screen ||
+    prevUsdtResetDeps.txStatus !== txStatus
+  ) {
+    setPrevUsdtResetDeps({
+      needsUsdtReset,
+      action: widgetState.action,
+      screen: widgetState.screen,
+      txStatus
+    });
     if (
       needsUsdtReset &&
       widgetState.action === TradeAction.APPROVE &&
@@ -400,15 +445,13 @@ function TradeWidgetWrapped({
     ) {
       setIsUsdtResetFlow(true);
     } else if (
-      // Only reset when we exit the approve action entirely
       widgetState.action !== TradeAction.APPROVE ||
       txStatus === TxStatus.ERROR ||
-      // Or when we move to a different screen that's not transaction
       (widgetState.action === TradeAction.APPROVE && widgetState.screen !== TradeScreen.TRANSACTION)
     ) {
       setIsUsdtResetFlow(false);
     }
-  }, [needsUsdtReset, widgetState.action, widgetState.screen, txStatus]);
+  }
 
   // Get the trade spender address (same as used in useTradeApprove)
   const tradeSpenderAddress = useMemo(() => {
@@ -911,11 +954,22 @@ function TradeWidgetWrapped({
     needsAllowance ||
     isAmountWaitingForDebounce;
 
-  useEffect(() => {
+  // Cancel-loading derived from on-chain cancel prepared state.
+  // Render-time prev-tracking — useState init is false, mount-fire may
+  // observably flip when SCW + non-native conditions are met.
+  const [prevCancelLoadingDeps, setPrevCancelLoadingDeps] = useState<
+    { isSmartContractWallet: boolean; onChainCancelPrepared: boolean } | null
+  >(null);
+  if (
+    prevCancelLoadingDeps === null ||
+    prevCancelLoadingDeps.isSmartContractWallet !== isSmartContractWallet ||
+    prevCancelLoadingDeps.onChainCancelPrepared !== onChainCancelPrepared
+  ) {
+    setPrevCancelLoadingDeps({ isSmartContractWallet, onChainCancelPrepared });
     if (!originToken?.isNative && isSmartContractWallet) {
       setCancelLoading(!onChainCancelPrepared);
     }
-  }, [isSmartContractWallet, onChainCancelPrepared]);
+  }
 
   useEffect(() => {
     if (isConnectedAndEnabled) {
@@ -946,12 +1000,17 @@ function TradeWidgetWrapped({
   }, [widgetState.flow, widgetState.screen, needsAllowance, allowanceLoading]);
 
   // update target/origin amount input when quote data changes
+  // Update target/origin amount input when quote data changes. The body
+  // also calls onWidgetStateChange (parent callback) in the OUT branch —
+  // calling parent setState during child render is forbidden by React, so
+  // this stays as a useEffect.
   useEffect(() => {
     const setFn = lastUpdated === TradeSide.IN ? setTargetAmount : setOriginAmount;
     const newAmount =
       lastUpdated === TradeSide.IN
         ? quoteData?.quote?.buyAmountAfterFee
         : quoteData?.quote?.sellAmountBeforeFee;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- parent callback in body (onWidgetStateChange), see comment at top of effect
     setFn(newAmount || 0n);
 
     // When target input is updated (lastUpdated === OUT), notify URL params of origin amount change
@@ -1074,23 +1133,40 @@ function TradeWidgetWrapped({
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
   }, [isConnecting, txStatus]);
 
-  useEffect(() => {
+  // Sync originToken when chainId or initialOriginTokenIndex change.
+  // Multi-dep prev-tracking, no sentinel.
+  const [prevOriginTokenDeps, setPrevOriginTokenDeps] = useState({
+    chainId,
+    initialOriginTokenIndex
+  });
+  if (
+    prevOriginTokenDeps.chainId !== chainId ||
+    prevOriginTokenDeps.initialOriginTokenIndex !== initialOriginTokenIndex
+  ) {
+    setPrevOriginTokenDeps({ chainId, initialOriginTokenIndex });
     setOriginToken(initialOriginToken);
-  }, [chainId, initialOriginTokenIndex]);
+  }
 
+  // Sync targetToken to targetTokenList changes. Kept as useEffect —
+  // targetTokenList is recomputed each render (its useMemo depends on
+  // sortByUsdValue, which depends on tokenUsdValues which churns with
+  // balance/price query updates). A render-time prev-check on the array
+  // reference would loop infinitely.
+  /* eslint-disable react-hooks/set-state-in-effect -- see comment above; targetTokenList ref is unstable across renders */
   useEffect(() => {
     if (targetTokenList.length === 1) {
-      // Theres only one token in the list, we select it
       setTargetToken(targetTokenList[0]);
     } else if (!targetTokenList.find(iterable => iterable.symbol === targetToken?.symbol)) {
-      // if current target token isn't in the list, set to undefined
       setTargetToken(undefined);
     }
-    // do nothing, the current target token is correct
   }, [targetTokenList]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Reset widget state after switching network
-  useEffect(() => {
+  // Reset widget state after switching network. Sentinel preserves the
+  // mount-fire that initialized widgetState to TRADE.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setOriginAmount(initialOriginAmount);
     setTargetAmount(initialTargetAmount);
     setLastUpdated(TradeSide.IN);
@@ -1102,8 +1178,6 @@ function TradeWidgetWrapped({
       action: TradeAction.TRADE,
       screen: TradeScreen.ACTION
     });
-
-    // Reset additional state
     setTradeAnyway(false);
     setShowAddToken(false);
     setCancelLoading(false);
@@ -1111,7 +1185,7 @@ function TradeWidgetWrapped({
     setExternalLink(undefined);
     setFormattedExecutedSellAmount(undefined);
     setFormattedExecutedBuyAmount(undefined);
-  }, [chainId]);
+  }
 
   useEffect(() => {
     if (prepareError) {
@@ -1124,6 +1198,12 @@ function TradeWidgetWrapped({
     }
   }, [prepareError]);
 
+  // External widget-state sync. Has a debounced setTimeout (later in the
+  // body) with a cleanup function — genuinely useEffect-shaped. Block-scoped
+  // eslint-disable around the whole effect (many conditional setStates per
+  // branch); render-time refactor would lose the setTimeout cleanup
+  // semantics.
+  /* eslint-disable react-hooks/set-state-in-effect -- see comment above; setTimeout cleanup makes useEffect the right shape */
   useEffect(() => {
     const tokensHasChanged =
       externalWidgetState?.token?.toLowerCase() !== originToken?.symbol?.toLowerCase() ||
@@ -1227,6 +1307,7 @@ function TradeWidgetWrapped({
       }));
     }
   }, [externalWidgetState, txStatus]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (txStatus === TxStatus.IDLE) {
