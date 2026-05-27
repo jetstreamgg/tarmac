@@ -81,10 +81,30 @@ const RewardsWidgetWrapped = ({
     onStateValidated?.(validatedExternalState);
   }, [onStateValidated, validatedExternalState]);
 
-  useEffect(() => {
-    setSelectedRewardContract(validatedExternalState?.selectedRewardContract);
-    setAmount(parseUnits(validatedExternalState?.amount || '0', 18));
-  }, [validatedExternalState?.selectedRewardContract, validatedExternalState?.amount]);
+  // Sync selectedRewardContract + amount from external state. Sentinel so
+  // mount-fire still runs setSelectedRewardContract (useState initialized to
+  // undefined; external state may carry a value).
+  const externalRewardContract = validatedExternalState?.selectedRewardContract;
+  const externalRewardsAmount = validatedExternalState?.amount;
+  const [prevRewardsExternalDeps, setPrevRewardsExternalDeps] = useState<
+    | {
+        selectedRewardContract: typeof externalRewardContract;
+        amount: typeof externalRewardsAmount;
+      }
+    | null
+  >(null);
+  if (
+    prevRewardsExternalDeps === null ||
+    prevRewardsExternalDeps.selectedRewardContract !== externalRewardContract ||
+    prevRewardsExternalDeps.amount !== externalRewardsAmount
+  ) {
+    setPrevRewardsExternalDeps({
+      selectedRewardContract: externalRewardContract,
+      amount: externalRewardsAmount
+    });
+    setSelectedRewardContract(externalRewardContract);
+    setAmount(parseUnits(externalRewardsAmount || '0', 18));
+  }
 
   // Balance of the token to be supplied
   const { data: tokenBalance, refetch: mutateTokenBalance } = useTokenBalance({
@@ -130,9 +150,12 @@ const RewardsWidgetWrapped = ({
   const [tabIndex, setTabIndex] = useState<0 | 1>(initialTabIndex);
   const linguiCtx = useLingui();
 
-  useEffect(() => {
+  // Mirror initialTabIndex. No sentinel — useState init matches.
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
   const {
     setButtonText,
@@ -414,30 +437,30 @@ const RewardsWidgetWrapped = ({
     setAmount(0n);
   };
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // mount-fire that initialized widgetState to OVERVIEW.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(parseUnits(validatedExternalState?.amount || '0', 18));
     setClaimAmount(0n);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
-
-    // Reset selected reward contract to initial value
     setSelectedRewardContract(validatedExternalState?.selectedRewardContract);
-
-    // Reset widget state to overview screen
     setWidgetState({
       flow: null,
       action: RewardsAction.OVERVIEW,
       screen: RewardsScreen.ACTION
     });
+  }
 
-    // Refresh data
+  // Refetches on network change in their own effect.
+  useEffect(() => {
     mutateAllowance?.();
     mutateTokenBalance?.();
     mutateRewardsBalance?.();
     mutateUserSuppliedBalance?.();
-  }, [chainId]);
+  }, [chainId, mutateAllowance, mutateTokenBalance, mutateRewardsBalance, mutateUserSuppliedBalance]);
 
   return (
     <WidgetContainer
