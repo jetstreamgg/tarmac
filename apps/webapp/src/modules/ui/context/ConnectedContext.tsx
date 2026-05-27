@@ -139,16 +139,35 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [isConnected, address, checkTermsAcceptance]);
 
-  useEffect(() => {
+  // Split into render-time setStates + effect-only async call.
+  // The sync setStates (skipAuthCheck, disconnect paths) move to render-time
+  // with a [null] sentinel so mount-fire still flips hasAcceptedTerms=true
+  // when skipAuthCheck is initially true. The async checkTermsAcceptance
+  // call stays in a useEffect (can't fire async work from render).
+  const [prevAuthDeps, setPrevAuthDeps] = useState<
+    { isConnected: boolean; address: typeof address; skipAuthCheck: boolean } | null
+  >(null);
+  if (
+    prevAuthDeps === null ||
+    prevAuthDeps.isConnected !== isConnected ||
+    prevAuthDeps.address !== address ||
+    prevAuthDeps.skipAuthCheck !== skipAuthCheck
+  ) {
+    setPrevAuthDeps({ isConnected, address, skipAuthCheck });
     if (skipAuthCheck) {
       setHasAcceptedTerms(true);
-      return;
-    }
-    if (isConnected && address) {
-      checkTermsAcceptance(address);
-    } else {
+    } else if (!isConnected || !address) {
       setHasAcceptedTerms(false);
       setTermsCheckError(false);
+    }
+    // Connected + !skipAuthCheck case → handled by the effect below
+    // (checkTermsAcceptance is async and sets its own state internally).
+  }
+
+  useEffect(() => {
+    if (!skipAuthCheck && isConnected && address) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate async kick-off: checkTermsAcceptance fires sync setStates at its top (setIsCheckingTerms(true), setTermsCheckError(false)) before its first await. activeAddressRef inside dedupes stale responses
+      checkTermsAcceptance(address);
     }
   }, [isConnected, address, skipAuthCheck, checkTermsAcceptance]);
 
