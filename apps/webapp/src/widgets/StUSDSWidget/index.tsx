@@ -130,13 +130,19 @@ const StUSDSWidgetWrapped = ({
   // If Curve is available, don't enforce native capacity limits on supply input
   const isCurveAvailableForSupply = providerSelection.curveProvider?.state?.canDeposit ?? false;
 
-  useEffect(() => {
+  // Sync `amount` and `tabIndex` to the external props whenever they change,
+  // without an effect. Per React docs: "Adjusting state when a prop changes".
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
+  if (prevInitialAmount !== initialAmount) {
+    setPrevInitialAmount(initialAmount);
     setAmount(initialAmount);
-  }, [initialAmount]);
-
-  useEffect(() => {
+  }
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
   // Reset swapAnyway when amount or tab changes
   useEffect(() => {

@@ -50,7 +50,11 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
-  const [enabled, setEnabled] = useState(false);
+  // Derived from `address` — no state needed. The previous
+  // useState + useEffect(setEnabled(!!address), [address]) introduced a
+  // one-render delay between address changing and enabled flipping.
+  // `useRestrictedAddressCheck` now sees the correct `enabled` value in
+  // the same render that `address` arrives.
 
   const skipAuthCheck =
     (!IS_PRODUCTION_ENV && import.meta.env.VITE_SKIP_AUTH_CHECK === 'true') || isPrivateDeployment();
@@ -60,7 +64,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     data: authData,
     isLoading: authIsLoading,
     error: authError
-  } = useRestrictedAddressCheck({ address, authUrl, enabled, chainId });
+  } = useRestrictedAddressCheck({ address, authUrl, enabled: !!address, chainId });
 
   const {
     data: vpnData,
@@ -94,9 +98,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [authError]);
 
-  useEffect(() => {
-    setEnabled(!!address);
-  }, [address]);
+  const enabled = !!address;
 
   // Guard against stale responses when the address changes mid-flight
   const activeAddressRef = useRef<string | null>(null);

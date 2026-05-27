@@ -130,13 +130,21 @@ const SavingsWidgetWrapped = ({
 
   const [updatedChiForDeposit, setUpdatedChiForDeposit] = useState(0n);
 
-  useEffect(() => {
+  // Sync `tabIndex` and `originToken` to the external props whenever they
+  // change, without an effect. Per React docs: "Adjusting state when a prop
+  // changes". (`originToken` tracks the *symbol* string so tokenForSymbol's
+  // fresh-each-call return doesn't trigger a re-sync on every render.)
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
-
-  useEffect(() => {
+  }
+  const [prevTokenSymbol, setPrevTokenSymbol] = useState(validatedExternalState?.token);
+  if (prevTokenSymbol !== validatedExternalState?.token) {
+    setPrevTokenSymbol(validatedExternalState?.token);
     setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
-  }, [validatedExternalState?.token]);
+  }
 
   useEffect(() => {
     if (rho && dsr && chi) {
@@ -148,9 +156,11 @@ const SavingsWidgetWrapped = ({
     }
   }, [rho, dsr, chi]);
 
-  useEffect(() => {
+  const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
+  if (prevInitialAmount !== initialAmount) {
+    setPrevInitialAmount(initialAmount);
     setAmount(initialAmount);
-  }, [initialAmount]);
+  }
 
   useNotifyWidgetState({ widgetState, txStatus, onWidgetStateChange });
 
