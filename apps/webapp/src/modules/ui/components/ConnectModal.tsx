@@ -238,11 +238,18 @@ export function ConnectModal({ open, onOpenChange }: ConnectModalProps) {
   // don't trigger this — our Dialog stays open through them.
   const [hasWalletOverlay, setHasWalletOverlay] = useState(false);
 
-  useEffect(() => {
+  // Reset overlay state when the modal closes — done as render-time prev
+  // tracking so the reset doesn't trip set-state-in-effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (!open) {
       setHasWalletOverlay(false);
-      return;
     }
+  }
+
+  useEffect(() => {
+    if (!open) return;
 
     const check = () => setHasWalletOverlay(isWalletOverlayVisible());
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useMerklRewards, useMerklClaimRewards, MerklTokenReward } from '@/hooks';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,13 +22,18 @@ export function ClaimableRewardsTable() {
 
   const rewards = data?.rewards ?? [];
 
-  // Auto-select all rewards when data loads or reward tokens change
+  // Auto-select all rewards when the set of reward addresses changes (data
+  // loads or new rewards appear). Render-time prev-tracking instead of an
+  // effect so the setState doesn't trip set-state-in-effect. User toggles
+  // via toggleInSet still work normally because they only run on user events.
   const rewardAddresses = useMemo(() => rewards.map(r => r.tokenAddress).join(','), [rewards]);
-  useEffect(() => {
+  const [prevRewardAddresses, setPrevRewardAddresses] = useState(rewardAddresses);
+  if (prevRewardAddresses !== rewardAddresses) {
+    setPrevRewardAddresses(rewardAddresses);
     if (rewards.length > 0) {
       setSelectedTokens(new Set(rewards.map(r => r.tokenAddress)));
     }
-  }, [rewardAddresses]);
+  }
 
   // Get the selected rewards for claiming (memoized to stabilize the reference for useMerklClaimRewards)
   const selectedRewards = useMemo(
