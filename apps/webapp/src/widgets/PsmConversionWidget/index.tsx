@@ -142,18 +142,32 @@ function PsmConversionWidgetWrapped({
     | undefined
   >(undefined);
 
-  useEffect(() => {
-    // Don't override origin amount during active transactions to avoid a race condition
-    // where handleOnSuccess calls onWidgetStateChange without originAmount, causing the
-    // parent to clear the URL param, which resets originAmount to 0n before the success
-    // screen renders.
-    if (txStatus !== TxStatus.IDLE) return;
-    const nextDirection = getDirectionForToken(validatedExternalState?.token);
-    setDirection(nextDirection);
-    setOriginAmount(
-      parseUnits(validatedExternalState?.amount || '0', getPsmDecimalsForDirection(nextDirection))
-    );
-  }, [validatedExternalState?.amount, validatedExternalState?.token, txStatus]);
+  // Sync direction + originAmount from external state when it changes AND
+  // we're not mid-transaction. Don't override origin amount during active
+  // transactions to avoid a race condition where handleOnSuccess calls
+  // onWidgetStateChange without originAmount, causing the parent to clear
+  // the URL param, which resets originAmount to 0n before the success
+  // screen renders. Render-time prev-tracking replaces a useEffect to
+  // avoid set-state-in-effect.
+  const externalToken = validatedExternalState?.token;
+  const externalAmount = validatedExternalState?.amount;
+  const [prevExternalToken, setPrevExternalToken] = useState(externalToken);
+  const [prevExternalAmount, setPrevExternalAmount] = useState(externalAmount);
+  const [prevTxStatus, setPrevTxStatus] = useState(txStatus);
+  if (
+    prevExternalToken !== externalToken ||
+    prevExternalAmount !== externalAmount ||
+    prevTxStatus !== txStatus
+  ) {
+    setPrevExternalToken(externalToken);
+    setPrevExternalAmount(externalAmount);
+    setPrevTxStatus(txStatus);
+    if (txStatus === TxStatus.IDLE) {
+      const nextDirection = getDirectionForToken(externalToken);
+      setDirection(nextDirection);
+      setOriginAmount(parseUnits(externalAmount || '0', getPsmDecimalsForDirection(nextDirection)));
+    }
+  }
 
   const transactionStateRef = useRef<{
     originToken?: TokenForChain;

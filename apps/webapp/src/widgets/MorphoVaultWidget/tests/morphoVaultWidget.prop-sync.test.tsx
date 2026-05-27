@@ -33,13 +33,13 @@ describe('MorphoVaultWidget prop-sync', () => {
     vi.restoreAllMocks();
   });
 
-  it('switches the active tab when externalWidgetState.flow changes between renders', async () => {
-    const baseProps = {
-      vaultAddress: '0x0000000000000000000000000000000000000001' as const,
-      assetAddress: '0x0000000000000000000000000000000000000002' as const,
-      assetToken: TOKENS.usdc
-    };
+  const baseProps = {
+    vaultAddress: '0x0000000000000000000000000000000000000001' as const,
+    assetAddress: '0x0000000000000000000000000000000000000002' as const,
+    assetToken: TOKENS.usdc
+  };
 
+  it('switches the active tab when externalWidgetState.flow changes between renders', async () => {
     const { rerender } = render(
       <MorphoVaultWidget {...baseProps} externalWidgetState={{ flow: MorphoVaultFlow.SUPPLY }} />,
       { wrapper: WagmiWrapper }
@@ -55,5 +55,40 @@ describe('MorphoVaultWidget prop-sync', () => {
     // And back to SUPPLY.
     rerender(<MorphoVaultWidget {...baseProps} externalWidgetState={{ flow: MorphoVaultFlow.SUPPLY }} />);
     expect(await screen.findByText('How much USDC would you like to supply?')).toBeTruthy();
+  });
+
+  /**
+   * Characterizes the "Handle external state changes" useEffect at index.tsx:276
+   * (sets amount from validatedExternalState.amount when txStatus === IDLE).
+   * Locks in: rerender with a new externalWidgetState.amount → input value reflects it.
+   */
+  it('updates the supply input value when externalWidgetState.amount changes between renders', async () => {
+    const { rerender } = render(
+      <MorphoVaultWidget
+        {...baseProps}
+        externalWidgetState={{ flow: MorphoVaultFlow.SUPPLY, amount: '10' }}
+      />,
+      { wrapper: WagmiWrapper }
+    );
+
+    // Locate the input field inside the testid wrapper that USDC widgets use.
+    const initialInput = (await screen.findByText('How much USDC would you like to supply?'))
+      .closest('div')
+      ?.parentElement?.querySelector('input');
+    expect(initialInput).toBeTruthy();
+    expect(initialInput?.value).toBe('10');
+
+    rerender(
+      <MorphoVaultWidget
+        {...baseProps}
+        externalWidgetState={{ flow: MorphoVaultFlow.SUPPLY, amount: '25' }}
+      />
+    );
+
+    // After rerender, the input should reflect the new value.
+    const updatedInput = (await screen.findByText('How much USDC would you like to supply?'))
+      .closest('div')
+      ?.parentElement?.querySelector('input');
+    expect(updatedInput?.value).toBe('25');
   });
 });
