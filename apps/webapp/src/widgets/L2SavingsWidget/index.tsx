@@ -146,15 +146,28 @@ const SavingsWidgetWrapped = ({
     setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
   }
 
-  useEffect(() => {
+  // Compute updatedChi when rho/dsr/chi change. Render-time prev-tracking
+  // with null sentinel so mount-fire (when all three are already loaded)
+  // still computes the initial chi value.
+  const [prevChiDeps, setPrevChiDeps] = useState<{
+    rho: typeof rho;
+    dsr: typeof dsr;
+    chi: typeof chi;
+  } | null>(null);
+  if (
+    prevChiDeps === null ||
+    prevChiDeps.rho !== rho ||
+    prevChiDeps.dsr !== dsr ||
+    prevChiDeps.chi !== chi
+  ) {
+    setPrevChiDeps({ rho, dsr, chi });
     if (rho && dsr && chi) {
       const timestamp = Math.floor(Date.now() / 1000);
       const elapsedTimeWithEpoch = BigInt(timestamp) + BigInt(EPOCH_LENGTH) - rho;
       const updatedChi = math.updatedChi(dsr, Number(elapsedTimeWithEpoch), chi);
-
       setUpdatedChiForDeposit(updatedChi);
     }
-  }, [rho, dsr, chi]);
+  }
 
   const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
   if (prevInitialAmount !== initialAmount) {
@@ -223,8 +236,19 @@ const SavingsWidgetWrapped = ({
     onAnalyticsEvent
   });
 
-  useEffect(() => {
-    //Initialize the supply flow only when we are connected
+  // Initialize widget flow based on tab + connection state. Render-time
+  // prev-tracking with null sentinel preserves the original useEffect's
+  // mount-fire which set widgetState on initial render.
+  const [prevTabConnDeps, setPrevTabConnDeps] = useState<{
+    tabIndex: 0 | 1;
+    isConnectedAndEnabled: boolean;
+  } | null>(null);
+  if (
+    prevTabConnDeps === null ||
+    prevTabConnDeps.tabIndex !== tabIndex ||
+    prevTabConnDeps.isConnectedAndEnabled !== isConnectedAndEnabled
+  ) {
+    setPrevTabConnDeps({ tabIndex, isConnectedAndEnabled });
     if (isConnectedAndEnabled) {
       if (tabIndex === 0) {
         setWidgetState({
@@ -233,7 +257,6 @@ const SavingsWidgetWrapped = ({
           screen: SavingsScreen.ACTION
         });
       } else if (tabIndex === 1) {
-        //Initialize the withdraw flow
         setWidgetState({
           flow: SavingsFlow.WITHDRAW,
           action: SavingsAction.WITHDRAW,
@@ -249,7 +272,7 @@ const SavingsWidgetWrapped = ({
         screen: null
       });
     }
-  }, [tabIndex, isConnectedAndEnabled]);
+  }
 
   useEffect(() => {
     if (txStatus === TxStatus.IDLE) {
@@ -436,16 +459,16 @@ const SavingsWidgetWrapped = ({
 
   const usds = TOKENS.usds;
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // original mount-fire that initialized widgetState based on tabIndex.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(initialAmount);
     setMaxWithdraw(false);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
     setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
-
-    // Reset widget state to initial screen
     if (tabIndex === 0) {
       setWidgetState({
         flow: SavingsFlow.SUPPLY,
@@ -459,7 +482,7 @@ const SavingsWidgetWrapped = ({
         screen: SavingsScreen.ACTION
       });
     }
-  }, [chainId]);
+  }
 
   return (
     <WidgetContainer
