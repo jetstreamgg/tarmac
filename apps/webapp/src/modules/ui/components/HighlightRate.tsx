@@ -91,19 +91,21 @@ export function RewardsRate({
     );
   }
 
-  // if no reward contract, don't show anything
-  if (!selectedRewardContract) {
-    return <></>;
-  }
-
-  // Use dynamic rate calculation instead of hardcoded API field
+  // Use dynamic rate calculation instead of hardcoded API field.
+  // Hook gates its own fetch with `enabled: Boolean(rewardContractAddress && baseUrl)`,
+  // so passing '' when no contract is selected is a no-op query.
   const {
     data: chartData,
     isLoading: isLoadingChart,
     error: errorChart
   } = useRewardsChartInfo({
-    rewardContractAddress: selectedRewardContract.contractAddress
+    rewardContractAddress: selectedRewardContract?.contractAddress ?? ''
   });
+
+  // if no reward contract, don't show anything
+  if (!selectedRewardContract) {
+    return <></>;
+  }
 
   const mostRecentData = chartData
     ? [...chartData].sort((a, b) => b.blockTimestamp - a.blockTimestamp)[0]

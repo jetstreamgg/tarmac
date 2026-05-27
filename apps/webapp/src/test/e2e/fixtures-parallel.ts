@@ -33,6 +33,7 @@ export const test = playwrightTest.extend<TestFixtures>({
       console.log(`Test "${testInfo.title}" permanently claimed account ${accountIndex}: ${account}`);
 
       // Provide the account to the test
+      // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture `use` callback, not React.use()
       await use(account);
     } catch (error) {
       console.error(`Failed to claim account for test "${testInfo.title}":`, error);
@@ -82,6 +83,7 @@ export const test = playwrightTest.extend<TestFixtures>({
     process.env.VITE_TEST_ACCOUNT = testAccount;
     process.env.VITE_TEST_WORKER_INDEX = testInfo.workerIndex.toString();
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture `use` callback, not React.use()
     await use(page);
 
     // Cleanup
