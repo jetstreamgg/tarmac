@@ -137,7 +137,12 @@ export function useSequentialTransactionFlow(
     };
   }, []);
 
-  // Handle transaction completion
+  // Handle transaction completion. This is a TX state-machine effect that
+  // observes wagmi's reactive isSuccess/miningError state and calls parent
+  // callbacks (onSuccess/onError) plus local setters. Moving to render-time
+  // would require calling parent callbacks during render — forbidden by
+  // React. The lastProcessedTxHash ref dedupes per-txHash so the setters
+  // can't cascade infinitely.
   useEffect(() => {
     // Only process if we're executing
     if (!isExecuting) return;
@@ -155,6 +160,7 @@ export function useSequentialTransactionFlow(
       if (nextIndex >= stableTransactions.length) {
         // All transactions completed
         onSuccess(txHash);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- TX state machine, see comment above the useEffect
         setIsExecuting(false);
         setCurrentIndex(0);
         setTransactionHashes([]);
