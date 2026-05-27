@@ -86,17 +86,18 @@ export function useRewardsRate({
 
   const { data: pricesData } = usePrices();
   const { data: lsMkrPriceData } = useLsMkrPrice();
-  if (pricesData && lsMkrPriceData) {
-    pricesData['LSMKR'] = lsMkrPriceData;
-  }
+  // Build a local prices map; never mutate `pricesData` directly because it's
+  // the TanStack Query cache object and would corrupt all other consumers.
+  const pricesWithLsMkr =
+    pricesData && lsMkrPriceData ? { ...pricesData, LSMKR: lsMkrPriceData } : pricesData;
 
   const tokens = useTokens(chainId);
 
   const rewardTokenInfo = tokens.find(t => t.address === rewardToken);
   const supplyTokenInfo = tokens.find(t => t.address === supplyToken);
 
-  const rewardsTokenPrice = rewardTokenInfo ? pricesData?.[rewardTokenInfo.symbol] : undefined;
-  const supplyTokenPrice = supplyTokenInfo ? pricesData?.[supplyTokenInfo.symbol] : undefined;
+  const rewardsTokenPrice = rewardTokenInfo ? pricesWithLsMkr?.[rewardTokenInfo.symbol] : undefined;
+  const supplyTokenPrice = supplyTokenInfo ? pricesWithLsMkr?.[supplyTokenInfo.symbol] : undefined;
 
   const mutate = () => {
     tsRefetch();

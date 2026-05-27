@@ -13,6 +13,18 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
   const { isConnectedAndAcceptedTerms, termsCheckError } = useConnectedContext();
   const { openConnectModal } = useConnectModal();
 
+  const openModal = () => {
+    if (!isConnectedAndAcceptedTerms && openConnectModal) {
+      openConnectModal();
+    } else {
+      setIsModalOpen(!isConnectedAndAcceptedTerms || true);
+    }
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
   useConnectionEffect({
     onConnect: () => {
       if (!isModalOpen && !isConnectedAndAcceptedTerms && !termsCheckError) {
@@ -32,18 +44,6 @@ export function TermsModalProvider({ children }: { children: React.ReactNode }) 
       setIsModalOpen(true);
     }
   }, [termsCheckError]);
-
-  const openModal = () => {
-    if (!isConnectedAndAcceptedTerms && openConnectModal) {
-      openConnectModal();
-    } else {
-      setIsModalOpen(!isConnectedAndAcceptedTerms || true);
-    }
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-  };
 
   return (
     <TermsModalContext.Provider value={{ isModalOpen, openModal, closeModal }}>

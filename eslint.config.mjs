@@ -44,8 +44,7 @@ export default [
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/refs': 'warn',
       'react-hooks/static-components': 'warn',
-      'react-hooks/preserve-manual-memoization': 'warn',
-      'react-hooks/immutability': 'warn'
+      'react-hooks/preserve-manual-memoization': 'warn'
     }
   },
   {

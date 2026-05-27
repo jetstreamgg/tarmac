@@ -35,7 +35,9 @@ export const useUpgradeTransactionCallbacks = ({
   tabIndex,
   needsAllowance,
   shouldUseBatch,
-  shouldAllowExternalUpdate,
+  // Rename to `*Ref` so the React Compiler immutability rule recognises this
+  // as a Ref and allows `.current` mutation.
+  shouldAllowExternalUpdate: shouldAllowExternalUpdateRef,
   mutateAllowance,
   mutateOriginBalance,
   mutateTargetBalance,
@@ -86,7 +88,7 @@ export const useUpgradeTransactionCallbacks = ({
         stepRef.current++;
         const isApproveStep = needsAllowance && !shouldUseBatch && step === 0;
 
-        shouldAllowExternalUpdate.current = false;
+        shouldAllowExternalUpdateRef.current = false;
         mutateAllowance();
         handleOnMutate();
         fireAnalytics({
@@ -160,7 +162,7 @@ export const useUpgradeTransactionCallbacks = ({
       originToken.symbol,
       tabIndex,
       targetToken.symbol,
-      shouldAllowExternalUpdate,
+      shouldAllowExternalUpdateRef,
       onAnalyticsEvent
     ]
   );

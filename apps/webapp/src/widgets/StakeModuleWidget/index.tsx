@@ -474,6 +474,48 @@ function StakeModuleWidgetWrapped({
     }
   }, [currentUrnIndexError]);
 
+  // Declared up here (rather than alongside the other button-click handlers
+  // further down) because the effects below reference them — the React
+  // Compiler immutability rule requires source-order declaration.
+  const handleClickOpenPosition = () => {
+    // First reset urn
+    setActiveUrn(undefined, onStakeUrnChange ?? (() => {}));
+
+    setWidgetState({
+      flow: StakeFlow.OPEN,
+      action: StakeAction.MULTICALL,
+      screen: StakeScreen.ACTION
+    });
+    setCurrentStep(StakeStep.OPEN_BORROW);
+  };
+
+  const resetToOverviewState = () => {
+    setActiveUrn(undefined, onStakeUrnChange ?? (() => {}));
+    setWidgetState((prev: WidgetState) => ({
+      ...prev,
+      flow: StakeFlow.MANAGE,
+      action: StakeAction.OVERVIEW
+    }));
+    setCurrentStep(StakeStep.OPEN_BORROW);
+    setSkyToLock(0n);
+    setSkyToFree(0n);
+    setUsdsToWipe(0n);
+    setUsdsToBorrow(0n);
+    setTabIndex(0);
+    setIndexToClaim(undefined);
+    setRewardContractsToClaim(undefined);
+    setRestakeSkyRewards(false);
+    setRestakeSkyAmount(0n);
+
+    onWidgetStateChange?.({
+      widgetState,
+      txStatus,
+      stakeTab: StakeAction.LOCK,
+      originAmount: '',
+      urnIndex: undefined
+    });
+  };
+
   useEffect(() => {
     // If there are no urns open, set up initial open flow
     if (currentUrnIndex === 0n) {
@@ -695,18 +737,6 @@ function StakeModuleWidgetWrapped({
     });
   };
 
-  const handleClickOpenPosition = () => {
-    // First reset urn
-    setActiveUrn(undefined, onStakeUrnChange ?? (() => {}));
-
-    setWidgetState({
-      flow: StakeFlow.OPEN,
-      action: StakeAction.MULTICALL,
-      screen: StakeScreen.ACTION
-    });
-    setCurrentStep(StakeStep.OPEN_BORROW);
-  };
-
   const onClickAction = !isConnectedAndEnabled
     ? onConnect
     : txStatus === TxStatus.SUCCESS
@@ -752,33 +782,6 @@ function StakeModuleWidgetWrapped({
       (widgetState.flow === StakeFlow.MANAGE && currentStep !== StakeStep.OPEN_BORROW)
     );
   }, [widgetState.flow, widgetState.action, txStatus, currentStep]);
-
-  const resetToOverviewState = () => {
-    setActiveUrn(undefined, onStakeUrnChange ?? (() => {}));
-    setWidgetState((prev: WidgetState) => ({
-      ...prev,
-      flow: StakeFlow.MANAGE,
-      action: StakeAction.OVERVIEW
-    }));
-    setCurrentStep(StakeStep.OPEN_BORROW);
-    setSkyToLock(0n);
-    setSkyToFree(0n);
-    setUsdsToWipe(0n);
-    setUsdsToBorrow(0n);
-    setTabIndex(0);
-    setIndexToClaim(undefined);
-    setRewardContractsToClaim(undefined);
-    setRestakeSkyRewards(false);
-    setRestakeSkyAmount(0n);
-
-    onWidgetStateChange?.({
-      widgetState,
-      txStatus,
-      stakeTab: StakeAction.LOCK,
-      originAmount: '',
-      urnIndex: undefined
-    });
-  };
 
   const widgetStateLoaded = !!widgetState.flow && !!widgetState.action;
 
