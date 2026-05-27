@@ -42,8 +42,7 @@ export default [
     // monorepo. `exhaustive-deps` is already `warn` in the recommended preset.
     rules: {
       'react-hooks/set-state-in-effect': 'warn',
-      'react-hooks/refs': 'warn',
-      'react-hooks/static-components': 'warn'
+      'react-hooks/refs': 'warn'
     }
   },
   {

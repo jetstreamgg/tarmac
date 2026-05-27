@@ -30,44 +30,36 @@ export function MorphoVaultBalanceDetails({ vaultAddress, assetToken }: MorphoVa
     address
   });
 
-  const SuppliedVaultBalanceCard = () => {
-    const sharesBalance = vaultData?.userShares
-      ? `(${formatBigInt(vaultData.userShares, { unit: vaultData.decimals, compact: true, maxDecimals: 2 })} shares)`
-      : undefined;
+  const sharesBalance = vaultData?.userShares
+    ? `(${formatBigInt(vaultData.userShares, { unit: vaultData.decimals, compact: true, maxDecimals: 2 })} shares)`
+    : undefined;
 
-    return (
-      <SuppliedBalanceCard
-        balance={vaultData?.userAssets || 0n}
-        isLoading={isVaultLoading}
-        token={assetToken}
-        error={vaultError}
-        label={t`Supplied balance`}
-        afterBalance={sharesBalance}
-        dataTestId="morpho-vault-supplied-balance-details"
-      />
-    );
-  };
+  const suppliedVaultBalanceCard = (
+    <SuppliedBalanceCard
+      balance={vaultData?.userAssets || 0n}
+      isLoading={isVaultLoading}
+      token={assetToken}
+      error={vaultError}
+      label={t`Supplied balance`}
+      afterBalance={sharesBalance}
+      dataTestId="morpho-vault-supplied-balance-details"
+    />
+  );
 
-  const AssetBalanceCard = () => {
-    return (
-      <UnsuppliedBalanceCard
-        balance={assetBalance?.value || 0n}
-        isLoading={isBalanceLoading}
-        token={assetToken}
-        error={balanceError}
-        dataTestId="morpho-vault-remaining-balance-details"
-      />
-    );
-  };
+  const assetBalanceCard = (
+    <UnsuppliedBalanceCard
+      balance={assetBalance?.value || 0n}
+      isLoading={isBalanceLoading}
+      token={assetToken}
+      error={balanceError}
+      dataTestId="morpho-vault-remaining-balance-details"
+    />
+  );
 
   return (
     <div className="flex w-full flex-wrap justify-between gap-3">
-      <div className="min-w-[250px] flex-1">
-        <SuppliedVaultBalanceCard />
-      </div>
-      <div className="min-w-[250px] flex-1">
-        <AssetBalanceCard />
-      </div>
+      <div className="min-w-[250px] flex-1">{suppliedVaultBalanceCard}</div>
+      <div className="min-w-[250px] flex-1">{assetBalanceCard}</div>
       <MorphoVaultRewardsDetails vaultAddress={vaultAddress} />
     </div>
   );

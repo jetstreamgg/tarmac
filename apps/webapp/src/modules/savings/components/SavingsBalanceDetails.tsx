@@ -36,60 +36,52 @@ export function SavingsBalanceDetails() {
   const usdsToken = { name: 'USDS', symbol: 'USDS' };
   const usdcToken = { name: 'USDC', symbol: 'USDC', decimals: 6 };
 
-  const SuppliedSavingsBalanceCard = () => {
-    return (
-      <SuppliedBalanceCard
-        balance={data?.userSavingsBalance || 0n}
-        isLoading={isLoading}
-        token={usdsToken}
-        error={error}
-        afterBalance={
-          sUsdsBalance
-            ? ` (${formatBigInt(sUsdsBalance.value, { compact: true, maxDecimals: 2 })} sUSDS)`
-            : undefined
-        }
-        dataTestId="savings-supplied-balance-details"
-      />
-    );
-  };
+  const suppliedSavingsBalanceCard = (
+    <SuppliedBalanceCard
+      balance={data?.userSavingsBalance || 0n}
+      isLoading={isLoading}
+      token={usdsToken}
+      error={error}
+      afterBalance={
+        sUsdsBalance
+          ? ` (${formatBigInt(sUsdsBalance.value, { compact: true, maxDecimals: 2 })} sUSDS)`
+          : undefined
+      }
+      dataTestId="savings-supplied-balance-details"
+    />
+  );
 
-  const UsdsBalanceCard = () => {
-    return (
-      <UnsuppliedBalanceCard
-        balance={data?.userNstBalance || 0n}
-        isLoading={isLoading}
-        token={usdsToken}
-        error={error}
-        dataTestId="savings-remaining-balance-details"
-      />
-    );
-  };
+  const usdsBalanceCard = (
+    <UnsuppliedBalanceCard
+      balance={data?.userNstBalance || 0n}
+      isLoading={isLoading}
+      token={usdsToken}
+      error={error}
+      dataTestId="savings-remaining-balance-details"
+    />
+  );
 
-  const UsdcBalanceCard = () => {
-    return (
-      <UnsuppliedBalanceCard
-        balance={usdcBalance?.value || 0n}
-        isLoading={isLoading}
-        token={usdcToken}
-        error={error}
-      />
-    );
-  };
+  const usdcBalanceCard = (
+    <UnsuppliedBalanceCard
+      balance={usdcBalance?.value || 0n}
+      isLoading={isLoading}
+      token={usdcToken}
+      error={error}
+    />
+  );
 
   return isL2 ? (
     <div className="flex w-full flex-col gap-3">
-      <div className="w-full">
-        <SuppliedSavingsBalanceCard />
-      </div>
+      <div className="w-full">{suppliedSavingsBalanceCard}</div>
       <div className="flex w-full flex-col justify-between gap-3 xl:flex-row">
-        <UsdsBalanceCard />
-        <UsdcBalanceCard />
+        {usdsBalanceCard}
+        {usdcBalanceCard}
       </div>
     </div>
   ) : (
     <div className="flex w-full flex-col justify-between gap-3 xl:flex-row">
-      <SuppliedSavingsBalanceCard />
-      <UsdsBalanceCard />
+      {suppliedSavingsBalanceCard}
+      {usdsBalanceCard}
     </div>
   );
 }
