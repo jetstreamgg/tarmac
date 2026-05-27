@@ -247,9 +247,14 @@ function StakeModuleWidgetWrapped({
     }
   }, [txStatus, setShowStepIndicator, widgetState.flow, needsAllowance]);
 
-  useEffect(() => {
+  // Sync tabIndex to initialTabIndex when the prop changes. No sentinel
+  // needed — useState initializes tabIndex to initialTabIndex, so mount-fire
+  // would be a no-op (setX(currentX)).
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
   // Auto-complete delegation step when user doesn't want to delegate
   useEffect(() => {

@@ -55,18 +55,33 @@ export const useRiskSlider = ({
   // Capture the initial risk ceiling for repay mode (can't drag right past this)
   const [initialRiskCeiling, setInitialRiskCeiling] = useState<number | undefined>();
 
-  useEffect(() => {
-    // Set the initial risk floor when we have valid vault data in borrow mode
-    // Updates whenever collateral changes (via riskPercentageNoBorrow from vaultNoBorrow)
+  // Set initial risk floor (borrow mode) or ceiling (repay mode) when we have
+  // valid vault data. Render-time tracking with a [null] sentinel so the body
+  // runs on mount (matches useEffect mount-fire).
+  const [prevRiskDeps, setPrevRiskDeps] = useState<
+    | {
+        isRepayMode: boolean;
+        hasExistingDebt: boolean;
+        vaultNoBorrow: typeof vaultNoBorrow;
+        riskPercentageNoBorrow: number;
+      }
+    | null
+  >(null);
+  if (
+    prevRiskDeps === null ||
+    prevRiskDeps.isRepayMode !== isRepayMode ||
+    prevRiskDeps.hasExistingDebt !== hasExistingDebt ||
+    prevRiskDeps.vaultNoBorrow !== vaultNoBorrow ||
+    prevRiskDeps.riskPercentageNoBorrow !== riskPercentageNoBorrow
+  ) {
+    setPrevRiskDeps({ isRepayMode, hasExistingDebt, vaultNoBorrow, riskPercentageNoBorrow });
     if (!isRepayMode && hasExistingDebt && vaultNoBorrow) {
       setInitialRiskFloor(riskPercentageNoBorrow);
     }
-    // Set the initial risk ceiling when we have valid vault data in repay mode
-    // Updates whenever collateral changes (via riskPercentageNoBorrow from vaultNoBorrow)
     if (isRepayMode && hasExistingDebt && vaultNoBorrow) {
       setInitialRiskCeiling(riskPercentageNoBorrow);
     }
-  }, [isRepayMode, hasExistingDebt, vaultNoBorrow, riskPercentageNoBorrow]);
+  }
 
   const [maxBorrowable, maxValue] = useMemo(() => {
     const maxBorrowable = vault?.maxSafeBorrowableIntAmountNoCap || 0n;

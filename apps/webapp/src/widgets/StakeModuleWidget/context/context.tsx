@@ -23,7 +23,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState
 } from 'react';
@@ -262,36 +261,62 @@ export const StakeModuleWidgetProvider = ({ children }: { children: ReactNode })
 
   const isSkyRewardPosition = !!activeSkyReward;
 
-  useEffect(() => {
+  // Sync restakeSkyAmount with the active reward's claimable balance, and
+  // disable restakeSkyRewards if the balance drops to 0 while the toggle is on.
+  // Render-time tracking with a [null] sentinel so the body runs on mount
+  // (matches the useEffect mount-fire semantics).
+  const [prevRestakeDeps, setPrevRestakeDeps] = useState<
+    | { activeSkyReward: typeof activeSkyReward; restakeSkyRewards: boolean; loading: boolean }
+    | null
+  >(null);
+  if (
+    prevRestakeDeps === null ||
+    prevRestakeDeps.activeSkyReward !== activeSkyReward ||
+    prevRestakeDeps.restakeSkyRewards !== restakeSkyRewards ||
+    prevRestakeDeps.loading !== activeUrnRewardClaimsLoading
+  ) {
+    setPrevRestakeDeps({
+      activeSkyReward,
+      restakeSkyRewards,
+      loading: activeUrnRewardClaimsLoading
+    });
     const nextAmount = activeSkyReward?.claimBalance ?? 0n;
     setRestakeSkyAmount(nextAmount);
-
     if (nextAmount === 0n && restakeSkyRewards && !activeUrnRewardClaimsLoading) {
       setRestakeSkyRewards(false);
     }
-  }, [
-    activeSkyReward,
-    restakeSkyRewards,
-    setRestakeSkyAmount,
-    setRestakeSkyRewards,
-    activeUrnRewardClaimsLoading
-  ]);
+  }
 
-  //Set reward claim amounts while tx is idle
-  useEffect(() => {
-    if (txStatus !== TxStatus.IDLE) return;
-
-    if (rewardContractsToClaim && activeUrnRewardClaims) {
-      const selectedRewardAmounts = activeUrnRewardClaims.filter(reward =>
-        rewardContractsToClaim.some(
-          contractAddress => contractAddress.toLowerCase() === reward.contractAddress.toLowerCase()
-        )
-      );
-      setRewardClaimAmounts(selectedRewardAmounts);
-    } else {
-      setRewardClaimAmounts([]);
+  // Set reward claim amounts while tx is idle. Render-time tracking with a
+  // [null] sentinel so the body runs on mount (matches useEffect mount-fire).
+  const [prevClaimDeps, setPrevClaimDeps] = useState<
+    | {
+        rewardContractsToClaim: typeof rewardContractsToClaim;
+        activeUrnRewardClaims: typeof activeUrnRewardClaims;
+        txStatus: TxStatus;
+      }
+    | null
+  >(null);
+  if (
+    prevClaimDeps === null ||
+    prevClaimDeps.rewardContractsToClaim !== rewardContractsToClaim ||
+    prevClaimDeps.activeUrnRewardClaims !== activeUrnRewardClaims ||
+    prevClaimDeps.txStatus !== txStatus
+  ) {
+    setPrevClaimDeps({ rewardContractsToClaim, activeUrnRewardClaims, txStatus });
+    if (txStatus === TxStatus.IDLE) {
+      if (rewardContractsToClaim && activeUrnRewardClaims) {
+        const selectedRewardAmounts = activeUrnRewardClaims.filter(reward =>
+          rewardContractsToClaim.some(
+            contractAddress => contractAddress.toLowerCase() === reward.contractAddress.toLowerCase()
+          )
+        );
+        setRewardClaimAmounts(selectedRewardAmounts);
+      } else {
+        setRewardClaimAmounts([]);
+      }
     }
-  }, [rewardContractsToClaim, activeUrnRewardClaims, txStatus]);
+  }
 
   const generateAllCalldata = useCallback(
     (ownerAddress: `0x${string}`, urnIndex: bigint, referralCode: number = 0) => {

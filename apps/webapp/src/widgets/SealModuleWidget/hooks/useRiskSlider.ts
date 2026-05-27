@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { Vault } from '@/hooks';
 import { SealModuleWidgetContext } from '../context/context';
 
@@ -30,9 +30,15 @@ export const useRiskSlider = ({ vault, isRepayMode = false }: UseRiskSliderProps
     setValue(newValue < maxValue ? newValue : maxValue);
   };
 
-  useEffect(() => {
+  // Sync slider position to riskPercentage when it changes. `undefined`
+  // sentinel ensures the block runs on mount too (matching useEffect's
+  // mount-fire), which can flip the initial Math.max(1, riskPercentage) to
+  // the raw riskPercentage (e.g. [1] → [0] when there's no liquidation risk).
+  const [prevRiskPercentage, setPrevRiskPercentage] = useState<number | undefined>(undefined);
+  if (prevRiskPercentage !== riskPercentage) {
+    setPrevRiskPercentage(riskPercentage);
     setSliderValue([riskPercentage]);
-  }, [riskPercentage]);
+  }
 
   const shouldShowSlider = isRepayMode
     ? true
