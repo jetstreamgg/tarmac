@@ -62,13 +62,13 @@ export function useSendBatchTransactionFlow<const calls extends readonly unknown
   useEffect(() => {
     if (mutationData?.id) {
       if (isSuccess && data.status === 'success') {
-        onSuccess(data.receipts?.[0].transactionHash);
+        onSuccess(data.receipts?.[0]?.transactionHash);
       } else if (isSuccess && data.status === 'failure') {
         onError(new Error('ERROR: Batch transaction failed'), undefined);
       } else if (miningError) {
-        onError(miningError, data?.receipts?.[0].transactionHash);
+        onError(miningError, data?.receipts?.[0]?.transactionHash);
       } else if (failureReason && txReverted) {
-        onError(toError(failureReason), data?.receipts?.[0].transactionHash);
+        onError(toError(failureReason), data?.receipts?.[0]?.transactionHash);
       }
     }
   }, [isSuccess, miningError, failureReason, mutationData?.id, txReverted, data]);
