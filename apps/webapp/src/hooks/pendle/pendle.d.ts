@@ -123,7 +123,12 @@ export type PendleConvertQuote = {
    * after the pinned-pendleSwap check.
    */
   aggregatorRoute?: PendleAggregatorRoute;
-  /** Routing fee in USD as reported by the API (undefined if API omits it) */
+  /**
+   * Trade fee in USD as reported by the API. Undocumented beyond `fee.usd`;
+   * appears to track Pendle's own swap fee (populated on non-aggregator routes
+   * too), but Pendle could fold aggregator-side fees in without notice.
+   * Surface as-is.
+   */
   feeUsd?: number;
   /** ms epoch when this quote was fetched (for staleness check) */
   fetchedAt: number;
