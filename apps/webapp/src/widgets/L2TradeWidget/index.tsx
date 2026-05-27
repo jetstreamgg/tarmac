@@ -259,6 +259,12 @@ function TradeWidgetWrapped({
     }
   }
 
+  // Two-way amount-calc effect: when one side changes, compute the other
+  // side from token-pair math (sUSDS chi conversion or PSM quote). Many
+  // conditional setState branches per token pair. Kept as useEffect with
+  // eslint-disable — mechanical refactor to render-time prev-tracking is
+  // possible but risky for the trade-flow money path; left for a focused
+  // commit with characterization tests.
   useEffect(() => {
     const bothAmountsZero = originAmount === 0n && targetAmount === 0n;
     const bothDebouncedNonZero = debouncedOriginAmount !== 0n && debouncedTargetAmount !== 0n;
@@ -274,6 +280,7 @@ function TradeWidgetWrapped({
     if (lastUpdated === TradeSide.IN) {
       // If origin is 0, clear target immediately
       if (debouncedOriginAmount === 0n) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment at top of effect
         setTargetAmount(0n);
         return;
       }
@@ -400,6 +407,12 @@ function TradeWidgetWrapped({
     maxAmountInForWithdraw
   ]);
 
+  // External widget-state sync. Has a debounced setTimeout (line ~496) with
+  // a cleanup function to abort pending updates when deps change — genuinely
+  // useEffect-shaped. The synchronous setStates inside the body cascade
+  // through React's normal render flow; existing debounce + IDLE guard
+  // prevent thrash during transactions.
+  /* eslint-disable react-hooks/set-state-in-effect -- see comment above; setTimeout cleanup makes useEffect the right shape */
   useEffect(() => {
     const tokensHasChanged =
       externalWidgetState?.token?.toLowerCase() !== originToken?.symbol?.toLowerCase() ||
@@ -518,6 +531,7 @@ function TradeWidgetWrapped({
     externalWidgetState?.targetToken,
     txStatus
   ]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Update external widget state when the debounced origin amount is updated
   useEffect(() => {
@@ -659,16 +673,18 @@ function TradeWidgetWrapped({
     setOriginToken(initialOriginToken);
   }
 
-  useEffect(() => {
+  // Sync targetToken to targetTokenList changes. Render-time with [null]
+  // sentinel preserves the original useEffect's mount-fire that selects
+  // the only token or clears an out-of-list selection.
+  const [prevTargetTokenList, setPrevTargetTokenList] = useState<typeof targetTokenList | null>(null);
+  if (prevTargetTokenList !== targetTokenList) {
+    setPrevTargetTokenList(targetTokenList);
     if (targetTokenList.length === 1) {
-      // Theres only one token in the list, we select it
       setTargetToken(targetTokenList[0]);
     } else if (!targetTokenList.find(iterable => iterable.symbol === targetToken?.symbol)) {
-      // if current target token isn't in the list, set to undefined
       setTargetToken(undefined);
     }
-    // do nothing, the current target token is correct
-  }, [targetTokenList]);
+  }
 
   useEffect(() => {
     if (targetToken === undefined || originToken === undefined) {
