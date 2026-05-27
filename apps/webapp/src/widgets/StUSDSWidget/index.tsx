@@ -144,10 +144,14 @@ const StUSDSWidgetWrapped = ({
     setTabIndex(initialTabIndex);
   }
 
-  // Reset swapAnyway when amount or tab changes
-  useEffect(() => {
+  // Reset swapAnyway when amount or tab changes. Render-time prev-tracking
+  // replaces a useEffect. No sentinel — setSwapAnyway(false) on mount is a
+  // no-op since useState already initialized swapAnyway to false.
+  const [prevSwapAnywayDeps, setPrevSwapAnywayDeps] = useState({ debouncedAmount, tabIndex });
+  if (prevSwapAnywayDeps.debouncedAmount !== debouncedAmount || prevSwapAnywayDeps.tabIndex !== tabIndex) {
+    setPrevSwapAnywayDeps({ debouncedAmount, tabIndex });
     setSwapAnyway(false);
-  }, [debouncedAmount, tabIndex]);
+  }
 
   const {
     setButtonText,
@@ -251,18 +255,27 @@ const StUSDSWidgetWrapped = ({
       ? (curveMaxWithdraw ?? nativeMaxWithdraw)
       : nativeMaxWithdraw;
 
-  // Update amount when max is true and maxWithdrawAmount changes
-  // This keeps the input synced with the latest max value when user has clicked 100%
-  useEffect(() => {
-    if (
-      max &&
-      widgetState.flow === StUSDSFlow.WITHDRAW &&
-      maxWithdrawAmount > 0n &&
-      txStatus === TxStatus.IDLE
-    ) {
+  // Update amount when max is true and maxWithdrawAmount changes — keeps the
+  // input synced with the latest max value when user has clicked 100%.
+  // Render-time prev-tracking. No sentinel: useState init max=false, so
+  // mount-fire (when max=false) short-circuits the condition and is a no-op.
+  const [prevMaxDeps, setPrevMaxDeps] = useState({
+    max,
+    maxWithdrawAmount,
+    flow: widgetState.flow,
+    txStatus
+  });
+  if (
+    prevMaxDeps.max !== max ||
+    prevMaxDeps.maxWithdrawAmount !== maxWithdrawAmount ||
+    prevMaxDeps.flow !== widgetState.flow ||
+    prevMaxDeps.txStatus !== txStatus
+  ) {
+    setPrevMaxDeps({ max, maxWithdrawAmount, flow: widgetState.flow, txStatus });
+    if (max && widgetState.flow === StUSDSFlow.WITHDRAW && maxWithdrawAmount > 0n && txStatus === TxStatus.IDLE) {
       setAmount(maxWithdrawAmount);
     }
-  }, [max, maxWithdrawAmount, widgetState.flow, txStatus]);
+  }
 
   const isSupplyBalanceError =
     txStatus === TxStatus.IDLE &&
@@ -303,26 +316,33 @@ const StUSDSWidgetWrapped = ({
     isAmountWaitingForDebounce ||
     debouncedAmount === 0n;
 
-  // Handle external state changes
-  useEffect(() => {
+  // Handle external state changes. Render-time prev-tracking with [null]
+  // sentinel so the body runs on mount too (matches useEffect mount-fire):
+  // when externalState.token differs from usds.symbol on initial render, the
+  // original useEffect would clear/set amount on first commit. Without the
+  // sentinel that mount-fire would be skipped.
+  const externalAmountForSync = validatedExternalState?.amount;
+  const [prevExternalSyncDeps, setPrevExternalSyncDeps] = useState<
+    { externalAmount: string | undefined; txStatus: TxStatus } | null
+  >(null);
+  if (
+    prevExternalSyncDeps === null ||
+    prevExternalSyncDeps.externalAmount !== externalAmountForSync ||
+    prevExternalSyncDeps.txStatus !== txStatus
+  ) {
+    setPrevExternalSyncDeps({ externalAmount: externalAmountForSync, txStatus });
     const tokenDecimals = getTokenDecimals(usds, chainId);
     const formattedAmount = formatUnits(amount, tokenDecimals);
-    const amountHasChanged =
-      validatedExternalState?.amount !== undefined && validatedExternalState?.amount !== formattedAmount;
-
+    const amountHasChanged = externalAmountForSync !== undefined && externalAmountForSync !== formattedAmount;
     const tokenHasChanged = externalWidgetState?.token?.toLowerCase() !== usds.symbol.toLowerCase();
-
     if ((amountHasChanged || tokenHasChanged) && txStatus === TxStatus.IDLE) {
-      // Only set amount if there's a valid amount in external state
-      if (validatedExternalState?.amount && validatedExternalState.amount !== '0') {
-        const newAmount = parseUnits(validatedExternalState.amount, tokenDecimals);
-        setAmount(newAmount);
+      if (externalAmountForSync && externalAmountForSync !== '0') {
+        setAmount(parseUnits(externalAmountForSync, tokenDecimals));
       } else {
-        // If amount is explicitly empty string, clear the input
         setAmount(0n);
       }
     }
-  }, [validatedExternalState?.amount, txStatus]);
+  }
 
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
@@ -534,15 +554,16 @@ const StUSDSWidgetWrapped = ({
     }
   }, [debouncedBalanceError]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Render-time prev-tracking
+  // with sentinel preserves the original useEffect's mount-fire (which set
+  // widgetState to SUPPLY/WITHDRAW based on tabIndex on first render).
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(initialAmount);
     setMax(false);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
-
-    // Reset widget state to initial screen based on current tab
     if (tabIndex === 0) {
       setWidgetState({
         flow: StUSDSFlow.SUPPLY,
@@ -556,11 +577,14 @@ const StUSDSWidgetWrapped = ({
         screen: StUSDSScreen.ACTION
       });
     }
+  }
 
-    // Refresh data
+  // Refetches on network change live in their own effect — they're side
+  // effects, not state updates, so they don't trip set-state-in-effect.
+  useEffect(() => {
     mutateStUsds();
     mutateNativeSupplyAllowance();
-  }, [chainId]);
+  }, [chainId, mutateStUsds, mutateNativeSupplyAllowance]);
 
   return (
     <WidgetContainer
