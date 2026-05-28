@@ -15,8 +15,8 @@ import type { PendleAggregatorRoute, PendleConvertQuote } from './pendle';
 /**
  * The on-chain swapData struct shape. When no aggregator is used this is
  * byte-equivalent to PENDLE_EMPTY_SWAP_DATA; when an aggregator hop is taken
- * (input/output token differs from the underlying), the fields come from the
- * API after passing the pinned-pendleSwap check.
+ * (the user-side token is not one the SY accepts directly), the fields come
+ * from the API after passing the pinned-pendleSwap check.
  */
 type VerifiedSwapData = {
   swapType: number;
@@ -288,12 +288,14 @@ function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
  *   2. Override every user-controllable field with values WE know
  *      (receiver, market, amounts, minOut)
  *   3. Resolve (pendleSwap, swapData, tokenMintSy/tokenRedeemSy) based on
- *      whether the user-picked token equals the underlying:
- *        - Equal → no-aggregator: empty pendleSwap/swapData, SY field = user
+ *      whether the user-picked token is one SY accepts directly
+ *      (`syAcceptedTokens`):
+ *        - Accepted → no-aggregator: empty pendleSwap/swapData, SY field = user
  *          token (byte-equivalent to `createTokenInputStruct + emptyLimit`).
- *        - Differs → aggregator: pendleSwap from the API after a strict
- *          equality check against PENDLE_PINNED_PENDLESWAP_ADDRESSES;
- *          swapData forwarded; SY field = underlying.
+ *        - Not accepted → aggregator: pendleSwap from the API after a strict
+ *          equality check against PENDLE_PINNED_PENDLESWAP_ADDRESSES; swapData
+ *          forwarded; SY field = the API's delivery token, checked against
+ *          syAcceptedTokens.
  *   4. `limit` is always forced to its empty form — limit-orders are out of
  *      scope.
  *
@@ -302,7 +304,8 @@ function extractGuessPtOut(params: unknown[]): VerifiedBuyArgs[3] {
  *
  * Trust anchors of the aggregator branch:
  *   (a) pendleSwap is pinned (only Pendle's audited forwarder),
- *   (b) tokenMintSy/tokenRedeemSy is pinned to the underlying,
+ *   (b) tokenMintSy/tokenRedeemSy must be in syAcceptedTokens (the SY's
+ *       allowlist of directly-accepted tokens),
  *   (c) apiMinOut is floored against `amountOut * (1 - slippage)` so a
  *       compromised or buggy quote cannot sneak a too-low minOut into the
  *       signed calldata — see verifyApiMinOut.
