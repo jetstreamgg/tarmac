@@ -4,19 +4,21 @@ import { t } from '@lingui/core/macro';
 import { Card, CardTitle } from '@/components/ui/card';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { Supplied, SuppliedEmpty, WithdrawnEmpty, Withdrawn, Rewards, RewardsEmpty } from '@/modules/icons';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
 import { Text } from '@/modules/layout/components/Typography';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { Token } from '@/hooks';
 import { useChainId } from 'wagmi';
+import { PopoverInfo } from '@/widgets';
 
 interface BalanceCardProps {
   balance: bigint | string;
   isLoading: boolean;
   token: Pick<Token, 'symbol' | 'name'> & Partial<Pick<Token, 'decimals'>>;
   label?: string;
+  labelTooltip?: { title: string; description: React.ReactNode };
   toggle?: React.ReactNode;
   error?: Error | null;
   afterBalance?: string;
@@ -34,6 +36,7 @@ interface BaseBalanceCardProps extends BalanceCardProps {
 
 function BaseBalanceCard({
   label,
+  labelTooltip,
   toggle,
   balance,
   icon,
@@ -68,7 +71,7 @@ function BaseBalanceCard({
           error={error ? error : null}
           errorComponent={<ErrorComponent label={label} />}
         >
-          <BaseBalanceCardContent label={label} toggle={toggle}>
+          <BaseBalanceCardContent label={label} labelTooltip={labelTooltip} toggle={toggle}>
             <TokenIconWithBalance
               token={token}
               balance={
@@ -87,10 +90,12 @@ function BaseBalanceCard({
 
 function BaseBalanceCardContent({
   label,
+  labelTooltip,
   toggle,
   children
 }: {
   label: string;
+  labelTooltip?: { title: string; description: React.ReactNode };
   toggle?: React.ReactNode;
   children: React.ReactNode;
 }) {
@@ -103,6 +108,15 @@ function BaseBalanceCardContent({
           </CardTitle>
           {toggle}
         </div>
+      ) : labelTooltip ? (
+        <CardTitle variant="stats" className="mb-2 flex items-center gap-1">
+          <span>{label}</span>
+          <PopoverInfo
+            title={labelTooltip.title}
+            description={labelTooltip.description}
+            iconClassName="text-textSecondary hover:text-white transition-colors"
+          />
+        </CardTitle>
       ) : (
         <CardTitle variant="stats" className="mb-2">
           {label}
@@ -136,6 +150,7 @@ export function SuppliedBalanceCard({
   isLoading,
   token,
   label,
+  labelTooltip,
   error,
   afterBalance,
   dataTestId
@@ -143,6 +158,7 @@ export function SuppliedBalanceCard({
   return (
     <BaseBalanceCard
       label={label || t`Savings balance`}
+      labelTooltip={labelTooltip}
       balance={balance}
       icon={<Supplied />}
       iconEmpty={<SuppliedEmpty />}

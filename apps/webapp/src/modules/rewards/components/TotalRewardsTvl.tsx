@@ -1,7 +1,7 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { useTotalTvl } from '../hooks/useTotalTvl';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 
 export function TotalRewardsTvl() {

@@ -1,5 +1,5 @@
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-import { getIlkName, mcdVatAbi, mcdVatAddress, sealModuleAddress } from '@jetstreamgg/sky-hooks';
+import { getIlkName, mcdVatAbi, mcdVatAddress, sealModuleAddress } from '@/hooks';
 import { encodeFunctionData, stringToHex } from 'viem';
 import { NetworkName } from './constants';
 import { getRpcUrlFromFile } from './getRpcUrlFromFile';

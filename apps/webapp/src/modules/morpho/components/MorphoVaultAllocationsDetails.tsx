@@ -1,4 +1,4 @@
-import { useMorphoVaultMarketApiData, useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultMarketApiData, useOverallSkyData } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,11 +10,11 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { PairTokenIcons } from '@/widgets';
 import { useChainId } from 'wagmi';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage } from '@/utils';
 import { InfoTooltip } from '@/components/InfoTooltip';
 
 /** Small SVG ring that fills clockwise based on a 0-1 value */

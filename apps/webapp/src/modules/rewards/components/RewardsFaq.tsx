@@ -1,4 +1,4 @@
-import { RewardContract } from '@jetstreamgg/sky-hooks';
+import { RewardContract } from '@/hooks';
 import { getRewardsFaqItems } from '@/data/faqs/getRewardsFaqItems';
 import { FaqAccordion } from '@/modules/ui/components/FaqAccordion';
 import { getRewardsCleFaqItems } from '@/data/faqs/getRewardsCleFaqItems';

@@ -4,7 +4,7 @@ import { LinkedAction, useUserSuggestedActions } from '../hooks/useUserSuggested
 import { LoadingActionCard } from './LoadingActionCard';
 import { LinkedActionCard } from './LinkedActionCard';
 import { filterActionsByIntent } from '@/lib/utils';
-import { RewardContract } from '@jetstreamgg/sky-hooks';
+import { RewardContract } from '@/hooks';
 
 export function ActionsShowcase({
   widget,

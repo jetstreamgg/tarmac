@@ -1,4 +1,4 @@
-import { RewardContract, useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
+import { RewardContract, useRewardsChartInfo } from '@/hooks';
 import { useState } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
 import { Trans } from '@lingui/react/macro';

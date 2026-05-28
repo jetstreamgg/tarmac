@@ -6,7 +6,7 @@ import {
   QueryParams,
   CHAIN_WIDGET_MAP
 } from '@/lib/constants';
-import { useGeoConfig } from '@/modules/geo-config';
+import { useGeoConfig } from '@/modules/geo-config/hooks/useGeoConfig';
 import { Intent, ConvertIntent } from '@/lib/enums';
 import {
   useTokens,
@@ -16,8 +16,8 @@ import {
   TOKENS,
   filterDeprecatedRewardContracts,
   isDeprecatedRewardContract
-} from '@jetstreamgg/sky-hooks';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+} from '@/hooks';
+import { isL2ChainId } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { useState, useEffect, useRef } from 'react';
 import { useConnection, useChainId, useChains } from 'wagmi';

@@ -26,8 +26,7 @@ export default [
       '**/sw.js',
       '**/generated.ts',
       '**/playwright-report/**',
-      'packages/components',
-      'packages/utils/src/locales/*'
+      'apps/webapp/src/locales/*'
     ]
   },
   ...compat.extends(
@@ -133,7 +132,8 @@ export default [
       'apps/webapp/src/modules/sentry/**/*.{ts,tsx}',
       'apps/webapp/src/test/**/*.{ts,tsx}',
       'apps/webapp/src/pages/Dev.tsx',
-      'apps/webapp/src/data/wagmi/config/config.e2e.ts'
+      'apps/webapp/src/data/wagmi/config/config.e2e.ts',
+      'apps/webapp/src/widgets/**/*.{ts,tsx}'
     ],
     rules: {
       'no-console': 'off',

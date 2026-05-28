@@ -1,8 +1,8 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
-import { useUsdsDaiData } from '@jetstreamgg/sky-hooks';
+import { useUsdsDaiData } from '@/hooks';
+import { PairTokenIcons } from '@/widgets';
 import { Text } from '@/modules/layout/components/Typography';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
 
 export function UsdsTotalSupplyCard(): React.ReactElement {
   const { data, isLoading, error } = useUsdsDaiData({ limit: 1 });

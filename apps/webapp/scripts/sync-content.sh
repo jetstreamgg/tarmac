@@ -17,7 +17,7 @@ TEMP_DIR=".tmp-content-repo"
 OUTPUT_SOURCE_PATH="output/webapp/faq"
 DESTINATION_PATH="src/data/faqs"
 TOOLTIPS_SOURCE_PATH="output/webapp/tooltips"
-TOOLTIPS_DESTINATION_PATH="../../packages/widgets/src/data/tooltips"
+TOOLTIPS_DESTINATION_PATH="src/widgets/data/tooltips"
 BANNERS_SOURCE_PATH="output/webapp/banner"
 BANNERS_DESTINATION_PATH="src/data/banners"
 SPEED_BUMPS_SOURCE_PATH="output/webapp/speed-bumps"
@@ -350,7 +350,7 @@ if (fs.existsSync(balancesFilePath)) {
   isBaseChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 
 import {
   L2GeneralFaqItems,
@@ -404,7 +404,7 @@ if (fs.existsSync(savingsFilePath)) {
   isL2ChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 
 import {
   L2GeneralFaqItems,
@@ -459,7 +459,7 @@ if (fs.existsSync(tradeFilePath)) {
   isL2ChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 
 import {
   L2GeneralFaqItems,
@@ -628,7 +628,7 @@ fi
 
 # Add tooltip file if it exists
 if [ -f "$TOOLTIPS_DESTINATION_PATH/index.ts" ]; then
-    GENERATED_FILES+=("packages/widgets/src/data/tooltips/index.ts")
+    GENERATED_FILES+=("apps/webapp/$TOOLTIPS_DESTINATION_PATH/index.ts")
 fi
 
 # Add banner file if it exists

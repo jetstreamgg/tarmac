@@ -7,34 +7,30 @@ import {
   Vaults,
   Convert,
   Upgrade,
-  Trade
+  Trade,
+  Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { useLingui } from '@lingui/react';
-import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import {
-  BATCH_TX_LEGAL_NOTICE_URL,
   COMING_SOON_MAP,
   QueryParams,
   IntentMapping,
   ExpertIntentMapping,
   VaultsIntentMapping,
-  ConvertIntentMapping
+  ConvertIntentMapping,
+  FixedIntentMapping,
+  FIXED_YIELD_MODULE_ENABLED
 } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ExpertIntent, VaultsIntent, ConvertIntent } from '@/lib/enums';
+import { ExpertIntent, VaultsIntent, ConvertIntent, FixedIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
 import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import React, { useEffect } from 'react';
-import { useNotification } from '../hooks/useNotification';
-
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
@@ -44,13 +40,14 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
-import { isL2ChainId, isTestnetId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, isTestnetId } from '@/utils';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
+import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
 import { useModuleUrls } from '../hooks/useModuleUrls';
-import { useAvailableTokenRewardContracts, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { useAvailableTokenRewardContracts, MORPHO_VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
@@ -64,23 +61,15 @@ type WidgetPaneProps = {
 };
 
 export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
-  const { i18n } = useLingui();
   const chainId = useChainId();
-  const onConnect = useCustomConnectModal();
 
-  // No-op: ConnectedModal now uses subgraph data instead of localStorage
-  const addRecentTransaction = () => {};
-
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const onNotification = useNotification();
-  const { onExternalLinkClicked } = useConfigContext();
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
-  const locale = i18n.locale;
 
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
-  const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   // Map Intent → ModuleId for geo-config filtering
+  // TODO(geo-gating): Pendle is intentionally absent from this map. Adding gating
+  // requires written sign-off from Jacek or Kacper (regulatory-sensitive change).
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
     [Intent.SAVINGS_INTENT]: 'savings',
     [Intent.REWARDS_INTENT]: 'rewards',
@@ -90,24 +79,19 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   // If the intent maps to a restricted module, fall back to Balances
   const restrictedModuleId = intentToModule[intent];
+  const isFixedYieldDisabled = intent === Intent.FIXED_INTENT && !FIXED_YIELD_MODULE_ENABLED;
   const effectiveIntent =
-    restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
+    (restrictedModuleId && !isModuleEnabled(restrictedModuleId)) || isFixedYieldDisabled
+      ? Intent.BALANCES_INTENT
+      : intent;
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
   const [searchParams, setSearchParams] = useSearchParams();
 
   const sharedProps = {
-    onConnect,
-    addRecentTransaction,
-    locale,
     rightHeaderComponent,
-    onNotification,
-    enabled: isConnectedAndAcceptedTerms,
-    onExternalLinkClicked,
-    referralCode,
-    shouldReset: searchParams.get(QueryParams.Reset) === 'true',
-    legalBatchTxUrl: BATCH_TX_LEGAL_NOTICE_URL
+    shouldReset: searchParams.get(QueryParams.Reset) === 'true'
   };
 
   const { trackWidgetSelected } = useAppAnalytics();
@@ -132,7 +116,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   }, []);
 
-  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, vaultsUrl } = useModuleUrls();
+  const { rewardsUrl, savingsUrlMap, sealUrl, stakeUrl, stusdsUrl, vaultsUrl, fixedYieldUrl } =
+    useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const rewardSubItems = rewardContracts
     .filter(contract => contract.rewardToken.symbol !== 'SKY')
@@ -159,6 +144,21 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   }));
 
+  const pendleSubItems = PENDLE_MARKETS.filter(market => !isMarketMatured(market.expiry)).map(market => ({
+    label: `PT-${market.underlyingSymbol}`,
+    icon: (
+      <TokenIcon
+        token={{ symbol: `PT-${market.underlyingSymbol}` }}
+        className="h-3 w-3"
+        showChainIcon={false}
+      />
+    ),
+    params: {
+      [QueryParams.FixedModule]: FixedIntentMapping[FixedIntent.MARKET_INTENT],
+      [QueryParams.Market]: market.marketAddress
+    }
+  }));
+
   const widgetItems: WidgetItem[] = [
     [
       Intent.BALANCES_INTENT,
@@ -174,6 +174,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           stakeCardUrl={stakeUrl}
           stusdsCardUrl={isRegionRestricted ? undefined : stusdsUrl}
           vaultsCardUrl={vaultsUrl}
+          fixedYieldCardUrl={fixedYieldUrl}
           chainIds={getSupportedChainIds(chainId)}
           hideZeroBalances={hideZeroBalances}
           setHideZeroBalances={setHideZeroBalances}
@@ -206,6 +207,20 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         ? 'Use USDS or USDC to access the Sky Savings Rate'
         : 'Use USDS to access the Sky Savings Rate'
     ],
+    ...(FIXED_YIELD_MODULE_ENABLED
+      ? [
+          [
+            Intent.FIXED_INTENT,
+            'Fixed Yield',
+            Pendle,
+            withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
+            false,
+            undefined,
+            'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
+            pendleSubItems
+          ]
+        ]
+      : []),
     [
       Intent.STAKE_INTENT,
       'Stake & Borrow',
@@ -304,6 +319,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       items: widgetItems.filter(
         ([intent]) =>
           intent === Intent.SAVINGS_INTENT ||
+          intent === Intent.FIXED_INTENT ||
           intent === Intent.REWARDS_INTENT ||
           intent === Intent.STAKE_INTENT
       )

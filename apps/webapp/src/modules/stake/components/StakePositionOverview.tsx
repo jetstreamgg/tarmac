@@ -11,8 +11,8 @@ import {
   useVault,
   useSkyPrice,
   ZERO_ADDRESS
-} from '@jetstreamgg/sky-hooks';
-import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@jetstreamgg/sky-utils';
+} from '@/hooks';
+import { formatBigInt, formatBigIntAsCeiledAbsoluteWithSymbol } from '@/utils';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
 import { StakeToken } from '../constants';
@@ -27,9 +27,9 @@ import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { StakeDelegateCard } from './StakeDelegateCard';
 import { StakeRewardCard } from './StakeRewardCard';
 // import { useMemo } from 'react';
-import { formatUrnIndex, getTooltipById, PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { formatUrnIndex, getTooltipById, PopoverInfo } from '@/widgets';
 import { useChainId } from 'wagmi';
-import { formatPercent } from '@jetstreamgg/sky-utils';
+import { formatPercent } from '@/utils';
 
 const RISK_COLORS = {
   [RiskLevel.LIQUIDATION]: { text: 'text-red-400', bg: 'bg-red-400' },

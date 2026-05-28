@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
 
-import { useConfig as useWagmiConfig, useChainId } from 'wagmi';
-import { TOKENS, useUpgradeHistory } from '@jetstreamgg/sky-hooks';
+import { useConfig as useWagmiConfig } from 'wagmi';
+import { TOKENS, useUpgradeHistory } from '@/hooks';
 import {
   TxStatus,
   UpgradeAction,
@@ -10,7 +10,7 @@ import {
   UpgradeFlow,
   UpgradeScreen,
   upgradeTokens
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -22,8 +22,6 @@ import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 const targetTokenFromSourceToken = (sourceToken?: string) => {
   if (sourceToken === 'DAI') return 'USDS';
@@ -32,7 +30,6 @@ const targetTokenFromSourceToken = (sourceToken?: string) => {
 };
 
 export function UpgradeWidgetPane(sharedProps: SharedProps) {
-  const chainId = useChainId();
   const subgraphUrl = useSubgraphUrl();
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedConvertOption } =
     useConfigContext();
@@ -48,9 +45,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
 
   // Get source_token from URL params
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
-
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const onAnalyticsEvent = useWidgetAnalytics('convert', chainId);
 
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
@@ -270,13 +264,10 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
             : undefined) as keyof typeof upgradeTokens | undefined
       }}
       onWidgetStateChange={onUpgradeWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       upgradeOptions={upgradeOptions}
       disallowedFlow={disallowedFlow}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />
   );

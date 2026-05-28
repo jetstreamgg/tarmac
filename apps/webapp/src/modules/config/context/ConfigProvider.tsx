@@ -1,9 +1,9 @@
 import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { UserConfig } from '../types/user-config';
-import { RewardContract } from '@jetstreamgg/sky-hooks';
+import { RewardContract } from '@/hooks';
 import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
 import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
-import { dynamicActivate } from '@jetstreamgg/sky-utils';
+import { dynamicActivate } from '@/utils';
 import { i18n } from '@lingui/core';
 import {
   ConfigContext,

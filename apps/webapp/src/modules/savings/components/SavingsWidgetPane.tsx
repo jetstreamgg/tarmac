@@ -5,10 +5,10 @@ import {
   SavingsAction,
   WidgetStateChangeParams,
   SavingsFlow
-} from '@jetstreamgg/sky-widgets';
-import { useSavingsHistory } from '@jetstreamgg/sky-hooks';
+} from '@/widgets';
+import { useSavingsHistory } from '@/hooks';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -17,8 +17,6 @@ import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -26,9 +24,6 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
   const chainId = useChainId();
-
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const onAnalyticsEvent = useWidgetAnalytics('savings', chainId);
 
   const isL2 = isL2ChainId(chainId);
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as SavingsFlow | undefined;
@@ -132,14 +127,11 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     <Widget
       {...sharedProps}
       onWidgetStateChange={onSavingsWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
         token: linkedActionConfig?.sourceToken,
         flow
       }}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
     />
   );
 }

@@ -2,7 +2,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { OracleInfo } from './OracleInfo';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 import { formatUnits } from 'viem';
 
 type TokenBalance = {

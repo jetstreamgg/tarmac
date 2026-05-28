@@ -2,11 +2,11 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { Text } from '@/modules/layout/components/Typography';
-import { useCurveRate } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { useCurveRate } from '@/hooks';
+import { formatBigInt } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { CurveLogo } from '@/modules/icons/CurveLogo';
-import { PopoverInfo, getTooltipById } from '@jetstreamgg/sky-widgets';
+import { PopoverInfo, getTooltipById } from '@/widgets';
 
 export function StUSDSCurveExchangeRateCard() {
   const { i18n } = useLingui();

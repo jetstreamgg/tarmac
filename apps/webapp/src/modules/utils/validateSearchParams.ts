@@ -1,5 +1,5 @@
-import { RewardContract } from '@jetstreamgg/sky-hooks';
-import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@jetstreamgg/sky-widgets';
+import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@/hooks';
+import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -10,12 +10,13 @@ import {
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping,
+  FixedIntentMapping,
   IS_PRODUCTION_ENV
 } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
 import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { isL2ChainId } from '@/utils';
 import { Chain } from 'viem';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 
@@ -222,6 +223,33 @@ export const validateSearchParams = (
     if (widget !== IntentMapping[Intent.CONVERT_INTENT]) {
       searchParams.delete(QueryParams.ConvertModule);
       setSelectedConvertOption(undefined);
+    }
+
+    // validates fixed_module param against FixedIntentMapping
+    if (key === QueryParams.FixedModule) {
+      const isValidIntent = Object.values(FixedIntentMapping).includes(value);
+      if (!isValidIntent) {
+        searchParams.delete(key);
+      }
+    }
+
+    // validates market param: must be an active (non-matured) market address.
+    // Matured markets have no detail view — they only render as redeem rows
+    // on the overview, so the URL state would be misleading.
+    if (key === QueryParams.Market) {
+      const lower = value.toLowerCase();
+      const market = PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
+      const isValid = !!market && !isMarketMatured(market.expiry);
+      if (!isValid) {
+        searchParams.delete(QueryParams.FixedModule);
+        searchParams.delete(key);
+      }
+    }
+
+    // if widget changes to something other than pendle, drop the pendle params
+    if (widget !== IntentMapping[Intent.FIXED_INTENT]) {
+      searchParams.delete(QueryParams.FixedModule);
+      searchParams.delete(QueryParams.Market);
     }
 
     // validate source token

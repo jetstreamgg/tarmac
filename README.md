@@ -12,28 +12,11 @@ The materials in this repository may include references to our trademarks as wel
 
 # Tarmac
 
-This project is a monorepo that utilizes https://pnpm.io/ to manage it’s dependencies. It allows to create “packages” that can be installed from another directory (locally) and allows to better code segmentation.
+This project is a pnpm-managed repository (see https://pnpm.io/). The webapp at [`apps/webapp`](./apps/webapp) is the sole product of this repo.
 
-The project structure is divided in:
+## Layout
 
-- apps: Utilizes packages, has custom made logic or it shouldn’t be published to a package manager
-- packages: Small units of code that can be reused by several applications, it could be published to a package manager like NPM.
-
-## Apps
-
-This project contains the following apps, located under the ["apps" folder](./apps):
-
-- [webapp](./apps/webapp): Web3 dApp that interacts with widgets from the [widgets](./packages/widgets/README.md) package
-
-## Packages
-
-This project contains the following packages, located under the ["packages" folder](./packages):
-
-- [hooks](./packages/hooks/README.md): React hooks to interact with the Maker protocol. Also contains relevant contract addresses.
-
-- [widgets](./packages/widgets/README.md): A package containing importable widgets allowing interaction with the protocol (Trade, Rewards, Savings, Upgrade, etc).
-
-- [utils](./packages/utils/README.md): Common helpers for getting links, chain info, math operations for vault management, etc.
+- [`apps/webapp`](./apps/webapp): The React webapp. Hooks live in `src/hooks/`, widgets in `src/widgets/`, shared utilities in `src/utils/`.
 
 ## Usage
 
@@ -42,10 +25,10 @@ This project contains the following packages, located under the ["packages" fold
 Please refer to [Installing Node.js and pnpm](#installing-nodejs-and-pnpm) to install the required dependencies first.
 
 ```
-pnpm install -> Installs all packages
-pnpm build -> Builds all packages
-pnpm dev -> Runs dev mode and launches the webapp in the port 3000
-pnpm test -> Runs the unit tests suite across the different packages
+pnpm install -> Installs all dependencies
+pnpm build -> Builds the webapp
+pnpm dev -> Runs dev mode and launches the webapp on port 3000
+pnpm test -> Runs the unit tests suite (fast webapp suite + vnet-backed hooks suite)
 pnpm test:hooks -> Manages the lifecycle of forking a new Tenderly testnet, running the 'hooks' tests, and then deleting the forked testnet.
 pnpm pr:desc [base-branch] -> Copies all code diffs and pull request template to clipboard by analyzing changes between the current branch and the specified base branch (defaults to main if not provided)
 
@@ -63,7 +46,7 @@ Note: Never commit your actual API key to version control. Always keep it secure
 
 #### Global dependencies
 
-This repository uses [pnpm workspaces](https://pnpm.io/workspaces) to manage multiple projects. You need to install **Node.js v20.19 or higher** and **pnpm v10.17 or higher**.
+You need to install **Node.js v20.19 or higher** and **pnpm v10.17 or higher**.
 
 #### Node.js and pnpm
 
@@ -79,24 +62,9 @@ If the versions are not correct or you don't have Node.js or pnpm installed, dow
 - Install Node.js using [fnm](https://github.com/Schniz/fnm) or from the [official website](https://nodejs.org)
 - Install [pnpm](https://pnpm.io/installation)
 
-### Contributions and releases
-
-This monorepo uses `changesets` to manage the versioning and changelog of the Jetstream packages. Changesets follows Semantic Versioning, you can read more about it [here](https://semver.org/)
-
-#### For contributors:
-
-- Use `pnpm changeset` and follow the prompts when making changes to the packages in order to document them.
-
-#### For maintainers:
-
-- Use `pnpm changeset version` to update the versions of all packages listed in the changesets since the last release was made, along with the dependencies that are out of range. This will also append the summary to a `CHANGELOG` file in each package.
-- Use `pnpm changeset publish` to publish the packages to NPM and create the corresponding git tags.
-  - It is recommended to make sure that changes made from the `changeset version` command are merged into the main branch before running the `changeset publish` command
-  - No changes should be committed between calling `version` and `publish` since this command assumes that last commit is the release commit.
-
 ## Internationalization and Translation Process
 
-In this project, we're utilizing `lingui` library for handling the internationalization (i18n) of the widgets package and the webapp. The following steps provide an overview of the i18n process:
+In this project, we're utilizing `lingui` library for handling the internationalization (i18n) of the webapp. The following steps provide an overview of the i18n process:
 
 The three commands we use for managing messages are listed in the `scripts` section of your `package.json` file:
 
@@ -106,7 +74,7 @@ The three commands we use for managing messages are listed in the `scripts` sect
 
 Here's what each script does:
 
-- `messages:extract`: This command extracts all messages from your source code into a `messages.po` file located in the [utils package](./packages/utils/src/locales/). The `--clean` option is used to remove obsolete messages from the file.
+- `messages:extract`: This command extracts all messages from your source code into the `.po` files located in [`apps/webapp/src/locales/`](./apps/webapp/src/locales/). The `--clean` option is used to remove obsolete messages from the file.
 
 - `messages:compile`: After translation, this command compiles the messages into an optimized JavaScript format which can be imported in the projects.
 

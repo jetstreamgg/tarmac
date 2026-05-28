@@ -28,8 +28,8 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
-vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     CardAnimationWrapper: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -90,12 +90,19 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+vi.mock('@/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils')>();
   return {
     ...actual,
     isL2ChainId: (chainId: number) => chainId !== 1,
-    isMainnetId: (chainId: number) => chainId === 1,
+    isMainnetId: (chainId: number) => chainId === 1
+  };
+});
+
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
+  return {
+    ...actual,
     useIsSafeWallet: () => false
   };
 });
@@ -112,6 +119,13 @@ vi.mock('@/lib/helpers/string/normalizeUrlParam', () => ({
 vi.mock('@/modules/analytics/hooks/useAppAnalytics', () => ({
   useAppAnalytics: () => ({
     trackConvertModuleSelected: analyticsMocks.trackConvertModuleSelected
+  })
+}));
+
+vi.mock('@/modules/geo-config', () => ({
+  useGeoConfig: () => ({
+    isModuleEnabled: () => true,
+    isRegionRestricted: false
   })
 }));
 

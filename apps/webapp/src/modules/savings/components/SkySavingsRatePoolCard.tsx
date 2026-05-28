@@ -1,8 +1,8 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { useOverallSkyData } from '@/hooks';
+import { formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 export function SkySavingsRatePoolCard(): React.ReactElement {
@@ -14,7 +14,12 @@ export function SkySavingsRatePoolCard(): React.ReactElement {
       title={t`Sky Savings Rate TVL`}
       content={
         <div className="mt-2 flex items-center">
-          <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS', name: 'usds' }} width={24} showChainIcon={false} />
+          <TokenIcon
+            className="h-6 w-6"
+            token={{ symbol: 'USDS', name: 'usds' }}
+            width={24}
+            showChainIcon={false}
+          />
           <Text className="ml-2" variant="large">
             {tvl}
           </Text>

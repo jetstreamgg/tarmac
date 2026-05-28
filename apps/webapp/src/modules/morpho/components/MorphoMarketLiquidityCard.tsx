@@ -1,10 +1,10 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { formatBigInt } from '@/utils';
+import { Token } from '@/hooks';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { useChainId } from 'wagmi';
 
 type MorphoMarketLiquidityCardProps = {
