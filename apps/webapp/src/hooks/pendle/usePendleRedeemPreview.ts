@@ -37,8 +37,8 @@ const ONE = 1_000_000_000_000_000_000n;
  *      convert PT shares to SY shares. PT → SY is NOT 1:1: a higher
  *      pyIndex means each PT redeems for proportionally fewer SY.
  *   2. SY.previewRedeem(tokenOut, syAmount) — the SY's exchange rate to
- *      its underlying. For pure 1:1 wrappers (USDG, USDe) this is identity;
- *      for vault-share PTs it can differ.
+ *      its underlying. For pure 1:1 wrappers this is identity; for vault-share
+ *      PTs (e.g. PT-sUSDS, which wraps yield-bearing sUSDS) it can differ.
  *
  * Final formula: `receive = SY.previewRedeem(underlying, ptBalance × 1e18 / pyIndex)`.
  *

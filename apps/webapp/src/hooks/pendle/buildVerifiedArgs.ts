@@ -117,12 +117,17 @@ export type KnownCallValues = {
   /** For BUY: PT token. For WITHDRAW: user-selected output token. */
   outputToken: `0x${string}`;
   /**
-   * The market's underlying token (the SY's accepted token). Equals
-   * inputToken on BUY / outputToken on WITHDRAW when the user picked the
-   * underlying directly; differs when the user picked USDS / USDC and the
-   * route therefore goes through an aggregator hop.
+   * Pendle's underlyingAsset — the SY's wrapped yield-bearing token. Used as
+   * tokenMintSy / tokenRedeemSy on the aggregator path.
    */
   underlyingToken: `0x${string}`;
+  /**
+   * Tokens SY accepts directly via getTokensIn() / getTokensOut(). When the
+   * user-side token is in this list, the no-aggregator path is taken
+   * (pendleSwap=0x0, tokenMintSy=userSideToken). Optional; defaults to
+   * `[underlyingToken]` to match single-input SYs.
+   */
+  syAcceptedTokens?: `0x${string}`[];
   amountIn: bigint;
   /**
    * The pinned PendleSwap forwarder address for the active chain. The caller
@@ -146,23 +151,24 @@ const verifiedEmptyLimit: VerifiedLimit = PENDLE_EMPTY_LIMIT;
  * Resolve the (pendleSwap, swapData, tokenMintSyOrRedeem) triplet for a Buy
  * or Withdraw call. There are exactly two valid cases:
  *
- *   1. **No aggregator** — the user-picked side equals the underlying. The
- *      SY accepts the input/output directly; pendleSwap is forced to 0x0
- *      and swapData to its empty form. tokenMintSy / tokenRedeemSy = the
- *      user-picked token (which equals the underlying).
+ *   1. **No aggregator** — the user-picked side is one of the tokens SY accepts
+ *      directly (`syAcceptedTokens`). pendleSwap is forced to 0x0 and swapData
+ *      to its empty form. tokenMintSy / tokenRedeemSy = the user-picked token
+ *      (the SY handles it natively).
  *
- *   2. **Aggregator** — the user picked USDS / USDC (or any non-underlying).
- *      The route must therefore pass through Pendle's PendleSwap forwarder,
- *      which proxies to the external aggregator. We assert the API's
- *      `pendleSwap` equals our pinned address; otherwise we refuse to sign.
- *      tokenMintSy / tokenRedeemSy must be the underlying — that's what the
- *      SY actually accepts after the aggregator hop produces it.
+ *   2. **Aggregator** — the user picked a token outside `syAcceptedTokens`
+ *      (e.g. USDC for a USDS/sUSDS-only SY). The route must pass through
+ *      Pendle's PendleSwap forwarder, which proxies to the external aggregator.
+ *      We assert the API's `pendleSwap` equals our pinned address; otherwise
+ *      we refuse to sign. tokenMintSy / tokenRedeemSy is the underlying —
+ *      that's what the SY ends up holding after the aggregator hop.
  *
  * @param userSideToken inputToken on BUY, outputToken on WITHDRAW
  */
 function resolveAggregatorFields(
   userSideToken: `0x${string}`,
   underlyingToken: `0x${string}`,
+  syAcceptedTokens: `0x${string}`[],
   pinnedPendleSwap: `0x${string}`,
   aggregatorRoute: PendleAggregatorRoute | undefined,
   side: PendleConvertSide
@@ -171,41 +177,44 @@ function resolveAggregatorFields(
   swapData: VerifiedSwapData;
   tokenMintSyOrRedeem: `0x${string}`;
 } {
-  const usesAggregator = !isAddressEqual(userSideToken, underlyingToken);
+  const usesAggregator = !syAcceptedTokens.some(t => isAddressEqual(userSideToken, t));
 
-  // tokenMintSy / tokenRedeemSy is always the underlying — that's what the SY
-  // contract accepts. In the no-aggregator branch userSideToken === underlying
-  // by precondition, so the two are equivalent on the wire, but pinning to
-  // underlyingToken makes the invariant explicit and self-documenting.
+  // No aggregator: SY accepts userSideToken directly per getTokensIn/getTokensOut,
+  // so tokenMintSy/tokenRedeemSy is the user-picked token itself.
   if (!usesAggregator) {
     return {
       pendleSwap: ZERO_ADDRESS,
       swapData: verifiedEmptySwapData,
-      tokenMintSyOrRedeem: underlyingToken
+      tokenMintSyOrRedeem: userSideToken
     };
   }
 
   // Aggregator path — require the API to have returned a route.
   if (!aggregatorRoute) {
     throw new Error(
-      `Pendle: refusing to sign — aggregator required (${side} with non-underlying token) but the quote has no aggregatorRoute`
+      `Pendle: refusing to sign — aggregator required (${side} with non-SY-accepted token) but the quote has no aggregatorRoute`
     );
   }
-  // The single trust anchor: pendleSwap MUST be the pinned PendleSwap
-  // forwarder. Anything else means the API is steering us at an unaudited
-  // contract — refuse to sign.
+  // Trust anchor #1: pendleSwap MUST be the pinned PendleSwap forwarder.
+  // Anything else means the API is steering us at an unaudited contract.
   if (!isAddressEqual(aggregatorRoute.pendleSwap, pinnedPendleSwap)) {
     throw new Error(
       `Pendle: refusing to sign — pendleSwap "${aggregatorRoute.pendleSwap}" is not the pinned forwarder "${pinnedPendleSwap}"`
     );
   }
+  // Trust anchor #2: the aggregator's delivery token MUST be in our local
+  // allowlist of SY-accepted tokens. For multi-input SYs (PT-sUSDS) the API
+  // picks the cheapest route, so this isn't necessarily `underlyingToken` —
+  // but it must be one of the tokens the SY natively accepts.
+  if (!syAcceptedTokens.some(t => isAddressEqual(aggregatorRoute.tokenMintSyOrRedeem, t))) {
+    throw new Error(
+      `Pendle: refusing to sign — aggregator delivers to "${aggregatorRoute.tokenMintSyOrRedeem}" which is not in syAcceptedTokens`
+    );
+  }
   return {
     pendleSwap: aggregatorRoute.pendleSwap,
     swapData: aggregatorRoute.swapData,
-    // After the aggregator hop, what reaches the SY is the underlying. The
-    // tokenMintSy / tokenRedeemSy field describes what the SY interacts with,
-    // not what the user supplied.
-    tokenMintSyOrRedeem: underlyingToken
+    tokenMintSyOrRedeem: aggregatorRoute.tokenMintSyOrRedeem
   };
 }
 
@@ -334,6 +343,7 @@ function buildBuyArgs(quote: PendleConvertQuote, known: KnownCallValues): Verifi
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.inputToken, // BUY's user-picked side is the input
     known.underlyingToken,
+    known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
     PendleConvertSide.BUY
@@ -365,6 +375,7 @@ function buildWithdrawArgs(quote: PendleConvertQuote, known: KnownCallValues): V
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.outputToken, // WITHDRAW's user-picked side is the output
     known.underlyingToken,
+    known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
     PendleConvertSide.WITHDRAW
@@ -395,6 +406,7 @@ function buildExitArgs(quote: PendleConvertQuote, known: KnownCallValues): Verif
   const { pendleSwap, swapData, tokenMintSyOrRedeem } = resolveAggregatorFields(
     known.outputToken, // EXIT's user-picked side is the output, same as WITHDRAW
     known.underlyingToken,
+    known.syAcceptedTokens ?? [known.underlyingToken],
     known.pinnedPendleSwap,
     quote.aggregatorRoute,
     PendleConvertSide.WITHDRAW

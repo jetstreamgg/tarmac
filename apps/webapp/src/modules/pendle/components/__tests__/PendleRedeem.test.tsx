@@ -53,11 +53,13 @@ vi.mock('@/widgets', async importOriginal => {
       title,
       isFetching,
       fetchingMessage,
+      pinnedData,
       transactionData
     }: {
       title: string;
       isFetching: boolean;
       fetchingMessage: string;
+      pinnedData?: { label: string; value: React.ReactNode }[];
       transactionData?: { label: string; value: React.ReactNode }[];
     }) => (
       <div data-testid="transaction-overview-stub">
@@ -65,7 +67,7 @@ vi.mock('@/widgets', async importOriginal => {
         {isFetching ? (
           <p>{fetchingMessage}</p>
         ) : (
-          transactionData?.map(row => (
+          [...(pinnedData ?? []), ...(transactionData ?? [])].map(row => (
             <div key={row.label}>
               <span>{row.label}</span>
               <span>{row.value}</span>
@@ -129,6 +131,9 @@ describe('PendleRedeem', () => {
   });
 
   it('renders the slippage tolerance from the slippage prop and strips trailing zeros', () => {
+    // aggregatorType set so the aggregator-only rows (Min. received,
+    // Slippage tolerance, Price impact) render — they're hidden on the
+    // pure-redeem path. See commit 75402e8c.
     const quote = {
       method: 'exitPostExpToToken',
       amountOut: 1_500_000n,
@@ -136,6 +141,7 @@ describe('PendleRedeem', () => {
       effectiveApy: 0,
       impliedApy: 0,
       priceImpact: 0,
+      aggregatorType: 'KYBERSWAP',
       fetchedAt: Date.now(),
       apiContractParams: [],
       apiContractParamsName: []
@@ -186,6 +192,8 @@ describe('PendleRedeem', () => {
   });
 
   it('renders the quote-derived rows when a quote is provided', () => {
+    // aggregatorType set so Min. received and Price impact render — those rows
+    // are hidden on the pure-redeem (no-aggregator) path per commit 75402e8c.
     const quote = {
       method: 'exitPostExpToToken',
       amountOut: 1_499_500n,
@@ -193,6 +201,7 @@ describe('PendleRedeem', () => {
       effectiveApy: 0,
       impliedApy: 0,
       priceImpact: -0.0012,
+      aggregatorType: 'KYBERSWAP',
       fetchedAt: Date.now(),
       apiContractParams: [],
       apiContractParamsName: []
@@ -205,5 +214,248 @@ describe('PendleRedeem', () => {
     expect(container.textContent).toContain('Price impact');
 
     unmount();
+  });
+
+  // --- APP-268: overview amount/symbol assertions ---------------------------
+  // Verifies the specific values + unit suffixes that appear in the pinned
+  // headline ("You redeem" / "You receive") and details. The stub at the top
+  // of this file renders pinnedData + transactionData inline, so we can read
+  // them out of container.textContent.
+
+  it('overview pins "You redeem" with PT symbol/decimals and "You receive" with output symbol', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_499_500n, // 1.4995 USDG (6 decimals)
+      apiMinOut: 1_484_505n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, unmount } = renderComponent(
+      <PendleRedeem {...baseProps} quote={quote} selectedOutputToken={USDG_TOKEN} />
+    );
+
+    // PT side: 1.5 PT-USDG (ptBalance = 1_500_000n, 6 decimals on the fixture market)
+    expect(container.textContent).toContain('You redeem');
+    expect(container.textContent).toContain('1.5 PT-USDG');
+    // Output side: 1.4995 USDG (output token decimals = 6, USDG symbol)
+    expect(container.textContent).toContain('You receive');
+    expect(container.textContent).toContain('1.4995 USDG');
+    // Headline must NOT label "You receive" with the PT symbol.
+    expect(container.textContent).not.toContain('1.4995 PT-USDG');
+    unmount();
+  });
+
+  it('"You receive" reflects the chosen output token symbol/decimals (USDS, 18d)', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_499_500_000_000_000_000n, // 1.4995 USDS (18 decimals)
+      apiMinOut: 1_484_505_000_000_000_000n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, unmount } = renderComponent(
+      <PendleRedeem {...baseProps} quote={quote} selectedOutputToken={USDS_TOKEN} />
+    );
+
+    expect(container.textContent).toContain('1.4995 USDS');
+    // Cross-decimals guard: would have rendered as a huge number if the
+    // formatter used 6 decimals (USDG) instead of 18 (USDS).
+    expect(container.textContent).not.toContain('1499500000000');
+    unmount();
+  });
+
+  it('"Min. received" (aggregator path) uses output-token decimals + symbol', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_499_500n,
+      apiMinOut: 1_484_505n, // 1.4845 USDG
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: -0.0012,
+      aggregatorType: 'KYBERSWAP', // gates Min. received row
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, unmount } = renderComponent(
+      <PendleRedeem {...baseProps} quote={quote} selectedOutputToken={USDG_TOKEN} />
+    );
+    expect(container.textContent).toContain('Min. received');
+    expect(container.textContent).toContain('1.4845 USDG');
+    unmount();
+  });
+
+  it('"Slippage tolerance" + "Price impact" render with sign-flipped percentages on aggregator routes', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_499_500n,
+      apiMinOut: 1_484_505n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: -0.0012, // API negative = unfavorable → displayed positive 0.12%
+      aggregatorType: 'OKX',
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, unmount } = renderComponent(
+      <PendleRedeem {...baseProps} quote={quote} slippage={0.005} />
+    );
+    expect(container.textContent).toContain('Slippage tolerance');
+    expect(container.textContent).toContain('0.5%');
+    expect(container.textContent).toContain('0.12%');
+    unmount();
+  });
+
+  it('"Routed via" with no aggregator says "Pendle redeem"', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_499_500n,
+      apiMinOut: 1_484_505n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} quote={quote} />);
+    expect(container.textContent).toContain('Pendle redeem');
+    // Should NOT contain the aggregator-arrow variant.
+    expect(container.textContent).not.toContain('→');
+    unmount();
+  });
+
+  it('"Routed via" with aggregator says "Pendle redeem → <aggregator>"', () => {
+    const quote = {
+      method: 'exitPostExpToToken',
+      amountOut: 1_499_500n,
+      apiMinOut: 1_484_505n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      aggregatorType: 'KYBERSWAP', // formats to "KyberSwap"
+      fetchedAt: Date.now(),
+      apiContractParams: [],
+      apiContractParamsName: []
+    };
+    const { container, unmount } = renderComponent(<PendleRedeem {...baseProps} quote={quote} />);
+    expect(container.textContent).toContain('Pendle redeem → KyberSwap');
+    unmount();
+  });
+
+  it('"Pendle fee" renders "$0.0363" (small) and "$12.35" (>= 1) and "Included in quote" (undefined)', () => {
+    // Small fee.
+    const small = renderComponent(
+      <PendleRedeem
+        {...baseProps}
+        quote={{
+          method: 'exitPostExpToToken',
+          amountOut: 1_499_500n,
+          apiMinOut: 1_484_505n,
+          effectiveApy: 0,
+          impliedApy: 0,
+          priceImpact: 0,
+          feeUsd: 0.0363,
+          fetchedAt: Date.now(),
+          apiContractParams: [],
+          apiContractParamsName: []
+        }}
+      />
+    );
+    expect(small.container.textContent).toContain('$0.0363');
+    small.unmount();
+
+    // Large fee.
+    const large = renderComponent(
+      <PendleRedeem
+        {...baseProps}
+        quote={{
+          method: 'exitPostExpToToken',
+          amountOut: 1_499_500n,
+          apiMinOut: 1_484_505n,
+          effectiveApy: 0,
+          impliedApy: 0,
+          priceImpact: 0,
+          feeUsd: 12.345,
+          fetchedAt: Date.now(),
+          apiContractParams: [],
+          apiContractParamsName: []
+        }}
+      />
+    );
+    expect(large.container.textContent).toContain('$12.35');
+    large.unmount();
+
+    // Undefined fee → "Included in quote".
+    const none = renderComponent(
+      <PendleRedeem
+        {...baseProps}
+        quote={{
+          method: 'exitPostExpToToken',
+          amountOut: 1_499_500n,
+          apiMinOut: 1_484_505n,
+          effectiveApy: 0,
+          impliedApy: 0,
+          priceImpact: 0,
+          fetchedAt: Date.now(),
+          apiContractParams: [],
+          apiContractParamsName: []
+        }}
+      />
+    );
+    expect(none.container.textContent).toContain('Included in quote');
+    none.unmount();
+  });
+
+  it('"Effective APY" renders only when non-zero (conditional row)', () => {
+    // Zero APY: row hidden.
+    const zero = renderComponent(
+      <PendleRedeem
+        {...baseProps}
+        quote={{
+          method: 'exitPostExpToToken',
+          amountOut: 1_499_500n,
+          apiMinOut: 1_484_505n,
+          effectiveApy: 0,
+          impliedApy: 0,
+          priceImpact: 0,
+          fetchedAt: Date.now(),
+          apiContractParams: [],
+          apiContractParamsName: []
+        }}
+      />
+    );
+    expect(zero.container.textContent).not.toContain('Effective APY');
+    zero.unmount();
+
+    // Non-zero APY: row present with percentage formatting.
+    const nonZero = renderComponent(
+      <PendleRedeem
+        {...baseProps}
+        quote={{
+          method: 'exitPostExpToToken',
+          amountOut: 1_499_500n,
+          apiMinOut: 1_484_505n,
+          effectiveApy: 0.0354,
+          impliedApy: 0,
+          priceImpact: 0,
+          fetchedAt: Date.now(),
+          apiContractParams: [],
+          apiContractParamsName: []
+        }}
+      />
+    );
+    expect(nonZero.container.textContent).toContain('Effective APY');
+    expect(nonZero.container.textContent).toContain('3.54%');
+    nonZero.unmount();
   });
 });

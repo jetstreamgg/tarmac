@@ -39,12 +39,11 @@ export const PENDLE_HISTORY_REFRESH_MS = 25_000;
 
 export const PENDLE_BUY_SLIPPAGE_STORAGE_KEY = 'pendle-buy-slippage';
 export const PENDLE_SELL_SLIPPAGE_STORAGE_KEY = 'pendle-sell-slippage';
-/** Matured-PT redeem flow gets its own key — different default and semantics
- * from buy/sell. Aggregator hops on redeem-to-USDS/USDC tend to need wider
- * slippage than pre-maturity AMM trades, hence the higher default below. */
+/** Matured-PT redeem flow gets its own key — separate default from buy/sell
+ * so users can hold a different tolerance per flow. */
 export const PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY = 'pendle-redeem-slippage';
-/** 1% — applied to matured-PT redeem (vs. 0.2% for buy/sell). */
-export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0.01;
+/** 0.02% — applied to matured-PT redeem (vs. 0.2% for buy/sell). */
+export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0.0002;
 
 export const pendleSlippageConfig = {
   min: 0,
@@ -78,13 +77,13 @@ export function getPendleBuyReviewSubtitle({
   needsAllowance: boolean;
 }): MessageDescriptor {
   if (!needsAllowance) {
-    return msg`You will supply your ${symbol} to the Pendle fixed-yield market.`;
+    return msg`You will supply your ${symbol} to the fixed-yield market.`;
   }
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the market in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the market in multiple transactions.`;
     default:
       return msg``;
   }
@@ -102,13 +101,13 @@ export function getPendleWithdrawReviewSubtitle({
   needsAllowance: boolean;
 }): MessageDescriptor {
   if (!needsAllowance) {
-    return msg`You will sell your ${ptSymbol} for ${underlyingSymbol} via Pendle.`;
+    return msg`You will sell your ${ptSymbol} for ${underlyingSymbol}.`;
   }
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} via Pendle in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} via Pendle in multiple transactions.`;
+      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} in multiple transactions.`;
     default:
       return msg``;
   }
@@ -128,17 +127,17 @@ export function getPendleActionDescription({
   underlyingSymbol: string;
 }): MessageDescriptor {
   if ((action === PendleAction.BUY || action === PendleAction.WITHDRAW) && txStatus === TxStatus.SUCCESS) {
-    if (flow === PendleFlow.BUY) return msg`Supplied ${underlyingSymbol} to the Pendle fixed-yield market`;
-    return msg`Sold PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
+    if (flow === PendleFlow.BUY) return msg`Supplied ${underlyingSymbol} to the fixed-yield market`;
+    return msg`Sold PT-${underlyingSymbol} for ${underlyingSymbol}`;
   }
   if (flow === PendleFlow.BUY) {
     return needsAllowance
-      ? msg`Approving and supplying ${underlyingSymbol} to the Pendle fixed-yield market`
-      : msg`Supplying ${underlyingSymbol} to the Pendle fixed-yield market`;
+      ? msg`Approving and supplying ${underlyingSymbol} to the fixed-yield market`
+      : msg`Supplying ${underlyingSymbol} to the fixed-yield market`;
   }
   return needsAllowance
-    ? msg`Approving and selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`
-    : msg`Selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
+    ? msg`Approving and selling PT-${underlyingSymbol} for ${underlyingSymbol}`
+    : msg`Selling PT-${underlyingSymbol} for ${underlyingSymbol}`;
 }
 
 // ---- Transaction-status copy ----
@@ -157,14 +156,14 @@ export function getPendleSupplySubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access your ${symbol} and supply it to the Pendle market.`
+        ? msg`Please allow this app to access your ${symbol} and supply it to the market.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
         ? msg`Your token approval and supply are being processed on the blockchain. Please wait.`
         : msg`Your supply is being processed on the blockchain. Please wait.`;
     case TxStatus.SUCCESS:
-      return msg`You've supplied ${amount} ${symbol} to the Pendle market.`;
+      return msg`You've supplied ${amount} ${symbol} to the market.`;
     case TxStatus.ERROR:
       return msg`An error occurred during the supply flow.`;
     default:
@@ -188,7 +187,7 @@ export function getPendleWithdrawSubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access your ${ptSymbol} and sell it via Pendle.`
+        ? msg`Please allow this app to access your ${ptSymbol} and sell it.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance

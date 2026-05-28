@@ -388,53 +388,28 @@ export const PENDLE_EMPTY_LIMIT = {
 // Adding a market is a pure config change.
 // ---------------------------------------------------------------------------
 
-/**
- * Initial integration uses PT-USDG for testing. Production launch market(s) will
- * be added here once chosen by the team.
- *
- * On-chain readout (Apr 2026):
- *   Market   0xc5b32dba5f29f8395fb9591e1a15f23a75214f33
- *   SY       0xc1799CaB1F201946f7CFaFBaF1BCC089b2F08927  ("SY Global Dollar")
- *   PT       0x9db38D74a0D29380899aD354121DfB521aDb0548
- *   YT       0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1
- *   USDG     0xe343167631d89B6Ffc58B88d6b7fB0228795491D  (only token in/out)
- *   Expiry   1779926400 (Thu May 28 2026 00:00:00 UTC)
- */
 export const PENDLE_MARKETS: PendleMarketConfig[] = [
   {
-    name: 'PT-USDG',
-    marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
-    ptToken: '0x9db38D74a0D29380899aD354121DfB521aDb0548',
-    ytToken: '0x4a1294749A70bc32A998B49dd11Bf26E9379e3C1',
-    syToken: '0xc1799CaB1F201946f7CFaFBaF1BCC089b2F08927',
-    underlyingToken: '0xe343167631d89B6Ffc58B88d6b7fB0228795491D',
-    underlyingSymbol: 'USDG',
-    underlyingDecimals: 6,
-    expiry: 1779926400, // Thu May 28 2026 00:00:00 UTC
-    usdsEquivalence: 'pegged'
-  },
-  {
-    name: 'PT-USDe',
-    marketAddress: '0xa3336f04f7afbf26714331e395054f33b77c9b8d',
-    ptToken: '0xAeBf0Bb9f57E89260d57f31AF34eB58657d96Ce0',
-    ytToken: '0x4265ebF36F738D4D623C201BecBbc0f92bE57198',
-    syToken: '0xf0bAcD9C3D94fC924DBcaaF644208C4E3f4d3bB4',
-    underlyingToken: '0x4c9edd5852cd905f086c759e8383e09bff1e68b3',
-    underlyingSymbol: 'USDe',
+    // PT-sUSDS-26NOV2026 — underlying is sUSDS (Pendle's underlyingAsset = SY's
+    // wrapped yield-bearing token). PT redeems to 1 USDS at maturity per
+    // SY.assetInfo (assetType=0 TOKEN, USDS), so usdsEquivalence is 'pegged'.
+    name: 'PT-sUSDS',
+    marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
+    ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
+    ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
+    syToken: '0xbe3d4ec488a0a042bb86f9176c24f8cd54018ba7',
+    underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
+    underlyingSymbol: 'sUSDS',
     underlyingDecimals: 18,
-    expiry: 1778112000,
+    // SY-sUSDS.getTokensIn() == getTokensOut() == [DAI, USDS, sUSDS]. USDS and
+    // DAI route through SY directly (no aggregator); USDC needs the aggregator.
+    syAcceptedTokens: [
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+      '0xdC035D45d973E3EC169d2276DDab16f1e407384F',
+      '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD'
+    ],
+    expiry: 1795651200, // Thu Nov 26 2026 00:00:00 UTC
     usdsEquivalence: 'pegged'
-  },
-  {
-    name: 'PT-sENA',
-    marketAddress: '0xeab7b7c8353ba1cb4b29cf7ae9c166efdc57835f',
-    ptToken: '0x4552C668eb8dEDeAc53e00CfD05d873f11a80204',
-    ytToken: '0xF8a735034Ce8eBec8f6A742658460a78Ebfae725',
-    syToken: '0xA36ECCA8B7624D224F01CD6649C8afAd3Da12C3D',
-    underlyingToken: '0x8bE3460A480c80728a8C4D7a5D5303c85ba7B3b9',
-    underlyingSymbol: 'sENA',
-    underlyingDecimals: 18,
-    expiry: 1777507200
   }
 ];
 

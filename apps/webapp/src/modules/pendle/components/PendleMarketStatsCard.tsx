@@ -33,30 +33,27 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
       onClick={disabled ? undefined : onClick}
       data-testid="pendle-market-stats-card"
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-row items-center space-y-0">
         <HStack className="items-center" gap={2}>
           <TokenIcon className="h-6 w-6" token={{ symbol: `PT-${market.underlyingSymbol}` }} />
-          <Text>PT-{market.underlyingSymbol}</Text>
           {matured ? (
-            <Text variant="small" className="text-textSecondary">
-              <Trans>· matured</Trans>
+            <Text className="text-textSecondary">
+              <Trans>Matured</Trans>
             </Text>
+          ) : isLoading ? (
+            <Skeleton className="h-4 w-40" />
+          ) : marketData?.impliedApy !== undefined ? (
+            <>
+              <Text>
+                Fixed <span className="text-bullish">{formatDecimalPercentage(marketData.impliedApy)}</span>{' '}
+                APY for {formatTimeLeft(remaining)}
+              </Text>
+              <PopoverRateInfo type="fixedYield" iconClassName="w-3 h-3" />
+            </>
           ) : (
-            <Text variant="small" className="text-textSecondary">
-              <Trans>· {formatTimeLeft(remaining)} left</Trans>
-            </Text>
+            <Text>—</Text>
           )}
         </HStack>
-        {isLoading ? (
-          <Skeleton className="h-4 w-16" />
-        ) : marketData?.impliedApy !== undefined ? (
-          <HStack className="items-center" gap={2}>
-            <Text className="text-bullish">{formatDecimalPercentage(marketData.impliedApy)}</Text>
-            <PopoverRateInfo type="fixedYield" iconClassName="w-3 h-3" />
-          </HStack>
-        ) : (
-          <Text>—</Text>
-        )}
       </CardHeader>
       <CardContent className="mt-5 p-0">
         <HStack className="justify-between" gap={2}>

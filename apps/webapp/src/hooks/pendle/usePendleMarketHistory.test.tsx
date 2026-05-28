@@ -5,8 +5,41 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import type { PendleMarketConfig, PendlePnlTransactionRaw } from './pendle';
+
+// Inject a synthetic second market into PENDLE_MARKETS so the per-market filter
+// in usePendleMarketHistory has two distinct in-set markets to choose between
+// even when production ships a single market. Without this, the upstream
+// normalize-drop in usePendleAllPnlTransactions removes "other-market" rows
+// before the per-market filter can see them, and the filter goes untested.
+const { SYNTHETIC_MARKET_ADDRESS, syntheticMarket } = vi.hoisted(() => {
+  const SYNTHETIC_MARKET_ADDRESS = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as `0x${string}`;
+  const syntheticMarket = {
+    name: 'PT-TEST',
+    marketAddress: SYNTHETIC_MARKET_ADDRESS,
+    ptToken: '0x0000000000000000000000000000000000000001',
+    ytToken: '0x0000000000000000000000000000000000000002',
+    syToken: '0x0000000000000000000000000000000000000003',
+    underlyingToken: '0x0000000000000000000000000000000000000004',
+    underlyingSymbol: 'TEST',
+    underlyingDecimals: 18,
+    expiry: 9999999999
+  } as const;
+  return { SYNTHETIC_MARKET_ADDRESS, syntheticMarket };
+});
+
+vi.mock('./constants', async () => {
+  const actual = await vi.importActual<typeof import('./constants')>('./constants');
+  const merged: PendleMarketConfig[] = [...actual.PENDLE_MARKETS, syntheticMarket];
+  return {
+    ...actual,
+    PENDLE_MARKETS: merged,
+    getPendleMarketByAddress: (addr: `0x${string}`) =>
+      merged.find(m => m.marketAddress.toLowerCase() === addr.toLowerCase())
+  };
+});
+
 import { PENDLE_MARKETS, PendleHistoryAction } from './constants';
-import type { PendlePnlTransactionRaw } from './pendle';
 
 vi.mock('wagmi', () => ({
   useConnection: vi.fn()
@@ -21,13 +54,13 @@ import { fetchPendlePnlTransactionsForUser } from './pendleApiClient';
 import { usePendleMarketHistory } from './usePendleMarketHistory';
 
 const USER = '0x1111111111111111111111111111111111111111' as const;
-const MARKET_USDG = PENDLE_MARKETS.find(m => m.name === 'PT-USDG')!.marketAddress;
-const MARKET_USDE = PENDLE_MARKETS.find(m => m.name === 'PT-USDe')!.marketAddress;
+const MARKET_SUSDS = PENDLE_MARKETS[0].marketAddress;
+const MARKET_PEER = SYNTHETIC_MARKET_ADDRESS;
 
 function wireRow(overrides: Partial<PendlePnlTransactionRaw>): PendlePnlTransactionRaw {
   return {
     chainId: 1,
-    market: `1-${MARKET_USDG}`,
+    market: `1-${MARKET_SUSDS}`,
     timestamp: '2026-01-01T00:00:00Z',
     action: 'buyPt',
     txHash: '0xaaaa000000000000000000000000000000000000000000000000000000000001',
@@ -63,14 +96,14 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
       wireRow({
         action: 'buyPt',
-        market: `1-${MARKET_USDG}`,
+        market: `1-${MARKET_SUSDS}`,
         txValueAsset: 100,
         effectivePtExchangeRate: 1.0234,
         assetUsd: 1
       })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -85,14 +118,14 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
       wireRow({
         action: 'sellPt',
-        market: `1-${MARKET_USDG}`,
+        market: `1-${MARKET_SUSDS}`,
         txValueAsset: 50,
         effectivePtExchangeRate: 0.98,
         assetUsd: 1.001
       })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -109,14 +142,14 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
       wireRow({
         action: 'redeemPy',
-        market: `1-${MARKET_USDG}`,
+        market: `1-${MARKET_SUSDS}`,
         txValueAsset: 800,
         effectivePtExchangeRate: 0,
         assetUsd: 1
       })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -131,10 +164,10 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     // PnL feed reports a redeemPy entry but no underlying actually moved —
     // surface nothing rather than a confusing "0 USDG" row.
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
-      wireRow({ action: 'redeemPy', market: `1-${MARKET_USDG}`, txValueAsset: 0, assetUsd: 1 })
+      wireRow({ action: 'redeemPy', market: `1-${MARKET_SUSDS}`, txValueAsset: 0, assetUsd: 1 })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -147,21 +180,21 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     // everything else must be dropped silently at the transport boundary.
     const buyPt = wireRow({
       action: 'buyPt',
-      market: `1-${MARKET_USDG}`,
+      market: `1-${MARKET_SUSDS}`,
       txHash: '0xbbbb000000000000000000000000000000000000000000000000000000000001'
     });
     const noise = ['mintPy', 'buyYt', 'sellYt', 'addLiquiditySingleToken', 'swapPtToYt', 'transferIn'].map(
       (action, i) =>
         wireRow({
           action,
-          market: `1-${MARKET_USDG}`,
+          market: `1-${MARKET_SUSDS}`,
           txHash: `0xcccc00000000000000000000000000000000000000000000000000000000000${i}` as `0x${string}`
         })
     );
 
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([buyPt, ...noise]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -176,17 +209,17 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
       wireRow({
         action: 'buyPt',
-        market: `1-${MARKET_USDG}`,
+        market: `1-${MARKET_SUSDS}`,
         txHash: '0xdddd000000000000000000000000000000000000000000000000000000000001'
       }),
       wireRow({
         action: 'buyPt',
-        market: `1-${MARKET_USDE}`,
+        market: `1-${MARKET_PEER}`,
         txHash: '0xdddd000000000000000000000000000000000000000000000000000000000002'
       })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -202,10 +235,10 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     // Other Pendle endpoints use the chainId-prefixed form — we accept both
     // so the resolver doesn't silently drop every row on the production API.
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
-      wireRow({ action: 'buyPt', market: MARKET_USDG })
+      wireRow({ action: 'buyPt', market: MARKET_SUSDS })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -217,7 +250,7 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
   it('drops rows whose market is not in PENDLE_MARKETS', async () => {
     // Unfiltered /v1/pnl/transactions returns activity across every Pendle
     // market the user has touched, not just ours. Unknown markets must drop.
-    const unknownMarket = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
+    const unknownMarket = '0xfeedfacefeedfacefeedfacefeedfacefeedface' as const;
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
       wireRow({ action: 'buyPt', market: `1-${unknownMarket}` })
     ]);
@@ -234,20 +267,20 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
     vi.mocked(fetchPendlePnlTransactionsForUser).mockResolvedValueOnce([
       wireRow({
         action: 'buyPt',
-        market: `1-${MARKET_USDG}`,
+        market: `1-${MARKET_SUSDS}`,
         timestamp: '2026-01-01T00:00:00Z',
         txHash: '0xeeee000000000000000000000000000000000000000000000000000000000001'
       }),
       wireRow({
         action: 'redeemPy',
-        market: `1-${MARKET_USDG}`,
+        market: `1-${MARKET_SUSDS}`,
         timestamp: '2026-06-01T00:00:00Z',
         txValueAsset: 100,
         txHash: '0xeeee000000000000000000000000000000000000000000000000000000000002'
       })
     ]);
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -260,7 +293,7 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
   it('surfaces the error when the PnL endpoint fails (single-query single-error)', async () => {
     vi.mocked(fetchPendlePnlTransactionsForUser).mockRejectedValueOnce(new Error('503'));
 
-    const { result } = renderHook(() => usePendleMarketHistory(MARKET_USDG), {
+    const { result } = renderHook(() => usePendleMarketHistory(MARKET_SUSDS), {
       wrapper: makeWrapper()
     });
 
@@ -273,7 +306,7 @@ describe('usePendleMarketHistory — single-endpoint PnL feed', () => {
       typeof useConnection
     >);
 
-    renderHook(() => usePendleMarketHistory(MARKET_USDG), { wrapper: makeWrapper() });
+    renderHook(() => usePendleMarketHistory(MARKET_SUSDS), { wrapper: makeWrapper() });
 
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(fetchPendlePnlTransactionsForUser).not.toHaveBeenCalled();
