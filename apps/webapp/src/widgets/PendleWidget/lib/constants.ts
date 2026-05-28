@@ -39,12 +39,11 @@ export const PENDLE_HISTORY_REFRESH_MS = 25_000;
 
 export const PENDLE_BUY_SLIPPAGE_STORAGE_KEY = 'pendle-buy-slippage';
 export const PENDLE_SELL_SLIPPAGE_STORAGE_KEY = 'pendle-sell-slippage';
-/** Matured-PT redeem flow gets its own key — different default and semantics
- * from buy/sell. Aggregator hops on redeem-to-USDS/USDC tend to need wider
- * slippage than pre-maturity AMM trades, hence the higher default below. */
+/** Matured-PT redeem flow gets its own key — separate default from buy/sell
+ * so users can hold a different tolerance per flow. */
 export const PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY = 'pendle-redeem-slippage';
-/** 1% — applied to matured-PT redeem (vs. 0.2% for buy/sell). */
-export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0.01;
+/** 0.02% — applied to matured-PT redeem (vs. 0.2% for buy/sell). */
+export const PENDLE_DEFAULT_REDEEM_SLIPPAGE = 0.0002;
 
 export const pendleSlippageConfig = {
   min: 0,
