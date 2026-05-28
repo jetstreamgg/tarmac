@@ -56,12 +56,27 @@ export const PendleRedeem = ({
   // and broader DeFi conventions). The raw quote.priceImpact stays unflipped
   // for analytics/debugging.
 
+  // Section 1 "Transaction overview" (expanded by default): the two numbers
+  // the user came for — how much PT they're redeeming, and how much USDS/USDC
+  // they're getting. Per APP-268.
+  const pinnedData = quote
+    ? [
+        {
+          label: t`You redeem`,
+          value: `${formattedPt} ${ptSymbol}`
+        },
+        {
+          label: t`You receive`,
+          value: `${formatBigInt(quote.amountOut, { unit: outDecimals, maxDecimals: 4 })} ${selectedOutputToken.symbol}`
+        }
+      ]
+    : undefined;
+
+  // Section 2 "Transaction Details" (collapsed by default).
   const transactionData = quote
     ? [
-        // Min. received, slippage tolerance, and price impact only matter when
-        // an aggregator hop is in the route. The pure Pendle redeem path burns
-        // PT for the underlying at the SY's expiry-frozen rate — deterministic,
-        // no swap, so these rows would be meaningless or misleading.
+        // Slippage / price impact / Min. received only matter on aggregator
+        // hops; pure PT-burn at the SY's expiry-frozen rate has no swap math.
         ...(aggregatorName
           ? [
               {
@@ -181,6 +196,7 @@ export const PendleRedeem = ({
         title={t`Transaction overview`}
         isFetching={isFetchingQuote && !quote}
         fetchingMessage={t`Fetching quote from Pendle`}
+        pinnedData={pinnedData}
         transactionData={transactionData}
       />
     </div>

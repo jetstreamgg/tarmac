@@ -108,6 +108,13 @@ export const SupplyWithdraw = ({
     month: 'short',
     day: 'numeric'
   });
+  // BUY only: 1 PT redeems for 1 USDS at maturity (assetInfo: TOKEN, USDS for
+  // PT-sUSDS) — so amountOut in PT units IS the USDS payout at maturity.
+  // Future markets with usdsEquivalence !== 'pegged' would need PT × chi here.
+  const valueAtMaturity =
+    quote && flow === PendleFlow.BUY
+      ? `${formatBigInt(quote.amountOut, { unit: targetDecimals, maxDecimals: 4 })} USDS`
+      : undefined;
 
   const errorText = insufficientFunds
     ? t`Insufficient funds. Your balance is ${formatUnits(inputBalance ?? 0n, originDecimals)}.`
@@ -250,34 +257,75 @@ export const SupplyWithdraw = ({
           isFetching={isFetchingQuote || (!quote && !quoteErrorMessage)}
           fetchingMessage={t`Fetching quote from Pendle`}
           onExternalLinkClicked={onExternalLinkClicked}
+          // Section 1 "Transaction overview" (expanded by default) — what the
+          // user came for. BUY: amount in, rate, maturity, USDS payout at
+          // maturity. SELL: amount in, realized rate, USDS now. Per APP-268.
+          pinnedData={
+            quote
+              ? flow === PendleFlow.BUY
+                ? [
+                    {
+                      label: t`You supply`,
+                      value: `${formatBigInt(amount, { unit: originDecimals, maxDecimals: 4 })} ${originSymbol}`
+                    },
+                    {
+                      label: t`Effective APY`,
+                      value: apyDisplay,
+                      className: quote.effectiveApy < 0 ? 'text-error' : 'text-bullish',
+                      tooltipTitle: getTooltipById('effective-apy')?.title || '',
+                      tooltipText: getTooltipById('effective-apy')?.tooltip || ''
+                    },
+                    {
+                      label: t`Maturity date`,
+                      value: maturityDisplay
+                    },
+                    {
+                      label: t`Value at maturity`,
+                      value: valueAtMaturity!
+                    }
+                  ]
+                : [
+                    {
+                      label: t`You withdraw`,
+                      value: `${formatBigInt(amount, { unit: originDecimals, maxDecimals: 4 })} ${originSymbol}`
+                    },
+                    {
+                      label: t`Effective APY`,
+                      value: apyDisplay,
+                      className: quote.effectiveApy < 0 ? 'text-error' : 'text-bullish',
+                      tooltipTitle: getTooltipById('effective-apy')?.title || '',
+                      tooltipText: getTooltipById('effective-apy')?.tooltip || ''
+                    },
+                    {
+                      label: t`Maturity date`,
+                      value: maturityDisplay
+                    },
+                    {
+                      label: t`You receive`,
+                      value: formattedReceive!,
+                      tooltipTitle: getTooltipById('early-withdrawal-impact')?.title || '',
+                      tooltipText: getTooltipById('early-withdrawal-impact')?.tooltip || ''
+                    }
+                  ]
+              : undefined
+          }
+          // Section 2 "Transaction Details" (collapsed by default) — the
+          // technical breakdown: actual PT amount, min received, slippage,
+          // price impact + breakdown, routing, fee, plus maturity on SELL.
           transactionData={
             quote
               ? [
-                  {
-                    label: flow === PendleFlow.BUY ? t`You supply` : t`You redeem`,
-                    value: `${formatBigInt(amount, { unit: originDecimals, maxDecimals: 4 })} ${originSymbol}`
-                  },
-                  {
-                    label: t`You receive`,
-                    value: formattedReceive!,
-                    ...(flow !== PendleFlow.BUY
-                      ? {
-                          tooltipTitle: getTooltipById('early-withdrawal-impact')?.title || '',
-                          tooltipText: getTooltipById('early-withdrawal-impact')?.tooltip || ''
+                  // BUY: surface the actual PT amount here (the pinned section
+                  // shows the USDS-denominated "Value at maturity" instead).
+                  // SELL: already pinned as "You receive", don't duplicate.
+                  ...(flow === PendleFlow.BUY
+                    ? [
+                        {
+                          label: t`You receive`,
+                          value: formattedReceive!
                         }
-                      : {})
-                  },
-                  {
-                    label: t`Effective APY`,
-                    value: apyDisplay,
-                    className: quote.effectiveApy < 0 ? 'text-error' : 'text-bullish',
-                    tooltipTitle: getTooltipById('effective-apy')?.title || '',
-                    tooltipText: getTooltipById('effective-apy')?.tooltip || ''
-                  },
-                  {
-                    label: t`Maturity date`,
-                    value: maturityDisplay
-                  },
+                      ]
+                    : []),
                   {
                     label: t`Min. received`,
                     value: formattedMin!
