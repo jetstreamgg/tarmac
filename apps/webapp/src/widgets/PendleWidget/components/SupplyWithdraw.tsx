@@ -309,7 +309,7 @@ export const SupplyWithdraw = ({
                   ]
               : undefined
           }
-          // Section 2 "Transaction Details" (collapsed by default) — the
+          // Section 2 "Transaction details" (collapsed by default) — the
           // technical breakdown: actual PT amount, min received, slippage,
           // price impact + breakdown, routing, fee, plus maturity on SELL.
           transactionData={

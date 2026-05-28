@@ -265,7 +265,7 @@ export function TokenInput({
 
     return `${formatBigInt(balance, {
       unit: decimals
-    })} ${token.symbol.toUpperCase()}`;
+    })} ${token.symbol}`;
   }, [balance, token, enabled]);
 
   const filteredTokenList = useMemo(() => {
