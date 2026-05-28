@@ -670,6 +670,208 @@ describe('buildVerifiedArgs — multi-input SY (syAcceptedTokens)', () => {
     };
     expect(() => buildVerifiedArgs(quote, known)).toThrow(/not in syAcceptedTokens/);
   });
+
+  // --- WITHDRAW (pre-maturity sell) ---------------------------------------
+  // resolveAggregatorFields is shared with BUY, but buildWithdrawArgs has its
+  // own args-tuple shape (output struct at args[3]). These tests guard against
+  // a regression in that mapping for multi-input SYs.
+
+  const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const;
+
+  it('Withdraw with USDS output (non-underlying but SY-accepted) takes the no-aggregator path', () => {
+    const known = {
+      side: PendleConvertSide.WITHDRAW,
+      receiver: RECEIVER,
+      market: SUSDS_MARKET,
+      inputToken: PT_SUSDS,
+      outputToken: USDS,
+      underlyingToken: SUSDS,
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 100_000_000_000_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.005
+    };
+    const quote: PendleConvertQuote = {
+      method: 'swapExactPtForToken',
+      amountOut: 100_000_000_000_000_000n,
+      apiMinOut: 99_500_000_000_000_000n,
+      effectiveApy: 0.05,
+      impliedApy: 0.058,
+      priceImpact: -0.0002,
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        SUSDS_MARKET,
+        '100000000000000000',
+        {
+          tokenOut: USDS,
+          minTokenOut: '99500000000000000',
+          tokenRedeemSy: USDS,
+          pendleSwap: ZERO,
+          swapData: API_EMPTY_SWAP
+        },
+        API_EMPTY_LIMIT
+      ],
+      apiContractParamsName: ['receiver', 'market', 'exactPtIn', 'output', 'limit']
+    };
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.functionName !== 'swapExactPtForToken') throw new Error('expected swapExactPtForToken');
+    expect(verified.args[3].pendleSwap).toBe(ZERO);
+    expect(verified.args[3].tokenOut).toBe(USDS);
+    expect(verified.args[3].tokenRedeemSy).toBe(USDS); // === userSide, SY accepts it directly
+  });
+
+  it('Withdraw aggregator: uses API tokenRedeemSy when SY accepts multiple tokens', () => {
+    // PT-sUSDS → USDC: SY redeems to USDS (SY-accepted, cheapest), aggregator
+    // then swaps USDS→USDC via OKX/Kyber/etc. tokenRedeemSy must reflect the
+    // API value (USDS), not the configured underlying (sUSDS).
+    const known = {
+      side: PendleConvertSide.WITHDRAW,
+      receiver: RECEIVER,
+      market: SUSDS_MARKET,
+      inputToken: PT_SUSDS,
+      outputToken: USDC,
+      underlyingToken: SUSDS,
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 100_000_000_000_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.005
+    };
+    const quote: PendleConvertQuote = {
+      method: 'swapExactPtForToken',
+      amountOut: 99_800_000n,
+      apiMinOut: 99_300_000n,
+      effectiveApy: 0.05,
+      impliedApy: 0.058,
+      priceImpact: -0.0002,
+      aggregatorType: 'OKX',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDS
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        SUSDS_MARKET,
+        '100000000000000000',
+        {
+          tokenOut: USDC,
+          minTokenOut: '99300000',
+          tokenRedeemSy: USDS,
+          pendleSwap: PINNED_PENDLE_SWAP,
+          swapData: { swapType: '4', extRouter: KYBER_ROUTER, extCalldata: '0x', needScale: false }
+        },
+        API_EMPTY_LIMIT
+      ],
+      apiContractParamsName: ['receiver', 'market', 'exactPtIn', 'output', 'limit']
+    };
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.functionName !== 'swapExactPtForToken') throw new Error('expected swapExactPtForToken');
+    expect(verified.args[3].pendleSwap).toBe(PINNED_PENDLE_SWAP);
+    expect(verified.args[3].tokenOut).toBe(USDC);
+    expect(verified.args[3].tokenRedeemSy).toBe(USDS); // what SY actually redeems to
+  });
+
+  // --- EXIT (matured-market redeem) ---------------------------------------
+  // Same resolveAggregatorFields path, different builder. Args tuple has no
+  // `limit` slot, output struct is at args[4]. Covers the matured-redeem
+  // surfaces (PendleMaturedPositionCard + PendleReadyToRedeemTable, both
+  // funneled through usePendleRedeemModal → exitPostExpToToken).
+
+  it('Exit (matured) with USDS output takes the no-aggregator path', () => {
+    const known = {
+      side: PendleConvertSide.WITHDRAW,
+      receiver: RECEIVER,
+      market: SUSDS_MARKET,
+      inputToken: PT_SUSDS,
+      outputToken: USDS,
+      underlyingToken: SUSDS,
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 100_000_000_000_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    const quote: PendleConvertQuote = {
+      method: 'exitPostExpToToken',
+      amountOut: 100_000_000_000_000_000n,
+      apiMinOut: 99_800_000_000_000_000n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        SUSDS_MARKET,
+        '100000000000000000',
+        '0',
+        {
+          tokenOut: USDS,
+          minTokenOut: '99800000000000000',
+          tokenRedeemSy: USDS,
+          pendleSwap: ZERO,
+          swapData: { swapType: '0', extRouter: ZERO, extCalldata: '0x', needScale: false }
+        }
+      ],
+      apiContractParamsName: ['receiver', 'market', 'netPtIn', 'netLpIn', 'output']
+    };
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.functionName !== 'exitPostExpToToken') throw new Error('expected exitPostExpToToken');
+    expect(verified.args[3]).toBe(0n); // netLpIn forced to 0
+    expect(verified.args[4].pendleSwap).toBe(ZERO);
+    expect(verified.args[4].tokenOut).toBe(USDS);
+    expect(verified.args[4].tokenRedeemSy).toBe(USDS); // === userSide
+  });
+
+  it('Exit (matured) aggregator: uses API tokenRedeemSy when SY accepts multiple tokens', () => {
+    const known = {
+      side: PendleConvertSide.WITHDRAW,
+      receiver: RECEIVER,
+      market: SUSDS_MARKET,
+      inputToken: PT_SUSDS,
+      outputToken: USDC,
+      underlyingToken: SUSDS,
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 100_000_000_000_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    const quote: PendleConvertQuote = {
+      method: 'exitPostExpToToken',
+      amountOut: 99_800_000n,
+      apiMinOut: 99_600_000n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      aggregatorType: 'OKX',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDS
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        SUSDS_MARKET,
+        '100000000000000000',
+        '0',
+        {
+          tokenOut: USDC,
+          minTokenOut: '99600000',
+          tokenRedeemSy: USDS,
+          pendleSwap: PINNED_PENDLE_SWAP,
+          swapData: { swapType: '4', extRouter: KYBER_ROUTER, extCalldata: '0x', needScale: false }
+        }
+      ],
+      apiContractParamsName: ['receiver', 'market', 'netPtIn', 'netLpIn', 'output']
+    };
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.functionName !== 'exitPostExpToToken') throw new Error('expected exitPostExpToToken');
+    expect(verified.args[3]).toBe(0n);
+    expect(verified.args[4].pendleSwap).toBe(PINNED_PENDLE_SWAP);
+    expect(verified.args[4].tokenOut).toBe(USDC);
+    expect(verified.args[4].tokenRedeemSy).toBe(USDS);
+  });
 });
 
 describe('buildVerifiedArgs — Exit (matured-market withdraw)', () => {
