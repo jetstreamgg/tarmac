@@ -26,7 +26,7 @@ export type PendleMaturedPositionEarnings = {
   earnings?: number;
   /** Annualized yield as a decimal (e.g. 0.0521 for 5.21% APY). */
   apy?: number;
-  /** Display symbol for both `earnings` and the cost basis math (e.g. 'USDS', 'sENA'). */
+  /** Display symbol for both `earnings` and the cost basis math (e.g. 'USDS'). */
   currency?: string;
   /** True until both market history and the on-chain receive amount have resolved. */
   isLoading: boolean;
@@ -59,11 +59,11 @@ export function usePendleMaturedPositionEarnings(
   });
 
   // Per PR #1546 review (commit d37958e5) — Pendle PT tokens inherit their
-  // underlying's decimals (e.g. PT-USDG has 6 because USDG has 6; PT-sUSDS
-  // has 18 because sUSDS has 18). Earlier docs claimed PT was universally
-  // 18-decimal; they conflated pyIndex's fixed-point scale (1e18) with PT's
-  // own scale. The fix: divide by `market.underlyingDecimals`, which the
-  // PENDLE_MARKETS config already carries per market.
+  // underlying's decimals (PT-sUSDS has 18 because sUSDS has 18; markets with
+  // 6-decimal underlyings would have 6-decimal PTs). Earlier docs claimed PT
+  // was universally 18-decimal; they conflated pyIndex's fixed-point scale
+  // (1e18) with PT's own scale. The fix: divide by `market.underlyingDecimals`,
+  // which the PENDLE_MARKETS config already carries per market.
   const ptBalanceFloat = Number(ptBalance ?? 0n) / 10 ** market.underlyingDecimals;
 
   const result = useMemo<Omit<PendleMaturedPositionEarnings, 'isLoading'>>(

@@ -365,7 +365,8 @@ describe('buildVerifiedArgs — Buy aggregator branch', () => {
       aggregatorType: 'KYBERSWAP',
       aggregatorRoute: {
         pendleSwap: PINNED_PENDLE_SWAP,
-        swapData: KYBER_SWAP_DATA
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDG
       },
       fetchedAt: Date.now(),
       apiContractParams: makeAggBuyParams(),
@@ -391,7 +392,7 @@ describe('buildVerifiedArgs — Buy aggregator branch', () => {
   it('rejects when the API returns a non-pinned pendleSwap', () => {
     const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
     const quote = makeAggBuyQuote({
-      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA }
+      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA, tokenMintSyOrRedeem: USDG }
     });
     expect(() => buildVerifiedArgs(quote, BUY_AGG_KNOWN)).toThrow(/not the pinned forwarder/);
   });
@@ -405,7 +406,7 @@ describe('buildVerifiedArgs — Buy aggregator branch', () => {
     // Sanity: BUY_KNOWN has inputToken == USDG (the underlying); presence of
     // aggregatorRoute on the quote should be ignored.
     const quote = makeAggBuyQuote({
-      aggregatorRoute: { pendleSwap: PINNED_PENDLE_SWAP, swapData: KYBER_SWAP_DATA }
+      aggregatorRoute: { pendleSwap: PINNED_PENDLE_SWAP, swapData: KYBER_SWAP_DATA, tokenMintSyOrRedeem: USDG }
     });
     quote.method = 'swapExactTokenForPt';
     quote.apiContractParams = makeBuyParams();
@@ -465,7 +466,8 @@ describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
       aggregatorType: 'KYBERSWAP',
       aggregatorRoute: {
         pendleSwap: PINNED_PENDLE_SWAP,
-        swapData: KYBER_SWAP_DATA
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDG
       },
       fetchedAt: Date.now(),
       apiContractParams: makeAggWithdrawParams(),
@@ -486,7 +488,7 @@ describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
   it('rejects when the API returns a non-pinned pendleSwap', () => {
     const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
     const quote = makeAggWithdrawQuote({
-      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA }
+      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA, tokenMintSyOrRedeem: USDG }
     });
     expect(() => buildVerifiedArgs(quote, WITHDRAW_AGG_KNOWN)).toThrow(/not the pinned forwarder/);
   });
@@ -494,6 +496,179 @@ describe('buildVerifiedArgs — Withdraw aggregator branch', () => {
   it('rejects when output ≠ underlying but quote has no aggregatorRoute', () => {
     const quote = makeAggWithdrawQuote({ aggregatorRoute: undefined });
     expect(() => buildVerifiedArgs(quote, WITHDRAW_AGG_KNOWN)).toThrow(/aggregator required/);
+  });
+});
+
+// Multi-input SY (e.g. PT-sUSDS): SY.getTokensIn returns [DAI, USDS, sUSDS].
+// underlyingToken is sUSDS but USDS is also accepted directly. The no-aggregator
+// path must trigger whenever the user-side token is in syAcceptedTokens — not
+// only when it equals underlyingToken.
+describe('buildVerifiedArgs — multi-input SY (syAcceptedTokens)', () => {
+  const SUSDS = '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD' as const;
+  const SY_ACCEPTED = [
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F' as const, // DAI
+    USDS,
+    SUSDS
+  ];
+  const PT_SUSDS = '0xdc169abe56461a2e0c034da431ac2a3ebf596094' as const;
+  const SUSDS_MARKET = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc' as const;
+
+  it('Buy with USDS (non-underlying but SY-accepted) takes the no-aggregator path', () => {
+    const known = {
+      side: PendleConvertSide.BUY,
+      receiver: RECEIVER,
+      market: SUSDS_MARKET,
+      inputToken: USDS,
+      outputToken: PT_SUSDS,
+      underlyingToken: SUSDS, // Pendle's underlyingAsset
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 100_000_000_000_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    // Use a no-aggregator quote (pendleSwap=0x0 in API response → aggregatorRoute undefined)
+    const quote = makeBuyQuote();
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[4].pendleSwap).toBe(ZERO);
+    expect(verified.args[4].swapData).toEqual(PENDLE_EMPTY_SWAP_DATA);
+    // tokenMintSy is the user-picked token (USDS) — SY accepts it directly,
+    // so no need to pin it to the underlying sUSDS.
+    expect(verified.args[4].tokenMintSy).toBe(USDS);
+    expect(verified.args[4].tokenIn).toBe(USDS);
+  });
+
+  it('falls back to [underlyingToken] when syAcceptedTokens is omitted', () => {
+    // Existing single-input-SY behavior: user must pick the underlying.
+    const known = {
+      side: PendleConvertSide.BUY,
+      receiver: RECEIVER,
+      market: MARKET,
+      inputToken: USDG, // === underlying, so no aggregator
+      outputToken: PT_USDG,
+      underlyingToken: USDG,
+      amountIn: 100_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    const verified = buildVerifiedArgs(makeBuyQuote(), known);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[4].pendleSwap).toBe(ZERO);
+    expect(verified.args[4].tokenMintSy).toBe(USDG);
+  });
+
+  it('Buy aggregator: uses API tokenMintSy when SY accepts multiple tokens', () => {
+    // PT-sUSDS: SY accepts [DAI, USDS, sUSDS]. User supplies USDC → OKX routes
+    // to USDS (cheaper than → sUSDS). buildVerifiedArgs must use the API's
+    // tokenMintSy (USDS), NOT the configured underlying (sUSDS), or the
+    // on-chain Router reverts on tokenMintSy / aggregator-output mismatch.
+    const SUSDS = '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD' as const;
+    const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const;
+    const SY_ACCEPTED = [
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F' as const, // DAI
+      USDS,
+      SUSDS
+    ];
+    const known = {
+      side: PendleConvertSide.BUY,
+      receiver: RECEIVER,
+      market: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc' as `0x${string}`,
+      inputToken: USDC,
+      outputToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094' as `0x${string}`,
+      underlyingToken: SUSDS,
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 1_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    const quote = {
+      method: 'swapExactTokenForPt' as const,
+      amountOut: 1_028_292_577_543_258_923n,
+      apiMinOut: 1_026_236_192_388_172_405n,
+      effectiveApy: 0.036,
+      impliedApy: 0.036,
+      priceImpact: -0.0003,
+      aggregatorType: 'OKX',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDS // OKX delivers to USDS, not sUSDS
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        known.market,
+        '1026236192388172405',
+        API_GUESS,
+        {
+          tokenIn: USDC,
+          netTokenIn: '1000000',
+          tokenMintSy: USDS,
+          pendleSwap: PINNED_PENDLE_SWAP,
+          swapData: { swapType: '4', extRouter: KYBER_ROUTER, extCalldata: '0x', needScale: false }
+        },
+        API_EMPTY_LIMIT
+      ],
+      apiContractParamsName: BUY_PARAM_NAMES
+    };
+    const verified = buildVerifiedArgs(quote, known);
+    if (verified.side !== PendleConvertSide.BUY) throw new Error('expected BUY');
+    expect(verified.args[4].pendleSwap).toBe(PINNED_PENDLE_SWAP);
+    expect(verified.args[4].tokenIn).toBe(USDC); // what user pays
+    expect(verified.args[4].tokenMintSy).toBe(USDS); // what aggregator delivers
+  });
+
+  it('Buy aggregator: rejects when API delivers to a token outside syAcceptedTokens', () => {
+    // Defense in depth: even if the API returns the pinned forwarder, refuse
+    // to sign when the aggregator's delivery target isn't a token the SY
+    // actually accepts (a misconfigured market or a tampered API response).
+    const SUSDS = '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD' as const;
+    const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as const;
+    const SY_ACCEPTED = ['0x6B175474E89094C44Da98b954EedeAC495271d0F' as const, USDS, SUSDS];
+    const ATTACKER_TOKEN = '0xbadbadbadbadbadbadbadbadbadbadbadbadbadb' as const;
+    const known = {
+      side: PendleConvertSide.BUY,
+      receiver: RECEIVER,
+      market: MARKET,
+      inputToken: USDC,
+      outputToken: PT_USDG,
+      underlyingToken: SUSDS,
+      syAcceptedTokens: SY_ACCEPTED,
+      amountIn: 1_000_000n,
+      pinnedPendleSwap: PINNED_PENDLE_SWAP,
+      slippage: 0.002
+    };
+    const quote = {
+      method: 'swapExactTokenForPt' as const,
+      amountOut: 100n,
+      apiMinOut: 99n,
+      effectiveApy: 0,
+      impliedApy: 0,
+      priceImpact: 0,
+      aggregatorType: 'OKX',
+      aggregatorRoute: {
+        pendleSwap: PINNED_PENDLE_SWAP,
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: ATTACKER_TOKEN
+      },
+      fetchedAt: Date.now(),
+      apiContractParams: [
+        RECEIVER,
+        MARKET,
+        '99',
+        API_GUESS,
+        {
+          tokenIn: USDC,
+          netTokenIn: '1000000',
+          tokenMintSy: ATTACKER_TOKEN,
+          pendleSwap: PINNED_PENDLE_SWAP,
+          swapData: { swapType: '4', extRouter: KYBER_ROUTER, extCalldata: '0x', needScale: false }
+        },
+        API_EMPTY_LIMIT
+      ],
+      apiContractParamsName: BUY_PARAM_NAMES
+    };
+    expect(() => buildVerifiedArgs(quote, known)).toThrow(/not in syAcceptedTokens/);
   });
 });
 
@@ -657,7 +832,8 @@ describe('buildVerifiedArgs — Exit aggregator branch', () => {
       aggregatorType: 'KYBERSWAP',
       aggregatorRoute: {
         pendleSwap: PINNED_PENDLE_SWAP,
-        swapData: KYBER_SWAP_DATA
+        swapData: KYBER_SWAP_DATA,
+        tokenMintSyOrRedeem: USDG
       },
       fetchedAt: Date.now(),
       apiContractParams: makeAggExitParams(),
@@ -678,7 +854,7 @@ describe('buildVerifiedArgs — Exit aggregator branch', () => {
   it('rejects when the API returns a non-pinned pendleSwap', () => {
     const ATTACKER = '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' as const;
     const quote = makeAggExitQuote({
-      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA }
+      aggregatorRoute: { pendleSwap: ATTACKER, swapData: KYBER_SWAP_DATA, tokenMintSyOrRedeem: USDG }
     });
     expect(() => buildVerifiedArgs(quote, EXIT_AGG_KNOWN)).toThrow(/not the pinned forwarder/);
   });

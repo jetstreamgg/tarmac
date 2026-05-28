@@ -41,7 +41,7 @@ function rowToItem(row: PendleCombinedHistoryRow): PendleHistoryItem {
     chainId: 1,
     assets,
     underlyingDecimals: decimals,
-    // "X PT-USDe", not "X USDe" — Pendle's router permits aggregator hops,
+    // "X PT-sUSDS", not "X USDS" — Pendle's router permits aggregator hops,
     // so the wallet-side token often differs from the market's underlying.
     underlyingSymbol: row.market.name,
     marketName: row.market.name,

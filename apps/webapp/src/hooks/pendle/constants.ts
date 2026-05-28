@@ -401,6 +401,13 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     underlyingToken: '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD',
     underlyingSymbol: 'sUSDS',
     underlyingDecimals: 18,
+    // SY-sUSDS.getTokensIn() == getTokensOut() == [DAI, USDS, sUSDS]. USDS and
+    // DAI route through SY directly (no aggregator); USDC needs the aggregator.
+    syAcceptedTokens: [
+      '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+      '0xdC035D45d973E3EC169d2276DDab16f1e407384F',
+      '0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD'
+    ],
     expiry: 1795651200, // Thu Nov 26 2026 00:00:00 UTC
     usdsEquivalence: 'pegged'
   }

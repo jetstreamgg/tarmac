@@ -19,7 +19,7 @@ export type MarketBalanceForAccordion = {
   balance: bigint;
   /** Balance normalized to 18 decimals for cross-asset comparison */
   balanceNormalized: bigint;
-  /** Symbol used to resolve the row's token icon (e.g. "PT-USDG") */
+  /** Symbol used to resolve the row's token icon (e.g. "PT-sUSDS") */
   tokenIconSymbol: string;
   /** Decimals of the `balance` field for display formatting */
   balanceDecimals: number;

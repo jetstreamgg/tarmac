@@ -51,7 +51,7 @@ export function normalizePendlePnlRows(rows: PendlePnlTransactionRaw[]): PendleC
     if (!Number.isFinite(tx.txValueAsset) || !Number.isFinite(tx.assetUsd)) continue;
     if (action !== PendleHistoryAction.REDEEM_PY && !Number.isFinite(tx.effectivePtExchangeRate)) continue;
     // YT-only redeems where no underlying actually moved would render as a
-    // confusing "0 USDe Redeem" row; drop them.
+    // confusing "0 USDS Redeem" row; drop them.
     if (action === PendleHistoryAction.REDEEM_PY && !(tx.txValueAsset > 0)) continue;
 
     const ptAmount =

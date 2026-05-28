@@ -15,7 +15,7 @@ import { PendleHistoryAction } from './constants';
  * in helpers.ts.
  */
 export type PendleMarketConfig = {
-  /** Display name for the market (e.g. "PT-USDG") */
+  /** Display name for the market (e.g. "PT-sUSDS") */
   name: string;
   /** The Pendle Market contract address (mainnet) */
   marketAddress: `0x${string}`;
@@ -26,20 +26,28 @@ export type PendleMarketConfig = {
   /** The SY (ERC-5115) token contract address */
   syToken: `0x${string}`;
   /**
-   * The single underlying token accepted by SY.getTokensIn() / getTokensOut().
-   * v1 supports only markets where SY accepts exactly one token, so we lock the
-   * "tokenIn === tokenMintSy" / "tokenOut === tokenRedeemSy" invariants by config.
+   * Pendle's "underlyingAsset" — the SY's wrapped yield-bearing token. Used as
+   * tokenMintSy / tokenRedeemSy when the user picks a non-direct token and the
+   * call routes through the aggregator.
    */
   underlyingToken: `0x${string}`;
-  /** Display symbol for the underlying token (e.g. "USDG") */
+  /** Display symbol for the underlying token (e.g. "sUSDS") */
   underlyingSymbol: string;
   /** Underlying token decimals */
   underlyingDecimals: number;
+  /**
+   * Tokens SY accepts directly via getTokensIn() / getTokensOut() — no aggregator
+   * hop. When the user picks one of these, the call sets pendleSwap=0x0 and
+   * tokenMintSy=userPicked. Defaults to [underlyingToken] for single-input SYs;
+   * set explicitly when SY accepts multiple tokens (PT-sUSDS accepts DAI, USDS,
+   * sUSDS).
+   */
+  syAcceptedTokens?: `0x${string}`[];
   /** Market expiry as a UNIX timestamp in seconds (immutable post-deploy) */
   expiry: number;
   /**
    * How the underlying converts to USDS for earnings display:
-   *   - 'pegged'  → 1 underlying ≈ 1 USDS (stablecoins like USDS, USDG, USDe)
+   *   - 'pegged'  → 1 underlying ≈ 1 USDS (e.g. PT-sUSDS, where 1 PT pays 1 USDS at maturity)
    *   - 'sUSDS'   → multiply by chi from sUSDS.previewRedeem(1e18)
    *   - undefined → no USDS conversion; display in underlying token symbol
    */
@@ -82,6 +90,14 @@ export type PendleAggregatorRoute = {
   pendleSwap: `0x${string}`;
   /** Aggregator forwarding payload */
   swapData: PendleSwapData;
+  /**
+   * The token the aggregator delivers to SY — `tokenMintSy` for BUY, `tokenRedeemSy`
+   * for WITHDRAW/EXIT. Pendle picks the cheapest SY-accepted route, so for
+   * multi-input SYs this can be any token in `getTokensIn() / getTokensOut()` and
+   * is NOT necessarily the configured `underlyingToken`. buildVerifiedArgs
+   * verifies it against `syAcceptedTokens` before signing.
+   */
+  tokenMintSyOrRedeem: `0x${string}`;
 };
 
 /** Pendle's price-impact breakdown — present only when an aggregator hop is in the route. */
@@ -392,7 +408,7 @@ export type PendleCombinedMarketHistoryHook = ReadHook & {
  * `ptAmount` is the raw PT integer (PT decimals = underlying decimals per
  * Pendle convention), so `formatBigInt(amount, { unit: decimals })` renders
  * the same number a user would see on a block explorer or the per-market
- * history table. `marketName` ("PT-USDe", …) is the unit shown in the row's
+ * history table. `marketName` ("PT-sUSDS", …) is the unit shown in the row's
  * right-hand text.
  */
 export interface PendleHistoryItem {
@@ -411,7 +427,7 @@ export interface PendleHistoryItem {
   assets: bigint;
   /** Underlying-token decimals — used by formatBigInt at render time. */
   underlyingDecimals: number;
-  /** Underlying-token display symbol (e.g. "USDe", "USDG"). */
+  /** Underlying-token display symbol (e.g. "sUSDS"). */
   underlyingSymbol: string;
   /** Market name for breadcrumb context; not used in the row's right-hand unit. */
   marketName: string;

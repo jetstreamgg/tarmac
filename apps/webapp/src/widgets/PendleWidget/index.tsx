@@ -187,6 +187,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     inputToken,
     outputToken,
     underlyingToken: market.underlyingToken,
+    syAcceptedTokens: market.syAcceptedTokens,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     slippage,
     enabled: debouncedAmount > 0n && debounceSettled
@@ -267,6 +268,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     inputToken,
     outputToken,
     underlyingToken: market.underlyingToken,
+    syAcceptedTokens: market.syAcceptedTokens,
     amountIn: debouncedAmount > 0n ? debouncedAmount : undefined,
     quote,
     slippage,

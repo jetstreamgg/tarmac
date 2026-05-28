@@ -67,15 +67,24 @@ function extractAggregatorRoute(method: string, params: unknown[]): PendleAggreg
     extCalldata?: `0x${string}`;
     needScale?: boolean;
   };
-  type RawSlot = { pendleSwap?: `0x${string}`; swapData?: RawSwapData };
+  type RawSlot = {
+    pendleSwap?: `0x${string}`;
+    swapData?: RawSwapData;
+    tokenMintSy?: `0x${string}`;
+    tokenRedeemSy?: `0x${string}`;
+  };
 
   let slot: RawSlot | undefined;
+  let tokenMintSyOrRedeemField: 'tokenMintSy' | 'tokenRedeemSy';
   if (method === 'swapExactTokenForPt') {
     slot = params[4] as RawSlot | undefined;
+    tokenMintSyOrRedeemField = 'tokenMintSy';
   } else if (method === 'swapExactPtForToken') {
     slot = params[3] as RawSlot | undefined;
+    tokenMintSyOrRedeemField = 'tokenRedeemSy';
   } else if (method === 'exitPostExpToToken') {
     slot = params[4] as RawSlot | undefined;
+    tokenMintSyOrRedeemField = 'tokenRedeemSy';
   } else {
     return undefined;
   }
@@ -112,6 +121,13 @@ function extractAggregatorRoute(method: string, params: unknown[]): PendleAggreg
     );
   }
 
+  const tokenMintSyOrRedeem = slot[tokenMintSyOrRedeemField];
+  if (!tokenMintSyOrRedeem || !/^0x[0-9a-fA-F]{40}$/.test(tokenMintSyOrRedeem)) {
+    throw new Error(
+      `Pendle: malformed quote — pendleSwap is set but ${tokenMintSyOrRedeemField} is missing/invalid for "${method}"`
+    );
+  }
+
   return {
     pendleSwap,
     swapData: {
@@ -119,7 +135,8 @@ function extractAggregatorRoute(method: string, params: unknown[]): PendleAggreg
       extRouter: swapData.extRouter,
       extCalldata: swapData.extCalldata,
       needScale: swapData.needScale
-    }
+    },
+    tokenMintSyOrRedeem
   };
 }
 
@@ -131,13 +148,19 @@ type UseQuotePendleConvertParams = {
   /** The token coming OUT of /convert (PT for Buy, user-selected for Withdraw / matured-exit) */
   outputToken?: `0x${string}`;
   /**
-   * The market's underlying token (the one the SY accepts directly). Used to
-   * decide whether to ask the API for an aggregator route: when the user's
-   * non-PT-side token differs from the underlying, we set
-   * `enableAggregator: true` and the API may return a KyberSwap / Odos / OKX /
-   * Paraswap hop wrapped via Pendle's PendleSwap forwarder.
+   * Pendle's underlyingAsset — the SY's wrapped yield-bearing token. Kept for
+   * symmetry with downstream buildVerifiedArgs; the aggregator-needed decision
+   * is driven by `syAcceptedTokens`, not this field.
    */
   underlyingToken?: `0x${string}`;
+  /**
+   * Tokens SY accepts directly via getTokensIn() / getTokensOut(). When the
+   * user-side token is one of these, the API returns a no-aggregator route;
+   * otherwise we set `enableAggregator: true` and the API may return a
+   * KyberSwap / Odos / OKX / Paraswap hop wrapped via Pendle's PendleSwap
+   * forwarder. Optional; defaults to `[underlyingToken]` for single-input SYs.
+   */
+  syAcceptedTokens?: `0x${string}`[];
   /** Input amount in wei */
   amountIn?: bigint;
   /** Slippage tolerance (decimal, e.g. 0.002 = 0.2%) */
@@ -179,6 +202,7 @@ export function useQuotePendleConvert({
   inputToken,
   outputToken,
   underlyingToken,
+  syAcceptedTokens,
   amountIn,
   slippage,
   enabled: enabledParam = true,
@@ -206,11 +230,14 @@ export function useQuotePendleConvert({
     amountIn !== 0n &&
     (!maturedExit || !!ytToken);
 
-  // Aggregator is needed iff the user's non-PT-side token differs from the
-  // SY's accepted (underlying) token. PT itself is never the underlying, so
-  // we look at the input on Buy and the output on Withdraw.
+  // Aggregator is needed iff the user's non-PT-side token is not one SY accepts
+  // directly. PT itself is never SY-accepted, so we look at the input on Buy
+  // and the output on Withdraw. Defaults to [underlyingToken] for backward
+  // compatibility with single-input SYs.
   const nonPtToken = side === PendleConvertSide.BUY ? inputToken : outputToken;
-  const enableAggregator = !!nonPtToken && !!underlyingToken && !isAddressEqual(nonPtToken, underlyingToken);
+  const effectiveAccepted = syAcceptedTokens ?? (underlyingToken ? [underlyingToken] : []);
+  const enableAggregator =
+    !!nonPtToken && effectiveAccepted.length > 0 && !effectiveAccepted.some(t => isAddressEqual(nonPtToken, t));
 
   const { data, isLoading, error, refetch } = useQuery({
     enabled,
@@ -221,6 +248,10 @@ export function useQuotePendleConvert({
       inputToken,
       outputToken,
       underlyingToken,
+      // syAcceptedTokens is per-market so stable for a given marketAddress, but
+      // include it explicitly so the cache is keyed correctly if the list ever
+      // changes for the same market in dev.
+      syAcceptedTokens?.join(','),
       enableAggregator,
       maturedExit,
       ytToken,

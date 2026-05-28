@@ -82,8 +82,8 @@ export const PendleTransactionReview = ({
   // Push title/subtitle/stepper copy.
   // Multi-token: copy that names the user-side token comes from the selected
   // token's symbol (originToken on BUY, targetToken on SELL), not from
-  // market.underlyingSymbol — those can differ now (e.g. user supplies USDC
-  // into a PT-USDG market).
+  // market.underlyingSymbol — those can differ (e.g. user supplies USDC
+  // into a PT-sUSDS market).
   const userSideSymbol = flow === PendleFlow.BUY ? originToken.symbol : targetToken.symbol;
   useEffect(() => {
     const batchStatus =

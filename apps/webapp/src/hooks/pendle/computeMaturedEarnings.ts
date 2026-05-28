@@ -20,15 +20,15 @@
 //      account for realized P&L directly, without proration.
 //   2. PT decimals = underlying decimals (Pendle convention): PT tokens
 //      are deployed with the same decimal count as their underlying token
-//      (PT-USDG has 6 because USDG has 6; PT-sUSDS has 18 because sUSDS
-//      has 18). The caller converts using `market.underlyingDecimals`
-//      from PENDLE_MARKETS — NOT a hardcoded 1e18 divisor. Per PR #1546
-//      review (commit d37958e5): an earlier draft conflated pyIndex's
-//      1e18 fixed-point scale with PT's own decimal count and silently
-//      mis-reconciled PT-USDG balances. The two `1e18` constants in this
-//      codebase serve different roles — pyIndex precision (still 18) vs
-//      PT decimals (varies per market) — and only the latter belongs at
-//      this conversion site.
+//      (PT-sUSDS has 18 because sUSDS has 18; markets with 6-decimal
+//      underlyings would have 6-decimal PTs). The caller converts using
+//      `market.underlyingDecimals` from PENDLE_MARKETS — NOT a hardcoded
+//      1e18 divisor. Per PR #1546 review (commit d37958e5): an earlier
+//      draft conflated pyIndex's 1e18 fixed-point scale with PT's own
+//      decimal count and silently mis-reconciled balances for 6-decimal
+//      markets. The two `1e18` constants in this codebase serve different
+//      roles — pyIndex precision (still 18) vs PT decimals (varies per
+//      market) — and only the latter belongs at this conversion site.
 //   3. APY hidden when sells exist: `daysHeld` derives from the earliest
 //      buy, which is only a faithful capital-deployment window for pure
 //      buy-and-hold. Any SELL_PT in history biases the rate, so we drop
@@ -83,9 +83,9 @@ export type ComputeMaturedEarningsInput = {
    * Caller converts from bigint via
    *   `Number(ptBalance ?? 0n) / 10 ** market.underlyingDecimals`
    * because PT decimals = underlying decimals per Pendle's convention
-   * (PT-USDG → 6, PT-sUSDS → 18). See top-of-file note 2 — and do NOT confuse
-   * this with the pyIndex `ONE = 1e18` constant the redeem-preview hook uses;
-   * those two 18s mean different things.
+   * (PT-sUSDS → 18; 6-decimal underlyings would give 6-decimal PTs). See
+   * top-of-file note 2 — and do NOT confuse this with the pyIndex `ONE = 1e18`
+   * constant the redeem-preview hook uses; those two 18s mean different things.
    */
   ptBalanceFloat: number;
 };
@@ -95,7 +95,7 @@ export type ComputeMaturedEarningsResult = {
   earnings?: number;
   /** Annualized yield as a decimal (e.g. 0.0521 for 5.21% APY). */
   apy?: number;
-  /** Display symbol for `earnings` (e.g. 'USDS', 'sENA'). */
+  /** Display symbol for `earnings` (e.g. 'USDS'). */
   currency?: string;
 };
 
