@@ -82,7 +82,6 @@ export default ({ mode }: { mode: modeEnum }) => {
       https://sky-tenderly.blockanalitica.com
       https://api.cow.fi/
       https://api.morpho.org/
-      https://api.merkl.xyz/
       https://api-v2.pendle.finance
       https://*.google-analytics.com
       https://*.analytics.google.com

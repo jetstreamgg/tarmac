@@ -54,7 +54,7 @@ const createMockMerklRewardsResponse = (userAddress: string, vaultAddress: strin
 
 // Helper to mock Merkl API with rewards
 const mockMerklApiWithRewards = async (page: Page, userAddress: string) => {
-  await page.route('**/api.merkl.xyz/v4/users/**/rewards**', route => {
+  await page.route('**/merkl/v4/users/**/rewards**', route => {
     const mockResponse = createMockMerklRewardsResponse(userAddress, USDS_RISK_CAPITAL_VAULT_ADDRESS);
     route.fulfill({
       status: 200,
@@ -66,7 +66,7 @@ const mockMerklApiWithRewards = async (page: Page, userAddress: string) => {
 
 // Helper to mock Merkl API with no rewards
 const mockMerklApiWithNoRewards = async (page: Page) => {
-  await page.route('**/api.merkl.xyz/v4/users/**/rewards**', route => {
+  await page.route('**/merkl/v4/users/**/rewards**', route => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',

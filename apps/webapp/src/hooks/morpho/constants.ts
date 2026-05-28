@@ -9,7 +9,7 @@ import { TOKENS } from '../tokens/tokens.constants';
 import { MorphoVaultConfig } from './morpho';
 
 export const MORPHO_API_URL = 'https://api.morpho.org/graphql';
-export const MERKL_API_URL = 'https://api.merkl.xyz/v4';
+export const MERKL_API_URL = `${import.meta.env?.VITE_PROXY_ORIGIN || 'https://staging-proxy.sky.money'}/merkl/v4`;
 
 export enum MorphoAdapterType {
   MetaMorpho = 'MetaMorpho',
