@@ -53,7 +53,7 @@ import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics
 export type PendleWidgetProps = WidgetProps & {
   /** Selected Pendle market — passed in by the webapp module after URL-driven selection. */
   market: PendleMarketConfig;
-  /** When provided, renders a "Back to Pendle" link above the heading. The webapp module
+  /** When provided, renders a "Back to Fixed Yield" link above the heading. The webapp module
    * uses this to clear the market query params and return to the overview list. */
   onBackToPendle?: () => void;
 };
@@ -373,6 +373,12 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     }
   }, [txStatus, needsAllowance, setShowStepIndicator]);
 
+  const maturityDate = new Date(market.expiry * 1000).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
   // Drive the WidgetContext-backed action button (label + disabled state) so the
   // widget reuses the same primaryAlt-styled WidgetButton as Savings/Trade/etc.
   useEffect(() => {
@@ -380,7 +386,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     if (!isConnectedAndEnabled) {
       label = t`Connect Wallet`;
     } else if (txStatus === TxStatus.SUCCESS) {
-      label = t`Back to ${market.name}`;
+      label = t`Back to the ${maturityDate} Market`;
     } else if (txStatus === TxStatus.ERROR) {
       label = t`Retry`;
     } else if (screen === PendleScreen.ACTION && amount === 0n) {
@@ -403,7 +409,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     screen,
     flow,
     amount,
-    market.name,
+    maturityDate,
     shouldUseBatch,
     needsAllowance,
     linguiCtx,
@@ -439,23 +445,25 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
               <HStack className="space-x-2">
                 <ArrowLeft className="self-center" />
                 <Heading tag="h3" variant="small" className="text-textSecondary">
-                  <Trans>Back to Pendle</Trans>
+                  <Trans>Back to Fixed Yield</Trans>
                 </Heading>
               </HStack>
             </Button>
           )}
-          <Heading variant="x-large" className="whitespace-nowrap">
-            {market.name}
-          </Heading>
         </div>
       }
       subHeader={
-        <Text className="text-textSecondary" variant="small">
-          <Trans>
-            Lock in fixed yield by buying PT-{market.underlyingSymbol}. Each PT redeems 1:1 for{' '}
-            {market.underlyingSymbol} at maturity.
-          </Trans>
-        </Text>
+        <div>
+          <Heading variant="x-large" className="whitespace-nowrap">
+            <Trans>{maturityDate} Market</Trans>
+          </Heading>
+          <Text className="text-textSecondary" variant="small">
+            <Trans>
+              Lock in fixed yield by buying PT-{market.underlyingSymbol}. Each PT redeems 1:1 for{' '}
+              {market.underlyingSymbol} at maturity.
+            </Trans>
+          </Text>
+        </div>
       }
       rightHeader={
         <HStack gap={2} className="items-center">

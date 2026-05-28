@@ -77,13 +77,13 @@ export function getPendleBuyReviewSubtitle({
   needsAllowance: boolean;
 }): MessageDescriptor {
   if (!needsAllowance) {
-    return msg`You will supply your ${symbol} to the Pendle fixed-yield market.`;
+    return msg`You will supply your ${symbol} to the fixed-yield market.`;
   }
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the market in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access your ${symbol} and supply it to the Pendle market in multiple transactions.`;
+      return msg`You're allowing this app to access your ${symbol} and supply it to the market in multiple transactions.`;
     default:
       return msg``;
   }
@@ -101,13 +101,13 @@ export function getPendleWithdrawReviewSubtitle({
   needsAllowance: boolean;
 }): MessageDescriptor {
   if (!needsAllowance) {
-    return msg`You will sell your ${ptSymbol} for ${underlyingSymbol} via Pendle.`;
+    return msg`You will sell your ${ptSymbol} for ${underlyingSymbol}.`;
   }
   switch (batchStatus) {
     case BatchStatus.ENABLED:
-      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} via Pendle in one bundled transaction.`;
+      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} in one bundled transaction.`;
     case BatchStatus.DISABLED:
-      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} via Pendle in multiple transactions.`;
+      return msg`You're allowing this app to access your ${ptSymbol} and sell it for ${underlyingSymbol} in multiple transactions.`;
     default:
       return msg``;
   }
@@ -127,17 +127,17 @@ export function getPendleActionDescription({
   underlyingSymbol: string;
 }): MessageDescriptor {
   if ((action === PendleAction.BUY || action === PendleAction.WITHDRAW) && txStatus === TxStatus.SUCCESS) {
-    if (flow === PendleFlow.BUY) return msg`Supplied ${underlyingSymbol} to the Pendle fixed-yield market`;
-    return msg`Sold PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
+    if (flow === PendleFlow.BUY) return msg`Supplied ${underlyingSymbol} to the fixed-yield market`;
+    return msg`Sold PT-${underlyingSymbol} for ${underlyingSymbol}`;
   }
   if (flow === PendleFlow.BUY) {
     return needsAllowance
-      ? msg`Approving and supplying ${underlyingSymbol} to the Pendle fixed-yield market`
-      : msg`Supplying ${underlyingSymbol} to the Pendle fixed-yield market`;
+      ? msg`Approving and supplying ${underlyingSymbol} to the fixed-yield market`
+      : msg`Supplying ${underlyingSymbol} to the fixed-yield market`;
   }
   return needsAllowance
-    ? msg`Approving and selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`
-    : msg`Selling PT-${underlyingSymbol} for ${underlyingSymbol} via Pendle`;
+    ? msg`Approving and selling PT-${underlyingSymbol} for ${underlyingSymbol}`
+    : msg`Selling PT-${underlyingSymbol} for ${underlyingSymbol}`;
 }
 
 // ---- Transaction-status copy ----
@@ -156,14 +156,14 @@ export function getPendleSupplySubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access your ${symbol} and supply it to the Pendle market.`
+        ? msg`Please allow this app to access your ${symbol} and supply it to the market.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
         ? msg`Your token approval and supply are being processed on the blockchain. Please wait.`
         : msg`Your supply is being processed on the blockchain. Please wait.`;
     case TxStatus.SUCCESS:
-      return msg`You've supplied ${amount} ${symbol} to the Pendle market.`;
+      return msg`You've supplied ${amount} ${symbol} to the market.`;
     case TxStatus.ERROR:
       return msg`An error occurred during the supply flow.`;
     default:
@@ -187,7 +187,7 @@ export function getPendleWithdrawSubtitle({
   switch (txStatus) {
     case TxStatus.INITIALIZED:
       return needsAllowance
-        ? msg`Please allow this app to access your ${ptSymbol} and sell it via Pendle.`
+        ? msg`Please allow this app to access your ${ptSymbol} and sell it.`
         : msg`Almost done!`;
     case TxStatus.LOADING:
       return needsAllowance
