@@ -1,4 +1,4 @@
-import { CardAnimationWrapper, WidgetContainer } from '@jetstreamgg/sky-widgets';
+import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ConvertIntent } from '@/lib/enums';
@@ -17,7 +17,8 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Convert, Upgrade, Trade } from '@/modules/icons';
 import { useChainId, useChains, useSwitchChain } from 'wagmi';
-import { isL2ChainId, isMainnetId, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { isL2ChainId, isMainnetId } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { PsmConversionWidgetPane } from './PsmConversionWidgetPane';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';

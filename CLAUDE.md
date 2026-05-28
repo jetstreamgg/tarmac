@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tarmac is a React-based Web3 DeFi application for interacting with the Sky/Maker protocol. It's structured as a monorepo using pnpm workspaces with the main webapp and reusable packages.
+Tarmac is a React-based Web3 DeFi application for interacting with the Sky/Maker protocol. The webapp lives at `apps/webapp/` and is the sole product of this repo.
 
 ## Essential Commands
 
@@ -13,16 +13,15 @@ Tarmac is a React-based Web3 DeFi application for interacting with the Sky/Maker
 ```bash
 pnpm install          # Install all dependencies
 pnpm dev             # Start dev server (port 3000)
-pnpm dev:packages    # Run packages in watch mode
 pnpm dev:mock        # Development with mock wallet
 ```
 
 ### Testing
 
 ```bash
-pnpm test            # Run all unit tests
-pnpm test:watch      # Run tests in watch mode
-pnpm test:coverage   # Run tests with coverage
+pnpm test            # Run fast webapp unit suite + vnet-backed hooks suite
+pnpm test:hooks      # Run only the vnet-backed hooks suite (wraps Tenderly fork lifecycle)
+pnpm test:coverage   # Run tests with coverage (vnet-wrapped)
 pnpm e2e             # Run E2E tests with Tenderly fork
 pnpm e2e:ui         # Run E2E tests with UI (interactive)
 ```
@@ -43,8 +42,7 @@ pnpm prettier:check  # Check formatting without writing. Same caveat: always che
 ### Build
 
 ```bash
-pnpm build           # Build all packages and webapp
-pnpm build:packages  # Build packages only
+pnpm build           # Build the webapp (runs `pnpm messages` first)
 ```
 
 ### Security audit
@@ -63,15 +61,15 @@ pnpm messages        # Extract and compile translations
 
 ## Architecture
 
-### Monorepo Structure
+### Repo Layout
 
-- `/apps/webapp/` - Main React application
-- `/packages/`
-  - `hooks/` - React hooks for Web3 interactions (Wagmi-based)
-  - `widgets/` - Self-contained UI components for protocol features
-  - `utils/` - Shared utilities and helpers
-  - `contracts/` - Smart contract ABIs and addresses
-  - `ui/` - Core UI component library
+- `/apps/webapp/` - The React application (the only product of this repo).
+  - `src/hooks/` - React hooks for Web3 interactions (Wagmi-based). Includes wagmi-generated `generated.ts`.
+  - `src/widgets/` - Self-contained UI components for protocol features.
+  - `src/utils/` - Shared utilities and helpers.
+  - `src/modules/` - Webapp modules (see below).
+  - `wagmi.config.ts` + `generate-with-retry.js` - Wagmi codegen config and retry wrapper.
+- `/apps/webapp/test/hooks/` - Test helpers + global setup for the vnet-backed hooks suite.
 
 ### Key Webapp Modules (`/apps/webapp/src/modules/`)
 
@@ -129,23 +127,23 @@ pnpm messages        # Extract and compile translations
 
 ### New Smart Contract
 
-1. Add contract to `/packages/contracts/src/contracts.ts`
-2. Run `pnpm -F hooks generate` to generate types
-3. Create hooks in `/packages/hooks/` for contract interactions
+1. Add contract address and ABI to `apps/webapp/src/hooks/contracts.ts` (mainnet contracts go in the `contracts` array; L2 contracts go in the `l2Contracts` array in the same file), re-exporting from `apps/webapp/src/hooks/index.ts` as needed.
+2. Run `pnpm -F webapp generate` to regenerate `apps/webapp/src/hooks/generated.ts`. Use `pnpm -F webapp generate:retry` to retry on flakey Etherscan responses.
+3. Create the hook in the appropriate subfolder of `apps/webapp/src/hooks/`.
 
 ### New Widget
 
-1. Create in `/packages/widgets/src/`
-2. Follow existing widget patterns with `WidgetProps` interface
-3. Export from package index
-4. Add tests and documentation
+1. Create the widget in `apps/webapp/src/widgets/<WidgetName>/`.
+2. Follow existing widget patterns with `WidgetProps` interface.
+3. Re-export from `apps/webapp/src/widgets/index.ts` if it needs a barrel entry.
+4. Add tests alongside the source and documentation if relevant.
 
 ### New Webapp Feature
 
-1. Create module in `/apps/webapp/src/modules/`
-2. Add routes in `/apps/webapp/src/pages/`
-3. Use existing hooks and components
-4. Add i18n messages with `<Trans>` tags
+1. Create module in `apps/webapp/src/modules/`.
+2. Add routes in `apps/webapp/src/pages/`.
+3. Use existing hooks and components.
+4. Add i18n messages with `<Trans>` tags.
 
 ## Environment Setup
 

@@ -12,9 +12,9 @@ import { Logo, LogoName } from './HighlightLogo';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { Trans } from '@lingui/react/macro';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 import { useEffect, useState } from 'react';
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 const secondaryTagline: Record<string, string> = {

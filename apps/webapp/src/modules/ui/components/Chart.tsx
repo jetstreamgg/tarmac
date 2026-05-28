@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
-import { formatNumber } from '@jetstreamgg/sky-utils';
+import { formatNumber } from '@/utils';
 import { useMemo, useState, useRef, useEffect, useId } from 'react';
 import { Area, AreaChart, XAxis, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
 import { format } from 'date-fns';

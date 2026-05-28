@@ -325,6 +325,14 @@ export const banners: Banner[] = [
     description:
       'Curated by Sky on Morpho, allocates 80% of deposits into sUSDS earning the Sky Savings Rate, and the remaining 20% to markets with volatile bluechip collateral exposure including stUSDS/USDS, cbBTC/USDS, wstETH/USDS and WETH/USDS.',
     display: ['connected', 'disconnected']
+  },
+  {
+    id: 'fixed-yield',
+    title: 'Fixed Yield',
+    module: 'fixed-yield-banners',
+    description:
+      "Powered by Pendle, Fixed Yield lets you set your return by a specific maturity date. Supply USDS to fix today's rate until that date. You can sell your position early, but you exit at the market's current price, which may be higher or lower than what you initially paid.",
+    display: ['connected', 'disconnected']
   }
 ];
 

@@ -11,7 +11,7 @@ import {
   isArbitrumChainId,
   isOptimismChainId,
   isUnichainChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 import { useChainId } from 'wagmi';
 import { QueryParams } from '@/lib/constants';
 import { Button } from '@/components/ui/button';

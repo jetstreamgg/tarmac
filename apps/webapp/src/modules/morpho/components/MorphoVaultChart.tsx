@@ -1,4 +1,4 @@
-import { useMorphoVaultChartInfo, useMorphoVaultMarketApiData, Token } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultChartInfo, useMorphoVaultMarketApiData, Token } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useState, useMemo } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';

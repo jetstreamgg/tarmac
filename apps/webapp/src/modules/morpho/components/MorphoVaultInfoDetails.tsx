@@ -1,6 +1,6 @@
 import { MorphoVaultTvlCard } from './MorphoVaultTvlCard';
 import { MorphoMarketLiquidityCard } from './MorphoMarketLiquidityCard';
-import { Token, useMorphoVaultMarketApiData } from '@jetstreamgg/sky-hooks';
+import { Token, useMorphoVaultMarketApiData } from '@/hooks';
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';

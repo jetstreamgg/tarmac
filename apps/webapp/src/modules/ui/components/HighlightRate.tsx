@@ -1,19 +1,19 @@
 import { VStack } from '@/modules/layout/components/VStack';
-import { useAvailableTokenRewardContracts, RewardContract } from '@jetstreamgg/sky-hooks';
+import { useAvailableTokenRewardContracts, RewardContract } from '@/hooks';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useChainId } from 'wagmi';
 import { LoadingErrorWrapper } from './LoadingErrorWrapper';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
-import { TOKENS } from '@jetstreamgg/sky-hooks';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
-import { useRewardsChartInfo } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage, formatStrAsApy } from '@jetstreamgg/sky-utils';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
+import { TOKENS } from '@/hooks';
+import { useOverallSkyData } from '@/hooks';
+import { useRewardsChartInfo } from '@/hooks';
+import { formatDecimalPercentage, formatStrAsApy } from '@/utils';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useStUsdsData } from '@jetstreamgg/sky-hooks';
-import { useMorphoVaultMarketApiData, MORPHO_VAULTS } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData } from '@/hooks';
+import { useMorphoVaultMarketApiData, MORPHO_VAULTS } from '@/hooks';
 
 // TODO export PairTokenIcons from widgets?
-// import { PairTokenIcons } from '@widgets/shared/components/ui/token/PairTokenIcon';
+// import { PairTokenIcons } from '@/widgets/shared/components/ui/token/PairTokenIcon';
 import { TokenIcon } from './TokenIcon';
 
 function PairTokenIcons({

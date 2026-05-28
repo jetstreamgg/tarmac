@@ -1,10 +1,4 @@
-import {
-  TxStatus,
-  WidgetStateChangeParams,
-  StakeFlow,
-  StakeModuleWidget,
-  StakeAction
-} from '@jetstreamgg/sky-widgets';
+import { TxStatus, WidgetStateChangeParams, StakeFlow, StakeModuleWidget, StakeAction } from '@/widgets';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -13,12 +7,9 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useStakeHistory } from '@jetstreamgg/sky-hooks';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
+import { useStakeHistory } from '@/hooks';
 import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
-import { useChainId } from 'wagmi';
 
 export function StakeWidgetPane(sharedProps: SharedProps) {
   const {
@@ -31,9 +22,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   const { mutate: refreshStakeHistory } = useStakeHistory();
   const [searchParams, setSearchParams] = useSearchParams();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
-  const chainId = useChainId();
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const onAnalyticsEvent = useWidgetAnalytics('stake', chainId);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Use ref to always access the latest searchParams without causing re-renders
@@ -193,7 +181,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
         disclaimer={<StakingSpkRewardsDisclaimer />}
         onStakeUrnChange={onStakeUrnChange}
         onWidgetStateChange={onStakeWidgetStateChange}
-        onAnalyticsEvent={onAnalyticsEvent}
         onShowHelpModal={() => {
           setShowHelpModal(true);
         }}
@@ -203,8 +190,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
           stakeTab,
           flow
         }}
-        batchEnabled={batchEnabled}
-        setBatchEnabled={setBatchEnabled}
       />
       <StakeHelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </>

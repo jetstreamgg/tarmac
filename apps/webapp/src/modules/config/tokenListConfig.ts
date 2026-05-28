@@ -12,7 +12,7 @@ import {
   spkAddress,
   usdcL2Address,
   usdsL2Address
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { tenderly } from '@/data/wagmi/config/config.default';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 

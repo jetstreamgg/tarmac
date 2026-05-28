@@ -4,11 +4,11 @@ import { LinkedAction, useUserSuggestedActions } from '@/modules/ui/hooks/useUse
 import { Intent } from '@/lib/enums';
 import { useRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useCallback, useMemo } from 'react';
-import { useAvailableTokenRewardContracts } from '@jetstreamgg/sky-hooks';
+import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useChainId } from 'wagmi';
-import { formatDecimalPercentage, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
+import { useOverallSkyData } from '@/hooks';
 
 export const usePrepareNotification = () => {
   const chainId = useChainId();

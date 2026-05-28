@@ -1,4 +1,4 @@
-import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@jetstreamgg/sky-hooks';
+import { useUsdsDaiData, useSkySavingsRateHistoricData } from '@/hooks';
 import { Chart, TimeFrame } from '@/modules/ui/components/Chart';
 import { useMemo, useState } from 'react';
 import { ErrorBoundary } from '@/modules/layout/components/ErrorBoundary';
@@ -7,7 +7,7 @@ import { useParseTokenChartData } from '@/modules/ui/hooks/useParseTokenChartDat
 import { parseUnits } from 'viem';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getDayCountFromTimeFrame } from '@/modules/utils/getDayCountFromTimeFrame';
-import { PairTokenIcons } from '@jetstreamgg/sky-widgets';
+import { PairTokenIcons } from '@/widgets';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 // BA Labs /save/ssr/historic/ only accepts specific bucket values for days_ago
@@ -42,11 +42,7 @@ export function UsdsSkyTotalsChart() {
 
   const limit = getDayCountFromTimeFrame(timeFrame);
 
-  const {
-    data: usdsDaiData,
-    error: usdsDaiError,
-    isLoading: usdsDaiIsLoading
-  } = useUsdsDaiData({ limit });
+  const { data: usdsDaiData, error: usdsDaiError, isLoading: usdsDaiIsLoading } = useUsdsDaiData({ limit });
 
   const {
     data: ssrData,
@@ -96,7 +92,12 @@ export function UsdsSkyTotalsChart() {
   const iconsMapping = {
     [ChartName.USDS_DAI]: <PairTokenIcons leftToken="USDS" rightToken="DAI" noChain />,
     [ChartName.SKY_SAVINGS]: (
-      <TokenIcon className="h-6 w-6" token={{ symbol: 'USDS', name: 'usds' }} width={24} showChainIcon={false} />
+      <TokenIcon
+        className="h-6 w-6"
+        token={{ symbol: 'USDS', name: 'usds' }}
+        width={24}
+        showChainIcon={false}
+      />
     )
   };
 

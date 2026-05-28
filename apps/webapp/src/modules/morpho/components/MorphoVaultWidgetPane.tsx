@@ -4,8 +4,8 @@ import {
   WidgetStateChangeParams,
   MorphoVaultFlow,
   MorphoVaultAction
-} from '@jetstreamgg/sky-widgets';
-import { Token } from '@jetstreamgg/sky-hooks';
+} from '@/widgets';
+import { Token } from '@/hooks';
 import { VaultsIntentMapping, QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -13,8 +13,6 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { VaultsIntent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useChainId } from 'wagmi';
 
 type MorphoVaultWidgetPaneProps = SharedProps & {
@@ -36,9 +34,6 @@ export function MorphoVaultWidgetPane({
   const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedVaultsOption } =
     useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const onAnalyticsEvent = useWidgetAnalytics('vaults', chainId);
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as MorphoVaultFlow | undefined;
 
@@ -117,13 +112,10 @@ export function MorphoVaultWidgetPane({
       assetToken={assetToken}
       vaultName={vaultName}
       onWidgetStateChange={onMorphoVaultWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
         flow
       }}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       onBackToVaults={handleBack}
     />
   );

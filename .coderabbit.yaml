@@ -54,28 +54,28 @@ reviews:
         - Ensure accessibility, responsiveness, and performance optimizations.
         - Provide thorough unit and integration testing, along with clear documentation.
 
-    # Instructions for the hooks package
-    - path: 'packages/hooks/**/*.{ts,tsx,jsx,js}'
+    # Instructions for the hooks tree
+    - path: 'apps/webapp/src/hooks/**/*.{ts,tsx,jsx,js}'
       instructions: |
-        Confirm that the Web3 React hooks package adheres to the following guidelines:
+        Confirm that the Web3 React hooks tree adheres to the following guidelines:
         - Implement reusable and composable custom hooks for interacting with Web3 and smart contracts.
         - Handle asynchronous operations and error states robustly.
         - Use TypeScript effectively to ensure type safety and clarity.
         - Include comprehensive tests and clear usage documentation.
 
-    # Instructions for the widgets package
-    - path: 'packages/widgets/**/*.{ts,tsx,jsx,js}'
+    # Instructions for the widgets tree
+    - path: 'apps/webapp/src/widgets/**/*.{ts,tsx,jsx,js}'
       instructions: |
-        Confirm that the Web3 React widgets package adheres to the following guidelines:
+        Confirm that the Web3 React widgets tree adheres to the following guidelines:
         - Develop modular, reusable UI components that integrate smoothly with Web3 functionalities.
         - Follow best practices for responsive design and accessibility.
         - Optimize performance and manage state efficiently.
         - Ensure consistency through proper TypeScript usage, testing, and documentation.
 
-    # Instructions for the utils package
-    - path: 'packages/utils/**/*.{ts,tsx,jsx,js}'
+    # Instructions for the utils tree
+    - path: 'apps/webapp/src/utils/**/*.{ts,tsx,jsx,js}'
       instructions: |
-        Confirm that the utils package adheres to the following guidelines:
+        Confirm that the utils tree adheres to the following guidelines:
         - Create well-structured, modular utility functions that promote code reuse.
         - Follow consistent naming conventions and coding standards.
         - Implement robust error handling and performance optimizations.

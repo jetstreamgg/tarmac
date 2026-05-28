@@ -7,7 +7,7 @@ import { VStack } from '@/modules/layout/components/VStack';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { SPK_STAKING_NOTIFICATION_KEY } from '@/lib/constants';
-import { isTestnetId } from '@jetstreamgg/sky-utils';
+import { isTestnetId } from '@/utils';
 
 const GOVERNANCE_PROPOSAL_URL =
   'https://vote.sky.money/executive/template-executive-vote-reduce-rewards-emissions-complete-guni-vault-offboardings-whitelist-keel-subproxy-to-send-cross-chain-messages-adjust-grove-dc-iam-parameters-delegate-compensation-star-agent-proxy-spells-january-15-2026';

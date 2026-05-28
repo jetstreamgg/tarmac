@@ -4,7 +4,7 @@ import { useConnectedContext } from '../context/ConnectedContext';
 import { AboutCard } from './AboutCard';
 import { TokenIcon } from './TokenIcon';
 import { Trans } from '@lingui/react/macro';
-import { Morpho } from '@jetstreamgg/sky-widgets';
+import { Morpho } from '@/widgets';
 
 const getVaultIcon = (bannerId: string) => {
   const morphoIcon = <Morpho className="h-6 w-6 rounded-sm" />;

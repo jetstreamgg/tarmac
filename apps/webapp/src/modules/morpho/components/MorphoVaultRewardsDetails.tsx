@@ -1,4 +1,4 @@
-import { useMorphoVaultRewards } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultRewards } from '@/hooks';
 import { RewardsBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
 

@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { formatBigInt, useFormatDates } from '@jetstreamgg/sky-utils';
+import { formatBigInt } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
-import { useMorphoVaultHistory, TransactionTypeEnum, getTokenDecimals } from '@jetstreamgg/sky-hooks';
+import { useMorphoVaultHistory, TransactionTypeEnum, getTokenDecimals } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 type MorphoVaultHistoryProps = {

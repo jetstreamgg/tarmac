@@ -12,7 +12,7 @@ import { Close } from '@/modules/icons/Close';
 import { HStack } from '@/modules/layout/components/HStack';
 import { StakeColor } from '@/modules/icons/StakeColor';
 import { Text } from '@/modules/layout/components/Typography';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 
 const circledNumber = (number: number) => {

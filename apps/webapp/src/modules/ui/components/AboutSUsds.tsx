@@ -1,6 +1,6 @@
-import { getEtherscanLink, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { getEtherscanLink, isL2ChainId } from '@/utils';
 import { useChainId } from 'wagmi';
-import { sUsdsAddress, sUsdsL2Address } from '@jetstreamgg/sky-hooks';
+import { sUsdsAddress, sUsdsL2Address } from '@/hooks';
 import { getBannerById } from '@/data/banners/banners';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { AboutCard } from './AboutCard';

@@ -1,10 +1,10 @@
 import { expect, test } from '../fixtures.ts';
 import { setErc20Balance } from '../utils/setBalance.ts';
-import { mkrAddress, usdsAddress } from '@jetstreamgg/sky-hooks';
+import { mkrAddress, usdsAddress } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain.ts';
 import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAcceptTerms.ts';
 import { newSealPosition } from '../utils/newSealPosition.ts';
-import { lsMkrUsdsRewardAddress, sealModuleAddress } from '@jetstreamgg/sky-hooks';
+import { lsMkrUsdsRewardAddress, sealModuleAddress } from '@/hooks';
 import { approveToken } from '../utils/approveToken.ts';
 import { NetworkName } from '../utils/constants.ts';
 import { getTestWalletAddress } from '../utils/testWallets.ts';

@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { usePostHog } from 'posthog-js/react';
 import { useChains, useConnection } from 'wagmi';
-import { WidgetAnalyticsEventType } from '@jetstreamgg/sky-widgets';
-import type { WidgetAnalyticsEvent } from '@jetstreamgg/sky-widgets';
+import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
+import type { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { AppEvents, safeCapture, getViewport, reportAnalyticsError, type TxStatus } from '../constants';
 import { useAnalyticsFlow } from '../context/AnalyticsFlowContext';
 

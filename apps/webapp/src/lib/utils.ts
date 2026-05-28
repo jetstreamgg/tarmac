@@ -177,6 +177,11 @@ export const getVaultsOverviewUrl = (searchParams: URLSearchParams, chainId: num
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}`,
     searchParams
   );
+export const getFixedYieldUrl = (searchParams: URLSearchParams, chainId: number) =>
+  getQueryParams(
+    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.FIXED_INTENT)}`,
+    searchParams
+  );
 export const getConvertUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
     `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.CONVERT_INTENT)}`,

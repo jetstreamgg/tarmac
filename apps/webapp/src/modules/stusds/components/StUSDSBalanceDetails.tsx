@@ -1,5 +1,5 @@
-import { useSavingsData, useStUsdsWithdrawBalances } from '@jetstreamgg/sky-hooks';
-import { formatBigInt } from '@jetstreamgg/sky-utils';
+import { useSavingsData, useStUsdsWithdrawBalances } from '@/hooks';
+import { formatBigInt } from '@/utils';
 import { SuppliedBalanceCard, UnsuppliedBalanceCard } from '@/modules/ui/components/BalanceCards';
 import { t } from '@lingui/core/macro';
 

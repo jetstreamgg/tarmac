@@ -3,8 +3,8 @@ import {
   useCollateralData,
   getIlkName,
   useBorrowCapacityData
-} from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage, formatNumber, formatBigInt } from '@jetstreamgg/sky-utils';
+} from '@/hooks';
+import { formatDecimalPercentage, formatNumber, formatBigInt } from '@/utils';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
@@ -20,7 +20,7 @@ import { StakeHistory } from './StakeHistory';
 import { StakeRewardsOverview } from './StakeRewardsOverview';
 import { StakeFaq } from './StakeFaq';
 import { StakeChart } from './StakeChart';
-import { getTooltipById, PopoverRateInfo, PopoverInfo, UtilizationBar } from '@jetstreamgg/sky-widgets';
+import { getTooltipById, PopoverRateInfo, PopoverInfo, UtilizationBar } from '@/widgets';
 import { useMemo } from 'react';
 import { StakeToken } from '../constants';
 import { StakingRewardRateCard } from './StakingRewardRateCard';

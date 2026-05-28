@@ -1,12 +1,12 @@
-import { formatBigInt, formatStrAsApy } from '@jetstreamgg/sky-utils';
+import { formatBigInt, formatStrAsApy } from '@/utils';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
-import { useStUsdsData, useStUsdsCapacityData } from '@jetstreamgg/sky-hooks';
+import { useStUsdsData, useStUsdsCapacityData } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
 import { HStack } from '@/modules/layout/components/HStack';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { PopoverRateInfo } from '@jetstreamgg/sky-widgets';
+import { PopoverRateInfo } from '@/widgets';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 

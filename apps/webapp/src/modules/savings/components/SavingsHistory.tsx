@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
-import { formatBigInt, useFormatDates, isL2ChainId } from '@jetstreamgg/sky-utils';
+import { formatBigInt, isL2ChainId } from '@/utils';
+import { useFormatDates } from '@/hooks';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { absBigInt } from '../../utils/math';
 import { SavingsSupply, ArrowDown } from '@/modules/icons';
 import { HistoryTable } from '@/modules/ui/components/historyTable/HistoryTable';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
-import { useSavingsHistory } from '@jetstreamgg/sky-hooks';
-import { getTokenDecimals, TransactionTypeEnum } from '@jetstreamgg/sky-hooks';
+import { useSavingsHistory } from '@/hooks';
+import { getTokenDecimals, TransactionTypeEnum } from '@/hooks';
 import { useChainId } from 'wagmi';
 
 export function SavingsHistory() {

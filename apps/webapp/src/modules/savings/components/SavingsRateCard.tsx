@@ -1,9 +1,9 @@
 import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { t } from '@lingui/core/macro';
 import { Text } from '@/modules/layout/components/Typography';
-import { useOverallSkyData } from '@jetstreamgg/sky-hooks';
-import { formatDecimalPercentage } from '@jetstreamgg/sky-utils';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
+import { useOverallSkyData } from '@/hooks';
+import { formatDecimalPercentage } from '@/utils';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 
 export function SavingsRateCard(): React.ReactElement {
   const { data, isLoading, error } = useOverallSkyData();

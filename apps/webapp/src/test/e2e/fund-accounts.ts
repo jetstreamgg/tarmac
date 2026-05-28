@@ -27,7 +27,7 @@ import {
   usdsL2Address,
   usdcL2Address,
   sUsdsL2Address
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { parseUnits, formatUnits } from 'viem';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
