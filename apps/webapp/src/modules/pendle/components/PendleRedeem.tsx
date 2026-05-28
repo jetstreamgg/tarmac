@@ -72,7 +72,7 @@ export const PendleRedeem = ({
       ]
     : undefined;
 
-  // Section 2 "Transaction Details" (collapsed by default).
+  // Section 2 "Transaction details" (collapsed by default).
   const transactionData = quote
     ? [
         // Slippage / price impact / Min. received only matter on aggregator

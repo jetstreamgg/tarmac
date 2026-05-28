@@ -122,7 +122,7 @@ export function TransactionOverview({
   rateType = 'ssr',
   onExternalLinkClicked,
   pinnedData,
-  detailsTitle = 'Transaction Details',
+  detailsTitle = 'Transaction details',
   transactionData
 }: TransactionOverviewParams) {
   const hasPinned = !!pinnedData && pinnedData.length > 0;
