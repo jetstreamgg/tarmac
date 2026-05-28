@@ -3,15 +3,15 @@ import { normalizePendlePnlRows } from './usePendleAllPnlTransactions';
 import { PendleHistoryAction } from './constants';
 import type { PendlePnlTransactionRaw } from './pendle';
 
-// PT-USDG is the test market wired into PENDLE_MARKETS — resolveMarket() picks
+// PT-sUSDS is the only market wired into PENDLE_MARKETS — resolveMarket() picks
 // it up from its address. Anything else would be filtered as "unsupported."
-const PT_USDG_ADDRESS = '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33';
+const PT_SUSDS_MARKET_ADDRESS = '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc';
 
 function row(overrides: Partial<PendlePnlTransactionRaw> = {}): PendlePnlTransactionRaw {
   return {
     txHash: '0xabc',
     timestamp: '2026-04-01T00:00:00Z',
-    market: PT_USDG_ADDRESS,
+    market: PT_SUSDS_MARKET_ADDRESS,
     action: 'buyPt',
     txValueAsset: 100,
     assetUsd: 1,
@@ -102,8 +102,8 @@ describe('normalizePendlePnlRows', () => {
   });
 
   it('accepts the alternate "<chainId>-<address>" market wire form', () => {
-    const out = normalizePendlePnlRows([row({ market: `1-${PT_USDG_ADDRESS}` })]);
+    const out = normalizePendlePnlRows([row({ market: `1-${PT_SUSDS_MARKET_ADDRESS}` })]);
     expect(out).toHaveLength(1);
-    expect(out[0].market.marketAddress.toLowerCase()).toBe(PT_USDG_ADDRESS);
+    expect(out[0].market.marketAddress.toLowerCase()).toBe(PT_SUSDS_MARKET_ADDRESS);
   });
 });
