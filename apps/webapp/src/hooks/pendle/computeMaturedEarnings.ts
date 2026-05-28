@@ -6,22 +6,18 @@
 //
 // Key decisions:
 //   1. Reconciliation gate (1% tolerance, see RECONCILIATION_TOLERANCE):
-//      The gate is ASYMMETRIC. Pendle's TRADES API indexes BUY_PT/SELL_PT
-//      only — post-maturity redeems (redeemPyToToken via Pendle's router)
-//      reduce on-chain PT balance but do NOT appear in trade history. So
-//      we split the two directions of deviation:
-//        - Excess PT on-chain (balance > netPt * 1.01): user has PT that
-//          Pendle's view doesn't account for — transferred-in, gifted-to,
-//          secondary-market, or pagination overflow past the API's
-//          100-trade cap. Cost basis is unknown for the surplus → hide.
-//        - Shortfall on-chain (balance < netPt): user redeemed some of
-//          their PT post-maturity. The remaining position's cost basis
-//          is recoverable by proration (see decision 5). Show the line.
-//      Within ±1% in either direction the proration math collapses to
-//      the un-prorated happy-path identity via the Math.min(1, ratio)
-//      cap, so existing buy-and-hold cases are unchanged. Per PR #1546
-//      review: reviewer's PT-sENA test position kept failing the prior
-//      symmetric gate because they had been making small redeems.
+//      The gate is SYMMETRIC. Pendle's v1 /pnl/transactions feed now
+//      surfaces REDEEM_PY rows alongside the v5 /transactions feed's
+//      BUY_PT / SELL_PT rows, so `netPtFromPendle = bought − sold −
+//      redeemed` is a faithful prediction of the user's on-chain balance.
+//      Drift in either direction beyond 1% indicates an untracked
+//      transfer (in or out): cost basis is unknown for the unexplained PT,
+//      so the line hides. This replaces the slice-02 asymmetric heuristic
+//      (which interpreted any shortfall as an implicit redeem and prorated
+//      cost basis); the heuristic was correct in spirit but introduced
+//      systematic error when the actual cost-per-PT differed from the
+//      face-value $1 implied by proration. Real redeem events let us
+//      account for realized P&L directly, without proration.
 //   2. PT decimals = underlying decimals (Pendle convention): PT tokens
 //      are deployed with the same decimal count as their underlying token
 //      (PT-USDG has 6 because USDG has 6; PT-sUSDS has 18 because sUSDS
@@ -36,28 +32,33 @@
 //   3. APY hidden when sells exist: `daysHeld` derives from the earliest
 //      buy, which is only a faithful capital-deployment window for pure
 //      buy-and-hold. Any SELL_PT in history biases the rate, so we drop
-//      it. Absolute earnings (a sum) remain correct under any pattern.
-//      FIFO per-lot age accounting is out of scope per PRD. Note that
-//      redeems don't create SELL_PT entries, so a "buy + redeem" user
-//      still gets an APY; a "buy + sell + redeem" user does not.
+//      it. REDEEM_PY rows do NOT trigger this — a redeem is the natural
+//      end-of-life of a PT position at maturity, not a market-timing
+//      exit. Absolute earnings (a sum) remain correct under any pattern.
+//      FIFO per-lot age accounting is out of scope per PRD.
 //   4. Hide-on-mismatch is safe-correct: a wrong earnings number is
 //      worse than no earnings number. The card's `earnings !== undefined`
 //      guard skips the line cleanly when this function returns empty.
-//   5. Redeem handling via prorated cost basis (PR #1546 review,
-//      review-fix slice 02): when Pendle's view exceeds on-chain balance
-//      (shortfall), we attribute only the proportional share of net cost
-//      basis to the remaining PT. The user paid `netCostUsd` for
-//      `netPtFromPendle` PT and still holds `ptBalanceFloat`, so the
-//      cost attributable to what they still hold is
-//        proratedNetCost = netCostUsd × (ptBalanceFloat / netPtFromPendle)
-//      Correct under the REDEEM assumption: the redeemed PT's cost has
-//      already been realized as the underlying tokens the redeem
-//      deposited into the user's wallet. Slightly overestimates the
-//      remaining-position cost if the shortfall is actually a transfer-
-//      out (gifted PT to a friend) — a documented edge case accepted as
-//      a tradeoff (transfers-out are rare; redeems are common,
-//      especially post-maturity). On-chain redeem-event detection would
-//      let us distinguish the two; out of scope per PRD.
+//   5. Earnings formula (slice 04, replacing slice 02's proration):
+//        earnings = finalValue + realizedFromRedeem − netCostUsd
+//      where `finalValue` is the chi-converted preview for the still-held
+//      PT and `realizedFromRedeem = totalRedeemedPt × multiplier`
+//      (multiplier = 1 for pegged markets, chi for sUSDS). Both terms
+//      use the SAME multiplier on the same display currency — the
+//      redeemed underlying tokens are valued in the current display
+//      currency, consistent with how finalValue treats the preview.
+//      For sUSDS markets where chi has appreciated since the redeem, this
+//      slightly over-credits the user (the redeemed sUSDS may have been
+//      withdrawn to USDS at the historical chi). Accepted as a tradeoff:
+//      historical-chi accounting would require per-redeem chi snapshots
+//      that the v1 feed doesn't currently provide.
+//   6. APY uses the cost of the REMAINING (unredeemed) position:
+//        costPerPt = netCostUsd / (ptBought − ptSold)
+//        costOfRemaining = costPerPt × netPtFromPendle
+//      Reflects the rate of return on the capital still deployed in PT,
+//      computed as `finalValue / costOfRemaining` annualized. Discount-
+//      bought positions show higher APY than at-cost — that's accurate,
+//      not a bug, since the user got more PT per dollar.
 import { PendleHistoryAction } from './constants';
 import type { PendleHistoryRow, PendleMarketConfig } from './pendle';
 
@@ -133,51 +134,68 @@ export function computeMaturedEarnings({
 
   const buys = history.filter(t => t.action === PendleHistoryAction.BUY_PT);
   const sells = history.filter(t => t.action === PendleHistoryAction.SELL_PT);
+  const redeems = history.filter(t => t.action === PendleHistoryAction.REDEEM_PY);
 
-  // Reconciliation gate: sum PT across Pendle's view of buys/sells and compare
-  // to what the user actually holds on-chain. usePendleMarketHistory zeros out
-  // ptAmount when Pendle's API omits the notional.pt field — the safe-fallback
-  // failure mode, since underestimating PT-in means the gate hides the line.
+  // Reconciliation gate: sum PT across Pendle's view of buys/sells/redeems
+  // and compare to what the user actually holds on-chain. usePendleMarketHistory
+  // zeros out ptAmount when Pendle's API omits the notional.pt field (or the
+  // v1 feed omits txValueAsset for a REDEEM row) — the safe-fallback failure
+  // mode, since underestimating either side biases the gate toward hiding.
   const ptBought = buys.reduce((s, t) => s + t.ptAmount, 0);
   const ptSold = sells.reduce((s, t) => s + t.ptAmount, 0);
-  const netPtFromPendle = ptBought - ptSold;
+  const ptRedeemed = redeems.reduce((s, t) => s + t.ptAmount, 0);
+  const ptNetTraded = ptBought - ptSold;
+  const netPtFromPendle = ptNetTraded - ptRedeemed;
   if (ptBalanceFloat <= 0) return EMPTY;
-  // Asymmetric check (see top-of-file decision 1). Only hide on EXCESS PT,
-  // where the surplus has unknown cost basis. Shortfall is allowed through
-  // and interpreted as redeems (decision 5).
-  if (netPtFromPendle < ptBalanceFloat * (1 - RECONCILIATION_TOLERANCE)) return EMPTY;
+  // Symmetric gate (see top-of-file decision 1). With REDEEM_PY rows from
+  // /v1/pnl/transactions, netPtFromPendle is a faithful prediction of the
+  // on-chain balance. Drift > 1% in either direction is an unexplained
+  // transfer (in or out); hide.
+  if (Math.abs(netPtFromPendle - ptBalanceFloat) > netPtFromPendle * RECONCILIATION_TOLERANCE) {
+    return EMPTY;
+  }
 
   const totalSpentUsd = buys.reduce((s, t) => s + t.valueUsd, 0);
   const totalRecoveredUsd = sells.reduce((s, t) => s + t.valueUsd, 0);
   const netCostUsd = totalSpentUsd - totalRecoveredUsd;
   if (netCostUsd <= 0) return EMPTY;
 
-  // Prorated cost basis (see top-of-file decision 5). Math.min(1, ratio) is
-  // load-bearing for the happy path: when balance ≈ netPt with sub-tolerance
-  // drift in either direction, floating-point can push the ratio slightly
-  // above 1, which would otherwise inflate the cost basis and reduce displayed
-  // earnings. Capping at 1 makes within-tolerance excess collapse to the
-  // un-prorated identity. Below 1, proration applies — interpreted as redeem.
-  const remainingFraction = Math.min(1, ptBalanceFloat / netPtFromPendle);
-  const proratedNetCost = netCostUsd * remainingFraction;
-
-  const receiveTokens = Number(previewAmount) / 10 ** market.underlyingDecimals;
-
-  let finalValue: number;
+  // Display-currency multiplier: 1 for pegged markets (1 PT = 1 USDS-equivalent
+  // underlying = 1 USDS), chi for sUSDS markets (1 PT = 1 sUSDS, then chi
+  // converts sUSDS to USDS at the current rate). Applied identically to both
+  // the unrealized preview value and the realized redeem value — see decision 5.
+  let multiplier: number;
   if (effectiveTier === 'pegged') {
-    finalValue = receiveTokens;
+    multiplier = 1;
   } else {
     if (chi === undefined) return EMPTY;
-    const usdsPerSusds = Number(chi) / 1e18;
-    finalValue = receiveTokens * usdsPerSusds;
+    multiplier = Number(chi) / 1e18;
   }
+
+  const receiveTokens = Number(previewAmount) / 10 ** market.underlyingDecimals;
+  const finalValue = receiveTokens * multiplier;
+  // Realized value from REDEEM_PY rows. ptAmount on a redeem row IS the
+  // underlying received (1 PT = 1 underlying at maturity, per the v1 feed
+  // normalizer). Convert to display currency with the same multiplier.
+  const realizedFromRedeem = ptRedeemed * multiplier;
 
   // When the market is genuinely USDS-equivalent (tier 1 or 2), label as USDS.
   // When the line is rendering only because the caller coerced a tier-3 market
   // into 'pegged' (Tenderly TEMP path), label with the underlying symbol so
   // the unit shown matches the receive token.
   const currency = market.usdsEquivalence ? 'USDS' : market.underlyingSymbol;
-  const earnings = finalValue - proratedNetCost;
+  const earnings = finalValue + realizedFromRedeem - netCostUsd;
+
+  // APY is the rate of return on the REMAINING (unredeemed) position. We
+  // attribute cost basis proportionally — every traded PT shares the same
+  // average cost — and compare against the current preview value of what's
+  // still held. The realized redeem portion contributes to absolute earnings
+  // but doesn't enter the APY ratio: redeems realize at face value, not at
+  // a market rate, so including them would bias the rate toward 0% for any
+  // position that redeemed early. Discount-bought positions show a higher
+  // APY than at-cost ones — that's accurate, not a bug.
+  const costPerPt = ptNetTraded > 0 ? netCostUsd / ptNetTraded : 0;
+  const costOfRemaining = costPerPt * netPtFromPendle;
 
   const earliestBuyTimestamp = Math.min(...buys.map(t => Number(new Date(t.timestamp)) / 1000));
   const daysHeld = (market.expiry - earliestBuyTimestamp) / 86_400;
@@ -185,11 +203,10 @@ export function computeMaturedEarnings({
   // `daysHeld` uses `earliestBuyTimestamp`, which is only a faithful capital-
   // deployment window when the user never sold. With any SELL_PT in history,
   // capital wasn't continuously deployed across that window — the rate would
-  // be biased low. FIFO per-lot age accounting is out of scope (PRD), so the
-  // honest UX is to hide the rate while still showing absolute earnings
-  // (which are a sum and remain correct under any trade pattern). APY uses
-  // proratedNetCost so a buy-then-redeem user sees a sensible rate on the
-  // remaining position (decision 5).
+  // be biased low. REDEEM_PY rows don't bias the rate (the redeem closes a
+  // portion of the position at face value at maturity, which is the natural
+  // end-of-life). FIFO per-lot age accounting is out of scope (PRD), so the
+  // honest UX is to hide the rate while still showing absolute earnings.
   //
   // Sub-day guard: `daysHeld >= 1` (not just `> 0`). Annualizing a sub-day
   // hold via Math.pow(ratio, 365/daysHeld) either overflows to Infinity for
@@ -198,8 +215,8 @@ export function computeMaturedEarnings({
   // surfaced this: buying PT a few hours before market maturity. Earnings
   // still display; just no annualized rate.
   const apy =
-    sells.length === 0 && daysHeld >= 1 && proratedNetCost > 0
-      ? Math.pow(finalValue / proratedNetCost, 365 / daysHeld) - 1
+    sells.length === 0 && daysHeld >= 1 && costOfRemaining > 0
+      ? Math.pow(finalValue / costOfRemaining, 365 / daysHeld) - 1
       : undefined;
 
   return { earnings, apy, currency };
