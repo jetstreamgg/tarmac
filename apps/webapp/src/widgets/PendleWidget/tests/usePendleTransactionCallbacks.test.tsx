@@ -88,6 +88,11 @@ const baseParams = (overrides: Partial<BuildParams>): BuildParams => ({
   refetchPtBalance: vi.fn(),
   onNotification: vi.fn(),
   onAnalyticsEvent: vi.fn(),
+  // `amount` is now the USD value of the non-PT leg; the hook delegates the
+  // valuation to this injected fn. The default treats every token as ~$1 so
+  // the existing action/shape assertions are unaffected; the USD-specific
+  // behaviour is covered in its own test below and in pendleUsdValue.test.ts.
+  valueUsd: (_symbol: string, amount: number) => amount,
   ...overrides
 });
 
@@ -239,6 +244,39 @@ describe('usePendleTransactionCallbacks', () => {
       expect(completed[0][0].action).toBe('supply');
       expect(completed[0][0].flow).toBe('supply');
       expect(completed[0][0].txHash).toBe('0xabc');
+    });
+  });
+
+  describe('USD amount', () => {
+    it('emits amount = USD value of the non-PT leg (valueUsd applied), not the token count', () => {
+      const onAnalyticsEvent = vi.fn();
+      // BUY of 1 USDG; value it at 1.05 USD/token to prove `amount` tracks the
+      // value-fn output, not the 1.0 token count.
+      const params = baseParams({
+        onAnalyticsEvent,
+        valueUsd: (_symbol: string, amount: number) => amount * 1.05
+      });
+
+      const { result } = renderHook(() => usePendleTransactionCallbacks(params));
+      act(() => {
+        result.current.onMutate();
+      });
+
+      expect(onAnalyticsEvent.mock.calls[0][0].amount).toBeCloseTo(1.05, 6);
+    });
+
+    it('omits amount when the leg cannot be valued (valueUsd → undefined)', () => {
+      const onAnalyticsEvent = vi.fn();
+      const params = baseParams({ onAnalyticsEvent, valueUsd: () => undefined });
+
+      const { result } = renderHook(() => usePendleTransactionCallbacks(params));
+      act(() => {
+        result.current.onMutate();
+      });
+
+      // Event still fires; amount is simply absent.
+      expect(onAnalyticsEvent).toHaveBeenCalledTimes(1);
+      expect(onAnalyticsEvent.mock.calls[0][0].amount).toBeUndefined();
     });
   });
 

@@ -37,7 +37,9 @@ import { PendleAction, PendleFlow, PendleScreen } from './lib/constants';
 import { usePendleSlippage } from './hooks/usePendleSlippage';
 import { usePendleTokens } from './hooks/usePendleTokens';
 import { usePendleTransactionCallbacks } from './hooks/usePendleTransactionCallbacks';
+import { usePendleUsdValue } from './hooks/usePendleUsdValue';
 import { pendleAnalyticsData } from './lib/pendleAnalyticsData';
+import { pendleNonPtLeg } from './lib/pendleUsdValue';
 import { SupplyWithdraw } from './components/SupplyWithdraw';
 import { PendleConfigMenu } from './components/PendleConfigMenu';
 import { PendlePoweredBy } from './components/PendlePoweredBy';
@@ -64,6 +66,9 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
   const onNotification = useNotification();
   const chainId = useChainId();
   const onAnalyticsEvent = useWidgetAnalytics('fixed', chainId);
+  // Values the user's non-PT leg in USD for the analytics `amount` property —
+  // sUSDS isn't $1, so a token count would mis-sum the inflow/outflow tiles.
+  const valueUsd = usePendleUsdValue();
   const { address, isConnected, isConnecting } = useConnection();
   const { isConnectedAndAcceptedTerms: enabled } = useConnectedContext();
   const { onExternalLinkClicked } = useConfigContext();
@@ -259,7 +264,8 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     refetchOutputBalance,
     refetchPtBalance,
     onNotification,
-    onAnalyticsEvent
+    onAnalyticsEvent,
+    valueUsd
   });
 
   const batchConvert = useBatchPendleConvert({
@@ -316,11 +322,22 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
 
     try {
       const analyticsFlow = side === PendleConvertSide.BUY ? 'supply' : 'withdraw';
+      const analyticsSide = side === PendleConvertSide.BUY ? 'buy' : 'sell';
+      // `amount` = USD value of the non-PT leg (input on buy, output on sell).
+      // useWidgetAnalytics applies the withdraw sign; pass positive magnitude.
+      const leg = pendleNonPtLeg(analyticsSide, {
+        originSymbol: originToken.symbol,
+        targetSymbol: targetToken.symbol,
+        amountInBigint: debouncedAmount,
+        amountOutBigint: quote?.amountOut ?? 0n,
+        fromDecimals,
+        toDecimals
+      });
       onAnalyticsEvent?.({
         event: WidgetAnalyticsEventType.REVIEW_VIEWED,
         action: analyticsFlow,
         flow: analyticsFlow,
-        amount: Number(formatUnits(debouncedAmount, fromDecimals)),
+        amount: valueUsd(leg.symbol, leg.amount),
         data: pendleAnalyticsData({
           market,
           side: side === PendleConvertSide.BUY ? 'buy' : 'sell',
