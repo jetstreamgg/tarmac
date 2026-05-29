@@ -18,7 +18,7 @@ export function BalancesDetails() {
           <BalancesSuggestedActions
             widget="stables"
             variant="card"
-            restrictedModules={isRegionRestricted ? ['morpho'] : undefined}
+            restrictedModules={isRegionRestricted ? ['morpho', 'fixedYield'] : undefined}
           />
         </DetailSectionRow>
       </DetailSection>
