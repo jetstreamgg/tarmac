@@ -2,7 +2,16 @@ import { GeoConfig, ModuleId } from './types';
 import { FALLBACK_CONFIG } from './constants';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 
-const MODULE_IDS: ModuleId[] = ['savings', 'rewards', 'expert', 'trade', 'upgrade', 'seal'];
+const MODULE_IDS: ModuleId[] = [
+  'savings',
+  'rewards',
+  'expert',
+  'trade',
+  'upgrade',
+  'stake',
+  'vaults',
+  'fixed'
+];
 
 const VALID_GEO_VALUES: Record<string, string[]> = {
   geo_mode: ['full', 'restricted'],

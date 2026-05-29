@@ -67,13 +67,14 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
 
   // Map Intent → ModuleId for geo-config filtering
-  // TODO(geo-gating): Pendle is intentionally absent from this map. Adding gating
-  // requires written sign-off from Jacek or Kacper (regulatory-sensitive change).
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
     [Intent.SAVINGS_INTENT]: 'savings',
     [Intent.REWARDS_INTENT]: 'rewards',
     [Intent.EXPERT_INTENT]: 'expert',
-    [Intent.TRADE_INTENT]: 'trade'
+    [Intent.TRADE_INTENT]: 'trade',
+    [Intent.STAKE_INTENT]: 'stake',
+    [Intent.VAULTS_INTENT]: 'vaults',
+    [Intent.FIXED_INTENT]: 'fixed'
   };
 
   // If the intent maps to a restricted module, fall back to Balances

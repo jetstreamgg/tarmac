@@ -1,4 +1,12 @@
-export type ModuleId = 'savings' | 'rewards' | 'expert' | 'trade' | 'upgrade' | 'seal';
+export type ModuleId =
+  | 'savings'
+  | 'rewards'
+  | 'expert'
+  | 'trade'
+  | 'upgrade'
+  | 'stake'
+  | 'vaults'
+  | 'fixed';
 
 export interface ModuleConfig {
   enabled: boolean;
