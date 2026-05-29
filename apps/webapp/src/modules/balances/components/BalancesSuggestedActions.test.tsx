@@ -36,8 +36,15 @@ vi.mock('@/modules/ui/context/NetworkSwitchContext', () => ({
   })
 }));
 
-vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-hooks')>();
+vi.mock('@/modules/geo-config', () => ({
+  useGeoConfig: () => ({
+    isModuleEnabled: () => true,
+    isRegionRestricted: false
+  })
+}));
+
+vi.mock('@/hooks', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks')>();
   return {
     ...actual,
     useOverallSkyData: () => ({ data: undefined, isLoading: false }),
@@ -48,12 +55,13 @@ vi.mock('@jetstreamgg/sky-hooks', async importOriginal => {
     useHighestRateFromChartData: () => undefined,
     filterDeprecatedRewardContracts: () => [],
     useStakeRewardContracts: () => ({ data: [], isLoading: false }),
-    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false })
+    useMultipleRewardsChartInfo: () => ({ data: [], isLoading: false }),
+    usePendleMarketsApiData: () => ({ data: undefined, isLoading: false, error: null, refetch: () => {} })
   };
 });
 
-vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-utils')>();
+vi.mock('@/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/utils')>();
   return {
     ...actual,
     formatDecimalPercentage: (value: number) => `${value}%`,
@@ -64,8 +72,8 @@ vi.mock('@jetstreamgg/sky-utils', async importOriginal => {
   };
 });
 
-vi.mock('@jetstreamgg/sky-widgets', async importOriginal => {
-  const actual = await importOriginal<typeof import('@jetstreamgg/sky-widgets')>();
+vi.mock('@/widgets', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/widgets')>();
   return {
     ...actual,
     Morpho: () => <div>morpho</div>,

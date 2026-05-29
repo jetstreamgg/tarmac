@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useConnection, useChainId } from 'wagmi';
-import { useRewardsWithUserBalance, usdsSkyRewardAddress } from '@jetstreamgg/sky-hooks';
-import { isMainnetId, chainId as chainIdMap } from '@jetstreamgg/sky-utils';
+import { useRewardsWithUserBalance, usdsSkyRewardAddress } from '@/hooks';
+import { isMainnetId, chainId as chainIdMap } from '@/utils';
 
 /**
  * Hook to check if the connected user has any position in the deprecated USDS-SKY rewards.

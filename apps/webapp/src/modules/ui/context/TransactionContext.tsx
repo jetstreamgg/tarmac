@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
-import { TxStatus } from '@jetstreamgg/sky-widgets';
-import { toError } from '@jetstreamgg/sky-hooks';
-import { getTransactionLink, useIsSafeWallet } from '@jetstreamgg/sky-utils';
+import { TxStatus } from '@/widgets';
+import { toError } from '@/hooks';
+import { getTransactionLink } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
 import { TransactionModal, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
@@ -30,9 +31,13 @@ export type TransactionConfig = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /** Optional node rendered to the right of the title — e.g. a slippage gear. */
+  rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
   onRetry?: () => void;
   confirmLabel?: string;
+  /** Disables the Confirm button — e.g. while a quote is refetching. */
+  confirmDisabled?: boolean;
   successLabel?: string;
   errorLabel?: string;
   onSuccess?: () => void;
@@ -41,7 +46,13 @@ export type TransactionConfig = {
   steps?: string[];
   /** Analytics metadata for tracking transaction lifecycle events */
   analytics?: TransactionAnalytics;
+  /** Identity used to gate updateModalContent calls to the active session. */
+  sessionId?: string;
 };
+
+type LiveModalUpdate = Partial<
+  Pick<TransactionConfig, 'transactionContent' | 'rightHeaderComponent' | 'confirmDisabled'>
+>;
 
 // Transaction lifecycle callbacks compatible with both WriteHookParams and BatchWriteHookParams
 export type TxCallbacks = {
@@ -54,6 +65,9 @@ export type TxCallbacks = {
 type TransactionContextValue = {
   /** Open the transaction modal with a review screen */
   launch: (config: TransactionConfig) => void;
+  /** Live-update body / right-header / confirm-disabled. Gated on sessionId. */
+  updateModalContent: (sessionId: string, partial: LiveModalUpdate) => void;
+  isModalOpen: boolean;
   /** Transaction lifecycle callbacks to spread into write hooks */
   txCallbacks: TxCallbacks;
   /** Current transaction status */
@@ -67,7 +81,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [txStatus, setTxStatus] = useState<TxStatus>(TxStatus.IDLE);
   const [externalLink, setExternalLink] = useState<string | undefined>();
   const [currentStep, setCurrentStep] = useState(0);
+  // Config is state so updateModalContent re-renders the modal; ref mirrors it for callback reads.
+  const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
+  const activeSessionRef = useRef<string | null>(null);
 
   const chainId = useChainId();
   const { address } = useConnection();
@@ -78,6 +95,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const launch = useCallback(
     (config: TransactionConfig) => {
       configRef.current = config;
+      activeSessionRef.current = config.sessionId ?? null;
+      setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
       setExternalLink(undefined);
       setCurrentStep(0);
@@ -93,6 +112,19 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       }
     },
     [chainId, trackWidgetReviewViewed]
+  );
+
+  const updateModalContent = useCallback<TransactionContextValue['updateModalContent']>(
+    (sessionId, partial) => {
+      if (sessionId !== activeSessionRef.current) return;
+      setActiveConfig(prev => {
+        if (!prev) return prev;
+        const next = { ...prev, ...partial };
+        configRef.current = next;
+        return next;
+      });
+    },
+    []
   );
 
   const resetTransactionProgress = useCallback(() => {
@@ -119,7 +151,9 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
     setCurrentStep(0);
+    setActiveConfig(null);
     configRef.current = null;
+    activeSessionRef.current = null;
   }, [txStatus, chainId, trackTransactionCompleted, startNewFlow]);
 
   const handleRetry = useCallback(() => {
@@ -241,27 +275,29 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     )
   };
 
-  const config = configRef.current;
-
   return (
-    <TransactionContext.Provider value={{ launch, txCallbacks, txStatus }}>
+    <TransactionContext.Provider
+      value={{ launch, updateModalContent, isModalOpen: open, txCallbacks, txStatus }}
+    >
       {children}
-      {config && (
+      {activeConfig && (
         <TransactionModal
           open={open}
           onClose={handleClose}
-          title={config.title}
-          subtitles={config.subtitles}
-          transactionContent={config.transactionContent}
-          onConfirm={config.onConfirm}
+          title={activeConfig.title}
+          subtitles={activeConfig.subtitles}
+          transactionContent={activeConfig.transactionContent}
+          rightHeaderComponent={activeConfig.rightHeaderComponent}
+          onConfirm={activeConfig.onConfirm}
           onRetry={handleRetry}
           onBack={resetTransactionProgress}
           txStatus={txStatus}
           externalLink={externalLink}
-          confirmLabel={config.confirmLabel}
-          successLabel={config.successLabel}
-          errorLabel={config.errorLabel}
-          steps={config.steps}
+          confirmLabel={activeConfig.confirmLabel}
+          confirmDisabled={activeConfig.confirmDisabled}
+          successLabel={activeConfig.successLabel}
+          errorLabel={activeConfig.errorLabel}
+          steps={activeConfig.steps}
           currentStep={currentStep}
         />
       )}

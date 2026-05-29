@@ -2,6 +2,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import {
   getConvertUrl,
   getExpertOverviewUrl,
+  getFixedYieldUrl,
   getRewardsUrl,
   getSavingsUrl,
   getSealUrl,
@@ -29,6 +30,7 @@ export const useModuleUrls = () => {
   const stusdsUrl = getStUsdsUrl(searchParams, chainId);
   const vaultsUrl = getVaultsOverviewUrl(searchParams, chainId);
   const convertUrl = getConvertUrl(searchParams, chainId);
+  const fixedYieldUrl = getFixedYieldUrl(searchParams, chainId);
 
   return {
     rewardsUrl,
@@ -38,6 +40,7 @@ export const useModuleUrls = () => {
     expertOverviewUrl,
     stusdsUrl,
     vaultsUrl,
-    convertUrl
+    convertUrl,
+    fixedYieldUrl
   };
 };

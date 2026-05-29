@@ -1,4 +1,4 @@
-import { NotificationType, TxStatus } from '@jetstreamgg/sky-widgets';
+import { NotificationType, TxStatus } from '@/widgets/shared/constants';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { HStack } from '@/modules/layout/components/HStack';
@@ -11,11 +11,11 @@ import { useCallback, useRef } from 'react';
 import { usePrepareNotification } from './usePrepareNotification';
 import { RewardsModule, Savings } from '@/modules/icons';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { PopoverRateInfo as PopoverInfo } from '@jetstreamgg/sky-widgets';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
-import { isDeprecatedRewardContract } from '@jetstreamgg/sky-hooks';
+import { PopoverRateInfo as PopoverInfo } from '@/widgets/shared/components/ui/PopoverRateInfo';
+import { isL2ChainId } from '@/utils';
+import { isDeprecatedRewardContract } from '@/hooks';
 import { useChainId } from 'wagmi';
-import { useGeoConfig } from '@/modules/geo-config';
+import { useGeoConfig } from '@/modules/geo-config/hooks/useGeoConfig';
 
 const generateToastContent = ({
   description,

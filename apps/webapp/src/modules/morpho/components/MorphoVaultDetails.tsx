@@ -9,7 +9,7 @@ import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { MorphoVaultChart } from './MorphoVaultChart';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { Token } from '@jetstreamgg/sky-hooks';
+import { Token } from '@/hooks';
 import { AboutMorphoVaults } from '@/modules/ui/components/AboutMorphoVaults';
 
 type MorphoVaultDetailsProps = {

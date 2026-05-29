@@ -1,4 +1,4 @@
-import { stUsdsAddress } from '@jetstreamgg/sky-hooks';
+import { stUsdsAddress } from '@/hooks';
 
 export interface ExpertModule {
   name: string;

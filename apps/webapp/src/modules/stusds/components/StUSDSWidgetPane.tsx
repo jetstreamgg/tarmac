@@ -1,11 +1,5 @@
-import {
-  StUSDSWidget,
-  TxStatus,
-  StUSDSAction,
-  WidgetStateChangeParams,
-  StUSDSFlow
-} from '@jetstreamgg/sky-widgets';
-import { useSavingsHistory } from '@jetstreamgg/sky-hooks';
+import { StUSDSWidget, TxStatus, StUSDSAction, WidgetStateChangeParams, StUSDSFlow } from '@/widgets';
+import { useSavingsHistory } from '@/hooks';
 import { ExpertIntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
@@ -14,9 +8,6 @@ import { useSearchParams } from 'react-router-dom';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { ExpertIntent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
-import { useChainId } from 'wagmi';
 
 export function StUSDSWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
@@ -24,10 +15,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     useConfigContext();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const chainId = useChainId();
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const onAnalyticsEvent = useWidgetAnalytics('expert', chainId);
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as StUSDSFlow | undefined;
 
@@ -118,13 +105,10 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     <StUSDSWidget
       {...sharedProps}
       onWidgetStateChange={onStUSDSWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       externalWidgetState={{
         amount: linkedActionConfig?.inputAmount,
         flow
       }}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       onBackToExpert={handleBack}
     />
   );

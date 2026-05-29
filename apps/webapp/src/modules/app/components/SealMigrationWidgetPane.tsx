@@ -1,27 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Seal } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { useLingui } from '@lingui/react';
 import { Trans } from '@lingui/react/macro';
-import { useCustomConnectModal } from '@/modules/ui/hooks/useCustomConnectModal';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { useNotification } from '../hooks/useNotification';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { ArrowLeft } from 'lucide-react';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Link, useSearchParams } from 'react-router-dom';
-import {
-  SealAction,
-  SealFlow,
-  SealModuleWidget,
-  TxStatus,
-  WidgetStateChangeParams
-} from '@jetstreamgg/sky-widgets';
-import { useSealCurrentIndex } from '@jetstreamgg/sky-hooks';
-import { isL2ChainId } from '@jetstreamgg/sky-utils';
+import { SealAction, SealFlow, SealModuleWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
+import { useSealCurrentIndex } from '@/hooks';
+import { isL2ChainId } from '@/utils';
 import { useConnection, useChainId, useSwitchChain } from 'wagmi';
 
 import { IntentMapping } from '@/lib/constants';
@@ -36,22 +26,14 @@ type WidgetPaneProps = {
 };
 
 export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
-  const { i18n } = useLingui();
-  const onConnect = useCustomConnectModal();
   const { data: currentUrnIndex } = useSealCurrentIndex();
-  // Transaction tracking removed - was using RainbowKit
-  const addRecentTransaction = () => {}; // No-op for now
-  const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const onNotification = useNotification();
-  const { onExternalLinkClicked, setSelectedSealUrnIndex } = useConfigContext();
+  const { setSelectedSealUrnIndex } = useConfigContext();
   const [shouldHideLink, setShouldHideLink] = useState(false);
-  const locale = i18n.locale;
   const chainId = useChainId();
   const isL2 = isL2ChainId(chainId);
   const [searchParams, setSearchParams] = useSearchParams();
   const { switchChain } = useSwitchChain();
   const { isConnected } = useConnection();
-  const referralCode = Number(import.meta.env.VITE_REFERRAL_CODE) || 0; // fallback to 0 if invalid
 
   const rightHeaderComponent = <DetailsSwitcher />;
 
@@ -114,14 +96,7 @@ export const SealMigrationWidgetPane = ({ children }: WidgetPaneProps) => {
   }, []);
 
   const sharedProps = {
-    onConnect,
-    addRecentTransaction,
-    locale,
     rightHeaderComponent,
-    onNotification,
-    enabled: isConnectedAndAcceptedTerms,
-    onExternalLinkClicked,
-    referralCode,
     onSealUrnChange
   };
 

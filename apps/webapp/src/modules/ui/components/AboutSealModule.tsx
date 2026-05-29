@@ -1,7 +1,7 @@
 import { Trans } from '@lingui/react/macro';
-import { getEtherscanLink } from '@jetstreamgg/sky-utils';
+import { getEtherscanLink } from '@/utils';
 import { useChainId } from 'wagmi';
-import { sealModuleAddress } from '@jetstreamgg/sky-hooks';
+import { sealModuleAddress } from '@/hooks';
 import { AboutCard } from './AboutCard';
 
 export const AboutSealModule = ({ height }: { height?: number | undefined }) => {

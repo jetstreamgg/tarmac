@@ -1,10 +1,4 @@
-import {
-  TradeWidget,
-  TxStatus,
-  TradeAction,
-  WidgetStateChangeParams,
-  L2TradeWidget
-} from '@jetstreamgg/sky-widgets';
+import { TradeWidget, TxStatus, TradeAction, WidgetStateChangeParams, L2TradeWidget } from '@/widgets';
 import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId, useConfig as useWagmiConfig } from 'wagmi';
@@ -18,10 +12,8 @@ import { useSearchParams } from 'react-router-dom';
 import { updateParamsFromTransaction } from '@/modules/utils/updateParamsFromTransaction';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { getChainSpecificText, isCowSupportedChainId } from '@jetstreamgg/sky-utils';
+import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
-import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function TradeWidgetPane(sharedProps: SharedProps) {
@@ -36,8 +28,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const { onNavigate, setCustomHref, customNavLabel, setCustomNavLabel } = useCustomNavigation();
   const isCowSupported = isCowSupportedChainId(chainId);
 
-  const [batchEnabled, setBatchEnabled] = useBatchToggle();
-  const onAnalyticsEvent = useWidgetAnalytics('trade', chainId);
   const { isRegionRestricted } = useGeoConfig();
   const tradeTokenList = isRegionRestricted
     ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
@@ -217,7 +207,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
       customTokenList={tradeTokenList}
       onWidgetStateChange={onTradeWidgetStateChange}
-      onAnalyticsEvent={onAnalyticsEvent}
       customNavigationLabel={customNavLabel}
       onCustomNavigation={onNavigate}
       externalWidgetState={externalWidgetState}
@@ -231,8 +220,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
         },
         chainId
       )}
-      batchEnabled={batchEnabled}
-      setBatchEnabled={setBatchEnabled}
       tokensLocked={shouldLockTokens}
       onBackToConvert={isConvertContext ? handleBackToConvert : undefined}
     />

@@ -8,7 +8,7 @@ import {
   SuccessCheckSolidColor,
   FailedX,
   Cancel
-} from '@jetstreamgg/sky-widgets';
+} from '@/widgets';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -18,8 +18,9 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { Popover, PopoverTrigger, PopoverContent, PopoverClose, PopoverArrow } from '@/components/ui/popover';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
-import { getExplorerName, useIsSafeWallet } from '@jetstreamgg/sky-utils';
-import { useIsBatchSupported } from '@jetstreamgg/sky-hooks';
+import { getExplorerName } from '@/utils';
+import { useIsSafeWallet } from '@/hooks';
+import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
 
@@ -39,12 +40,16 @@ export type TransactionModalProps = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /** Optional node rendered between the title and the close button — e.g. a slippage gear. */
+  rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
   onRetry?: () => void;
   onBack?: () => void;
   txStatus: TxStatus;
   externalLink?: string;
   confirmLabel?: string;
+  /** Disables the Confirm button (e.g. while a quote is refetching). */
+  confirmDisabled?: boolean;
   successLabel?: string;
   errorLabel?: string;
   steps?: string[];
@@ -73,12 +78,14 @@ export function TransactionModal({
   title,
   subtitles,
   transactionContent,
+  rightHeaderComponent,
   onConfirm,
   onRetry,
   onBack,
   txStatus,
   externalLink,
   confirmLabel,
+  confirmDisabled,
   successLabel,
   errorLabel,
   steps,
@@ -147,14 +154,17 @@ export function TransactionModal({
       >
         <div className="flex items-center justify-between">
           <DialogTitle className="text-text text-2xl">{title}</DialogTitle>
-          <Button
-            variant="ghost"
-            className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
-            onClick={handleClose}
-            disabled={isTransacting}
-          >
-            <Close className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {rightHeaderComponent}
+            <Button
+              variant="ghost"
+              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
+              onClick={handleClose}
+              disabled={isTransacting}
+            >
+              <Close className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
 
         <div
@@ -216,7 +226,12 @@ export function TransactionModal({
                 className="flex flex-col gap-4"
               >
                 {showBatchToggle && <BatchToggle />}
-                <Button variant="primaryAlt" className="w-full" onClick={handleConfirm}>
+                <Button
+                  variant="primaryAlt"
+                  className="w-full"
+                  onClick={handleConfirm}
+                  disabled={confirmDisabled}
+                >
                   {confirmLabel ?? <Trans>Confirm</Trans>}
                 </Button>
               </motion.div>

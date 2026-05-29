@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, useMemo } from 'react';
 import { useChainId, useConnection } from 'wagmi';
-import { useRestrictedAddressCheck, useVpnCheck } from '@jetstreamgg/sky-hooks';
+import { useRestrictedAddressCheck, useVpnCheck } from '@/hooks';
 import { IS_PRODUCTION_ENV } from '@/lib/constants';
 import { isPrivateDeployment } from '@/lib/isPrivateDeployment';
 import { useVpnAnalytics } from '@/modules/analytics/hooks/useVpnAnalytics';
@@ -29,7 +29,7 @@ interface ConnectedContextType {
   };
 }
 
-const ConnectedContext = createContext<ConnectedContextType>({
+export const ConnectedContext = createContext<ConnectedContextType>({
   isConnectedAndAcceptedTerms: false,
   isAuthorized: false,
   setHasAcceptedTerms: () => {},

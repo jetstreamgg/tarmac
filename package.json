@@ -11,19 +11,12 @@
     "prettier": "prettier --write --cache .",
     "prettier:check": "prettier --check --cache .",
     "lint": "eslint --cache",
-    "build": "pnpm messages && pnpm -r run build",
-    "build:packages": "pnpm -r --filter='./packages/**' build",
+    "build": "pnpm messages && pnpm -F webapp build",
     "dev": "pnpm messages && pnpm -F webapp dev",
-    "dev:packages": "pnpm messages && pnpm --parallel -F './packages/**' dev",
     "preview": "pnpm --filter='./apps/webapp' preview",
-    "test": "pnpm -r --filter='!./packages/hooks' --parallel run test && pnpm test:hooks",
-    "test:coverage": "pnpm vnet:fork && pnpm -r --workspace-concurrency=1 run test:coverage && pnpm vnet:delete",
-    "test:coverage:ci": "pnpm -r --workspace-concurrency=1 --filter './packages/**' run test:coverage",
-    "test:coverage:alternate:fork": "pnpm vnet:alternate:fork && USE_ALTERNATE_VNET=true pnpm -r --workspace-concurrency=1 run test:coverage && pnpm vnet:alternate:delete",
-    "test:hooks": "pnpm vnet:fork && pnpm --filter='./packages/hooks' run test && pnpm vnet:delete",
-    "test:hooks:alternate:fork": "pnpm vnet:alternate:fork && USE_ALTERNATE_VNET=true pnpm --filter='./packages/hooks' run test && pnpm vnet:alternate:delete",
-    "test:widgets": "pnpm vnet:fork && pnpm --filter='./packages/widgets' run test && pnpm vnet:delete",
-    "test:utils": "pnpm --filter='./packages/utils' run test",
+    "test": "pnpm -F webapp test && pnpm test:hooks",
+    "test:coverage": "pnpm vnet:fork && pnpm -F webapp test:coverage && pnpm vnet:delete",
+    "test:hooks": "pnpm vnet:fork && pnpm -F webapp exec vitest run -c vitest.hooks.config.ts && pnpm vnet:delete",
     "e2e": "pnpm messages && pnpm vnet:delete:all && pnpm vnet:fork && pnpm -F webapp e2e",
     "e2e:no-vnet": "pnpm messages && pnpm -F webapp e2e",
     "e2e:ui": "pnpm messages && pnpm vnet:delete:all && pnpm vnet:fork && pnpm -F webapp e2e:ui",
@@ -44,11 +37,10 @@
     "vnet:alternate:delete:ci": "node ./scripts/cleanupAlternateVnet.js",
     "vnet:alternate:fund": "cd apps/webapp && USE_ALTERNATE_VNET=true npx tsx --tsconfig tsconfig.json src/test/e2e/fund-accounts.ts",
     "prepare": "husky",
-    "typecheck": "pnpm --filter './packages/**' --filter './apps/**' typecheck",
+    "typecheck": "pnpm --filter './apps/**' typecheck",
     "messages:extract": "lingui extract --clean",
     "messages:compile": "lingui compile",
     "messages": "pnpm messages:extract && pnpm messages:compile",
-    "changeset:release": "pnpm build && npx changeset publish",
     "knip": "knip",
     "pr:desc": "bash ./scripts/generate_pr_description.sh"
   },
@@ -58,7 +50,6 @@
       "eslint --cache --fix"
     ]
   },
-  "main": "index.js",
   "directories": {
     "doc": "docs"
   },
@@ -74,12 +65,10 @@
   "homepage": "https://github.com/jetstreamgg/tarmac#readme",
   "workspaces": {
     "packages": [
-      "packages/*",
       "apps/webapp"
     ]
   },
   "devDependencies": {
-    "@changesets/cli": "catalog:",
     "@eslint/eslintrc": "catalog:",
     "@eslint/js": "catalog:",
     "@lingui/cli": "catalog:",
@@ -119,8 +108,8 @@
     "overrides": {
       "esbuild@<=0.24.2": "^0.25.0",
       "@babel/runtime@7.26.7": "7.26.10",
-      "axios@>=1.0.0 <1.15.2": "1.15.2",
-      "@json-rpc-tools/provider>axios@^0.21.0": "1.15.2",
+      "axios@>=1.0.0 <1.16.0": "^1.16.0",
+      "@json-rpc-tools/provider>axios@^0.21.0": "^1.16.0",
       "protobufjs@<7.5.6": "~7.5.6",
       "@protobufjs/utf8@<1.1.1": "~1.1.1",
       "dompurify@<3.4.0": "~3.4.0",

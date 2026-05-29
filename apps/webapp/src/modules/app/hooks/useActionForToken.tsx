@@ -5,13 +5,13 @@ import {
   isOptimismChainId,
   isUnichainChainId,
   isL2ChainId
-} from '@jetstreamgg/sky-utils';
+} from '@/utils';
 import { useCallback } from 'react';
 import {
   RewardContract,
   useAvailableTokenRewardContractsForChains,
   useTotalUserStaked
-} from '@jetstreamgg/sky-hooks';
+} from '@/hooks';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { useSearchParams } from 'react-router-dom';
 import { IntentMapping, QueryParams, ConvertIntentMapping } from '@/lib/constants';

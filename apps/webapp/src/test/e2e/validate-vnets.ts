@@ -10,7 +10,7 @@ import { getRpcUrlFromFile } from './utils/getRpcUrlFromFile';
 import { NetworkName } from './utils/constants';
 import { getTestAddresses } from './utils/testWallets';
 import { formatUnits } from 'viem';
-import { usdsAddress, usdcAddress, mkrAddress, usdsL2Address, usdcL2Address } from '@jetstreamgg/sky-hooks';
+import { usdsAddress, usdcAddress, mkrAddress, usdsL2Address, usdcL2Address } from '@/hooks';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
 
