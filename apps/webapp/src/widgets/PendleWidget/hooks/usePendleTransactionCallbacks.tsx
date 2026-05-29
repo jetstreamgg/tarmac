@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
 import { getTransactionLink } from '@/utils';
 import {
@@ -18,10 +17,13 @@ import {
 import { WidgetAnalyticsEvent, WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents';
 import { PENDLE_HISTORY_REFRESH_MS, PendleFlow, PendleScreen } from '../lib/constants';
 import { pendleAnalyticsData, type PendleAnalyticsSide } from '../lib/pendleAnalyticsData';
+import { pendleNonPtLeg } from '../lib/pendleUsdValue';
 
 type UsePendleTransactionCallbacksParameters = {
   onAnalyticsEvent?: OnAnalyticsEventCallback;
   onNotification?: OnNotificationCallback;
+  /** Values a token leg in USD for the analytics `amount` property. */
+  valueUsd: (symbol: string, amount: number) => number | undefined;
   flow: PendleFlow;
   side: PendleConvertSide;
   market: PendleMarketConfig;
@@ -68,7 +70,8 @@ export function usePendleTransactionCallbacks({
   refetchOutputBalance,
   refetchPtBalance,
   onNotification,
-  onAnalyticsEvent
+  onAnalyticsEvent,
+  valueUsd
 }: UsePendleTransactionCallbacksParameters) {
   // Tracks which step of a non-batch sequence we're on (approve → main).
   const supplyStepRef = useRef(0);
@@ -77,7 +80,20 @@ export function usePendleTransactionCallbacks({
 
   const mainAction: 'supply' | 'withdraw' = side === PendleConvertSide.BUY ? 'supply' : 'withdraw';
   const analyticsSide: PendleAnalyticsSide = side === PendleConvertSide.BUY ? 'buy' : 'sell';
-  const formattedAmount = Number(formatUnits(amount, fromDecimals));
+  // `amount` = USD value of the non-PT leg (input on buy, output on sell), so
+  // sUSDS supplies don't mis-sum the inflow/outflow tiles. useWidgetAnalytics
+  // applies the withdraw sign — pass positive magnitude. Raw token counts stay
+  // on amountFrom/amountTo in buildData(). undefined when price unavailable →
+  // the event omits `amount` rather than emit a wrong-unit number.
+  const leg = pendleNonPtLeg(analyticsSide, {
+    originSymbol: originToken.symbol,
+    targetSymbol: targetToken.symbol,
+    amountInBigint: amount,
+    amountOutBigint: quote?.amountOut ?? 0n,
+    fromDecimals,
+    toDecimals
+  });
+  const formattedAmount = valueUsd(leg.symbol, leg.amount);
 
   const buildData = () =>
     pendleAnalyticsData({

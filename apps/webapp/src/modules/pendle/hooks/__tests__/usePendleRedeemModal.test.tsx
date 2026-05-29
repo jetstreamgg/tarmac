@@ -45,7 +45,12 @@ const hoisted = vi.hoisted(() => ({
   launchMock: vi.fn(),
   matured: true,
   // Swappable execute fn so tests can prove the latest one fires through onConfirm.
-  currentExecute: (() => undefined) as () => void
+  currentExecute: (() => undefined) as () => void,
+  // Swappable USD value fn (default ≈$1/token) so a test can force "no value".
+  valueUsd: ((_symbol: string, amount: number) => amount) as (
+    symbol: string,
+    amount: number
+  ) => number | undefined
 }));
 
 vi.mock('@/hooks', async importOriginal => {
@@ -94,7 +99,10 @@ vi.mock('@/widgets', async importOriginal => {
       slippage: 0.01,
       setSlippage: () => undefined,
       defaultSlippage: 0.01
-    })
+    }),
+    // Stub the USD value fn so the test doesn't pull in usePrices()/wagmi reads.
+    // Reads the swappable hoisted fn (default ≈$1/token).
+    usePendleUsdValue: () => hoisted.valueUsd
   };
 });
 
@@ -154,6 +162,7 @@ describe('usePendleRedeemModal analytics', () => {
   beforeEach(() => {
     hoisted.launchMock.mockClear();
     hoisted.matured = true;
+    hoisted.valueUsd = (_symbol: string, amount: number) => amount;
   });
 
   afterEach(() => {
@@ -211,11 +220,24 @@ describe('usePendleRedeemModal analytics', () => {
     unmount();
   });
 
-  it('emits a strictly negative amount in analytics.data with PT-balance magnitude', () => {
+  it('emits a strictly negative amount = USD value of the redeemed output leg', () => {
+    // `amount` now values the non-PT output leg (USDS/USDC/underlying the user
+    // receives), not the PT count. Output = QUOTE.amountOut (1_499_500n at 6dp)
+    // = 1.4995; valued ~$1/token by the stubbed value fn; emitted negative as a
+    // withdrawal. (Previously this asserted the PT-balance magnitude of 1.5.)
     const { unmount } = renderComponent(<TestConsumer />);
     const config = hoisted.launchMock.mock.calls[0][0];
     expect(config.analytics.data.amount).toBeLessThan(0);
-    expect(Math.abs(config.analytics.data.amount)).toBeCloseTo(1.5, 6);
+    expect(Math.abs(config.analytics.data.amount)).toBeCloseTo(1.4995, 6);
+    unmount();
+  });
+
+  it('omits amount when the output leg cannot be valued (valueUsd → undefined)', () => {
+    hoisted.valueUsd = () => undefined;
+    const { unmount } = renderComponent(<TestConsumer />);
+    const config = hoisted.launchMock.mock.calls[0][0];
+    expect(config.analytics.widgetName).toBe('fixed');
+    expect('amount' in config.analytics.data).toBe(false);
     unmount();
   });
 
