@@ -35,8 +35,6 @@ export enum Environment {
   Development = 'development'
 }
 
-export const FIXED_YIELD_MODULE_ENABLED = import.meta.env.VITE_FIXED_YIELD_MODULE_ENABLED === 'true';
-
 export const IntentMapping = {
   [Intent.BALANCES_INTENT]: 'balances',
   [Intent.UPGRADE_INTENT]: 'upgrade',
@@ -81,7 +79,7 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.EXPERT_INTENT,
     Intent.VAULTS_INTENT,
     Intent.CONVERT_INTENT,
-    ...(FIXED_YIELD_MODULE_ENABLED ? [Intent.FIXED_INTENT] : [])
+    Intent.FIXED_INTENT
   ],
   [tenderly.id]: [
     Intent.BALANCES_INTENT,
@@ -94,7 +92,7 @@ export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
     Intent.EXPERT_INTENT,
     Intent.VAULTS_INTENT,
     Intent.CONVERT_INTENT,
-    ...(FIXED_YIELD_MODULE_ENABLED ? [Intent.FIXED_INTENT] : [])
+    Intent.FIXED_INTENT
   ],
   [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
   [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],

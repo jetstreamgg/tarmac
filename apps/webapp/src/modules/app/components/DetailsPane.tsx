@@ -6,7 +6,7 @@ import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { MorphoVaultDetails } from '@/modules/morpho/components/MorphoVaultDetails';
 import { MORPHO_VAULTS } from '@/hooks';
-import { ConvertIntentMapping, QueryParams, FIXED_YIELD_MODULE_ENABLED } from '@/lib/constants';
+import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
 import { useSearchParams } from 'react-router-dom';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
@@ -199,13 +199,6 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                 </MotionDetailsWrapper>
               );
             case Intent.FIXED_INTENT:
-              if (!FIXED_YIELD_MODULE_ENABLED) {
-                return (
-                  <MotionDetailsWrapper key={keys[8]}>
-                    <BalancesDetails />
-                  </MotionDetailsWrapper>
-                );
-              }
               return (
                 <MotionDetailsWrapper key={keys[9]}>
                   <PendleDetailsPane />
