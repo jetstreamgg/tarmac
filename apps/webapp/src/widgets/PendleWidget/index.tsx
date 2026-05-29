@@ -207,7 +207,7 @@ const PendleWidgetWrapped = ({ market, rightHeaderComponent, onBackToPendle }: P
     // generic "service unavailable" copy would be misleading — the user
     // just needs to enter a larger amount.
     if (/input valuation is too low/i.test(raw)) {
-      return t`Enter at least $0.01 to continue.`;
+      return t`Input amount is too low. Please try a larger amount.`;
     }
     if (/no routes/i.test(raw)) {
       return t`No route available for this trade size. Try a different amount.`;
