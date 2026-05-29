@@ -10,7 +10,6 @@ import {
   usePrices,
   useAllPendleUserAssets
 } from '@/hooks';
-import { FIXED_YIELD_MODULE_ENABLED } from '@/lib/constants';
 import { RewardsBalanceCard } from './RewardsBalanceCard';
 import { SavingsBalanceCard } from './SavingsBalanceCard';
 import { SealBalanceCard } from './SealBalanceCard';
@@ -225,7 +224,6 @@ export const ModulesBalances = ({
   );
 
   const hideFixedYield = Boolean(
-    !FIXED_YIELD_MODULE_ENABLED ||
     pendleError ||
     (totalPendleUserAssets === 0n && hideZeroBalances) ||
     (!showAllNetworks && !isMainnetId(currentChainId))
@@ -348,7 +346,7 @@ export const ModulesBalances = ({
     (totalUserStaked ?? 0n) === 0n &&
     (hideRestrictedModules || totalExpertSavingsBalance === 0n) &&
     totalMorphoUserAssets === 0n &&
-    (!FIXED_YIELD_MODULE_ENABLED || totalPendleUserAssets === 0n);
+    totalPendleUserAssets === 0n;
 
   useEffect(() => {
     onAllFundsEmpty?.(allFundsEmpty);

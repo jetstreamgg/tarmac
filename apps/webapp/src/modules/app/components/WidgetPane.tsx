@@ -18,8 +18,7 @@ import {
   ExpertIntentMapping,
   VaultsIntentMapping,
   ConvertIntentMapping,
-  FixedIntentMapping,
-  FIXED_YIELD_MODULE_ENABLED
+  FixedIntentMapping
 } from '@/lib/constants';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
@@ -79,11 +78,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   // If the intent maps to a restricted module, fall back to Balances
   const restrictedModuleId = intentToModule[intent];
-  const isFixedYieldDisabled = intent === Intent.FIXED_INTENT && !FIXED_YIELD_MODULE_ENABLED;
   const effectiveIntent =
-    (restrictedModuleId && !isModuleEnabled(restrictedModuleId)) || isFixedYieldDisabled
-      ? Intent.BALANCES_INTENT
-      : intent;
+    restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
@@ -207,20 +203,16 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         ? 'Use USDS or USDC to access the Sky Savings Rate'
         : 'Use USDS to access the Sky Savings Rate'
     ],
-    ...(FIXED_YIELD_MODULE_ENABLED
-      ? [
-          [
-            Intent.FIXED_INTENT,
-            'Fixed Yield',
-            Pendle,
-            withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
-            false,
-            undefined,
-            'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
-            pendleSubItems
-          ]
-        ]
-      : []),
+    [
+      Intent.FIXED_INTENT,
+      'Fixed Yield',
+      Pendle,
+      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
+      false,
+      undefined,
+      'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
+      pendleSubItems
+    ],
     [
       Intent.STAKE_INTENT,
       'Stake & Borrow',

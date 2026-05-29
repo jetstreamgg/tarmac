@@ -52,6 +52,8 @@ export { usePendleTokens } from './PendleWidget/hooks/usePendleTokens';
 export type { PendleTokens } from './PendleWidget/hooks/usePendleTokens';
 export { usePendleSlippage } from './PendleWidget/hooks/usePendleSlippage';
 export type { PendleSlippageMode } from './PendleWidget/hooks/usePendleSlippage';
+export { usePendleUsdValue } from './PendleWidget/hooks/usePendleUsdValue';
+export { pendleUsdValue, pendleNonPtLeg } from './PendleWidget/lib/pendleUsdValue';
 export { PendleConfigMenu } from './PendleWidget/components/PendleConfigMenu';
 export { pendleAnalyticsData } from './PendleWidget/lib/pendleAnalyticsData';
 export type { PendleAnalyticsDataInput, PendleAnalyticsSide } from './PendleWidget/lib/pendleAnalyticsData';
