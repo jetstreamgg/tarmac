@@ -1,4 +1,4 @@
-import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactElement, ReactNode, useCallback, useMemo, useState } from 'react';
 import { UserConfig } from '../types/user-config';
 import { RewardContract } from '@/hooks';
 import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
@@ -14,9 +14,42 @@ import {
 import { defaultConfig as siteConfig } from '../default-config';
 import { reportError } from '@/modules/sentry/reportError';
 
+// Read + merge user settings synchronously so the component renders with the
+// correct config on the very first paint (no default-config flash).
+const loadUserConfigFromStorage = (): UserConfig => {
+  try {
+    const settings = window.localStorage.getItem(USER_SETTINGS_KEY);
+    const parsed = JSON.parse(settings || '{}');
+    return {
+      ...defaultUserConfig,
+      ...parsed,
+      locale: 'en',
+      batchEnabled:
+        // If the feature flag is enabled, but the local storage item is not set, default to enabled
+        import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
+      expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
+      expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false,
+      stakingSpkDisclaimerDismissed: parsed.stakingSpkDisclaimerDismissed ?? false,
+      rewardsUsdsSkyDisclaimerDismissed: parsed.rewardsUsdsSkyDisclaimerDismissed ?? false
+    };
+  } catch (e) {
+    reportError(e, {
+      module: 'config',
+      flow: 'user-settings',
+      action: 'parse-local-storage',
+      type: 'local_storage_parse_error'
+    });
+    window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(defaultUserConfig));
+    return defaultUserConfig;
+  }
+};
+
 export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
-  const [userConfig, setUserConfig] = useState<UserConfig>(defaultUserConfig);
-  const [loaded, setLoaded] = useState<boolean>(false);
+  // Lazy initializer reads + merges localStorage synchronously on mount.
+  const [userConfig, setUserConfig] = useState<UserConfig>(loadUserConfigFromStorage);
+  // `loaded` is kept in the context API for backwards compat; since the lazy
+  // init populates userConfig synchronously, there is no "loading" phase.
+  const [loaded] = useState<boolean>(true);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [selectedSealUrnIndex, setSelectedSealUrnIndex] = useState<number | undefined>(undefined);
   const [selectedStakeUrnIndex, setSelectedStakeUrnIndex] = useState<number | undefined>(undefined);
@@ -26,42 +59,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   const [selectedExpertOption, setSelectedExpertOption] = useState<ExpertIntent | undefined>(undefined);
   const [selectedVaultsOption, setSelectedVaultsOption] = useState<VaultsIntent | undefined>(undefined);
   const [selectedConvertOption, setSelectedConvertOption] = useState<ConvertIntent | undefined>(undefined);
-
-  // Check the user settings on load, and set locale
-  useEffect(() => {
-    // const localeFromUrl = fromUrl(QueryParams.Locale);
-    // const backupLocale = detect(fromNavigator(), () => 'en');
-    const settings = window.localStorage.getItem(USER_SETTINGS_KEY);
-    try {
-      const parsed = JSON.parse(settings || '{}');
-      // Use Zod to parse and validate the user settings
-      //throws an error if settings don't match the zod schema
-      // const parsedAndValidated = userSettingsSchema.parse(parsed);
-      // const localeFromConfig = parsedAndValidated.locale;
-      setUserConfig({
-        ...userConfig,
-        ...parsed,
-        // locale: localeFromUrl || localeFromConfig || backupLocale
-        locale: 'en',
-        batchEnabled:
-          // If the feature flag is enabled, but the local storage item is not set, default to enabled
-          import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
-        expertRiskDisclaimerShown: parsed.expertRiskDisclaimerShown ?? false,
-        expertRiskDisclaimerDismissed: parsed.expertRiskDisclaimerDismissed ?? false,
-        stakingSpkDisclaimerDismissed: parsed.stakingSpkDisclaimerDismissed ?? false,
-        rewardsUsdsSkyDisclaimerDismissed: parsed.rewardsUsdsSkyDisclaimerDismissed ?? false
-      });
-    } catch (e) {
-      reportError(e, {
-        module: 'config',
-        flow: 'user-settings',
-        action: 'parse-local-storage',
-        type: 'local_storage_parse_error'
-      });
-      window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(userConfig));
-    }
-    setLoaded(true);
-  }, []);
 
   const updateUserConfig = (config: UserConfig) => {
     setUserConfig(config);

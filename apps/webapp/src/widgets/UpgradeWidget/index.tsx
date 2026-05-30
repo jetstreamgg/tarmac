@@ -105,53 +105,70 @@ export function UpgradeWidgetWrapped({
   );
   const linguiCtx = useLingui();
 
-  useEffect(() => {
+  // Mirror initialTabIndex into tabIndex. No sentinel — useState init matches.
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
-  useEffect(() => {
-    if (!shouldAllowExternalUpdate.current) return;
-
-    const externalToken = validatedExternalState?.initialUpgradeToken;
-    let newOriginToken: Token;
-
-    if (externalToken) {
-      // If we have an external token, use it
-      newOriginToken = tokenForSymbol(externalToken as keyof typeof upgradeTokens);
-    } else {
-      // If no external token, check if current originToken matches the flow
-      const isUpgradeToken = originToken.symbol === 'DAI' || originToken.symbol === 'MKR';
-      const isRevertToken = originToken.symbol === 'USDS' || originToken.symbol === 'SKY';
-      const isFlowUpgrade =
-        validatedExternalState?.flow === undefined || validatedExternalState?.flow === UpgradeFlow.UPGRADE;
-
-      if ((isFlowUpgrade && !isUpgradeToken) || (!isFlowUpgrade && !isRevertToken)) {
-        // Token doesn't match flow, set to default
-        newOriginToken = tokenForSymbol(
-          (validatedExternalState?.flow === UpgradeFlow.REVERT ? 'USDS' : 'DAI') as keyof typeof upgradeTokens
-        );
+  // Sync originToken/targetToken/originAmount from external state, gated by
+  // shouldAllowExternalUpdate ref. Sentinel preserves mount-fire: the ref
+  // gating means the body may run on initial render if the ref is true,
+  // which adjusts the initial useState values when external state has its
+  // own opinion (e.g. external token differs from default).
+  const externalInitialUpgradeToken = validatedExternalState?.initialUpgradeToken;
+  const externalAmountForUpgrade = validatedExternalState?.amount;
+  const externalFlowForUpgrade = validatedExternalState?.flow;
+  const [prevUpgradeExternalDeps, setPrevUpgradeExternalDeps] = useState<
+    | {
+        initialUpgradeToken: typeof externalInitialUpgradeToken;
+        amount: typeof externalAmountForUpgrade;
+        flow: typeof externalFlowForUpgrade;
+        originToken: Token;
+      }
+    | null
+  >(null);
+  if (
+    prevUpgradeExternalDeps === null ||
+    prevUpgradeExternalDeps.initialUpgradeToken !== externalInitialUpgradeToken ||
+    prevUpgradeExternalDeps.amount !== externalAmountForUpgrade ||
+    prevUpgradeExternalDeps.flow !== externalFlowForUpgrade ||
+    prevUpgradeExternalDeps.originToken !== originToken
+  ) {
+    setPrevUpgradeExternalDeps({
+      initialUpgradeToken: externalInitialUpgradeToken,
+      amount: externalAmountForUpgrade,
+      flow: externalFlowForUpgrade,
+      originToken
+    });
+    if (shouldAllowExternalUpdate.current) {
+      let newOriginToken: Token;
+      if (externalInitialUpgradeToken) {
+        newOriginToken = tokenForSymbol(externalInitialUpgradeToken as keyof typeof upgradeTokens);
       } else {
-        // Current token is valid for the flow, keep it
-        newOriginToken = originToken;
+        const isUpgradeToken = originToken.symbol === 'DAI' || originToken.symbol === 'MKR';
+        const isRevertToken = originToken.symbol === 'USDS' || originToken.symbol === 'SKY';
+        const isFlowUpgrade =
+          externalFlowForUpgrade === undefined || externalFlowForUpgrade === UpgradeFlow.UPGRADE;
+        if ((isFlowUpgrade && !isUpgradeToken) || (!isFlowUpgrade && !isRevertToken)) {
+          newOriginToken = tokenForSymbol(
+            (externalFlowForUpgrade === UpgradeFlow.REVERT ? 'USDS' : 'DAI') as keyof typeof upgradeTokens
+          );
+        } else {
+          newOriginToken = originToken;
+        }
+      }
+      const newTargetToken = targetTokenForSymbol(newOriginToken.symbol as keyof typeof upgradeTokens);
+      if (newOriginToken && newTargetToken) {
+        setOriginToken(newOriginToken);
+        setTargetToken(newTargetToken);
+      }
+      if (externalAmountForUpgrade !== undefined) {
+        setOriginAmount(parseUnits(externalAmountForUpgrade, 18));
       }
     }
-
-    const newTargetToken = targetTokenForSymbol(newOriginToken.symbol as keyof typeof upgradeTokens);
-
-    if (newOriginToken && newTargetToken) {
-      setOriginToken(newOriginToken);
-      setTargetToken(newTargetToken);
-    }
-
-    if (validatedExternalState?.amount !== undefined) {
-      setOriginAmount(parseUnits(validatedExternalState.amount, 18));
-    }
-  }, [
-    validatedExternalState?.initialUpgradeToken,
-    validatedExternalState?.amount,
-    validatedExternalState?.flow,
-    originToken
-  ]);
+  }
 
   const {
     setButtonText,
@@ -193,14 +210,12 @@ export function UpgradeWidgetWrapped({
   // Fetch the current fee from the contract
   const { data: mkrSkyFee, isLoading: isFeeLoading } = useMkrSkyFee();
 
-  // Calculate target amount with fee applied
-  const targetAmount = useMemo(() => {
-    // Don't calculate if fee is still loading or undefined
-    if (isFeeLoading || mkrSkyFee === undefined) {
-      return 0n;
-    }
-    return math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyFee);
-  }, [originToken, debouncedOriginAmount, mkrSkyFee, isFeeLoading]);
+  // Calculate target amount with fee applied. No useMemo — the compiler
+  // auto-memoizes this primitive expression when its inputs are stable.
+  const targetAmount =
+    isFeeLoading || mkrSkyFee === undefined
+      ? 0n
+      : math.calculateConversion(originToken, debouncedOriginAmount, mkrSkyFee);
 
   const { data: allowance, mutate: mutateAllowance } = useTokenAllowance({
     chainId,
@@ -417,14 +432,14 @@ export function UpgradeWidgetWrapped({
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
   }, [txStatus, isConnecting]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // mount-fire that initialized widgetState based on tabIndex.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setOriginAmount(parseUnits(validatedExternalState?.amount || '0', 18));
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
-
-    // Reset tokens to initial values
     setOriginToken(
       tokenForSymbol((validatedExternalState?.initialUpgradeToken as keyof typeof upgradeTokens) || 'DAI')
     );
@@ -433,8 +448,6 @@ export function UpgradeWidgetWrapped({
         (validatedExternalState?.initialUpgradeToken as keyof typeof upgradeTokens) || 'DAI'
       )
     );
-
-    // Reset widget state to initial screen based on current tab
     if (tabIndex === 0) {
       setWidgetState({
         flow: UpgradeFlow.UPGRADE,
@@ -448,12 +461,14 @@ export function UpgradeWidgetWrapped({
         screen: UpgradeScreen.ACTION
       });
     }
+  }
 
-    // Refresh data
+  // Refetches on network change in their own effect.
+  useEffect(() => {
     mutateAllowance();
     mutateOriginBalance();
     mutateTargetBalance();
-  }, [chainId]);
+  }, [chainId, mutateAllowance, mutateOriginBalance, mutateTargetBalance]);
 
   return (
     <WidgetContainer

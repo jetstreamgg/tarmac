@@ -3,7 +3,7 @@ import { cowApiClient } from './constants';
 import { OrderQuoteResponse } from './trade';
 import { WriteHookParams } from '../hooks';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { fetchOrderStatus } from './fetchOrderStatus';
 import { useWriteContractFlow } from '../shared/useWriteContractFlow';
 import { gPv2SettlementAbi, gPv2SettlementAddress } from '../generated';
@@ -60,8 +60,9 @@ export const useCreatePreSignTradeOrder = ({
   const chainId = useChainId();
   const { address } = useConnection();
 
-  const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
-  const [shouldSendTransaction, setShouldSendTransaction] = useState(false);
+  // Tracks the most recent orderId we've already called execute() for.
+  // Replaces a `shouldSendTransaction` flag-state to avoid setState-in-effect.
+  const lastFiredOrderIdRef = useRef<string | null>(null);
 
   const { data: orderId, mutate: createOrder } = useMutation({
     mutationKey: ['create-cow-trade-order', order?.id],
@@ -69,7 +70,6 @@ export const useCreatePreSignTradeOrder = ({
     onMutate,
     onSuccess: data => {
       onStart(data || '');
-      setShouldSendTransaction(true);
     },
     onError: err => {
       onError(err, '');
@@ -90,36 +90,34 @@ export const useCreatePreSignTradeOrder = ({
     enabled: !!orderId,
     queryKey: ['erc20-order-status', orderId],
     queryFn: () => fetchOrderStatus(orderId!, chainId),
-    // Refetches the order status every 2 seconds if the order is not filled
-    refetchInterval: shouldRefetchOrderStatus ? 2000 : false,
+    // Refetch every 2s until the order is fulfilled, then stop. Function form
+    // derives polling from the latest data — no React state, no setState in
+    // effect.
+    refetchInterval: query => (query.state.data?.status === 'fulfilled' ? false : 2000),
     refetchIntervalInBackground: true
   });
 
   useEffect(() => {
     if (createdOrder?.status === 'fulfilled') {
-      setShouldRefetchOrderStatus(false);
       onSuccess(BigInt(createdOrder.executedSellAmount), BigInt(createdOrder.executedBuyAmount));
     }
   }, [createdOrder?.status]);
 
+  // Fire the on-chain setPreSignature exactly once per orderId, once the
+  // write flow is prepared. Ref-guarded so it can't re-fire if `prepared`
+  // toggles after the first execute().
   useEffect(() => {
-    if (shouldSendTransaction && prepared) {
+    if (orderId && prepared && lastFiredOrderIdRef.current !== orderId) {
+      lastFiredOrderIdRef.current = orderId;
       execute();
-      setShouldSendTransaction(false);
     }
-  }, [shouldSendTransaction, prepared]);
+  }, [orderId, prepared, execute]);
 
-  const resetState = useCallback(() => {
-    setShouldRefetchOrderStatus(true);
-    setShouldSendTransaction(false);
-  }, []);
-
-  useEffect(() => {
-    // This effect will run when the component unmounts or when the order changes
-    return () => {
-      resetState();
-    };
-  }, [order, resetState]);
+  // Note: no cleanup-on-order-change to reset lastFiredOrderIdRef. Resetting
+  // it would re-fire execute() for any stale orderId still held in
+  // useMutation's `data` (which persists across mutationKey changes until the
+  // next mutate() call). Each new successful mutation produces a fresh
+  // orderId, so ref !== orderId is enough to fire exactly once per order.
 
   return {
     execute: () => {

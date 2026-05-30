@@ -92,7 +92,6 @@ export const TradeTransactionStatus = ({
     setTargetToken,
     setTargetAmount
   } = useContext(WidgetContext);
-  if (!originToken || !targetToken) return null;
 
   const { flow, action, screen } = widgetState;
 
@@ -124,6 +123,7 @@ export const TradeTransactionStatus = ({
   const chainExplorerName = getExplorerName(chainId, isSafeWallet);
 
   useEffect(() => {
+    if (!originToken || !targetToken) return;
     setOriginToken(originToken);
     setOriginAmount(originAmount);
     setTargetToken(targetToken);
@@ -132,6 +132,7 @@ export const TradeTransactionStatus = ({
 
   // Sets the title and subtitle of the card
   useEffect(() => {
+    if (!originToken || !targetToken) return;
     if (isEthFlow) {
       setTxTitle(i18n._(ethFlowTradeTitle[ethFlowTxStatus as keyof EthTxCardCopyText]));
       setTxSubtitle(
@@ -204,7 +205,9 @@ export const TradeTransactionStatus = ({
         setLoadingText(i18n._(tradeLoadingButtonText({ txStatus })));
       }
     }
-  }, [txStatus, flow, action, screen, i18n.locale, isEthFlow, ethFlowTxStatus]);
+  }, [txStatus, flow, action, screen, i18n.locale, isEthFlow, ethFlowTxStatus, originToken, targetToken]);
+
+  if (!originToken || !targetToken) return null;
 
   // Show USDT reset flow with two vertical steps (for both sequential and batched)
   if (isUsdtResetFlow && action === TradeAction.APPROVE) {

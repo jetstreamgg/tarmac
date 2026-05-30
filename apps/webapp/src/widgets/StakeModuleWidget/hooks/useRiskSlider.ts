@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { Vault } from '@/hooks';
 import { StakeModuleWidgetContext } from '../context/context';
 
@@ -8,6 +8,26 @@ type UseRiskSliderProps = {
   vaultNoBorrow?: Vault;
   isRepayMode?: boolean;
 };
+
+// Pure helper hoisted out of the hook so it doesn't need useMemo to stabilise.
+function computeCapPercentage(
+  isRepayMode: boolean,
+  maxBorrowableCapped: bigint,
+  maxBorrowableUncapped: bigint,
+  existingDebtValue: bigint
+): number | undefined {
+  if (isRepayMode) return undefined;
+  if (maxBorrowableUncapped === 0n) return undefined;
+  if (maxBorrowableCapped < maxBorrowableUncapped) {
+    return (
+      Number(
+        ((maxBorrowableCapped + existingDebtValue) * 10000n) /
+          (maxBorrowableUncapped + existingDebtValue)
+      ) / 100
+    );
+  }
+  return undefined;
+}
 
 export const useRiskSlider = ({
   vault,
@@ -35,18 +55,33 @@ export const useRiskSlider = ({
   // Capture the initial risk ceiling for repay mode (can't drag right past this)
   const [initialRiskCeiling, setInitialRiskCeiling] = useState<number | undefined>();
 
-  useEffect(() => {
-    // Set the initial risk floor when we have valid vault data in borrow mode
-    // Updates whenever collateral changes (via riskPercentageNoBorrow from vaultNoBorrow)
+  // Set initial risk floor (borrow mode) or ceiling (repay mode) when we have
+  // valid vault data. Render-time tracking with a [null] sentinel so the body
+  // runs on mount (matches useEffect mount-fire).
+  const [prevRiskDeps, setPrevRiskDeps] = useState<
+    | {
+        isRepayMode: boolean;
+        hasExistingDebt: boolean;
+        vaultNoBorrow: typeof vaultNoBorrow;
+        riskPercentageNoBorrow: number;
+      }
+    | null
+  >(null);
+  if (
+    prevRiskDeps === null ||
+    prevRiskDeps.isRepayMode !== isRepayMode ||
+    prevRiskDeps.hasExistingDebt !== hasExistingDebt ||
+    prevRiskDeps.vaultNoBorrow !== vaultNoBorrow ||
+    prevRiskDeps.riskPercentageNoBorrow !== riskPercentageNoBorrow
+  ) {
+    setPrevRiskDeps({ isRepayMode, hasExistingDebt, vaultNoBorrow, riskPercentageNoBorrow });
     if (!isRepayMode && hasExistingDebt && vaultNoBorrow) {
       setInitialRiskFloor(riskPercentageNoBorrow);
     }
-    // Set the initial risk ceiling when we have valid vault data in repay mode
-    // Updates whenever collateral changes (via riskPercentageNoBorrow from vaultNoBorrow)
     if (isRepayMode && hasExistingDebt && vaultNoBorrow) {
       setInitialRiskCeiling(riskPercentageNoBorrow);
     }
-  }, [isRepayMode, hasExistingDebt, vaultNoBorrow, riskPercentageNoBorrow]);
+  }
 
   const [maxBorrowable, maxValue] = useMemo(() => {
     const maxBorrowable = vault?.maxSafeBorrowableIntAmountNoCap || 0n;
@@ -132,28 +167,15 @@ export const useRiskSlider = ({
       !!existingOrNewVault?.collateralAmount &&
       existingOrNewVault.collateralAmount > 0n;
 
-  // Calculate cap percentage based on capped vs uncapped max borrowable
-  const capPercentage = useMemo(() => {
-    if (isRepayMode) return undefined;
-
-    const maxBorrowableCapped = vault?.maxSafeBorrowableIntAmount || 0n;
-    const maxBorrowableUncapped = vault?.maxSafeBorrowableIntAmountNoCap || 0n;
-    const existingDebtValue = vaultNoBorrow?.debtValue || 0n;
-
-    if (maxBorrowableUncapped === 0n) return undefined;
-
-    // Cap percentage represents where the debt ceiling limit is on the slider
-    // If capped < uncapped, there's a ceiling
-    if (maxBorrowableCapped < maxBorrowableUncapped) {
-      const ratio =
-        Number(
-          ((maxBorrowableCapped + existingDebtValue) * 10000n) / (maxBorrowableUncapped + existingDebtValue)
-        ) / 100;
-      return ratio;
-    }
-
-    return undefined;
-  }, [vault?.maxSafeBorrowableIntAmount, vault?.maxSafeBorrowableIntAmountNoCap, isRepayMode, vaultNoBorrow]);
+  // Calculate cap percentage based on capped vs uncapped max borrowable.
+  // No useMemo — compiler auto-memoizes when beneficial; the manual memo was
+  // deemed redundant.
+  const capPercentage = computeCapPercentage(
+    isRepayMode,
+    vault?.maxSafeBorrowableIntAmount || 0n,
+    vault?.maxSafeBorrowableIntAmountNoCap || 0n,
+    vaultNoBorrow?.debtValue || 0n
+  );
 
   // Calculate the correct slider position based on current repay/borrow amount
   // This reverses the calculation in handleSliderChange to maintain two-way sync
@@ -188,36 +210,66 @@ export const useRiskSlider = ({
     vault?.maxSafeBorrowableIntAmountNoCap
   ]);
 
-  // Sync slider in borrow mode
-  useEffect(() => {
-    if (isRepayMode) return;
-
-    // If we have a calculated position (existing debt scenario), use that for two-way sync
-    if (calculatedSliderPosition !== undefined) {
-      if (capPercentage !== undefined && calculatedSliderPosition > capPercentage) {
-        setSliderValue([capPercentage]);
-      } else {
-        setSliderValue([calculatedSliderPosition]);
+  // Sync slider in borrow mode. Render-time prev-tracking with [null]
+  // sentinel — the original useEffect's mount-fire was observable (init
+  // sliderValue=[Math.max(1, riskPercentage)] differs from what these
+  // branches compute from capPercentage/calculatedSliderPosition).
+  const [prevBorrowSyncDeps, setPrevBorrowSyncDeps] = useState<
+    | {
+        riskPercentage: number;
+        capPercentage: number | undefined;
+        isRepayMode: boolean;
+        calculatedSliderPosition: number | undefined;
       }
-    } else {
-      // Otherwise use riskPercentage (new vault scenario)
-      if (capPercentage !== undefined && riskPercentage > capPercentage) {
-        setSliderValue([capPercentage]);
+    | null
+  >(null);
+  if (
+    prevBorrowSyncDeps === null ||
+    prevBorrowSyncDeps.riskPercentage !== riskPercentage ||
+    prevBorrowSyncDeps.capPercentage !== capPercentage ||
+    prevBorrowSyncDeps.isRepayMode !== isRepayMode ||
+    prevBorrowSyncDeps.calculatedSliderPosition !== calculatedSliderPosition
+  ) {
+    setPrevBorrowSyncDeps({ riskPercentage, capPercentage, isRepayMode, calculatedSliderPosition });
+    if (!isRepayMode) {
+      if (calculatedSliderPosition !== undefined) {
+        if (capPercentage !== undefined && calculatedSliderPosition > capPercentage) {
+          setSliderValue([capPercentage]);
+        } else {
+          setSliderValue([calculatedSliderPosition]);
+        }
       } else {
-        setSliderValue([riskPercentage]);
+        if (capPercentage !== undefined && riskPercentage > capPercentage) {
+          setSliderValue([capPercentage]);
+        } else {
+          setSliderValue([riskPercentage]);
+        }
       }
     }
-  }, [riskPercentage, capPercentage, isRepayMode, calculatedSliderPosition]);
+  }
 
-  // Sync slider in repay mode - use calculated position for two-way sync
-  useEffect(() => {
-    if (!isRepayMode) return;
-
-    // Use calculated position if available, otherwise fall back to riskPercentageNoBorrow
-    const position =
-      calculatedSliderPosition !== undefined ? calculatedSliderPosition : riskPercentageNoBorrow;
-    setSliderValue([position]);
-  }, [isRepayMode, calculatedSliderPosition, riskPercentageNoBorrow]);
+  // Sync slider in repay mode — same pattern with its own deps. [null]
+  // sentinel for mount-fire (init differs from computed position).
+  const [prevRepaySyncDeps, setPrevRepaySyncDeps] = useState<
+    {
+      isRepayMode: boolean;
+      calculatedSliderPosition: number | undefined;
+      riskPercentageNoBorrow: number;
+    } | null
+  >(null);
+  if (
+    prevRepaySyncDeps === null ||
+    prevRepaySyncDeps.isRepayMode !== isRepayMode ||
+    prevRepaySyncDeps.calculatedSliderPosition !== calculatedSliderPosition ||
+    prevRepaySyncDeps.riskPercentageNoBorrow !== riskPercentageNoBorrow
+  ) {
+    setPrevRepaySyncDeps({ isRepayMode, calculatedSliderPosition, riskPercentageNoBorrow });
+    if (isRepayMode) {
+      const position =
+        calculatedSliderPosition !== undefined ? calculatedSliderPosition : riskPercentageNoBorrow;
+      setSliderValue([position]);
+    }
+  }
 
   return {
     sliderValue,

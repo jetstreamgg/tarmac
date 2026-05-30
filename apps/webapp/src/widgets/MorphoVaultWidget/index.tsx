@@ -147,13 +147,19 @@ const MorphoVaultWidgetWrapped = ({
 
   const [disclaimerChecked, setDisclaimerChecked] = useState<boolean>(false);
 
-  useEffect(() => {
+  // Sync `amount` and `tabIndex` to the external props whenever they change,
+  // without an effect. Per React docs: "Adjusting state when a prop changes".
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
+  if (prevInitialAmount !== initialAmount) {
+    setPrevInitialAmount(initialAmount);
     setAmount(initialAmount);
-  }, [initialAmount]);
-
-  useEffect(() => {
+  }
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
   const {
     setButtonText,
@@ -266,21 +272,25 @@ const MorphoVaultWidgetWrapped = ({
     !morphoVaultDeposit.prepared ||
     morphoVaultDeposit.isLoading;
 
-  // Handle external state changes
-  useEffect(() => {
+  // Handle external state changes — sync amount from externalWidgetState when
+  // it changes AND we're not mid-transaction. Render-time prev-tracking
+  // replaces a useEffect to avoid set-state-in-effect.
+  const externalAmount = validatedExternalState?.amount;
+  const [prevExternalAmount, setPrevExternalAmount] = useState(externalAmount);
+  const [prevTxStatus, setPrevTxStatus] = useState(txStatus);
+  if (prevExternalAmount !== externalAmount || prevTxStatus !== txStatus) {
+    setPrevExternalAmount(externalAmount);
+    setPrevTxStatus(txStatus);
     const formattedAmount = formatUnits(amount, assetDecimals);
-    const amountHasChanged =
-      validatedExternalState?.amount !== undefined && validatedExternalState?.amount !== formattedAmount;
-
+    const amountHasChanged = externalAmount !== undefined && externalAmount !== formattedAmount;
     if (amountHasChanged && txStatus === TxStatus.IDLE) {
-      if (validatedExternalState?.amount && validatedExternalState.amount !== '0') {
-        const newAmount = parseUnits(validatedExternalState.amount, assetDecimals);
-        setAmount(newAmount);
+      if (externalAmount && externalAmount !== '0') {
+        setAmount(parseUnits(externalAmount, assetDecimals));
       } else {
         setAmount(0n);
       }
     }
-  }, [validatedExternalState?.amount, txStatus]);
+  }
 
   // Action handlers
   const nextOnClick = () => {
@@ -452,13 +462,15 @@ const MorphoVaultWidgetWrapped = ({
     }
   }, [debouncedBalanceError]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
+  // Reset widget state after switching network. Sentinel preserves the
+  // original mount-fire that initialized widgetState based on tabIndex.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(initialAmount);
     setMax(false);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
-
     if (tabIndex === 0) {
       setWidgetState({
         flow: MorphoVaultFlow.SUPPLY,
@@ -472,11 +484,15 @@ const MorphoVaultWidgetWrapped = ({
         screen: MorphoVaultScreen.ACTION
       });
     }
+  }
 
+  // Refetches on network change in their own effect — side effects, not
+  // state updates, so they don't trip set-state-in-effect.
+  useEffect(() => {
     mutateAssetBalance();
     mutateVaultData();
     mutateAllowance();
-  }, [chainId]);
+  }, [chainId, mutateAssetBalance, mutateVaultData, mutateAllowance]);
 
   return (
     <WidgetContainer

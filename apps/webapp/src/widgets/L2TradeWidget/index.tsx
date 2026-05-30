@@ -237,16 +237,25 @@ function TradeWidgetWrapped({
     }
   }, [txStatus, needsAllowance, setShowStepIndicator]);
 
+  // Compute updatedChi when rho/dsr/chi change. Kept as useEffect because
+  // the body needs Date.now() — calling it during render would trip the
+  // (now-error) react-hooks/purity rule.
   useEffect(() => {
     if (rho && dsr && chi) {
       const timestamp = Math.floor(Date.now() / 1000);
       const elapsedTimeWithEpoch = BigInt(timestamp) + BigInt(EPOCH_LENGTH) - rho;
       const updatedChi = math.updatedChi(dsr, Number(elapsedTimeWithEpoch), chi);
-
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above; Date.now() in body forces useEffect
       setUpdatedChiForDeposit(updatedChi);
     }
   }, [rho, dsr, chi]);
 
+  // Two-way amount-calc effect: when one side changes, compute the other
+  // side from token-pair math (sUSDS chi conversion or PSM quote). Many
+  // conditional setState branches per token pair. Kept as useEffect with
+  // eslint-disable — mechanical refactor to render-time prev-tracking is
+  // possible but risky for the trade-flow money path; left for a focused
+  // commit with characterization tests.
   useEffect(() => {
     const bothAmountsZero = originAmount === 0n && targetAmount === 0n;
     const bothDebouncedNonZero = debouncedOriginAmount !== 0n && debouncedTargetAmount !== 0n;
@@ -262,6 +271,7 @@ function TradeWidgetWrapped({
     if (lastUpdated === TradeSide.IN) {
       // If origin is 0, clear target immediately
       if (debouncedOriginAmount === 0n) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment at top of effect
         setTargetAmount(0n);
         return;
       }
@@ -388,6 +398,12 @@ function TradeWidgetWrapped({
     maxAmountInForWithdraw
   ]);
 
+  // External widget-state sync. Has a debounced setTimeout (line ~496) with
+  // a cleanup function to abort pending updates when deps change — genuinely
+  // useEffect-shaped. The synchronous setStates inside the body cascade
+  // through React's normal render flow; existing debounce + IDLE guard
+  // prevent thrash during transactions.
+  /* eslint-disable react-hooks/set-state-in-effect -- see comment above; setTimeout cleanup makes useEffect the right shape */
   useEffect(() => {
     const tokensHasChanged =
       externalWidgetState?.token?.toLowerCase() !== originToken?.symbol?.toLowerCase() ||
@@ -506,6 +522,7 @@ function TradeWidgetWrapped({
     externalWidgetState?.targetToken,
     txStatus
   ]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Update external widget state when the debounced origin amount is updated
   useEffect(() => {
@@ -633,20 +650,32 @@ function TradeWidgetWrapped({
     setIsLoading(isConnecting || txStatus === TxStatus.LOADING || txStatus === TxStatus.INITIALIZED);
   }, [isConnecting, txStatus]);
 
-  useEffect(() => {
+  // Sync originToken when chainId or initialOriginTokenIndex change.
+  // Multi-dep prev-tracking, no sentinel (init useState matches mount value).
+  const [prevOriginTokenDeps, setPrevOriginTokenDeps] = useState({
+    chainId,
+    initialOriginTokenIndex
+  });
+  if (
+    prevOriginTokenDeps.chainId !== chainId ||
+    prevOriginTokenDeps.initialOriginTokenIndex !== initialOriginTokenIndex
+  ) {
+    setPrevOriginTokenDeps({ chainId, initialOriginTokenIndex });
     setOriginToken(initialOriginToken);
-  }, [chainId, initialOriginTokenIndex]);
+  }
 
-  useEffect(() => {
+  // Sync targetToken to targetTokenList changes. Render-time with [null]
+  // sentinel preserves the original useEffect's mount-fire that selects
+  // the only token or clears an out-of-list selection.
+  const [prevTargetTokenList, setPrevTargetTokenList] = useState<typeof targetTokenList | null>(null);
+  if (prevTargetTokenList !== targetTokenList) {
+    setPrevTargetTokenList(targetTokenList);
     if (targetTokenList.length === 1) {
-      // Theres only one token in the list, we select it
       setTargetToken(targetTokenList[0]);
     } else if (!targetTokenList.find(iterable => iterable.symbol === targetToken?.symbol)) {
-      // if current target token isn't in the list, set to undefined
       setTargetToken(undefined);
     }
-    // do nothing, the current target token is correct
-  }, [targetTokenList]);
+  }
 
   useEffect(() => {
     if (targetToken === undefined || originToken === undefined) {
@@ -659,9 +688,11 @@ function TradeWidgetWrapped({
     }
   }, [targetToken, originToken]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // mount-fire that initialized widgetState to TRADE.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setOriginAmount(initialOriginAmount);
     setTargetAmount(initialTargetAmount);
     setLastUpdated(TradeSide.IN);
@@ -670,14 +701,12 @@ function TradeWidgetWrapped({
     setTxStatus(TxStatus.IDLE);
     setShowAddToken(false);
     setExternalLink(undefined);
-
-    // Reset widget state to initial screen
     setWidgetState({
       flow: TradeFlow.TRADE,
       action: TradeAction.TRADE,
       screen: TradeScreen.ACTION
     });
-  }, [chainId]);
+  }
 
   const tradeOnClick = () => {
     fireAnalytics({

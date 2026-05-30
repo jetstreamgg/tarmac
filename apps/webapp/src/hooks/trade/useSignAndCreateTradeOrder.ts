@@ -3,7 +3,7 @@ import { ORDER_TYPE_FIELDS, cowApiClient } from './constants';
 import { OrderQuoteResponse } from './trade';
 import { WriteHookParams } from '../hooks';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { fetchOrderStatus } from './fetchOrderStatus';
 import { gPv2SettlementAddress } from '../generated';
 
@@ -56,8 +56,6 @@ export const useSignAndCreateTradeOrder = ({
   const chainId = useChainId();
   const { address } = useConnection();
 
-  const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
-
   const { signTypedData, data: signature } = useSignTypedData({
     mutation: {
       onSuccess: signature => {
@@ -86,28 +84,22 @@ export const useSignAndCreateTradeOrder = ({
     enabled: !!orderId,
     queryKey: ['erc20-order-status', orderId],
     queryFn: () => fetchOrderStatus(orderId!, chainId),
-    // Refetches the order status every 2 seconds if the order is not filled
-    refetchInterval: shouldRefetchOrderStatus ? 2000 : false,
+    // Refetch every 2s until the order is fulfilled, then stop. Function form
+    // derives polling from the latest data — no React state, no setState in
+    // effect.
+    refetchInterval: query => (query.state.data?.status === 'fulfilled' ? false : 2000),
     refetchIntervalInBackground: true
   });
 
   useEffect(() => {
     if (createdOrder?.status === 'fulfilled') {
-      setShouldRefetchOrderStatus(false);
       onSuccess(BigInt(createdOrder.executedSellAmount), BigInt(createdOrder.executedBuyAmount));
     }
   }, [createdOrder?.status]);
 
-  const resetState = useCallback(() => {
-    setShouldRefetchOrderStatus(true);
-  }, []);
-
-  useEffect(() => {
-    // This effect will run when the component unmounts or when the order changes
-    return () => {
-      resetState();
-    };
-  }, [order, resetState]);
+  // When `order` changes, useQuery's queryKey (keyed on the resulting orderId)
+  // changes too, so it starts a fresh query for the new order — no explicit
+  // reset needed.
 
   return {
     execute: () => {

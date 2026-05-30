@@ -42,11 +42,6 @@ export function SealPositionOverview({
   const { data: urnAddress, isLoading: urnAddressLoading } = useUrnAddress(BigInt(positionIndex));
   const { data: vault, isLoading: vaultLoading, error: vaultError } = useVault(urnAddress || ZERO_ADDRESS);
 
-  if (!error && !isLoading && !data) return null;
-
-  const riskColor = vault?.riskLevel ? RISK_COLORS[vault?.riskLevel] : undefined;
-
-  const mkrSealed = formatBigInt(vault?.collateralAmount || 0n);
   const skySealed = useMemo(() => {
     return vault?.collateralAmount
       ? math.calculateConversion(TOKENS.mkr, vault?.collateralAmount || 0n, 0n)
@@ -56,6 +51,12 @@ export function SealPositionOverview({
   const displayToken = useMemo(() => {
     return userConfig?.sealToken === SealToken.MKR ? SealToken.MKR : SealToken.SKY;
   }, [userConfig?.sealToken]);
+
+  if (!error && !isLoading && !data) return null;
+
+  const riskColor = vault?.riskLevel ? RISK_COLORS[vault?.riskLevel] : undefined;
+
+  const mkrSealed = formatBigInt(vault?.collateralAmount || 0n);
 
   return (
     <DetailSection

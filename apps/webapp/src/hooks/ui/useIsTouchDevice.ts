@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+// Touch capability doesn't change after page load, so subscribe is a no-op.
+// Hoisted outside the hook so its identity is stable across renders.
+const subscribeTouch = () => () => {};
+const getTouchSnapshot = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const getTouchServerSnapshot = () => false;
 
 /**
  * Hook to detect if the current device supports touch interactions.
@@ -7,11 +13,5 @@ import { useEffect, useState } from 'react';
  * @returns {boolean} true if the device supports touch, false otherwise
  */
 export function useIsTouchDevice(): boolean {
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-
-  useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
-  }, []);
-
-  return isTouchDevice;
+  return useSyncExternalStore(subscribeTouch, getTouchSnapshot, getTouchServerSnapshot);
 }

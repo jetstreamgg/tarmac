@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { Call, erc20Abi } from 'viem';
 import { chainId, isTestnetId } from '@/utils';
@@ -15,6 +15,11 @@ import {
 } from './constants';
 import type { PendleConvertQuote } from './pendle';
 import { buildVerifiedArgs } from './buildVerifiedArgs';
+
+// Hoisted out of render so the stale-quote branch in the verify useMemo is pure
+// (constructing `new Error()` during render captures a fresh stack each call,
+// which React Compiler flags as impure).
+const STALE_QUOTE_ERROR = new Error('Pendle: quote is stale — please refresh');
 
 type UseBatchPendleConvertParams = BatchWriteHookParams & {
   side: PendleConvertSide;
@@ -98,6 +103,26 @@ export function useBatchPendleConvert({
 
   const hasAllowance = allowance !== undefined && amountIn !== undefined && allowance >= amountIn;
 
+  // Track quote staleness via React's sanctioned external-store API — avoids
+  // `Date.now()` during render (purity). The subscribe callback arms a single
+  // timer that notifies React at the exact TTL boundary; the snapshot returns
+  // the current staleness boolean.
+  const subscribeStale = useCallback(
+    (notify: () => void) => {
+      if (!quote) return () => {};
+      const remaining = PENDLE_QUOTE_TTL_MS - (Date.now() - quote.fetchedAt);
+      if (remaining <= 0) return () => {};
+      const timer = setTimeout(notify, remaining);
+      return () => clearTimeout(timer);
+    },
+    [quote]
+  );
+  const isQuoteStale = useSyncExternalStore(
+    subscribeStale,
+    () => (quote ? Date.now() - quote.fetchedAt > PENDLE_QUOTE_TTL_MS : false),
+    () => false
+  );
+
   // Verify the quote and rebuild args. Memoised so the verification only runs
   // when an input changes — guards otherwise re-throw on every render.
   const { verified, verifyError } = useMemo(() => {
@@ -113,10 +138,10 @@ export function useBatchPendleConvert({
     ) {
       return { verified: undefined, verifyError: null as Error | null };
     }
-    if (Date.now() - quote.fetchedAt > PENDLE_QUOTE_TTL_MS) {
+    if (isQuoteStale) {
       return {
         verified: undefined,
-        verifyError: new Error('Pendle: quote is stale — please refresh')
+        verifyError: STALE_QUOTE_ERROR
       };
     }
     try {
@@ -147,7 +172,8 @@ export function useBatchPendleConvert({
     amountIn,
     connectedAddress,
     side,
-    slippage
+    slippage,
+    isQuoteStale
   ]);
 
   // Build the call list: optional approve, then convert.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { TradeDetails } from '@/modules/trade/components/TradeDetails';
 import { UpgradeDetails } from '@/modules/upgrade/components/UpgradeDetails';
@@ -69,17 +69,15 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
     MORPHO_VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
     MORPHO_VAULTS[0];
 
-  useEffect(() => {
-    setIntentState(prevIntentState => {
-      if (prevIntentState !== intent) {
-        // By giving the keys a new value, we force the motion component to animate the new component in, even if it's
-        // the same component as before. This prevents the component from being re-added before being removed
-        setKeys(prevKeys => prevKeys.map(key => key + prevKeys.length));
-      }
-
-      return intent || defaultDetail;
-    });
-  }, [intent]);
+  // Render-time prev tracking — when the `intent` prop changes, mirror into
+  // intentState and bump the animation keys so motion treats the new content
+  // as a fresh mount even when the component identity is unchanged.
+  const [prevIntent, setPrevIntent] = useState(intent);
+  if (prevIntent !== intent) {
+    setPrevIntent(intent);
+    setIntentState(intent || defaultDetail);
+    setKeys(prevKeys => prevKeys.map(key => key + prevKeys.length));
+  }
 
   return (
     // The remaining padding in the right is added by the scrollbar

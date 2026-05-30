@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChainId, useConnection, useReadContracts } from 'wagmi';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { ReadHook } from '../hooks';
 import { isTestnetId, formatBigInt } from '@/utils';
@@ -309,12 +309,19 @@ export function useMerklRewards(): MerklRewardsHook {
     }
   });
 
+  // Subscribe to wall-clock time via React's sanctioned external-store API.
+  // 15s precision: filter clears within 15s of the 5-minute recent-claim mark.
+  const subscribeTick = useCallback((notify: () => void) => {
+    const id = setInterval(notify, 15_000);
+    return () => clearInterval(id);
+  }, []);
+  const now = useSyncExternalStore(subscribeTick, () => Date.now(), () => 0);
+
   // Filter out tokens that were recently claimed on-chain but still show in the API
   const data = useMemo(() => {
     if (!apiData) return undefined;
     if (!claimedData || claimedData.length === 0) return apiData;
 
-    const now = Date.now();
     const filteredRewards = apiData.rewards.filter((_reward, index) => {
       const result = claimedData[index];
       if (!result || result.status === 'failure') return true;
@@ -330,7 +337,8 @@ export function useMerklRewards(): MerklRewardsHook {
       rewards: filteredRewards,
       hasClaimableRewards: filteredRewards.length > 0
     };
-  }, [apiData, claimedData]);
+  }, [apiData, claimedData, now]);
+
 
   const mutate = useCallback(() => {
     if (!userAddress) return;

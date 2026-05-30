@@ -14,16 +14,15 @@ export function useParseRewardsChartData(
     const { startTimestamp, endTimestamp } = determineTimeframeBounds(timeFrame, sortedChartData);
 
     // Filter chartData changes within the determined timeframe
-    let prevItem: RewardsChartInfoParsed | undefined;
-    const relevantChanges = sortedChartData.filter((item, index) => {
-      const found = item.blockTimestamp >= startTimestamp && item.blockTimestamp <= endTimestamp;
-      if (found && !prevItem && index > 0) {
-        prevItem = sortedChartData[index - 1];
-      }
-      return found;
-    });
-
-    const firstItem = prevItem ? [prevItem] : [];
+    const relevantChanges = sortedChartData.filter(
+      item => item.blockTimestamp >= startTimestamp && item.blockTimestamp <= endTimestamp
+    );
+    // Grab the entry just before the first in-range entry (if any) so we have a
+    // value to anchor the start of the chart against.
+    const firstInRangeIndex = sortedChartData.findIndex(
+      item => item.blockTimestamp >= startTimestamp && item.blockTimestamp <= endTimestamp
+    );
+    const firstItem = firstInRangeIndex > 0 ? [sortedChartData[firstInRangeIndex - 1]] : [];
     const lastItem = sortedChartData.length > 0 ? [sortedChartData[sortedChartData.length - 1]] : [];
 
     // Generate data points for totalSupplied and rate

@@ -9,40 +9,36 @@ export function StUSDSBalanceDetails() {
 
   const usdsToken = { name: 'USDS', symbol: 'USDS' };
 
-  const SuppliedStUSDSBalanceCard = () => {
-    const stUsdsBalance = userStUsdsBalance
-      ? `(${formatBigInt(userStUsdsBalance, { unit: 18, compact: true, maxDecimals: 2 })} stUSDS)`
-      : undefined;
+  const stUsdsBalance = userStUsdsBalance
+    ? `(${formatBigInt(userStUsdsBalance, { unit: 18, compact: true, maxDecimals: 2 })} stUSDS)`
+    : undefined;
 
-    return (
-      <SuppliedBalanceCard
-        balance={effectiveBalance || 0n}
-        isLoading={isLoading}
-        token={usdsToken}
-        error={error}
-        label={t`Supplied balance`}
-        afterBalance={stUsdsBalance}
-        dataTestId="stusds-supplied-balance-details"
-      />
-    );
-  };
+  const suppliedStUsdsBalanceCard = (
+    <SuppliedBalanceCard
+      balance={effectiveBalance || 0n}
+      isLoading={isLoading}
+      token={usdsToken}
+      error={error}
+      label={t`Supplied balance`}
+      afterBalance={stUsdsBalance}
+      dataTestId="stusds-supplied-balance-details"
+    />
+  );
 
-  const UsdsBalanceCard = () => {
-    return (
-      <UnsuppliedBalanceCard
-        balance={savingsData?.userNstBalance || 0n}
-        isLoading={savingsIsLoading}
-        token={usdsToken}
-        error={savingsError}
-        dataTestId="stusds-remaining-balance-details"
-      />
-    );
-  };
+  const usdsBalanceCard = (
+    <UnsuppliedBalanceCard
+      balance={savingsData?.userNstBalance || 0n}
+      isLoading={savingsIsLoading}
+      token={usdsToken}
+      error={savingsError}
+      dataTestId="stusds-remaining-balance-details"
+    />
+  );
 
   return (
     <div className="flex w-full flex-col justify-between gap-3 xl:flex-row">
-      <SuppliedStUSDSBalanceCard />
-      <UsdsBalanceCard />
+      {suppliedStUsdsBalanceCard}
+      {usdsBalanceCard}
     </div>
   );
 }

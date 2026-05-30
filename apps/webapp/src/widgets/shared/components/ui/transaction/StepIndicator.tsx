@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { TxStatus } from '../../../constants';
 import { motion } from 'motion/react';
 import { SuccessCheckSolidColor } from '../../icons/Icons';
@@ -36,9 +36,10 @@ const ProgressBar = ({ txStatus, currentStep }: { txStatus: TxStatus; currentSte
 
   const currentProgress = getProgress();
 
-  useEffect(() => {
+  // Render-time prev tracking — no effect needed.
+  if (prevProgress !== currentProgress) {
     setPrevProgress(currentProgress);
-  }, [currentProgress]);
+  }
 
   const getAnimationDuration = () => {
     if (!currentStep || currentProgress < prevProgress) {

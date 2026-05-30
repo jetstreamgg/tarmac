@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { TRUST_LEVELS, TrustLevelEnum } from '../constants';
 import { usePrices } from '../prices/usePrices';
 import { usePendleUserPtBalances } from './usePendleUserPtBalances';
@@ -28,6 +28,20 @@ export function useAllPendleUserAssets(): AllPendleUserAssetsHook {
   const { data: pricesData, isLoading: pricesLoading, error: pricesError } = usePrices();
   const { data: marketsApi } = usePendleMarketsApiData();
 
+  // Subscribe to wall-clock time via React's sanctioned external-store API.
+  // The snapshot returns Date.now() — impurity is allowed here because the
+  // subscribe callback notifies React when the value changes (every 15s).
+  // Used by valuation as time-to-maturity advances.
+  const subscribeTick = useCallback((notify: () => void) => {
+    const id = setInterval(notify, 15_000);
+    return () => clearInterval(id);
+  }, []);
+  const nowSec = useSyncExternalStore(
+    subscribeTick,
+    () => Math.floor(Date.now() / 1000),
+    () => 0
+  );
+
   const data = useMemo<AllPendleUserAssetsData>(
     () =>
       computePendleAssetValuations({
@@ -35,9 +49,9 @@ export function useAllPendleUserAssets(): AllPendleUserAssetsHook {
         usdsPrice: pricesData?.USDS ? parseFloat(pricesData.USDS.price) : 0,
         sUsdsPrice: pricesData?.sUSDS ? parseFloat(pricesData.sUSDS.price) : 0,
         marketsApi,
-        nowSec: Math.floor(Date.now() / 1000)
+        nowSec
       }),
-    [ptBalances, pricesData, marketsApi]
+    [ptBalances, pricesData, marketsApi, nowSec]
   );
 
   return {

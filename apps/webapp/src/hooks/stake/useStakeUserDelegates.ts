@@ -115,27 +115,44 @@ export function useStakeUserDelegates({
     }));
   }, [delegates]);
 
-  // One-time setup of delegate list order when data first loads
-  // Runs independently of the selected delegate changing
-  useEffect(() => {
-    if (!delegatesWithTotals || hasInitiallyOrdered.current || !shouldSortDelegates) return;
-
-    hasInitiallyOrdered.current = true;
-
-    if (selectedDelegate && selectedDelegate !== ZERO_ADDRESS) {
-      // If there's a pre-selected delegate, put it first in the list
-      const orderedDelegates = sortDelegatesWithSelectedFirst(
-        delegatesWithTotals,
-        selectedDelegate,
-        sortDelegatesFn
-      );
-      setDisplayedDelegates(orderedDelegates);
-    } else {
-      // No pre-selected delegate, just sort by total delegated amount
-      const sortedDelegates = delegatesWithTotals.sort(sortDelegatesFn);
-      setDisplayedDelegates(sortedDelegates);
+  // One-time setup of delegate list order when data first loads. Render-time
+  // tracking with the existing hasInitiallyOrdered ref guard preserves the
+  // fire-once semantics — once the ref is set, subsequent dep changes still
+  // enter the block but skip the sort body.
+  const [prevSortDeps, setPrevSortDeps] = useState<
+    | {
+        delegatesWithTotals: typeof delegatesWithTotals;
+        shouldSortDelegates: typeof shouldSortDelegates;
+        sortDelegatesFn: typeof sortDelegatesFn;
+        selectedDelegate: typeof selectedDelegate;
+      }
+    | null
+  >(null);
+  if (
+    prevSortDeps === null ||
+    prevSortDeps.delegatesWithTotals !== delegatesWithTotals ||
+    prevSortDeps.shouldSortDelegates !== shouldSortDelegates ||
+    prevSortDeps.sortDelegatesFn !== sortDelegatesFn ||
+    prevSortDeps.selectedDelegate !== selectedDelegate
+  ) {
+    setPrevSortDeps({ delegatesWithTotals, shouldSortDelegates, sortDelegatesFn, selectedDelegate });
+    if (delegatesWithTotals && !hasInitiallyOrdered.current && shouldSortDelegates) {
+      hasInitiallyOrdered.current = true;
+      if (selectedDelegate && selectedDelegate !== ZERO_ADDRESS) {
+        // If there's a pre-selected delegate, put it first in the list
+        const orderedDelegates = sortDelegatesWithSelectedFirst(
+          delegatesWithTotals,
+          selectedDelegate,
+          sortDelegatesFn
+        );
+        setDisplayedDelegates(orderedDelegates);
+      } else {
+        // No pre-selected delegate, just sort by total delegated amount
+        const sortedDelegates = delegatesWithTotals.sort(sortDelegatesFn);
+        setDisplayedDelegates(sortedDelegates);
+      }
     }
-  }, [delegatesWithTotals, shouldSortDelegates, sortDelegatesFn, selectedDelegate]);
+  }
 
   return {
     isLoading,

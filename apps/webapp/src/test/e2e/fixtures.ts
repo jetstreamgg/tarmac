@@ -142,6 +142,7 @@ const test = playwrightTest.extend<TestFixture, WorkerFixture>({
     await page.route('https://virtual.**.rpc.tenderly.co/**', mockRpcCalls);
     await page.route('**/ip/status', mockVpnCheck);
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture `use` callback, not React.use()
     await use(page);
   }
 });

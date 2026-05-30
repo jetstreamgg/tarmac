@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { PENDLE_DEFAULT_SLIPPAGE } from '@/hooks';
 import {
   PendleFlow,
@@ -51,9 +51,14 @@ export function usePendleSlippage(mode: PendleSlippageMode) {
 
   const [slippage, setSlippageRaw] = useState<number>(() => readStoredSlippage(storageKey, defaultSlippage));
 
-  useEffect(() => {
+  // Re-read from localStorage when the mode (and therefore storageKey) changes,
+  // without an effect. Per React docs: "Adjusting state when a prop changes".
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevStorageKey, setPrevStorageKey] = useState(storageKey);
+  if (prevStorageKey !== storageKey) {
+    setPrevStorageKey(storageKey);
     setSlippageRaw(readStoredSlippage(storageKey, defaultSlippage));
-  }, [storageKey, defaultSlippage]);
+  }
 
   const setSlippage = useCallback(
     (decimal: number) => {

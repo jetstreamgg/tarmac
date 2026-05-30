@@ -3,7 +3,7 @@ import { useConnection, useChainId, useSignTypedData } from 'wagmi';
 import { cowApiClient } from './constants';
 import { WriteHookParams } from '../hooks';
 import { fetchOrderStatus } from './fetchOrderStatus';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { gPv2SettlementAddress } from '../generated';
 
 const cancelOrders = async (orderUids: `0x${string}`[], signature: `0x${string}`, chainId: number) => {
@@ -48,8 +48,6 @@ export const useSignAndCancelOrder = ({
   const chainId = useChainId();
   const { address } = useConnection();
 
-  const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
-
   const { signTypedData, data: signature } = useSignTypedData({
     mutation: {
       onSuccess: signature => {
@@ -82,28 +80,23 @@ export const useSignAndCancelOrder = ({
     enabled: paramEnabled && orderUids?.length > 0 && isOrderCancellationSent,
     queryKey: ['cancel-order-status', orderUids[0]],
     queryFn: () => fetchOrderStatus(orderUids[0], chainId),
-    // Refetches the order status every 2 seconds if the order is not filled
-    refetchInterval: shouldRefetchOrderStatus ? 2000 : false,
+    // Refetch every 2s until the order is fulfilled or cancelled, then stop.
+    // Function form derives polling from the latest data — no React state.
+    refetchInterval: query => {
+      const status = query.state.data?.status;
+      return status === 'fulfilled' || status === 'cancelled' ? false : 2000;
+    },
     refetchIntervalInBackground: true
   });
 
   useEffect(() => {
     if (cancelledOrder?.status === 'fulfilled' || cancelledOrder?.status === 'cancelled') {
-      setShouldRefetchOrderStatus(false);
       onSuccess(cancelledOrder, orderUids);
     }
   }, [cancelledOrder?.status]);
 
-  const resetState = useCallback(() => {
-    setShouldRefetchOrderStatus(true);
-  }, []);
-
-  useEffect(() => {
-    // This effect will run when the component unmounts or when the order changes
-    return () => {
-      resetState();
-    };
-  }, [orderUids, resetState]);
+  // When orderUids changes, useQuery's queryKey changes too, so it starts a
+  // fresh query for the new uids — no explicit reset needed.
 
   return {
     execute: () => {

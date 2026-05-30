@@ -90,13 +90,18 @@ const SavingsWidgetWrapped = ({
     token: originToken.address[chainId]
   });
 
-  useEffect(() => {
+  // Sync amount and tabIndex from props. No sentinel — useState already
+  // initialized to the same prop values, so mount-fire is a no-op.
+  const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
+  if (prevInitialAmount !== initialAmount) {
+    setPrevInitialAmount(initialAmount);
     setAmount(initialAmount);
-  }, [initialAmount]);
-
-  useEffect(() => {
+  }
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
   const {
     setButtonText,
@@ -112,14 +117,27 @@ const SavingsWidgetWrapped = ({
 
   useNotifyWidgetState({ widgetState, txStatus, onWidgetStateChange });
 
-  useEffect(() => {
+  // Re-derive originToken when flow or external token changes. Sentinel —
+  // useState init for originToken doesn't reach this exact derivation, so
+  // mount-fire might pick a different token (e.g. USDS withdrawal vs DAI
+  // supply with external state).
+  const externalTokenForOrigin = validatedExternalState?.token;
+  const [prevOriginTokenDeps, setPrevOriginTokenDeps] = useState<
+    { externalToken: string | undefined; flow: SavingsFlow | undefined } | null
+  >(null);
+  if (
+    prevOriginTokenDeps === null ||
+    prevOriginTokenDeps.externalToken !== externalTokenForOrigin ||
+    prevOriginTokenDeps.flow !== widgetState.flow
+  ) {
+    setPrevOriginTokenDeps({ externalToken: externalTokenForOrigin, flow: widgetState.flow });
     // We only support DAI for supply flows. For withdrawals it should always use USDS
     const tokenSymbolToUse =
-      widgetState.flow === SavingsFlow.SUPPLY && !!validatedExternalState?.token
-        ? validatedExternalState?.token
+      widgetState.flow === SavingsFlow.SUPPLY && !!externalTokenForOrigin
+        ? externalTokenForOrigin
         : 'USDS';
     setOriginToken(tokenForSymbol(tokenSymbolToUse));
-  }, [validatedExternalState?.token, widgetState.flow]);
+  }
 
   const needsAllowance = !!(!allowance || allowance < debouncedAmount);
   const shouldUseBatch =
@@ -220,26 +238,30 @@ const SavingsWidgetWrapped = ({
         ((!batchEnabled || !batchSupported) && !isTestnetId(chainId))
       : !batchSavingsSupply.prepared || batchSavingsSupply.isLoading);
 
-  // Handle external state changes
-  useEffect(() => {
+  // Handle external state changes. Sentinel preserves mount-fire that
+  // clears/sets amount when externalState.token differs from originToken.
+  const externalAmountForSync = validatedExternalState?.amount;
+  const [prevExternalSyncDeps, setPrevExternalSyncDeps] = useState<
+    { externalAmount: string | undefined; txStatus: TxStatus } | null
+  >(null);
+  if (
+    prevExternalSyncDeps === null ||
+    prevExternalSyncDeps.externalAmount !== externalAmountForSync ||
+    prevExternalSyncDeps.txStatus !== txStatus
+  ) {
+    setPrevExternalSyncDeps({ externalAmount: externalAmountForSync, txStatus });
     const tokenDecimals = getTokenDecimals(originToken, chainId);
     const formattedAmount = formatUnits(amount, tokenDecimals);
-    const amountHasChanged =
-      validatedExternalState?.amount !== undefined && validatedExternalState?.amount !== formattedAmount;
-
+    const amountHasChanged = externalAmountForSync !== undefined && externalAmountForSync !== formattedAmount;
     const tokenHasChanged = externalWidgetState?.token?.toLowerCase() !== originToken.symbol.toLowerCase();
-
     if ((amountHasChanged || tokenHasChanged) && txStatus === TxStatus.IDLE) {
-      // Only set amount if there's a valid amount in external state
-      if (validatedExternalState?.amount && validatedExternalState.amount !== '0') {
-        const newAmount = parseUnits(validatedExternalState.amount, tokenDecimals);
-        setAmount(newAmount);
+      if (externalAmountForSync && externalAmountForSync !== '0') {
+        setAmount(parseUnits(externalAmountForSync, tokenDecimals));
       } else {
-        // If amount is explicitly empty string, clear the input
         setAmount(0n);
       }
     }
-  }, [validatedExternalState?.amount, txStatus]);
+  }
 
   const nextOnClick = () => {
     setTxStatus(TxStatus.IDLE);
@@ -383,15 +405,15 @@ const SavingsWidgetWrapped = ({
     }
   }, [debouncedBalanceError]);
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // mount-fire that initialized widgetState based on tabIndex.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(initialAmount);
     setMax(false);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
-
-    // Reset widget state to initial screen based on current tab
     if (tabIndex === 0) {
       setWidgetState({
         flow: SavingsFlow.SUPPLY,
@@ -405,12 +427,14 @@ const SavingsWidgetWrapped = ({
         screen: SavingsScreen.ACTION
       });
     }
+  }
 
-    // Refresh data
+  // Refetches on network change in their own effect.
+  useEffect(() => {
     mutateOriginBalance();
     mutateSavings();
     mutateAllowance();
-  }, [chainId]);
+  }, [chainId, mutateOriginBalance, mutateSavings, mutateAllowance]);
 
   return (
     <WidgetContainer

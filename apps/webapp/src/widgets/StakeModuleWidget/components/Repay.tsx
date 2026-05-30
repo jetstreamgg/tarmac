@@ -345,34 +345,34 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
           ? error?.message
           : undefined;
 
-  const calculateMaxRepayable = useCallback(() => {
-    if (!existingVault?.debtValue || !usdsBalance?.value) {
+  // Optional-chain values hoisted into locals so the compiler's inferred deps
+  // (which see flat names after the early-return guard) match the source deps.
+  const existingDebtValue = existingVault?.debtValue;
+  const existingDust = existingVault?.dust;
+  const userBalanceValue = usdsBalance?.value;
+  const maxRepayableAmount = useMemo(() => {
+    if (!existingDebtValue || !userBalanceValue) {
       return 0n;
     }
 
-    const totalDebt = existingVault.debtValue;
-    const userBalance = usdsBalance.value;
-
-    if (userBalance >= totalDebt) {
-      return totalDebt;
+    if (userBalanceValue >= existingDebtValue) {
+      return existingDebtValue;
     }
 
-    const remainingDebt = totalDebt - userBalance;
+    const remainingDebt = existingDebtValue - userBalanceValue;
 
-    if (remainingDebt > 0n && remainingDebt < (existingVault.dust || 0n)) {
-      const maxRepayWithoutDust = totalDebt - (existingVault.dust || 0n);
+    if (remainingDebt > 0n && remainingDebt < (existingDust || 0n)) {
+      const maxRepayWithoutDust = existingDebtValue - (existingDust || 0n);
 
-      if (userBalance >= maxRepayWithoutDust && maxRepayWithoutDust > 0n) {
+      if (userBalanceValue >= maxRepayWithoutDust && maxRepayWithoutDust > 0n) {
         return maxRepayWithoutDust;
       } else {
         return 0n;
       }
     } else {
-      return userBalance;
+      return userBalanceValue;
     }
-  }, [existingVault?.debtValue, existingVault?.dust, usdsBalance?.value]);
-
-  const maxRepayableAmount = calculateMaxRepayable();
+  }, [existingDebtValue, existingDust, userBalanceValue]);
 
   const formattedLimitAmount = formatBigIntAsCeiledAbsoluteWithSymbol(
     maxRepayableAmount,

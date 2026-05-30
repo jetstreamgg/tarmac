@@ -13,7 +13,7 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { Trans } from '@lingui/react/macro';
 import { formatNumber } from '@/utils';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useChainId } from 'wagmi';
 
@@ -52,7 +52,12 @@ export const LinkedActionCard = ({
   const { i18n } = useLingui();
   const { linkedActionConfig, updateLinkedActionConfig } = useConfigContext();
   const navigate = useNavigate();
-  const [isLastStep, setIsLastStep] = useState<boolean>();
+  // Computed once on mount via lazy initializer (replaces a mount-only useEffect
+  // that did `setIsLastStep(linkedActionConfig?.initialAction === la)` with [] deps).
+  // The "run once to prevent logo from switching briefly during unmount" behavior
+  // is preserved — the initializer runs exactly once per mount, and we never
+  // re-derive from `linkedActionConfig` afterwards (intentional fire-once).
+  const [isLastStep] = useState<boolean>(() => linkedActionConfig?.initialAction === la);
   const chainId = useChainId();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
 
@@ -73,11 +78,6 @@ export const LinkedActionCard = ({
     const modifiedUrl = `${urlWithRetainedParams}${urlWithRetainedParams.includes('convert_module=trade') ? `&${QueryParams.Timestamp}=${new Date().getTime()}` : ''}`;
     navigate(modifiedUrl);
   };
-
-  // Run once to prevent logo from switching briefly during unmount
-  useEffect(() => {
-    setIsLastStep(linkedActionConfig?.initialAction === la);
-  }, []);
 
   return (
     <Card variant="spotlight" className="relative w-full overflow-hidden xl:flex-1">

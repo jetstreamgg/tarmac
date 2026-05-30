@@ -60,13 +60,25 @@ export const BalancesHistory = ({
     setVisibleCount(prev => Math.min(prev + itemsPerPage, data.length));
   }, [data.length, itemsPerPage]);
 
-  useEffect(() => {
+  // Reset the visible window whenever any of the view-config inputs change.
+  // Render-time prev tracking replaces a useEffect to avoid set-state-in-effect.
+  const [prevData, setPrevData] = useState(data);
+  const [prevItemsPerPage, setPrevItemsPerPage] = useState(itemsPerPage);
+  const [prevUseInfiniteScroll, setPrevUseInfiniteScroll] = useState(useInfiniteScroll);
+  if (
+    prevData !== data ||
+    prevItemsPerPage !== itemsPerPage ||
+    prevUseInfiniteScroll !== useInfiniteScroll
+  ) {
+    setPrevData(data);
+    setPrevItemsPerPage(itemsPerPage);
+    setPrevUseInfiniteScroll(useInfiniteScroll);
     if (useInfiniteScroll) {
       setVisibleCount(itemsPerPage);
     } else {
       setItemsToDisplay(data.slice(0, itemsPerPage));
     }
-  }, [data, itemsPerPage, useInfiniteScroll]);
+  }
 
   useEffect(() => {
     if (!useInfiniteScroll) return;

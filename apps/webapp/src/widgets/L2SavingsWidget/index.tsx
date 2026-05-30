@@ -130,27 +130,40 @@ const SavingsWidgetWrapped = ({
 
   const [updatedChiForDeposit, setUpdatedChiForDeposit] = useState(0n);
 
-  useEffect(() => {
+  // Sync `tabIndex` and `originToken` to the external props whenever they
+  // change, without an effect. Per React docs: "Adjusting state when a prop
+  // changes". (`originToken` tracks the *symbol* string so tokenForSymbol's
+  // fresh-each-call return doesn't trigger a re-sync on every render.)
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  const [prevInitialTabIndex, setPrevInitialTabIndex] = useState(initialTabIndex);
+  if (prevInitialTabIndex !== initialTabIndex) {
+    setPrevInitialTabIndex(initialTabIndex);
     setTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
-
-  useEffect(() => {
+  }
+  const [prevTokenSymbol, setPrevTokenSymbol] = useState(validatedExternalState?.token);
+  if (prevTokenSymbol !== validatedExternalState?.token) {
+    setPrevTokenSymbol(validatedExternalState?.token);
     setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
-  }, [validatedExternalState?.token]);
+  }
 
+  // Compute updatedChi when rho/dsr/chi change. Kept as useEffect because
+  // the body needs Date.now() — calling it during render would trip the
+  // (now-error) react-hooks/purity rule.
   useEffect(() => {
     if (rho && dsr && chi) {
       const timestamp = Math.floor(Date.now() / 1000);
       const elapsedTimeWithEpoch = BigInt(timestamp) + BigInt(EPOCH_LENGTH) - rho;
       const updatedChi = math.updatedChi(dsr, Number(elapsedTimeWithEpoch), chi);
-
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above; Date.now() in body forces useEffect
       setUpdatedChiForDeposit(updatedChi);
     }
   }, [rho, dsr, chi]);
 
-  useEffect(() => {
+  const [prevInitialAmount, setPrevInitialAmount] = useState(initialAmount);
+  if (prevInitialAmount !== initialAmount) {
+    setPrevInitialAmount(initialAmount);
     setAmount(initialAmount);
-  }, [initialAmount]);
+  }
 
   useNotifyWidgetState({ widgetState, txStatus, onWidgetStateChange });
 
@@ -213,8 +226,19 @@ const SavingsWidgetWrapped = ({
     onAnalyticsEvent
   });
 
-  useEffect(() => {
-    //Initialize the supply flow only when we are connected
+  // Initialize widget flow based on tab + connection state. Render-time
+  // prev-tracking with null sentinel preserves the original useEffect's
+  // mount-fire which set widgetState on initial render.
+  const [prevTabConnDeps, setPrevTabConnDeps] = useState<{
+    tabIndex: 0 | 1;
+    isConnectedAndEnabled: boolean;
+  } | null>(null);
+  if (
+    prevTabConnDeps === null ||
+    prevTabConnDeps.tabIndex !== tabIndex ||
+    prevTabConnDeps.isConnectedAndEnabled !== isConnectedAndEnabled
+  ) {
+    setPrevTabConnDeps({ tabIndex, isConnectedAndEnabled });
     if (isConnectedAndEnabled) {
       if (tabIndex === 0) {
         setWidgetState({
@@ -223,7 +247,6 @@ const SavingsWidgetWrapped = ({
           screen: SavingsScreen.ACTION
         });
       } else if (tabIndex === 1) {
-        //Initialize the withdraw flow
         setWidgetState({
           flow: SavingsFlow.WITHDRAW,
           action: SavingsAction.WITHDRAW,
@@ -239,7 +262,7 @@ const SavingsWidgetWrapped = ({
         screen: null
       });
     }
-  }, [tabIndex, isConnectedAndEnabled]);
+  }
 
   useEffect(() => {
     if (txStatus === TxStatus.IDLE) {
@@ -426,16 +449,16 @@ const SavingsWidgetWrapped = ({
 
   const usds = TOKENS.usds;
 
-  // Reset widget state after switching network
-  useEffect(() => {
-    // Reset all state variables
+  // Reset widget state after switching network. Sentinel preserves the
+  // original mount-fire that initialized widgetState based on tabIndex.
+  const [prevResetChainId, setPrevResetChainId] = useState<number | null>(null);
+  if (prevResetChainId !== chainId) {
+    setPrevResetChainId(chainId);
     setAmount(initialAmount);
     setMaxWithdraw(false);
     setTxStatus(TxStatus.IDLE);
     setExternalLink(undefined);
     setOriginToken(tokenForSymbol(validatedExternalState?.token || 'USDS'));
-
-    // Reset widget state to initial screen
     if (tabIndex === 0) {
       setWidgetState({
         flow: SavingsFlow.SUPPLY,
@@ -449,7 +472,7 @@ const SavingsWidgetWrapped = ({
         screen: SavingsScreen.ACTION
       });
     }
-  }, [chainId]);
+  }
 
   return (
     <WidgetContainer

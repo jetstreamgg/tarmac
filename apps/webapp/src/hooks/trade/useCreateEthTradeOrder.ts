@@ -25,7 +25,6 @@ export const useCreateEthTradeOrder = ({
   onSuccess: (executedSellAmount: bigint, executedBuyAmount: bigint) => void;
 }): WriteHook => {
   const [transactionHash, setTransactionHash] = useState<`0x${string}` | undefined>(undefined);
-  const [shouldRefetchOrderStatus, setShouldRefetchOrderStatus] = useState(true);
 
   const { address: connectedAddress, isConnected } = useConnection();
   const chainId = useChainId();
@@ -63,8 +62,10 @@ export const useCreateEthTradeOrder = ({
     enabled: !!orderId,
     queryKey: ['ethflow-order-status', orderId],
     queryFn: () => fetchOrderStatus(orderId!, chainId),
-    // Refetches the order status every 2 seconds if the order is not filled
-    refetchInterval: shouldRefetchOrderStatus ? 2000 : false,
+    // Refetch every 2s until the order is fulfilled, then stop. Function form
+    // lets TanStack derive the polling decision from the latest data — no
+    // React state, no setState in effect.
+    refetchInterval: query => (query.state.data?.status === 'fulfilled' ? false : 2000),
     refetchIntervalInBackground: true
   });
 
@@ -74,14 +75,12 @@ export const useCreateEthTradeOrder = ({
     }
 
     if (createdOrder?.status === 'fulfilled') {
-      setShouldRefetchOrderStatus(false);
       onSuccess(BigInt(createdOrder.executedSellAmount), BigInt(createdOrder.executedBuyAmount));
     }
   }, [createdOrder?.status]);
 
   const resetState = useCallback(() => {
     setTransactionHash(undefined);
-    setShouldRefetchOrderStatus(true);
   }, []);
 
   useEffect(() => {

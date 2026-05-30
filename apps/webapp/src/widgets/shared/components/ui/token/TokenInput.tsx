@@ -173,7 +173,14 @@ export function TokenInput({
     }
   };
 
-  useEffect(() => {
+  // Sync inputValue from the controlled `value` prop. Render-time
+  // prev-tracking. No sentinel — useState init for inputValue already
+  // matches what this block would set on mount, so mount-fire is a no-op.
+  // Note: `onChange(0n)` only fires inside the catch branch (parser error),
+  // which is exceptional — not a routine parent-state-during-render issue.
+  const [prevValue, setPrevValue] = useState(value);
+  if (prevValue !== value) {
+    setPrevValue(value);
     if (value === undefined) {
       setInputValue('');
     } else {
@@ -188,11 +195,17 @@ export function TokenInput({
         onChange(0n);
       }
     }
-  }, [value]);
+  }
 
+  // Re-parse the input when token decimals change (e.g. user switches
+  // between 6-decimal USDC and 18-decimal USDS). The body calls
+  // updateValue, which invokes onChange — calling the parent's onChange
+  // during render would violate React's "no parent state updates during
+  // child render" rule, so this stays as a useEffect.
   useEffect(() => {
     const newValue = parseUnits(inputValue, decimals);
     const needsUpdate = value !== newValue;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional, see comment above
     if (inputValue && needsUpdate) updateValue(inputValue);
   }, [token?.decimals]);
 

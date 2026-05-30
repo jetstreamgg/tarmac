@@ -50,31 +50,30 @@ export const VaultsBalanceCard = ({
   // Get vault-only unclaimed rewards (excludes "Other campaigns")
   const unclaimedRewardsLoading = rewardsLoading;
 
-  // Filter to only include rewards from supported vaults (not "Other campaigns")
+  // Filter to only include rewards from supported vaults (not "Other campaigns").
+  // `rewards` is hoisted to a local so the React Compiler's inferred dep
+  // matches the source dep (it sees `rewards`, not `rewardsData?.rewards`).
+  const rewards = rewardsData?.rewards;
   const { totalUnclaimedRewardsValue, uniqueRewardTokens } = useMemo(() => {
-    if (!rewardsData?.rewards) return { totalUnclaimedRewardsValue: 0, uniqueRewardTokens: [] };
+    if (!rewards) return { totalUnclaimedRewardsValue: 0, uniqueRewardTokens: [] };
 
-    let totalUsd = 0;
-    const tokens: string[] = [];
-
-    for (const reward of rewardsData.rewards) {
-      // Filter to vault sources only (has vaultAddress, excludes "Other campaigns")
-      const vaultSources = reward.sources.filter(s => s.vaultAddress);
-      if (vaultSources.length === 0) continue;
-
-      // Sum the vault-only amounts for this token
-      const vaultOnlyAmount = vaultSources.reduce((sum, s) => sum + s.amount, 0n);
-      if (vaultOnlyAmount > 0n) {
-        // Calculate USD value for vault-only portion
+    const vaultRewards = rewards
+      .map(reward => {
+        // Filter to vault sources only (has vaultAddress, excludes "Other campaigns")
+        const vaultSources = reward.sources.filter(s => s.vaultAddress);
+        const vaultOnlyAmount = vaultSources.reduce((sum, s) => sum + s.amount, 0n);
+        if (vaultOnlyAmount <= 0n) return null;
         const vaultOnlyUsd =
           parseFloat(formatUnits(vaultOnlyAmount, reward.tokenDecimals)) * reward.tokenPrice;
-        totalUsd += vaultOnlyUsd;
-        tokens.push(reward.tokenSymbol);
-      }
-    }
+        return { tokenSymbol: reward.tokenSymbol, vaultOnlyUsd };
+      })
+      .filter((r): r is { tokenSymbol: string; vaultOnlyUsd: number } => r !== null);
 
-    return { totalUnclaimedRewardsValue: totalUsd, uniqueRewardTokens: tokens };
-  }, [rewardsData?.rewards]);
+    return {
+      totalUnclaimedRewardsValue: vaultRewards.reduce((sum, r) => sum + r.vaultOnlyUsd, 0),
+      uniqueRewardTokens: vaultRewards.map(r => r.tokenSymbol)
+    };
+  }, [rewards]);
 
   const morphoSupplied = morphoAssetsData.total;
   const morphoMaxRate = (morphoRatesData || []).reduce((max, rate) => Math.max(max, rate.netRate), 0);
