@@ -34,7 +34,10 @@ const binanceConnector = getWagmiConnectorV2();
 
 const connectors = [
   // Core wallets
-  metaMask(),
+  // preferExtension: connect via the installed browser extension on desktop instead of the
+  // MetaMask Wallet Protocol deeplink (metamask://connect/mwp), which has no registered handler
+  // on desktop. Mobile still falls through to the deeplink, where the scheme is handled.
+  metaMask({ ui: { preferExtension: true, showInstallModal: true } }),
   baseAccount({
     appName: 'sky.money',
     appLogoUrl: 'https://app.sky.money/images/sky.svg',
