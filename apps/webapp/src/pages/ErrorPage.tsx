@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Layout } from '../modules/layout/components/Layout';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Heading } from '@/modules/layout/components/Typography';
 import { reportError } from '@/modules/sentry/reportError';

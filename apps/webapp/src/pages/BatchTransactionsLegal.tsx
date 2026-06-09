@@ -3,7 +3,7 @@ import { Text, Heading } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { HStack } from '@/modules/layout/components/HStack';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 export function BatchTransactionsLegal() {

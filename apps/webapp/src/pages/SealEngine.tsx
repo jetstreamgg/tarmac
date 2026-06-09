@@ -2,7 +2,7 @@ import { Layout } from '@/modules/layout/components/Layout';
 import { Text, Heading, List } from '@/modules/layout/components/Typography';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { HStack } from '@/modules/layout/components/HStack';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { SEAL_ENGINE_V1_ADDRESS } from '@/lib/constants';
 

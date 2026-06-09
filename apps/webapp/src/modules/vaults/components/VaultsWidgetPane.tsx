@@ -9,7 +9,7 @@ import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWi
 import { vaultModuleForProvider, vaultsIntentForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { VaultProvider } from '@/hooks/vaults/types';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useRouteEntityParams } from '@/lib/router';
+import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
 import { VaultStatsCard } from '@/modules/expert/components/VaultStatsCard';
 import { VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';

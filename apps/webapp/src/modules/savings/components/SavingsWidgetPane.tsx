@@ -10,7 +10,7 @@ import { useSavingsHistory } from '@/hooks';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@/utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useAppSearchParams, useRouteIntent } from '@/lib/router';
+import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';

@@ -6,7 +6,7 @@ import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
-import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/router';
+import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {

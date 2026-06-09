@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { ALLOWED_EXTERNAL_DOMAINS, ExpertIntentMapping, QueryParams } from './constants';
 import { ExpertIntent, Intent } from './enums';
-import { INTENT_PATHS } from './router';
+import { INTENT_PATHS } from './navigation';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
 import { reportError } from '@/modules/sentry/reportError';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useAppNavigate } from '@/lib/router';
+import { useAppNavigate } from '@/lib/navigation';
 import { useChainId } from 'wagmi';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';

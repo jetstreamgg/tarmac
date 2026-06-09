@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { HEADER_HEIGHT } from './constants';
 import { defaultConfig } from '../../config/default-config';
 import { CustomConnectButton } from './CustomConnectButton';

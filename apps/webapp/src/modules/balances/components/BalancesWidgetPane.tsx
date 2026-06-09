@@ -1,6 +1,6 @@
 import { WidgetStateChangeParams, SavingsFlow, BalancesWidget, BalancesWidgetProps } from '@/widgets';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/router';
+import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useCallback } from 'react';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { QueryParams } from '@/lib/constants';

@@ -9,7 +9,7 @@ import {
   getStUsdsUrl,
   getVaultsOverviewUrl
 } from '@/lib/utils';
-import { useAppSearchParams } from '@/lib/router';
+import { useAppSearchParams } from '@/lib/navigation';
 import { useChainId, useChains } from 'wagmi';
 
 export const useModuleUrls = () => {

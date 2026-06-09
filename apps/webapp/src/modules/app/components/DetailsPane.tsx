@@ -7,7 +7,7 @@ import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { VaultDetails } from '@/modules/morpho/components/VaultDetails';
 import { VAULTS } from '@/hooks';
 import { useChainId } from 'wagmi';
-import { useRouteConvertIntent, useRouteEntityParams } from '@/lib/router';
+import { useRouteConvertIntent, useRouteEntityParams } from '@/lib/navigation';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';

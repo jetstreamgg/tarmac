@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { UnsupportedNetwork } from '@/modules/icons/UnsupportedNetwork';
 import { useChains, useSwitchChain } from 'wagmi';
 import { Button } from '@/components/ui/button';
-import { useAppSearchParams } from '@/lib/router';
+import { useAppSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 

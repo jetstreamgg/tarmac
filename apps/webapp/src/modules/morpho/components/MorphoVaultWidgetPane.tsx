@@ -4,7 +4,7 @@ import { QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/router';
+import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navigation';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useChainId } from 'wagmi';
 

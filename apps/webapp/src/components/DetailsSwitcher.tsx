@@ -1,6 +1,6 @@
 import { Toggle } from '@/components/ui/toggle';
 import { Metrics } from '@/modules/icons';
-import { useAppSearchParams, useRouteIntent } from '@/lib/router';
+import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { IntentMapping, QueryParams } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import {

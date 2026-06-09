@@ -10,7 +10,7 @@ import {
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { formatBigInt, formatNumber } from '@/utils';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 
 export type MarketBalanceForAccordion = {

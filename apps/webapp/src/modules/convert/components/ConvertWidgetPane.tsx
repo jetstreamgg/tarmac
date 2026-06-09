@@ -13,7 +13,7 @@ import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPan
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useRouteConvertIntent } from '@/lib/router';
+import { keepSearch, useRouteConvertIntent } from '@/lib/navigation';
 import { Card, CardHeader } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Convert, Upgrade, Trade } from '@/modules/icons';

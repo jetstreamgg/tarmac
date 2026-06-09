@@ -1,7 +1,7 @@
 import { Card } from '@/widgets/components/ui/card';
 import { Text } from '../Typography';
 import { TokenIcon } from '../token/TokenIcon';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { Logo, LogoName } from '../../ModuleLogo';
 
 export const InteractiveStatsCardAlt = ({

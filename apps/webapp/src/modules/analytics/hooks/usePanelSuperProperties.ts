@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { usePostHog } from 'posthog-js/react';
-import { useAppSearchParams } from '@/lib/router';
+import { useAppSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 
 /**

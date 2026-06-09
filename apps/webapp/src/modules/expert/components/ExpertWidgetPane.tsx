@@ -8,7 +8,7 @@ import { AnimatePresence } from 'motion/react';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
 import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping } from '@/lib/constants';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch } from '@/lib/router';
+import { keepSearch } from '@/lib/navigation';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 

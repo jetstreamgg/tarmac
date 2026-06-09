@@ -8,7 +8,7 @@ import { WalletIcon } from '@/modules/ui/components/WalletIcon';
 import { useConnection } from 'wagmi';
 import { WALLET_ICONS } from '@/lib/constants';
 import { ConnectedModalTabs } from './ConnectedModalTabs';
-import { useAppSearchParams } from '@/lib/router';
+import { useAppSearchParams } from '@/lib/navigation';
 import { useEffect } from 'react';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useIsSafeWallet } from '@/hooks';

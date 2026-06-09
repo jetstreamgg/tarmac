@@ -6,7 +6,7 @@ import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/router';
+import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';

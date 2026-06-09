@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { INTENT_PATHS, retainOnNavigate } from '@/lib/router';
+import { INTENT_PATHS, retainOnNavigate } from '@/lib/navigation';
 import { Intent } from '@/lib/enums';
 import { requiresMainnet } from '@/lib/widget-network-map';
 import { isL2ChainId, isTestnetId } from '@/utils';

@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/router';
+import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/navigation';
 
 import { TOKENS, useUpgradeHistory } from '@/hooks';
 import {

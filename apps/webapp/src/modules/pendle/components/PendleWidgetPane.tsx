@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useRouteEntityParams } from '@/lib/router';
+import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';

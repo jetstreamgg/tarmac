@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { useRouteEntityParams } from '@/lib/router';
+import { useRouteEntityParams } from '@/lib/navigation';
 import { useChainId, useConnection } from 'wagmi';
 import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { isTestnetId } from '@/utils';

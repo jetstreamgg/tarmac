@@ -1,5 +1,5 @@
 import { createRootRoute, createRoute, createRouter, notFound, redirect } from '@tanstack/react-router';
-import { keepSearch } from '@/lib/router';
+import { keepSearch } from '@/lib/navigation';
 import Home from './Home';
 import ErrorPage from './ErrorPage';
 import { NotFound } from '../modules/layout/components/NotFound';

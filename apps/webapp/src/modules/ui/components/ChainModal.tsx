@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Intent } from '@/lib/enums';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
 import { useNavigate } from '@tanstack/react-router';
-import { INTENT_PATHS, keepSearch, useAppSearchParams } from '@/lib/router';
+import { INTENT_PATHS, keepSearch, useAppSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useIsSafeWallet } from '@/hooks';

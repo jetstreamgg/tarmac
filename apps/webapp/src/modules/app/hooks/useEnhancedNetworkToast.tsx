@@ -10,7 +10,7 @@ import { isMultichain, requiresMainnet } from '@/lib/widget-network-map';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { useAppSearchParams, type SetSearchParams } from '@/lib/router';
+import { useAppSearchParams, type SetSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { Loader2 } from 'lucide-react';

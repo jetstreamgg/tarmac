@@ -10,7 +10,7 @@ import {
   useRouteConvertIntent,
   useRouteExpertIntent,
   useRouteEntityParams
-} from '@/lib/router';
+} from '@/lib/navigation';
 import { QueryParams, CHAIN_WIDGET_MAP, COMING_SOON_MAP } from '@/lib/constants';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { vaultsIntentForVaultModule } from '@/lib/vaults/vaultProviderMapping';

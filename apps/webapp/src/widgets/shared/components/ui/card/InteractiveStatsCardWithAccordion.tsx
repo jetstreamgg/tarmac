@@ -12,7 +12,7 @@ import { ArrowRight } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
 import { formatBigInt, formatNumber, getChainIcon } from '@/utils';
-import { AppLink } from '@/lib/router';
+import { AppLink } from '@/lib/navigation';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 import { PriceData } from '@/hooks';
 

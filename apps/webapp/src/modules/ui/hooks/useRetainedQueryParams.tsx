@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
-import { useAppSearchParams } from '@/lib/router';
+import { useAppSearchParams } from '@/lib/navigation';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
 
 export const getRetainedQueryParams = (

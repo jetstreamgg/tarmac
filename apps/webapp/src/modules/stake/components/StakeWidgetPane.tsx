@@ -2,7 +2,7 @@ import { TxStatus, WidgetStateChangeParams, StakeFlow, StakeModuleWidget, StakeA
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useAppSearchParams, useRouteIntent } from '@/lib/router';
+import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@/hooks';

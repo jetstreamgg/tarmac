@@ -58,8 +58,8 @@ vi.mock('@tanstack/react-router', async importOriginal => {
   };
 });
 
-vi.mock('@/lib/router', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/lib/router')>();
+vi.mock('@/lib/navigation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/navigation')>();
   return {
     ...actual,
     useAppSearchParams: () => [mockSearchParams, setSearchParamsMock],

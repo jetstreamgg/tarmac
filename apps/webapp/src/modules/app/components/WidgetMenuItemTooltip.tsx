@@ -6,7 +6,7 @@ import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useNavigate } from '@tanstack/react-router';
-import { INTENT_PATHS, retainOnNavigate } from '@/lib/router';
+import { INTENT_PATHS, retainOnNavigate } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';

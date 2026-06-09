@@ -2,7 +2,7 @@ import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } 
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { useRouteIntent } from '@/lib/router';
+import { useRouteIntent } from '@/lib/navigation';
 import { requiresMainnet } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Loader2 } from 'lucide-react';
