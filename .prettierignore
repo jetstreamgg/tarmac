@@ -6,3 +6,4 @@ node_modules
 pnpm-lock.yaml
 coverage
 apps/webapp/src/locales/*
+apps/webapp/src/data/corpus-sync-log.jsonl

@@ -93,6 +93,7 @@ export function VaultInfoDetails({ vaultAddress, assetToken, provider = 'morpho'
           isLoading={liquidityLoading}
           error={isMorpho ? marketError : null}
           assetToken={assetToken}
+          provider={provider}
         />
       </div>
       {isMorpho && (

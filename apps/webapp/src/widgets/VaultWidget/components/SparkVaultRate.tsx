@@ -12,9 +12,8 @@ import { useSparkVaultResolvedRate } from '@/hooks';
  * API `apy` when present, falling back to the on-chain Vault Savings Rate (`vsr`). Every Spark-rate
  * surface reads this resolution, so the header/card can never disagree with the transaction overview.
  *
- * TODO: the (i) popover carries a placeholder note. The rate reads 0% until Spark activates the
- * vault; confirm with Spark whether to surface the SSR floor / their data-hub rate instead, then
- * replace this `tooltipOverride` with real rate-breakdown copy (ideally a dedicated tooltip id).
+ * The (i) popover uses the dedicated `sky` rate tooltip (`susdt-vault-rate`), which carries the
+ * Sky-set savings-rate copy — no Morpho wording. See the corpus `sUSDT Vault Rate` tooltip.
  */
 export function SparkVaultRate({
   vaultAddress,
@@ -33,17 +32,7 @@ export function SparkVaultRate({
       <Text variant="large" className="text-text">
         {formattedRate}
       </Text>
-      {/* `type` only selects default copy, which we fully override below — the Spark vault rate
-          anchors to the Sky Savings Rate, so `ssr` is the closest fallback. */}
-      <PopoverRateInfo
-        type="ssr"
-        iconClassName={iconClassName}
-        tooltipOverride={{
-          title: 'Vault Savings Rate',
-          description:
-            'TODO: on-chain Vault Savings Rate (reads 0% until Spark activates the vault) — confirm the final rate source with Spark.'
-        }}
-      />
+      <PopoverRateInfo type="sky" iconClassName={iconClassName} />
     </div>
   );
 }

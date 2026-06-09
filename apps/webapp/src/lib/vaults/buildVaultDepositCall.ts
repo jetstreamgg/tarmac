@@ -26,7 +26,7 @@ export function buildVaultDepositCall({
   receiver: `0x${string}`;
   referral: number;
 }): Call {
-  const sendReferral = provider === 'spark' && referral > 0;
+  const sendReferral = provider === 'sky' && referral > 0;
 
   if (sendReferral) {
     // Only sparkVaultAbi carries the 3-arg overload; the Morpho abi has just the 2-arg form.

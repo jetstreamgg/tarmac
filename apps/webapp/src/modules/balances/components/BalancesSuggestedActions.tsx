@@ -4,6 +4,7 @@ import { useChainId, useChains } from 'wagmi';
 import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
@@ -101,8 +102,16 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'sparkVault',
     subtitle: 'Rate: {rate}',
     module: 'morpho',
-    url: `?widget=vaults&vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=spark`,
+    url: `?widget=vaults&vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=${vaultModuleForProvider('sky')}`,
     badge: 'New'
+  },
+  {
+    // tokens, subtitle and badge are filled in at render time from active Pendle markets
+    label: 'Fixed Yield Markets',
+    tokens: [],
+    rateKey: 'fixedYield',
+    module: 'fixedYield',
+    url: '?widget=fixed'
   },
   {
     label: 'Expert: stUSDS',
@@ -408,27 +417,22 @@ export function BalancesSuggestedActions({
     trade: 'trade'
   };
 
-  const fixedYieldAction = useMemo<BalancesAction>(() => {
+  const stableActions = useMemo(() => {
     const activeMarkets = PENDLE_MARKETS.filter(m => !isMarketMatured(m.expiry));
-    const activePtSymbols = activeMarkets.map(m => `PT-${m.underlyingSymbol}`);
-    return {
-      label: 'Fixed Yield Markets',
-      tokens: activePtSymbols,
-      rateKey: 'fixedYield',
-      subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
-      module: 'fixedYield',
-      url: '?widget=fixed',
-      badge: isNewIntent(Intent.FIXED_INTENT) ? 'New' : undefined
-    };
+    return STABLE_ACTIONS.map(action =>
+      action.rateKey === 'fixedYield'
+        ? {
+            ...action,
+            tokens: activeMarkets.map(m => `PT-${m.underlyingSymbol}`),
+            subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
+            badge: isNewIntent(Intent.FIXED_INTENT) ? 'New' : undefined
+          }
+        : action
+    );
   }, []);
 
   const actions = useMemo(() => {
-    let result =
-      widget === 'stables'
-        ? [...STABLE_ACTIONS, fixedYieldAction]
-        : widget === 'sky'
-          ? SKY_ACTIONS
-          : TOKEN_ACTIONS;
+    let result = widget === 'stables' ? stableActions : widget === 'sky' ? SKY_ACTIONS : TOKEN_ACTIONS;
     if (restrictedModules) {
       result = result.filter(action => restrictedModules.includes(action.module));
     }
@@ -437,7 +441,7 @@ export function BalancesSuggestedActions({
       return !geoModuleId || isModuleEnabled(geoModuleId);
     });
     return result;
-  }, [widget, restrictedModules, isModuleEnabled, fixedYieldAction]);
+  }, [widget, restrictedModules, isModuleEnabled, stableActions]);
 
   const { rates: rateMap, loading: rateLoading } = useActionRates(actions, chainId);
 

@@ -38,7 +38,7 @@ import { TOKENS } from '@/hooks';
 
 describe('VaultBalanceDetails (provider-aware rewards card)', () => {
   it('hides the Accumulated Rewards card for a Spark vault but keeps Supplied + Remaining', async () => {
-    render(<VaultBalanceDetails vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="spark" />, {
+    render(<VaultBalanceDetails vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="sky" />, {
       wrapper: WagmiWrapper
     });
 

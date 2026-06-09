@@ -138,13 +138,13 @@ describe('validateSearchParams for convert psm', () => {
 });
 
 describe('validateSearchParams for vault_module', () => {
-  it('preserves vault_module=spark and selects the Spark vaults option', () => {
+  it('preserves vault_module=sky and selects the Spark vaults option', () => {
     const { params, setSelectedVaultsOption } = validateVaultParams(
-      `widget=vaults&vault_module=spark&vault=${SPARK_VAULT_ADDRESS}`
+      `widget=vaults&vault_module=sky&vault=${SPARK_VAULT_ADDRESS}`
     );
-    expect(params.get('vault_module')).toBe('spark');
+    expect(params.get('vault_module')).toBe('sky');
     expect(params.get('vault')).toBe(SPARK_VAULT_ADDRESS);
-    expect(setSelectedVaultsOption).toHaveBeenCalledWith(VaultsIntent.SPARK_VAULT_INTENT);
+    expect(setSelectedVaultsOption).toHaveBeenCalledWith(VaultsIntent.SKY_VAULT_INTENT);
   });
 
   it('preserves vault_module=morpho and selects the Morpho vaults option', () => {

@@ -100,8 +100,8 @@ export function useVaultMarketData({
   });
 
   const sparkData = useSparkVaultApiData({
-    vaultAddress: provider === 'spark' ? vaultAddress : undefined
+    vaultAddress: provider === 'sky' ? vaultAddress : undefined
   });
 
-  return provider === 'spark' ? sparkData : morphoData;
+  return provider === 'sky' ? sparkData : morphoData;
 }

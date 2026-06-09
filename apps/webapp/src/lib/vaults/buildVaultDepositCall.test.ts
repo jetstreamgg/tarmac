@@ -23,7 +23,7 @@ function encodeCall(call: ReturnType<typeof buildVaultDepositCall>) {
 describe('buildVaultDepositCall', () => {
   it('encodes the 3-arg deposit(assets, receiver, referral) for a Spark vault with a referral code', () => {
     const call = buildVaultDepositCall({
-      provider: 'spark',
+      provider: 'sky',
       vaultAddress: VAULT_ADDRESS,
       amount: AMOUNT,
       receiver: RECEIVER,
@@ -58,7 +58,7 @@ describe('buildVaultDepositCall', () => {
 
   it('falls back to the 2-arg deposit for a Spark vault when no referral code is configured (0)', () => {
     const call = buildVaultDepositCall({
-      provider: 'spark',
+      provider: 'sky',
       vaultAddress: VAULT_ADDRESS,
       amount: AMOUNT,
       receiver: RECEIVER,

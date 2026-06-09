@@ -311,6 +311,14 @@ export const banners: Banner[] = [
     display: ['connected', 'disconnected']
   },
   {
+    id: 'tether-savings-vault',
+    title: 'Tether Savings Vault',
+    module: 'vaults-banners',
+    description:
+      'Tether Savings (sUSDT) is a non-custodial, permissionless stablecoin savings vault backed by USDS, managed by Sky using Spark infrastructure. Deposit USDT to earn a variable savings rate set by Sky.',
+    display: ['connected', 'disconnected']
+  },
+  {
     id: 'fixed-yield',
     title: 'Fixed Yield',
     module: 'fixed-yield-banners',

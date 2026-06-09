@@ -8,7 +8,7 @@ import { calculateApyFromStr } from '@/utils/math/calculateApy';
  */
 export type VaultRateSource =
   | { provider: 'morpho'; address: `0x${string}`; netRate: number | undefined }
-  | { provider: 'spark'; address: `0x${string}`; vsr: bigint | undefined };
+  | { provider: 'sky'; address: `0x${string}`; vsr: bigint | undefined };
 
 /**
  * Pure provider-routing core: registry-of-rate-inputs in → rate-by-address out.
@@ -23,7 +23,7 @@ export function buildVaultRatesByAddress(sources: VaultRateSource[]): Map<string
   const map = new Map<string, number>();
   for (const source of sources) {
     const key = source.address.toLowerCase();
-    if (source.provider === 'spark') {
+    if (source.provider === 'sky') {
       if (source.vsr === undefined) continue;
       // calculateApyFromStr returns a percentage (e.g. 5.2); the map holds decimals.
       map.set(key, calculateApyFromStr(source.vsr) / 100);

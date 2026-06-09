@@ -27,7 +27,7 @@ describe('buildVaultRatesByAddress (provider-routing core)', () => {
   });
 
   it('derives a Spark rate from on-chain vsr as a decimal (percentage ÷ 100)', () => {
-    const sources: VaultRateSource[] = [{ provider: 'spark', address: SPARK_ADDR, vsr: ACTIVE_VSR }];
+    const sources: VaultRateSource[] = [{ provider: 'sky', address: SPARK_ADDR, vsr: ACTIVE_VSR }];
 
     const map = buildVaultRatesByAddress(sources);
 
@@ -37,7 +37,7 @@ describe('buildVaultRatesByAddress (provider-routing core)', () => {
   });
 
   it('renders a dormant Spark vault (vsr === 1e27) as a present 0, not a missing entry', () => {
-    const sources: VaultRateSource[] = [{ provider: 'spark', address: SPARK_ADDR, vsr: RAY }];
+    const sources: VaultRateSource[] = [{ provider: 'sky', address: SPARK_ADDR, vsr: RAY }];
 
     const map = buildVaultRatesByAddress(sources);
 
@@ -46,7 +46,7 @@ describe('buildVaultRatesByAddress (provider-routing core)', () => {
   });
 
   it('omits a Spark vault whose vsr has not been read yet (undefined)', () => {
-    const sources: VaultRateSource[] = [{ provider: 'spark', address: SPARK_ADDR, vsr: undefined }];
+    const sources: VaultRateSource[] = [{ provider: 'sky', address: SPARK_ADDR, vsr: undefined }];
 
     const map = buildVaultRatesByAddress(sources);
 
@@ -56,7 +56,7 @@ describe('buildVaultRatesByAddress (provider-routing core)', () => {
   it('merges Morpho and Spark sources into one address→rate map', () => {
     const sources: VaultRateSource[] = [
       { provider: 'morpho', address: MORPHO_ADDR, netRate: 0.04 },
-      { provider: 'spark', address: SPARK_ADDR, vsr: ACTIVE_VSR }
+      { provider: 'sky', address: SPARK_ADDR, vsr: ACTIVE_VSR }
     ];
 
     const map = buildVaultRatesByAddress(sources);

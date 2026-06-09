@@ -73,7 +73,7 @@ describe('VaultInfoDetails (Spark API-first, on-chain fallback)', () => {
     };
     mockOnChainLiquidity = { data: 101_000_000_000_000n, isLoading: false }; // 101M buffer (must be ignored)
 
-    render(<VaultInfoDetails vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="spark" />, {
+    render(<VaultInfoDetails vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="sky" />, {
       wrapper: WagmiWrapper
     });
 
@@ -102,7 +102,7 @@ describe('VaultInfoDetails (Spark API-first, on-chain fallback)', () => {
     };
     mockOnChainLiquidity = { data: 80_000_000_000_000n, isLoading: false }; // 80M vault buffer
 
-    render(<VaultInfoDetails vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="spark" />, {
+    render(<VaultInfoDetails vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="sky" />, {
       wrapper: WagmiWrapper
     });
 

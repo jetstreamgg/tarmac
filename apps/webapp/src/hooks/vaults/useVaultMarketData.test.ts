@@ -51,8 +51,8 @@ describe('useVaultMarketData dispatcher', () => {
     expect(result.current.data?.totalAssets).toBe(123n);
   });
 
-  it("routes a 'spark' vault to the Spark data source and returns its normalized result", () => {
-    const { result } = renderHook(() => useVaultMarketData({ provider: 'spark', vaultAddress: VAULT }));
+  it("routes a 'sky' vault to the Spark data source and returns its normalized result", () => {
+    const { result } = renderHook(() => useVaultMarketData({ provider: 'sky', vaultAddress: VAULT }));
 
     expect(useSparkVaultApiData).toHaveBeenCalledWith({ vaultAddress: VAULT });
     expect(result.current).toBe(sparkResult);
@@ -60,7 +60,7 @@ describe('useVaultMarketData dispatcher', () => {
   });
 
   it('keeps the inactive provider hook disabled by passing an undefined address', () => {
-    renderHook(() => useVaultMarketData({ provider: 'spark', vaultAddress: VAULT }));
+    renderHook(() => useVaultMarketData({ provider: 'sky', vaultAddress: VAULT }));
     // Spark active -> Morpho gets undefined (query disabled, no wrong-provider fetch).
     expect(useMorphoVaultMarketApiData).toHaveBeenCalledWith({ vaultAddress: undefined });
 

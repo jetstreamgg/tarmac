@@ -20,7 +20,7 @@ import { useSparkVaultRate } from './useSparkVaultRate';
  */
 export function useSparkVaultResolvedRate({ vaultAddress }: { vaultAddress?: `0x${string}` }) {
   const { data: marketData, isLoading: isMarketDataLoading } = useVaultMarketData({
-    provider: 'spark',
+    provider: 'sky',
     vaultAddress
   });
 

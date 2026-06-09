@@ -8,7 +8,6 @@ import { useChainId } from 'wagmi';
 import { getBannerById } from '@/data/banners/banners';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { base, arbitrum, optimism, unichain } from 'viem/chains';
-import { Morpho } from '@/widgets';
 import { Pendle as PendleIcon } from '@/widgets/shared/components/icons/Pendle';
 
 // Type for banner configuration
@@ -80,42 +79,41 @@ export function ConnectCard({ intent, className, convertOption }: ConnectCardPro
   // Parse banner content - handles tooltips if present, otherwise returns plain text
   const contentText = banner?.description ? parseBannerContent(banner.description) : '';
 
-  const isMorphoVaults = intent === Intent.VAULTS_INTENT;
+  const isVaults = intent === Intent.VAULTS_INTENT;
   const isFixedYield = intent === Intent.FIXED_INTENT;
 
   return (
     <GradientShapeCard
       colorLeft={
-        isMorphoVaults
+        isVaults
           ? 'radial-gradient(200.08% 406.67% at 5.14% 108.47%, #4331E9 0%, #2A197D 21.68%)'
           : 'radial-gradient(100% 177.78% at 100% 0%, #A273FF 0%, #4331E9 100%)'
       }
       colorMiddle={
-        isMorphoVaults
+        isVaults
           ? 'linear-gradient(360deg, #2470FF 0%, #1B4ECF 300%)'
           : 'radial-gradient(circle at 0% 100%, #FFCD6B 0%, #EB5EDF 150%)'
       }
-      colorRight={isMorphoVaults ? '#1e1a4b' : '#2A197D'}
+      colorRight={isVaults ? '#1e1a4b' : '#2A197D'}
       className={className}
     >
       <div className="w-[80%] space-y-2 self-start xl:w-2/3" data-testid="connect-wallet-card">
         <Heading className="mb-2 flex items-center gap-2">
-          {isMorphoVaults && <Morpho className="h-6 w-6 rounded-sm" />}
           {isFixedYield && <PendleIcon className="h-6 w-6 rounded-sm" />}
-          {isMorphoVaults ? <Trans>Vaults</Trans> : isFixedYield ? <Trans>About Fixed Yield</Trans> : heading}
+          {isVaults ? <Trans>Vaults</Trans> : isFixedYield ? <Trans>About Fixed Yield</Trans> : heading}
         </Heading>
-        {isMorphoVaults ? (
+        {isVaults ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              Connect your wallet to start using Sky-curated Morpho Vaults. Deposit USDS, USDT, or USDC and
-              start earning.
+              Connect your wallet to start using Sky-curated Vaults. Deposit USDS, USDT, or USDC and start
+              earning.
             </Trans>
           </Text>
         ) : isFixedYield ? (
           <Text variant="small" className="leading-4.5">
             <Trans>
-              When volatility plays against you, get a fixed yield over a pre-set period. The rate is set
-              when you deposit your USDS, while expected returns are available at maturity date, not before.
+              When volatility plays against you, get a fixed yield over a pre-set period. The rate is set when
+              you deposit your USDS, while expected returns are available at maturity date, not before.
             </Trans>
           </Text>
         ) : (

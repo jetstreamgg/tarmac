@@ -10,7 +10,7 @@ import { chainId, getEtherscanLink, isTestnetId } from '@/utils';
 /** Human-readable data-source label per provider for the on-chain vault contract. */
 const VAULT_CONTRACT_DATA_SOURCE_TITLE: Record<VaultProvider, string> = {
   morpho: 'Morpho Vault Contract',
-  spark: 'Spark Vault Contract'
+  sky: 'Sky Vault Contract'
 };
 
 /**

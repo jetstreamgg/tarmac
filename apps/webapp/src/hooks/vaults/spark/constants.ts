@@ -40,7 +40,7 @@ export const SPARK_VAULT_IDENTITY = { protocol: 'sky', chain: 'mainnet', token: 
  */
 export const SPARK_VAULTS: VaultConfig[] = [
   {
-    provider: 'spark',
+    provider: 'sky',
     name: 'Tether Savings',
     symbol: 'sUSDT',
     vaultAddress: {

@@ -1,12 +1,12 @@
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { Morpho } from '@/widgets/shared/components/icons/Morpho';
-import { Spark } from '@/widgets/shared/components/icons/Spark';
+import { Sky } from '@/widgets/shared/components/icons/Sky';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { VaultProvider } from '@/hooks';
 
 const PROVIDER_META: Record<VaultProvider, { label: string; href: string }> = {
   morpho: { label: 'Morpho', href: 'https://morpho.org/' },
-  spark: { label: 'Spark', href: 'https://spark.fi/' }
+  sky: { label: 'Sky', href: 'https://sky.money/' }
 };
 
 export const VaultPoweredBy = ({
@@ -32,8 +32,8 @@ export const VaultPoweredBy = ({
           {label}
         </ExternalLink>
       </Text>
-      {provider === 'spark' ? (
-        <Spark className="rounded-[0.25rem]" />
+      {provider === 'sky' ? (
+        <Sky className="rounded-full" />
       ) : (
         <Morpho className="rounded-[0.25rem]" />
       )}

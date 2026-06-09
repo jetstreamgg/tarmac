@@ -150,7 +150,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                 // Both providers render the same provider-aware detail view,
                 // which derives its provider from the vault address.
                 case VaultsIntent.MORPHO_VAULT_INTENT:
-                case VaultsIntent.SPARK_VAULT_INTENT:
+                case VaultsIntent.SKY_VAULT_INTENT:
                   return (
                     <MotionDetailsWrapper key={keys[10]}>
                       <VaultDetails

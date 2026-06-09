@@ -28,7 +28,7 @@ import { VaultProvider } from '@/hooks/vaults/types';
 /**
  * Build the vault-address → deep-link map. Each link carries the target vault's
  * own provider in `vault_module` (derived via the slice-01 mapping), so a Spark
- * vault link reads `vault_module=spark` and a Morpho one `vault_module=morpho`.
+ * vault link reads `vault_module=sky` and a Morpho one `vault_module=morpho`.
  */
 export const buildVaultDeepLinkMap = (
   url: string | undefined,
@@ -181,6 +181,15 @@ export const VaultsBalanceCard = ({
     [morphoAssetsData.vaults, ratesByAddress, vaultChainId, hideZeroBalances]
   );
 
+  // The blended-rate (i) tooltip is provider-specific: a portfolio holding only Sky vaults
+  // (e.g. Tether Savings) gets the Sky rate tooltip — not the Morpho "vault curator on Morpho"
+  // copy. Morpho-only or mixed positions keep the Morpho tooltip.
+  const positionsWithBalance = morphoAssetsData.vaults.filter(v => v.balanceNormalized > 0n);
+  const blendedRatePopoverType: 'morpho' | 'sky' =
+    positionsWithBalance.length > 0 && positionsWithBalance.every(v => v.vault.provider === 'sky')
+      ? 'sky'
+      : 'morpho';
+
   // Build URL map for vaults with vault-specific query params
   const urlMap = useMemo(() => {
     if (vaultUrlMap) return vaultUrlMap;
@@ -202,7 +211,7 @@ export const VaultsBalanceCard = ({
             <div className="flex items-center gap-2">
               <RateLineWithArrow
                 rateText={t`Rate: ${(weightedAverageRate * 100).toFixed(2)}%`}
-                popoverType="morpho"
+                popoverType={blendedRatePopoverType}
                 onExternalLinkClicked={onExternalLinkClicked}
                 showArrow={false}
               />

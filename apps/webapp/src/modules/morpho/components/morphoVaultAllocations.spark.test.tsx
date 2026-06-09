@@ -36,7 +36,7 @@ describe('MorphoVaultAllocationsDetails (spark)', () => {
       isLoading: false
     };
 
-    render(<MorphoVaultAllocationsDetails vaultAddress={VAULT} provider="spark" assetToken={TOKENS.usdt} />, {
+    render(<MorphoVaultAllocationsDetails vaultAddress={VAULT} provider="sky" assetToken={TOKENS.usdt} />, {
       wrapper: WagmiWrapper
     });
 
@@ -49,7 +49,7 @@ describe('MorphoVaultAllocationsDetails (spark)', () => {
   it('hides the breakdown (renders nothing) when there are no Spark allocations', () => {
     mockMarketData = { data: { allocations: [] }, isLoading: false };
 
-    render(<MorphoVaultAllocationsDetails vaultAddress={VAULT} provider="spark" assetToken={TOKENS.usdt} />, {
+    render(<MorphoVaultAllocationsDetails vaultAddress={VAULT} provider="sky" assetToken={TOKENS.usdt} />, {
       wrapper: WagmiWrapper
     });
 

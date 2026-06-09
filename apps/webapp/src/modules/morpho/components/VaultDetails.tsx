@@ -39,6 +39,8 @@ export function VaultDetails({ vaultAddress, assetToken, vaultName }: VaultDetai
   const showExposure = isMorpho || (marketData?.allocations?.length ?? 0) > 0;
 
   const getBannerId = () => {
+    // Tether Savings (sUSDT) is a Sky vault on Spark infra — its own banner, not a Morpho one.
+    if (vaultName.includes('Tether')) return 'tether-savings-vault';
     if (vaultName.includes('Risk Capital')) {
       if (vaultName.includes('USDT')) return 'usdt-risk-capital-vault';
       if (vaultName.includes('USDC')) return 'usdc-risk-capital-vault';
@@ -88,9 +90,9 @@ export function VaultDetails({ vaultAddress, assetToken, vaultName }: VaultDetai
       )}
       {/* TEMPORARY: the Metrics chart is hidden for the Spark (sUSDT) vault while
           the Savings historic endpoint returns no data. Remove this
-          `provider !== 'spark'` gate to bring the chart back once the endpoint is
+          `provider !== 'sky'` gate to bring the chart back once the endpoint is
           populated. */}
-      {provider !== 'spark' && (
+      {provider !== 'sky' && (
         <DetailSection title={t`Metrics`}>
           <DetailSectionRow>
             <MorphoVaultChart vaultAddress={vaultAddress} assetToken={assetToken} provider={provider} />
@@ -99,12 +101,12 @@ export function VaultDetails({ vaultAddress, assetToken, vaultName }: VaultDetai
       )}
       <DetailSection title={t`About`}>
         <DetailSectionRow>
-          <AboutMorphoVaults bannerId={getBannerId()} />
+          <AboutMorphoVaults bannerId={getBannerId()} provider={provider} />
         </DetailSectionRow>
       </DetailSection>
       <DetailSection title={t`FAQs`}>
         <DetailSectionRow>
-          <MorphoVaultFaq />
+          <MorphoVaultFaq provider={provider} />
         </DetailSectionRow>
       </DetailSection>
     </DetailSectionWrapper>

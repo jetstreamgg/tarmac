@@ -30,12 +30,12 @@ const makeBalance = (address: `0x${string}`, name: string, balanceNormalized: bi
 };
 
 describe('buildVaultDeepLinkMap', () => {
-  it('derives vault_module=spark for a Spark vault from its provider', () => {
+  it('derives vault_module=sky for a Spark vault from its provider', () => {
     const map = buildVaultDeepLinkMap(BASE_URL, [
-      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'spark' } }
+      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'sky' } }
     ]);
     expect(map[SPARK_USDT_VAULT_ADDRESS]).toBe(
-      `${BASE_URL}&vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=spark`
+      `${BASE_URL}&vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=sky`
     );
   });
 
@@ -49,24 +49,24 @@ describe('buildVaultDeepLinkMap', () => {
   it('routes each vault to its own provider when both are present', () => {
     const map = buildVaultDeepLinkMap(BASE_URL, [
       { vaultAddress: MORPHO_ADDRESS, vault: { provider: 'morpho' } },
-      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'spark' } }
+      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'sky' } }
     ]);
     expect(map[MORPHO_ADDRESS]).toContain('vault_module=morpho');
-    expect(map[SPARK_USDT_VAULT_ADDRESS]).toContain('vault_module=spark');
+    expect(map[SPARK_USDT_VAULT_ADDRESS]).toContain('vault_module=sky');
   });
 
   it('uses ? as the separator when the base url has no query string', () => {
     const map = buildVaultDeepLinkMap('/vaults', [
-      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'spark' } }
+      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'sky' } }
     ]);
     expect(map[SPARK_USDT_VAULT_ADDRESS]).toBe(
-      `/vaults?vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=spark`
+      `/vaults?vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=sky`
     );
   });
 
   it('maps every vault to an empty string when no base url is provided', () => {
     const map = buildVaultDeepLinkMap(undefined, [
-      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'spark' } }
+      { vaultAddress: SPARK_USDT_VAULT_ADDRESS, vault: { provider: 'sky' } }
     ]);
     expect(map[SPARK_USDT_VAULT_ADDRESS]).toBe('');
   });

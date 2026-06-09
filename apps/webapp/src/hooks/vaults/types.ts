@@ -1,7 +1,7 @@
 import { Token } from '../tokens/types';
 
-/** Vault data provider. Morpho today; Spark (sUSDT) added in APP-266. */
-export type VaultProvider = 'morpho' | 'spark';
+/** Vault data provider. Morpho today; Sky (sUSDT) added in APP-266. */
+export type VaultProvider = 'morpho' | 'sky';
 
 /**
  * Provider-neutral vault configuration.

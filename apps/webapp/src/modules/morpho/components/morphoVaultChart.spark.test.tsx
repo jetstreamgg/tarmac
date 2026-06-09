@@ -41,12 +41,12 @@ describe('MorphoVaultChart (spark)', () => {
       error: null
     };
 
-    render(<MorphoVaultChart vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="spark" />, {
+    render(<MorphoVaultChart vaultAddress={VAULT} assetToken={TOKENS.usdt} provider="sky" />, {
       wrapper: WagmiWrapper
     });
 
     // Provider-specific test id (mirrors the slice-02 `${provider}-...` convention).
-    expect(await screen.findByTestId('spark-vault-chart')).toBeTruthy();
+    expect(await screen.findByTestId('sky-vault-chart')).toBeTruthy();
     // Not in the error state — data came through cleanly.
     expect(screen.queryByText(/Unable to load chart data/i)).toBeNull();
   });

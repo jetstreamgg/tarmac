@@ -283,6 +283,12 @@ Bundled transaction: Active`
       'Vault rates are variable and depend on market conditions, borrower demand, and the allocation strategy defined by Sky as vault curator on Morpho. Key factors that influence vault rates include the supply and demand dynamics of the underlying lending markets, the utilization rate of each market the vault allocates to, and the specific allocation strategy and risk profile of the vault. Sky.money does not control or guarantee vault performance. The vault rate provided is an estimated annual rate, updated using data from Morpho, a third-party lending protocol. This estimate is for informational purposes only and does not guarantee future results.'
   },
   {
+    id: 'susdt-vault-rate',
+    title: 'sUSDT Vault Rate',
+    tooltip:
+      'The Tether Savings (sUSDT) Vault rate is variable and set by Sky. Sky sets the sUSDT savings rate against three inputs: profit-and-loss sustainability across the full deposit base, depositor composition, and on-chain borrow demand—adjusting the rate to reflect what deployment yields can support. The rate shown is an estimated annual rate provided for informational purposes only and does not guarantee future results. Sky.money does not control or guarantee vault performance.'
+  },
+  {
     id: 'pt-susds',
     title: 'PT-sUSDS',
     tooltip:

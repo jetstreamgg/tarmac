@@ -5,8 +5,8 @@ import { connectMockWalletAndAcceptTerms } from '../utils/connectMockWalletAndAc
 // Spark Tether Savings (sUSDT) vault — registered in slice 02 (APP-266).
 // Copied from expert-morpho.spec.ts and adapted to the Vaults tab + USDT asset.
 // NOTE: assumes the Tenderly fork funds the test account with USDT (operator
-// runs e2e). Provider-aware selectors: `spark-vault-stats-card`,
-// `supply-input-spark`, `withdraw-input-spark`.
+// runs e2e). Provider-aware selectors: `sky-vault-stats-card`,
+// `supply-input-sky`, `withdraw-input-sky`.
 
 const VAULT_NAME = 'Tether Savings';
 
@@ -16,7 +16,7 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // Navigate to the Vaults tab and open the Spark vault detail
     await isolatedPage.getByRole('tab', { name: 'Vaults' }).click();
-    await isolatedPage.getByTestId('spark-vault-stats-card').click();
+    await isolatedPage.getByTestId('sky-vault-stats-card').click();
   });
 
   test('Renders the Spark vault with the on-chain name and Powered-by-Spark branding', async ({
@@ -42,8 +42,8 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
     await vaultInfoAccordion.click();
 
     const supplyAmount = 10;
-    await isolatedPage.getByTestId('supply-input-spark').click();
-    await isolatedPage.getByTestId('supply-input-spark').fill(supplyAmount.toString());
+    await isolatedPage.getByTestId('supply-input-sky').click();
+    await isolatedPage.getByTestId('supply-input-sky').fill(supplyAmount.toString());
 
     await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).toBeVisible();
     await expect(isolatedPage.getByText('You will supply')).toBeVisible();
@@ -64,8 +64,8 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   test('Withdraw USDT from the Spark vault', async ({ isolatedPage }) => {
     // Supply first so there's a balance to withdraw
     const supplyAmount = 20;
-    await isolatedPage.getByTestId('supply-input-spark').click();
-    await isolatedPage.getByTestId('supply-input-spark').fill(supplyAmount.toString());
+    await isolatedPage.getByTestId('supply-input-sky').click();
+    await isolatedPage.getByTestId('supply-input-sky').fill(supplyAmount.toString());
     await performAction(isolatedPage, 'Supply');
     await isolatedPage
       .getByRole('button', { name: new RegExp(`Back to ${VAULT_NAME}`, 'i') })
@@ -75,8 +75,8 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
     // Partial withdraw
     await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
     const withdrawAmount = 5;
-    await isolatedPage.getByTestId('withdraw-input-spark').click();
-    await isolatedPage.getByTestId('withdraw-input-spark').fill(withdrawAmount.toString());
+    await isolatedPage.getByTestId('withdraw-input-sky').click();
+    await isolatedPage.getByTestId('withdraw-input-sky').fill(withdrawAmount.toString());
 
     await expect(isolatedPage.getByText('You will withdraw')).toBeVisible();
     await expect(isolatedPage.getByText(`${withdrawAmount} USDT`).first()).toBeVisible();
@@ -87,8 +87,8 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
   test('Max withdraw redeems the full position', async ({ isolatedPage }) => {
     // Supply, then withdraw the max (redeem path)
     const supplyAmount = 30;
-    await isolatedPage.getByTestId('supply-input-spark').click();
-    await isolatedPage.getByTestId('supply-input-spark').fill(supplyAmount.toString());
+    await isolatedPage.getByTestId('supply-input-sky').click();
+    await isolatedPage.getByTestId('supply-input-sky').fill(supplyAmount.toString());
     await performAction(isolatedPage, 'Supply');
     await isolatedPage
       .getByRole('button', { name: new RegExp(`Back to ${VAULT_NAME}`, 'i') })
@@ -96,9 +96,9 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
       .click();
 
     await isolatedPage.getByRole('tab', { name: 'Withdraw' }).click();
-    await isolatedPage.getByTestId('withdraw-input-spark-max').click();
+    await isolatedPage.getByTestId('withdraw-input-sky-max').click();
 
-    const inputValue = await isolatedPage.getByTestId('withdraw-input-spark').inputValue();
+    const inputValue = await isolatedPage.getByTestId('withdraw-input-sky').inputValue();
     expect(parseFloat(inputValue)).toBeGreaterThanOrEqual(supplyAmount - 1);
 
     await performAction(isolatedPage, 'Withdraw');

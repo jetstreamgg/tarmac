@@ -2,7 +2,7 @@ import { StatsCard } from '@/modules/ui/components/StatsCard';
 import { msg } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react';
 import { formatBigInt } from '@/utils';
-import { Token } from '@/hooks';
+import { Token, VaultProvider } from '@/hooks';
 import { TokenIconWithBalance } from '@/modules/ui/components/TokenIconWithBalance';
 import { PopoverRateInfo as PopoverInfo } from '@/widgets';
 import { useChainId } from 'wagmi';
@@ -12,17 +12,24 @@ type MorphoMarketLiquidityCardProps = {
   isLoading: boolean;
   error?: Error | null;
   assetToken: Token;
+  /** Which provider operates the vault. Drives the liquidity tooltip wording. Defaults to Morpho. */
+  provider?: VaultProvider;
 };
 
 export function MorphoMarketLiquidityCard({
   liquidity,
   isLoading,
   error,
-  assetToken
+  assetToken,
+  provider = 'morpho'
 }: MorphoMarketLiquidityCardProps) {
   const { i18n } = useLingui();
   const chainId = useChainId();
-  const liquidityTooltip = `The amount of ${assetToken.symbol} currently idle in the Morpho market and available for immediate withdrawal or new borrowing.`;
+  // Spark/Tether vaults expose instant-withdrawal liquidity, not a Morpho market.
+  const liquidityTooltip =
+    provider === 'sky'
+      ? `The amount of ${assetToken.symbol} currently available for instant withdrawal.`
+      : `The amount of ${assetToken.symbol} currently idle in the Morpho market and available for immediate withdrawal or new borrowing.`;
 
   const assetDecimals =
     typeof assetToken.decimals === 'number'

@@ -13,12 +13,12 @@ import { VaultProvider } from '@/hooks/vaults/types';
  */
 const VAULT_MODULE_BY_PROVIDER: Record<VaultProvider, string> = {
   morpho: 'morpho',
-  spark: 'spark'
+  sky: 'sky'
 };
 
 const INTENT_BY_PROVIDER: Record<VaultProvider, VaultsIntent> = {
   morpho: VaultsIntent.MORPHO_VAULT_INTENT,
-  spark: VaultsIntent.SPARK_VAULT_INTENT
+  sky: VaultsIntent.SKY_VAULT_INTENT
 };
 
 const PROVIDERS = Object.keys(VAULT_MODULE_BY_PROVIDER) as VaultProvider[];

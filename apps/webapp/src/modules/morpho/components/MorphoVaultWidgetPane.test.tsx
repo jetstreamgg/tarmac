@@ -92,7 +92,7 @@ function renderComponent(ui: ReactNode) {
   };
 }
 
-function renderPane(provider: 'morpho' | 'spark') {
+function renderPane(provider: 'morpho' | 'sky') {
   return renderComponent(
     <MorphoVaultWidgetPane
       {...({} as any)}
@@ -112,9 +112,9 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
     setSearchParamsMock.mockClear();
   });
 
-  it('writes amount + flow params for a Spark vault when vault_module=spark', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=spark');
-    renderPane('spark');
+  it('writes amount + flow params for a Spark vault when vault_module=sky', () => {
+    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky');
+    renderPane('sky');
 
     act(() => {
       captured.onWidgetStateChange?.({
@@ -145,8 +145,8 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
   });
 
   it('clears the amount param when the amount is emptied on a Spark vault', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=spark&input_amount=100');
-    renderPane('spark');
+    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky&input_amount=100');
+    renderPane('sky');
 
     act(() => {
       captured.onWidgetStateChange?.({
@@ -162,7 +162,7 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
   it('does nothing when the vault_module does not match the open vault provider', () => {
     // Spark vault but URL still carries vault_module=morpho — a stale/foreign module.
     mockSearchParams = new URLSearchParams('widget=vaults&vault_module=morpho');
-    renderPane('spark');
+    renderPane('sky');
 
     act(() => {
       captured.onWidgetStateChange?.({

@@ -8,7 +8,7 @@ import {
 } from '@/widgets/components/ui/tooltip';
 import { cn } from '@/widgets/lib/utils';
 import { Morpho as MorphoIcon } from '@/widgets/shared/components/icons/Morpho';
-import { Spark as SparkIcon } from '@/widgets/shared/components/icons/Spark';
+import { Sky as SkyIcon } from '@/widgets/shared/components/icons/Sky';
 import { Text } from '@/widgets/shared/components/ui/Typography';
 import { VaultProvider } from '@/hooks';
 
@@ -20,20 +20,20 @@ type VaultPoweredByBadgeProps = {
 
 /**
  * Provider-aware "Powered by" badge. Renders the provider's icon + tooltip.
- * The Spark variant is added in slice 02 (sUSDT vault registration).
+ * The Sky variant covers the sUSDT vault (Sky-branded, Spark-powered).
  */
 export const VaultPoweredByBadge = ({ provider, className }: VaultPoweredByBadgeProps) => {
   switch (provider) {
-    case 'spark':
+    case 'sky':
       return (
         <Tooltip>
           <TooltipTrigger asChild>
-            <SparkIcon className={cn('h-4.5 w-4.5 rounded-sm', className)} />
+            <SkyIcon className={cn('h-4.5 w-4.5 rounded-full', className)} />
           </TooltipTrigger>
           <TooltipPortal>
             <TooltipContent arrowPadding={10} className="max-w-[260px]">
               <Text variant="small">
-                <Trans>Vault powered by Spark</Trans>
+                <Trans>Vault powered by Sky</Trans>
               </Text>
               <TooltipArrow width={12} height={8} />
             </TooltipContent>

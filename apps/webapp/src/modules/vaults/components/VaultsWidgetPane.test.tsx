@@ -145,14 +145,14 @@ describe('VaultsWidgetPane card-select URL build', () => {
     setSearchParamsMock.mockClear();
   });
 
-  it('writes vault_module=spark and the vault address when the Spark vault card is selected', () => {
+  it('writes vault_module=sky and the vault address when the Spark vault card is selected', () => {
     const { container } = renderComponent(
       <VaultsWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
     );
 
     clickButtonByText(container, /Tether Savings/i);
 
-    expect(mockSearchParams.get('vault_module')).toBe('spark');
+    expect(mockSearchParams.get('vault_module')).toBe('sky');
     expect(mockSearchParams.get('vault')?.toLowerCase()).toBe(SPARK_USDT_VAULT_ADDRESS.toLowerCase());
   });
 

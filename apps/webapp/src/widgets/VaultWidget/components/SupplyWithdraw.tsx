@@ -118,6 +118,13 @@ export const SupplyWithdraw = ({
   const { isConnected } = useConnection();
   const isConnectedAndEnabled = useMemo(() => isConnected && enabled, [isConnected, enabled]);
 
+  // Liquidity copy is provider-specific: Spark/Tether vaults expose instant-withdrawal liquidity,
+  // not a Morpho market, so override the default `morpho-liquidity` tooltip for non-Morpho providers.
+  const liquidityTooltipOverride =
+    provider === 'sky'
+      ? { description: t`The amount of ${assetToken.symbol} currently available for instant withdrawal.` }
+      : undefined;
+
   // Calculate final balances after transaction
   const finalAssetBalance =
     widgetState.flow === VaultFlow.SUPPLY ? (assetBalance || 0n) - amount : (assetBalance || 0n) + amount;
@@ -260,7 +267,11 @@ export const SupplyWithdraw = ({
             />
             {!isVaultDataLoading && isLiquidityConstrained && maxWithdraw === 0n && (
               <div className="mt-2 ml-3 flex items-start text-amber-400">
-                <PopoverRateInfo type="morphoLiquidity" iconClassName="mt-1 shrink-0 text-amber-400" />
+                <PopoverRateInfo
+                  type="morphoLiquidity"
+                  tooltipOverride={liquidityTooltipOverride}
+                  iconClassName="mt-1 shrink-0 text-amber-400"
+                />
                 <Text variant="small" className="ml-2 flex gap-2">
                   <Trans>Withdrawals are temporarily unavailable due to liquidity constraints.</Trans>
                 </Text>
@@ -268,7 +279,11 @@ export const SupplyWithdraw = ({
             )}
             {!isVaultDataLoading && isLiquidityDataUnavailable && (
               <div className="mt-2 ml-3 flex items-start text-white">
-                <PopoverRateInfo type="morphoLiquidity" iconClassName="mt-1 shrink-0 text-white" />
+                <PopoverRateInfo
+                  type="morphoLiquidity"
+                  tooltipOverride={liquidityTooltipOverride}
+                  iconClassName="mt-1 shrink-0 text-white"
+                />
                 <Text variant="small" className="ml-2 flex gap-2">
                   <Trans>
                     Liquidity data is temporarily unavailable. Withdrawals may be limited by available
@@ -282,7 +297,11 @@ export const SupplyWithdraw = ({
               maxWithdraw !== undefined &&
               maxWithdraw > 0n && (
                 <div className="mt-2 ml-3 flex items-start text-white">
-                  <PopoverRateInfo type="morphoLiquidity" iconClassName="mt-1 shrink-0 text-white" />
+                  <PopoverRateInfo
+                    type="morphoLiquidity"
+                    tooltipOverride={liquidityTooltipOverride}
+                    iconClassName="mt-1 shrink-0 text-white"
+                  />
                   <Text variant="small" className="ml-2 flex gap-2">
                     <Trans>You cannot withdraw your full balance due to current liquidity limits.</Trans>
                   </Text>
@@ -298,7 +317,7 @@ export const SupplyWithdraw = ({
           isFetching={false}
           fetchingMessage={t`Fetching transaction details`}
           onExternalLinkClicked={onExternalLinkClicked}
-          rateType="morpho"
+          rateType={provider === 'sky' ? 'sky' : 'morpho'}
           transactionData={[
             {
               label: tabIndex === 0 ? t`You will supply` : t`You will withdraw`,

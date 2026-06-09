@@ -113,7 +113,7 @@ const VaultWidgetWrapped = ({
 
   // Spark exposes its rate on-chain (Vault Savings Rate); read it directly instead of the API.
   const { formattedRate: sparkRate } = useSparkVaultRate({
-    vaultAddress: provider === 'spark' ? vaultAddress : undefined
+    vaultAddress: provider === 'sky' ? vaultAddress : undefined
   });
 
   const userAssets = vaultData?.userAssets ?? 0n;

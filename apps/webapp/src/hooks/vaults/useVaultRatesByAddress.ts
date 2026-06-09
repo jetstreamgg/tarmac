@@ -25,7 +25,7 @@ export function useVaultRatesByAddress(): VaultRatesByAddressHook {
   const chainIdToUse = isTestnetId(connectedChainId) ? chainId.tenderly : chainId.mainnet;
 
   const byProvider = useMemo(() => {
-    const partition: Record<VaultProvider, { address: `0x${string}` }[]> = { morpho: [], spark: [] };
+    const partition: Record<VaultProvider, { address: `0x${string}` }[]> = { morpho: [], sky: [] };
     for (const vault of VAULTS) {
       const address = vault.vaultAddress[chainIdToUse];
       if (address) partition[vault.provider].push({ address });
@@ -39,13 +39,13 @@ export function useVaultRatesByAddress(): VaultRatesByAddressHook {
 
   const sparkContracts = useMemo(
     () =>
-      byProvider.spark.map(({ address }) => ({
+      byProvider.sky.map(({ address }) => ({
         address,
         abi: sparkVaultAbi,
         functionName: 'vsr' as const,
         chainId: chainIdToUse
       })),
-    [byProvider.spark, chainIdToUse]
+    [byProvider.sky, chainIdToUse]
   );
 
   const { data: sparkVsrResults, isLoading: sparkLoading } = useReadContracts({
@@ -62,8 +62,8 @@ export function useVaultRatesByAddress(): VaultRatesByAddressHook {
         address,
         netRate: morphoRateByAddress.get(address.toLowerCase())
       })),
-      ...byProvider.spark.map(({ address }, i) => ({
-        provider: 'spark' as const,
+      ...byProvider.sky.map(({ address }, i) => ({
+        provider: 'sky' as const,
         address,
         vsr: sparkVsrResults?.[i]?.status === 'success' ? (sparkVsrResults[i].result as bigint) : undefined
       }))

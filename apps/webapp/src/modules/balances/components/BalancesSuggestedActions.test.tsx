@@ -128,7 +128,7 @@ describe('BalancesSuggestedActions', () => {
 
     expect(mockSearchParams.get('widget')).toBe('vaults');
     expect(mockSearchParams.get('vault')).toBe(SPARK_USDT_VAULT_ADDRESS);
-    expect(mockSearchParams.get('vault_module')).toBe('spark');
+    expect(mockSearchParams.get('vault_module')).toBe('sky');
     expect(mockSearchParams.get('network')).toBe('ethereum');
     expect(mockSearchParams.get('lang')).toBe('en');
   });

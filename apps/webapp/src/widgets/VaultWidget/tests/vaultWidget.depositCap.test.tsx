@@ -50,13 +50,13 @@ describe('VaultWidget deposit cap', () => {
         assetAddress="0xdAC17F958D2ee523a2206206994597C13D831ec7"
         assetToken={TOKENS.usdt}
         vaultName="Tether Savings"
-        provider="spark"
+        provider="sky"
       />,
       { wrapper: WagmiWrapper }
     );
 
     // getByTestId throws if absent, so reaching the assertion means it rendered.
-    const capNotice = await screen.findByTestId('deposit-cap-reached-spark', undefined, {
+    const capNotice = await screen.findByTestId('deposit-cap-reached-sky', undefined, {
       timeout: 10000
     });
     expect(capNotice).toBeTruthy();

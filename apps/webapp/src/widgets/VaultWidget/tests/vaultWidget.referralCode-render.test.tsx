@@ -36,14 +36,14 @@ describe('VaultWidget referralCode render-layer parity', () => {
     captured.params = undefined;
   });
 
-  it('forwards provider="spark" and the REFERRAL_CODE constant to useVaultTransactions', async () => {
+  it('forwards provider="sky" and the REFERRAL_CODE constant to useVaultTransactions', async () => {
     render(
       <VaultWidget
         vaultAddress="0x74cb54e082411cfCAEADb00a0765625B10410DAa"
         assetAddress="0xdAC17F958D2ee523a2206206994597C13D831ec7"
         assetToken={TOKENS.usdt}
         vaultName="Tether Savings"
-        provider="spark"
+        provider="sky"
       />,
       { wrapper: WagmiWrapper }
     );
@@ -51,7 +51,7 @@ describe('VaultWidget referralCode render-layer parity', () => {
     await waitFor(() => {
       expect(captured.params).toBeDefined();
     });
-    expect(captured.params?.provider).toBe('spark');
+    expect(captured.params?.provider).toBe('sky');
     expect(captured.params?.referralCode).toBe(REFERRAL_CODE);
     expect(typeof captured.params?.referralCode).toBe('number');
   });

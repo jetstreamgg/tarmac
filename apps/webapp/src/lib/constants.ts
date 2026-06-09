@@ -56,7 +56,7 @@ export const ExpertIntentMapping: Record<ExpertIntent, string> = {
 
 export const VaultsIntentMapping: Record<VaultsIntent, string> = {
   [VaultsIntent.MORPHO_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.MORPHO_VAULT_INTENT),
-  [VaultsIntent.SPARK_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.SPARK_VAULT_INTENT)
+  [VaultsIntent.SKY_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.SKY_VAULT_INTENT)
 };
 
 export const ConvertIntentMapping: Record<ConvertIntent, string> = {
