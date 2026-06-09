@@ -130,12 +130,6 @@ To format the project, use `pnpm prettier`.
 
 There's also a precommit hook that runs eslint and prettier on all staged files.
 
-## Additional Docs
-
-For more detailed information, you can refer to the following documents in the `docs` folder:
-
-- [User Suggested Actions Construction](docs/generating-user-actions.md): This document explains how the `fetchUserSuggestedActions` function generates personalized actions for users based on their token balances and available reward opportunities.
-
 ## Internationalization and Translation
 
 This application supports i18n and translations via the Lingui package. To add content that can be translated, you need to follow three simple steps:
