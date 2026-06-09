@@ -4,7 +4,6 @@ import { IconProps } from '@/widgets/shared/components/icons/Icon';
 
 export type SharedProps = {
   rightHeaderComponent: React.JSX.Element;
-  shouldReset: boolean;
 };
 
 export type WidgetSubItem = {

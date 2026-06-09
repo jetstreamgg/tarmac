@@ -452,7 +452,6 @@ export function BalancesSuggestedActions({
       const isNetworkChange = targetNetworkName !== networkName;
 
       const params = new URLSearchParams(action.url.replace(/^\?/, ''));
-      params.delete(QueryParams.InputAmount);
       params.set(QueryParams.Network, targetNetworkName);
 
       // Show switching UI if changing networks

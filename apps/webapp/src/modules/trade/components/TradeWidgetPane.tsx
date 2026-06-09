@@ -41,8 +41,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     txStatus,
     widgetState,
     originToken,
-    targetToken,
-    originAmount
+    targetToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
@@ -54,25 +53,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
 
     if (!isTradeContext) {
       return;
-    }
-
-    // Update search params
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(
-        prev => {
-          prev.set(QueryParams.InputAmount, originAmount);
-          return prev;
-        },
-        { replace: true }
-      );
-    } else if (originAmount === '') {
-      setSearchParams(
-        prev => {
-          prev.delete(QueryParams.InputAmount);
-          return prev;
-        },
-        { replace: true }
-      );
     }
 
     if (originToken) {

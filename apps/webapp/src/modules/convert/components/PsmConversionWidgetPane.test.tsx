@@ -49,14 +49,11 @@ vi.mock('react-router-dom', () => ({
 
 describe('PsmConversionWidgetPane', () => {
   const sharedProps = {
-    rightHeaderComponent: <div />,
-    shouldReset: false
+    rightHeaderComponent: <div />
   };
 
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams(
-      'widget=convert&convert_module=psm&source_token=USDC&input_amount=10'
-    );
+    mockSearchParams = new URLSearchParams('widget=convert&convert_module=psm&source_token=USDC');
     capturedWidgetProps = undefined;
     setSearchParamsMock.mockClear();
     setSelectedConvertOptionMock.mockClear();
@@ -66,12 +63,11 @@ describe('PsmConversionWidgetPane', () => {
     render(<PsmConversionWidgetPane {...sharedProps} />);
 
     expect(capturedWidgetProps?.externalWidgetState).toEqual({
-      amount: '10',
       token: 'USDC'
     });
   });
 
-  it('syncs updated widget state back into URL params in psm context', () => {
+  it('syncs updated source token back into URL params in psm context', () => {
     render(<PsmConversionWidgetPane {...sharedProps} />);
 
     capturedWidgetProps?.onWidgetStateChange({
@@ -80,7 +76,7 @@ describe('PsmConversionWidgetPane', () => {
     });
 
     expect(mockSearchParams.get('source_token')).toBe('USDS');
-    expect(mockSearchParams.get('input_amount')).toBe('25');
+    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(setSearchParamsMock).toHaveBeenCalledTimes(1);
   });
 
@@ -108,13 +104,12 @@ describe('PsmConversionWidgetPane', () => {
     expect(setSearchParamsMock).not.toHaveBeenCalled();
   });
 
-  it('clears convert_module and input_amount when navigating back to convert landing', () => {
+  it('clears convert_module when navigating back to convert landing', () => {
     render(<PsmConversionWidgetPane {...sharedProps} />);
 
     capturedWidgetProps?.onBackToConvert();
 
     expect(mockSearchParams.get('convert_module')).toBeNull();
-    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(setSelectedConvertOptionMock).toHaveBeenCalledWith(undefined);
   });
 });

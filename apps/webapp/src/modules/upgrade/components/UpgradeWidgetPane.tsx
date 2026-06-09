@@ -65,8 +65,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     hash,
     txStatus,
     widgetState,
-    originToken,
-    originAmount
+    originToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
@@ -104,24 +103,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
       setSearchParams(
         prev => {
           prev.delete(QueryParams.SourceToken);
-          return prev;
-        },
-        { replace: true }
-      );
-    }
-
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(
-        prev => {
-          prev.set(QueryParams.InputAmount, originAmount);
-          return prev;
-        },
-        { replace: true }
-      );
-    } else if (originAmount === '') {
-      setSearchParams(
-        prev => {
-          prev.delete(QueryParams.InputAmount);
           return prev;
         },
         { replace: true }

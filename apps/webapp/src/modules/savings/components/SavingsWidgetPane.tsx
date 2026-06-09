@@ -28,31 +28,11 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     hash,
     txStatus,
     widgetState,
-    originToken,
-    originAmount
+    originToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SAVINGS_INTENT]) {
       return;
-    }
-
-    // Update amount in URL if provided and not zero
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(
-        prev => {
-          prev.set(QueryParams.InputAmount, originAmount);
-          return prev;
-        },
-        { replace: true }
-      );
-    } else if (originAmount === '') {
-      setSearchParams(
-        prev => {
-          prev.delete(QueryParams.InputAmount);
-          return prev;
-        },
-        { replace: true }
-      );
     }
 
     // Update source token in URL if provided

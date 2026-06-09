@@ -35,24 +35,11 @@ export function MorphoVaultWidgetPane({
   const currentVaultAddress = vaultAddress[chainId];
   const currentAssetAddress = assetToken.address[chainId as keyof typeof assetToken.address];
 
-  const onMorphoVaultWidgetStateChange = ({ widgetState, originAmount }: WidgetStateChangeParams) => {
+  const onMorphoVaultWidgetStateChange = ({ widgetState }: WidgetStateChangeParams) => {
     // Prevent race conditions: only sync when the URL's module matches this
     // vault's own provider (Spark → `spark`, Morpho → `morpho`).
     if (searchParams.get(QueryParams.VaultModule) !== vaultModuleForProvider(provider)) {
       return;
-    }
-
-    // Update amount in URL if provided and not zero
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(prev => {
-        prev.set(QueryParams.InputAmount, originAmount);
-        return prev;
-      });
-    } else if (originAmount === '') {
-      setSearchParams(prev => {
-        prev.delete(QueryParams.InputAmount);
-        return prev;
-      });
     }
 
     // Set flow search param based on widgetState.flow

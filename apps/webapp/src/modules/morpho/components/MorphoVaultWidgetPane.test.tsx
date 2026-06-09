@@ -112,7 +112,7 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
     setSearchParamsMock.mockClear();
   });
 
-  it('writes amount + flow params for a Spark vault when vault_module=sky', () => {
+  it('writes flow param (and never input_amount) for a Spark vault when vault_module=sky', () => {
     mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky');
     renderPane('sky');
 
@@ -124,11 +124,11 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
       });
     });
 
-    expect(mockSearchParams.get('input_amount')).toBe('100');
+    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(mockSearchParams.get('flow')).toBe('withdraw');
   });
 
-  it('writes amount + flow params for a Morpho vault when vault_module=morpho (unchanged)', () => {
+  it('writes flow param (and never input_amount) for a Morpho vault when vault_module=morpho', () => {
     mockSearchParams = new URLSearchParams('widget=vaults&vault_module=morpho');
     renderPane('morpho');
 
@@ -140,23 +140,8 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
       });
     });
 
-    expect(mockSearchParams.get('input_amount')).toBe('250');
-    expect(mockSearchParams.get('flow')).toBe('supply');
-  });
-
-  it('clears the amount param when the amount is emptied on a Spark vault', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky&input_amount=100');
-    renderPane('sky');
-
-    act(() => {
-      captured.onWidgetStateChange?.({
-        txStatus: 'idle',
-        widgetState: {},
-        originAmount: ''
-      });
-    });
-
     expect(mockSearchParams.get('input_amount')).toBeNull();
+    expect(mockSearchParams.get('flow')).toBe('supply');
   });
 
   it('does nothing when the vault_module does not match the open vault provider', () => {
@@ -172,7 +157,6 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
       });
     });
 
-    expect(mockSearchParams.get('input_amount')).toBeNull();
     expect(mockSearchParams.get('flow')).toBeNull();
   });
 });

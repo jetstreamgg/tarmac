@@ -195,8 +195,7 @@ function renderComponent(ui: ReactNode) {
 }
 
 const sharedProps = {
-  rightHeaderComponent: <span />,
-  shouldReset: false
+  rightHeaderComponent: <span />
 };
 
 const cardAddresses = (container: HTMLElement): string[] =>

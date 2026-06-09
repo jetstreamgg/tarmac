@@ -1,5 +1,5 @@
 import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@/hooks';
-import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
+import { SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
 import {
   QueryParams,
   IntentMapping,
@@ -114,19 +114,6 @@ export const validateSearchParams = (
     if (widget === IntentMapping[Intent.REWARDS_INTENT]) {
       if (!searchParams.get(QueryParams.Reward)) {
         setSelectedRewardContract(undefined);
-        searchParams.delete(QueryParams.InputAmount);
-      }
-
-      // if the flow is claim, remove the flow param as it's only used by the chatbot
-      if (searchParams.get(QueryParams.Flow) === RewardsFlow.CLAIM) {
-        searchParams.delete(QueryParams.Flow);
-      }
-    }
-
-    if (widget === IntentMapping[Intent.STAKE_INTENT]) {
-      // if the flow is claim, remove the flow param as it's only used by the chatbot
-      if (searchParams.get(QueryParams.Flow) === StakeFlow.CLAIM) {
-        searchParams.delete(QueryParams.Flow);
       }
     }
 
@@ -153,7 +140,6 @@ export const validateSearchParams = (
     if (widget === IntentMapping[Intent.EXPERT_INTENT]) {
       if (!searchParams.get(QueryParams.ExpertModule)) {
         setSelectedExpertOption(undefined);
-        searchParams.delete(QueryParams.InputAmount);
       }
     }
 
@@ -179,7 +165,6 @@ export const validateSearchParams = (
     if (widget === IntentMapping[Intent.VAULTS_INTENT]) {
       if (!searchParams.get(QueryParams.VaultModule)) {
         setSelectedVaultsOption(undefined);
-        searchParams.delete(QueryParams.InputAmount);
       }
     }
 
@@ -314,21 +299,6 @@ export const validateSearchParams = (
       }
     }
 
-    // validate input amount
-    if (key === QueryParams.InputAmount) {
-      // check if input amount is not a valid number or is negative
-      if (isNaN(Number(value)) || Number(value) <= 0) {
-        searchParams.delete(key);
-      }
-    }
-
-    // removes reset param
-    if (key === QueryParams.Reset) {
-      setTimeout(() => {
-        // wait for the widget to reset
-        searchParams.delete(key);
-      }, 500);
-    }
   });
 
   return searchParams;

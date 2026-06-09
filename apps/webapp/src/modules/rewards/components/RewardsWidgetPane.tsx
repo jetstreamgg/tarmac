@@ -43,8 +43,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
   const onRewardsWidgetStateChange = ({
     hash,
     txStatus,
-    widgetState,
-    originAmount
+    widgetState
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
@@ -57,25 +56,6 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
       setSearchParams(
         prev => {
           prev.set(QueryParams.Flow, flow);
-          return prev;
-        },
-        { replace: true }
-      );
-    }
-
-    // Update amount in URL if provided and not zero
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(
-        prev => {
-          prev.set(QueryParams.InputAmount, originAmount);
-          return prev;
-        },
-        { replace: true }
-      );
-    } else if (originAmount === '') {
-      setSearchParams(
-        prev => {
-          prev.delete(QueryParams.InputAmount);
           return prev;
         },
         { replace: true }
