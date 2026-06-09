@@ -153,7 +153,7 @@ test('Details pane shows correct history data and layout subsections', async ({ 
 });
 
 test('Rewards overview cards redirect to the correct reward contract', async ({ isolatedPage }) => {
-  await isolatedPage.goto('/?widget=balances');
+  await isolatedPage.goto('/');
   await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
 
   const firstWidgetRewards = isolatedPage

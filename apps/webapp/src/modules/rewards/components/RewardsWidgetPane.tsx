@@ -1,11 +1,12 @@
-import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
+import { useNavigate } from '@tanstack/react-router';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
-import { useAppSearchParams } from '@/lib/router';
+import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/router';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
@@ -17,32 +18,32 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
   });
 
   const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
+  const intent = useRouteIntent();
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;
 
   const onRewardContractChange = (rewardContract?: RewardContract) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
+    if (intent !== Intent.REWARDS_INTENT) {
       return;
     }
 
-    setSearchParams(
-      params => {
-        if (rewardContract?.contractAddress) {
-          params.set(QueryParams.Widget, IntentMapping[Intent.REWARDS_INTENT]);
-          params.set(QueryParams.Reward, rewardContract.contractAddress);
-        } else {
-          params.delete(QueryParams.Reward);
-        }
-        return params;
-      },
-      { replace: true }
-    );
+    if (rewardContract?.contractAddress) {
+      void navigate({
+        to: '/rewards/$rewardContract',
+        params: { rewardContract: rewardContract.contractAddress },
+        search: keepSearch,
+        replace: true
+      });
+    } else {
+      void navigate({ to: '/rewards', search: keepSearch, replace: true });
+    }
     setSelectedRewardContract(rewardContract);
   };
 
   const onRewardsWidgetStateChange = ({ hash, txStatus, widgetState }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
+    if (intent !== Intent.REWARDS_INTENT) {
       return;
     }
 

@@ -5,9 +5,9 @@ import { getChainIcon, isMainnetId } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
-import { useAppSearchParams } from '@/lib/router';
-import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
-import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
+import { useNavigate } from '@tanstack/react-router';
+import { INTENT_PATHS, retainOnNavigate } from '@/lib/router';
+import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { WidgetSubItem } from '@/modules/app/types/Widgets';
@@ -44,11 +44,18 @@ export function WidgetMenuItemTooltip({
   children
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
-  const [, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
 
   const getMainnetChainId = (supportedChainIds: number[]) =>
     supportedChainIds.find(isMainnetId) || supportedChainIds[0];
+
+  const navigateRetaining = (to: string, network: string) => {
+    void navigate({
+      to,
+      search: prev => ({ ...retainOnNavigate(prev), [QueryParams.Network]: network })
+    });
+  };
 
   const handleSubItemClick = (subItem: WidgetSubItem) => {
     if (!currentChainId) return;
@@ -64,15 +71,7 @@ export function WidgetMenuItemTooltip({
     if (!targetChain) return;
 
     setIsSwitchingNetwork(currentChainId !== targetChainId);
-    setSearchParams(prevParams => {
-      const searchParams = deleteSearchParams(prevParams);
-      searchParams.set(QueryParams.Network, normalizeUrlParam(targetChain.name));
-      searchParams.set(QueryParams.Widget, mapIntentToQueryParam(widgetIntent));
-      Object.entries(subItem.params).forEach(([key, value]) => {
-        searchParams.set(key, value);
-      });
-      return searchParams;
-    });
+    navigateRetaining(subItem.to, normalizeUrlParam(targetChain.name));
   };
 
   const handleNetworkSwitch = (chainId: number) => {
@@ -80,12 +79,7 @@ export function WidgetMenuItemTooltip({
     const chain = chains.find(c => c.id === chainId);
     if (chain) {
       setIsSwitchingNetwork(currentChainId !== chainId);
-      setSearchParams(prevParams => {
-        const searchParams = deleteSearchParams(prevParams);
-        searchParams.set(QueryParams.Network, normalizeUrlParam(chain.name));
-        searchParams.set(QueryParams.Widget, mapIntentToQueryParam(widgetIntent));
-        return searchParams;
-      });
+      navigateRetaining(INTENT_PATHS[widgetIntent], normalizeUrlParam(chain.name));
     }
   };
 

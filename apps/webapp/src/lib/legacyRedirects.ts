@@ -1,0 +1,106 @@
+import { Intent, ConvertIntent, ExpertIntent, FixedIntent } from '@/lib/enums';
+import {
+  ConvertIntentMapping,
+  ExpertIntentMapping,
+  FixedIntentMapping,
+  IntentMapping,
+  QueryParams
+} from '@/lib/constants';
+import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+
+// Param names of the retired query-param navigation scheme. Kept as local
+// literals: they are intentionally absent from QueryParams.
+const LegacyParams = {
+  Widget: 'widget',
+  ConvertModule: 'convert_module',
+  ExpertModule: 'expert_module',
+  VaultModule: 'vault_module',
+  Vault: 'vault',
+  FixedModule: 'fixed_module',
+  Market: 'market',
+  Reward: 'reward'
+} as const;
+
+export type LegacyRedirect = { to: string; search: Record<string, string> };
+
+const CONVERT_MODULE_VALUES = Object.values(ConvertIntentMapping);
+
+/**
+ * Translates pre-path-navigation URLs (?widget=...&convert_module=... etc.)
+ * into their path equivalents so external deep links and bookmarks keep
+ * working. Returns null when the search params carry no legacy navigation
+ * state. Entity values (reward contract, vault, market) are passed through
+ * verbatim — the target route's own validation handles invalid ones.
+ */
+export function legacySearchToLocation(search: Record<string, string>): LegacyRedirect | null {
+  const {
+    [LegacyParams.Widget]: widget,
+    [LegacyParams.ConvertModule]: convertModule,
+    [LegacyParams.ExpertModule]: expertModule,
+    [LegacyParams.VaultModule]: vaultModule,
+    [LegacyParams.Vault]: vault,
+    [LegacyParams.FixedModule]: fixedModule,
+    [LegacyParams.Market]: market,
+    [LegacyParams.Reward]: reward,
+    ...rest
+  } = search;
+
+  if (widget === undefined) return null;
+
+  let to: string;
+  switch (widget.toLowerCase()) {
+    case IntentMapping[Intent.SAVINGS_INTENT]:
+      to = '/savings';
+      break;
+    case IntentMapping[Intent.STAKE_INTENT]:
+      to = '/stake';
+      break;
+    case IntentMapping[Intent.REWARDS_INTENT]:
+      to = reward ? `/rewards/${reward}` : '/rewards';
+      break;
+    // Standalone trade was folded into Convert before this migration.
+    case IntentMapping[Intent.TRADE_INTENT]:
+      to = `/convert/${ConvertIntentMapping[ConvertIntent.TRADE_INTENT]}`;
+      break;
+    // Standalone upgrade only maps into Convert on mainnet (parity with the
+    // legacy rewrite); on other networks it was stripped, landing on Balances.
+    case IntentMapping[Intent.UPGRADE_INTENT]: {
+      const network = rest[QueryParams.Network];
+      to =
+        !network || normalizeUrlParam(network) === normalizeUrlParam('ethereum')
+          ? `/convert/${ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]}`
+          : '/';
+      break;
+    }
+    case IntentMapping[Intent.CONVERT_INTENT]: {
+      const module = convertModule?.toLowerCase();
+      to = module && CONVERT_MODULE_VALUES.includes(module) ? `/convert/${module}` : '/convert';
+      break;
+    }
+    case IntentMapping[Intent.EXPERT_INTENT]:
+      to =
+        expertModule?.toLowerCase() === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]
+          ? `/expert/${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
+          : '/expert';
+      break;
+    case IntentMapping[Intent.VAULTS_INTENT]: {
+      const provider = vaultModule ? providerForVaultModule(vaultModule) : undefined;
+      to = provider && vault ? `/vaults/${provider}/${vault}` : '/vaults';
+      break;
+    }
+    case IntentMapping[Intent.FIXED_INTENT]:
+      to =
+        fixedModule?.toLowerCase() === FixedIntentMapping[FixedIntent.MARKET_INTENT] && market
+          ? `/fixed/market/${market}`
+          : '/fixed';
+      break;
+    // balances and unknown widget values both land on the default module,
+    // matching the legacy validator that stripped unrecognised widgets.
+    default:
+      to = '/';
+      break;
+  }
+
+  return { to, search: rest };
+}

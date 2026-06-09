@@ -6,20 +6,18 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence } from 'motion/react';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
-import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping, QueryParams } from '@/lib/constants';
-import { useAppSearchParams } from '@/lib/router';
+import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping } from '@/lib/constants';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch } from '@/lib/router';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
   const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
-  const [, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
 
   const handleSelectExpertOption = (expertIntent: ExpertIntent) => {
-    setSearchParams(params => {
-      params.set(QueryParams.ExpertModule, ExpertIntentMapping[expertIntent]);
-      return params;
-    });
+    void navigate({ to: `/expert/${ExpertIntentMapping[expertIntent]}`, search: keepSearch });
     setSelectedExpertOption(expertIntent);
   };
 

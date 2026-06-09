@@ -1,25 +1,25 @@
 import { WidgetStateChangeParams, SavingsFlow, BalancesWidget, BalancesWidgetProps } from '@/widgets';
-import { useAppSearchParams } from '@/lib/router';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/router';
 import { useCallback } from 'react';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { IntentMapping, QueryParams } from '@/lib/constants';
+import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 
 export function BalancesWidgetPane(sharedProps: SharedProps & BalancesWidgetProps) {
   const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
+  const intent = useRouteIntent();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as SavingsFlow | undefined;
 
   const onExploreVaults = useCallback(() => {
-    setSearchParams(prev => {
-      prev.set(QueryParams.Widget, IntentMapping[Intent.VAULTS_INTENT]);
-      return prev;
-    });
-  }, [setSearchParams]);
+    void navigate({ to: '/vaults', search: keepSearch });
+  }, [navigate]);
 
   const onBalancesWidgetStateChange = ({ widgetState }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.BALANCES_INTENT]) {
+    if (intent !== Intent.BALANCES_INTENT) {
       return;
     }
 

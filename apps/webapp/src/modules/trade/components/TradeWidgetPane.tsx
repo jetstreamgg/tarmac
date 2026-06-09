@@ -2,10 +2,11 @@ import { TradeWidget, TxStatus, TradeAction, WidgetStateChangeParams, L2TradeWid
 import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId } from 'wagmi';
-import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useAppSearchParams } from '@/lib/router';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/router';
 import { useQueryClient } from '@tanstack/react-query';
 import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
@@ -17,7 +18,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const queryClient = useQueryClient();
   const { setSelectedConvertOption } = useConfigContext();
 
-  const [searchParams, setSearchParams] = useAppSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
 
   const isCowSupported = isCowSupportedChainId(chainId);
 
@@ -26,14 +27,13 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     ? restrictedTradeTokenList[chainId as keyof typeof restrictedTradeTokenList]
     : defaultConfig.tradeTokenList[chainId];
 
-  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-  const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
+  const intent = useRouteIntent();
+  const convertIntent = useRouteConvertIntent();
+  const navigate = useNavigate();
+  const isConvertContext = intent === Intent.CONVERT_INTENT;
 
   const handleBackToConvert = () => {
-    setSearchParams(params => {
-      params.delete(QueryParams.ConvertModule);
-      return params;
-    });
+    void navigate({ to: '/convert', search: keepSearch });
     setSelectedConvertOption(undefined);
   };
 
@@ -44,12 +44,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
     targetToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-    const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
-    const isTradeContext =
-      widgetParam === IntentMapping[Intent.TRADE_INTENT] ||
-      (widgetParam === IntentMapping[Intent.CONVERT_INTENT] &&
-        convertModuleParam === ConvertIntentMapping[ConvertIntent.TRADE_INTENT]);
+    const isTradeContext = intent === Intent.CONVERT_INTENT && convertIntent === ConvertIntent.TRADE_INTENT;
 
     if (!isTradeContext) {
       return;

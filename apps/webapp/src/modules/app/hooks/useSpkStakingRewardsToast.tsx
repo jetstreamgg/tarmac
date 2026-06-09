@@ -53,7 +53,7 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
                 variant="pill"
                 size="xs"
                 onClick={() => {
-                  navigate(`/?widget=stake&network=${networkParam}`);
+                  navigate(`/stake?network=${networkParam}`);
                   toast.dismiss(toastId);
                   onClose();
                 }}

@@ -12,7 +12,8 @@ import { AnimatePresence } from 'motion/react';
 import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPane';
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
-import { useAppSearchParams } from '@/lib/router';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useRouteConvertIntent } from '@/lib/router';
 import { Card, CardHeader } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Convert, Upgrade, Trade } from '@/modules/icons';
@@ -26,7 +27,8 @@ import { useGeoConfig } from '@/modules/geo-config';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
-  const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
+  const routeConvertIntent = useRouteConvertIntent();
   const { info, error } = useToast();
   const chainId = useChainId();
   const chains = useChains();
@@ -41,9 +43,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const shouldShowUpgradeOption = !isL2 || !isSafeWallet;
   const { trackConvertModuleSelected } = useAppAnalytics();
 
-  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
-    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
-  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
+  const activeConvertOption = routeConvertIntent ?? selectedConvertOption;
 
   const trackModuleSelection = (convertIntent: ConvertIntent) => {
     trackConvertModuleSelected({
@@ -59,12 +59,9 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   useEffect(() => {
     if (!isTradeEnabled && selectedConvertOption === ConvertIntent.TRADE_INTENT) {
       setSelectedConvertOption(undefined);
-      setSearchParams(params => {
-        params.delete(QueryParams.ConvertModule);
-        return params;
-      });
+      void navigate({ to: '/convert', search: keepSearch, replace: true });
     }
-  }, [isTradeEnabled, selectedConvertOption, setSelectedConvertOption, setSearchParams]);
+  }, [isTradeEnabled, selectedConvertOption, setSelectedConvertOption, navigate]);
   const cardInteractionClass = isPending
     ? 'pointer-events-none cursor-not-allowed opacity-60'
     : 'cursor-pointer';
@@ -86,10 +83,12 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
         {
           onSuccess: () => {
             trackModuleSelection(convertIntent);
-            setSearchParams(params => {
-              params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);
-              params.set(QueryParams.Network, normalizeUrlParam(mainnetChain.name));
-              return params;
+            void navigate({
+              to: `/convert/${ConvertIntentMapping[convertIntent]}`,
+              search: prev => ({
+                ...keepSearch(prev),
+                [QueryParams.Network]: normalizeUrlParam(mainnetChain.name)
+              })
             });
             setSelectedConvertOption(convertIntent);
           },
@@ -110,10 +109,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
 
     trackModuleSelection(convertIntent);
 
-    setSearchParams(params => {
-      params.set(QueryParams.ConvertModule, ConvertIntentMapping[convertIntent]);
-      return params;
-    });
+    void navigate({ to: `/convert/${ConvertIntentMapping[convertIntent]}`, search: keepSearch });
     setSelectedConvertOption(convertIntent);
   };
 

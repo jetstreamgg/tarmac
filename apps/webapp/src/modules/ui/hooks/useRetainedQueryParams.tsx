@@ -30,7 +30,7 @@ export const getRetainedQueryParams = (
     urlObj.searchParams.set(key, value);
   });
 
-  return `/${urlObj.search}`;
+  return `${urlObj.pathname}${urlObj.search}`;
 };
 
 export const useRetainedQueryParams = (

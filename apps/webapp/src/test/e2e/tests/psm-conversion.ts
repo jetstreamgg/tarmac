@@ -666,14 +666,14 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
   test.describe('PSM Conversion — URL state', () => {
     test('Navigating directly via URL params loads PSM widget', async ({ isolatedPage }) => {
       if (isMainnet) {
-        await isolatedPage.goto('/?widget=convert&convert_module=psm');
+        await isolatedPage.goto('/convert/psm');
       } else {
-        await isolatedPage.goto('/?widget=convert&convert_module=psm');
+        await isolatedPage.goto('/convert/psm');
         await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
         await isolatedPage.waitForTimeout(1000);
         await switchToL2(isolatedPage, networkName);
         // Re-navigate after network switch
-        await isolatedPage.goto('/?widget=convert&convert_module=psm');
+        await isolatedPage.goto('/convert/psm');
       }
 
       await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
@@ -686,10 +686,10 @@ export const runPsmConversionTests = async ({ networkName }: { networkName: Netw
 
     test('URL params with source_token=USDS starts in USDS→USDC direction', async ({ isolatedPage }) => {
       if (isMainnet) {
-        await isolatedPage.goto('/?widget=convert&convert_module=psm&source_token=USDS');
+        await isolatedPage.goto('/convert/psm?source_token=USDS');
         await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
       } else {
-        await isolatedPage.goto('/?widget=convert&convert_module=psm&source_token=USDS');
+        await isolatedPage.goto('/convert/psm?source_token=USDS');
         await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
         await isolatedPage.waitForTimeout(1000);
         await switchToL2(isolatedPage, networkName);

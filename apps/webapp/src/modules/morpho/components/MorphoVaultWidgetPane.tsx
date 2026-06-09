@@ -3,7 +3,8 @@ import { Token, type VaultProvider } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useAppSearchParams } from '@/lib/router';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/router';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useChainId } from 'wagmi';
 
@@ -28,6 +29,8 @@ export function MorphoVaultWidgetPane({
   const chainId = useChainId();
   const { setSelectedVaultsOption } = useConfigContext();
   const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
+  const routeProvider = useRouteEntityParams().provider;
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as VaultFlow | undefined;
 
@@ -36,9 +39,9 @@ export function MorphoVaultWidgetPane({
   const currentAssetAddress = assetToken.address[chainId as keyof typeof assetToken.address];
 
   const onMorphoVaultWidgetStateChange = ({ widgetState }: WidgetStateChangeParams) => {
-    // Prevent race conditions: only sync when the URL's module matches this
-    // vault's own provider (Spark → `spark`, Morpho → `morpho`).
-    if (searchParams.get(QueryParams.VaultModule) !== vaultModuleForProvider(provider)) {
+    // Prevent race conditions: only sync when the route's provider segment
+    // matches this vault's own provider.
+    if (routeProvider !== vaultModuleForProvider(provider)) {
       return;
     }
 
@@ -53,11 +56,7 @@ export function MorphoVaultWidgetPane({
   };
 
   const handleBack = () => {
-    setSearchParams(params => {
-      params.delete(QueryParams.VaultModule);
-      params.delete(QueryParams.Vault);
-      return params;
-    });
+    void navigate({ to: '/vaults', search: keepSearch });
     setSelectedVaultsOption(undefined);
   };
 

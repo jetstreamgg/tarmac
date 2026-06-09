@@ -1,7 +1,7 @@
 import { Toggle } from '@/components/ui/toggle';
 import { Metrics } from '@/modules/icons';
-import { useAppSearchParams } from '@/lib/router';
-import { QueryParams } from '@/lib/constants';
+import { useAppSearchParams, useRouteIntent } from '@/lib/router';
+import { IntentMapping, QueryParams } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import {
   Tooltip,
@@ -16,12 +16,13 @@ import { JSX } from 'react';
 
 export function DetailsSwitcher(): JSX.Element {
   const [searchParams, setSearchParams] = useAppSearchParams();
+  const intent = useRouteIntent();
   const { trackDetailsPaneToggled } = useAppAnalytics();
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const handleSwitch = (pressed: boolean) => {
     trackDetailsPaneToggled({
       toggleAction: pressed ? 'open' : 'close',
-      activeWidget: searchParams.get(QueryParams.Widget) || 'balances'
+      activeWidget: IntentMapping[intent] || 'balances'
     });
     const queryParam = pressed ? 'true' : 'false';
     searchParams.set(QueryParams.Details, queryParam);

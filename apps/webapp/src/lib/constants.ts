@@ -5,23 +5,17 @@ import { MessageDescriptor } from '@lingui/core';
 import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
 import { tenderly } from '@/data/wagmi/config/config.default';
 
+// Navigation state (module, submodule, entity selection) lives in the path;
+// these are the params that remain query-driven.
 export enum QueryParams {
   Locale = 'lang',
-  Widget = 'widget',
   Details = 'details',
-  Reward = 'reward',
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
   Network = 'network',
   Flow = 'flow',
-  StakeTab = 'stake_tab',
-  ExpertModule = 'expert_module',
-  Vault = 'vault',
-  VaultModule = 'vault_module',
-  ConvertModule = 'convert_module',
-  Market = 'market',
-  FixedModule = 'fixed_module'
+  StakeTab = 'stake_tab'
 }
 
 export enum Environment {

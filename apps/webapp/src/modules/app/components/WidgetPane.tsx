@@ -11,18 +11,11 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import {
-  COMING_SOON_MAP,
-  QueryParams,
-  IntentMapping,
-  ExpertIntentMapping,
-  ConvertIntentMapping,
-  FixedIntentMapping
-} from '@/lib/constants';
+import { COMING_SOON_MAP, IntentMapping, ExpertIntentMapping, ConvertIntentMapping } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
-import { ExpertIntent, ConvertIntent, FixedIntent } from '@/lib/enums';
+import { ExpertIntent, ConvertIntent } from '@/lib/enums';
 import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -122,7 +115,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
           showChainIcon={false}
         />
       ),
-      params: { [QueryParams.Reward]: contract.contractAddress }
+      to: `/rewards/${contract.contractAddress}`
     }));
 
   // Vaults only exist on mainnet/testnet, so use appropriate chain based on environment
@@ -130,10 +123,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const vaultSubItems = VAULTS.filter(vault => vault.vaultAddress[vaultChainId]).map(vault => ({
     label: vault.name,
     icon: <TokenIcon token={{ symbol: vault.assetToken.symbol }} className="h-3 w-3" showChainIcon={false} />,
-    params: {
-      [QueryParams.VaultModule]: vaultModuleForProvider(vault.provider),
-      [QueryParams.Vault]: vault.vaultAddress[vaultChainId]
-    }
+    to: `/vaults/${vaultModuleForProvider(vault.provider)}/${vault.vaultAddress[vaultChainId]}`
   }));
 
   const pendleSubItems = PENDLE_MARKETS.filter(market => !isMarketMatured(market.expiry)).map(market => ({
@@ -145,10 +135,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         showChainIcon={false}
       />
     ),
-    params: {
-      [QueryParams.FixedModule]: FixedIntentMapping[FixedIntent.MARKET_INTENT],
-      [QueryParams.Market]: market.marketAddress
-    }
+    to: `/fixed/market/${market.marketAddress}`
   }));
 
   const widgetItems: WidgetItem[] = [
@@ -239,7 +226,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         {
           label: 'stUSDS',
           icon: <TokenIcon token={{ symbol: 'stUSDS' }} className="h-3 w-3" showChainIcon={false} />,
-          params: { [QueryParams.ExpertModule]: ExpertIntentMapping[ExpertIntent.STUSDS_INTENT] }
+          to: `/expert/${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`
         }
       ]
     ],
@@ -255,18 +242,18 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         {
           label: '1:1 Conversion',
           icon: <Convert className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.PSM_INTENT] }
+          to: `/convert/${ConvertIntentMapping[ConvertIntent.PSM_INTENT]}`
         },
         {
           label: 'Trade',
           icon: <Trade className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.TRADE_INTENT] },
+          to: `/convert/${ConvertIntentMapping[ConvertIntent.TRADE_INTENT]}`,
           intent: Intent.TRADE_INTENT
         },
         {
           label: 'Upgrade',
           icon: <Upgrade className="h-3 w-3" />,
-          params: { [QueryParams.ConvertModule]: ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT] },
+          to: `/convert/${ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]}`,
           intent: Intent.UPGRADE_INTENT
         }
       ]

@@ -53,7 +53,7 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
                 variant="pill"
                 size="xs"
                 onClick={() => {
-                  navigate(`/?widget=rewards&network=${networkParam}`);
+                  navigate(`/rewards?network=${networkParam}`);
                   toast.dismiss(toastId);
                   onClose();
                 }}

@@ -75,7 +75,7 @@ export function Header(): React.ReactElement {
       className={`flex w-full items-center justify-center px-3 py-2 min-h-[${HEADER_HEIGHT}px] max-h-[${HEADER_HEIGHT}px] md:mb-2`}
     >
       <div className="flex w-full items-center justify-between pr-0 pl-3 sm:px-5">
-        <AppLink to="/?widget=balances" title="Home page">
+        <AppLink to="/" title="Home page">
           <div className="min-w-[96px]">
             <img src={defaultConfig.logo} alt="logo" width={96} />
           </div>

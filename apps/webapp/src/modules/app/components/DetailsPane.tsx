@@ -6,9 +6,8 @@ import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { VaultDetails } from '@/modules/morpho/components/VaultDetails';
 import { VAULTS } from '@/hooks';
-import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
-import { useAppSearchParams } from '@/lib/router';
+import { useRouteConvertIntent, useRouteEntityParams } from '@/lib/router';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -53,15 +52,12 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
-  const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
+  const { selectedExpertOption, selectedVaultsOption } = useConfigContext();
   const chainId = useChainId();
-  const [searchParams] = useAppSearchParams();
-  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
-    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
-  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
+  const activeConvertOption = useRouteConvertIntent();
 
-  // Get the selected vault address from URL params (for multi-vault support)
-  const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
+  // Get the selected vault address from the route (for multi-vault support)
+  const selectedVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
   // Find the selected vault config, default to first vault if not specified
   const selectedVault =

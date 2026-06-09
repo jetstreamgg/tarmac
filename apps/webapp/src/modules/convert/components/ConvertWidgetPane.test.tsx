@@ -3,6 +3,7 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { createRoot } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ConvertIntent } from '@/lib/enums';
 import { ConvertWidgetPane } from './ConvertWidgetPane';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
@@ -27,6 +28,9 @@ const setSearchParamsMock = vi.fn(
       typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
   }
 );
+
+const navigateMock = vi.fn();
+let mockConvertIntent: ConvertIntent | undefined = undefined;
 
 vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
@@ -58,11 +62,20 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   })
 }));
 
+vi.mock('@tanstack/react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    useNavigate: () => navigateMock
+  };
+});
+
 vi.mock('@/lib/router', async importOriginal => {
   const actual = await importOriginal<typeof import('@/lib/router')>();
   return {
     ...actual,
-    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock],
+    useRouteConvertIntent: () => mockConvertIntent
   };
 });
 
@@ -236,8 +249,10 @@ describe('ConvertWidgetPane', () => {
     analyticsMocks.setSelectedConvertOption.mockReset();
     analyticsMocks.info.mockReset();
     analyticsMocks.error.mockReset();
-    mockSearchParams = new URLSearchParams('widget=convert');
+    mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
+    navigateMock.mockClear();
+    mockConvertIntent = undefined;
   });
 
   it('tracks convert-module selection when the Trade card is chosen', () => {
@@ -254,6 +269,7 @@ describe('ConvertWidgetPane', () => {
       entrySurface: 'convert_landing',
       chainId: 1
     });
+    expect(navigateMock).toHaveBeenCalledWith(expect.objectContaining({ to: '/convert/trade' }));
   });
 
   it('tracks convert-module selection when Upgrade is chosen after an L2 switch', () => {
@@ -272,5 +288,6 @@ describe('ConvertWidgetPane', () => {
       entrySurface: 'convert_landing',
       chainId: 8453
     });
+    expect(navigateMock).toHaveBeenCalledWith(expect.objectContaining({ to: '/convert/upgrade' }));
   });
 });
