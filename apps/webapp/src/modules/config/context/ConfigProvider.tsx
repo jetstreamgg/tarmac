@@ -5,12 +5,7 @@ import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
 import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
 import { dynamicActivate } from '@/utils';
 import { i18n } from '@lingui/core';
-import {
-  ConfigContext,
-  defaultLinkedActionConfig,
-  defaultUserConfig,
-  LinkedActionConfig
-} from './ConfigContext';
+import { ConfigContext, defaultUserConfig } from './ConfigContext';
 import { defaultConfig as siteConfig } from '../default-config';
 import { reportError } from '@/modules/sentry/reportError';
 
@@ -19,7 +14,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
   const [loaded, setLoaded] = useState<boolean>(false);
   const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [selectedStakeUrnIndex, setSelectedStakeUrnIndex] = useState<number | undefined>(undefined);
-  const [linkedActionConfig, setLinkedActionConfig] = useState(defaultLinkedActionConfig);
   const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
   const [externalLinkModalUrl, setExternalLinkModalUrl] = useState('');
   const [selectedExpertOption, setSelectedExpertOption] = useState<ExpertIntent | undefined>(undefined);
@@ -66,21 +60,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     setUserConfig(config);
     window.localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(config));
   };
-
-  const updateLinkedActionConfig = useCallback(
-    (config: Partial<LinkedActionConfig>) => {
-      setLinkedActionConfig(prevConfig => ({
-        ...prevConfig,
-        ...config
-      }));
-    },
-    [setLinkedActionConfig]
-  );
-
-  // Convenience function to safely exit linked action mode
-  const exitLinkedActionMode = useCallback(() => {
-    setLinkedActionConfig(defaultLinkedActionConfig);
-  }, [setLinkedActionConfig]);
 
   const locale = useMemo(() => {
     // const locale = userConfig.locale || 'en';
@@ -144,9 +123,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         setSelectedRewardContract,
         selectedStakeUrnIndex: selectedStakeUrnIndex,
         setSelectedStakeUrnIndex: setSelectedStakeUrnIndex,
-        linkedActionConfig,
-        updateLinkedActionConfig,
-        exitLinkedActionMode,
         externalLinkModalOpened,
         setExternalLinkModalOpened,
         externalLinkModalUrl,

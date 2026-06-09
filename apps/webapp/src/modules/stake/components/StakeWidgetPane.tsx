@@ -1,10 +1,8 @@
 import { TxStatus, WidgetStateChangeParams, StakeFlow, StakeModuleWidget, StakeAction } from '@/widgets';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
-import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@/hooks';
@@ -12,13 +10,7 @@ import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
 
 export function StakeWidgetPane(sharedProps: SharedProps) {
-  const {
-    linkedActionConfig,
-    updateLinkedActionConfig,
-    exitLinkedActionMode,
-    selectedStakeUrnIndex,
-    setSelectedStakeUrnIndex
-  } = useConfigContext();
+  const { selectedStakeUrnIndex, setSelectedStakeUrnIndex } = useConfigContext();
   const { mutate: refreshStakeHistory } = useStakeHistory();
   const [searchParams, setSearchParams] = useSearchParams();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
@@ -137,27 +129,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
       );
     }
 
-    // After a successful linked action open flow, set the final step to "success"
-    if (
-      widgetState.flow === StakeFlow.OPEN &&
-      txStatus === TxStatus.SUCCESS &&
-      linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
-    ) {
-      updateLinkedActionConfig({ step: LinkedActionSteps.COMPLETED_SUCCESS });
-    }
-
-    // Reset the linked action state and URL params after clicking "finish"
-    if (txStatus === TxStatus.IDLE && linkedActionConfig.step === LinkedActionSteps.COMPLETED_SUCCESS) {
-      exitLinkedActionMode();
-      setSearchParams(
-        prevParams => {
-          const params = deleteSearchParams(prevParams);
-          return params;
-        },
-        { replace: true }
-      );
-    }
-
     if (
       hash &&
       txStatus === TxStatus.SUCCESS &&
@@ -186,7 +157,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
           setShowHelpModal(true);
         }}
         externalWidgetState={{
-          amount: linkedActionConfig?.inputAmount,
           urnIndex: selectedStakeUrnIndex,
           stakeTab,
           flow

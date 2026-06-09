@@ -9,8 +9,6 @@ import { WidgetContent } from '../types/Widgets';
 import { AnimatePresence, motion } from 'motion/react';
 import { cardAnimations } from '@/modules/ui/animation/presets';
 import { AnimationLabels } from '@/modules/ui/animation/constants';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { LinkedActionWrapper } from '@/modules/ui/components/LinkedActionWrapper';
 import { cn } from '@/lib/utils';
 import { Menu, ChevronDown, Loader2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -78,9 +76,6 @@ export function WidgetNavigation({
       return updated;
     });
   }, []);
-  const {
-    linkedActionConfig: { showLinkedAction }
-  } = useConfigContext();
   const { isModuleEnabled } = useGeoConfig();
 
   // Scroll hint for vertical menu
@@ -198,7 +193,6 @@ export function WidgetNavigation({
 
   const contentMarginTop = isMobile ? 0 : 8;
   const contentPaddingTop = isMobile ? 0 : 2;
-  const laExtraHeight = isMobile ? 61 : showDrawerMenu ? 44 : 100; // LA Wrapper and action button height
   const tabContentClasses = 'pl-4 pt-2 pr-1.5 pb-4 md:pl-1.5 md:pr-0 md:pb-1 lg:py-1 lg:pr-0';
   // If it's mobile, use the widget navigation row height + the height of the webiste header
   // as we're using 100vh for the content style, if not, just use the height of the navigation row
@@ -206,9 +200,9 @@ export function WidgetNavigation({
   const headerHeight =
     (isMobile ? (hideTabs ? 56 : 63 + 56) : 66) + (contentMarginTop + contentPaddingTop) * 4;
   const style = isMobile
-    ? { height: `calc(100dvh - ${headerHeight + (showLinkedAction ? laExtraHeight : 0)}px)` }
+    ? { height: `calc(100dvh - ${headerHeight}px)` }
     : showDrawerMenu
-      ? { height: `${height - 52 - (showLinkedAction ? laExtraHeight : 0)}px` }
+      ? { height: `${height - 52}px` }
       : undefined;
   const verticalTabGlowClasses =
     'before:-left-[17px] before:absolute before:top-1/2 before:-translate-y-1/2 before:h-[120%] before:w-px before:bg-nav-light-vertical';
@@ -417,7 +411,6 @@ export function WidgetNavigation({
             </AnimatePresence>
           </div>
           <div className="md:max-w-[440px] md:min-w-[352px] lg:flex lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:flex-col lg:overflow-hidden">
-            <LinkedActionWrapper />
             {isSwitchingNetwork ? (
               <div
                 className={cn(tabContentClasses, 'flex flex-1 flex-col items-center justify-center')}
@@ -450,11 +443,7 @@ export function WidgetNavigation({
                             exit={AnimationLabels.exit}
                             className={cn(
                               'flex-1 overflow-y-auto md:pr-0 lg:overflow-hidden',
-                              isMobile
-                                ? showLinkedAction
-                                  ? 'scroll-mt-[148px]'
-                                  : 'scroll-mt-[87px]'
-                                : 'scroll-mt-[0px]'
+                              isMobile ? 'scroll-mt-[87px]' : 'scroll-mt-[0px]'
                             )}
                           >
                             {content}

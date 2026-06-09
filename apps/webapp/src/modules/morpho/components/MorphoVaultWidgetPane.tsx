@@ -1,11 +1,9 @@
-import { MorphoVaultWidget, TxStatus, WidgetStateChangeParams, VaultFlow, VaultAction } from '@/widgets';
+import { MorphoVaultWidget, WidgetStateChangeParams, VaultFlow } from '@/widgets';
 import { Token, type VaultProvider } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
-import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useChainId } from 'wagmi';
 
@@ -28,8 +26,7 @@ export function MorphoVaultWidgetPane({
   ...sharedProps
 }: MorphoVaultWidgetPaneProps) {
   const chainId = useChainId();
-  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedVaultsOption } =
-    useConfigContext();
+  const { setSelectedVaultsOption } = useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as VaultFlow | undefined;
@@ -38,11 +35,7 @@ export function MorphoVaultWidgetPane({
   const currentVaultAddress = vaultAddress[chainId];
   const currentAssetAddress = assetToken.address[chainId as keyof typeof assetToken.address];
 
-  const onMorphoVaultWidgetStateChange = ({
-    txStatus,
-    widgetState,
-    originAmount
-  }: WidgetStateChangeParams) => {
+  const onMorphoVaultWidgetStateChange = ({ widgetState, originAmount }: WidgetStateChangeParams) => {
     // Prevent race conditions: only sync when the URL's module matches this
     // vault's own provider (Spark → `spark`, Morpho → `morpho`).
     if (searchParams.get(QueryParams.VaultModule) !== vaultModuleForProvider(provider)) {
@@ -70,24 +63,6 @@ export function MorphoVaultWidgetPane({
         return prev;
       });
     }
-
-    // After a successful linked action SUPPLY, set the final step to "success"
-    if (
-      widgetState.action === VaultAction.SUPPLY &&
-      txStatus === TxStatus.SUCCESS &&
-      linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
-    ) {
-      updateLinkedActionConfig({ step: LinkedActionSteps.COMPLETED_SUCCESS });
-    }
-
-    // Reset the linked action state and URL params after clicking "finish"
-    if (txStatus === TxStatus.IDLE && linkedActionConfig.step === LinkedActionSteps.COMPLETED_SUCCESS) {
-      exitLinkedActionMode();
-      setSearchParams(prevParams => {
-        const params = deleteSearchParams(prevParams);
-        return params;
-      });
-    }
   };
 
   const handleBack = () => {
@@ -112,10 +87,7 @@ export function MorphoVaultWidgetPane({
       vaultName={vaultName}
       provider={provider}
       onWidgetStateChange={onMorphoVaultWidgetStateChange}
-      externalWidgetState={{
-        amount: linkedActionConfig?.inputAmount,
-        flow
-      }}
+      externalWidgetState={{ flow }}
       onBackToVaults={handleBack}
     />
   );

@@ -8,24 +8,16 @@ import { RewardContract, TOKENS } from '@/hooks';
 import { RewardsBalanceDetails } from './RewardsBalanceDetails';
 import { RewardsHistory } from './RewardsHistory';
 import { RewardsFaq } from './RewardsFaq';
-import { ActionsShowcase } from '@/modules/ui/components/ActionsShowcase';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
-import { IntentMapping } from '@/lib/constants';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { AboutCle } from '@/modules/ui/components/AboutCle';
-import { useUserSuggestedActions } from '@/modules/ui/hooks/useUserSuggestedActions';
 import { RewardsOverviewAbout } from './RewardsOverviewAbout';
-import { filterActionsByIntent } from '@/lib/utils';
 import { AboutSpk } from '@/modules/ui/components/AboutSpk';
 
 export function RewardsDetailsView({ rewardContract }: { rewardContract?: RewardContract }) {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const { linkedActionConfig } = useConfigContext();
-  const { data: actionData } = useUserSuggestedActions(rewardContract);
   if (!rewardContract) {
     return null;
   }
-  const widget = IntentMapping.REWARDS_INTENT;
 
   return (
     <DetailSectionWrapper>
@@ -39,15 +31,6 @@ export function RewardsDetailsView({ rewardContract }: { rewardContract?: Reward
           <RewardsTokenInfo rewardContract={rewardContract} />
         </DetailSectionRow>
       </DetailSection>
-      {isConnectedAndAcceptedTerms &&
-        !linkedActionConfig?.showLinkedAction &&
-        (filterActionsByIntent(actionData?.linkedActions || [], widget).length ?? 0) > 0 && (
-          <DetailSection title={t`Combined actions`}>
-            <DetailSectionRow>
-              <ActionsShowcase widget={widget} currentRewardContract={rewardContract} />
-            </DetailSectionRow>
-          </DetailSection>
-        )}
       {isConnectedAndAcceptedTerms && (
         <DetailSection title={t`Your Rewards transaction history`}>
           <DetailSectionRow>

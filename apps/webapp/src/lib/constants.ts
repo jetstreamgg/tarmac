@@ -1,4 +1,3 @@
-import { RewardsModule, Savings, Trade, Upgrade, Stake, Expert, Vaults, Convert } from '@/modules/icons';
 import { ConvertIntent, ExpertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
 import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
@@ -14,7 +13,6 @@ export enum QueryParams {
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',
-  LinkedAction = 'linked_action',
   InputAmount = 'input_amount',
   Timestamp = 'timestamp',
   Network = 'network',
@@ -131,13 +129,6 @@ export const EXPERT_WIDGET_OPTIONS: {
   }
 ];
 
-export const VALID_LINKED_ACTIONS = [
-  IntentMapping[Intent.REWARDS_INTENT],
-  IntentMapping[Intent.SAVINGS_INTENT],
-  IntentMapping[Intent.EXPERT_INTENT],
-  IntentMapping[Intent.VAULTS_INTENT]
-];
-
 export function mapIntentToQueryParam(intent: Intent): string {
   return IntentMapping[intent] || '';
 }
@@ -150,17 +141,6 @@ export function mapQueryParamToIntent(queryParam?: string | null): Intent {
 }
 
 export const REFRESH_DELAY = 1000;
-
-export const linkedActionMetadata = {
-  [IntentMapping[Intent.UPGRADE_INTENT]]: { text: 'Upgrade DAI', icon: Upgrade },
-  [IntentMapping[Intent.TRADE_INTENT]]: { text: 'Trade Tokens', icon: Trade },
-  [IntentMapping[Intent.SAVINGS_INTENT]]: { text: 'Access Savings', icon: Savings },
-  [IntentMapping[Intent.REWARDS_INTENT]]: { text: 'Get Rewards', icon: RewardsModule },
-  [IntentMapping[Intent.STAKE_INTENT]]: { text: 'Stake', icon: Stake },
-  [IntentMapping[Intent.EXPERT_INTENT]]: { text: 'Expert Modules', icon: Expert },
-  [IntentMapping[Intent.VAULTS_INTENT]]: { text: 'Vaults', icon: Vaults },
-  [IntentMapping[Intent.CONVERT_INTENT]]: { text: 'Convert', icon: Convert }
-};
 
 export const ALLOWED_EXTERNAL_DOMAINS = [
   'sky.money',
