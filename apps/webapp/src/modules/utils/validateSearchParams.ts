@@ -3,7 +3,6 @@ import { RewardsFlow, StakeFlow, SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
 import {
   QueryParams,
   IntentMapping,
-  VALID_LINKED_ACTIONS,
   CHAIN_WIDGET_MAP,
   mapQueryParamToIntent,
   COMING_SOON_MAP,
@@ -131,11 +130,8 @@ export const validateSearchParams = (
       }
     }
 
-    // if widget changes to something other than rewards, and we're not in a rewards linked action, reset the selected reward contract
-    if (
-      widget !== IntentMapping[Intent.REWARDS_INTENT] &&
-      searchParams.get(QueryParams.LinkedAction) !== IntentMapping[Intent.REWARDS_INTENT]
-    ) {
+    // if widget changes to something other than rewards, reset the selected reward contract
+    if (widget !== IntentMapping[Intent.REWARDS_INTENT]) {
       searchParams.delete(QueryParams.Reward);
       setSelectedRewardContract(undefined);
     }
@@ -161,11 +157,8 @@ export const validateSearchParams = (
       }
     }
 
-    // if widget changes to something other than advanced, and we're not in an advanced linked action, reset the selected advanced option
-    if (
-      widget !== IntentMapping[Intent.EXPERT_INTENT] &&
-      searchParams.get(QueryParams.LinkedAction) !== IntentMapping[Intent.EXPERT_INTENT]
-    ) {
+    // if widget changes to something other than advanced, reset the selected advanced option
+    if (widget !== IntentMapping[Intent.EXPERT_INTENT]) {
       searchParams.delete(QueryParams.ExpertModule);
       setSelectedExpertOption(undefined);
     }
@@ -191,10 +184,7 @@ export const validateSearchParams = (
     }
 
     // if widget changes to something other than vaults, reset the selected vault option
-    if (
-      widget !== IntentMapping[Intent.VAULTS_INTENT] &&
-      searchParams.get(QueryParams.LinkedAction) !== IntentMapping[Intent.VAULTS_INTENT]
-    ) {
+    if (widget !== IntentMapping[Intent.VAULTS_INTENT]) {
       searchParams.delete(QueryParams.VaultModule);
       setSelectedVaultsOption(undefined);
     }
@@ -332,15 +322,6 @@ export const validateSearchParams = (
       }
     }
 
-    // removes linked action param if value is not valid or if we are on an L2 chain
-    if (
-      key === QueryParams.LinkedAction &&
-      (!VALID_LINKED_ACTIONS.includes(value.toLowerCase()) || isL2Chain)
-    ) {
-      // TODO here we could also check if it's a valid linked action based on the combination of widget and LA value
-      searchParams.delete(key);
-    }
-
     // removes reset param
     if (key === QueryParams.Reset) {
       setTimeout(() => {
@@ -350,37 +331,5 @@ export const validateSearchParams = (
     }
   });
 
-  return searchParams;
-};
-
-// This is intended to be run immediately after the global validation function
-export const validateLinkedActionSearchParams = (searchParams: URLSearchParams) => {
-  const linkedActionParam = searchParams.get(QueryParams.LinkedAction);
-  // Only run this validation if we are in linked action mode
-  if (linkedActionParam) {
-    searchParams.forEach((value, key) => {
-      if (key === QueryParams.SourceToken) {
-        const widgetParam = resolveWidgetForTokenValidation(searchParams);
-
-        // Only DAI is allowed as a source token for Upgrade when in linked action
-        if (widgetParam === IntentMapping[Intent.UPGRADE_INTENT]) {
-          if (value.toLowerCase() !== 'dai') {
-            searchParams.delete(key);
-          }
-        }
-      }
-
-      // Only USDS is allowed as a target token for Trade when in linked action
-      if (key === QueryParams.TargetToken) {
-        const widgetParam = resolveWidgetForTokenValidation(searchParams);
-
-        if (widgetParam === IntentMapping[Intent.TRADE_INTENT]) {
-          if (value.toLowerCase() !== 'usds') {
-            searchParams.delete(key);
-          }
-        }
-      }
-    });
-  }
   return searchParams;
 };

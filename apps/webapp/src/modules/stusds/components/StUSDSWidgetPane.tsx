@@ -2,17 +2,14 @@ import { StUSDSWidget, TxStatus, StUSDSAction, WidgetStateChangeParams, StUSDSFl
 import { useSavingsHistory } from '@/hooks';
 import { ExpertIntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSearchParams } from 'react-router-dom';
-import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { ExpertIntent } from '@/lib/enums';
 
 export function StUSDSWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
-  const { linkedActionConfig, updateLinkedActionConfig, exitLinkedActionMode, setSelectedExpertOption } =
-    useConfigContext();
+  const { setSelectedExpertOption } = useConfigContext();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -65,24 +62,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
       });
     }
 
-    // After a successful linked action SUPPLY, set the final step to "success"
-    if (
-      widgetState.action === StUSDSAction.SUPPLY &&
-      txStatus === TxStatus.SUCCESS &&
-      linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
-    ) {
-      updateLinkedActionConfig({ step: LinkedActionSteps.COMPLETED_SUCCESS });
-    }
-
-    // Reset the linked action state and URL params after clicking "finish"
-    if (txStatus === TxStatus.IDLE && linkedActionConfig.step === LinkedActionSteps.COMPLETED_SUCCESS) {
-      exitLinkedActionMode();
-      setSearchParams(prevParams => {
-        const params = deleteSearchParams(prevParams);
-        return params;
-      });
-    }
-
     if (
       hash &&
       txStatus === TxStatus.SUCCESS &&
@@ -106,10 +85,7 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     <StUSDSWidget
       {...sharedProps}
       onWidgetStateChange={onStUSDSWidgetStateChange}
-      externalWidgetState={{
-        amount: linkedActionConfig?.inputAmount,
-        flow
-      }}
+      externalWidgetState={{ flow }}
       onBackToExpert={handleBack}
     />
   );

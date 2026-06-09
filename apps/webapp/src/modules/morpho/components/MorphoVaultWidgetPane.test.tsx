@@ -19,8 +19,6 @@ const captured = vi.hoisted(() => ({
 
 const mocks = vi.hoisted(() => ({
   chainId: 1, // mainnet.id — literal because vi.hoisted runs before imports
-  updateLinkedActionConfig: vi.fn(),
-  exitLinkedActionMode: vi.fn(),
   setSelectedVaultsOption: vi.fn()
 }));
 
@@ -45,15 +43,8 @@ vi.mock('@/widgets', () => ({
 
 vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   useConfigContext: () => ({
-    linkedActionConfig: { step: undefined, inputAmount: undefined },
-    updateLinkedActionConfig: mocks.updateLinkedActionConfig,
-    exitLinkedActionMode: mocks.exitLinkedActionMode,
     setSelectedVaultsOption: mocks.setSelectedVaultsOption
   })
-}));
-
-vi.mock('@/modules/config/context/ConfigContext', () => ({
-  LinkedActionSteps: { COMPLETED_CURRENT: 'completed_current', COMPLETED_SUCCESS: 'completed_success' }
 }));
 
 vi.mock('react-router-dom', async importOriginal => {
@@ -116,8 +107,6 @@ function renderPane(provider: 'morpho' | 'spark') {
 describe('MorphoVaultWidgetPane state→URL guard', () => {
   beforeEach(() => {
     mocks.chainId = mainnet.id;
-    mocks.updateLinkedActionConfig.mockReset();
-    mocks.exitLinkedActionMode.mockReset();
     mocks.setSelectedVaultsOption.mockReset();
     captured.onWidgetStateChange = undefined;
     setSearchParamsMock.mockClear();

@@ -1,11 +1,8 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { LinkedAction } from '@/modules/ui/hooks/useUserSuggestedActions';
 import {
   ALLOWED_EXTERNAL_DOMAINS,
   ExpertIntentMapping,
-  VaultsIntentMapping,
-  IntentMapping,
   mapIntentToQueryParam,
   QueryParams
 } from './constants';
@@ -44,36 +41,6 @@ export function getFooterLinks(): FooterLink[] {
     }
   }
   return footerLinks;
-}
-
-const MODULE_PARENT_LINKED_ACTION_BY_INTENT: Record<string, string> = {
-  ...Object.fromEntries(
-    Object.values(ExpertIntentMapping).map(moduleIntent => [
-      moduleIntent,
-      IntentMapping[Intent.EXPERT_INTENT]
-    ])
-  ),
-  ...Object.fromEntries(
-    Object.values(VaultsIntentMapping).map(moduleIntent => [
-      moduleIntent,
-      IntentMapping[Intent.VAULTS_INTENT]
-    ])
-  )
-};
-
-export function filterActionsByIntent(actions: LinkedAction[], intent: string): LinkedAction[] {
-  const parentLinkedAction = MODULE_PARENT_LINKED_ACTION_BY_INTENT[intent];
-
-  return actions.filter(x => {
-    // Direct match on intent or linked action
-    if (x.intent === intent || (x as LinkedAction)?.la === intent) {
-      return true;
-    }
-    if (parentLinkedAction && (x as LinkedAction)?.la === parentLinkedAction) {
-      return true;
-    }
-    return false;
-  });
 }
 
 /**

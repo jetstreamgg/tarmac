@@ -6,11 +6,10 @@ import { useSearchParams } from 'react-router-dom';
 import { QueryParams, mapQueryParamToIntent } from '@/lib/constants';
 
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { validateLinkedActionSearchParams, validateSearchParams } from '@/modules/utils/validateSearchParams';
+import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
 import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
 import { useSpkStakingRewardsToast } from '../hooks/useSpkStakingRewardsToast';
@@ -24,8 +23,6 @@ import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 
 export function MainApp() {
   const {
-    linkedActionConfig,
-    updateLinkedActionConfig,
     setSelectedRewardContract,
     setSelectedExpertOption,
     expertRiskDisclaimerShown,
@@ -87,14 +84,6 @@ export function MainApp() {
 
   const widgetParam = searchParams.get(QueryParams.Widget);
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
-  const rewardContract = searchParams.get(QueryParams.Reward) || undefined;
-  const expertModule = searchParams.get(QueryParams.ExpertModule) || undefined;
-  const vaultModule = searchParams.get(QueryParams.VaultModule) || undefined;
-  const sourceToken = searchParams.get(QueryParams.SourceToken) || undefined;
-  const targetToken = searchParams.get(QueryParams.TargetToken) || undefined;
-  const linkedAction = searchParams.get(QueryParams.LinkedAction) || undefined;
-  const inputAmount = searchParams.get(QueryParams.InputAmount) || undefined;
-  const timestamp = searchParams.get(QueryParams.Timestamp) || undefined;
   const network = searchParams.get(QueryParams.Network) || undefined;
 
   const newChainId = network
@@ -102,9 +91,6 @@ export function MainApp() {
     : chainId;
 
   const rewardContracts = useAvailableTokenRewardContracts(newChainId);
-
-  // step is initialized as 0 and will evaluate to false, setting the first step to 1
-  const step = linkedAction ? linkedActionConfig.step || 1 : 0;
 
   // Page Load Notifications - Only one notification shows per page load
   // Get configurations for all page load notifications
@@ -145,9 +131,7 @@ export function MainApp() {
           setSelectedVaultsOption,
           setSelectedConvertOption
         );
-        // Runs second validation for linked-action-specific criteria
-        const validatedLinkedActionParams = validateLinkedActionSearchParams(validatedParams);
-        return validatedLinkedActionParams;
+        return validatedParams;
       },
       { replace: true }
     );
@@ -212,34 +196,6 @@ export function MainApp() {
       emitter?.off('change', handleChainChange);
     };
   }, [chains, connector, setSearchParams]);
-
-  useEffect(() => {
-    updateLinkedActionConfig({
-      sourceToken,
-      targetToken,
-      // Only update the initialAction value if we are on the first widget
-      initialAction:
-        step < LinkedActionSteps.COMPLETED_CURRENT ? widgetParam : linkedActionConfig.initialAction,
-      linkedAction,
-      inputAmount,
-      rewardContract,
-      expertModule: expertModule || vaultModule,
-      step,
-      showLinkedAction: !!linkedAction,
-      timestamp
-    });
-  }, [
-    sourceToken,
-    targetToken,
-    linkedAction,
-    inputAmount,
-    rewardContract,
-    expertModule,
-    vaultModule,
-    step,
-    widgetParam,
-    linkedActionConfig.initialAction
-  ]);
 
   return (
     <AppContainer>

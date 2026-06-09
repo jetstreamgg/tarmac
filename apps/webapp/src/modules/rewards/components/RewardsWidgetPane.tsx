@@ -2,9 +2,7 @@ import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { LinkedActionSteps } from '@/modules/config/context/ConfigContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
 import { useSearchParams } from 'react-router-dom';
@@ -12,13 +10,7 @@ import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
-  const {
-    selectedRewardContract,
-    setSelectedRewardContract,
-    linkedActionConfig,
-    updateLinkedActionConfig,
-    exitLinkedActionMode
-  } = useConfigContext();
+  const { selectedRewardContract, setSelectedRewardContract } = useConfigContext();
   const { mutate: refreshRewardsHistory } = useRewardsUserHistory({
     rewardContractAddress: selectedRewardContract?.contractAddress || '',
     subgraphUrl
@@ -90,27 +82,6 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
       );
     }
 
-    // After a successful linked action supply, set the step to "success"
-    if (
-      widgetState.action === RewardsAction.SUPPLY &&
-      txStatus === TxStatus.SUCCESS &&
-      linkedActionConfig.step === LinkedActionSteps.COMPLETED_CURRENT
-    ) {
-      updateLinkedActionConfig({ step: LinkedActionSteps.COMPLETED_SUCCESS });
-    }
-
-    // Reset the linked action state and URL params after clicking "finish"
-    if (txStatus === TxStatus.IDLE && linkedActionConfig.step === LinkedActionSteps.COMPLETED_SUCCESS) {
-      exitLinkedActionMode();
-      setSearchParams(
-        (prevParams: URLSearchParams) => {
-          const params = deleteSearchParams(prevParams);
-          return params;
-        },
-        { replace: true }
-      );
-    }
-
     if (
       hash &&
       txStatus === TxStatus.SUCCESS &&
@@ -126,7 +97,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     <RewardsWidget
       {...sharedProps}
       onRewardContractChange={onRewardContractChange}
-      externalWidgetState={{ selectedRewardContract, amount: linkedActionConfig?.inputAmount, flow }}
+      externalWidgetState={{ selectedRewardContract, flow }}
       onWidgetStateChange={onRewardsWidgetStateChange}
       disclaimer={<RewardsUsdsSkyDisclaimer />}
     />
