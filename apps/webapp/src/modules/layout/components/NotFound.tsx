@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { Layout } from './Layout';
 import { Heading, Text } from './Typography';
@@ -10,7 +10,7 @@ export function NotFound() {
 
   useEffect(() => {
     setTimeout(() => {
-      navigate('/');
+      navigate({ to: '/' });
     }, 5000);
   }, [navigate]);
 
@@ -33,7 +33,11 @@ export function NotFound() {
           <Text variant="large" className="text-text/65 mt-3">
             Click the button to find your way back (you will be redirected to the homepage in 5 seconds).
           </Text>
-          <Button variant="primary" className="mt-6 self-center px-6 py-4" onClick={() => navigate('/')}>
+          <Button
+            variant="primary"
+            className="mt-6 self-center px-6 py-4"
+            onClick={() => navigate({ to: '/' })}
+          >
             Go to Homepage
           </Button>
         </div>

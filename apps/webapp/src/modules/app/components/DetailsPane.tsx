@@ -8,7 +8,7 @@ import { VaultDetails } from '@/modules/morpho/components/VaultDetails';
 import { VAULTS } from '@/hooks';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -55,7 +55,7 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const { bpi } = useBreakpointIndex();
   const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
   const chainId = useChainId();
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useAppSearchParams();
   const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
     ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
   )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;

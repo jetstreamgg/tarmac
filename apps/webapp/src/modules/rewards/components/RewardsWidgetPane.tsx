@@ -5,7 +5,7 @@ import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
@@ -16,7 +16,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     subgraphUrl
   });
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as RewardsFlow | undefined;
 
   const onRewardContractChange = (rewardContract?: RewardContract) => {
@@ -40,11 +40,7 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     setSelectedRewardContract(rewardContract);
   };
 
-  const onRewardsWidgetStateChange = ({
-    hash,
-    txStatus,
-    widgetState
-  }: WidgetStateChangeParams) => {
+  const onRewardsWidgetStateChange = ({ hash, txStatus, widgetState }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.REWARDS_INTENT]) {
       return;

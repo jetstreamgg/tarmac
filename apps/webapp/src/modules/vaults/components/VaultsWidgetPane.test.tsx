@@ -46,11 +46,11 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   })
 }));
 
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@/lib/router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/router')>();
   return {
     ...actual,
-    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock]
   };
 });
 

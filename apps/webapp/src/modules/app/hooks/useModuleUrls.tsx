@@ -9,11 +9,11 @@ import {
   getStUsdsUrl,
   getVaultsOverviewUrl
 } from '@/lib/utils';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useChainId, useChains } from 'wagmi';
 
 export const useModuleUrls = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useAppSearchParams();
   const chainId = useChainId();
   const supportedChainIds = getSupportedChainIds(chainId);
   const chains = useChains();

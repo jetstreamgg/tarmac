@@ -7,13 +7,13 @@ import { Trans } from '@lingui/react/macro';
 import { AnimatePresence } from 'motion/react';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
 import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping, QueryParams } from '@/lib/constants';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
   const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
-  const [, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
 
   const handleSelectExpertOption = (expertIntent: ExpertIntent) => {
     setSearchParams(params => {

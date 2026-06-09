@@ -12,7 +12,7 @@ import { ArrowRight } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { useChains } from 'wagmi';
 import { formatBigInt, formatNumber, getChainIcon } from '@/utils';
-import { Link } from 'react-router-dom';
+import { AppLink } from '@/lib/router';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 import { PriceData } from '@/hooks';
 
@@ -88,7 +88,7 @@ export const InteractiveStatsCardWithAccordion = ({
           <div className="group/header-link relative -mt-3 px-4 pt-3 pb-1 lg:-mt-5 lg:px-5 lg:pt-5">
             <div>{headerContent}</div>
             {url && (
-              <Link
+              <AppLink
                 to={url}
                 aria-label={typeof title === 'string' ? title : undefined}
                 className="header-link absolute inset-0 z-0 h-full w-full"
@@ -164,9 +164,9 @@ export const InteractiveStatsCardWithAccordion = ({
               );
 
               return (
-                <Link to={urlMap[chainId]} key={chainId}>
+                <AppLink to={urlMap[chainId]} key={chainId}>
                   {rowContent}
-                </Link>
+                </AppLink>
               );
             })}
           </AccordionContent>

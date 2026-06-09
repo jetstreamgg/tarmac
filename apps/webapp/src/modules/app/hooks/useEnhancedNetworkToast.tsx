@@ -10,7 +10,7 @@ import { isMultichain, requiresMainnet } from '@/lib/widget-network-map';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { useSearchParams, type SetURLSearchParams } from 'react-router-dom';
+import { useAppSearchParams, type SetSearchParams } from '@/lib/router';
 import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { Loader2 } from 'lucide-react';
@@ -65,7 +65,7 @@ const NetworkQuickSwitchButtons = ({
     onSuccess?: (data: any, variables: { chainId: number }) => void;
     onSettled?: () => void;
   }) => void;
-  setSearchParams: SetURLSearchParams;
+  setSearchParams: SetSearchParams;
   toastId?: string | number;
 }) => {
   const [switchingTo, setSwitchingTo] = useState<number | null>(null);
@@ -144,7 +144,7 @@ const NetworkQuickSwitchButtons = ({
 export function useEnhancedNetworkToast() {
   const chains = useChains();
   const { handleSwitchChain } = useChainModalContext();
-  const [, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showNetworkToast = useCallback(

@@ -5,7 +5,7 @@ import { getChainIcon, isMainnetId } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
 import { useChains } from 'wagmi';
 import { isMultichain } from '@/lib/widget-network-map';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
 import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
@@ -44,7 +44,7 @@ export function WidgetMenuItemTooltip({
   children
 }: WidgetMenuItemTooltipProps) {
   const chains = useChains();
-  const [, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
 
   const getMainnetChainId = (supportedChainIds: number[]) =>

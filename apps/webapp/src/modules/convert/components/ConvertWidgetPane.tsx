@@ -12,7 +12,7 @@ import { AnimatePresence } from 'motion/react';
 import { UpgradeWidgetPane } from '@/modules/upgrade/components/UpgradeWidgetPane';
 import { TradeWidgetPane } from '@/modules/trade/components/TradeWidgetPane';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { Card, CardHeader } from '@/components/ui/card';
 import { HStack } from '@/modules/layout/components/HStack';
 import { Convert, Upgrade, Trade } from '@/modules/icons';
@@ -26,7 +26,7 @@ import { useGeoConfig } from '@/modules/geo-config';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
   const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const { info, error } = useToast();
   const chainId = useChainId();
   const chains = useChains();

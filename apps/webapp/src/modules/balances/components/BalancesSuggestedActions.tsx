@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useChainId, useChains } from 'wagmi';
 import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
@@ -381,7 +381,7 @@ export function BalancesSuggestedActions({
   variant?: 'default' | 'card' | 'card-sm';
   restrictedModules?: string[];
 }) {
-  const [, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
   const chainId = useChainId();
   const chains = useChains();
   const { setIsSwitchingNetwork } = useNetworkSwitch();

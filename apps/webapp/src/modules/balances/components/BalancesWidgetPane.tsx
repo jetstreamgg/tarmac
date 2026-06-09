@@ -1,17 +1,12 @@
-import {
-  WidgetStateChangeParams,
-  SavingsFlow,
-  BalancesWidget,
-  BalancesWidgetProps
-} from '@/widgets';
-import { useSearchParams } from 'react-router-dom';
+import { WidgetStateChangeParams, SavingsFlow, BalancesWidget, BalancesWidgetProps } from '@/widgets';
+import { useAppSearchParams } from '@/lib/router';
 import { useCallback } from 'react';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { IntentMapping, QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 
 export function BalancesWidgetPane(sharedProps: SharedProps & BalancesWidgetProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as SavingsFlow | undefined;
 

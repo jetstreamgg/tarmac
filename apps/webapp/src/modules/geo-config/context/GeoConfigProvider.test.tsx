@@ -24,14 +24,14 @@ const mockConfig: GeoConfig = {
 
 const routerListeners = new Set<() => void>();
 const mockRouter = {
-  state: {
+  history: {
     location: {
       search: ''
+    },
+    subscribe: (listener: () => void) => {
+      routerListeners.add(listener);
+      return () => routerListeners.delete(listener);
     }
-  },
-  subscribe: (listener: () => void) => {
-    routerListeners.add(listener);
-    return () => routerListeners.delete(listener);
   }
 };
 
@@ -66,7 +66,7 @@ const GeoConfigProbe = () => {
 
 describe('GeoConfigProvider', () => {
   beforeEach(() => {
-    mockRouter.state.location.search = '';
+    mockRouter.history.location.search = '';
     routerListeners.clear();
   });
 
@@ -81,7 +81,7 @@ describe('GeoConfigProvider', () => {
     expect(screen.getByTestId('savings').textContent).toBe('true');
 
     act(() => {
-      mockRouter.state.location.search = '?geo_mode=restricted&geo_module_savings=true';
+      mockRouter.history.location.search = '?geo_mode=restricted&geo_module_savings=true';
       routerListeners.forEach(listener => listener());
     });
 
@@ -89,7 +89,7 @@ describe('GeoConfigProvider', () => {
     expect(screen.getByTestId('savings').textContent).toBe('true');
 
     act(() => {
-      mockRouter.state.location.search = '';
+      mockRouter.history.location.search = '';
       routerListeners.forEach(listener => listener());
     });
 

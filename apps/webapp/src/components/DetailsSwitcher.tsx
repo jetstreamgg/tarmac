@@ -1,6 +1,6 @@
 import { Toggle } from '@/components/ui/toggle';
 import { Metrics } from '@/modules/icons';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { QueryParams } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import {
@@ -15,7 +15,7 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { JSX } from 'react';
 
 export function DetailsSwitcher(): JSX.Element {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const { trackDetailsPaneToggled } = useAppAnalytics();
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const handleSwitch = (pressed: boolean) => {

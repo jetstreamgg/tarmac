@@ -3,7 +3,7 @@ import { Token, type VaultProvider } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useChainId } from 'wagmi';
 
@@ -27,7 +27,7 @@ export function MorphoVaultWidgetPane({
 }: MorphoVaultWidgetPaneProps) {
   const chainId = useChainId();
   const { setSelectedVaultsOption } = useConfigContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as VaultFlow | undefined;
 

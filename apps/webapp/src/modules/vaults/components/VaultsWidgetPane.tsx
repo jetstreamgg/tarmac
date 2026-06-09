@@ -9,7 +9,7 @@ import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWi
 import { QueryParams } from '@/lib/constants';
 import { vaultModuleForProvider, vaultsIntentForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { VaultProvider } from '@/hooks/vaults/types';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { VaultStatsCard } from '@/modules/expert/components/VaultStatsCard';
 import { VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
@@ -18,7 +18,7 @@ import { positionAnimations } from '@/widgets';
 
 export function VaultsWidgetPane(sharedProps: SharedProps) {
   const { selectedVaultsOption, setSelectedVaultsOption } = useConfigContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const chainId = useChainId();
 
   const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;

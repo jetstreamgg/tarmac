@@ -10,7 +10,7 @@ import {
 import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { formatBigInt, formatNumber } from '@/utils';
-import { Link } from 'react-router-dom';
+import { AppLink } from '@/lib/router';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 
 export type MarketBalanceForAccordion = {
@@ -93,7 +93,7 @@ export const InteractiveStatsCardWithMarketAccordion = ({
           <div className="group/header-link relative -mt-3 px-4 pt-3 pb-1 lg:-mt-5 lg:px-5 lg:pt-5">
             <div>{headerContent}</div>
             {url && (
-              <Link
+              <AppLink
                 to={url}
                 aria-label={typeof title === 'string' ? title : undefined}
                 className="header-link absolute inset-0 z-0 h-full w-full"
@@ -193,9 +193,9 @@ export const InteractiveStatsCardWithMarketAccordion = ({
                 );
 
                 return marketUrl ? (
-                  <Link to={marketUrl} key={marketAddress}>
+                  <AppLink to={marketUrl} key={marketAddress}>
                     {rowContent}
-                  </Link>
+                  </AppLink>
                 ) : (
                   <div key={marketAddress}>{rowContent}</div>
                 );

@@ -3,11 +3,11 @@ import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { ConvertIntent } from '@/lib/enums';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useMemo } from 'react';
 
 export function PsmConversionWidgetPane(sharedProps: SharedProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const { setSelectedConvertOption } = useConfigContext();
   const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
   const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();

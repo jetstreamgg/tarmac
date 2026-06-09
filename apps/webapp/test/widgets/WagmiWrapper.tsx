@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/react-router';
 import { MakerHooksProvider } from '../../src/widgets/context/context';
 import { mock } from 'wagmi/connectors';
 import { createConfig, WagmiProvider, http } from 'wagmi';
@@ -37,6 +37,34 @@ const config = createConfig({
 
 const queryClient = new QueryClient();
 
+// TanStack Router's RouterProvider renders a route tree instead of children,
+// so the test router's root route renders the wrapper's children. Children are
+// passed through context (not closed over at router creation) so `rerender`
+// updates content without remounting the tree, and the router instance stays
+// stable across rerenders.
+const RouterChildrenContext = React.createContext<React.ReactNode>(null);
+
+function RootChildren() {
+  return <>{React.useContext(RouterChildrenContext)}</>;
+}
+
+function MemoryRouterProvider({ children }: { children?: React.ReactNode }) {
+  const router = React.useMemo(
+    () =>
+      createRouter({
+        routeTree: createRootRoute({ component: RootChildren }),
+        history: createMemoryHistory({ initialEntries: ['/'] })
+      }),
+    []
+  );
+
+  return (
+    <RouterChildrenContext.Provider value={children}>
+      <RouterProvider router={router} />
+    </RouterChildrenContext.Provider>
+  );
+}
+
 // Fake ConnectedContext value for widget unit/integration tests: treat the test
 // wallet as connected + terms-accepted. Preserves the pre-migration behavior of
 // widgets that used to default `enabled = true` from their props.
@@ -64,7 +92,7 @@ export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <MemoryRouterProvider>
           <I18nWidgetProvider locale="en">
             <ConnectedContext.Provider value={testConnectedContextValue}>
               <ConnectModalContext.Provider value={testConnectModalContextValue}>
@@ -85,7 +113,7 @@ export function WagmiWrapper({ children }: { children?: React.ReactNode }) {
               </ConnectModalContext.Provider>
             </ConnectedContext.Provider>
           </I18nWidgetProvider>
-        </MemoryRouter>
+        </MemoryRouterProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

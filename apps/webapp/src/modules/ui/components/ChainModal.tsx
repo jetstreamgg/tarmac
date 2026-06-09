@@ -10,7 +10,7 @@ import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Intent } from '@/lib/enums';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { mapIntentToQueryParam, QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useIsSafeWallet } from '@/hooks';
@@ -58,7 +58,7 @@ export function ChainModal({
   const client = useClient();
   const chains = useChains();
   const isSafeWallet = useIsSafeWallet();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const {
     handleSwitchChain,
     isPending: isSwitchChainPending,

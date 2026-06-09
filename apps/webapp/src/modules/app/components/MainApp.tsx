@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { WidgetPane } from './WidgetPane';
 import { DetailsPane } from './DetailsPane';
 import { AppContainer } from './AppContainer';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { QueryParams, mapQueryParamToIntent } from '@/lib/constants';
 
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
@@ -30,7 +30,7 @@ export function MainApp() {
     setSelectedConvertOption
   } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const { bpi } = useBreakpointIndex();
 
   const intent = mapQueryParamToIntent(searchParams.get(QueryParams.Widget));

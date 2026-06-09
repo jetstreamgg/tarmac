@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 
 import { TOKENS, useUpgradeHistory } from '@/hooks';
 import {
@@ -21,7 +21,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const { setSelectedConvertOption } = useConfigContext();
   const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as UpgradeFlow | undefined;
   const [currentToken, setCurrentToken] = useState<string | undefined>();

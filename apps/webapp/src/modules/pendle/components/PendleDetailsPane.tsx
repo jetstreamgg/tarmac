@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useChainId, useConnection } from 'wagmi';
 import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { isTestnetId } from '@/utils';
@@ -27,7 +27,7 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
 };
 
 export const PendleDetailsPane = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useAppSearchParams();
   const chainId = useChainId();
   const { address: userAddress } = useConnection();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;

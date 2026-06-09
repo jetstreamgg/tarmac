@@ -43,8 +43,8 @@ vi.mock('wagmi', async importOriginal => {
   };
 });
 
-vi.mock('react-router-dom', () => ({
-  useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+vi.mock('@/lib/router', () => ({
+  useAppSearchParams: () => [mockSearchParams, setSearchParamsMock]
 }));
 
 describe('PsmConversionWidgetPane', () => {

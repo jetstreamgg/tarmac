@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useReducer } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { AnimatePresence, motion } from 'motion/react';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
@@ -21,7 +21,7 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
 };
 
 export function PendleWidgetPane(sharedProps: SharedProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const chainId = useChainId();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
 
@@ -101,8 +101,8 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             subHeader={
               <Text className="text-textSecondary" variant="small">
                 <Trans>
-                  Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full
-                  USDS value at maturity.
+                  Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS
+                  value at maturity.
                 </Trans>
               </Text>
             }

@@ -11,7 +11,7 @@ import { HStack } from '@/widgets/shared/components/ui/layout/HStack';
 import { ArrowRight } from 'lucide-react';
 import { formatUnits } from 'viem';
 import { formatBigInt, formatNumber } from '@/utils';
-import { Link } from 'react-router-dom';
+import { AppLink } from '@/lib/router';
 import { InteractiveStatsCard } from './InteractiveStatsCard';
 import { PriceData } from '@/hooks';
 
@@ -92,7 +92,7 @@ export const InteractiveStatsCardWithVaultAccordion = ({
           <div className="group/header-link relative -mt-3 px-4 pt-3 pb-1 lg:-mt-5 lg:px-5 lg:pt-5">
             <div>{headerContent}</div>
             {url && (
-              <Link
+              <AppLink
                 to={url}
                 aria-label={typeof title === 'string' ? title : undefined}
                 className="header-link absolute inset-0 z-0 h-full w-full"
@@ -184,9 +184,9 @@ export const InteractiveStatsCardWithVaultAccordion = ({
                 );
 
                 return vaultUrl ? (
-                  <Link to={vaultUrl} key={vaultAddress}>
+                  <AppLink to={vaultUrl} key={vaultAddress}>
                     {rowContent}
-                  </Link>
+                  </AppLink>
                 ) : (
                   <div key={vaultAddress}>{rowContent}</div>
                 );

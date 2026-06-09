@@ -1,6 +1,9 @@
 import * as Sentry from '@sentry/react';
-import { useEffect } from 'react';
-import { createRoutesFromChildren, matchRoutes, useLocation, useNavigationType } from 'react-router-dom';
+// Type-only: a runtime import of the router here would make the whole page
+// graph main.tsx's first evaluated import and trip circular-init TDZ errors
+// (e.g. "Cannot access 'siteConfig' before initialization"). The router
+// instance is injected by main.tsx instead.
+import type { AnyRouter } from '@tanstack/react-router';
 
 // Fall back to the app-wide env name so Sentry still gets a meaningful environment
 // even before dedicated VITE_SENTRY_* values are populated everywhere.
@@ -15,7 +18,7 @@ const shouldSendDevEvents = isProd || isDebug;
 
 let hasInitializedSentry = false;
 
-export function initSentry(): void {
+export function initSentry(router: AnyRouter): void {
   if (typeof window === 'undefined' || hasInitializedSentry) {
     return;
   }
@@ -75,14 +78,8 @@ export function initSentry(): void {
         filterKeys: ['sky-webapp'],
         behaviour: 'drop-error-if-exclusively-contains-third-party-frames'
       }),
-      Sentry.browserTracingIntegration(),
-      Sentry.reactRouterV6BrowserTracingIntegration({
-        useEffect,
-        useLocation,
-        useNavigationType,
-        createRoutesFromChildren,
-        matchRoutes
-      })
+      // Includes browser tracing; do not add browserTracingIntegration separately.
+      Sentry.tanstackRouterBrowserTracingIntegration(router)
     ],
     beforeSend(event) {
       if (!shouldSendDevEvents) {

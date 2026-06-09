@@ -2,7 +2,7 @@ import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { wagmiConfigDev, wagmiConfigMainnet } from '@/data/wagmi/config/config.default';
 import { mockWagmiConfig } from '@/data/wagmi/config/config.e2e';
-import { RouterProvider } from 'react-router-dom';
+import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
 import { I18nProvider } from '@lingui/react';
 import { i18n } from '@lingui/core';

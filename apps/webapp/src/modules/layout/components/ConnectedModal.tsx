@@ -8,7 +8,7 @@ import { WalletIcon } from '@/modules/ui/components/WalletIcon';
 import { useConnection } from 'wagmi';
 import { WALLET_ICONS } from '@/lib/constants';
 import { ConnectedModalTabs } from './ConnectedModalTabs';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useEffect } from 'react';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useIsSafeWallet } from '@/hooks';
@@ -31,7 +31,7 @@ export function ConnectedModal({
   const { onExternalLinkClicked } = useConfigContext();
   const { openConnectModal } = useConnectModal();
   const { connector } = useConnection();
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useAppSearchParams();
   const isSafeWallet = useIsSafeWallet();
 
   const onSwitchAccountClick = () => {

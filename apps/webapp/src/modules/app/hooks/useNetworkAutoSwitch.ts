@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useChains } from 'wagmi';
 import { Intent } from '@/lib/enums';
 import { requiresMainnet } from '@/lib/widget-network-map';
@@ -34,7 +34,7 @@ export function useNetworkAutoSwitch({
   currentChainId,
   currentIntent
 }: UseNetworkAutoSwitchProps): UseNetworkAutoSwitchReturn {
-  const [, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useAppSearchParams();
   const chains = useChains();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
   const { selectedRewardContract } = useConfigContext();

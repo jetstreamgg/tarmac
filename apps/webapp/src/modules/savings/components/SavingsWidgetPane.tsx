@@ -10,7 +10,7 @@ import { useSavingsHistory } from '@/hooks';
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@/utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
@@ -18,7 +18,7 @@ import { Intent } from '@/lib/enums';
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const chainId = useChainId();
 
   const isL2 = isL2ChainId(chainId);

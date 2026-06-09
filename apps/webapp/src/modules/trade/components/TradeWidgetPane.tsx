@@ -5,7 +5,7 @@ import { useChainId } from 'wagmi';
 import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { useQueryClient } from '@tanstack/react-query';
 import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
@@ -17,7 +17,7 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
   const queryClient = useQueryClient();
   const { setSelectedConvertOption } = useConfigContext();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
 
   const isCowSupported = isCowSupportedChainId(chainId);
 

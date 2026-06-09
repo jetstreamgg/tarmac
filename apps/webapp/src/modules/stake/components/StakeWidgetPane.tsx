@@ -2,7 +2,7 @@ import { TxStatus, WidgetStateChangeParams, StakeFlow, StakeModuleWidget, StakeA
 import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/router';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@/hooks';
@@ -12,7 +12,7 @@ import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
 export function StakeWidgetPane(sharedProps: SharedProps) {
   const { selectedStakeUrnIndex, setSelectedStakeUrnIndex } = useConfigContext();
   const { mutate: refreshStakeHistory } = useStakeHistory();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
@@ -61,12 +61,7 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     };
   }, [urnIndexParam]);
 
-  const onStakeWidgetStateChange = ({
-    hash,
-    txStatus,
-    widgetState,
-    stakeTab
-  }: WidgetStateChangeParams) => {
+  const onStakeWidgetStateChange = ({ hash, txStatus, widgetState, stakeTab }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.STAKE_INTENT]) {
       return;
