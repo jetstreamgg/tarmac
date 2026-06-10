@@ -27,6 +27,8 @@ export const router = createRouter({
   routeTree,
   parseSearch,
   stringifySearch,
+  // Prefetch lazy route chunks when links are hovered/focused
+  defaultPreload: 'intent',
   defaultErrorComponent: ErrorPage,
   defaultNotFoundComponent: NotFound
 });

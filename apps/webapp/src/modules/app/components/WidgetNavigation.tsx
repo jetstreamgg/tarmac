@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback, JSX } from 'react';
+import { useRouter } from '@tanstack/react-router';
 import { Intent } from '../../../lib/enums';
 import { IntentMapping, isNewIntent } from '@/lib/constants';
+import { INTENT_PATHS } from '@/lib/navigation';
 import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { Text } from '@/modules/layout/components/Typography';
@@ -119,6 +121,16 @@ export function WidgetNavigation({
 
   const { trackWidgetSelected } = useAppAnalytics();
   const { startNewFlow } = useAnalyticsFlow();
+
+  // Nav items are Tabs triggers (not Links), so prefetch the target route's
+  // lazy chunk on hover/focus manually, mirroring defaultPreload: 'intent'.
+  const router = useRouter();
+  const preloadIntent = useCallback(
+    (targetIntent: Intent) => {
+      void router.preloadRoute({ to: INTENT_PATHS[targetIntent] as '/' }).catch(() => {});
+    },
+    [router]
+  );
 
   const handleWidgetChange = (value: string, method?: SelectionMethod) => {
     // Skip tracking if the widget didn't actually change (e.g. Tabs re-firing during URL param updates)
@@ -342,6 +354,8 @@ export function WidgetNavigation({
                                 ref={intent === widgetIntent ? activeTabRef : null}
                                 variant="icons"
                                 value={widgetIntent}
+                                onMouseEnter={() => preloadIntent(widgetIntent)}
+                                onFocus={() => preloadIntent(widgetIntent)}
                                 className={cn(
                                   'text-textSecondary data-[state=active]:text-text relative h-[78px] w-full px-1',
                                   'lg:justify-start lg:gap-1.5 lg:bg-transparent lg:py-2 lg:hover:bg-transparent',

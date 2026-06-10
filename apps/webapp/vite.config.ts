@@ -208,8 +208,7 @@ export default ({ mode }: { mode: modeEnum }) => {
         target: 'react',
         routesDirectory: path.resolve(__dirname, 'src/routes'),
         generatedRouteTree: path.resolve(__dirname, 'src/routeTree.gen.ts'),
-        // Flipped on in the final step of the route-splitting refactor
-        autoCodeSplitting: false
+        autoCodeSplitting: true
       }),
       react({
         plugins: [['@lingui/swc-plugin', {}]]
