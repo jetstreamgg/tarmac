@@ -25,6 +25,9 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
+const navigateMock = vi.fn();
+let mockEntityParams: Record<string, string | undefined> = {};
+
 vi.mock('@/widgets', async importOriginal => {
   const actual = await importOriginal<typeof import('@/widgets')>();
   return {
@@ -46,11 +49,20 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   })
 }));
 
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@tanstack/react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useNavigate: () => navigateMock
+  };
+});
+
+vi.mock('@/lib/navigation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/navigation')>();
+  return {
+    ...actual,
+    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock],
+    useRouteEntityParams: () => mockEntityParams
   };
 });
 
@@ -78,7 +90,7 @@ vi.mock('@/modules/morpho/components/MorphoVaultWidgetPane', () => ({
 }));
 
 // Render each vault card as a button labelled by its name so the test can click it
-// and assert the resulting search params — not the click internals.
+// and assert the resulting navigation — not the click internals.
 vi.mock('@/modules/expert/components/VaultStatsCard', () => ({
   VaultStatsCard: ({ vaultName, onClick }: { vaultName: string; onClick?: () => void }) => (
     <button onClick={onClick} type="button">
@@ -137,32 +149,42 @@ function clickButtonByText(container: HTMLElement, matcher: RegExp) {
   });
 }
 
-describe('VaultsWidgetPane card-select URL build', () => {
+describe('VaultsWidgetPane card-select navigation', () => {
   beforeEach(() => {
     mocks.chainId = mainnet.id;
     mocks.setSelectedVaultsOption.mockReset();
-    mockSearchParams = new URLSearchParams('widget=vaults');
+    mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
+    navigateMock.mockClear();
+    mockEntityParams = {};
   });
 
-  it('writes vault_module=sky and the vault address when the Spark vault card is selected', () => {
+  it('navigates to the sky vault detail path when the Spark vault card is selected', () => {
     const { container } = renderComponent(
       <VaultsWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
     );
 
     clickButtonByText(container, /Tether Savings/i);
 
-    expect(mockSearchParams.get('vault_module')).toBe('sky');
-    expect(mockSearchParams.get('vault')?.toLowerCase()).toBe(SPARK_USDT_VAULT_ADDRESS.toLowerCase());
+    expect(navigateMock).toHaveBeenCalledTimes(1);
+    const navArg = navigateMock.mock.calls[0][0];
+    expect(navArg.to).toBe('/vaults/$provider/$vaultAddress');
+    expect(navArg.params.provider).toBe('sky');
+    expect(navArg.params.vaultAddress.toLowerCase()).toBe(SPARK_USDT_VAULT_ADDRESS.toLowerCase());
   });
 
-  it('writes vault_module=morpho when a Morpho vault card is selected', () => {
+  it('navigates to the morpho vault detail path when a Morpho vault card is selected', () => {
     const { container } = renderComponent(
       <VaultsWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
     );
 
     clickButtonByText(container, /USDS Flagship/i);
 
-    expect(mockSearchParams.get('vault_module')).toBe('morpho');
+    expect(navigateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: '/vaults/$provider/$vaultAddress',
+        params: expect.objectContaining({ provider: 'morpho' })
+      })
+    );
   });
 });

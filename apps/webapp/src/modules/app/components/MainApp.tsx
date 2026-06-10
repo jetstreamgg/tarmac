@@ -1,9 +1,19 @@
 import { useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { WidgetPane } from './WidgetPane';
 import { DetailsPane } from './DetailsPane';
 import { AppContainer } from './AppContainer';
-import { useSearchParams } from 'react-router-dom';
-import { QueryParams, mapQueryParamToIntent } from '@/lib/constants';
+import {
+  keepSearch,
+  useAppSearchParams,
+  useRouteIntent,
+  useRouteConvertIntent,
+  useRouteExpertIntent,
+  useRouteEntityParams
+} from '@/lib/navigation';
+import { QueryParams, CHAIN_WIDGET_MAP, COMING_SOON_MAP } from '@/lib/constants';
+import { ConvertIntent, Intent } from '@/lib/enums';
+import { vaultsIntentForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
@@ -20,6 +30,7 @@ import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
+import { isL2ChainId } from '@/utils';
 
 export function MainApp() {
   const {
@@ -30,10 +41,14 @@ export function MainApp() {
     setSelectedConvertOption
   } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
   const { bpi } = useBreakpointIndex();
 
-  const intent = mapQueryParamToIntent(searchParams.get(QueryParams.Widget));
+  const intent = useRouteIntent();
+  const convertIntent = useRouteConvertIntent();
+  const expertIntent = useRouteExpertIntent();
+  const { rewardContract, provider } = useRouteEntityParams();
 
   const chainId = useChainId();
   const chains = useChains();
@@ -82,10 +97,12 @@ export function MainApp() {
     }
   });
 
-  const widgetParam = searchParams.get(QueryParams.Widget);
   const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const network = searchParams.get(QueryParams.Network) || undefined;
 
+  // The chain the URL points at: the network param wins over the connected
+  // chain so navigation validates against the target network while a wallet
+  // switch is still in flight.
   const newChainId = network
     ? (chains.find(chain => normalizeUrlParam(chain.name) === normalizeUrlParam(network))?.id ?? chainId)
     : chainId;
@@ -114,37 +131,77 @@ export function MainApp() {
   // If the user is connected to a Safe Wallet using WalletConnect, notify they can use the Safe App
   useSafeAppNotification();
 
-  // Run validation on search params whenever search params change
+  // Route validation: redirects that depend on chain or user state, replacing
+  // the navigation-param stripping the legacy query-param validator did.
   useEffect(() => {
-    setSearchParams(
-      params => {
-        // Runs initial validation for globally allowed params
-        const validatedParams = validateSearchParams(
-          params,
-          rewardContracts,
-          widgetParam || '',
-          setSelectedRewardContract,
-          newChainId,
-          chains,
-          setSelectedExpertOption,
-          expertRiskDisclaimerShown,
-          setSelectedVaultsOption,
-          setSelectedConvertOption
-        );
-        return validatedParams;
-      },
-      { replace: true }
-    );
+    const allowedIntents = CHAIN_WIDGET_MAP[newChainId] ?? [];
+    const comingSoon = COMING_SOON_MAP[newChainId] ?? [];
+
+    // Module not available (or coming soon) on the target chain → Balances.
+    if (!allowedIntents.includes(intent) || comingSoon.includes(intent)) {
+      void navigate({ to: '/', search: keepSearch, replace: true });
+      return;
+    }
+
+    // Upgrade is not available on L2 chains → Convert overview.
+    if (convertIntent === ConvertIntent.UPGRADE_INTENT && isL2ChainId(newChainId)) {
+      void navigate({ to: '/convert', search: keepSearch, replace: true });
+      return;
+    }
+
+    // Expert submodules require the risk disclaimer to have been acknowledged.
+    if (expertIntent !== undefined && !expertRiskDisclaimerShown) {
+      void navigate({ to: '/expert', search: keepSearch, replace: true });
+      return;
+    }
+
+    // Reward detail routes must point at a reward contract available on the
+    // target chain.
+    if (
+      rewardContract !== undefined &&
+      !rewardContracts?.some(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
+    ) {
+      void navigate({ to: '/rewards', search: keepSearch, replace: true });
+    }
   }, [
-    searchParams,
-    rewardContracts,
-    setSelectedRewardContract,
-    widgetParam,
-    setSelectedExpertOption,
+    intent,
+    convertIntent,
+    expertIntent,
+    rewardContract,
+    newChainId,
     expertRiskDisclaimerShown,
-    setSelectedVaultsOption,
-    setSelectedConvertOption
+    rewardContracts,
+    navigate
   ]);
+
+  // Sync route-derived selections into the config context for consumers like
+  // the details panes.
+  useEffect(() => {
+    const contract =
+      intent === Intent.REWARDS_INTENT && rewardContract
+        ? rewardContracts?.find(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
+        : undefined;
+    setSelectedRewardContract(contract);
+  }, [intent, rewardContract, rewardContracts, setSelectedRewardContract]);
+
+  useEffect(() => {
+    setSelectedConvertOption(convertIntent);
+  }, [convertIntent, setSelectedConvertOption]);
+
+  useEffect(() => {
+    setSelectedExpertOption(expertRiskDisclaimerShown ? expertIntent : undefined);
+  }, [expertIntent, expertRiskDisclaimerShown, setSelectedExpertOption]);
+
+  useEffect(() => {
+    setSelectedVaultsOption(provider ? vaultsIntentForVaultModule(provider) : undefined);
+  }, [provider, setSelectedVaultsOption]);
+
+  // Run validation on the remaining query-driven search params whenever they change
+  useEffect(() => {
+    setSearchParams(params => validateSearchParams(params, intent, convertIntent, isL2ChainId(newChainId)), {
+      replace: true
+    });
+  }, [searchParams, intent, convertIntent, newChainId]);
 
   useEffect(() => {
     // If there's no network param, default to the current chain

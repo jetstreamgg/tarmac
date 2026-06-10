@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { useChainId, useChains } from 'wagmi';
 import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
@@ -78,7 +78,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'vaults',
     subtitle: 'Rates up to {rate}',
     module: 'morpho',
-    url: '?widget=vaults'
+    url: '/vaults'
   },
   {
     label: 'Rewards and Points',
@@ -86,7 +86,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'rewards',
     subtitle: 'Rates up to {rate}',
     module: 'rewards',
-    url: '?widget=rewards'
+    url: '/rewards'
   },
   {
     label: 'Sky Savings Rate (sUSDS)',
@@ -94,7 +94,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'savings',
     subtitle: 'Rate: {rate}',
     module: 'savings',
-    url: '?widget=savings'
+    url: '/savings'
   },
   {
     label: 'Tether Savings (sUSDT)',
@@ -102,7 +102,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'sparkVault',
     subtitle: 'Rate: {rate}',
     module: 'morpho',
-    url: `?widget=vaults&vault=${SPARK_USDT_VAULT_ADDRESS}&vault_module=${vaultModuleForProvider('sky')}`,
+    url: `/vaults/${vaultModuleForProvider('sky')}/${SPARK_USDT_VAULT_ADDRESS}`,
     badge: 'New'
   },
   {
@@ -111,7 +111,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     tokens: [],
     rateKey: 'fixedYield',
     module: 'fixedYield',
-    url: '?widget=fixed'
+    url: '/fixed'
   },
   {
     label: 'Expert: stUSDS',
@@ -119,7 +119,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'stusds',
     subtitle: 'Rate: {rate}',
     module: 'stusds',
-    url: '?widget=expert&expert_module=stusds'
+    url: '/expert/stusds'
   }
 ];
 
@@ -130,14 +130,14 @@ const SKY_ACTIONS: BalancesAction[] = [
     rateKey: 'staking',
     subtitle: 'Rate: {rate}',
     module: 'stake',
-    url: '?widget=stake'
+    url: '/stake'
   },
   {
     label: 'Borrow USDS',
     tokens: ['USDS'],
     module: 'stake',
     subtitle: 'Minimum borrow amount is 30K USDS',
-    url: '?widget=stake'
+    url: '/stake'
   }
 ];
 
@@ -147,31 +147,31 @@ const TOKEN_ACTIONS: BalancesAction[] = [
     tokens: ['USDC', 'USDS'],
     module: 'convert',
     subtitle: 'Convert USDC and USDS at a fixed 1:1 rate',
-    url: '?widget=convert&convert_module=psm&source_token=USDC'
+    url: '/convert/psm?source_token=USDC'
   },
   {
     label: 'Get USDS',
     tokens: ['USDS'],
     module: 'trade',
-    url: '?widget=convert&convert_module=trade&target_token=USDS'
+    url: '/convert/trade?target_token=USDS'
   },
   {
     label: 'Get SKY',
     tokens: ['SKY'],
     module: 'trade',
-    url: '?widget=convert&convert_module=trade&target_token=SKY'
+    url: '/convert/trade?target_token=SKY'
   },
   {
     label: 'Upgrade DAI to USDS',
     tokens: ['DAI', 'USDS'],
     module: 'upgrade',
-    url: '?widget=convert&convert_module=upgrade&source_token=DAI'
+    url: '/convert/upgrade?source_token=DAI'
   },
   {
     label: 'Upgrade MKR to SKY',
     tokens: ['MKR', 'SKY'],
     module: 'upgrade',
-    url: '?widget=convert&convert_module=upgrade&source_token=MKR'
+    url: '/convert/upgrade?source_token=MKR'
   }
 ];
 
@@ -381,7 +381,7 @@ export function BalancesSuggestedActions({
   variant?: 'default' | 'card' | 'card-sm';
   restrictedModules?: string[];
 }) {
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const chainId = useChainId();
   const chains = useChains();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
@@ -451,27 +451,29 @@ export function BalancesSuggestedActions({
       const targetNetworkName = getTargetNetworkName(action.module);
       const isNetworkChange = targetNetworkName !== networkName;
 
-      const params = new URLSearchParams(action.url.replace(/^\?/, ''));
-      params.set(QueryParams.Network, targetNetworkName);
+      const url = new URL(action.url, 'http://internal');
+      const actionSearch = Object.fromEntries(url.searchParams);
 
       // Show switching UI if changing networks
       if (isNetworkChange) {
         setIsSwitchingNetwork(true);
       }
 
-      setSearchParams(prev => {
-        const next = new URLSearchParams();
-        [QueryParams.Locale, QueryParams.Details].forEach(param => {
-          const value = prev.get(param);
-          if (value !== null) next.set(param, value);
-        });
-        params.forEach((value, key) => {
-          next.set(key, value);
-        });
-        return next;
+      void navigate({
+        to: url.pathname as '/',
+        search: prev => {
+          const next: Record<string, string> = {};
+          [QueryParams.Locale, QueryParams.Details].forEach(param => {
+            const value = prev[param];
+            if (value !== undefined) next[param] = value;
+          });
+          Object.assign(next, actionSearch);
+          next[QueryParams.Network] = targetNetworkName;
+          return next;
+        }
       });
     },
-    [networkName, getTargetNetworkName, setIsSwitchingNetwork, setSearchParams]
+    [networkName, getTargetNetworkName, setIsSwitchingNetwork, navigate]
   );
 
   if (actions.length === 0) return null;

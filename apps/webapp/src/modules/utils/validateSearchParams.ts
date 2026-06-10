@@ -1,76 +1,33 @@
-import { isMarketMatured, PENDLE_MARKETS, RewardContract } from '@/hooks';
 import { SUPPORTED_TOKEN_SYMBOLS } from '@/widgets';
-import {
-  QueryParams,
-  IntentMapping,
-  CHAIN_WIDGET_MAP,
-  mapQueryParamToIntent,
-  COMING_SOON_MAP,
-  ExpertIntentMapping,
-  ConvertIntentMapping,
-  FixedIntentMapping,
-  IS_PRODUCTION_ENV
-} from '@/lib/constants';
+import { QueryParams, IS_PRODUCTION_ENV } from '@/lib/constants';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
-import { ConvertIntent, ExpertIntent, Intent, VaultsIntent } from '@/lib/enums';
+import { ConvertIntent, Intent } from '@/lib/enums';
 import { defaultConfig } from '../config/default-config';
-import { isL2ChainId } from '@/utils';
-import { Chain } from 'viem';
-import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { vaultsIntentForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 
-// TODO: Remove once all references to widget=trade|upgrade are migrated
-export const rewriteLegacyWidgetParams = (searchParams: URLSearchParams): void => {
-  const widget = searchParams.get(QueryParams.Widget)?.toLowerCase();
-  const network = searchParams.get(QueryParams.Network);
-  const shouldRewriteUpgrade =
-    widget === IntentMapping[Intent.UPGRADE_INTENT] &&
-    (!network || normalizeUrlParam(network) === normalizeUrlParam('ethereum'));
-
-  if (widget === IntentMapping[Intent.TRADE_INTENT] || shouldRewriteUpgrade) {
-    searchParams.set(QueryParams.Widget, IntentMapping[Intent.CONVERT_INTENT]);
-    if (!searchParams.has(QueryParams.ConvertModule)) {
-      searchParams.set(QueryParams.ConvertModule, widget);
-    }
-  }
-};
-
-const resolveWidgetForTokenValidation = (searchParams: URLSearchParams): string | undefined => {
-  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-
-  if (widgetParam !== IntentMapping[Intent.CONVERT_INTENT]) {
-    return widgetParam;
-  }
-
-  const convertModule = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
-  if (convertModule === ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]) {
-    return IntentMapping[Intent.UPGRADE_INTENT];
-  }
-  if (convertModule === ConvertIntentMapping[ConvertIntent.TRADE_INTENT]) {
-    return IntentMapping[Intent.TRADE_INTENT];
-  }
-  if (convertModule === ConvertIntentMapping[ConvertIntent.PSM_INTENT]) {
-    return ConvertIntentMapping[ConvertIntent.PSM_INTENT];
-  }
-  return undefined;
-};
-
+/**
+ * Validates the search params that remain query-driven after the path
+ * navigation migration (network, details, flow, tokens...). Navigation state
+ * (module, submodule, entities) lives in the path and is validated by the
+ * routes and MainApp's route-validation effect.
+ */
 export const validateSearchParams = (
   searchParams: URLSearchParams,
-  rewardContracts: RewardContract[],
-  widget: string,
-  setSelectedRewardContract: (rewardContract?: RewardContract) => void,
-  chainId: number,
-  chains: readonly [Chain, ...Chain[]],
-  setSelectedExpertOption: (expertOption: ExpertIntent | undefined) => void,
-  expertRiskDisclaimerShown: boolean,
-  setSelectedVaultsOption: (vaultsOption: VaultsIntent | undefined) => void,
-  setSelectedConvertOption: (convertOption: ConvertIntent | undefined) => void
+  intent: Intent,
+  convertIntent: ConvertIntent | undefined,
+  isL2Chain: boolean
 ) => {
-  const chainInUrl = chains.find(c => normalizeUrlParam(c.name) === searchParams.get(QueryParams.Network));
-  const isL2Chain = isL2ChainId(chainInUrl?.id || chainId);
+  // Token params are validated against the module that consumes them: savings,
+  // and the convert submodules (upgrade only outside L2 chains).
+  const acceptsSourceToken =
+    intent === Intent.SAVINGS_INTENT ||
+    (intent === Intent.CONVERT_INTENT &&
+      (convertIntent === ConvertIntent.TRADE_INTENT ||
+        convertIntent === ConvertIntent.PSM_INTENT ||
+        (convertIntent === ConvertIntent.UPGRADE_INTENT && !isL2Chain)));
 
-  searchParams.forEach((value, key) => {
+  // Iterate over a snapshot: deleting from URLSearchParams while forEach-ing
+  // skips the entry that shifts into the deleted slot.
+  [...searchParams.entries()].forEach(([key, value]) => {
     // removes any query param not found in QueryParams (preserve valid geo override params in non-production)
     if (!Object.values(QueryParams).includes(key as QueryParams)) {
       if (!IS_PRODUCTION_ENV && GEO_OVERRIDE_PARAMS.includes(key)) {
@@ -87,198 +44,38 @@ export const validateSearchParams = (
       searchParams.delete(key);
     }
 
-    // removes widget param is value is not valid
-    if (
-      key === QueryParams.Widget &&
-      (!Object.values(IntentMapping).includes(value.toLowerCase()) ||
-        !CHAIN_WIDGET_MAP[chainInUrl?.id || chainId].includes(mapQueryParamToIntent(value)) ||
-        COMING_SOON_MAP[chainInUrl?.id || chainId]?.includes(mapQueryParamToIntent(value)))
-    ) {
-      searchParams.delete(key);
-    }
-
-    // removes rewards param if value is not a valid reward contract address
-    // also sets the selected reward contract if the reward contract address is valid
-    if (key === QueryParams.Reward) {
-      const rewardContract = rewardContracts?.find(
-        f => f.contractAddress?.toLowerCase() === value?.toLowerCase()
-      );
-      if (!rewardContract) {
-        searchParams.delete(key);
-      } else {
-        setSelectedRewardContract(rewardContract);
-      }
-    }
-
-    // Reset the selected reward contract if the widget is set to rewards and no valid reward contract parameter exists.
-    if (widget === IntentMapping[Intent.REWARDS_INTENT]) {
-      if (!searchParams.get(QueryParams.Reward)) {
-        setSelectedRewardContract(undefined);
-      }
-    }
-
-    // if widget changes to something other than rewards, reset the selected reward contract
-    if (widget !== IntentMapping[Intent.REWARDS_INTENT]) {
-      searchParams.delete(QueryParams.Reward);
-      setSelectedRewardContract(undefined);
-    }
-
-    // removes expertModule param if value is not a valid expert intent or if the expert risk hasn't been acknowledged
-    // also sets the selected expert option if the expertIntent is valid
-    if (key === QueryParams.ExpertModule) {
-      const intent = Object.entries(ExpertIntentMapping).find(
-        ([, intentValue]) => intentValue === value
-      )?.[0] as ExpertIntent | undefined;
-      if (!intent || !expertRiskDisclaimerShown) {
-        searchParams.delete(key);
-      } else {
-        setSelectedExpertOption(intent);
-      }
-    }
-
-    // Reset the selected expert option if the widget is set to expert and no valid expert option parameter exists.
-    if (widget === IntentMapping[Intent.EXPERT_INTENT]) {
-      if (!searchParams.get(QueryParams.ExpertModule)) {
-        setSelectedExpertOption(undefined);
-      }
-    }
-
-    // if widget changes to something other than advanced, reset the selected advanced option
-    if (widget !== IntentMapping[Intent.EXPERT_INTENT]) {
-      searchParams.delete(QueryParams.ExpertModule);
-      setSelectedExpertOption(undefined);
-    }
-
-    // validates vaultModule param: its value carries the open vault's provider
-    // (`morpho` | `spark`). An unrecognised value is dropped rather than passed
-    // through; a recognised one selects the matching vaults option.
-    if (key === QueryParams.VaultModule) {
-      const intent = vaultsIntentForVaultModule(value);
-      if (!intent) {
-        searchParams.delete(key);
-      } else {
-        setSelectedVaultsOption(intent);
-      }
-    }
-
-    // Reset the selected vault option if the widget is set to vaults and no valid vault option parameter exists.
-    if (widget === IntentMapping[Intent.VAULTS_INTENT]) {
-      if (!searchParams.get(QueryParams.VaultModule)) {
-        setSelectedVaultsOption(undefined);
-      }
-    }
-
-    // if widget changes to something other than vaults, reset the selected vault option
-    if (widget !== IntentMapping[Intent.VAULTS_INTENT]) {
-      searchParams.delete(QueryParams.VaultModule);
-      setSelectedVaultsOption(undefined);
-    }
-
-    // validates convertModule param
-    if (key === QueryParams.ConvertModule) {
-      const intent = Object.entries(ConvertIntentMapping).find(
-        ([, intentValue]) => intentValue === value
-      )?.[0] as ConvertIntent | undefined;
-      // Upgrade is not available on L2 chains
-      if (!intent || (intent === ConvertIntent.UPGRADE_INTENT && isL2Chain)) {
-        searchParams.delete(key);
-      } else {
-        setSelectedConvertOption(intent);
-      }
-    }
-
-    // Reset the selected convert option if the widget is set to convert and no valid convert option parameter exists.
-    if (widget === IntentMapping[Intent.CONVERT_INTENT]) {
-      if (!searchParams.get(QueryParams.ConvertModule)) {
-        setSelectedConvertOption(undefined);
-      }
-    }
-
-    // if widget changes to something other than convert, reset the selected convert option
-    if (widget !== IntentMapping[Intent.CONVERT_INTENT]) {
-      searchParams.delete(QueryParams.ConvertModule);
-      setSelectedConvertOption(undefined);
-    }
-
-    // validates fixed_module param against FixedIntentMapping
-    if (key === QueryParams.FixedModule) {
-      const isValidIntent = Object.values(FixedIntentMapping).includes(value);
-      if (!isValidIntent) {
-        searchParams.delete(key);
-      }
-    }
-
-    // validates market param: must be an active (non-matured) market address.
-    // Matured markets have no detail view — they only render as redeem rows
-    // on the overview, so the URL state would be misleading.
-    if (key === QueryParams.Market) {
-      const lower = value.toLowerCase();
-      const market = PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
-      const isValid = !!market && !isMarketMatured(market.expiry);
-      if (!isValid) {
-        searchParams.delete(QueryParams.FixedModule);
-        searchParams.delete(key);
-      }
-    }
-
-    // if widget changes to something other than pendle, drop the pendle params
-    if (widget !== IntentMapping[Intent.FIXED_INTENT]) {
-      searchParams.delete(QueryParams.FixedModule);
-      searchParams.delete(QueryParams.Market);
-    }
-
     // validate source token
     if (key === QueryParams.SourceToken) {
-      // source token is only valid for upgrade, savings, trade, and psm on Mainnet,
-      // and for savings, trade, and psm on L2 chains.
-      // Convert delegates to a submodule via convert_module.
-      const widgetParam = resolveWidgetForTokenValidation(searchParams);
-      if (
-        !widgetParam ||
-        (![
-          IntentMapping[Intent.UPGRADE_INTENT],
-          IntentMapping[Intent.SAVINGS_INTENT],
-          IntentMapping[Intent.TRADE_INTENT],
-          ConvertIntentMapping[ConvertIntent.PSM_INTENT]
-        ].includes(widgetParam.toLowerCase()) &&
-          !isL2Chain) ||
-        (![
-          IntentMapping[Intent.SAVINGS_INTENT],
-          IntentMapping[Intent.TRADE_INTENT],
-          ConvertIntentMapping[ConvertIntent.PSM_INTENT]
-        ].includes(widgetParam.toLowerCase()) &&
-          isL2Chain)
-      ) {
+      if (!acceptsSourceToken) {
         searchParams.delete(key);
-      }
-
-      // if widget is upgrade, only valid source token is MKR, DAI or USDS
-      if (widgetParam === IntentMapping[Intent.UPGRADE_INTENT]) {
-        if (!['mkr', 'dai', 'usds'].includes(value.toLowerCase())) {
-          searchParams.delete(key);
+      } else if (intent === Intent.CONVERT_INTENT) {
+        // if module is upgrade, only valid source token is MKR, DAI or USDS
+        if (convertIntent === ConvertIntent.UPGRADE_INTENT) {
+          if (!['mkr', 'dai', 'usds'].includes(value.toLowerCase())) {
+            searchParams.delete(key);
+          }
         }
-      }
 
-      // if widget is trade, check if token is valid
-      if (widgetParam === IntentMapping[Intent.TRADE_INTENT]) {
-        const tradeValidValues = Object.values(SUPPORTED_TOKEN_SYMBOLS).map(symbol => symbol.toLowerCase());
-        if (!tradeValidValues.includes(value.toLowerCase())) {
-          searchParams.delete(key);
+        // if module is trade, check if token is supported
+        if (convertIntent === ConvertIntent.TRADE_INTENT) {
+          const tradeValidValues = Object.values(SUPPORTED_TOKEN_SYMBOLS).map(symbol => symbol.toLowerCase());
+          if (!tradeValidValues.includes(value.toLowerCase())) {
+            searchParams.delete(key);
+          }
         }
-      }
 
-      if (widgetParam === ConvertIntentMapping[ConvertIntent.PSM_INTENT]) {
-        if (!['usdc', 'usds'].includes(value.toLowerCase())) {
-          searchParams.delete(key);
+        if (convertIntent === ConvertIntent.PSM_INTENT) {
+          if (!['usdc', 'usds'].includes(value.toLowerCase())) {
+            searchParams.delete(key);
+          }
         }
       }
     }
 
     // validate target token
     if (key === QueryParams.TargetToken) {
-      // target token is only valid on trade (including convert+trade)
-      const widgetParam = resolveWidgetForTokenValidation(searchParams);
-      if (!widgetParam || ![IntentMapping[Intent.TRADE_INTENT]].includes(widgetParam)) {
+      // target token is only valid on trade
+      if (intent !== Intent.CONVERT_INTENT || convertIntent !== ConvertIntent.TRADE_INTENT) {
         searchParams.delete(key);
       }
 
@@ -298,7 +95,6 @@ export const validateSearchParams = (
         }
       }
     }
-
   });
 
   return searchParams;

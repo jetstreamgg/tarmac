@@ -2,15 +2,13 @@ import { Tooltip, TooltipArrow, TooltipContent, TooltipPortal, TooltipTrigger } 
 import { Text } from '@/modules/layout/components/Typography';
 import { t } from '@lingui/core/macro';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
-import { useSearchParams } from 'react-router-dom';
-import { mapQueryParamToIntent, QueryParams } from '@/lib/constants';
+import { useRouteIntent } from '@/lib/navigation';
 import { requiresMainnet } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Loader2 } from 'lucide-react';
 
 export function NetworkSwitcher() {
-  const [searchParams] = useSearchParams();
-  const intent = mapQueryParamToIntent(searchParams.get(QueryParams.Widget));
+  const intent = useRouteIntent();
   const { isSwitchingNetwork } = useNetworkSwitch();
 
   // Check if current intent requires mainnet - if so, always disable the switcher
@@ -22,7 +20,7 @@ export function NetworkSwitcher() {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center justify-center rounded-xl border border-transparent px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15">
+          <div className="from-primary-start/100 to-primary-end/100 hover:from-primary-start/100 hover:to-primary-end/100 focus:from-primary-start/100 focus:to-primary-end/100 flex items-center justify-center rounded-xl border border-transparent bg-radial-(--gradient-position) px-[9px] py-2 bg-blend-overlay hover:border-transparent hover:bg-white/10 focus:border-transparent focus:bg-white/15">
             <Loader2 className="h-5 w-5 animate-spin text-white" />
           </div>
         </TooltipTrigger>

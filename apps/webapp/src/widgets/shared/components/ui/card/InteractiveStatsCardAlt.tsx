@@ -1,7 +1,7 @@
 import { Card } from '@/widgets/components/ui/card';
 import { Text } from '../Typography';
 import { TokenIcon } from '../token/TokenIcon';
-import { Link } from 'react-router-dom';
+import { AppLink } from '@/lib/navigation';
 import { Logo, LogoName } from '../../ModuleLogo';
 
 export const InteractiveStatsCardAlt = ({
@@ -44,7 +44,13 @@ export const InteractiveStatsCardAlt = ({
         </div>
         <Logo logoName={logoName} />
       </div>
-      {url && <Link to={url} className="absolute inset-0 z-0 h-full w-full rounded-[20px]" />}
+      {url && (
+        <AppLink
+          to={url}
+          aria-label={typeof title === 'string' ? title : 'Open details'}
+          className="absolute inset-0 z-0 h-full w-full rounded-[20px]"
+        />
+      )}
     </Card>
   );
 };

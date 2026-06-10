@@ -9,8 +9,8 @@ export type SharedProps = {
 export type WidgetSubItem = {
   label: string;
   icon?: React.ReactNode;
-  /** Query params to set when this sub-item is clicked */
-  params: Record<string, string>;
+  /** Path to navigate to when this sub-item is clicked */
+  to: string;
   /** Target intent for network determination (defaults to parent widget's intent) */
   intent?: Intent;
 };

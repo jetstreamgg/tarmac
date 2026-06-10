@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useChains } from 'wagmi';
+import { useNavigate } from '@tanstack/react-router';
+import { INTENT_PATHS, retainOnNavigate } from '@/lib/navigation';
 import { Intent } from '@/lib/enums';
 import { requiresMainnet } from '@/lib/widget-network-map';
 import { isL2ChainId, isTestnetId } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { QueryParams, mapIntentToQueryParam } from '@/lib/constants';
-import { deleteSearchParams } from '@/modules/utils/deleteSearchParams';
+import { QueryParams } from '@/lib/constants';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
@@ -27,15 +26,14 @@ interface UseNetworkAutoSwitchReturn {
  *
  * Responsibilities:
  * - Auto-switches to mainnet for mainnet-only widgets
- * - Manages search params for network and widget navigation
+ * - Navigates to the target module path, retaining cross-module search params
  * - Tracks auto-switching state for UI feedback
  */
 export function useNetworkAutoSwitch({
   currentChainId,
   currentIntent
 }: UseNetworkAutoSwitchProps): UseNetworkAutoSwitchReturn {
-  const [, setSearchParams] = useSearchParams();
-  const chains = useChains();
+  const navigate = useNavigate();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
   const { selectedRewardContract } = useConfigContext();
   const [isAutoSwitching, setIsAutoSwitching] = useState(false);
@@ -53,30 +51,29 @@ export function useNetworkAutoSwitch({
 
   const handleWidgetNavigation = useCallback(
     (targetIntent: Intent) => {
-      const queryParam = mapIntentToQueryParam(targetIntent);
-
       // Store the previous intent before switching
       setPreviousIntent(currentIntent);
+
+      // Rewards keeps the previously selected reward contract as a detail route.
+      const navigateToTarget = (networkOverride?: string) => {
+        const rewardContract =
+          targetIntent === Intent.REWARDS_INTENT ? selectedRewardContract?.contractAddress : undefined;
+        const search = (prev: Record<string, string | undefined>) => {
+          const retained = retainOnNavigate(prev);
+          if (networkOverride) retained[QueryParams.Network] = networkOverride;
+          return retained;
+        };
+        if (rewardContract) {
+          void navigate({ to: '/rewards/$rewardContract', params: { rewardContract }, search });
+        } else {
+          void navigate({ to: INTENT_PATHS[targetIntent], search });
+        }
+      };
 
       // IMPORTANT: Skip all auto-switching logic if we're on a testnet
       // Testnets are for testing and we shouldn't disrupt the user's testing environment
       if (currentChainId && isTestnetId(currentChainId)) {
-        // Just change the widget without any network switching
-        setSearchParams(prevParams => {
-          const searchParams = deleteSearchParams(prevParams);
-          searchParams.set(QueryParams.Widget, queryParam);
-
-          // Handle rewards-specific params even on testnet
-          if (targetIntent === Intent.REWARDS_INTENT) {
-            if (selectedRewardContract?.contractAddress) {
-              searchParams.set(QueryParams.Reward, selectedRewardContract.contractAddress);
-            }
-          } else {
-            searchParams.delete(QueryParams.Reward);
-          }
-
-          return searchParams;
-        });
+        navigateToTarget();
         return; // Exit early for testnets
       }
 
@@ -85,39 +82,13 @@ export function useNetworkAutoSwitch({
         // Auto-switch to mainnet for mainnet-only widgets (they're not available on L2)
         setIsSwitchingNetwork(true);
         setIsAutoSwitching(true);
-
-        setSearchParams(prevParams => {
-          const searchParams = deleteSearchParams(prevParams);
-          // Set network to Ethereum mainnet
-          searchParams.set(QueryParams.Network, normalizeUrlParam('Ethereum'));
-          searchParams.set(QueryParams.Widget, queryParam);
-
-          // Handle rewards-specific params
-          if (targetIntent === Intent.REWARDS_INTENT && selectedRewardContract?.contractAddress) {
-            searchParams.set(QueryParams.Reward, selectedRewardContract.contractAddress);
-          }
-
-          return searchParams;
-        });
+        navigateToTarget(normalizeUrlParam('Ethereum'));
       } else {
         // Normal widget change without network switch
-        setSearchParams(prevParams => {
-          const searchParams = deleteSearchParams(prevParams);
-          searchParams.set(QueryParams.Widget, queryParam);
-
-          // Handle rewards-specific params
-          if (targetIntent === Intent.REWARDS_INTENT) {
-            if (selectedRewardContract?.contractAddress) {
-              searchParams.set(QueryParams.Reward, selectedRewardContract.contractAddress);
-            }
-          } else {
-            searchParams.delete(QueryParams.Reward);
-          }
-          return searchParams;
-        });
+        navigateToTarget();
       }
     },
-    [currentChainId, currentIntent, chains, setIsSwitchingNetwork, setSearchParams, selectedRewardContract]
+    [currentChainId, currentIntent, navigate, setIsSwitchingNetwork, selectedRewardContract]
   );
 
   return {

@@ -1,4 +1,5 @@
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/navigation';
 
 import { TOKENS, useUpgradeHistory } from '@/hooks';
 import {
@@ -9,7 +10,7 @@ import {
   UpgradeFlow,
   upgradeTokens
 } from '@/widgets';
-import { ConvertIntentMapping, IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
@@ -21,7 +22,7 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const { setSelectedConvertOption } = useConfigContext();
   const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
 
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as UpgradeFlow | undefined;
   const [currentToken, setCurrentToken] = useState<string | undefined>();
@@ -29,14 +30,13 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
   // Get source_token from URL params
   const sourceToken = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
 
-  const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-  const isConvertContext = widgetParam === IntentMapping[Intent.CONVERT_INTENT];
+  const intent = useRouteIntent();
+  const convertIntent = useRouteConvertIntent();
+  const navigate = useNavigate();
+  const isConvertContext = intent === Intent.CONVERT_INTENT;
 
   const handleBackToConvert = () => {
-    setSearchParams(params => {
-      params.delete(QueryParams.ConvertModule);
-      return params;
-    });
+    void navigate({ to: '/convert', search: keepSearch });
     setSelectedConvertOption(undefined);
   };
 
@@ -68,12 +68,8 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
     originToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    const widgetParam = searchParams.get(QueryParams.Widget)?.toLowerCase();
-    const convertModuleParam = searchParams.get(QueryParams.ConvertModule)?.toLowerCase();
     const isUpgradeContext =
-      widgetParam === IntentMapping[Intent.UPGRADE_INTENT] ||
-      (widgetParam === IntentMapping[Intent.CONVERT_INTENT] &&
-        convertModuleParam === ConvertIntentMapping[ConvertIntent.UPGRADE_INTENT]);
+      intent === Intent.CONVERT_INTENT && convertIntent === ConvertIntent.UPGRADE_INTENT;
 
     if (!isUpgradeContext) {
       return;

@@ -10,8 +10,9 @@ import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Intent } from '@/lib/enums';
 import { useChainModalContext } from '@/modules/ui/context/ChainModalContext';
-import { useSearchParams } from 'react-router-dom';
-import { mapIntentToQueryParam, QueryParams } from '@/lib/constants';
+import { useNavigate } from '@tanstack/react-router';
+import { INTENT_PATHS, keepSearch, useAppSearchParams } from '@/lib/navigation';
+import { QueryParams } from '@/lib/constants';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useIsSafeWallet } from '@/hooks';
 import { Trans } from '@lingui/react/macro';
@@ -58,7 +59,8 @@ export function ChainModal({
   const client = useClient();
   const chains = useChains();
   const isSafeWallet = useIsSafeWallet();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const navigate = useNavigate();
   const {
     handleSwitchChain,
     isPending: isSwitchChainPending,
@@ -125,18 +127,24 @@ export function ChainModal({
                         const currentNetwork = searchParams.get(QueryParams.Network);
                         // Only update if the network actually changed (compare normalized to avoid case-only diffs)
                         if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
-                          setSearchParams(
-                            (params: URLSearchParams) => {
-                              if (normalizeUrlParam(currentNetwork || '') !== normalizedNewChainName) {
+                          if (nextIntent) {
+                            void navigate({
+                              to: INTENT_PATHS[nextIntent],
+                              search: prev => ({
+                                ...keepSearch(prev),
+                                [QueryParams.Network]: normalizedNewChainName
+                              }),
+                              replace: true
+                            });
+                          } else {
+                            setSearchParams(
+                              (params: URLSearchParams) => {
                                 params.set(QueryParams.Network, normalizedNewChainName);
-                              }
-                              if (nextIntent) {
-                                params.set(QueryParams.Widget, mapIntentToQueryParam(nextIntent));
-                              }
-                              return params;
-                            },
-                            { replace: true }
-                          );
+                                return params;
+                              },
+                              { replace: true }
+                            );
+                          }
                         }
                       }
                     },

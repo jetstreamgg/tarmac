@@ -7,10 +7,10 @@ import {
   SavingsFlow
 } from '@/widgets';
 import { useSavingsHistory } from '@/hooks';
-import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@/utils';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
@@ -18,7 +18,8 @@ import { Intent } from '@/lib/enums';
 export function SavingsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const intent = useRouteIntent();
   const chainId = useChainId();
 
   const isL2 = isL2ChainId(chainId);
@@ -31,7 +32,7 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
     originToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.SAVINGS_INTENT]) {
+    if (intent !== Intent.SAVINGS_INTENT) {
       return;
     }
 

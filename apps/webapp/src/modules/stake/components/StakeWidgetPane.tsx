@@ -1,8 +1,8 @@
 import { TxStatus, WidgetStateChangeParams, StakeFlow, StakeModuleWidget, StakeAction } from '@/widgets';
-import { IntentMapping, QueryParams, REFRESH_DELAY } from '@/lib/constants';
+import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { Intent } from '@/lib/enums';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useStakeHistory } from '@/hooks';
@@ -12,30 +12,27 @@ import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
 export function StakeWidgetPane(sharedProps: SharedProps) {
   const { selectedStakeUrnIndex, setSelectedStakeUrnIndex } = useConfigContext();
   const { mutate: refreshStakeHistory } = useStakeHistory();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const intent = useRouteIntent();
   const urnIndexParam = searchParams.get(QueryParams.UrnIndex);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  // Use ref to always access the latest searchParams without causing re-renders
-  const searchParamsRef = useRef(searchParams);
+  // Use a ref to always access the latest route intent without stale closures
+  const intentRef = useRef(intent);
   useEffect(() => {
-    searchParamsRef.current = searchParams;
-  }, [searchParams]);
+    intentRef.current = intent;
+  }, [intent]);
 
   const onStakeUrnChange = useCallback(
     (urn?: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined }) => {
-      // Use ref to access current searchParams without stale closure
-      const currentWidget = searchParamsRef.current.get(QueryParams.Widget);
-
-      // Prevent race conditions
-      if (currentWidget !== IntentMapping[Intent.STAKE_INTENT]) {
+      // Prevent race conditions (ref avoids a stale closure)
+      if (intentRef.current !== Intent.STAKE_INTENT) {
         return;
       }
 
       setSearchParams(
         params => {
           if (urn?.urnAddress && urn?.urnIndex !== undefined) {
-            params.set(QueryParams.Widget, IntentMapping[Intent.STAKE_INTENT]);
             params.set(QueryParams.UrnIndex, urn.urnIndex.toString());
           } else {
             params.delete(QueryParams.UrnIndex);
@@ -61,14 +58,9 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     };
   }, [urnIndexParam]);
 
-  const onStakeWidgetStateChange = ({
-    hash,
-    txStatus,
-    widgetState,
-    stakeTab
-  }: WidgetStateChangeParams) => {
+  const onStakeWidgetStateChange = ({ hash, txStatus, widgetState, stakeTab }: WidgetStateChangeParams) => {
     // Prevent race conditions
-    if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.STAKE_INTENT]) {
+    if (intent !== Intent.STAKE_INTENT) {
       return;
     }
 

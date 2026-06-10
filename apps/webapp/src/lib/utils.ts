@@ -1,14 +1,11 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import {
-  ALLOWED_EXTERNAL_DOMAINS,
-  ExpertIntentMapping,
-  mapIntentToQueryParam,
-  QueryParams
-} from './constants';
+import { ALLOWED_EXTERNAL_DOMAINS, ExpertIntentMapping, QueryParams } from './constants';
 import { ExpertIntent, Intent } from './enums';
+import { INTENT_PATHS } from './navigation';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { reportError } from '@/modules/sentry/reportError';
 import { Chain } from 'viem';
 
@@ -96,7 +93,7 @@ const getQueryParams = (url: string, searchParams: URLSearchParams) => {
 
 export const getRewardsUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.REWARDS_INTENT)}`,
+    `${INTENT_PATHS[Intent.REWARDS_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );
 
@@ -106,37 +103,39 @@ export const getSavingsUrl = (
   chains: readonly [Chain, ...Chain[]]
 ) =>
   getQueryParams(
-    `/?network=${chains.find(c => c.id === chainId)?.name}&widget=${mapIntentToQueryParam(Intent.SAVINGS_INTENT)}`,
+    `${INTENT_PATHS[Intent.SAVINGS_INTENT]}?network=${normalizeUrlParam(
+      chains.find(c => c.id === chainId)?.name ?? getMainnetChainName(chainId)
+    )}`,
     searchParams
   );
 
 export const getStakeUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.STAKE_INTENT)}`,
+    `${INTENT_PATHS[Intent.STAKE_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );
 export const getStUsdsUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}&expert_module=${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}`,
+    `${INTENT_PATHS[Intent.EXPERT_INTENT]}/${ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );
 export const getExpertOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.EXPERT_INTENT)}`,
+    `${INTENT_PATHS[Intent.EXPERT_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );
 export const getVaultsOverviewUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.VAULTS_INTENT)}`,
+    `${INTENT_PATHS[Intent.VAULTS_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );
 export const getFixedYieldUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.FIXED_INTENT)}`,
+    `${INTENT_PATHS[Intent.FIXED_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );
 export const getConvertUrl = (searchParams: URLSearchParams, chainId: number) =>
   getQueryParams(
-    `/?network=${getMainnetChainName(chainId)}&widget=${mapIntentToQueryParam(Intent.CONVERT_INTENT)}`,
+    `${INTENT_PATHS[Intent.CONVERT_INTENT]}?network=${getMainnetChainName(chainId)}`,
     searchParams
   );

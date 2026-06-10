@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useReducer } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import { useChainId } from 'wagmi';
 import { mainnet } from 'viem/chains';
 import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { isTestnetId } from '@/utils';
 import { CardAnimationWrapper, PendleWidget, WidgetContainer, positionAnimations } from '@/widgets';
-import { FixedIntent } from '@/lib/enums';
-import { FixedIntentMapping, QueryParams } from '@/lib/constants';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { PendleMarketStatsCard } from './PendleMarketStatsCard';
@@ -21,11 +20,11 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
 };
 
 export function PendleWidgetPane(sharedProps: SharedProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const chainId = useChainId();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
 
-  const selectedMarketAddress = searchParams.get(QueryParams.Market);
+  const selectedMarketAddress = useRouteEntityParams().marketAddress ?? null;
   const selectedMarket = useMemo(() => findMarket(selectedMarketAddress), [selectedMarketAddress]);
 
   const { data: ptBalances } = usePendleUserPtBalances();
@@ -46,9 +45,8 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
     return () => clearTimeout(id);
   }, [selectedMarket?.marketAddress, selectedMarket?.expiry]);
 
-  // URL cleanup for matured/unknown markets is centralized in
-  // validateSearchParams (called from MainApp) — same pattern as Vaults,
-  // Convert, etc.
+  // URL cleanup for matured/unknown markets lives in the /fixed/market route's
+  // beforeLoad, which falls back to the overview.
 
   // Partition into "My positions" (user holds PT) vs "All markets". Matured
   // markets are excluded from both — they live in PendleReadyToRedeemList.
@@ -68,19 +66,15 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
   }, [ptBalances]);
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
-    setSearchParams(params => {
-      params.set(QueryParams.FixedModule, FixedIntentMapping[FixedIntent.MARKET_INTENT]);
-      params.set(QueryParams.Market, market.marketAddress);
-      return params;
+    void navigate({
+      to: '/fixed/market/$marketAddress',
+      params: { marketAddress: market.marketAddress },
+      search: keepSearch
     });
   };
 
   const handleBack = () => {
-    setSearchParams(params => {
-      params.delete(QueryParams.FixedModule);
-      params.delete(QueryParams.Market);
-      return params;
-    });
+    void navigate({ to: '/fixed', search: keepSearch });
   };
 
   return (
@@ -101,8 +95,8 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
             subHeader={
               <Text className="text-textSecondary" variant="small">
                 <Trans>
-                  Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full
-                  USDS value at maturity.
+                  Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS
+                  value at maturity.
                 </Trans>
               </Text>
             }

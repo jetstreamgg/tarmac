@@ -3,22 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BalancesSuggestedActions } from './BalancesSuggestedActions';
 import { SPARK_USDT_VAULT_ADDRESS } from '@/hooks';
 
-let mockSearchParams = new URLSearchParams();
+let mockSearch: Record<string, string> = {};
+let lastNavigation: { to: string; search: Record<string, string> } | undefined;
 
-const setSearchParamsMock = vi.fn(
-  (next: URLSearchParams | ((params: URLSearchParams) => URLSearchParams)) => {
-    mockSearchParams =
-      typeof next === 'function' ? next(new URLSearchParams(mockSearchParams)) : new URLSearchParams(next);
+const navigateMock = vi.fn(
+  ({ to, search }: { to: string; search: (prev: Record<string, string>) => Record<string, string> }) => {
+    lastNavigation = { to, search: search(mockSearch) };
   }
 );
 
 const setIsSwitchingNetworkMock = vi.fn();
 
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@tanstack/react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useNavigate: () => navigateMock
   };
 });
 
@@ -85,8 +85,9 @@ vi.mock('@/widgets', async importOriginal => {
 
 describe('BalancesSuggestedActions', () => {
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams('lang=en&details=false');
-    setSearchParamsMock.mockClear();
+    mockSearch = { lang: 'en', details: 'false' };
+    lastNavigation = undefined;
+    navigateMock.mockClear();
     setIsSwitchingNetworkMock.mockClear();
   });
 
@@ -105,12 +106,13 @@ describe('BalancesSuggestedActions', () => {
     fireEvent.click(screen.getByRole('button', { name: /1:1 Conversion/i }));
 
     expect(setIsSwitchingNetworkMock).not.toHaveBeenCalled();
-    expect(mockSearchParams.get('widget')).toBe('convert');
-    expect(mockSearchParams.get('convert_module')).toBe('psm');
-    expect(mockSearchParams.get('source_token')).toBe('USDC');
-    expect(mockSearchParams.get('network')).toBe('ethereum');
-    expect(mockSearchParams.get('lang')).toBe('en');
-    expect(mockSearchParams.get('details')).toBe('false');
+    expect(lastNavigation?.to).toBe('/convert/psm');
+    expect(lastNavigation?.search).toEqual({
+      source_token: 'USDC',
+      network: 'ethereum',
+      lang: 'en',
+      details: 'false'
+    });
   });
 
   it('renders the Tether Savings (sUSDT) card with a New badge for stables', () => {
@@ -126,10 +128,7 @@ describe('BalancesSuggestedActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Tether Savings \(sUSDT\)/i }));
 
-    expect(mockSearchParams.get('widget')).toBe('vaults');
-    expect(mockSearchParams.get('vault')).toBe(SPARK_USDT_VAULT_ADDRESS);
-    expect(mockSearchParams.get('vault_module')).toBe('sky');
-    expect(mockSearchParams.get('network')).toBe('ethereum');
-    expect(mockSearchParams.get('lang')).toBe('en');
+    expect(lastNavigation?.to).toBe(`/vaults/sky/${SPARK_USDT_VAULT_ADDRESS}`);
+    expect(lastNavigation?.search).toEqual({ network: 'ethereum', lang: 'en', details: 'false' });
   });
 });

@@ -49,7 +49,7 @@ async function fetchGeoConfig(): Promise<GeoConfig> {
 }
 
 function getGeoOverrideSearch(): string {
-  return router.state.location.search || (typeof window !== 'undefined' ? window.location.search : '');
+  return router.history.location.search || (typeof window !== 'undefined' ? window.location.search : '');
 }
 
 export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
@@ -68,7 +68,7 @@ export const GeoConfigProvider = ({ children }: { children: ReactNode }): ReactE
   });
 
   const locationSearch = useSyncExternalStore(
-    onStoreChange => router.subscribe(() => onStoreChange()),
+    onStoreChange => router.history.subscribe(() => onStoreChange()),
     getGeoOverrideSearch,
     getGeoOverrideSearch
   );

@@ -49,6 +49,9 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
+const navigateMock = vi.fn();
+let mockEntityParams: Record<string, string | undefined> = {};
+
 vi.mock('@/hooks', async importOriginal => {
   const actual = await importOriginal<typeof import('@/hooks')>();
   return {
@@ -111,11 +114,20 @@ vi.mock('@/widgets', async importOriginal => {
   };
 });
 
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@tanstack/react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useNavigate: () => navigateMock
+  };
+});
+
+vi.mock('@/lib/navigation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/navigation')>();
+  return {
+    ...actual,
+    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock],
+    useRouteEntityParams: () => mockEntityParams
   };
 });
 
@@ -205,8 +217,10 @@ const cardAddresses = (container: HTMLElement): string[] =>
 
 describe('PendleWidgetPane', () => {
   beforeEach(() => {
-    mockSearchParams = new URLSearchParams('widget=fixed');
+    mockSearchParams = new URLSearchParams();
     setSearchParamsMock.mockClear();
+    navigateMock.mockClear();
+    mockEntityParams = {};
     // Reset connection + balances between tests.
     hoisted.userAddress = undefined;
     hoisted.ptBalances = undefined;
@@ -216,7 +230,7 @@ describe('PendleWidgetPane', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the overview list with the configured market when no ?market is set', () => {
+  it('renders the overview list with the configured market when no market path param is set', () => {
     const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
 
     // eslint-disable-next-line testing-library/no-container
@@ -227,10 +241,8 @@ describe('PendleWidgetPane', () => {
     unmount();
   });
 
-  it('renders the PendleWidget when a known ?market is selected', () => {
-    mockSearchParams = new URLSearchParams(
-      `widget=fixed&fixed_module=market&market=${ACTIVE_MARKET_ADDRESS}`
-    );
+  it('renders the PendleWidget when a known market path param is selected', () => {
+    mockEntityParams = { marketAddress: ACTIVE_MARKET_ADDRESS };
 
     const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
 
@@ -240,10 +252,8 @@ describe('PendleWidgetPane', () => {
     unmount();
   });
 
-  it('falls back to the overview when ?market is unknown', () => {
-    mockSearchParams = new URLSearchParams(
-      'widget=fixed&fixed_module=market&market=0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'
-    );
+  it('falls back to the overview when the market path param is unknown', () => {
+    mockEntityParams = { marketAddress: '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' };
 
     const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
 

@@ -6,10 +6,10 @@ import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence, motion } from 'motion/react';
 import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWidgetPane';
-import { QueryParams } from '@/lib/constants';
 import { vaultModuleForProvider, vaultsIntentForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { VaultProvider } from '@/hooks/vaults/types';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
+import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
 import { VaultStatsCard } from '@/modules/expert/components/VaultStatsCard';
 import { VAULTS, useAllMorphoVaultsUserAssets } from '@/hooks';
 import { useChainId } from 'wagmi';
@@ -18,14 +18,15 @@ import { positionAnimations } from '@/widgets';
 
 export function VaultsWidgetPane(sharedProps: SharedProps) {
   const { selectedVaultsOption, setSelectedVaultsOption } = useConfigContext();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const chainId = useChainId();
 
-  const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
+  const selectedVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
-  const selectedVault =
-    VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
-    VAULTS[0];
+  const routeSelectedVault = VAULTS.find(
+    v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()
+  );
+  const selectedVault = routeSelectedVault ?? VAULTS[0];
 
   const { data: userVaultsData } = useAllMorphoVaultsUserAssets();
 
@@ -52,18 +53,23 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
     return [myVaults, allVaults];
   }, [userVaultsData, chainId]);
 
-  // Derive effective option from URL param so deep-links and quick access work
+  // Derive effective option from the route so deep-links and quick access work.
+  // Detail mode requires the route's vault address to resolve on the current
+  // chain — an unresolved address falls back to the overview instead of
+  // opening a different vault than the URL indicates.
   const effectiveVaultsOption = selectedVaultAddress
-    ? VaultsIntent.MORPHO_VAULT_INTENT
+    ? routeSelectedVault
+      ? VaultsIntent.MORPHO_VAULT_INTENT
+      : undefined
     : selectedVaultsOption;
 
   // Derive the URL/routing identity from the selected vault's provider so the
-  // param reflects the vault the user opened (Spark → `spark`, Morpho → `morpho`).
+  // path reflects the vault the user opened.
   const handleSelectVault = (vaultAddress: `0x${string}`, provider: VaultProvider) => {
-    setSearchParams(params => {
-      params.set(QueryParams.VaultModule, vaultModuleForProvider(provider));
-      params.set(QueryParams.Vault, vaultAddress);
-      return params;
+    void navigate({
+      to: '/vaults/$provider/$vaultAddress',
+      params: { provider: vaultModuleForProvider(provider), vaultAddress },
+      search: keepSearch
     });
     setSelectedVaultsOption(vaultsIntentForProvider(provider));
   };

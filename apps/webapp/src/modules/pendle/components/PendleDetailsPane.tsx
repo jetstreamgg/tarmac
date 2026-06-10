@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import { t } from '@lingui/core/macro';
 import { Trans } from '@lingui/react/macro';
-import { useSearchParams } from 'react-router-dom';
+import { useRouteEntityParams } from '@/lib/navigation';
 import { useChainId, useConnection } from 'wagmi';
 import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMarketConfig } from '@/hooks';
 import { isTestnetId } from '@/utils';
 import { mainnet } from 'viem/chains';
-import { QueryParams } from '@/lib/constants';
 import { DetailSection } from '@/modules/ui/components/DetailSection';
 import { DetailSectionRow } from '@/modules/ui/components/DetailSectionRow';
 import { DetailSectionWrapper } from '@/modules/ui/components/DetailSectionWrapper';
@@ -27,12 +26,11 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
 };
 
 export const PendleDetailsPane = () => {
-  const [searchParams] = useSearchParams();
   const chainId = useChainId();
   const { address: userAddress } = useConnection();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
 
-  const selectedMarketAddress = searchParams.get(QueryParams.Market);
+  const selectedMarketAddress = useRouteEntityParams().marketAddress ?? null;
   const selectedMarket = useMemo(() => findMarket(selectedMarketAddress), [selectedMarketAddress]);
 
   const showSelectedMarket = !!selectedMarket && !isMarketMatured(selectedMarket.expiry);

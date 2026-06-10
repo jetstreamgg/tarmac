@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/navigation';
 import { GEO_OVERRIDE_PARAMS, isValidGeoParam } from '@/modules/geo-config/applyGeoOverrides';
 
 export const getRetainedQueryParams = (
@@ -30,14 +30,14 @@ export const getRetainedQueryParams = (
     urlObj.searchParams.set(key, value);
   });
 
-  return `/${urlObj.search}`;
+  return `${urlObj.pathname}${urlObj.search}`;
 };
 
 export const useRetainedQueryParams = (
   url: string,
   retainedParams: QueryParams[] = [QueryParams.Locale, QueryParams.Details, QueryParams.Network]
 ) => {
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useAppSearchParams();
 
   const retainedQueryParams = useMemo(() => {
     return getRetainedQueryParams(url, retainedParams, searchParams);

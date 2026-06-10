@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/lib/navigation';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
 import { VStack } from '@/modules/layout/components/VStack';
@@ -12,7 +12,7 @@ import { SEAL_ENGINE_NOTIFICATION_KEY } from '@/lib/constants';
  * one notification shows per page load. Dismissal is persisted to localStorage.
  */
 export const useSealEnginePositionToast = (isAuthorized: boolean) => {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   const onClose = useCallback(() => {
     localStorage.setItem(SEAL_ENGINE_NOTIFICATION_KEY, 'true');

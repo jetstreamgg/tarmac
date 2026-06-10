@@ -6,9 +6,8 @@ import { SavingsDetails } from '@/modules/savings/components/SavingsDetails';
 import { StUSDSDetails } from '@/modules/stusds/components/StUSDSDetails';
 import { VaultDetails } from '@/modules/morpho/components/VaultDetails';
 import { VAULTS } from '@/hooks';
-import { ConvertIntentMapping, QueryParams } from '@/lib/constants';
 import { useChainId } from 'wagmi';
-import { useSearchParams } from 'react-router-dom';
+import { useRouteConvertIntent, useRouteEntityParams } from '@/lib/navigation';
 import { RewardsDetailsPane } from '@/modules/rewards/components/RewardsDetailsPane';
 import { BalancesDetails } from '@/modules/balances/components/BalancesDetails';
 import { ConnectCard } from '@/modules/layout/components/ConnectCard';
@@ -53,20 +52,18 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   const [keys, setKeys] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
-  const { selectedExpertOption, selectedVaultsOption, selectedConvertOption } = useConfigContext();
+  const { selectedExpertOption, selectedVaultsOption } = useConfigContext();
   const chainId = useChainId();
-  const [searchParams] = useSearchParams();
-  const activeConvertOption = (Object.entries(ConvertIntentMapping).find(
-    ([, value]) => value === searchParams.get(QueryParams.ConvertModule)
-  )?.[0] ?? selectedConvertOption) as ConvertIntent | undefined;
+  const activeConvertOption = useRouteConvertIntent();
 
-  // Get the selected vault address from URL params (for multi-vault support)
-  const selectedVaultAddress = searchParams.get(QueryParams.Vault) as `0x${string}` | null;
+  // Get the selected vault address from the route (for multi-vault support)
+  const selectedVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
-  // Find the selected vault config, default to first vault if not specified
-  const selectedVault =
-    VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
-    VAULTS[0];
+  // Find the selected vault config; unresolved addresses fall back to the
+  // vaults overview details below instead of showing a different vault.
+  const routeSelectedVault = VAULTS.find(
+    v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()
+  );
 
   useEffect(() => {
     setIntentState(prevIntentState => {
@@ -151,22 +148,22 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                 // which derives its provider from the vault address.
                 case VaultsIntent.MORPHO_VAULT_INTENT:
                 case VaultsIntent.SKY_VAULT_INTENT:
+                  if (!routeSelectedVault) break;
                   return (
                     <MotionDetailsWrapper key={keys[10]}>
                       <VaultDetails
-                        vaultAddress={selectedVault.vaultAddress[chainId]}
-                        assetToken={selectedVault.assetToken}
-                        vaultName={selectedVault.name}
+                        vaultAddress={routeSelectedVault.vaultAddress[chainId]}
+                        assetToken={routeSelectedVault.assetToken}
+                        vaultName={routeSelectedVault.name}
                       />
                     </MotionDetailsWrapper>
                   );
-                default:
-                  return (
-                    <MotionDetailsWrapper key={keys[11]}>
-                      <VaultsDetailsPane />
-                    </MotionDetailsWrapper>
-                  );
               }
+              return (
+                <MotionDetailsWrapper key={keys[11]}>
+                  <VaultsDetailsPane />
+                </MotionDetailsWrapper>
+              );
             case Intent.CONVERT_INTENT:
               switch (activeConvertOption) {
                 case ConvertIntent.PSM_INTENT:

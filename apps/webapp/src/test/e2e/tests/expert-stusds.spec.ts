@@ -107,7 +107,7 @@ test.describe('Expert Module - stUSDS', () => {
     await expect(isolatedPage.getByText('Supplied to Expert')).toBeVisible();
 
     // Click the Expert balance card (links to Expert overview)
-    await isolatedPage.locator('a[href*="widget=expert"]').first().click();
+    await isolatedPage.locator('a[href*="/expert"]').first().click();
 
     // Should land on the Expert overview page
     // await expect(isolatedPage.getByRole('heading', { name: 'Expert', exact: true })).toBeVisible();

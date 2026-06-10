@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from '@/lib/navigation';
 import { useChainId } from 'wagmi';
 import { toast, toastWithClose } from '@/components/ui/use-toast';
 import { Text } from '@/modules/layout/components/Typography';
@@ -13,7 +13,7 @@ const GOVERNANCE_PROPOSAL_URL =
   'https://vote.sky.money/executive/template-executive-vote-reduce-rewards-emissions-complete-guni-vault-offboardings-whitelist-keel-subproxy-to-send-cross-chain-messages-adjust-grove-dc-iam-parameters-delegate-compensation-star-agent-proxy-spells-january-15-2026';
 
 export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
   const chainId = useChainId();
   const isTestnet = isTestnetId(chainId);
   const networkParam = isTestnet ? 'tenderly' : 'ethereum';
@@ -53,7 +53,7 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
                 variant="pill"
                 size="xs"
                 onClick={() => {
-                  navigate(`/?widget=rewards&network=${networkParam}`);
+                  navigate(`/rewards?network=${networkParam}`);
                   toast.dismiss(toastId);
                   onClose();
                 }}

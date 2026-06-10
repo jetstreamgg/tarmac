@@ -31,6 +31,9 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
+const navigateMock = vi.fn();
+let mockEntityParams: Record<string, string | undefined> = {};
+
 vi.mock('@/widgets', () => ({
   MorphoVaultWidget: ({ onWidgetStateChange }: { onWidgetStateChange?: (params: any) => void }) => {
     captured.onWidgetStateChange = onWidgetStateChange;
@@ -47,11 +50,20 @@ vi.mock('@/modules/config/hooks/useConfigContext', () => ({
   })
 }));
 
-vi.mock('react-router-dom', async importOriginal => {
-  const actual = await importOriginal<typeof import('react-router-dom')>();
+vi.mock('@tanstack/react-router', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>();
   return {
     ...actual,
-    useSearchParams: () => [mockSearchParams, setSearchParamsMock]
+    useNavigate: () => navigateMock
+  };
+});
+
+vi.mock('@/lib/navigation', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/navigation')>();
+  return {
+    ...actual,
+    useAppSearchParams: () => [mockSearchParams, setSearchParamsMock],
+    useRouteEntityParams: () => mockEntityParams
   };
 });
 
@@ -110,10 +122,13 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
     mocks.setSelectedVaultsOption.mockReset();
     captured.onWidgetStateChange = undefined;
     setSearchParamsMock.mockClear();
+    navigateMock.mockClear();
+    mockEntityParams = {};
   });
 
-  it('writes flow param (and never input_amount) for a Spark vault when vault_module=sky', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=sky');
+  it('writes flow param (and never input_amount) for a Spark vault on the sky provider route', () => {
+    mockSearchParams = new URLSearchParams();
+    mockEntityParams = { provider: 'sky', vaultAddress: VAULT_ADDRESS };
     renderPane('sky');
 
     act(() => {
@@ -128,8 +143,9 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
     expect(mockSearchParams.get('flow')).toBe('withdraw');
   });
 
-  it('writes flow param (and never input_amount) for a Morpho vault when vault_module=morpho', () => {
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=morpho');
+  it('writes flow param (and never input_amount) for a Morpho vault on the morpho provider route', () => {
+    mockSearchParams = new URLSearchParams();
+    mockEntityParams = { provider: 'morpho', vaultAddress: VAULT_ADDRESS };
     renderPane('morpho');
 
     act(() => {
@@ -144,9 +160,10 @@ describe('MorphoVaultWidgetPane state→URL guard', () => {
     expect(mockSearchParams.get('flow')).toBe('supply');
   });
 
-  it('does nothing when the vault_module does not match the open vault provider', () => {
-    // Spark vault but URL still carries vault_module=morpho — a stale/foreign module.
-    mockSearchParams = new URLSearchParams('widget=vaults&vault_module=morpho');
+  it('does nothing when the route provider does not match the open vault provider', () => {
+    // Spark vault but the route still carries the morpho provider segment — a stale/foreign module.
+    mockSearchParams = new URLSearchParams();
+    mockEntityParams = { provider: 'morpho', vaultAddress: VAULT_ADDRESS };
     renderPane('sky');
 
     act(() => {

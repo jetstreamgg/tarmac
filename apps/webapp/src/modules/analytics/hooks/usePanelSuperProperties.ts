@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { usePostHog } from 'posthog-js/react';
-import { useSearchParams } from 'react-router-dom';
+import { useAppSearchParams } from '@/lib/navigation';
 import { QueryParams } from '@/lib/constants';
 
 /**
@@ -12,7 +12,7 @@ import { QueryParams } from '@/lib/constants';
  */
 export function usePanelSuperProperties() {
   const posthog = usePostHog();
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useAppSearchParams();
 
   const detailsOpen = !(searchParams.get(QueryParams.Details) === 'false');
 
