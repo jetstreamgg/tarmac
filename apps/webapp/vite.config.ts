@@ -4,6 +4,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 const { version: APP_VERSION } = JSON.parse(readFileSync('./package.json', 'utf-8'));
 import react from '@vitejs/plugin-react-swc';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import { configDefaults } from 'vitest/config';
 import { lingui } from '@lingui/vite-plugin';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
@@ -201,6 +202,14 @@ export default ({ mode }: { mode: modeEnum }) => {
           process: false
         },
         include: ['buffer']
+      }),
+      // Must come before the react plugin so route files are transformed first
+      tanstackRouter({
+        target: 'react',
+        routesDirectory: path.resolve(__dirname, 'src/routes'),
+        generatedRouteTree: path.resolve(__dirname, 'src/routeTree.gen.ts'),
+        // Flipped on in the final step of the route-splitting refactor
+        autoCodeSplitting: false
       }),
       react({
         plugins: [['@lingui/swc-plugin', {}]]
