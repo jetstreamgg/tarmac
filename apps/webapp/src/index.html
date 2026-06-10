@@ -2,6 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!--
+      Set the theme before first paint to avoid a flash of the wrong theme (FOUC).
+      Mirrors the resolution logic in src/lib/theme.ts: stored preference, else OS
+      preference, else the dark default. Kept inline + dependency-free on purpose.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = JSON.parse(localStorage.getItem('user-settings') || '{}').theme;
+          var theme =
+            stored ||
+            (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark');
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta
       name="viewport"
