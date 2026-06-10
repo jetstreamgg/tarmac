@@ -26,15 +26,9 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     (urn?: { urnAddress: `0x${string}` | undefined; urnIndex: bigint | undefined }) => {
       // Use ref to access current searchParams without stale closure
       const currentWidget = searchParamsRef.current.get(QueryParams.Widget);
-      const currentIsReset = searchParamsRef.current.get(QueryParams.Reset) === 'true';
 
       // Prevent race conditions
       if (currentWidget !== IntentMapping[Intent.STAKE_INTENT]) {
-        return;
-      }
-
-      // Don't run while resetting
-      if (currentIsReset) {
         return;
       }
 
@@ -71,8 +65,7 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
     hash,
     txStatus,
     widgetState,
-    stakeTab,
-    originAmount
+    stakeTab
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.Widget) !== IntentMapping[Intent.STAKE_INTENT]) {
@@ -104,25 +97,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
       setSearchParams(
         prev => {
           prev.delete(QueryParams.StakeTab);
-          return prev;
-        },
-        { replace: true }
-      );
-    }
-
-    // Update amount in URL if provided and not zero
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(
-        prev => {
-          prev.set(QueryParams.InputAmount, originAmount);
-          return prev;
-        },
-        { replace: true }
-      );
-    } else if (originAmount === '') {
-      setSearchParams(
-        prev => {
-          prev.delete(QueryParams.InputAmount);
           return prev;
         },
         { replace: true }

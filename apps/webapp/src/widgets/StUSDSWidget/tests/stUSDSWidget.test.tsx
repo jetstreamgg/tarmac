@@ -215,14 +215,4 @@ describe('StUSDS widget tests', () => {
     expect(supplyTab).toBeTruthy();
   });
 
-  it('resets properly when shouldReset is true', async () => {
-    const { rerender } = renderWithWagmiWrapper(<StUSDSWidget shouldReset={false} />);
-
-    // Re-render with shouldReset=true
-    rerender(<StUSDSWidget shouldReset={true} />);
-
-    // Should still render properly after reset
-    const supplyTab = await screen.findByText('Supply');
-    expect(supplyTab).toBeTruthy();
-  });
 });

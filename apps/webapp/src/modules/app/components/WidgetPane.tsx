@@ -36,7 +36,6 @@ import { mainnet } from 'wagmi/chains';
 import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
 import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
 import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
-import { useSearchParams } from 'react-router-dom';
 import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { isL2ChainId, isTestnetId } from '@/utils';
@@ -84,11 +83,8 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
 
   const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const sharedProps = {
-    rightHeaderComponent,
-    shouldReset: searchParams.get(QueryParams.Reset) === 'true'
+    rightHeaderComponent
   };
 
   const { trackWidgetSelected } = useAppAnalytics();
@@ -328,19 +324,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       items: widgetItems.filter(([intent]) => intent === Intent.CONVERT_INTENT)
     }
   ];
-
-  useEffect(() => {
-    if (!searchParams.get(QueryParams.Reset)) return;
-
-    const timer = setTimeout(() => {
-      setSearchParams(prev => {
-        prev.delete(QueryParams.Reset);
-        return prev;
-      });
-    }, 500);
-
-    return () => clearTimeout(timer); // cleanup
-  }, [searchParams, setSearchParams]);
 
   // Show all widget items regardless of network for better discoverability
   // Auto-switching will be handled in WidgetNavigation

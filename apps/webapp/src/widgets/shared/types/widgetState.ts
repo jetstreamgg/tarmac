@@ -136,6 +136,5 @@ export type WidgetProps = {
   onWidgetStateChange?: (params: WidgetStateChangeParams) => void;
   onCustomNavigation?: () => void;
   customNavigationLabel?: string;
-  shouldReset?: boolean;
   disallowedFlow?: WidgetFlow;
 };

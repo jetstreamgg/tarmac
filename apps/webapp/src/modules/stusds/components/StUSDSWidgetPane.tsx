@@ -19,25 +19,11 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
     hash,
     txStatus,
     widgetState,
-    originToken,
-    originAmount
+    originToken
   }: WidgetStateChangeParams) => {
     // Prevent race conditions
     if (searchParams.get(QueryParams.ExpertModule) !== ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]) {
       return;
-    }
-
-    // Update amount in URL if provided and not zero
-    if (originAmount && originAmount !== '0') {
-      setSearchParams(prev => {
-        prev.set(QueryParams.InputAmount, originAmount);
-        return prev;
-      });
-    } else if (originAmount === '') {
-      setSearchParams(prev => {
-        prev.delete(QueryParams.InputAmount);
-        return prev;
-      });
     }
 
     // Update source token in URL if provided
