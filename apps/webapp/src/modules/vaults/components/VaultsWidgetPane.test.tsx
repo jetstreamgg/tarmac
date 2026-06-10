@@ -5,7 +5,9 @@ import { createRoot } from 'react-dom/client';
 import { mainnet } from 'wagmi/chains';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VaultsWidgetPane } from './VaultsWidgetPane';
-import { SPARK_USDT_VAULT_ADDRESS } from '@/hooks/vaults/spark/constants';
+import { sparkUsdtVaultAddress } from '@/hooks/generated';
+
+const SPARK_USDT_VAULT_ADDRESS = sparkUsdtVaultAddress[mainnet.id];
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 i18n.load('en', {});

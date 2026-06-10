@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mainnet } from 'wagmi/chains';
 import { BalancesSuggestedActions } from './BalancesSuggestedActions';
-import { SPARK_USDT_VAULT_ADDRESS } from '@/hooks';
+import { sparkUsdtVaultAddress } from '@/hooks';
+
+const SPARK_USDT_VAULT_ADDRESS = sparkUsdtVaultAddress[mainnet.id];
 
 let mockSearch: Record<string, string> = {};
 let lastNavigation: { to: string; search: Record<string, string> } | undefined;

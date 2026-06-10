@@ -1,7 +1,7 @@
 // SparkVault ABI (APP-266) — the Tether Savings (sUSDT) vault implementation (0x1b99..f455)
 // behind the proxy at 0x74cb..0DAa. Captured from Etherscan via `wagmi generate` and stored as
 // a const (same pattern as stUsdsImplementationAbi.ts) so we neither hand-roll a 1-function ABI
-// nor regenerate the whole generated.ts. Use against the PROXY address (SPARK_USDT_VAULT_ADDRESS).
+// nor regenerate the whole generated.ts. Use against the PROXY address (sparkUsdtVaultAddress).
 
 export const sparkVaultAbi = [
   { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },

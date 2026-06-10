@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { mainnet } from 'wagmi/chains';
 import { TENDERLY_CHAIN_ID } from '../constants';
 import { VAULTS, getVaultByAddress } from './constants';
-import { SPARK_USDT_VAULT_ADDRESS } from './spark/constants';
+import { sparkUsdtVaultAddress } from '../generated';
 import { MORPHO_VAULTS } from '../morpho/constants';
+
+const SPARK_USDT_VAULT_ADDRESS = sparkUsdtVaultAddress[mainnet.id];
 
 describe('unified VAULTS registry', () => {
   it('includes every Morpho vault and the Spark Tether Savings vault', () => {

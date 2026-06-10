@@ -1,15 +1,6 @@
-import { mainnet } from 'wagmi/chains';
-import { TENDERLY_CHAIN_ID } from '../../constants';
+import { sparkUsdtVaultAddress } from '../../generated';
 import { TOKENS } from '../../tokens/tokens.constants';
 import { VaultConfig } from '../types';
-
-/**
- * Tether Savings (sUSDT) `SparkVault` — the only Spark contract the webapp touches.
- * Verified ERC-4626 proxy; upgrade authority = Sky governance Pause Proxy (APP-266,
- * address pre-cleared). Underlying asset is USDT (6 decimals). Same address on
- * mainnet and the Tenderly fork.
- */
-export const SPARK_USDT_VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa' as const;
 
 /**
  * Host for the Savings Data API. We read it from our own edge-cached proxy
@@ -43,10 +34,7 @@ export const SPARK_VAULTS: VaultConfig[] = [
     provider: 'sky',
     name: 'Tether Savings',
     symbol: 'sUSDT',
-    vaultAddress: {
-      [mainnet.id]: SPARK_USDT_VAULT_ADDRESS,
-      [TENDERLY_CHAIN_ID]: SPARK_USDT_VAULT_ADDRESS
-    },
+    vaultAddress: sparkUsdtVaultAddress,
     assetToken: TOKENS.usdt
   }
 ];

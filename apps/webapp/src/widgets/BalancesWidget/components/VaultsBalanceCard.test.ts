@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import { mainnet } from 'wagmi/chains';
 import { buildVaultDeepLinkMap, computeVaultBalances } from './VaultsBalanceCard';
-import { SPARK_USDT_VAULT_ADDRESS } from '@/hooks/vaults/spark/constants';
+import { sparkUsdtVaultAddress } from '@/hooks/generated';
 import type { MorphoVaultBalance } from '@/hooks';
 import type { Token } from '@/hooks/tokens/types';
 
+const SPARK_USDT_VAULT_ADDRESS = sparkUsdtVaultAddress[mainnet.id];
 const MORPHO_ADDRESS = '0x1234567890123456789012345678901234567890' as const;
 const BASE_URL = '/?network=ethereum&widget=vaults';
 

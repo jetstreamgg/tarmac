@@ -148,7 +148,6 @@ export {
   VAULTS,
   getVaultByAddress,
   SPARK_VAULTS,
-  SPARK_USDT_VAULT_ADDRESS,
   SPARK_SAVINGS_API_HOST,
   SPARK_VAULT_IDENTITY,
   useSparkVaultApiData,
@@ -494,6 +493,7 @@ export {
   lsSkySpkRewardAddress,
   lsSkySkyRewardAddress,
   usdsRiskCapitalVaultAddress,
+  sparkUsdtVaultAddress,
   useReadClipperDue
 } from './generated';
 export { contracts, l2Contracts } from './contracts';

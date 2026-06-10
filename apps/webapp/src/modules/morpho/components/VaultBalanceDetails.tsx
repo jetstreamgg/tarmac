@@ -22,7 +22,7 @@ export function VaultBalanceDetails({
     data: vaultData,
     isLoading: isVaultLoading,
     error: vaultError
-  } = useMorphoVaultOnChainData({ vaultAddress });
+  } = useMorphoVaultOnChainData({ vaultAddress, provider });
 
   const assetAddress = assetToken.address[chainId as keyof typeof assetToken.address];
   const {

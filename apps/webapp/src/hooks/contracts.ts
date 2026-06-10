@@ -69,9 +69,9 @@ export const contracts: {
   },
 
   // Spark Tether Savings (sUSDT) vault — verified ERC-4626 SparkVault (APP-266).
-  // Reuses the generic ERC-4626 ABI (usdsRiskCapitalVaultAbi); registered here for
-  // codegen completeness, but consumed at runtime via SPARK_USDT_VAULT_ADDRESS in
-  // hooks/vaults/spark/constants.ts (no `pnpm generate` run for this slice).
+  // The address is consumed at runtime via the generated `sparkUsdtVaultAddress`.
+  // Codegen only emits the proxy ABI here; reads/writes use the captured
+  // implementation ABI in hooks/abis/sparkVaultAbi.ts.
   {
     name: 'sparkUsdtVault',
     address: {

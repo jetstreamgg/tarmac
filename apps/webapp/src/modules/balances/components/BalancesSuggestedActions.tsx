@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useChainId, useChains } from 'wagmi';
+import { mainnet } from 'wagmi/chains';
 import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
@@ -15,7 +16,7 @@ import {
   useStUsdsData,
   useMorphoVaultMultipleRateApiData,
   useSparkVaultResolvedRate,
-  SPARK_USDT_VAULT_ADDRESS,
+  sparkUsdtVaultAddress,
   MORPHO_VAULTS,
   useAvailableTokenRewardContracts,
   useRewardsChartInfo,
@@ -189,7 +190,7 @@ const MODULE_ICONS: Record<BalancesAction['module'], (props: IconProps) => React
 
 const RATE_TOOLTIP_TYPES: Partial<Record<NonNullable<BalancesAction['rateKey']>, PopoverTooltipType>> = {
   vaults: 'morpho',
-  sparkVault: 'morpho',
+  sparkVault: 'sky',
   rewards: 'str',
   savings: 'ssr',
   stusds: 'stusds',
@@ -242,7 +243,7 @@ function useActionRates(
   });
 
   const { formattedRate: sparkVaultRate, isLoading: sparkVaultLoading } = useSparkVaultResolvedRate({
-    vaultAddress: SPARK_USDT_VAULT_ADDRESS
+    vaultAddress: sparkUsdtVaultAddress[mainnet.id]
   });
 
   const allRewardContracts = useAvailableTokenRewardContracts(mainnetChainId);

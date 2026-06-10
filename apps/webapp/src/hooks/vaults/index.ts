@@ -1,11 +1,6 @@
 export { type VaultProvider, type VaultConfig } from './types';
 export { VAULTS, getVaultByAddress } from './constants';
-export {
-  SPARK_VAULTS,
-  SPARK_USDT_VAULT_ADDRESS,
-  SPARK_SAVINGS_API_HOST,
-  SPARK_VAULT_IDENTITY
-} from './spark/constants';
+export { SPARK_VAULTS, SPARK_SAVINGS_API_HOST, SPARK_VAULT_IDENTITY } from './spark/constants';
 export { useSparkVaultApiData } from './spark/useSparkVaultApiData';
 export { normalizeSparkCurrentData, normalizeSparkHistoricData } from './spark/normalizeSparkVaultData';
 export {
