@@ -59,8 +59,7 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     setLoaded(true);
   }, []);
 
-  // Keep the document's `data-theme` attribute in sync with the user's theme.
-  // The pre-hydration script in index.html sets the initial value to avoid a flash.
+  // Sync `data-theme` with the user's theme (index.html sets the initial value).
   useEffect(() => {
     if (userConfig.theme) {
       applyTheme(userConfig.theme);

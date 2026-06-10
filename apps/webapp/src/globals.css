@@ -220,11 +220,6 @@
     --brand-purple: 67 49 233;
     --brand-light-purple: 80 77 255;
 
-    /* Base surface/text for `body` (consumed via --color-background/foreground).
-       Dark is the default theme; the light overrides live in :root[data-theme='light']. */
-    --background: 240 7% 5%;
-    --foreground: 0 0% 100%;
-
     /* NOTE: in the radial gradients, the color stop percentages needs to be placed after the color value.
        TODO: update the rest of the gradients to this format
      */
@@ -327,18 +322,11 @@
   }
 
   /*
-   * Light "Sky" daytime theme.
-   *
-   * Activated by `data-theme="light"` on the <html> element (see index.html and
-   * ConfigProvider). Tailwind v4 emits the @theme `--color-*` tokens as live CSS
-   * custom properties that the utilities reference via var(), so overriding them
-   * in this more-specific scope re-themes the whole app at runtime. We override the
-   * semantic tokens directly (rather than the base --primary-white / --transparent-*
-   * vars) so literal white overlays, glass strokes and gradients are left intact.
-   *
-   * NOTE: this is an interim palette. The official Sky light theme is gated on the
-   * Figma deliverable; these values are tuned for contrast (WCAG AA on body text)
-   * and are easy to retune once Figma lands.
+   * Light "Sky" daytime theme — activated by data-theme="light" on <html>.
+   * Tailwind v4 emits the @theme --color-* tokens as live CSS vars, so overriding
+   * the semantic tokens here re-themes the app at runtime (base --primary-white /
+   * --transparent-* vars are left alone so white overlays/gradients stay intact).
+   * Interim palette — the official Sky light theme is gated on Figma.
    */
   :root[data-theme='light'] {
     /* body base */
@@ -355,15 +343,17 @@
     --color-error: #dc4c4c; /* deeper red for white-bg contrast */
     --color-bullish: #00a167; /* deeper green for white-bg contrast */
 
-    /* surfaces & containers — frosted white over the lilac page gradient */
-    --color-container: rgba(255, 255, 255, 0.66);
-    --color-containerDark: rgba(255, 255, 255, 0.82);
+    /* Elevation levels so nested components separate:
+       page gradient (lilac) < container panel (periwinkle) < card (white).
+       container stays opaque so popovers/tooltips/banners read on the light page. */
+    --color-container: rgba(223, 228, 247, 0.95);
+    --color-containerDark: rgba(232, 235, 250, 0.94);
     --color-surface: rgba(108, 104, 255, 0.12);
     --color-surfaceHover: rgba(108, 104, 255, 0.2);
     --color-surfaceAlt: rgba(26, 24, 85, 0.06);
-    --color-panel: rgba(255, 255, 255, 0.5);
-    --color-card: rgba(255, 255, 255, 0.72);
-    --color-cardLight: rgba(255, 255, 255, 0.85);
+    --color-panel: rgba(255, 255, 255, 0.45);
+    --color-card: rgba(255, 255, 255, 0.96);
+    --color-cardLight: rgba(255, 255, 255, 1);
     --color-selectBackground: rgba(26, 24, 85, 0.05);
     --color-selectActive: rgba(26, 24, 85, 0.1);
     --color-chartSelect: rgba(235, 232, 255, 1);
@@ -384,12 +374,19 @@
     --color-borderActive: rgba(26, 24, 85, 0.25);
     --color-borderPurple: #b9a8ff;
 
-    /* page background: soft blue -> lilac daytime "sky" gradient (replaces the dark image) */
+    /* Lighter purple for active nav tabs / toggles (primary) and connect/chain
+       buttons (primary-bright); dark keeps the deep indigo from :root. */
+    --color-primary-start: rgba(125, 108, 242);
+    --color-primary-end: rgba(143, 126, 246);
+    --color-primary-bright-start: rgba(130, 112, 245);
+    --color-primary-bright-end: rgba(148, 131, 248);
+
+    /* page background: lilac daytime gradient, a touch deeper than the cards. */
     --background-image-app-background: linear-gradient(
       180deg,
-      #e9eeff 0%,
-      #efe9ff 55%,
-      #f5f0ff 100%
+      #d3ddf6 0%,
+      #dbd3f3 55%,
+      #e2daf5 100%
     );
   }
 }

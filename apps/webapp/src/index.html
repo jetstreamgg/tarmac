@@ -2,11 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!--
-      Set the theme before first paint to avoid a flash of the wrong theme (FOUC).
-      Mirrors the resolution logic in src/lib/theme.ts: stored preference, else OS
-      preference, else the dark default. Kept inline + dependency-free on purpose.
-    -->
+    <!-- Set theme before first paint to avoid a flash (FOUC). Mirrors the
+         resolution in src/lib/theme.ts: stored choice, else OS pref, else dark. -->
     <script>
       (function () {
         try {

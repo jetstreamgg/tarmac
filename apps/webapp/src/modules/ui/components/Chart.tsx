@@ -79,7 +79,7 @@ const TimeframeControls = ({
           key={tfKey}
           className={
             activeTimeframe === tfKey
-              ? 'text-text bg-[rgb(60,50,122)] hover:bg-[rgb(60,50,122)] active:bg-[rgb(60,50,122)]'
+              ? 'text-text bg-[rgb(60,50,122)] hover:bg-[rgb(60,50,122)] active:bg-[rgb(60,50,122)] light:bg-[rgb(125,108,242)] light:hover:bg-[rgb(125,108,242)] light:active:bg-[rgb(125,108,242)]'
               : ''
           }
           onClick={() => {

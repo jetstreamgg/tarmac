@@ -172,7 +172,7 @@ export function WidgetMenuItemTooltip({
                         e.stopPropagation();
                         handleSubItemClick(subItem);
                       }}
-                      className="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-0.5 text-xs transition-colors hover:bg-white/20"
+                      className="light:bg-surfaceAlt light:hover:bg-surfaceHover flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-0.5 text-xs transition-colors hover:bg-white/20"
                     >
                       {subItem.icon}
                       {subItem.label}

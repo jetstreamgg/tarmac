@@ -273,7 +273,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollPrev}
         disabled={!canScrollPrev}
         className={cn(
-          'text-white/60 transition-colors hover:text-white',
+          'text-white/60 light:text-textSecondary transition-colors hover:text-white light:hover:text-text',
           !canScrollPrev && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Previous slide"
@@ -289,7 +289,9 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
             onClick={() => scrollTo(index)}
             className={cn(
               'h-2 w-2 rounded-full transition-all',
-              selectedIndex === index ? 'w-6 bg-white' : 'bg-white/30 hover:bg-white/60'
+              selectedIndex === index
+                ? 'w-6 bg-white light:bg-text'
+                : 'bg-white/30 light:bg-textDimmed hover:bg-white/60 light:hover:bg-textSecondary'
             )}
             aria-label={`Go to slide ${index + 1}`}
           />
@@ -301,7 +303,7 @@ function CarouselControls({ className, ...props }: React.ComponentProps<'div'>) 
         onClick={scrollNext}
         disabled={!canScrollNext}
         className={cn(
-          'text-white/60 transition-colors hover:text-white',
+          'text-white/60 light:text-textSecondary transition-colors hover:text-white light:hover:text-text',
           !canScrollNext && 'cursor-not-allowed opacity-30'
         )}
         aria-label="Next slide"

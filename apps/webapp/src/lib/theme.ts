@@ -1,9 +1,6 @@
 import { Theme } from '@/modules/config/types/user-config';
 
-/**
- * Default theme when the user has expressed no preference and the OS gives no hint.
- * The app shipped dark-only historically, so dark stays the baseline.
- */
+/** Baseline when there's no saved choice and no OS hint (app shipped dark-only). */
 export const DEFAULT_THEME: Theme = 'dark';
 
 /** Read the OS-level color-scheme preference, falling back to the default theme. */
