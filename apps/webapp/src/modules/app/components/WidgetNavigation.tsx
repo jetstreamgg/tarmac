@@ -1,16 +1,15 @@
 import React, { useRef, useEffect, useState, useCallback, JSX } from 'react';
 import { Intent } from '../../../lib/enums';
 import { IntentMapping, isNewIntent } from '@/lib/constants';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../../components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { WidgetContent } from '../types/Widgets';
 import { AnimatePresence, motion } from 'motion/react';
-import { cardAnimations } from '@/modules/ui/animation/presets';
-import { AnimationLabels } from '@/modules/ui/animation/constants';
 import { cn } from '@/lib/utils';
-import { Menu, ChevronDown, Loader2 } from 'lucide-react';
+import { Menu, ChevronDown } from 'lucide-react';
+import { ShellChromeContext } from '../context/ShellChromeContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { DualSwitcher } from '@/components/DualSwitcher';
@@ -29,9 +28,11 @@ import { useGeoConfig } from '@/modules/geo-config';
 interface WidgetNavigationProps {
   widgetContent: WidgetContent;
   intent?: Intent;
+  /** Route-driven pane content rendered inside the navigation column. */
   children?: React.ReactNode;
-  hideTabs?: boolean;
   currentChainId?: number;
+  /** Portal target for the md+ details pane (provided by the shell). */
+  detailsSlot?: HTMLElement | null;
 }
 
 const NEW_INTENTS_SEEN_KEY = 'seenNewNavIntents';
@@ -49,8 +50,8 @@ export function WidgetNavigation({
   widgetContent,
   intent,
   children,
-  hideTabs,
-  currentChainId
+  currentChainId,
+  detailsSlot = null
 }: WidgetNavigationProps): JSX.Element {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
@@ -80,7 +81,7 @@ export function WidgetNavigation({
 
   // Scroll hint for vertical menu
   const { shouldShowHint, isOverflowing } = useScrollHint(tabsListRef, {
-    enabled: !showDrawerMenu && !hideTabs
+    enabled: !showDrawerMenu
   });
 
   // Clear the "new" dot once the user lands on the module, regardless of how they got there
@@ -193,13 +194,10 @@ export function WidgetNavigation({
 
   const contentMarginTop = isMobile ? 0 : 8;
   const contentPaddingTop = isMobile ? 0 : 2;
-  const tabContentClasses = 'pl-4 pt-2 pr-1.5 pb-4 md:pl-1.5 md:pr-0 md:pb-1 lg:py-1 lg:pr-0';
   // If it's mobile, use the widget navigation row height + the height of the webiste header
   // as we're using 100vh for the content style, if not, just use the height of the navigation row
-  // If the tab list is hidden, don't count it's height
-  const headerHeight =
-    (isMobile ? (hideTabs ? 56 : 63 + 56) : 66) + (contentMarginTop + contentPaddingTop) * 4;
-  const style = isMobile
+  const headerHeight = (isMobile ? 63 + 56 : 66) + (contentMarginTop + contentPaddingTop) * 4;
+  const paneStyle = isMobile
     ? { height: `calc(100dvh - ${headerHeight}px)` }
     : showDrawerMenu
       ? { height: `${height - 52}px` }
@@ -222,7 +220,7 @@ export function WidgetNavigation({
   return (
     <div ref={containerRef} className={`${showDrawerMenu ? 'w-full' : 'lg:flex lg:h-full'}`}>
       {/* Mobile and tablet hamburger menu */}
-      {showDrawerMenu && !hideTabs && (
+      {showDrawerMenu && (
         <div
           className="flex items-center justify-between p-4 pb-2 md:pt-1 md:pr-2.5 md:pl-1.5 lg:hidden"
           ref={menuRef}
@@ -310,9 +308,7 @@ export function WidgetNavigation({
           <div className="relative lg:h-full">
             <TooltipProvider>
               {/* Outer container with overflow-visible for tooltips */}
-              <div
-                className={cn('overflow-visible lg:h-full', hideTabs && 'hidden', showDrawerMenu && 'hidden')}
-              >
+              <div className={cn('overflow-visible lg:h-full', showDrawerMenu && 'hidden')}>
                 {/* Inner scrollable container */}
                 <TabsList
                   ref={tabsListRef}
@@ -411,50 +407,9 @@ export function WidgetNavigation({
             </AnimatePresence>
           </div>
           <div className="md:max-w-[440px] md:min-w-[352px] lg:flex lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:flex-col lg:overflow-hidden">
-            {isSwitchingNetwork ? (
-              <div
-                className={cn(tabContentClasses, 'flex flex-1 flex-col items-center justify-center')}
-                style={style}
-              >
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="text-textSecondary h-8 w-8 animate-spin" />
-                  <Text variant="medium" className="text-textSecondary">
-                    <Trans>Switching network...</Trans>
-                  </Text>
-                </div>
-              </div>
-            ) : (
-              <AnimatePresence initial={false} mode="popLayout">
-                {widgetContent.map(group =>
-                  group.items.map(
-                    ([int, , , content]) =>
-                      intent === int && (
-                        <TabsContent
-                          key={int}
-                          value={int}
-                          className={cn(tabContentClasses, 'flex flex-col')}
-                          style={style}
-                          asChild
-                        >
-                          <motion.div
-                            variants={cardAnimations}
-                            initial={AnimationLabels.initial}
-                            animate={AnimationLabels.animate}
-                            exit={AnimationLabels.exit}
-                            className={cn(
-                              'flex-1 overflow-y-auto md:pr-0 lg:overflow-hidden',
-                              isMobile ? 'scroll-mt-[87px]' : 'scroll-mt-[0px]'
-                            )}
-                          >
-                            {content}
-                          </motion.div>
-                        </TabsContent>
-                      )
-                  )
-                )}
-                {children}
-              </AnimatePresence>
-            )}
+            <ShellChromeContext.Provider value={{ paneStyle, detailsSlot }}>
+              {children}
+            </ShellChromeContext.Provider>
           </div>
         </motion.div>
       </Tabs>

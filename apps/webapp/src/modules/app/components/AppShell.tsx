@@ -1,26 +1,42 @@
+import { useState } from 'react';
+import { Outlet } from '@tanstack/react-router';
+import { useChainId } from 'wagmi';
 import { Layout } from '@/modules/layout/components/Layout';
 import { AppContainer } from './AppContainer';
-import { WidgetPane } from './WidgetPane';
-import { DetailsPane } from './DetailsPane';
+import { WidgetNavigation } from './WidgetNavigation';
 import { useAppOrchestration } from '../hooks/useAppOrchestration';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useWidgetItems } from '../hooks/useWidgetItems';
+import { useDeeplinkAnalytics } from '../hooks/useDeeplinkAnalytics';
+import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 
 /**
  * Component of the pathless shell route: the app chrome shared by every
- * module route. Runs the app-level orchestration and renders the two-pane
- * module content.
+ * module route. Runs the app-level orchestration and renders the navigation
+ * around the route's two-pane content (via Outlet). The empty `contents` div
+ * is the portal target for the md+ details pane, so route components can
+ * render it as a sibling of the navigation column.
  */
 export function AppShell() {
-  const { intent, detailsParam } = useAppOrchestration();
+  const { intent } = useAppOrchestration();
   const { bpi } = useBreakpointIndex();
+  const chainId = useChainId();
+  const [detailsSlot, setDetailsSlot] = useState<HTMLElement | null>(null);
+  const { widgetContent, effectiveIntent } = useWidgetItems(intent);
+  useDeeplinkAnalytics(effectiveIntent, chainId);
 
   return (
     <Layout>
       <AppContainer>
-        <WidgetPane key={`widget-pane-${bpi}`} intent={intent}>
-          {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
-        </WidgetPane>
-        {bpi > BP.sm && detailsParam && <DetailsPane intent={intent} />}
+        <WidgetNavigation
+          key={`widget-nav-${bpi}`}
+          widgetContent={widgetContent}
+          intent={effectiveIntent}
+          currentChainId={chainId}
+          detailsSlot={detailsSlot}
+        >
+          <Outlet />
+        </WidgetNavigation>
+        <div className="contents" ref={setDetailsSlot} />
       </AppContainer>
     </Layout>
   );

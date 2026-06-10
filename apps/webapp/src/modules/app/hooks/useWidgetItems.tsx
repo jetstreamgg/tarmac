@@ -11,18 +11,17 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { COMING_SOON_MAP, IntentMapping, ExpertIntentMapping, ConvertIntentMapping } from '@/lib/constants';
+import { COMING_SOON_MAP, ExpertIntentMapping, ConvertIntentMapping } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
 import { ExpertIntent, ConvertIntent } from '@/lib/enums';
-import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
 import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
 import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
@@ -37,21 +36,24 @@ import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
 import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
 import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
 import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
-import { useModuleUrls } from '../hooks/useModuleUrls';
+import { useModuleUrls } from './useModuleUrls';
 import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
-import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 
-// Module-level guard: persists across React remounts/StrictMode, resets on page reload (fresh deeplink)
-let lastDeeplinkTracked: string | null = null;
-
-type WidgetPaneProps = {
-  intent: Intent;
-  children?: React.ReactNode;
-};
-
-export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
+/**
+ * Builds the widget items for the current chain and geo-config: nav metadata
+ * (label, icon, description, sub-items) plus the legacy pane content element
+ * per module. `effectiveIntent` falls back to Balances when the route's module
+ * is geo-restricted.
+ *
+ * Transitional: the pane content slot disappears once every module route
+ * renders its own widget/details pair.
+ */
+export function useWidgetItems(intent: Intent): {
+  widgetItems: WidgetItem[];
+  widgetContent: WidgetContent;
+  effectiveIntent: Intent;
+} {
   const chainId = useChainId();
 
   const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
@@ -79,28 +81,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const sharedProps = {
     rightHeaderComponent
   };
-
-  const { trackWidgetSelected } = useAppAnalytics();
-  const { startNewFlow } = useAnalyticsFlow();
-
-  // Deeplink detection: fire app_widget_selected when initial intent ≠ default (balances)
-  // Uses module-level guard (not useRef) so it survives React StrictMode remounts and key-driven remounts
-  useEffect(() => {
-    if (
-      effectiveIntent &&
-      effectiveIntent !== Intent.BALANCES_INTENT &&
-      effectiveIntent !== lastDeeplinkTracked
-    ) {
-      lastDeeplinkTracked = effectiveIntent;
-      startNewFlow();
-      trackWidgetSelected({
-        widgetName: IntentMapping[effectiveIntent] || effectiveIntent,
-        previousWidget: IntentMapping[Intent.BALANCES_INTENT],
-        selectionMethod: 'deeplink',
-        chainId
-      });
-    }
-  }, []);
 
   const { rewardsUrl, savingsUrlMap, stakeUrl, stusdsUrl, vaultsUrl, fixedYieldUrl } = useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
@@ -316,9 +296,5 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   // Auto-switching will be handled in WidgetNavigation
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
-  return (
-    <WidgetNavigation widgetContent={filteredWidgetContent} intent={effectiveIntent} currentChainId={chainId}>
-      {children}
-    </WidgetNavigation>
-  );
-};
+  return { widgetItems, widgetContent: filteredWidgetContent, effectiveIntent };
+}
