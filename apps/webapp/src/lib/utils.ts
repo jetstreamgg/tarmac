@@ -5,6 +5,7 @@ import { ExpertIntent, Intent } from './enums';
 import { INTENT_PATHS } from './navigation';
 import { getRetainedQueryParams } from '@/modules/ui/hooks/useRetainedQueryParams';
 import { getMainnetChainName } from '@/data/wagmi/config/config.default';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { reportError } from '@/modules/sentry/reportError';
 import { Chain } from 'viem';
 
@@ -102,7 +103,9 @@ export const getSavingsUrl = (
   chains: readonly [Chain, ...Chain[]]
 ) =>
   getQueryParams(
-    `${INTENT_PATHS[Intent.SAVINGS_INTENT]}?network=${chains.find(c => c.id === chainId)?.name}`,
+    `${INTENT_PATHS[Intent.SAVINGS_INTENT]}?network=${normalizeUrlParam(
+      chains.find(c => c.id === chainId)?.name ?? getMainnetChainName(chainId)
+    )}`,
     searchParams
   );
 

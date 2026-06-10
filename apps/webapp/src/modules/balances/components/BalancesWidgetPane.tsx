@@ -1,6 +1,6 @@
 import { WidgetStateChangeParams, SavingsFlow, BalancesWidget, BalancesWidgetProps } from '@/widgets';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
+import { retainOnNavigate, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useCallback } from 'react';
 import { SharedProps } from '@/modules/app/types/Widgets';
 import { QueryParams } from '@/lib/constants';
@@ -14,7 +14,7 @@ export function BalancesWidgetPane(sharedProps: SharedProps & BalancesWidgetProp
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as SavingsFlow | undefined;
 
   const onExploreVaults = useCallback(() => {
-    void navigate({ to: '/vaults', search: keepSearch });
+    void navigate({ to: '/vaults', search: retainOnNavigate });
   }, [navigate]);
 
   const onBalancesWidgetStateChange = ({ widgetState }: WidgetStateChangeParams) => {

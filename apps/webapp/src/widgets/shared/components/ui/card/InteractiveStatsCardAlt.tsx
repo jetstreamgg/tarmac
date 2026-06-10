@@ -44,7 +44,13 @@ export const InteractiveStatsCardAlt = ({
         </div>
         <Logo logoName={logoName} />
       </div>
-      {url && <AppLink to={url} className="absolute inset-0 z-0 h-full w-full rounded-[20px]" />}
+      {url && (
+        <AppLink
+          to={url}
+          aria-label={typeof title === 'string' ? title : 'Open details'}
+          className="absolute inset-0 z-0 h-full w-full rounded-[20px]"
+        />
+      )}
     </Card>
   );
 };

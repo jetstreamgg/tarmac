@@ -9,9 +9,10 @@ export function NotFound() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTimeout(() => {
+    const timeoutId = window.setTimeout(() => {
       navigate({ to: '/' });
     }, 5000);
+    return () => window.clearTimeout(timeoutId);
   }, [navigate]);
 
   return (

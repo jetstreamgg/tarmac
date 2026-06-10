@@ -8,7 +8,7 @@ import { WalletIcon } from '@/modules/ui/components/WalletIcon';
 import { useConnection } from 'wagmi';
 import { WALLET_ICONS } from '@/lib/constants';
 import { ConnectedModalTabs } from './ConnectedModalTabs';
-import { useAppSearchParams } from '@/lib/navigation';
+import { useRouterState } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useConnectModal } from '@/modules/ui/context/ConnectModalContext';
 import { useIsSafeWallet } from '@/hooks';
@@ -31,7 +31,7 @@ export function ConnectedModal({
   const { onExternalLinkClicked } = useConfigContext();
   const { openConnectModal } = useConnectModal();
   const { connector } = useConnection();
-  const [searchParams] = useAppSearchParams();
+  const locationHref = useRouterState({ select: s => s.location.href });
   const isSafeWallet = useIsSafeWallet();
 
   const onSwitchAccountClick = () => {
@@ -40,9 +40,9 @@ export function ConnectedModal({
   };
 
   useEffect(() => {
-    // Whenever there's a site navigation, close the connected modal
+    // Whenever there's a site navigation (path or search change), close the connected modal
     onOpenChange(false);
-  }, [searchParams]);
+  }, [locationHref, onOpenChange]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

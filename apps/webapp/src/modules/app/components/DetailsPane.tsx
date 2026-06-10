@@ -59,10 +59,11 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
   // Get the selected vault address from the route (for multi-vault support)
   const selectedVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
-  // Find the selected vault config, default to first vault if not specified
-  const selectedVault =
-    VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
-    VAULTS[0];
+  // Find the selected vault config; unresolved addresses fall back to the
+  // vaults overview details below instead of showing a different vault.
+  const routeSelectedVault = VAULTS.find(
+    v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()
+  );
 
   useEffect(() => {
     setIntentState(prevIntentState => {
@@ -147,22 +148,22 @@ export const DetailsPane = ({ intent }: DetailsPaneProps) => {
                 // which derives its provider from the vault address.
                 case VaultsIntent.MORPHO_VAULT_INTENT:
                 case VaultsIntent.SKY_VAULT_INTENT:
+                  if (!routeSelectedVault) break;
                   return (
                     <MotionDetailsWrapper key={keys[10]}>
                       <VaultDetails
-                        vaultAddress={selectedVault.vaultAddress[chainId]}
-                        assetToken={selectedVault.assetToken}
-                        vaultName={selectedVault.name}
+                        vaultAddress={routeSelectedVault.vaultAddress[chainId]}
+                        assetToken={routeSelectedVault.assetToken}
+                        vaultName={routeSelectedVault.name}
                       />
                     </MotionDetailsWrapper>
                   );
-                default:
-                  return (
-                    <MotionDetailsWrapper key={keys[11]}>
-                      <VaultsDetailsPane />
-                    </MotionDetailsWrapper>
-                  );
               }
+              return (
+                <MotionDetailsWrapper key={keys[11]}>
+                  <VaultsDetailsPane />
+                </MotionDetailsWrapper>
+              );
             case Intent.CONVERT_INTENT:
               switch (activeConvertOption) {
                 case ConvertIntent.PSM_INTENT:

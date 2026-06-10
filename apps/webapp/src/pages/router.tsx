@@ -9,7 +9,7 @@ import { BatchTransactionsLegal } from './BatchTransactionsLegal';
 import { legacySearchToLocation } from '@/lib/legacyRedirects';
 import { ConvertIntent, ExpertIntent, FixedIntent, Intent } from '@/lib/enums';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
-import { PENDLE_MARKETS, isMarketMatured } from '@/hooks';
+import { PENDLE_MARKETS, isMarketMatured, VAULTS } from '@/hooks';
 
 export type AppSearchParams = Record<string, string>;
 
@@ -133,11 +133,18 @@ const vaultsRoute = createRoute({
 const vaultsDetailRoute = createRoute({
   getParentRoute: () => vaultsRoute,
   path: '$provider/$vaultAddress',
-  // An unrecognised provider segment falls back to the vaults overview, like
-  // the legacy vault_module validation. Vault address validity is handled by
-  // the vault panes (chain-dependent).
+  // An unrecognised provider segment or an address that belongs to no known
+  // vault of that provider falls back to the vaults overview. Which chain the
+  // vault lives on is resolved by the panes (chain-dependent).
   beforeLoad: ({ params }) => {
-    if (!providerForVaultModule(params.provider)) {
+    const provider = providerForVaultModule(params.provider);
+    const address = params.vaultAddress.toLowerCase();
+    const isKnownVault =
+      !!provider &&
+      VAULTS.some(
+        v => v.provider === provider && Object.values(v.vaultAddress).some(a => a?.toLowerCase() === address)
+      );
+    if (!isKnownVault) {
       throw redirect({ to: '/vaults', search: keepSearch, replace: true });
     }
   },

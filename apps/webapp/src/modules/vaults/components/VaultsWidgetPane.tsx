@@ -23,9 +23,10 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
 
   const selectedVaultAddress = (useRouteEntityParams().vaultAddress ?? null) as `0x${string}` | null;
 
-  const selectedVault =
-    VAULTS.find(v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()) ||
-    VAULTS[0];
+  const routeSelectedVault = VAULTS.find(
+    v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()
+  );
+  const selectedVault = routeSelectedVault ?? VAULTS[0];
 
   const { data: userVaultsData } = useAllMorphoVaultsUserAssets();
 
@@ -52,9 +53,14 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
     return [myVaults, allVaults];
   }, [userVaultsData, chainId]);
 
-  // Derive effective option from the route so deep-links and quick access work
+  // Derive effective option from the route so deep-links and quick access work.
+  // Detail mode requires the route's vault address to resolve on the current
+  // chain — an unresolved address falls back to the overview instead of
+  // opening a different vault than the URL indicates.
   const effectiveVaultsOption = selectedVaultAddress
-    ? VaultsIntent.MORPHO_VAULT_INTENT
+    ? routeSelectedVault
+      ? VaultsIntent.MORPHO_VAULT_INTENT
+      : undefined
     : selectedVaultsOption;
 
   // Derive the URL/routing identity from the selected vault's provider so the
