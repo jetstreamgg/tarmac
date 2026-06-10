@@ -18,6 +18,7 @@
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is([data-theme='light'] *));
 
 @theme {
   --font-graphik: GraphikStd;

@@ -334,7 +334,7 @@ export function TokenInput({
                     ) : (
                       <Input
                         ref={inputRef}
-                        className="hide-spin-button placeholder:text-white/30"
+                        className="hide-spin-button placeholder:text-white/30 light:placeholder:text-textDimmed"
                         value={inputValue !== '00' ? inputValue : '0'}
                         onChange={e => {
                           updateValue(e.target.value as `${number}`, e);

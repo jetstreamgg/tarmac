@@ -8,7 +8,7 @@ import { POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
 export function FooterLinks() {
   const footerLinks = getFooterLinks();
   const { showBanner } = useCookieConsent();
-  const externalClass = 'hover:text-white hover:underline hover:underline-offset-4';
+  const externalClass = 'hover:text-text hover:underline hover:underline-offset-4';
 
   const regularLinks = footerLinks.filter(link => link.highlight !== 'true');
   const highlightedLinks = footerLinks.filter(link => link.highlight === 'true');
@@ -21,7 +21,7 @@ export function FooterLinks() {
           if (!url) return null;
           return (
             <ExternalLink key={url || `link-${i}`} showIcon={false} href={url} className={externalClass}>
-              <Text variant="captionSm" className="text-white">
+              <Text variant="captionSm" className="text-text">
                 {link.name}
               </Text>
             </ExternalLink>
@@ -29,7 +29,7 @@ export function FooterLinks() {
         })}
         {POSTHOG_ENABLED && (
           <button onClick={showBanner} className={externalClass}>
-            <Text variant="captionSm" className="text-white">
+            <Text variant="captionSm" className="text-text">
               Cookie Settings
             </Text>
           </button>
