@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { LegacyPanes } from '@/modules/app/components/LegacyPanes';
+import { ConvertPanes } from '@/modules/convert/components/ConvertPanes';
 import { Intent } from '@/lib/enums';
 
 export const Route = createFileRoute('/_shell/convert')({
-  component: LegacyPanes,
+  component: ConvertPanes,
   staticData: { intent: Intent.CONVERT_INTENT }
 });

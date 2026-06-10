@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { LegacyPanes } from '@/modules/app/components/LegacyPanes';
+import { RewardsPanes } from '@/modules/rewards/components/RewardsPanes';
 import { Intent } from '@/lib/enums';
 
 export const Route = createFileRoute('/_shell/rewards')({
-  component: LegacyPanes,
+  component: RewardsPanes,
   staticData: { intent: Intent.REWARDS_INTENT }
 });

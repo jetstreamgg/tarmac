@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { LegacyPanes } from '@/modules/app/components/LegacyPanes';
+import { ExpertPanes } from '@/modules/expert/components/ExpertPanes';
 import { Intent } from '@/lib/enums';
 
 export const Route = createFileRoute('/_shell/expert')({
-  component: LegacyPanes,
+  component: ExpertPanes,
   staticData: { intent: Intent.EXPERT_INTENT }
 });

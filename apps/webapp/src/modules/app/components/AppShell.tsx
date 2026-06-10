@@ -8,6 +8,7 @@ import { useAppOrchestration } from '../hooks/useAppOrchestration';
 import { useWidgetItems } from '../hooks/useWidgetItems';
 import { useDeeplinkAnalytics } from '../hooks/useDeeplinkAnalytics';
 import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { LegacyPanes } from './LegacyPanes';
 
 /**
  * Component of the pathless shell route: the app chrome shared by every
@@ -34,7 +35,10 @@ export function AppShell() {
           currentChainId={chainId}
           detailsSlot={detailsSlot}
         >
-          <Outlet />
+          {/* Geo-restricted module (or geo-config still loading): fall back to
+              the Balances pair like the legacy switch did, regardless of which
+              module route matched. */}
+          {effectiveIntent !== intent ? <LegacyPanes /> : <Outlet />}
         </WidgetNavigation>
         <div className="contents" ref={setDetailsSlot} />
       </AppContainer>

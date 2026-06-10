@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { LegacyPanes } from '@/modules/app/components/LegacyPanes';
+import { VaultsPanes } from '@/modules/vaults/components/VaultsPanes';
 import { Intent } from '@/lib/enums';
 
 export const Route = createFileRoute('/_shell/vaults')({
-  component: LegacyPanes,
+  component: VaultsPanes,
   staticData: { intent: Intent.VAULTS_INTENT }
 });
