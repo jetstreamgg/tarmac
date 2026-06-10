@@ -103,7 +103,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'sparkVault',
     subtitle: 'Rate: {rate}',
     module: 'morpho',
-    url: `/vaults/${vaultModuleForProvider('sky')}/${SPARK_USDT_VAULT_ADDRESS}`,
+    url: `/vaults/${vaultModuleForProvider('sky')}/${sparkUsdtVaultAddress[mainnet.id]}`,
     badge: 'New'
   },
   {
