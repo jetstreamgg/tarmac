@@ -1,12 +1,11 @@
 import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { VaultsIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
 import { AnimatePresence, motion } from 'motion/react';
 import { MorphoVaultWidgetPane } from '@/modules/morpho/components/MorphoVaultWidgetPane';
-import { vaultModuleForProvider, vaultsIntentForProvider } from '@/lib/vaults/vaultProviderMapping';
+import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { VaultProvider } from '@/hooks/vaults/types';
 import { useNavigate } from '@tanstack/react-router';
 import { keepSearch, useRouteEntityParams } from '@/lib/navigation';
@@ -17,7 +16,6 @@ import { useMemo } from 'react';
 import { positionAnimations } from '@/widgets';
 
 export function VaultsWidgetPane(sharedProps: SharedProps) {
-  const { selectedVaultsOption, setSelectedVaultsOption } = useConfigContext();
   const navigate = useNavigate();
   const chainId = useChainId();
 
@@ -57,11 +55,8 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
   // Detail mode requires the route's vault address to resolve on the current
   // chain — an unresolved address falls back to the overview instead of
   // opening a different vault than the URL indicates.
-  const effectiveVaultsOption = selectedVaultAddress
-    ? routeSelectedVault
-      ? VaultsIntent.MORPHO_VAULT_INTENT
-      : undefined
-    : selectedVaultsOption;
+  const effectiveVaultsOption =
+    selectedVaultAddress && routeSelectedVault ? VaultsIntent.MORPHO_VAULT_INTENT : undefined;
 
   // Derive the URL/routing identity from the selected vault's provider so the
   // path reflects the vault the user opened.
@@ -71,7 +66,6 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
       params: { provider: vaultModuleForProvider(provider), vaultAddress },
       search: keepSearch
     });
-    setSelectedVaultsOption(vaultsIntentForProvider(provider));
   };
 
   const renderSelectedWidget = () => {

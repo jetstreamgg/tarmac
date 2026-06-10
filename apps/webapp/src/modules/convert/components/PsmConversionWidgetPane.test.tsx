@@ -19,8 +19,6 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
-const setSelectedConvertOptionMock = vi.fn();
-
 let capturedWidgetProps: Record<string, any> | undefined;
 
 vi.mock('@/widgets', async importOriginal => {
@@ -33,12 +31,6 @@ vi.mock('@/widgets', async importOriginal => {
     }
   };
 });
-
-vi.mock('@/modules/config/hooks/useConfigContext', () => ({
-  useConfigContext: () => ({
-    setSelectedConvertOption: setSelectedConvertOptionMock
-  })
-}));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -78,7 +70,6 @@ describe('PsmConversionWidgetPane', () => {
     capturedWidgetProps = undefined;
     navigateMock.mockClear();
     setSearchParamsMock.mockClear();
-    setSelectedConvertOptionMock.mockClear();
   });
 
   it('passes URL-derived external state into the widget', () => {
@@ -132,6 +123,5 @@ describe('PsmConversionWidgetPane', () => {
     capturedWidgetProps?.onBackToConvert();
 
     expect(navigateMock).toHaveBeenCalledWith(expect.objectContaining({ to: '/convert' }));
-    expect(setSelectedConvertOptionMock).toHaveBeenCalledWith(undefined);
   });
 });

@@ -12,14 +12,12 @@ import {
 } from '@/widgets';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
 
 export function UpgradeWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
-  const { setSelectedConvertOption } = useConfigContext();
   const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
 
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -37,7 +35,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
 
   const handleBackToConvert = () => {
     void navigate({ to: '/convert', search: keepSearch });
-    setSelectedConvertOption(undefined);
   };
 
   // Set initial currentToken from sourceToken

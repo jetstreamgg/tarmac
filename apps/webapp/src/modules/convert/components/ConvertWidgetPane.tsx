@@ -1,6 +1,5 @@
 import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ConvertIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,7 +25,6 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
 export function ConvertWidgetPane(sharedProps: SharedProps) {
-  const { selectedConvertOption, setSelectedConvertOption } = useConfigContext();
   const navigate = useNavigate();
   const routeConvertIntent = useRouteConvertIntent();
   const { info, error } = useToast();
@@ -43,7 +41,7 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const shouldShowUpgradeOption = !isL2 || !isSafeWallet;
   const { trackConvertModuleSelected } = useAppAnalytics();
 
-  const activeConvertOption = routeConvertIntent ?? selectedConvertOption;
+  const activeConvertOption = routeConvertIntent;
 
   const trackModuleSelection = (convertIntent: ConvertIntent) => {
     trackConvertModuleSelected({
@@ -57,11 +55,10 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
 
   // If Trade is disabled by geo-config but selected (e.g. via deeplink), clear it
   useEffect(() => {
-    if (!isTradeEnabled && selectedConvertOption === ConvertIntent.TRADE_INTENT) {
-      setSelectedConvertOption(undefined);
+    if (!isTradeEnabled && routeConvertIntent === ConvertIntent.TRADE_INTENT) {
       void navigate({ to: '/convert', search: keepSearch, replace: true });
     }
-  }, [isTradeEnabled, selectedConvertOption, setSelectedConvertOption, navigate]);
+  }, [isTradeEnabled, routeConvertIntent, navigate]);
   const cardInteractionClass = isPending
     ? 'pointer-events-none cursor-not-allowed opacity-60'
     : 'cursor-pointer';
@@ -90,7 +87,6 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 [QueryParams.Network]: normalizeUrlParam(mainnetChain.name)
               })
             });
-            setSelectedConvertOption(convertIntent);
           },
           onError: err => {
             if (err.name === 'UserRejectedRequestError') {
@@ -110,7 +106,6 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
     trackModuleSelection(convertIntent);
 
     void navigate({ to: `/convert/${ConvertIntentMapping[convertIntent]}`, search: keepSearch });
-    setSelectedConvertOption(convertIntent);
   };
 
   const renderSelectedWidget = () => {

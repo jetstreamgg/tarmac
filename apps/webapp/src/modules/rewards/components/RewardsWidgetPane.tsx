@@ -3,15 +3,15 @@ import { Intent } from '@/lib/enums';
 import { useNavigate } from '@tanstack/react-router';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
 import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
+import { useRouteRewardContract } from '@/modules/rewards/hooks/useRouteRewardContract';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
 export function RewardsWidgetPane(sharedProps: SharedProps) {
   const subgraphUrl = useSubgraphUrl();
-  const { selectedRewardContract, setSelectedRewardContract } = useConfigContext();
+  const selectedRewardContract = useRouteRewardContract();
   const { mutate: refreshRewardsHistory } = useRewardsUserHistory({
     rewardContractAddress: selectedRewardContract?.contractAddress || '',
     subgraphUrl
@@ -38,7 +38,6 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
     } else {
       void navigate({ to: '/rewards', search: keepSearch, replace: true });
     }
-    setSelectedRewardContract(rewardContract);
   };
 
   const onRewardsWidgetStateChange = ({ hash, txStatus, widgetState }: WidgetStateChangeParams) => {

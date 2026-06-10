@@ -16,49 +16,30 @@ import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
 import { ExpertIntent, ConvertIntent } from '@/lib/enums';
-import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
-import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
-import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
 import React from 'react';
 
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
-import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
-import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
-import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { isL2ChainId, isTestnetId } from '@/utils';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
-import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
-import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
-import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
-import { useModuleUrls } from './useModuleUrls';
 import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 
 /**
- * Builds the widget items for the current chain and geo-config: nav metadata
- * (label, icon, description, sub-items) plus the legacy pane content element
- * per module. `effectiveIntent` falls back to Balances when the route's module
- * is geo-restricted.
- *
- * Transitional: the pane content slot disappears once every module route
- * renders its own widget/details pair.
+ * Builds the navigation metadata (label, icon, description, sub-items) for
+ * every module available on the current chain and geo-config. The pane
+ * content itself is route-driven. `effectiveIntent` falls back to Balances
+ * when the route's module is geo-restricted.
  */
 export function useWidgetItems(intent: Intent): {
-  widgetItems: WidgetItem[];
   widgetContent: WidgetContent;
   effectiveIntent: Intent;
 } {
   const chainId = useChainId();
 
-  const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
-
-  const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
+  const { isModuleEnabled } = useGeoConfig();
 
   // Map Intent → ModuleId for geo-config filtering
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
@@ -76,13 +57,6 @@ export function useWidgetItems(intent: Intent): {
   const effectiveIntent =
     restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
 
-  const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
-
-  const sharedProps = {
-    rightHeaderComponent
-  };
-
-  const { rewardsUrl, savingsUrlMap, stakeUrl, stusdsUrl, vaultsUrl, fixedYieldUrl } = useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const rewardSubItems = rewardContracts
     .filter(contract => contract.rewardToken.symbol !== 'SKY')
@@ -123,23 +97,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.BALANCES_INTENT,
       'Balances',
       Balances,
-      withErrorBoundary(
-        <BalancesWidgetPane
-          {...sharedProps}
-          hideRestrictedModules={isRegionRestricted}
-          rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
-          savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}
-          stakeCardUrl={stakeUrl}
-          stusdsCardUrl={isRegionRestricted ? undefined : stusdsUrl}
-          vaultsCardUrl={vaultsUrl}
-          fixedYieldCardUrl={fixedYieldUrl}
-          chainIds={getSupportedChainIds(chainId)}
-          hideZeroBalances={hideZeroBalances}
-          setHideZeroBalances={setHideZeroBalances}
-          showAllNetworks={showAllNetworks}
-          setShowAllNetworks={setShowAllNetworks}
-        />
-      ),
       false,
       undefined,
       'Manage your Sky Ecosystem funds across supported networks'
@@ -148,7 +105,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.REWARDS_INTENT,
       'Rewards',
       RewardsModule,
-      withErrorBoundary(<RewardsWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Use USDS to access Sky Token Rewards',
@@ -158,7 +114,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.SAVINGS_INTENT,
       'Savings',
       Savings,
-      withErrorBoundary(<SavingsWidgetPane {...sharedProps} />),
       false,
       undefined,
       isL2ChainId(chainId)
@@ -169,7 +124,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.FIXED_INTENT,
       'Fixed Yield',
       Pendle,
-      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
@@ -179,7 +133,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.STAKE_INTENT,
       'Stake & Borrow',
       Stake,
-      withErrorBoundary(<StakeWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Stake SKY to earn rewards, delegate votes, and borrow USDS'
@@ -188,7 +141,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.VAULTS_INTENT,
       'Vaults',
       Vaults,
-      withErrorBoundary(<VaultsWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Third-party vault integrations with Sky Ecosystem tokens',
@@ -198,7 +150,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.EXPERT_INTENT,
       'Expert',
       Expert,
-      withErrorBoundary(<ExpertWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Higher-risk options for more experienced users',
@@ -214,7 +165,6 @@ export function useWidgetItems(intent: Intent): {
       Intent.CONVERT_INTENT,
       'Convert',
       Convert,
-      withErrorBoundary(<ConvertWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Get Sky Ecosystem tokens with best possible rates',
@@ -243,7 +193,7 @@ export function useWidgetItems(intent: Intent): {
       const moduleId = intentToModule[intent as Intent];
       return !moduleId || isModuleEnabled(moduleId);
     })
-    .map(([intent, label, icon, component, , , description, subItems]) => {
+    .map(([intent, label, icon, , , description, subItems]) => {
       const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
       const filteredSubItems = (subItems as WidgetSubItem[] | undefined)?.filter(sub => {
         if (!sub.intent) return true;
@@ -254,7 +204,6 @@ export function useWidgetItems(intent: Intent): {
         intent as Intent,
         label as string,
         icon as (props: IconProps) => React.ReactNode,
-        comingSoon ? null : (component as React.ReactNode),
         comingSoon,
         comingSoon ? { disabled: true } : undefined,
         description as string,
@@ -296,5 +245,5 @@ export function useWidgetItems(intent: Intent): {
   // Auto-switching will be handled in WidgetNavigation
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
-  return { widgetItems, widgetContent: filteredWidgetContent, effectiveIntent };
+  return { widgetContent: filteredWidgetContent, effectiveIntent };
 }

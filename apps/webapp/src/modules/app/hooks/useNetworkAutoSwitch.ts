@@ -7,7 +7,7 @@ import { isL2ChainId, isTestnetId } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams } from '@/lib/constants';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
+import { useRouteRewardContract } from '@/modules/rewards/hooks/useRouteRewardContract';
 
 interface UseNetworkAutoSwitchProps {
   currentChainId?: number;
@@ -35,7 +35,7 @@ export function useNetworkAutoSwitch({
 }: UseNetworkAutoSwitchProps): UseNetworkAutoSwitchReturn {
   const navigate = useNavigate();
   const { setIsSwitchingNetwork } = useNetworkSwitch();
-  const { selectedRewardContract } = useConfigContext();
+  const selectedRewardContract = useRouteRewardContract();
   const [isAutoSwitching, setIsAutoSwitching] = useState(false);
   const [previousIntent, setPreviousIntent] = useState<Intent | undefined>(currentIntent);
   const [previousChainId, setPreviousChainId] = useState<number | undefined>(currentChainId);

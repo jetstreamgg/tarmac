@@ -8,17 +8,21 @@ import { AnimatePresence } from 'motion/react';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
 import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping } from '@/lib/constants';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch } from '@/lib/navigation';
+import { keepSearch, useRouteExpertIntent } from '@/lib/navigation';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 
 export function ExpertWidgetPane(sharedProps: SharedProps) {
-  const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
+  const { expertRiskDisclaimerShown } = useConfigContext();
+  const routeExpertIntent = useRouteExpertIntent();
   const navigate = useNavigate();
+
+  // Submodules only render once the risk disclaimer has been acknowledged;
+  // until then (the orchestration redirect is in flight) the overview shows.
+  const selectedExpertOption = expertRiskDisclaimerShown ? routeExpertIntent : undefined;
 
   const handleSelectExpertOption = (expertIntent: ExpertIntent) => {
     void navigate({ to: `/expert/${ExpertIntentMapping[expertIntent]}`, search: keepSearch });
-    setSelectedExpertOption(expertIntent);
   };
 
   const renderSelectedWidget = () => {

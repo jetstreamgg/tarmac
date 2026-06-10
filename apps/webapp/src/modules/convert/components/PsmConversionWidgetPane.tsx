@@ -1,6 +1,5 @@
 import { PsmConversionWidget, WidgetStateChangeParams } from '@/widgets';
 import { SharedProps } from '@/modules/app/types/Widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { QueryParams } from '@/lib/constants';
 import { ConvertIntent } from '@/lib/enums';
 import { useNavigate } from '@tanstack/react-router';
@@ -11,7 +10,6 @@ import { useMemo } from 'react';
 export function PsmConversionWidgetPane(sharedProps: SharedProps) {
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
-  const { setSelectedConvertOption } = useConfigContext();
   const intent = useRouteIntent();
   const convertIntent = useRouteConvertIntent();
   const sourceTokenParam = searchParams.get(QueryParams.SourceToken)?.toUpperCase();
@@ -19,7 +17,6 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
 
   const handleBackToConvert = () => {
     void navigate({ to: '/convert', search: keepSearch });
-    setSelectedConvertOption(undefined);
   };
 
   const onPsmConversionWidgetStateChange = ({ originToken }: WidgetStateChangeParams) => {

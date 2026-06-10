@@ -10,7 +10,6 @@ import {
 } from '@/lib/navigation';
 import { QueryParams, CHAIN_WIDGET_MAP, COMING_SOON_MAP } from '@/lib/constants';
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { vaultsIntentForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
@@ -35,13 +34,7 @@ import { isL2ChainId } from '@/utils';
  * shell layout route so it stays mounted across module navigations.
  */
 export function useAppOrchestration(): { intent: Intent; detailsParam: boolean } {
-  const {
-    setSelectedRewardContract,
-    setSelectedExpertOption,
-    expertRiskDisclaimerShown,
-    setSelectedVaultsOption,
-    setSelectedConvertOption
-  } = useConfigContext();
+  const { expertRiskDisclaimerShown } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
@@ -49,7 +42,7 @@ export function useAppOrchestration(): { intent: Intent; detailsParam: boolean }
   const intent = useRouteIntent();
   const convertIntent = useRouteConvertIntent();
   const expertIntent = useRouteExpertIntent();
-  const { rewardContract, provider } = useRouteEntityParams();
+  const { rewardContract } = useRouteEntityParams();
 
   const chainId = useChainId();
   const chains = useChains();
@@ -174,28 +167,6 @@ export function useAppOrchestration(): { intent: Intent; detailsParam: boolean }
     rewardContracts,
     navigate
   ]);
-
-  // Sync route-derived selections into the config context for consumers like
-  // the details panes.
-  useEffect(() => {
-    const contract =
-      intent === Intent.REWARDS_INTENT && rewardContract
-        ? rewardContracts?.find(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
-        : undefined;
-    setSelectedRewardContract(contract);
-  }, [intent, rewardContract, rewardContracts, setSelectedRewardContract]);
-
-  useEffect(() => {
-    setSelectedConvertOption(convertIntent);
-  }, [convertIntent, setSelectedConvertOption]);
-
-  useEffect(() => {
-    setSelectedExpertOption(expertRiskDisclaimerShown ? expertIntent : undefined);
-  }, [expertIntent, expertRiskDisclaimerShown, setSelectedExpertOption]);
-
-  useEffect(() => {
-    setSelectedVaultsOption(provider ? vaultsIntentForVaultModule(provider) : undefined);
-  }, [provider, setSelectedVaultsOption]);
 
   // Run validation on the remaining query-driven search params whenever they change
   useEffect(() => {

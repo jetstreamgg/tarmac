@@ -246,7 +246,7 @@ export function WidgetNavigation({
               <div className="flex h-full flex-col">
                 <div className="mt-10 flex-1 overflow-y-auto px-3 pb-6">
                   {widgetContent.map(group =>
-                    group.items.map(([widgetIntent, label, icon, , comingSoon, options]) => (
+                    group.items.map(([widgetIntent, label, icon, comingSoon, options]) => (
                       <Button
                         key={widgetIntent}
                         onClick={() => {
@@ -320,7 +320,7 @@ export function WidgetNavigation({
                   {widgetContent.map(group => (
                     <React.Fragment key={group.id}>
                       {group.items.map(
-                        ([widgetIntent, label, icon, , comingSoon, options, description, subItems]) => (
+                        ([widgetIntent, label, icon, comingSoon, options, description, subItems]) => (
                           <div
                             key={widgetIntent}
                             className="flex grow basis-[15%] justify-center md:w-full md:basis-auto md:justify-start"

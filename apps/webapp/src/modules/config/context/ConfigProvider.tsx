@@ -1,8 +1,6 @@
 import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { UserConfig } from '../types/user-config';
-import { RewardContract } from '@/hooks';
 import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
-import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
 import { dynamicActivate } from '@/utils';
 import { i18n } from '@lingui/core';
 import { ConfigContext, defaultUserConfig } from './ConfigContext';
@@ -12,13 +10,9 @@ import { reportError } from '@/modules/sentry/reportError';
 export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElement => {
   const [userConfig, setUserConfig] = useState<UserConfig>(defaultUserConfig);
   const [loaded, setLoaded] = useState<boolean>(false);
-  const [selectedRewardContract, setSelectedRewardContract] = useState<RewardContract | undefined>(undefined);
   const [selectedStakeUrnIndex, setSelectedStakeUrnIndex] = useState<number | undefined>(undefined);
   const [externalLinkModalOpened, setExternalLinkModalOpened] = useState(false);
   const [externalLinkModalUrl, setExternalLinkModalUrl] = useState('');
-  const [selectedExpertOption, setSelectedExpertOption] = useState<ExpertIntent | undefined>(undefined);
-  const [selectedVaultsOption, setSelectedVaultsOption] = useState<VaultsIntent | undefined>(undefined);
-  const [selectedConvertOption, setSelectedConvertOption] = useState<ConvertIntent | undefined>(undefined);
 
   // Check the user settings on load, and set locale
   useEffect(() => {
@@ -119,8 +113,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         updateUserConfig,
         loaded,
         locale,
-        selectedRewardContract,
-        setSelectedRewardContract,
         selectedStakeUrnIndex: selectedStakeUrnIndex,
         setSelectedStakeUrnIndex: setSelectedStakeUrnIndex,
         externalLinkModalOpened,
@@ -128,12 +120,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         externalLinkModalUrl,
         setExternalLinkModalUrl,
         onExternalLinkClicked,
-        selectedExpertOption,
-        setSelectedExpertOption,
-        selectedVaultsOption,
-        setSelectedVaultsOption,
-        selectedConvertOption,
-        setSelectedConvertOption,
         expertRiskDisclaimerShown: userConfig.expertRiskDisclaimerShown ?? false,
         setExpertRiskDisclaimerShown,
         expertRiskDisclaimerDismissed: userConfig.expertRiskDisclaimerDismissed ?? false,

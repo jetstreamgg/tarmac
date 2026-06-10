@@ -19,8 +19,7 @@ export type WidgetItem = [
   Intent,
   string,
   (props: IconProps) => React.ReactNode,
-  React.ReactNode | null,
-  boolean,
+  boolean, // comingSoon
   { disabled?: boolean }?,
   string?, // description for tooltip
   WidgetSubItem[]? // sub-items for quick navigation in tooltip
