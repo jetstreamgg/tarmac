@@ -8,7 +8,7 @@ import { defaultConfig } from '../config/default-config';
  * Validates the search params that remain query-driven after the path
  * navigation migration (network, details, flow, tokens...). Navigation state
  * (module, submodule, entities) lives in the path and is validated by the
- * routes and MainApp's route-validation effect.
+ * routes and useAppOrchestration's route-validation effect.
  */
 export const validateSearchParams = (
   searchParams: URLSearchParams,

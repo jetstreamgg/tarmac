@@ -1,8 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { WidgetPane } from './WidgetPane';
-import { DetailsPane } from './DetailsPane';
-import { AppContainer } from './AppContainer';
 import {
   keepSearch,
   useAppSearchParams,
@@ -19,20 +16,25 @@ import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { validateSearchParams } from '@/modules/utils/validateSearchParams';
 import { useAvailableTokenRewardContracts } from '@/hooks';
 import { useConnection, useConnectionEffect, useChainId, useChains, useSwitchChain } from 'wagmi';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { useSafeAppNotification } from '../hooks/useSafeAppNotification';
-import { useGovernanceMigrationToast } from '../hooks/useGovernanceMigrationToast';
-import { useSpkStakingRewardsToast } from '../hooks/useSpkStakingRewardsToast';
-import { useUsdsSkyRewardsToast } from '../hooks/useUsdsSkyRewardsToast';
-import { useSealEnginePositionToast } from '../hooks/useSealEnginePositionToast';
-import { useNotificationQueue } from '../hooks/useNotificationQueue';
-import { usePageLoadNotifications } from '../hooks/usePageLoadNotifications';
+import { useSafeAppNotification } from './useSafeAppNotification';
+import { useGovernanceMigrationToast } from './useGovernanceMigrationToast';
+import { useSpkStakingRewardsToast } from './useSpkStakingRewardsToast';
+import { useUsdsSkyRewardsToast } from './useUsdsSkyRewardsToast';
+import { useSealEnginePositionToast } from './useSealEnginePositionToast';
+import { useNotificationQueue } from './useNotificationQueue';
+import { usePageLoadNotifications } from './usePageLoadNotifications';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { isL2ChainId } from '@/utils';
 
-export function MainApp() {
+/**
+ * App-level orchestration that must run once for every module route: route
+ * validation/gating, ConfigContext selection sync, search-param validation,
+ * network defaulting/switching and page-load notifications. Lives in the
+ * shell layout route so it stays mounted across module navigations.
+ */
+export function useAppOrchestration(): { intent: Intent; detailsParam: boolean } {
   const {
     setSelectedRewardContract,
     setSelectedExpertOption,
@@ -43,7 +45,6 @@ export function MainApp() {
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
-  const { bpi } = useBreakpointIndex();
 
   const intent = useRouteIntent();
   const convertIntent = useRouteConvertIntent();
@@ -254,12 +255,5 @@ export function MainApp() {
     };
   }, [chains, connector, setSearchParams]);
 
-  return (
-    <AppContainer>
-      <WidgetPane key={`widget-pane-${bpi}`} intent={intent}>
-        {bpi === BP.sm && detailsParam && <DetailsPane intent={intent} />}
-      </WidgetPane>
-      {bpi > BP.sm && detailsParam && <DetailsPane intent={intent} />}
-    </AppContainer>
-  );
+  return { intent, detailsParam };
 }
