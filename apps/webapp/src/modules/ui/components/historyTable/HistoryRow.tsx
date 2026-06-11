@@ -54,7 +54,7 @@ const BaseRow = ({
       {(typeColumn || statusColumn) && <TableCell className="grow">{content[3]}</TableCell>}
       <TableCell className="h-auto w-full pb-2.5 xl:w-auto xl:pb-4">{content[4]}</TableCell>
       <TableCell className="h-auto w-full pt-2.5 xl:w-auto xl:pt-4">
-        <Text variant="small" className="text-selectActive xl:hidden">
+        <Text variant="small" className="text-selectActive light:text-textSecondary xl:hidden">
           <Trans>Tx hash</Trans>
         </Text>
         <div className="flex justify-between space-x-2 lg:justify-start xl:justify-end">{content[5]}</div>
@@ -124,7 +124,7 @@ const HistoryRowContent = ({ row, chainId, index, typeColumn, statusColumn }: Hi
         {/* "Completed" falback is used for psm trades on networks that now support cow swap*/}
       </Text>,
       <Fragment key="fifth-content">
-        <Text variant="small" className="text-selectActive xl:hidden">
+        <Text variant="small" className="text-selectActive light:text-textSecondary xl:hidden">
           <Trans>Date</Trans>
         </Text>
         <Text className="text-left xl:text-right">{row?.formattedDate}</Text>

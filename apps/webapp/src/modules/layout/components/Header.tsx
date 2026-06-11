@@ -9,6 +9,7 @@ import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { BATCH_TX_ENABLED } from '@/lib/constants';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 // import { erc20Abi, parseEther } from 'viem';
 // import {
 //   daiUsdsAbi,
@@ -121,6 +122,7 @@ export function Header(): React.ReactElement {
           <ChainModal dataTestId="chain-modal-trigger-header" showLabel={!isMobile} />
           <CustomConnectButton />
           {useMock ? <MockConnectButton /> : null}
+          <ThemeToggle />
           {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
         </div>
       </div>

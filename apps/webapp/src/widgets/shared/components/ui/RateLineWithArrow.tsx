@@ -19,7 +19,10 @@ export const RateLineWithArrow = ({
   return (
     <div className="flex items-center gap-2">
       <div className="flex w-fit items-center gap-1.5">
-        <Text variant="small" className="text-bullish leading-4">
+        <Text
+          variant="small"
+          className="text-bullish light:group-hover/interactive-card:text-[#1dd9ba] leading-4"
+        >
           {rateText}
         </Text>
         <PopoverRateInfo

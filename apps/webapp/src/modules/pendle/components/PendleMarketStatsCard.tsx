@@ -78,7 +78,7 @@ export const PendleMarketStatsCard = ({ market, onClick, disabled = false }: Pen
                 <PopoverInfo
                   title={maturityTooltip.title}
                   description={maturityTooltip.tooltip}
-                  iconClassName="text-textSecondary hover:text-white transition-colors"
+                  iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
                 />
               )}
             </HStack>

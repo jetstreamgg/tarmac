@@ -49,7 +49,7 @@ export function InfoTooltip({
       >
         {shouldShowCloseButton && (
           <PopoverClose onClick={e => e.stopPropagation()} className="absolute top-4 right-4 z-10">
-            <X className="h-5 w-5 cursor-pointer text-white" />
+            <X className="h-5 w-5 cursor-pointer text-text" />
           </PopoverClose>
         )}
         <div

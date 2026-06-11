@@ -33,7 +33,7 @@ export const useSpkStakingRewardsToast = (isAuthorized: boolean) => {
       toastWithClose(
         toastId => (
           <div>
-            <Text variant="medium" className="text-selectActive">
+            <Text variant="medium" className="text-selectActive light:text-text">
               SPK Staking Rewards Update
             </Text>
             <VStack className="mt-4 gap-4">

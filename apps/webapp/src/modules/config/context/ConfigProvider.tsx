@@ -2,6 +2,7 @@ import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useState } fr
 import { UserConfig } from '../types/user-config';
 import { ALLOWED_EXTERNAL_DOMAINS, USER_SETTINGS_KEY } from '@/lib/constants';
 import { dynamicActivate } from '@/utils';
+import { applyTheme, getSystemTheme } from '@/lib/theme';
 import { i18n } from '@lingui/core';
 import { ConfigContext, defaultUserConfig } from './ConfigContext';
 import { defaultConfig as siteConfig } from '../default-config';
@@ -30,6 +31,8 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
         ...parsed,
         // locale: localeFromUrl || localeFromConfig || backupLocale
         locale: 'en',
+        // Fall back to the OS color-scheme preference on first visit
+        theme: parsed.theme ?? getSystemTheme(),
         batchEnabled:
           // If the feature flag is enabled, but the local storage item is not set, default to enabled
           import.meta.env.VITE_BATCH_TX_ENABLED === 'true' ? (parsed.batchEnabled ?? true) : undefined,
@@ -49,6 +52,13 @@ export const ConfigProvider = ({ children }: { children: ReactNode }): ReactElem
     }
     setLoaded(true);
   }, []);
+
+  // Sync `data-theme` with the user's theme (index.html sets the initial value).
+  useEffect(() => {
+    if (userConfig.theme) {
+      applyTheme(userConfig.theme);
+    }
+  }, [userConfig.theme]);
 
   const updateUserConfig = (config: UserConfig) => {
     setUserConfig(config);

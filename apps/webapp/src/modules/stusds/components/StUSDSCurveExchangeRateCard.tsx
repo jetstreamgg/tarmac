@@ -29,7 +29,7 @@ export function StUSDSCurveExchangeRateCard() {
           <PopoverInfo
             title={i18n._(msg`${tooltipContent?.title || 'Curve Exchange Rate'}`)}
             description={i18n._(msg`${tooltipContent?.tooltip || ''}`)}
-            iconClassName="text-textSecondary hover:text-white transition-colors"
+            iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
             iconSize="medium"
           />
           <CurveLogo className="h-3.5 w-3.5" />

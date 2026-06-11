@@ -231,7 +231,7 @@ export const SupplyWithdraw = ({
             </motion.div>
           </VStack>
           <div
-            className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-300"
+            className="mt-3 rounded-xl bg-amber-500/10 px-3 py-2 text-sm text-amber-300 light:text-amber-700"
             data-testid="pendle-early-withdraw-banner"
           >
             <Trans>

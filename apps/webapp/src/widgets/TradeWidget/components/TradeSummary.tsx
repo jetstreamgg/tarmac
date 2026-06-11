@@ -205,7 +205,7 @@ export function TradeSummary({
                         title="Bundle transactions"
                         description={
                           <>
-                            <Text className="text-[13px] text-white/60">
+                            <Text className="text-[13px] text-white/60 light:text-textSecondary">
                               Bundled transactions are set &apos;on&apos; by default to complete transactions
                               in a single step. Combining actions improves the user experience and reduces gas
                               fees. Manually toggle off to cancel this feature.
@@ -218,7 +218,7 @@ export function TradeSummary({
                   </HStack>
                   <Switch checked={batchEnabled} onCheckedChange={setBatchEnabled} />
                 </HStack>
-                <Text className="mt-2 text-[13px] text-white/60">
+                <Text className="mt-2 text-[13px] text-white/60 light:text-textSecondary">
                   {batchEnabled ? (
                     <Trans>
                       USDT allowance will be reset to 0 and then set to the required amount in a single

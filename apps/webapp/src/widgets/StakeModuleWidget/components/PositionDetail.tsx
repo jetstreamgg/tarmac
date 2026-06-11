@@ -182,7 +182,7 @@ export function PositionDetail({
         <HStack gap={2} className="items-center">
           <YellowWarning boxSize={16} viewBox="0 0 16 16" className="mt-1 shrink-0 self-start" />
           <Text className="text-textSecondary text-sm">
-            Please <span className="font-bold text-white">choose another reward.</span>{' '}
+            Please <span className="font-bold text-text">choose another reward.</span>{' '}
             {isUsdsReward
               ? 'The USDS rewards are disabled as a Staking Reward option, and the USDS rate set to zero. The pool of USDS will remain forever so that you can claim your rewards anytime.'
               : 'The SPK rewards are disabled as a Staking Reward option, and the SPK rate set to zero. The pool of SPK will remain forever so that you can claim your rewards anytime.'}

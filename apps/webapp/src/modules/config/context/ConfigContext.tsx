@@ -3,10 +3,12 @@ import { SiteConfig } from '../types/site-config';
 import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
 import { StakeToken } from '@/modules/stake/constants';
+import { DEFAULT_THEME } from '@/lib/theme';
 
 // Default user config
 export const defaultUserConfig: UserConfig = {
   locale: undefined,
+  theme: DEFAULT_THEME,
   stakeToken: StakeToken.SKY,
   batchEnabled: false, // Default to false to show activation prompt
   expertRiskDisclaimerShown: false,

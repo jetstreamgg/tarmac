@@ -446,7 +446,7 @@ export const Repay = ({ isConnectedAndEnabled }: { isConnectedAndEnabled: boolea
       />
 
       {shouldShowGauge ? (
-        <div className="mt-2 ml-3 flex items-start text-white">
+        <div className="mt-2 ml-3 flex items-start text-text">
           <Info height={15} width={16} className="mt-1 shrink-0" />
           <Text variant="small" className="ml-2">
             {t`You cannot repay your full USDS balance of ${formatBigInt(usdsBalance?.value || 0n, {

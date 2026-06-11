@@ -7,6 +7,7 @@ import { GradientShapeCard } from './GradientShapeCard';
 import { TokenIcon } from './TokenIcon';
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 
 type AboutCardProps = {
   title?: ReactNode;
@@ -31,6 +32,16 @@ export const AboutCard = ({
   height,
   contentWidth = 'w-2/3'
 }: AboutCardProps) => {
+  const { userConfig } = useConfigContext();
+  // The card gradients are inline styles, so they can't use the CSS `light:`
+  // variant — pick a lighter periwinkle base in light mode here instead. The
+  // per-card `colorMiddle` accent stripe stays as-is in both themes.
+  const isLight = userConfig.theme === 'light';
+  const colorLeft = isLight
+    ? 'radial-gradient(200.08% 406.67% at 5.14% 108.47%, #8E7DF0 0%, #B7ABF1 21.68%)'
+    : 'radial-gradient(200.08% 406.67% at 5.14% 108.47%, #4331E9 0%, #2A197D 21.68%)';
+  const colorRight = isLight ? '#D6D0F2' : '#1e1a4b';
+
   const renderTitle = () => {
     if (icon && title) {
       return (
@@ -70,9 +81,9 @@ export const AboutCard = ({
 
   return (
     <GradientShapeCard
-      colorLeft="radial-gradient(200.08% 406.67% at 5.14% 108.47%, #4331E9 0%, #2A197D 21.68%)"
+      colorLeft={colorLeft}
       colorMiddle={colorMiddle}
-      colorRight="#1e1a4b"
+      colorRight={colorRight}
       className="mb-6"
       height={height}
     >

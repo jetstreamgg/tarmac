@@ -21,7 +21,7 @@ export const useGovernanceMigrationToast = (isAuthorized: boolean) => {
     const timer = setTimeout(() => {
       toastWithClose(
         <div>
-          <Text variant="medium" className="text-selectActive">
+          <Text variant="medium" className="text-selectActive light:text-text">
             MKR to SKY Migration
           </Text>
           <VStack className="mt-4 gap-4">

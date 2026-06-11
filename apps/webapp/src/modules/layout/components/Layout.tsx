@@ -62,7 +62,7 @@ export function Layout({
       <Banner />
       {showEnvInfo && (
         <div className="absolute bottom-0 left-2">
-          <Text className="text-xs text-white">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>
+          <Text className="text-xs text-text">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>
         </div>
       )}
     </div>

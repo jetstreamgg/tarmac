@@ -334,7 +334,7 @@ export function TokenInput({
                     ) : (
                       <Input
                         ref={inputRef}
-                        className="hide-spin-button placeholder:text-white/30"
+                        className="hide-spin-button placeholder:text-white/30 light:placeholder:text-textDimmed"
                         value={inputValue !== '00' ? inputValue : '0'}
                         onChange={e => {
                           updateValue(e.target.value as `${number}`, e);
@@ -370,7 +370,7 @@ export function TokenInput({
                       <HStack className="justify-between pt-4">
                         <HStack
                           gap={2}
-                          className={`text-selectActive ${'w-full'} items-center overflow-clip`}
+                          className={`text-selectActive light:text-textSecondary ${'w-full'} items-center overflow-clip`}
                           title={balanceText}
                         >
                           {!hideIcon && limitText && isConnectedAndEnabled ? (
@@ -396,7 +396,7 @@ export function TokenInput({
                           </Text>
                         </HStack>
                         {showPercentageButtons && (
-                          <HStack gap={2} className="text-selectActive items-center">
+                          <HStack gap={2} className="text-selectActive light:text-textSecondary items-center">
                             {buttonsToShow.map(percentage => (
                               <Button
                                 key={percentage}
@@ -412,7 +412,7 @@ export function TokenInput({
                           </HStack>
                         )}
                         {customActionButtons && (
-                          <HStack gap={2} className="text-selectActive items-center">
+                          <HStack gap={2} className="text-selectActive light:text-textSecondary items-center">
                             {customActionButtons}
                           </HStack>
                         )}
@@ -450,13 +450,13 @@ export function TokenInput({
         >
           <VStack className="w-full space-y-2">
             <motion.div variants={positionAnimations}>
-              <Text className="text-selectActive ml-5 text-sm leading-none font-medium">
+              <Text className="text-selectActive light:text-textSecondary ml-5 text-sm leading-none font-medium">
                 <Trans>Select token</Trans>
               </Text>
             </motion.div>
             {enableSearch && (
               <motion.div variants={positionAnimations} className="px-2">
-                <HStack gap={2} className="items-center rounded-xl bg-white/2 p-3">
+                <HStack gap={2} className="items-center rounded-xl bg-white/2 light:bg-surfaceAlt p-3">
                   <Search className="text-textSecondary h-4 w-4" />
                   <div className="grow">
                     <Input
@@ -470,7 +470,7 @@ export function TokenInput({
                   </div>
                   {searchQuery && (
                     <Close
-                      className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white"
+                      className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white light:hover:text-text"
                       onClick={() => setSearchQuery('')}
                     />
                   )}

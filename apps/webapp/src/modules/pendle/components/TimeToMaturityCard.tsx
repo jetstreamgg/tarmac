@@ -81,7 +81,7 @@ export const TimeToMaturityCard = ({ market }: TimeToMaturityCardProps) => {
           <PopoverInfo
             title={maturityTooltip.title}
             description={maturityTooltip.tooltip}
-            iconClassName="text-textSecondary hover:text-white transition-colors"
+            iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
           />
         )}
       </CardTitle>

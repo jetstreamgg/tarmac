@@ -21,7 +21,7 @@ export function StUSDSCapCard() {
           <span>{i18n._(msg`Maximum capacity`)}</span>
           <PopoverInfo
             type="maximumCapacity"
-            iconClassName="text-textSecondary hover:text-white transition-colors"
+            iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
             width={14}
             height={14}
           />

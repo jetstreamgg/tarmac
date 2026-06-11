@@ -33,7 +33,7 @@ export const useUsdsSkyRewardsToast = (isAuthorized: boolean) => {
       toastWithClose(
         toastId => (
           <div>
-            <Text variant="medium" className="text-selectActive">
+            <Text variant="medium" className="text-selectActive light:text-text">
               USDS-SKY Rewards Update
             </Text>
             <VStack className="mt-4 gap-4">

@@ -159,7 +159,7 @@ export function UpgradeRevert({
                           value: isFeeLoading ? '...' : `${upgradePenalty}%`,
                           tooltipTitle: getTooltipById('delayed-upgrade-penalty')?.title || '',
                           tooltipText: (
-                            <Text variant="small" className="leading-5 text-white/80">
+                            <Text variant="small" className="leading-5 text-white/80 light:text-textSecondary">
                               {parseMarkdownLinks(getTooltipById('delayed-upgrade-penalty')?.tooltip)}
                             </Text>
                           )

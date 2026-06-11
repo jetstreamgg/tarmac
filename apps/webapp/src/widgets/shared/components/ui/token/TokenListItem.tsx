@@ -82,7 +82,7 @@ export function TokenListItem({
               </div>
               <VStack className="h-9 items-start justify-between" gap={1}>
                 <Text className="text-text text-[13px] leading-none font-normal">{token.name}</Text>
-                <Text className="text-selectActive text-xs leading-none font-normal">{token.symbol}</Text>
+                <Text className="text-selectActive light:text-textSecondary text-xs leading-none font-normal">{token.symbol}</Text>
               </VStack>
             </HStack>
             <VStack className="h-9 items-end justify-between p-0">
@@ -96,7 +96,7 @@ export function TokenListItem({
                   <Text className="text-text h-full text-right text-[13px] leading-none font-normal">
                     {formattedBalance}
                   </Text>
-                  <Text className="text-selectActive text-right text-xs leading-none font-normal">
+                  <Text className="text-selectActive light:text-textSecondary text-right text-xs leading-none font-normal">
                     {formattedUsdBalance && `$${formattedUsdBalance}`}
                   </Text>
                 </>
