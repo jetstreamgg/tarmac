@@ -12,6 +12,7 @@ import { FooterLinks } from './FooterLinks';
 import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
+import { DebugNav } from './DebugNav';
 import { usePanelSuperProperties } from '@/modules/analytics/hooks/usePanelSuperProperties';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 
@@ -46,6 +47,8 @@ export function Layout({
           'bg-app-background flex max-h-svh min-h-svh max-w-full items-center overflow-auto bg-cover bg-center bg-no-repeat md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
         }
       >
+        {(IS_DEVELOPMENT_ENV || IS_STAGING_ENV) && <DebugNav />}
+
         <ErrorBoundary>
           <Header />
         </ErrorBoundary>
