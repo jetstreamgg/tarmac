@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Toaster as Sonner, type ToastClassnames } from 'sonner';
 import { Success, Failure } from '@/modules/icons';
 import { Info, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
