@@ -188,7 +188,7 @@ export const RewardsStatsCard = ({
               <YellowWarning boxSize={16} viewBox="0 0 16 16" className="mt-0.5 shrink-0" />
               <Text className="text-textSecondary text-sm">
                 <Trans>
-                  Please <span className="font-bold text-white">withdraw your USDS.</span> SKY Rewards are
+                  Please <span className="font-bold text-text">withdraw your USDS.</span> SKY Rewards are
                   disabled as a Reward option, and the SKY rate set to zero. The pool of SKY will remain
                   forever so that you can claim your rewards anytime.
                 </Trans>

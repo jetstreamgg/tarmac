@@ -72,7 +72,7 @@ const TimeframeControls = ({
     );
   }
   return (
-    <HStack className="text-selectActive flex" gap={2}>
+    <HStack className="text-selectActive light:text-text flex" gap={2}>
       {keys.map(tfKey => (
         <Button
           variant="ghost"
@@ -483,7 +483,7 @@ export function Chart({
       </Card>
       <HStack className="mt-3 justify-between">
         {dateAxis.map((date, index) => (
-          <Text className="text-selectActive" variant="small" key={`${date}+${index}`}>
+          <Text className="text-selectActive light:text-textSecondary" variant="small" key={`${date}+${index}`}>
             {date}
           </Text>
         ))}

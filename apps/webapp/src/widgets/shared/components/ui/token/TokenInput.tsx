@@ -370,7 +370,7 @@ export function TokenInput({
                       <HStack className="justify-between pt-4">
                         <HStack
                           gap={2}
-                          className={`text-selectActive ${'w-full'} items-center overflow-clip`}
+                          className={`text-selectActive light:text-textSecondary ${'w-full'} items-center overflow-clip`}
                           title={balanceText}
                         >
                           {!hideIcon && limitText && isConnectedAndEnabled ? (
@@ -396,7 +396,7 @@ export function TokenInput({
                           </Text>
                         </HStack>
                         {showPercentageButtons && (
-                          <HStack gap={2} className="text-selectActive items-center">
+                          <HStack gap={2} className="text-selectActive light:text-textSecondary items-center">
                             {buttonsToShow.map(percentage => (
                               <Button
                                 key={percentage}
@@ -412,7 +412,7 @@ export function TokenInput({
                           </HStack>
                         )}
                         {customActionButtons && (
-                          <HStack gap={2} className="text-selectActive items-center">
+                          <HStack gap={2} className="text-selectActive light:text-textSecondary items-center">
                             {customActionButtons}
                           </HStack>
                         )}
@@ -450,7 +450,7 @@ export function TokenInput({
         >
           <VStack className="w-full space-y-2">
             <motion.div variants={positionAnimations}>
-              <Text className="text-selectActive ml-5 text-sm leading-none font-medium">
+              <Text className="text-selectActive light:text-textSecondary ml-5 text-sm leading-none font-medium">
                 <Trans>Select token</Trans>
               </Text>
             </motion.div>

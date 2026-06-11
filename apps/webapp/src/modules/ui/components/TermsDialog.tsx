@@ -79,7 +79,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
     <DialogContent aria-describedby={undefined} className="bg-containerDark max-h-[95dvh] overflow-y-auto">
       <DialogTitle className="sr-only">{title}</DialogTitle>
       {termsVersion && (
-        <Text className="text-center text-xs text-white/50">
+        <Text className="text-center text-xs text-white/50 light:text-textDimmed">
           <Trans>Terms version: {termsVersion}</Trans>
         </Text>
       )}
@@ -90,7 +90,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
       </Card>
 
       {showScrollInstruction && (
-        <Text className="text-center text-sm leading-none text-white/50 md:leading-tight">
+        <Text className="text-center text-sm leading-none text-white/50 light:text-textDimmed md:leading-tight">
           {scrollInstructionText || (
             <Trans>
               Please scroll to the bottom and read the entire terms; the accept button will become enabled

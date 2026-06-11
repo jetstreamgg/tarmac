@@ -232,8 +232,8 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
               </TooltipTrigger>
               <TooltipPortal>
                 <TooltipContent side="right" className="max-w-xs">
-                  <p className="text-sm font-medium text-white">{maxPermittedRiskTooltip?.title}</p>
-                  <p className="mt-2 text-xs text-gray-400">{maxPermittedRiskTooltip?.tooltip}</p>
+                  <p className="text-sm font-medium text-text">{maxPermittedRiskTooltip?.title}</p>
+                  <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">{maxPermittedRiskTooltip?.tooltip}</p>
                 </TooltipContent>
               </TooltipPortal>
             </Tooltip>
@@ -257,8 +257,8 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   </TooltipTrigger>
                   <TooltipPortal>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-sm font-medium text-white">{riskFloorTooltip?.title}</p>
-                      <p className="mt-2 text-xs text-gray-400">{riskFloorTooltip?.tooltip}</p>
+                      <p className="text-sm font-medium text-text">{riskFloorTooltip?.title}</p>
+                      <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">{riskFloorTooltip?.tooltip}</p>
                     </TooltipContent>
                   </TooltipPortal>
                 </Tooltip>
@@ -283,8 +283,8 @@ const RiskSlider = React.forwardRef<React.ComponentRef<typeof SliderPrimitive.Ro
                   </TooltipTrigger>
                   <TooltipPortal>
                     <TooltipContent side="right" className="max-w-xs">
-                      <p className="text-sm font-medium text-white">{riskCeilingTooltip?.title}</p>
-                      <p className="mt-2 text-xs text-gray-400">{riskCeilingTooltip?.tooltip}</p>
+                      <p className="text-sm font-medium text-text">{riskCeilingTooltip?.title}</p>
+                      <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">{riskCeilingTooltip?.tooltip}</p>
                     </TooltipContent>
                   </TooltipPortal>
                 </Tooltip>

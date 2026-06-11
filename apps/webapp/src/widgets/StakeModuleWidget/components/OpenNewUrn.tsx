@@ -81,7 +81,7 @@ export const OpenNewUrn = ({
           </div>
         </HStack>
         {widgetState.flow !== StakeFlow.OPEN && (
-          <Button variant="link" className="text-white" onClick={handleSkip}>
+          <Button variant="link" className="text-text" onClick={handleSkip}>
             Skip
           </Button>
         )}

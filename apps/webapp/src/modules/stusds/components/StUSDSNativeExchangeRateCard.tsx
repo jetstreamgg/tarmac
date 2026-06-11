@@ -79,7 +79,7 @@ export function StUSDSNativeExchangeRateCard() {
           </div>
           {hasAnyRestriction && statusLabel && statusTooltip && (
             <div className="flex items-center gap-1">
-              <Text variant="small" className="text-white">
+              <Text variant="small" className="text-text">
                 {statusLabel}
               </Text>
               <PopoverInfo

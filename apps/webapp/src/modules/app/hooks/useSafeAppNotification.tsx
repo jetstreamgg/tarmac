@@ -19,7 +19,7 @@ export const useSafeAppNotification = () => {
     if (isSafeWallet && connector?.id === WALLET_CONNECT_CONNECTOR_ID && toastDismissed !== 'true') {
       toastWithClose(
         <div>
-          <Text variant="medium" className="text-selectActive">
+          <Text variant="medium" className="text-selectActive light:text-text">
             {'Sky.money is a Safe{Wallet} Safe App'}
           </Text>
           <VStack className="mt-4 gap-4">
