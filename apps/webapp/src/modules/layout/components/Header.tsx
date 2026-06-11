@@ -77,15 +77,11 @@ export function Header(): React.ReactElement {
       className={`flex w-full items-center justify-center px-3 py-2 min-h-[${HEADER_HEIGHT}px] max-h-[${HEADER_HEIGHT}px] md:mb-2`}
     >
       <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 pr-0 pl-3 sm:px-5">
-        <div className="flex items-center gap-2 justify-self-start">
-          {/* Module navigation drawer for mobile and tablet */}
-          <HeaderNavDrawer />
-          <AppLink to="/" title="Home page">
-            <div className="min-w-[96px]">
-              <img src={defaultConfig.logo} alt="logo" width={96} />
-            </div>
-          </AppLink>
-        </div>
+        <AppLink to="/" title="Home page" className="justify-self-start">
+          <div className="min-w-[96px]">
+            <img src={defaultConfig.logo} alt="logo" width={96} />
+          </div>
+        </AppLink>
 
         {/* Center module navigation (desktop) */}
         <HeaderNav />
@@ -99,6 +95,8 @@ export function Header(): React.ReactElement {
           {useMock ? <MockConnectButton /> : null}
           <ThemeToggle />
           {BATCH_TX_ENABLED && <BatchTransactionsToggle />}
+          {/* Module navigation drawer for mobile and tablet */}
+          <HeaderNavDrawer />
         </div>
       </div>
     </div>
