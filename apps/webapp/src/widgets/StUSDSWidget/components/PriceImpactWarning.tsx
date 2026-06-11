@@ -28,7 +28,7 @@ export const PriceImpactWarning = ({
   const getTextColor = () => {
     if (priceImpactBps > PRICE_IMPACT_HIGH_THRESHOLD_BPS) return 'text-error';
     if (priceImpactBps > PRICE_IMPACT_WARNING_THRESHOLD_BPS) return 'text-amber-400';
-    return 'text-white';
+    return 'text-text';
   };
 
   // Convert basis points to percentage and round down to nearest integer for display

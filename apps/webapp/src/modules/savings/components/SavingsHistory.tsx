@@ -31,7 +31,7 @@ export function SavingsHistory() {
       s.type === TransactionTypeEnum.SUPPLY ? (
         <SavingsSupply width={14} height={13} className="mr-1" />
       ) : (
-        <ArrowDown width={10} height={14} className="mr-1 fill-white" />
+        <ArrowDown width={10} height={14} className="mr-1 fill-white light:fill-text" />
       ),
     formattedDate: formattedDates.length > index ? formattedDates[index] : '',
     rawDate: s.blockTimestamp,

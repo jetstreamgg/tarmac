@@ -18,6 +18,7 @@
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is([data-theme='light'] *));
 
 @theme {
   --font-graphik: GraphikStd;
@@ -318,6 +319,75 @@
     --transparent-black-65: #0c0c0da6;
     --transparent-black-20: #00000033;
     --transparent-black-10: #0c0c0d1a;
+  }
+
+  /*
+   * Light "Sky" daytime theme — activated by data-theme="light" on <html>.
+   * Tailwind v4 emits the @theme --color-* tokens as live CSS vars, so overriding
+   * the semantic tokens here re-themes the app at runtime (base --primary-white /
+   * --transparent-* vars are left alone so white overlays/gradients stay intact).
+   * Interim palette — the official Sky light theme is gated on Figma.
+   */
+  :root[data-theme='light'] {
+    /* body base */
+    --background: 240 60% 98%;
+    --foreground: 242 56% 22%;
+
+    /* text */
+    --color-text: #1a1855; /* deep indigo headline text */
+    --color-textSecondary: rgba(26, 24, 85, 0.62);
+    --color-textMuted: rgba(26, 24, 85, 0.62);
+    --color-textEmphasis: #6b3fe4; /* pink fails contrast on white -> readable purple */
+    --color-textDimmed: rgba(26, 24, 85, 0.45);
+    --color-textDesaturated: rgba(26, 24, 85, 0.55);
+    --color-error: #dc4c4c; /* deeper red for white-bg contrast */
+    --color-bullish: #00a167; /* deeper green for white-bg contrast */
+
+    /* Elevation levels so nested components separate:
+       page gradient (lilac) < container panel (periwinkle) < card (white).
+       container stays opaque so popovers/tooltips/banners read on the light page. */
+    --color-container: rgba(223, 228, 247, 0.95);
+    --color-containerDark: rgba(232, 235, 250, 0.94);
+    --color-surface: rgba(108, 104, 255, 0.12);
+    --color-surfaceHover: rgba(108, 104, 255, 0.2);
+    --color-surfaceAlt: rgba(26, 24, 85, 0.06);
+    --color-panel: rgba(255, 255, 255, 0.45);
+    --color-card: rgba(255, 255, 255, 0.96);
+    --color-cardLight: rgba(255, 255, 255, 1);
+    --color-selectBackground: rgba(26, 24, 85, 0.05);
+    --color-selectActive: rgba(26, 24, 85, 0.1);
+    --color-chartSelect: rgba(235, 232, 255, 1);
+
+    /* secondary buttons */
+    --color-secondary: rgba(26, 24, 85, 0.05);
+    --color-secondaryHover: rgba(26, 24, 85, 0.08);
+    --color-secondaryActive: rgba(26, 24, 85, 0.1);
+    --color-secondaryFocus: rgba(26, 24, 85, 0.08);
+    --color-secondaryDisabled: rgba(26, 24, 85, 0.03);
+
+    /* tabs */
+    --color-tab: rgba(26, 24, 85, 0.55);
+    --color-tabPrimary: rgba(26, 24, 85, 0.1);
+
+    /* borders */
+    --color-border: rgba(26, 24, 85, 0.12);
+    --color-borderActive: rgba(26, 24, 85, 0.25);
+    --color-borderPurple: #b9a8ff;
+
+    /* Lighter purple for active nav tabs / toggles (primary) and connect/chain
+       buttons (primary-bright); dark keeps the deep indigo from :root. */
+    --color-primary-start: rgba(125, 108, 242);
+    --color-primary-end: rgba(143, 126, 246);
+    --color-primary-bright-start: rgba(130, 112, 245);
+    --color-primary-bright-end: rgba(148, 131, 248);
+
+    /* page background: lilac daytime gradient, a touch deeper than the cards. */
+    --background-image-app-background: linear-gradient(
+      180deg,
+      #d3ddf6 0%,
+      #dbd3f3 55%,
+      #e2daf5 100%
+    );
   }
 }
 

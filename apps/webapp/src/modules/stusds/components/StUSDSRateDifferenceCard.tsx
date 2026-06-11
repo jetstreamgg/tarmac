@@ -32,7 +32,7 @@ export function StUSDSRateDifferenceCard() {
           <PopoverInfo
             title={i18n._(msg`${tooltipContent?.title || 'Curve vs. Native Rate difference'}`)}
             description={i18n._(msg`${tooltipContent?.tooltip || ''}`)}
-            iconClassName="text-textSecondary hover:text-white transition-colors"
+            iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
             iconSize="medium"
           />
         </div>

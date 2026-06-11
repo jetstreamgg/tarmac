@@ -42,9 +42,9 @@ export function StUSDSHistory() {
       );
     } else {
       iconLeft = isCurve ? (
-        <CurveSavingsWithdraw width={31} height={26} className="mr-1 -ml-[7px] flex-shrink-0 fill-white" />
+        <CurveSavingsWithdraw width={31} height={26} className="mr-1 -ml-[7px] flex-shrink-0 fill-white light:fill-text" />
       ) : (
-        <ArrowDown width={10} height={14} className="mr-[19px] flex-shrink-0 fill-white" />
+        <ArrowDown width={10} height={14} className="mr-[19px] flex-shrink-0 fill-white light:fill-text" />
       );
     }
 

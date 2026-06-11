@@ -283,7 +283,7 @@ export const StUSDSSupplyWithdraw = ({
                 </Text>
               </div>
             ) : !isStUsdsDataLoading && !isCurveAvailableForSupply && userBalanceExceedsCapacity ? (
-              <div className="mt-2 ml-3 flex items-start text-white">
+              <div className="mt-2 ml-3 flex items-start text-text">
                 <PopoverRateInfo type="remainingCapacity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="mb-1 ml-2 flex gap-2">
                   You cannot supply your full balance due to current capacity limits.
@@ -356,7 +356,7 @@ export const StUSDSSupplyWithdraw = ({
                 </Text>
               </div>
             ) : !isStUsdsDataLoading && !isCurveAvailableForWithdraw && userSuppliedExceedsLiquidity ? (
-              <div className="mt-2 ml-3 flex items-start text-white">
+              <div className="mt-2 ml-3 flex items-start text-text">
                 <PopoverRateInfo type="stusdsLiquidity" iconClassName="mt-1 shrink-0" />
                 <Text variant="small" className="ml-2 flex gap-2">
                   You cannot withdraw your full balance due to current liquidity limits.

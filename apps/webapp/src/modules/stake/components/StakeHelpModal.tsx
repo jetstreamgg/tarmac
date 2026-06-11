@@ -19,7 +19,7 @@ const circledNumber = (number: number) => {
   return (
     <Text
       className={
-        'inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white text-center text-xs text-white'
+        'inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white text-center text-xs text-text'
       }
     >
       {number}
@@ -137,6 +137,6 @@ const StakingStep = ({
       {circledNumber(number)}
       <Text className="text-text ml-2 text-[16px] font-bold sm:text-[18px]">{title}</Text>
     </div>
-    <Text className="mt-1 text-[12px] text-white/80 sm:text-[14px]">{content}</Text>
+    <Text className="mt-1 text-[12px] text-white/80 light:text-textSecondary sm:text-[14px]">{content}</Text>
   </div>
 );

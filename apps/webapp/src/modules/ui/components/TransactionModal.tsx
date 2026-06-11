@@ -306,11 +306,11 @@ function BatchToggle() {
   return (
     <div className="border-selectActive flex items-center gap-4 border-t pt-4">
       <div className="flex flex-wrap items-center gap-1">
-        <Text className="text-sm leading-none text-white">
+        <Text className="text-sm leading-none text-text">
           <Trans>Bundle transactions</Trans>
         </Text>
         <Popover>
-          <PopoverTrigger onClick={e => e.stopPropagation()} className="z-10 text-white">
+          <PopoverTrigger onClick={e => e.stopPropagation()} className="z-10 text-text">
             <Info width={13} height={13} />
           </PopoverTrigger>
           <PopoverContent align="center" side="top" className="bg-containerDark backdrop-blur-[50px]">
@@ -319,10 +319,10 @@ function BatchToggle() {
                 <Trans>Bundle transactions</Trans>
               </Text>
               <PopoverClose onClick={e => e.stopPropagation()}>
-                <Close className="h-5 w-5 cursor-pointer text-white" />
+                <Close className="h-5 w-5 cursor-pointer text-text" />
               </PopoverClose>
             </div>
-            <Text className="mt-2 text-sm text-white/80">
+            <Text className="mt-2 text-sm text-white/80 light:text-textSecondary">
               <Trans>
                 Bundled transactions are set &apos;on&apos; by default to complete transactions in a single
                 step. Combining actions improves the user experience and reduces gas fees. Manually toggle off

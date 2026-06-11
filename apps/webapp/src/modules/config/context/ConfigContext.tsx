@@ -5,10 +5,12 @@ import { defaultConfig as siteConfig } from '../default-config';
 import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
 import { RewardContract } from '@/hooks';
 import { StakeToken } from '@/modules/stake/constants';
+import { DEFAULT_THEME } from '@/lib/theme';
 
 // Default user config
 export const defaultUserConfig: UserConfig = {
   locale: undefined,
+  theme: DEFAULT_THEME,
   stakeToken: StakeToken.SKY,
   batchEnabled: false, // Default to false to show activation prompt
   expertRiskDisclaimerShown: false,

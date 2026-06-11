@@ -65,7 +65,7 @@ export const DelegateCheckbox = ({ isVisible = true }: DelegateCheckboxProps) =>
         htmlFor={delegateCheckboxId}
         className={cn('ml-2', hasExistingDelegate ? 'cursor-not-allowed' : 'cursor-pointer')}
       >
-        <Text variant="medium" className={cn(hasExistingDelegate ? 'text-textSecondary' : 'text-white')}>
+        <Text variant="medium" className={cn(hasExistingDelegate ? 'text-textSecondary' : 'text-text')}>
           {hasExistingDelegate ? (
             <Trans>You are delegating voting power for this position</Trans>
           ) : (

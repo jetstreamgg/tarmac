@@ -27,7 +27,7 @@ export const CostWarning: React.FC<CostWarningProps> = ({
   const getTextColor = () => {
     if (priceImpact > 30 || feePercentage > 30) return 'text-error';
     if (priceImpact > 5 || feePercentage > 20) return 'text-warning';
-    return 'text-white';
+    return 'text-text';
   };
 
   const handleOnClick = () => {

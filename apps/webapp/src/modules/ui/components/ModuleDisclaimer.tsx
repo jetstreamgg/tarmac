@@ -37,7 +37,7 @@ export function ModuleDisclaimer({
   if (isDismissed) return null;
 
   return (
-    <Card className="relative bg-black/65 p-5">
+    <Card className="relative bg-black/65 light:bg-card p-5">
       <button
         onClick={onDismiss}
         className="text-textSecondary hover:text-text absolute top-4 right-4 transition-colors"

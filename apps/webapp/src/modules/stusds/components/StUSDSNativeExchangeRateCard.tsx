@@ -72,14 +72,14 @@ export function StUSDSNativeExchangeRateCard() {
               <PopoverInfo
                 title={i18n._(msg`${tooltipContent?.title || 'Native Exchange Rate'}`)}
                 description={i18n._(msg`${tooltipContent?.tooltip || ''}`)}
-                iconClassName="text-textSecondary hover:text-white transition-colors"
+                iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
                 iconSize="medium"
               />
             )}
           </div>
           {hasAnyRestriction && statusLabel && statusTooltip && (
             <div className="flex items-center gap-1">
-              <Text variant="small" className="text-white">
+              <Text variant="small" className="text-text">
                 {statusLabel}
               </Text>
               <PopoverInfo

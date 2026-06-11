@@ -90,7 +90,7 @@ export const SelectDelegate = ({
           <Text>{delegateTitle}</Text>
           <PopoverRateInfo type="delegate" width={13} height={13} />
         </HStack>
-        <Button variant="link" className="text-white" onClick={handleSkip}>
+        <Button variant="link" className="text-text" onClick={handleSkip}>
           <Trans>Skip</Trans>
         </Button>
       </HStack>
@@ -108,7 +108,7 @@ export const SelectDelegate = ({
         </div>
         {search && (
           <Close
-            className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white"
+            className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white light:hover:text-text"
             onClick={() => setSearch('')}
           />
         )}

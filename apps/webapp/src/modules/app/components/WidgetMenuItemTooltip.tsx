@@ -162,7 +162,7 @@ export function WidgetMenuItemTooltip({
             <p className="text-sm">{description}</p>
             {subItems && subItems.length > 0 && (
               <>
-                <p className="mt-2 text-xs text-gray-400">Quick access:</p>
+                <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">Quick access:</p>
                 <div className="mt-1 mb-1 flex flex-wrap gap-1.5">
                   {subItems.map(subItem => (
                     <button
@@ -172,7 +172,7 @@ export function WidgetMenuItemTooltip({
                         e.stopPropagation();
                         handleSubItemClick(subItem);
                       }}
-                      className="flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-0.5 text-xs transition-colors hover:bg-white/20"
+                      className="light:bg-surfaceAlt light:hover:bg-surfaceHover flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-0.5 text-xs transition-colors hover:bg-white/20"
                     >
                       {subItem.icon}
                       {subItem.label}
@@ -185,7 +185,7 @@ export function WidgetMenuItemTooltip({
               widgetIntent !== Intent.BALANCES_INTENT &&
               widgetIntent !== Intent.CONVERT_INTENT && (
                 <>
-                  <p className="mt-2 text-xs text-gray-400">Supported on:</p>
+                  <p className="mt-2 text-xs text-gray-400 light:text-textSecondary">Supported on:</p>
                   <div className="mt-1 flex gap-2">{renderNetworkIcons()}</div>
                 </>
               )}
