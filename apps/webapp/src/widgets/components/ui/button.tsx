@@ -39,8 +39,8 @@ const buttonVariants = cva(
         paginationActive:
           'bg-radial-(--gradient-position) from-primary-start/100 to-primary-end/100 hover:bg-primaryHover rounded-full! text-text',
         input:
-          'bg-black/20 hover:bg-white/10 active:bg-white/7 text-text text-[13px] font-normal leading-4 disabled:pointer-events-auto disabled:cursor-not-allowed font-graphik',
-        ghost: 'text-text hover:text-white/80 active:text-white/60'
+          'bg-black/20 light:bg-surfaceAlt hover:bg-white/10 active:bg-white/7 text-text text-[13px] font-normal leading-4 disabled:pointer-events-auto disabled:cursor-not-allowed font-graphik',
+        ghost: 'text-text hover:text-white/80 active:text-white/60 light:hover:text-text light:active:text-text'
       },
       size: {
         default: 'h-10 px-4 py-2',

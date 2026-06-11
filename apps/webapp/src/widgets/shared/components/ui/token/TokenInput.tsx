@@ -456,7 +456,7 @@ export function TokenInput({
             </motion.div>
             {enableSearch && (
               <motion.div variants={positionAnimations} className="px-2">
-                <HStack gap={2} className="items-center rounded-xl bg-white/2 p-3">
+                <HStack gap={2} className="items-center rounded-xl bg-white/2 light:bg-surfaceAlt p-3">
                   <Search className="text-textSecondary h-4 w-4" />
                   <div className="grow">
                     <Input
@@ -470,7 +470,7 @@ export function TokenInput({
                   </div>
                   {searchQuery && (
                     <Close
-                      className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white"
+                      className="text-textSecondary h-4 w-4 cursor-pointer transition-colors hover:text-white light:hover:text-text"
                       onClick={() => setSearchQuery('')}
                     />
                   )}

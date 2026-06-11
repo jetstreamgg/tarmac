@@ -50,7 +50,7 @@ export const UtilizationBar = ({
               <PopoverInfo
                 title={popoverTitle}
                 description={popoverDescription}
-                iconClassName="text-textSecondary hover:text-white transition-colors"
+                iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
                 iconSize="medium"
               />
             )}

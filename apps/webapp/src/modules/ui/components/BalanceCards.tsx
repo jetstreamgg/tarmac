@@ -114,7 +114,7 @@ function BaseBalanceCardContent({
           <PopoverInfo
             title={labelTooltip.title}
             description={labelTooltip.description}
-            iconClassName="text-textSecondary hover:text-white transition-colors"
+            iconClassName="text-textSecondary hover:text-white light:hover:text-text transition-colors"
           />
         </CardTitle>
       ) : (

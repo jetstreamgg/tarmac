@@ -84,7 +84,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
         </Text>
       )}
 
-      <Card className="scrollbar-thin-always mx-auto max-h-[256px] w-full overflow-y-auto bg-[#181720] p-3 sm:max-h-[432px] sm:p-4">
+      <Card className="scrollbar-thin-always mx-auto max-h-[256px] w-full overflow-y-auto bg-[#181720] light:bg-card p-3 sm:max-h-[432px] sm:p-4">
         {content}
         <div ref={endOfTermsRef} data-testid="end-of-terms" />
       </Card>
@@ -110,7 +110,7 @@ export const TermsDialog: React.FC<TermsDialogProps> = ({
       <div className="flex w-full justify-between gap-4 sm:mt-0 sm:w-auto">
         <Button
           variant="secondary"
-          className="flex-1 border bg-transparent hover:bg-[rgb(17,16,31)] active:bg-[rgb(34,32,66)]"
+          className="flex-1 border bg-transparent hover:bg-[rgb(17,16,31)] active:bg-[rgb(34,32,66)] light:hover:bg-surfaceHover light:active:bg-surfaceAlt"
           onClick={onDecline}
           disabled={isLoading}
         >
