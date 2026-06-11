@@ -30,7 +30,7 @@ const buttonVariants = cva(
         outline:
           'text-text border border-surface hover:bg-surface/50 active:bg-surface/80 focus:bg-surface/80',
         ghost:
-          'text-selectActive hover:bg-[rgb(43,36,90)] active:bg-[rgb(49,41,100)] active:text-text light:hover:bg-surfaceAlt light:active:bg-surfaceHover',
+          'text-selectActive light:text-textSecondary hover:bg-[rgb(43,36,90)] active:bg-[rgb(49,41,100)] active:text-text light:hover:bg-surfaceAlt light:active:bg-surfaceHover',
         input:
           'bg-black/20 hover:bg-radial-(--gradient-position) hover:from-primary-alt-start/70 hover:to-primary-alt-end/70 active:bg-radial-(--gradient-position) active:from-primary-alt-start/50 active:to-primary-alt-end/50 text-text text-[13px] font-normal leading-4 disabled:pointer-events-auto disabled:cursor-not-allowed font-graphik',
         suggest:
