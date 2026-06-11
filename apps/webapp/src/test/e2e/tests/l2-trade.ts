@@ -11,7 +11,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await isolatedPage.waitForTimeout(1000);
     await switchToL2(isolatedPage, networkName);
 
-    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
     await isolatedPage.getByRole('button', { name: 'Trade Trade popular tokens' }).click();
 
     //select usds for target token; usdc is origin by default
@@ -54,7 +54,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await isolatedPage.waitForTimeout(1000);
     await switchToL2(isolatedPage, networkName);
 
-    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
     await isolatedPage.getByRole('button', { name: 'Trade Trade popular tokens' }).click();
 
     //select sUsds for target token; usdc is origin by default
@@ -97,7 +97,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await isolatedPage.waitForTimeout(1000);
     await switchToL2(isolatedPage, networkName);
 
-    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
     await isolatedPage.getByRole('button', { name: 'Trade Trade popular tokens' }).click();
 
     //select usds for origin token
@@ -144,7 +144,7 @@ export const runL2TradeTests = async ({ networkName }: { networkName: NetworkNam
     await isolatedPage.waitForTimeout(1000);
     await switchToL2(isolatedPage, networkName);
 
-    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
     await isolatedPage.getByRole('button', { name: 'Trade Trade popular tokens' }).click();
 
     //select usds for target token; usdc is origin by default

@@ -10,7 +10,7 @@ import { approveToken } from '../utils/approveToken.ts';
 test('Upgrade DAI and revert USDS', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
 
@@ -33,7 +33,7 @@ test('Upgrade DAI and revert USDS', async ({ isolatedPage }) => {
 test('Upgrade MKR but revert SKY isnt allowed', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('undefined-menu-button').click();
@@ -54,7 +54,7 @@ test('Upgrade MKR but revert SKY isnt allowed', async ({ isolatedPage }) => {
 test('Upgrade and revert with insufficient balance', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
 
@@ -87,7 +87,7 @@ test('Upgrade and revert with insufficient balance', async ({ isolatedPage }) =>
 test('Balances change after successfully upgrading and reverting', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
 
@@ -155,7 +155,7 @@ test('Balances change after successfully upgrading and reverting', async ({ isol
 test('Insufficient token allowance triggers approval flow', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
@@ -206,7 +206,7 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
 
 test('if not connected it should show a connect button', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
 
@@ -225,7 +225,7 @@ test('if not connected it should show a connect button', async ({ isolatedPage }
 test('percentage buttons work', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
 
@@ -273,7 +273,7 @@ test('percentage buttons work', async ({ isolatedPage }) => {
 test('enter amount button should be disabled', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
 
@@ -304,7 +304,7 @@ test('enter amount button should be disabled', async ({ isolatedPage }) => {
 test('An approval error redirects to the error screen', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
@@ -347,7 +347,7 @@ test('An approval error redirects to the error screen', async ({ isolatedPage })
 test('An upgrade error redirects to the error screen', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByTestId('upgrade-input-origin').click();
@@ -369,7 +369,7 @@ test('An upgrade error redirects to the error screen', async ({ isolatedPage }) 
 test('A revert error redirects to the error screen', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-  await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   // click the Upgrade card
   await isolatedPage.getByTestId('convert-upgrade-card').click();
   await isolatedPage.getByRole('tab', { name: 'Revert' }).click();

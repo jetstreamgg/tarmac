@@ -3,43 +3,50 @@ import { Outlet } from '@tanstack/react-router';
 import { useChainId } from 'wagmi';
 import { Layout } from '@/modules/layout/components/Layout';
 import { AppContainer } from './AppContainer';
-import { WidgetNavigation } from './WidgetNavigation';
+import { ShellChromeContext } from '../context/ShellChromeContext';
 import { useAppOrchestration } from '../hooks/useAppOrchestration';
 import { useWidgetItems } from '../hooks/useWidgetItems';
 import { useDeeplinkAnalytics } from '../hooks/useDeeplinkAnalytics';
-import { useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
+import { useNetworkChangeToast } from '../hooks/useNetworkChangeToast';
+import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { BalancesPanes } from '@/modules/balances/components/BalancesPanes';
+
+/** Height of the website header above the container on mobile. */
+const MOBILE_HEADER_HEIGHT = 56;
 
 /**
  * Component of the pathless shell route: the app chrome shared by every
- * module route. Runs the app-level orchestration and renders the navigation
- * around the route's two-pane content (via Outlet). The empty `contents` div
- * is the portal target for the md+ details pane, so route components can
- * render it as a sibling of the navigation column.
+ * module route. Runs the app-level orchestration and renders the route's
+ * two-pane content (via Outlet) inside the widget pane column. Module
+ * navigation lives in the Header. The empty `contents` div is the portal
+ * target for the md+ details pane, so route components can render it as a
+ * sibling of the widget pane column.
  */
 export function AppShell() {
   const { intent } = useAppOrchestration();
   const { bpi } = useBreakpointIndex();
   const chainId = useChainId();
   const [detailsSlot, setDetailsSlot] = useState<HTMLElement | null>(null);
-  const { widgetContent, effectiveIntent } = useWidgetItems(intent);
+  const { effectiveIntent } = useWidgetItems(intent);
   useDeeplinkAnalytics(effectiveIntent, chainId);
+  useNetworkChangeToast(effectiveIntent);
+
+  // Mobile: the widget pane fills the viewport below the header so the
+  // details pane scrolls in from below it. md+: the pane column stretches to
+  // the container height and sizes itself via flex.
+  const paneStyle = bpi < BP.md ? { height: `calc(100dvh - ${MOBILE_HEADER_HEIGHT}px)` } : undefined;
 
   return (
     <Layout>
       <AppContainer>
-        <WidgetNavigation
-          key={`widget-nav-${bpi}`}
-          widgetContent={widgetContent}
-          intent={effectiveIntent}
-          currentChainId={chainId}
-          detailsSlot={detailsSlot}
-        >
-          {/* Geo-restricted module (or geo-config still loading): fall back to
-              the Balances pair like the legacy switch did, regardless of which
-              module route matched. */}
-          {effectiveIntent !== intent ? <BalancesPanes /> : <Outlet />}
-        </WidgetNavigation>
+        <div className="w-full md:flex md:max-w-[440px] md:min-w-[352px] md:flex-col lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:overflow-hidden">
+          <ShellChromeContext.Provider value={{ paneStyle, detailsSlot }}>
+            {/* Geo-restricted module (or geo-config still loading): fall back to
+                the Balances pair like the legacy switch did, regardless of which
+                module route matched. */}
+            {effectiveIntent !== intent ? <BalancesPanes /> : <Outlet />}
+          </ShellChromeContext.Provider>
+        </div>
         <div className="contents" ref={setDetailsSlot} />
       </AppContainer>
     </Layout>
