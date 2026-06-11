@@ -2,9 +2,12 @@ import * as React from 'react';
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import { ChevronDown } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/cn';
 
 const Accordion = AccordionPrimitive.Root;
+
+/* App accordion (canonical `AccordionItem`/`AccordionTrigger`/`AccordionContent`)
+ * — original components/ui look. UNCHANGED. */
 
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
@@ -49,4 +52,54 @@ const AccordionContent = React.forwardRef<
 
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 
+/* Widget accordion (`AccordionWidget*`) — original widgets look, preserved
+ * verbatim per ticket A1's preserve-both decision (near-vanilla: no padding,
+ * font-medium, smaller chevron, no text color). Exposed via the widget shim as
+ * `AccordionItem`/`AccordionTrigger`/`AccordionContent`. (`Accordion` itself is
+ * identical — both are `AccordionPrimitive.Root` — so it is shared.) */
+
+const AccordionWidgetItem = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
+>(({ className, ...props }, ref) => (
+  <AccordionPrimitive.Item ref={ref} className={cn(className)} {...props} />
+));
+AccordionWidgetItem.displayName = 'AccordionItem';
+
+const AccordionWidgetTrigger = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
+>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Header className="flex">
+    <AccordionPrimitive.Trigger
+      ref={ref}
+      className={cn(
+        'flex flex-1 items-center justify-between font-medium transition-all [&[data-state=open]>svg]:rotate-180',
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+    </AccordionPrimitive.Trigger>
+  </AccordionPrimitive.Header>
+));
+AccordionWidgetTrigger.displayName = AccordionPrimitive.Trigger.displayName;
+
+const AccordionWidgetContent = React.forwardRef<
+  React.ElementRef<typeof AccordionPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <AccordionPrimitive.Content
+    ref={ref}
+    className="data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm transition-all"
+    {...props}
+  >
+    <div className={cn('pt-0 pb-4', className)}>{children}</div>
+  </AccordionPrimitive.Content>
+));
+
+AccordionWidgetContent.displayName = AccordionPrimitive.Content.displayName;
+
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent };
+export { AccordionWidgetItem, AccordionWidgetTrigger, AccordionWidgetContent };
