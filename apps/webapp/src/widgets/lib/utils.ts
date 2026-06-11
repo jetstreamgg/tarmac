@@ -1,5 +1,3 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { z } from 'zod';
 import { upgradeTokens } from '@/widgets/UpgradeWidget/lib/constants';
 import { defaultConfig } from '../config/default-config';
@@ -12,9 +10,7 @@ import { UpgradeFlow } from '../UpgradeWidget/lib/constants';
 import { ExternalWidgetState } from '@/widgets/shared/types/widgetState';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from '@/lib/cn';
 
 const tokenSymbols: string[] = []; //get all token symbols
 for (const key in defaultConfig.tradeTokenList) {

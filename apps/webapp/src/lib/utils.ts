@@ -1,5 +1,3 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { ALLOWED_EXTERNAL_DOMAINS, ExpertIntentMapping, QueryParams } from './constants';
 import { ExpertIntent, Intent } from './enums';
 import { INTENT_PATHS } from './navigation';
@@ -9,9 +7,7 @@ import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { reportError } from '@/modules/sentry/reportError';
 import { Chain } from 'viem';
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+export { cn } from './cn';
 
 export type FooterLink = { url: string; name: string; highlight?: string };
 
