@@ -1,5 +1,4 @@
 import { Intent } from '@/lib/enums';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
@@ -14,9 +13,7 @@ export function SavingsPanes() {
     <TwoPane
       // Remount per breakpoint, matching the legacy widget-pane key
       key={`savings-${bpi}`}
-      widget={withErrorBoundary(
-        <SavingsWidgetPane rightHeaderComponent={<DualSwitcher className="hidden lg:flex" />} />
-      )}
+      widget={withErrorBoundary(<SavingsWidgetPane />)}
       details={
         <DetailsLayout intent={Intent.SAVINGS_INTENT}>
           <SavingsDetails />

@@ -1,13 +1,12 @@
 import { StUSDSWidget, TxStatus, StUSDSAction, WidgetStateChangeParams, StUSDSFlow } from '@/widgets';
 import { useSavingsHistory } from '@/hooks';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useNavigate } from '@tanstack/react-router';
 import { keepSearch, useAppSearchParams, useRouteExpertIntent } from '@/lib/navigation';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { ExpertIntent } from '@/lib/enums';
 
-export function StUSDSWidgetPane(sharedProps: SharedProps) {
+export function StUSDSWidgetPane() {
   const subgraphUrl = useSubgraphUrl();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -66,7 +65,6 @@ export function StUSDSWidgetPane(sharedProps: SharedProps) {
 
   return (
     <StUSDSWidget
-      {...sharedProps}
       onWidgetStateChange={onStUSDSWidgetStateChange}
       externalWidgetState={{ flow }}
       onBackToExpert={handleBack}

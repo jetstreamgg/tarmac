@@ -154,20 +154,6 @@ export function useAppAnalytics() {
     [posthog, address, getChainName, getFlowId]
   );
 
-  const trackDetailsPaneToggled = ({
-    toggleAction,
-    activeWidget
-  }: {
-    toggleAction: 'open' | 'close';
-    activeWidget: string;
-  }) => {
-    safeCapture(posthog, AppEvents.DETAILS_PANE_TOGGLED, {
-      toggle_action: toggleAction,
-      active_widget: activeWidget,
-      viewport: getViewport()
-    });
-  };
-
   const trackWalletConnected = useCallback(
     ({ walletName }: { walletName: string }) => {
       safeCapture(posthog, AppEvents.WALLET_CONNECTED, {
@@ -194,7 +180,6 @@ export function useAppAnalytics() {
     trackTransactionStarted,
     trackTransactionCompleted,
     trackWidgetReviewViewed,
-    trackDetailsPaneToggled,
     trackWalletConnected,
     trackWalletDisconnected
   };

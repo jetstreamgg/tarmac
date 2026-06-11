@@ -1,5 +1,4 @@
 import { Intent } from '@/lib/enums';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
@@ -15,9 +14,7 @@ export function PendlePanes() {
     <TwoPane
       // Remount per breakpoint, matching the legacy widget-pane key
       key={`fixed-${bpi}`}
-      widget={withErrorBoundary(
-        <PendleWidgetPane rightHeaderComponent={<DualSwitcher className="hidden lg:flex" />} />
-      )}
+      widget={withErrorBoundary(<PendleWidgetPane />)}
       details={
         <DetailsLayout intent={Intent.FIXED_INTENT}>
           <PendleDetailsPane />

@@ -9,13 +9,12 @@ import {
 import { useSavingsHistory } from '@/hooks';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { isL2ChainId } from '@/utils';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
 
-export function SavingsWidgetPane(sharedProps: SharedProps) {
+export function SavingsWidgetPane() {
   const subgraphUrl = useSubgraphUrl();
   const { mutate: refreshSavingsHistory } = useSavingsHistory(subgraphUrl);
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -80,11 +79,5 @@ export function SavingsWidgetPane(sharedProps: SharedProps) {
 
   const Widget = isL2 ? L2SavingsWidget : SavingsWidget;
 
-  return (
-    <Widget
-      {...sharedProps}
-      onWidgetStateChange={onSavingsWidgetStateChange}
-      externalWidgetState={{ flow }}
-    />
-  );
+  return <Widget onWidgetStateChange={onSavingsWidgetStateChange} externalWidgetState={{ flow }} />;
 }

@@ -1,5 +1,4 @@
 import { PsmConversionWidget, WidgetStateChangeParams } from '@/widgets';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { QueryParams } from '@/lib/constants';
 import { ConvertIntent } from '@/lib/enums';
 import { useNavigate } from '@tanstack/react-router';
@@ -7,7 +6,7 @@ import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent }
 import { Intent } from '@/lib/enums';
 import { useMemo } from 'react';
 
-export function PsmConversionWidgetPane(sharedProps: SharedProps) {
+export function PsmConversionWidgetPane() {
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
   const intent = useRouteIntent();
@@ -56,7 +55,6 @@ export function PsmConversionWidgetPane(sharedProps: SharedProps) {
 
   return (
     <PsmConversionWidget
-      {...sharedProps}
       onWidgetStateChange={onPsmConversionWidgetStateChange}
       externalWidgetState={externalWidgetState}
       onBackToConvert={handleBackToConvert}

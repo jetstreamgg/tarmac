@@ -88,7 +88,7 @@ vi.mock('@/widgets', async importOriginal => {
 
 describe('BalancesSuggestedActions', () => {
   beforeEach(() => {
-    mockSearch = { lang: 'en', details: 'false' };
+    mockSearch = { lang: 'en' };
     lastNavigation = undefined;
     navigateMock.mockClear();
     setIsSwitchingNetworkMock.mockClear();
@@ -113,8 +113,7 @@ describe('BalancesSuggestedActions', () => {
     expect(lastNavigation?.search).toEqual({
       source_token: 'USDC',
       network: 'ethereum',
-      lang: 'en',
-      details: 'false'
+      lang: 'en'
     });
   });
 
@@ -132,6 +131,6 @@ describe('BalancesSuggestedActions', () => {
     fireEvent.click(screen.getByRole('button', { name: /Tether Savings \(sUSDT\)/i }));
 
     expect(lastNavigation?.to).toBe(`/vaults/sky/${SPARK_USDT_VAULT_ADDRESS}`);
-    expect(lastNavigation?.search).toEqual({ network: 'ethereum', lang: 'en', details: 'false' });
+    expect(lastNavigation?.search).toEqual({ network: 'ethereum', lang: 'en' });
   });
 });

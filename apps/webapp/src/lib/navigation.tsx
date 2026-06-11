@@ -98,12 +98,12 @@ export const keepSearch = (prev: Record<string, string | undefined>): Record<str
 
 /**
  * Search params preserved when navigating between modules. Mirrors the legacy
- * deleteSearchParams behavior: keep details/network (and valid geo overrides in
+ * deleteSearchParams behavior: keep network (and valid geo overrides in
  * non-production), drop module-specific state like flow or source_token.
  */
 export function retainOnNavigate(prev: Record<string, string | undefined>): Record<string, string> {
   const retained: Record<string, string> = {};
-  for (const key of [QueryParams.Details, QueryParams.Network] as string[]) {
+  for (const key of [QueryParams.Network] as string[]) {
     if (prev[key] !== undefined) retained[key] = prev[key];
   }
   if (!IS_PRODUCTION_ENV) {

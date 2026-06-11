@@ -2,10 +2,6 @@ import React from 'react';
 import { Intent } from '@/lib/enums';
 import { IconProps } from '@/widgets/shared/components/icons/Icon';
 
-export type SharedProps = {
-  rightHeaderComponent: React.JSX.Element;
-};
-
 export type WidgetSubItem = {
   label: string;
   icon?: React.ReactNode;

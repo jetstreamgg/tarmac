@@ -1,5 +1,4 @@
 import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ExpertIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
@@ -12,7 +11,7 @@ import { keepSearch, useRouteExpertIntent } from '@/lib/navigation';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 
-export function ExpertWidgetPane(sharedProps: SharedProps) {
+export function ExpertWidgetPane() {
   const { expertRiskDisclaimerShown } = useConfigContext();
   const routeExpertIntent = useRouteExpertIntent();
   const navigate = useNavigate();
@@ -28,7 +27,7 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
   const renderSelectedWidget = () => {
     switch (selectedExpertOption) {
       case ExpertIntent.STUSDS_INTENT:
-        return <StUSDSWidgetPane {...sharedProps} />;
+        return <StUSDSWidgetPane />;
       default:
         return null;
     }
@@ -51,7 +50,6 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
                 <Trans>Higher-risk options for more experienced users</Trans>
               </Text>
             }
-            rightHeader={sharedProps.rightHeaderComponent}
           >
             <CardAnimationWrapper className="flex flex-col gap-4">
               <ExpertRiskDisclaimer />

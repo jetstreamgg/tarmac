@@ -14,7 +14,6 @@ import { Menu, ChevronDown } from 'lucide-react';
 import { ShellChromeContext } from '../context/ShellChromeContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { useChains, useAccount } from 'wagmi';
 import { useEnhancedNetworkToast } from '@/modules/app/hooks/useEnhancedNetworkToast';
@@ -301,8 +300,6 @@ export function WidgetNavigation({
                 </div>
               </div>
             </SheetContent>
-            {/* Only show the dual switcher in this row for mobile and tablet in portrait mode */}
-            <DualSwitcher className="flex lg:hidden" />
           </Sheet>
         </div>
       )}

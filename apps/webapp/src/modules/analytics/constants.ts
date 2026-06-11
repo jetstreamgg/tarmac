@@ -9,7 +9,6 @@ export const AppEvents = {
   TRANSACTION_STARTED: 'app_widget_flow_started',
   TRANSACTION_COMPLETED: 'app_widget_flow_completed',
   WIDGET_REVIEW_VIEWED: 'app_widget_review_viewed',
-  DETAILS_PANE_TOGGLED: 'app_details_pane_toggled',
   VPN_CHECK_COMPLETED: 'app_vpn_check_completed',
   VPN_BLOCKED_PAGE_VIEW: 'app_vpn_blocked_page_view',
   WALLET_CONNECTED: 'app_wallet_connected',

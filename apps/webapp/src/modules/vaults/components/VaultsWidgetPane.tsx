@@ -1,5 +1,4 @@
 import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { VaultsIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { Trans } from '@lingui/react/macro';
@@ -15,7 +14,7 @@ import { useChainId } from 'wagmi';
 import { useMemo } from 'react';
 import { positionAnimations } from '@/widgets';
 
-export function VaultsWidgetPane(sharedProps: SharedProps) {
+export function VaultsWidgetPane() {
   const navigate = useNavigate();
   const chainId = useChainId();
 
@@ -73,7 +72,6 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
       case VaultsIntent.MORPHO_VAULT_INTENT:
         return (
           <MorphoVaultWidgetPane
-            {...sharedProps}
             vaultAddress={selectedVault.vaultAddress}
             assetToken={selectedVault.assetToken}
             vaultName={selectedVault.name}
@@ -102,7 +100,6 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
                 <Trans>Third-party vault integrations with Sky Ecosystem tokens</Trans>
               </Text>
             }
-            rightHeader={sharedProps.rightHeaderComponent}
           >
             <div className="flex flex-col gap-4">
               {myVaults.length > 0 && (

@@ -1,6 +1,5 @@
 import { useChainId } from 'wagmi';
 import { Intent } from '@/lib/enums';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
@@ -29,7 +28,6 @@ export function BalancesPanes() {
       key={`balances-${bpi}`}
       widget={withErrorBoundary(
         <BalancesWidgetPane
-          rightHeaderComponent={<DualSwitcher className="hidden lg:flex" />}
           hideRestrictedModules={isRegionRestricted}
           rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
           savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}

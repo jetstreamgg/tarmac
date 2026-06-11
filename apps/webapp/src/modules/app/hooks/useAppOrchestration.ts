@@ -33,7 +33,7 @@ import { isL2ChainId } from '@/utils';
  * network defaulting/switching and page-load notifications. Lives in the
  * shell layout route so it stays mounted across module navigations.
  */
-export function useAppOrchestration(): { intent: Intent; detailsParam: boolean } {
+export function useAppOrchestration(): { intent: Intent } {
   const { expertRiskDisclaimerShown } = useConfigContext();
   const { isAuthorized } = useConnectedContext();
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -91,7 +91,6 @@ export function useAppOrchestration(): { intent: Intent; detailsParam: boolean }
     }
   });
 
-  const detailsParam = !(searchParams.get(QueryParams.Details) === 'false');
   const network = searchParams.get(QueryParams.Network) || undefined;
 
   // The chain the URL points at: the network param wins over the connected
@@ -226,5 +225,5 @@ export function useAppOrchestration(): { intent: Intent; detailsParam: boolean }
     };
   }, [chains, connector, setSearchParams]);
 
-  return { intent, detailsParam };
+  return { intent };
 }
