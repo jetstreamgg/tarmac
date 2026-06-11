@@ -47,7 +47,7 @@ export function Layout({
           'bg-app-background flex max-h-svh min-h-svh max-w-full items-center overflow-auto bg-cover bg-center bg-no-repeat md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
         }
       >
-        {(IS_DEVELOPMENT_ENV || IS_STAGING_ENV) && <DebugNav />}
+        <DebugNav />
 
         <ErrorBoundary>
           <Header />
