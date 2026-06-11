@@ -127,7 +127,12 @@ export function WidgetNavigation({
   const router = useRouter();
   const preloadIntent = useCallback(
     (targetIntent: Intent) => {
-      void router.preloadRoute({ to: INTENT_PATHS[targetIntent] as '/' }).catch(() => {});
+      // Best-effort: a failed prefetch is recovered by the real navigation on click
+      void router.preloadRoute({ to: INTENT_PATHS[targetIntent] }).catch((error: unknown) => {
+        if (import.meta.env.DEV) {
+          console.warn(`Failed to preload route for ${targetIntent}:`, error);
+        }
+      });
     },
     [router]
   );
