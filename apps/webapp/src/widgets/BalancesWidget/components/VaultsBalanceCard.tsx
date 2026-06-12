@@ -278,6 +278,13 @@ export const VaultsBalanceCard = ({
       icon={vaultsIcon}
       url={url}
       logoName="vaults"
+      apyBadge={
+        weightedAverageRate > 0
+          ? t`Rate: ${(weightedAverageRate * 100).toFixed(2)}%`
+          : maxRate > 0
+            ? t`Rates up to: ${(maxRate * 100).toFixed(2)}%`
+            : undefined
+      }
       content={isBalanceLoading ? <Skeleton className="w-32" /> : <Text>{formatBigInt(morphoSupplied)}</Text>}
     />
   );

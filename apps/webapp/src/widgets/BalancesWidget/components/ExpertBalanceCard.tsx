@@ -71,6 +71,7 @@ export const ExpertBalanceCard = ({
       icon={expertIcon}
       url={url}
       logoName="expert"
+      apyBadge={stUsdsRate > 0 ? t`Rate: ${stUsdsRate.toFixed(2)}%` : undefined}
       content={
         loading || isBalanceLoading ? (
           <Skeleton className="w-32" />

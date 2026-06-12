@@ -14,7 +14,7 @@ import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { CustomConnectButton } from '@/modules/layout/components/CustomConnectButton';
+import { WalletChip } from './WalletChip';
 import { ExternalLink } from '@/modules/layout/components/ExternalLink';
 import { useCookieConsent } from '@/modules/analytics/context/CookieConsentContext';
 import { POSTHOG_ENABLED } from '@/modules/analytics/PostHogProvider';
@@ -198,10 +198,7 @@ export function TopNav() {
           );
         })}
       </div>
-      {/* B1 chip = re-tagged connect button; the WalletChip/WalletDrawer re-skin is B2. */}
-      <div data-testid="wallet-chip">
-        <CustomConnectButton />
-      </div>
+      <WalletChip />
       <MoreMenu />
     </nav>
   );

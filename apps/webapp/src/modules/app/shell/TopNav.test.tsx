@@ -41,8 +41,8 @@ vi.mock('@/components/BatchTransactionsToggle', () => ({
   BatchTransactionsToggle: () => <div data-testid="batch-transactions-toggle-stub" />
 }));
 
-vi.mock('@/modules/layout/components/CustomConnectButton', () => ({
-  CustomConnectButton: () => <div data-testid="custom-connect-button-stub" />
+vi.mock('./WalletChip', () => ({
+  WalletChip: () => <div data-testid="wallet-chip" data-stub="wallet-chip-stub" />
 }));
 
 vi.mock('@/components/ThemeToggle', () => ({
@@ -137,10 +137,10 @@ describe('TopNav destinations', () => {
 });
 
 describe('TopNav wallet chip', () => {
-  it('wraps the existing connect button under the V2 wallet-chip testid', async () => {
+  it('mounts the WalletChip (which owns the V2 wallet-chip testid)', async () => {
     renderTopNav();
     const chip = await screen.findByTestId('wallet-chip');
-    expect(chip.querySelector('[data-testid="custom-connect-button-stub"]')).toBeTruthy();
+    expect(chip.getAttribute('data-stub')).toBe('wallet-chip-stub');
   });
 });
 
