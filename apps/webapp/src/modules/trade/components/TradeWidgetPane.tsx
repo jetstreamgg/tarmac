@@ -3,8 +3,6 @@ import { defaultConfig } from '../../config/default-config';
 import { restrictedTradeTokenList } from '../../config/tokenListConfig';
 import { useChainId } from 'wagmi';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { SharedProps } from '@/modules/app/types/Widgets';
-import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useNavigate } from '@tanstack/react-router';
 import { keepSearch, useAppSearchParams, useRouteConvertIntent, useRouteIntent } from '@/lib/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,11 +10,10 @@ import { getChainSpecificText, isCowSupportedChainId } from '@/utils';
 import { ConvertIntent, Intent } from '@/lib/enums';
 import { useGeoConfig } from '@/modules/geo-config';
 
-export function TradeWidgetPane(sharedProps: SharedProps) {
+export function TradeWidgetPane() {
   const chainId = useChainId();
 
   const queryClient = useQueryClient();
-  const { setSelectedConvertOption } = useConfigContext();
 
   const [, setSearchParams] = useAppSearchParams();
 
@@ -34,7 +31,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
 
   const handleBackToConvert = () => {
     void navigate({ to: '/convert', search: keepSearch });
-    setSelectedConvertOption(undefined);
   };
 
   const onTradeWidgetStateChange = ({
@@ -104,7 +100,6 @@ export function TradeWidgetPane(sharedProps: SharedProps) {
 
   return (
     <Widget
-      {...sharedProps}
       disallowedPairs={defaultConfig.tradeDisallowedPairs}
       customTokenList={tradeTokenList}
       onWidgetStateChange={onTradeWidgetStateChange}

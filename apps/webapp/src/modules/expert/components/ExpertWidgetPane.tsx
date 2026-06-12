@@ -1,5 +1,4 @@
 import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { ExpertIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
@@ -8,23 +7,27 @@ import { AnimatePresence } from 'motion/react';
 import { StUSDSWidgetPane } from '@/modules/stusds/components/StUSDSWidgetPane';
 import { EXPERT_WIDGET_OPTIONS, ExpertIntentMapping } from '@/lib/constants';
 import { useNavigate } from '@tanstack/react-router';
-import { keepSearch } from '@/lib/navigation';
+import { keepSearch, useRouteExpertIntent } from '@/lib/navigation';
 import { ExpertRiskDisclaimer } from './ExpertRiskDisclaimer';
 import { StusdsStatsCard } from './StusdsStatsCard';
 
-export function ExpertWidgetPane(sharedProps: SharedProps) {
-  const { selectedExpertOption, setSelectedExpertOption, expertRiskDisclaimerShown } = useConfigContext();
+export function ExpertWidgetPane() {
+  const { expertRiskDisclaimerShown } = useConfigContext();
+  const routeExpertIntent = useRouteExpertIntent();
   const navigate = useNavigate();
+
+  // Submodules only render once the risk disclaimer has been acknowledged;
+  // until then (the orchestration redirect is in flight) the overview shows.
+  const selectedExpertOption = expertRiskDisclaimerShown ? routeExpertIntent : undefined;
 
   const handleSelectExpertOption = (expertIntent: ExpertIntent) => {
     void navigate({ to: `/expert/${ExpertIntentMapping[expertIntent]}`, search: keepSearch });
-    setSelectedExpertOption(expertIntent);
   };
 
   const renderSelectedWidget = () => {
     switch (selectedExpertOption) {
       case ExpertIntent.STUSDS_INTENT:
-        return <StUSDSWidgetPane {...sharedProps} />;
+        return <StUSDSWidgetPane />;
       default:
         return null;
     }
@@ -47,7 +50,6 @@ export function ExpertWidgetPane(sharedProps: SharedProps) {
                 <Trans>Higher-risk options for more experienced users</Trans>
               </Text>
             }
-            rightHeader={sharedProps.rightHeaderComponent}
           >
             <CardAnimationWrapper className="flex flex-col gap-4">
               <ExpertRiskDisclaimer />

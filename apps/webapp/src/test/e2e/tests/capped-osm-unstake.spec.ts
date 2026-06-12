@@ -25,7 +25,7 @@ test.describe('Capped OSM SKY Price - Unstake Blocking', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Stake & Borrow' }).click();
     console.log('Setup complete');
   });
 

@@ -9,7 +9,6 @@ import { isMarketMatured, PENDLE_MARKETS, usePendleUserPtBalances, type PendleMa
 import { isTestnetId } from '@/utils';
 import { CardAnimationWrapper, PendleWidget, WidgetContainer, positionAnimations } from '@/widgets';
 import { Heading, Text } from '@/modules/layout/components/Typography';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { PendleMarketStatsCard } from './PendleMarketStatsCard';
 import { PendleReadyToRedeemList } from './PendleReadyToRedeemList';
 
@@ -19,7 +18,7 @@ const findMarket = (address: string | null): PendleMarketConfig | undefined => {
   return PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
 };
 
-export function PendleWidgetPane(sharedProps: SharedProps) {
+export function PendleWidgetPane() {
   const navigate = useNavigate();
   const chainId = useChainId();
   const isOnPendleChain = isTestnetId(chainId) || chainId === mainnet.id;
@@ -84,7 +83,7 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
         className="h-full"
       >
         {showSelectedMarket ? (
-          <PendleWidget {...sharedProps} market={selectedMarket!} onBackToPendle={handleBack} />
+          <PendleWidget market={selectedMarket!} onBackToPendle={handleBack} />
         ) : (
           <WidgetContainer
             header={
@@ -100,7 +99,6 @@ export function PendleWidgetPane(sharedProps: SharedProps) {
                 </Trans>
               </Text>
             }
-            rightHeader={sharedProps.rightHeaderComponent}
           >
             <div className="flex flex-col gap-4">
               {!isOnPendleChain && (

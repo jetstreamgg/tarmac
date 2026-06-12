@@ -5,7 +5,7 @@ import { connectMockWalletAndAcceptTerms } from './connectMockWalletAndAcceptTer
 export const withdrawAllAndReset = async (page: Page, buttonText: Action = 'Withdraw') => {
   await page.reload();
   await connectMockWalletAndAcceptTerms(page);
-  await page.getByRole('tab', { name: 'Rewards' }).click();
+  await page.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   const firstFeaturedReward = page.getByText('With: USDS Get: SKY').first();
   if (await firstFeaturedReward.isVisible()) {
     await firstFeaturedReward.click();

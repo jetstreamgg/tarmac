@@ -2,8 +2,6 @@ import { createContext } from 'react';
 import { SiteConfig } from '../types/site-config';
 import { UserConfig } from '../types/user-config';
 import { defaultConfig as siteConfig } from '../default-config';
-import { ConvertIntent, ExpertIntent, VaultsIntent } from '@/lib/enums';
-import { RewardContract } from '@/hooks';
 import { StakeToken } from '@/modules/stake/constants';
 import { DEFAULT_THEME } from '@/lib/theme';
 
@@ -25,8 +23,6 @@ export interface ConfigContextProps {
   loaded: boolean;
   locale: string;
   updateUserConfig: (config: UserConfig) => void;
-  selectedRewardContract?: RewardContract;
-  setSelectedRewardContract: (rewardContract?: RewardContract) => void;
   selectedStakeUrnIndex: number | undefined;
   setSelectedStakeUrnIndex: (position: number | undefined) => void;
   externalLinkModalOpened: boolean;
@@ -34,12 +30,6 @@ export interface ConfigContextProps {
   externalLinkModalUrl: string;
   setExternalLinkModalUrl: (val: string) => void;
   onExternalLinkClicked: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
-  selectedExpertOption: ExpertIntent | undefined;
-  setSelectedExpertOption: (intent: ExpertIntent | undefined) => void;
-  selectedVaultsOption: VaultsIntent | undefined;
-  setSelectedVaultsOption: (intent: VaultsIntent | undefined) => void;
-  selectedConvertOption: ConvertIntent | undefined;
-  setSelectedConvertOption: (intent: ConvertIntent | undefined) => void;
   expertRiskDisclaimerShown: boolean;
   setExpertRiskDisclaimerShown: (shown: boolean) => void;
   expertRiskDisclaimerDismissed: boolean;
@@ -64,8 +54,6 @@ export const ConfigContext = createContext<ConfigContextProps>({
   updateUserConfig: () => {
     // do nothing.
   },
-  selectedRewardContract: undefined,
-  setSelectedRewardContract: () => {},
   selectedStakeUrnIndex: undefined,
   setSelectedStakeUrnIndex: () => {},
   externalLinkModalOpened: false,
@@ -73,12 +61,6 @@ export const ConfigContext = createContext<ConfigContextProps>({
   externalLinkModalUrl: '',
   setExternalLinkModalUrl: () => {},
   onExternalLinkClicked: () => {},
-  selectedExpertOption: undefined,
-  setSelectedExpertOption: () => {},
-  selectedVaultsOption: undefined,
-  setSelectedVaultsOption: () => {},
-  selectedConvertOption: undefined,
-  setSelectedConvertOption: () => {},
   expertRiskDisclaimerShown: false,
   setExpertRiskDisclaimerShown: () => {},
   expertRiskDisclaimerDismissed: false,

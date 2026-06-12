@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
  * - 3xl: >= 1680px (large desktop)
  *
  * Panel class selectors:
- * - Widget: data-testid="widget-navigation" (lg+) or hamburger menu button (sm-md)
+ * - Navigation: header nav data-testid="widget-navigation" (lg+) or header hamburger menu button (sm-md)
  * - Details: .details-pane
  *
  * Run with: pnpm e2e pane-visibility.spec.ts
@@ -98,19 +98,6 @@ test.describe('Pane Visibility', () => {
 
       await expect(widgetNav).toBeVisible();
       await expect(detailsPane).toBeVisible();
-    });
-  });
-
-  test.describe('Details can be hidden with parameter', () => {
-    test('details=false hides details pane at xl', async ({ page }) => {
-      await page.setViewportSize(VIEWPORTS.xl);
-      await page.goto('/?details=false');
-
-      const widgetNav = page.getByTestId('widget-navigation');
-      const detailsPane = page.locator('.details-pane');
-
-      await expect(widgetNav).toBeVisible();
-      await expect(detailsPane).not.toBeVisible();
     });
   });
 });

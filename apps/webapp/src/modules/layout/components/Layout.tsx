@@ -12,7 +12,6 @@ import { FooterLinks } from './FooterLinks';
 import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
-import { usePanelSuperProperties } from '@/modules/analytics/hooks/usePanelSuperProperties';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 
 export function Layout({
@@ -27,7 +26,6 @@ export function Layout({
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
   const { bpi } = useBreakpointIndex();
 
-  usePanelSuperProperties();
   useWalletAnalytics();
 
   const showEnvInfo = (IS_STAGING_ENV || IS_DEVELOPMENT_ENV) && import.meta.env.VITE_CF_PAGES_COMMIT_SHA;
@@ -62,7 +60,7 @@ export function Layout({
       <Banner />
       {showEnvInfo && (
         <div className="absolute bottom-0 left-2">
-          <Text className="text-xs text-text">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>
+          <Text className="text-text text-xs">{import.meta.env.VITE_CF_PAGES_COMMIT_SHA}</Text>
         </div>
       )}
     </div>

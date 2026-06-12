@@ -11,52 +11,35 @@ import {
   Pendle
 } from '../../icons';
 import { Intent } from '@/lib/enums';
-import { COMING_SOON_MAP, IntentMapping, ExpertIntentMapping, ConvertIntentMapping } from '@/lib/constants';
+import { COMING_SOON_MAP, ExpertIntentMapping, ConvertIntentMapping } from '@/lib/constants';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useGeoConfig } from '@/modules/geo-config';
 import { ModuleId } from '@/modules/geo-config/types';
 import { ExpertIntent, ConvertIntent } from '@/lib/enums';
-import { WidgetNavigation } from '@/modules/app/components/WidgetNavigation';
-import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { IconProps } from '@/modules/icons/Icon';
-import { RewardsWidgetPane } from '@/modules/rewards/components/RewardsWidgetPane';
-import { SavingsWidgetPane } from '@/modules/savings/components/SavingsWidgetPane';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 import { useChainId } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { BalancesWidgetPane } from '@/modules/balances/components/BalancesWidgetPane';
-import { StakeWidgetPane } from '@/modules/stake/components/StakeWidgetPane';
-import { getSupportedChainIds } from '@/data/wagmi/config/config.default';
-import { useBalanceFilters } from '@/modules/ui/context/BalanceFiltersContext';
 import { WidgetContent, WidgetItem, WidgetSubItem } from '../types/Widgets';
 import { isL2ChainId, isTestnetId } from '@/utils';
 import { TENDERLY_CHAIN_ID } from '@/data/wagmi/config/testTenderlyChain';
-import { ExpertWidgetPane } from '@/modules/expert/components/ExpertWidgetPane';
-import { VaultsWidgetPane } from '@/modules/vaults/components/VaultsWidgetPane';
-import { ConvertWidgetPane } from '@/modules/convert/components/ConvertWidgetPane';
-import { PendleWidgetPane } from '@/modules/pendle/components/PendleWidgetPane';
-import { useModuleUrls } from '../hooks/useModuleUrls';
 import { useAvailableTokenRewardContracts, VAULTS, PENDLE_MARKETS, isMarketMatured } from '@/hooks';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
-import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 
-// Module-level guard: persists across React remounts/StrictMode, resets on page reload (fresh deeplink)
-let lastDeeplinkTracked: string | null = null;
-
-type WidgetPaneProps = {
-  intent: Intent;
-  children?: React.ReactNode;
-};
-
-export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
+/**
+ * Builds the navigation metadata (label, icon, description, sub-items) for
+ * every module available on the current chain and geo-config. The pane
+ * content itself is route-driven. `effectiveIntent` falls back to Balances
+ * when the route's module is geo-restricted.
+ */
+export function useWidgetItems(intent: Intent): {
+  widgetContent: WidgetContent;
+  effectiveIntent: Intent;
+} {
   const chainId = useChainId();
 
-  const { hideZeroBalances, setHideZeroBalances, showAllNetworks, setShowAllNetworks } = useBalanceFilters();
-
-  const { isModuleEnabled, isRegionRestricted } = useGeoConfig();
+  const { isModuleEnabled } = useGeoConfig();
 
   // Map Intent → ModuleId for geo-config filtering
   const intentToModule: Partial<Record<Intent, ModuleId>> = {
@@ -74,35 +57,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
   const effectiveIntent =
     restrictedModuleId && !isModuleEnabled(restrictedModuleId) ? Intent.BALANCES_INTENT : intent;
 
-  const rightHeaderComponent = <DualSwitcher className="hidden lg:flex" />;
-
-  const sharedProps = {
-    rightHeaderComponent
-  };
-
-  const { trackWidgetSelected } = useAppAnalytics();
-  const { startNewFlow } = useAnalyticsFlow();
-
-  // Deeplink detection: fire app_widget_selected when initial intent ≠ default (balances)
-  // Uses module-level guard (not useRef) so it survives React StrictMode remounts and key-driven remounts
-  useEffect(() => {
-    if (
-      effectiveIntent &&
-      effectiveIntent !== Intent.BALANCES_INTENT &&
-      effectiveIntent !== lastDeeplinkTracked
-    ) {
-      lastDeeplinkTracked = effectiveIntent;
-      startNewFlow();
-      trackWidgetSelected({
-        widgetName: IntentMapping[effectiveIntent] || effectiveIntent,
-        previousWidget: IntentMapping[Intent.BALANCES_INTENT],
-        selectionMethod: 'deeplink',
-        chainId
-      });
-    }
-  }, []);
-
-  const { rewardsUrl, savingsUrlMap, stakeUrl, stusdsUrl, vaultsUrl, fixedYieldUrl } = useModuleUrls();
   const rewardContracts = useAvailableTokenRewardContracts(chainId);
   const rewardSubItems = rewardContracts
     .filter(contract => contract.rewardToken.symbol !== 'SKY')
@@ -143,23 +97,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.BALANCES_INTENT,
       'Balances',
       Balances,
-      withErrorBoundary(
-        <BalancesWidgetPane
-          {...sharedProps}
-          hideRestrictedModules={isRegionRestricted}
-          rewardsCardUrl={isRegionRestricted ? undefined : rewardsUrl}
-          savingsCardUrlMap={isRegionRestricted ? undefined : savingsUrlMap}
-          stakeCardUrl={stakeUrl}
-          stusdsCardUrl={isRegionRestricted ? undefined : stusdsUrl}
-          vaultsCardUrl={vaultsUrl}
-          fixedYieldCardUrl={fixedYieldUrl}
-          chainIds={getSupportedChainIds(chainId)}
-          hideZeroBalances={hideZeroBalances}
-          setHideZeroBalances={setHideZeroBalances}
-          showAllNetworks={showAllNetworks}
-          setShowAllNetworks={setShowAllNetworks}
-        />
-      ),
       false,
       undefined,
       'Manage your Sky Ecosystem funds across supported networks'
@@ -168,7 +105,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.REWARDS_INTENT,
       'Rewards',
       RewardsModule,
-      withErrorBoundary(<RewardsWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Use USDS to access Sky Token Rewards',
@@ -178,7 +114,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.SAVINGS_INTENT,
       'Savings',
       Savings,
-      withErrorBoundary(<SavingsWidgetPane {...sharedProps} />),
       false,
       undefined,
       isL2ChainId(chainId)
@@ -189,7 +124,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.FIXED_INTENT,
       'Fixed Yield',
       Pendle,
-      withErrorBoundary(<PendleWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Know your return by a pre-set maturity date. Supply USDS at a discount. Redeem for full USDS value at maturity.',
@@ -199,7 +133,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.STAKE_INTENT,
       'Stake & Borrow',
       Stake,
-      withErrorBoundary(<StakeWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Stake SKY to earn rewards, delegate votes, and borrow USDS'
@@ -208,7 +141,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.VAULTS_INTENT,
       'Vaults',
       Vaults,
-      withErrorBoundary(<VaultsWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Third-party vault integrations with Sky Ecosystem tokens',
@@ -218,7 +150,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.EXPERT_INTENT,
       'Expert',
       Expert,
-      withErrorBoundary(<ExpertWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Higher-risk options for more experienced users',
@@ -234,7 +165,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       Intent.CONVERT_INTENT,
       'Convert',
       Convert,
-      withErrorBoundary(<ConvertWidgetPane {...sharedProps} />),
       false,
       undefined,
       'Get Sky Ecosystem tokens with best possible rates',
@@ -263,7 +193,7 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
       const moduleId = intentToModule[intent as Intent];
       return !moduleId || isModuleEnabled(moduleId);
     })
-    .map(([intent, label, icon, component, , , description, subItems]) => {
+    .map(([intent, label, icon, , , description, subItems]) => {
       const comingSoon = COMING_SOON_MAP[chainId]?.includes(intent as Intent);
       const filteredSubItems = (subItems as WidgetSubItem[] | undefined)?.filter(sub => {
         if (!sub.intent) return true;
@@ -274,7 +204,6 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
         intent as Intent,
         label as string,
         icon as (props: IconProps) => React.ReactNode,
-        comingSoon ? null : (component as React.ReactNode),
         comingSoon,
         comingSoon ? { disabled: true } : undefined,
         description as string,
@@ -312,13 +241,9 @@ export const WidgetPane = ({ intent, children }: WidgetPaneProps) => {
     }
   ];
 
-  // Show all widget items regardless of network for better discoverability
-  // Auto-switching will be handled in WidgetNavigation
+  // Show all widget items regardless of network for better discoverability;
+  // the header nav auto-switches to mainnet for mainnet-only modules
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
-  return (
-    <WidgetNavigation widgetContent={filteredWidgetContent} intent={effectiveIntent} currentChainId={chainId}>
-      {children}
-    </WidgetNavigation>
-  );
-};
+  return { widgetContent: filteredWidgetContent, effectiveIntent };
+}

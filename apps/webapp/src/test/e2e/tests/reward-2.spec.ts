@@ -13,7 +13,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 });
 
@@ -38,7 +38,7 @@ test('A supply error redirects to the error screen', async ({ isolatedPage }) =>
   await isolatedPage.reload();
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   await isolatedPage.getByTestId('supply-input-rewards').fill('1');
@@ -154,7 +154,7 @@ test('Details pane shows correct history data and layout subsections', async ({ 
 
 test('Rewards overview cards redirect to the correct reward contract', async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
 
   const firstWidgetRewards = isolatedPage
     .getByTestId('widget-container')
@@ -174,7 +174,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   // await isolatedPage.reload();
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   // First, supply some tokens
@@ -183,7 +183,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   await performAction(isolatedPage, 'Supply');
   await isolatedPage.getByRole('button', { name: 'Back to Rewards' }).click();
 
-  await isolatedPage.getByRole('tab', { name: 'Balances' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Balances' }).click();
   const skyLocator = isolatedPage
     .getByTestId('widget-container')
     .getByText('SKY', { exact: true })
@@ -195,7 +195,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   await expect(skyLocator).toBeVisible();
   const skyInitialBalance = await skyLocator.innerText();
 
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
 
   // Then, distribute rewards
   await distributeRewards();
@@ -204,7 +204,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   await isolatedPage.waitForTimeout(1000);
   await isolatedPage.waitForLoadState('domcontentloaded');
   await isolatedPage.waitForTimeout(5000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
   await expect(
     isolatedPage.getByTestId('widget-container').getByRole('button', { name: 'Claim' })
@@ -213,7 +213,7 @@ test.skip('Claim rewards', async ({ isolatedPage }) => {
   // Finally, claim rewards and check new SKY balance
   await isolatedPage.getByTestId('widget-container').getByRole('button', { name: 'Claim' }).click();
   await expect(isolatedPage.getByText('Success!', { exact: true })).toBeVisible();
-  await isolatedPage.getByRole('tab', { name: 'Balances' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Balances' }).click();
   await expect(
     isolatedPage.getByTestId('widget-container').getByRole('heading', { name: 'Balances' })
   ).toBeVisible();

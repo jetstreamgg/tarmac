@@ -12,7 +12,7 @@ test.describe('Pendle (scaffold — write actions stubbed)', () => {
   });
 
   test.skip('reaches the Fixed Yield module from the sidebar', async ({ isolatedPage }) => {
-    await isolatedPage.getByRole('tab', { name: 'Fixed Yield' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Fixed Yield' }).click();
     await expect(isolatedPage.getByText('Fixed Yield')).toBeVisible();
   });
 
