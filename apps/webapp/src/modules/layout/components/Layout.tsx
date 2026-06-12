@@ -13,6 +13,9 @@ import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
+import { TopNav } from '@/modules/app/shell/TopNav';
+import { AppLink } from '@/lib/navigation';
+import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
   children,
@@ -44,6 +47,16 @@ export function Layout({
           'bg-app-background flex max-h-svh min-h-svh max-w-full items-center overflow-auto bg-cover bg-center bg-no-repeat md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
         }
       >
+        {/* V2 main header. The legacy header coexists below until B4 retires it. */}
+        <ErrorBoundary>
+          <div className="flex w-full items-center gap-4 px-3 py-2 sm:px-10 md:mb-1">
+            <AppLink to="/" title="Home page" className="min-w-[96px]">
+              <img src={defaultConfig.logo} alt="logo" width={96} />
+            </AppLink>
+            <TopNav />
+          </div>
+        </ErrorBoundary>
+
         <ErrorBoundary>
           <Header />
         </ErrorBoundary>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { legacySearchToLocation } from './legacyRedirects';
+import { legacyPathToLocation, legacySearchToLocation } from './legacyRedirects';
 
 const SPARK_VAULT_ADDRESS = '0x74cb54e082411cfCAEADb00a0765625B10410DAa';
 const MARKET_ADDRESS = '0x36d3ca43ae7939645c306e26603ce16e39a89192';
@@ -112,5 +112,106 @@ describe('legacySearchToLocation', () => {
 
   it('handles case-insensitive widget values', () => {
     expect(legacySearchToLocation({ widget: 'Trade' })).toEqual({ to: '/convert/trade', search: {} });
+  });
+});
+
+// Dormant until the IA flip (Track B): written and tested here, registered nowhere.
+describe('legacyPathToLocation', () => {
+  it('returns null for paths that survive the IA flip unchanged', () => {
+    expect(legacyPathToLocation('/')).toBeNull();
+    expect(legacyPathToLocation('/stake')).toBeNull();
+    expect(legacyPathToLocation('/seal-engine')).toBeNull();
+    expect(legacyPathToLocation('/batch-transactions-legal-notice')).toBeNull();
+    expect(legacyPathToLocation('/dev')).toBeNull();
+  });
+
+  it('returns null for target-IA and unknown paths', () => {
+    expect(legacyPathToLocation('/portfolio')).toBeNull();
+    expect(legacyPathToLocation('/earn')).toBeNull();
+    expect(legacyPathToLocation('/earn/savings')).toBeNull();
+    expect(legacyPathToLocation('/bogus')).toBeNull();
+  });
+
+  it('maps current module paths to their target-IA destinations', () => {
+    expect(legacyPathToLocation('/balances')).toEqual({ to: '/portfolio', search: {} });
+    expect(legacyPathToLocation('/savings')).toEqual({ to: '/earn/savings', search: {} });
+    expect(legacyPathToLocation('/rewards')).toEqual({ to: '/earn/rewards', search: {} });
+    expect(legacyPathToLocation('/vaults')).toEqual({ to: '/earn/vaults', search: {} });
+    expect(legacyPathToLocation('/fixed')).toEqual({ to: '/earn/fixed', search: {} });
+    expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/expert', search: {} });
+  });
+
+  it('tolerates trailing slashes', () => {
+    expect(legacyPathToLocation('/savings/')).toEqual({ to: '/earn/savings', search: {} });
+  });
+
+  it('moves the reward contract from path segment to query param', () => {
+    expect(legacyPathToLocation(`/rewards/${REWARD_ADDRESS}`)).toEqual({
+      to: '/earn/rewards',
+      search: { reward: REWARD_ADDRESS }
+    });
+  });
+
+  it('moves vault provider and address to query params', () => {
+    expect(legacyPathToLocation(`/vaults/sky/${SPARK_VAULT_ADDRESS}`)).toEqual({
+      to: '/earn/vaults',
+      search: { vault_module: 'sky', vault: SPARK_VAULT_ADDRESS }
+    });
+    expect(legacyPathToLocation('/vaults/sky')).toEqual({
+      to: '/earn/vaults',
+      search: { vault_module: 'sky' }
+    });
+  });
+
+  it('moves the fixed market from path segments to query params', () => {
+    expect(legacyPathToLocation(`/fixed/market/${MARKET_ADDRESS}`)).toEqual({
+      to: '/earn/fixed',
+      search: { fixed_module: 'market', market: MARKET_ADDRESS }
+    });
+  });
+
+  it('moves the expert module from path segment to query param', () => {
+    expect(legacyPathToLocation('/expert/stusds')).toEqual({
+      to: '/earn/expert',
+      search: { expert_module: 'stusds' }
+    });
+  });
+
+  it('moves convert submodules from path segments to query params', () => {
+    expect(legacyPathToLocation('/convert/psm')).toEqual({
+      to: '/convert',
+      search: { convert_module: 'psm' }
+    });
+    expect(legacyPathToLocation('/convert/trade')).toEqual({
+      to: '/convert',
+      search: { convert_module: 'trade' }
+    });
+    expect(legacyPathToLocation('/convert/upgrade')).toEqual({
+      to: '/convert',
+      search: { convert_module: 'upgrade' }
+    });
+  });
+
+  it('drops unrecognised trailing segments and lands on the destination', () => {
+    expect(legacyPathToLocation('/convert/bogus')).toEqual({ to: '/convert', search: {} });
+    expect(legacyPathToLocation('/fixed/bogus')).toEqual({ to: '/earn/fixed', search: {} });
+  });
+
+  it('preserves incoming params and drops the retired ones', () => {
+    expect(
+      legacyPathToLocation('/savings', {
+        network: 'base',
+        flow: 'withdraw',
+        input_amount: '5',
+        linked_action: 'trade'
+      })
+    ).toEqual({ to: '/earn/savings', search: { network: 'base', flow: 'withdraw' } });
+  });
+
+  it('path-derived sub-state wins over a conflicting incoming param', () => {
+    expect(legacyPathToLocation(`/rewards/${REWARD_ADDRESS}`, { reward: 'stale' })).toEqual({
+      to: '/earn/rewards',
+      search: { reward: REWARD_ADDRESS }
+    });
   });
 });

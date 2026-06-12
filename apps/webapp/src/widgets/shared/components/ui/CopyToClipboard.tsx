@@ -19,6 +19,7 @@ export function CopyToClipboard({ text }: { text: string }) {
     <Tooltip open={hasCopied}>
       <TooltipTrigger asChild>
         <motion.div
+          data-testid="copy-to-clipboard"
           whileTap={{ scale: 0.8 }}
           initial={AnimationLabels.initial}
           animate={AnimationLabels.animate}

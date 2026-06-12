@@ -19,6 +19,21 @@ vi.mock('wagmi/connectors', async importOriginal => {
   };
 });
 
+// posthog-js self-initializes at module import (PostHogProvider.tsx module scope)
+// whenever the local .env enables it, so any test that transitively imports the
+// analytics module fires real telemetry fetches that happy-dom aborts at window
+// teardown — the same unhandled-rejection failure mode as walletConnect above.
+vi.mock('posthog-js', () => ({
+  default: {
+    init: vi.fn(),
+    capture: vi.fn(),
+    register: vi.fn(),
+    reset: vi.fn(),
+    opt_in_capturing: vi.fn(),
+    set_config: vi.fn()
+  }
+}));
+
 vi.mock('@sentry/react', async () => {
   const React = await import('react');
   const withScope = vi.fn(

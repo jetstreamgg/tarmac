@@ -8,6 +8,7 @@ import {
 } from '@/lib/constants';
 import { providerForVaultModule } from '@/lib/vaults/vaultProviderMapping';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { ROUTES } from '@/lib/routes';
 
 // Param names of the retired query-param navigation scheme. Kept as local
 // literals: they are intentionally absent from QueryParams.
@@ -103,4 +104,75 @@ export function legacySearchToLocation(search: Record<string, string>): LegacyRe
   }
 
   return { to, search: rest };
+}
+
+// Current-generation module paths → target-IA destinations (plan §4.1).
+// DORMANT: unit-tested but registered nowhere until the IA flips (Track B).
+// `params` lifts entity path segments back into query-param sub-state.
+type V2Redirect = { to: string; params?: (segments: string[]) => Record<string, string> };
+
+const V2_REDIRECT_BY_MODULE: Record<string, V2Redirect> = {
+  balances: { to: ROUTES.PORTFOLIO },
+  savings: { to: ROUTES.EARN_SAVINGS },
+  rewards: {
+    to: ROUTES.EARN_REWARDS,
+    params: ([reward]): Record<string, string> => (reward ? { [LegacyParams.Reward]: reward } : {})
+  },
+  vaults: {
+    to: ROUTES.EARN_VAULTS,
+    params: ([provider, vault]): Record<string, string> =>
+      provider && providerForVaultModule(provider)
+        ? {
+            [LegacyParams.VaultModule]: provider.toLowerCase(),
+            ...(vault && { [LegacyParams.Vault]: vault })
+          }
+        : {}
+  },
+  fixed: {
+    to: ROUTES.EARN_FIXED,
+    params: ([module, market]): Record<string, string> =>
+      module?.toLowerCase() === FixedIntentMapping[FixedIntent.MARKET_INTENT] && market
+        ? { [LegacyParams.FixedModule]: module.toLowerCase(), [LegacyParams.Market]: market }
+        : {}
+  },
+  expert: {
+    to: ROUTES.EARN_EXPERT,
+    params: ([module]): Record<string, string> =>
+      module?.toLowerCase() === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]
+        ? { [LegacyParams.ExpertModule]: module.toLowerCase() }
+        : {}
+  },
+  convert: {
+    to: ROUTES.CONVERT,
+    params: ([module]): Record<string, string> =>
+      module && CONVERT_MODULE_VALUES.includes(module.toLowerCase())
+        ? { [LegacyParams.ConvertModule]: module.toLowerCase() }
+        : {}
+  }
+};
+
+/**
+ * Translates current module paths into their target-IA equivalents once the
+ * IA flips. Returns null when the path needs no redirect. Composes after
+ * legacySearchToLocation: ?widget= URLs first rewrite to a current path,
+ * then this maps that path forward. Entity values pass through verbatim —
+ * the target route's own validation handles invalid ones.
+ */
+export function legacyPathToLocation(
+  pathname: string,
+  search: Record<string, string> = {}
+): LegacyRedirect | null {
+  const segments = pathname.split('/').filter(Boolean);
+  const moduleKey = segments[0]?.toLowerCase();
+  const redirect = moduleKey ? V2_REDIRECT_BY_MODULE[moduleKey] : undefined;
+  if (!redirect) return null;
+  // Already at its destination with no sub-state to lift: nothing to do.
+  if (segments.length === 1 && `/${moduleKey}` === redirect.to) return null;
+
+  // input_amount/linked_action are retired in the new IA (plan §4.1); path-derived
+  // sub-state wins over any stale incoming param.
+  const preserved = Object.fromEntries(
+    Object.entries(search).filter(([key]) => key !== 'input_amount' && key !== 'linked_action')
+  );
+  return { to: redirect.to, search: { ...preserved, ...(redirect.params?.(segments.slice(1)) ?? {}) } };
 }

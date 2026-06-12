@@ -12,7 +12,13 @@ const Jazzicon =
 import { CopyToClipboard } from '@/widgets/shared/components/ui/CopyToClipboard';
 import { ExternalLink } from '@/widgets/shared/components/ExternalLink';
 import { useChainId } from 'wagmi';
-import { isBaseChainId, isArbitrumChainId, isOptimismChainId, isUnichainChainId } from '@/utils';
+import {
+  getEtherscanLink,
+  isBaseChainId,
+  isArbitrumChainId,
+  isOptimismChainId,
+  isUnichainChainId
+} from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { cn } from '@/widgets/lib/utils';
 import { SwitchAccountButton } from './SwitchAccountButton';
@@ -25,7 +31,8 @@ export const WalletCard = ({
   walletIcon,
   className,
   onExternalLinkClicked,
-  onSwitchAccountClick
+  onSwitchAccountClick,
+  showExplorerLink = false
 }: {
   iconSize?: number;
   showEns?: boolean;
@@ -35,6 +42,7 @@ export const WalletCard = ({
   className?: string;
   onExternalLinkClicked?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   onSwitchAccountClick?: () => void;
+  showExplorerLink?: boolean;
 }): React.ReactElement => {
   const chainId = useChainId();
   const { address } = useConnection();
@@ -85,6 +93,15 @@ export const WalletCard = ({
             <SwitchAccountButton onSwitchAccountClick={onSwitchAccountClick} />
           )}
           <CopyToClipboard text={address || ''} />
+          {showExplorerLink && address && (
+            <ExternalLink
+              href={getEtherscanLink(chainId, address, 'address')}
+              iconSize={16}
+              className="text-textSecondary hover:text-text"
+              onExternalLinkClicked={onExternalLinkClicked}
+              dataTestId="wallet-card-explorer"
+            />
+          )}
         </div>
       </div>
       {isBaseChain && (
