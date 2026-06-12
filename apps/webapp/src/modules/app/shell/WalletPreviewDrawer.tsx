@@ -16,7 +16,7 @@ interface WalletPreviewDrawerProps {
   onDisconnect: () => void;
 }
 
-/** V2 right slide-out wallet preview. Replaces ConnectedModal's Dialog for the V2 chip (legacy keeps its own until B4). */
+/** V2 right slide-out wallet preview opened from the wallet chip. */
 export function WalletPreviewDrawer({
   isOpen,
   onOpenChange,
@@ -29,7 +29,7 @@ export function WalletPreviewDrawer({
   const isSafeWallet = useIsSafeWallet();
 
   useEffect(() => {
-    // Same contract as ConnectedModal: any navigation closes the preview.
+    // Any navigation closes the preview.
     onOpenChange(false);
   }, [locationHref, onOpenChange]);
 

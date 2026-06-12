@@ -15,7 +15,7 @@ import { WalletPreviewDrawer } from './WalletPreviewDrawer';
 
 const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
-/** V2 wallet chip. Same 4-way ladder as CustomConnectButton (kept until B4), drawer instead of ConnectedModal. */
+/** V2 wallet chip: unauthorized page / terms modal / connect / chip with preview drawer. */
 export function WalletChip() {
   const { openConnectModal } = useConnectModal();
   const { isConnected, address } = useConnection();

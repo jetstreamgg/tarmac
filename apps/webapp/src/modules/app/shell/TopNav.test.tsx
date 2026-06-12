@@ -45,6 +45,14 @@ vi.mock('./WalletChip', () => ({
   WalletChip: () => <div data-testid="wallet-chip" data-stub="wallet-chip-stub" />
 }));
 
+vi.mock('@/modules/ui/components/ChainModal', () => ({
+  ChainModal: ({ dataTestId }: { dataTestId?: string }) => <div data-testid={dataTestId} />
+}));
+
+vi.mock('@/modules/layout/components/MockConnectButton', () => ({
+  MockConnectButton: () => <div data-testid="mock-connect-button-stub" />
+}));
+
 vi.mock('@/components/ThemeToggle', () => ({
   ThemeToggle: () => <div data-testid="theme-toggle-stub" />
 }));
@@ -133,6 +141,27 @@ describe('TopNav destinations', () => {
     expect(screen.getByTestId('nav-earn').getAttribute('href')).toBe(ROUTES.EARN);
     expect(screen.getByTestId('nav-stake').getAttribute('href')).toBe(ROUTES.STAKE);
     expect(screen.getByTestId('nav-convert').getAttribute('href')).toBe(ROUTES.CONVERT);
+  });
+});
+
+describe('TopNav chain trigger', () => {
+  it('mounts the ChainModal with the header trigger testid (e2e contract)', async () => {
+    renderTopNav();
+    expect(await screen.findByTestId('chain-modal-trigger-header')).toBeTruthy();
+  });
+});
+
+describe('TopNav mock wallet connect', () => {
+  it('mounts the MockConnectButton when VITE_USE_MOCK_WALLET is on (e2e connects through it)', async () => {
+    vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
+    renderTopNav();
+    expect(await screen.findByTestId('mock-connect-button-stub')).toBeTruthy();
+  });
+
+  it('omits the MockConnectButton otherwise', async () => {
+    renderTopNav();
+    await screen.findByTestId('nav-portfolio');
+    expect(screen.queryByTestId('mock-connect-button-stub')).toBeNull();
   });
 });
 

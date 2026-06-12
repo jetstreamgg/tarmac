@@ -12,7 +12,7 @@ enum WalletDrawerTab {
   ACTIVITY = 'activity'
 }
 
-/** Assets/Activity tabs. Same shared-widget wiring as ConnectedModalTabs (legacy, removed in B4). */
+/** Assets/Activity tabs sharing the widget balance/history wiring. */
 export function WalletDrawerTabs() {
   const chainId = useChainId();
   const { onExternalLinkClicked } = useConfigContext();

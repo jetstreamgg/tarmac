@@ -33,4 +33,17 @@ describe('target-IA destination routes', () => {
     const match = router.state.matches.find(m => (m.routeId as string) === '/_shell/portfolio');
     expect(match?.staticData?.intent).toBe(Intent.BALANCES_INTENT);
   });
+
+  it.each([
+    [ROUTES.PORTFOLIO, '/_shell/portfolio'],
+    [ROUTES.EARN, '/_shell/earn']
+  ])('declares %s full-width so it escapes the widget-pane column', async (path, routeId) => {
+    const router = createRouter({
+      routeTree,
+      history: createMemoryHistory({ initialEntries: [path] })
+    });
+    await router.load();
+    const match = router.state.matches.find(m => (m.routeId as string) === routeId);
+    expect(match?.staticData?.fullWidth).toBe(true);
+  });
 });

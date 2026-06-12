@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from '@tanstack/react-router';
+import { useRouteFullWidth } from '@/lib/navigation';
 import { useChainId } from 'wagmi';
 import { Layout } from '@/modules/layout/components/Layout';
 import { AppContainer } from './AppContainer';
@@ -17,13 +18,15 @@ const MOBILE_HEADER_HEIGHT = 56;
 /**
  * Component of the pathless shell route: the app chrome shared by every
  * module route. Runs the app-level orchestration and renders the route's
- * two-pane content (via Outlet) inside the widget pane column. Module
- * navigation lives in the Header. The empty `contents` div is the portal
- * target for the md+ details pane, so route components can render it as a
- * sibling of the widget pane column.
+ * two-pane content (via Outlet) inside the widget pane column; full-width
+ * destination routes (staticData.fullWidth) render straight into the
+ * container instead. The empty `contents` div is the portal target for the
+ * md+ details pane, so route components can render it as a sibling of the
+ * widget pane column.
  */
 export function AppShell() {
   const { intent } = useAppOrchestration();
+  const isFullWidth = useRouteFullWidth();
   const { bpi } = useBreakpointIndex();
   const chainId = useChainId();
   const [detailsSlot, setDetailsSlot] = useState<HTMLElement | null>(null);
@@ -39,15 +42,28 @@ export function AppShell() {
   return (
     <Layout>
       <AppContainer>
-        <div className="w-full md:flex md:max-w-[440px] md:min-w-[352px] md:flex-col lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:overflow-hidden">
-          <ShellChromeContext.Provider value={{ paneStyle, detailsSlot }}>
-            {/* Geo-restricted module (or geo-config still loading): fall back to
-                the Balances pair like the legacy switch did, regardless of which
-                module route matched. */}
-            {effectiveIntent !== intent ? <BalancesPanes /> : <Outlet />}
-          </ShellChromeContext.Provider>
-        </div>
-        <div className="contents" ref={setDetailsSlot} />
+        {isFullWidth ? (
+          // Destination pages own the whole container; no module content, so
+          // the geo fallback below doesn't apply.
+          <div className="w-full">
+            <Outlet />
+          </div>
+        ) : (
+          <>
+            <div
+              data-testid="widget-pane-column"
+              className="w-full md:flex md:max-w-[440px] md:min-w-[352px] md:flex-col lg:max-w-[416px] lg:min-w-[416px] lg:flex-1 lg:overflow-hidden"
+            >
+              <ShellChromeContext.Provider value={{ paneStyle, detailsSlot }}>
+                {/* Geo-restricted module (or geo-config still loading): fall back to
+                    the Balances pair like the legacy switch did, regardless of which
+                    module route matched. */}
+                {effectiveIntent !== intent ? <BalancesPanes /> : <Outlet />}
+              </ShellChromeContext.Provider>
+            </div>
+            <div className="contents" ref={setDetailsSlot} />
+          </>
+        )}
       </AppContainer>
     </Layout>
   );

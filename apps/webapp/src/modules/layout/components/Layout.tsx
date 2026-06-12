@@ -1,5 +1,4 @@
 import React, { useContext } from 'react';
-import { Header } from './Header';
 import { ConfigContext } from '../../config/context/ConfigContext';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useConnection } from 'wagmi';
@@ -47,7 +46,6 @@ export function Layout({
           'bg-app-background flex max-h-svh min-h-svh max-w-full items-center overflow-auto bg-cover bg-center bg-no-repeat md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
         }
       >
-        {/* V2 main header. The legacy header coexists below until B4 retires it. */}
         <ErrorBoundary>
           <div className="flex w-full items-center gap-4 px-3 py-2 sm:px-10 md:mb-1">
             <AppLink to="/" title="Home page" className="min-w-[96px]">
@@ -55,10 +53,6 @@ export function Layout({
             </AppLink>
             <TopNav />
           </div>
-        </ErrorBoundary>
-
-        <ErrorBoundary>
-          <Header />
         </ErrorBoundary>
 
         <ErrorBoundary>

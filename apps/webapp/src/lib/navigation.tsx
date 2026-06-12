@@ -17,6 +17,8 @@ declare module '@tanstack/react-router' {
     expertIntent?: ExpertIntent;
     vaultsIntent?: VaultsIntent;
     fixedIntent?: FixedIntent;
+    // Destination pages render full-width instead of inside the widget-pane column.
+    fullWidth?: boolean;
   }
 }
 
@@ -69,6 +71,11 @@ export function useRouteVaultsIntent(): VaultsIntent | undefined {
 
 export function useRouteFixedIntent(): FixedIntent | undefined {
   return useDeepestStaticData('fixedIntent') as FixedIntent | undefined;
+}
+
+/** Whether the current route renders full-width (destination pages) instead of in the pane column. */
+export function useRouteFullWidth(): boolean {
+  return (useDeepestStaticData('fullWidth') as boolean | undefined) ?? false;
 }
 
 export type RouteEntityParams = {
