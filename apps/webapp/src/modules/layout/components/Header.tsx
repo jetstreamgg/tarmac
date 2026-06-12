@@ -1,8 +1,6 @@
 import React from 'react';
-import { AppLink } from '@/lib/navigation';
 import { HeaderNav, HeaderNavDrawer } from './HeaderNav';
 import { HEADER_HEIGHT } from './constants';
-import { defaultConfig } from '../../config/default-config';
 import { CustomConnectButton } from './CustomConnectButton';
 import { MockConnectButton } from './MockConnectButton';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
@@ -77,11 +75,8 @@ export function Header(): React.ReactElement {
       className={`flex w-full items-center justify-center px-3 py-2 min-h-[${HEADER_HEIGHT}px] max-h-[${HEADER_HEIGHT}px] md:mb-2`}
     >
       <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-4 pr-0 pl-3 sm:px-5">
-        <AppLink to="/" title="Home page" className="justify-self-start">
-          <div className="min-w-[96px]">
-            <img src={defaultConfig.logo} alt="logo" width={96} />
-          </div>
-        </AppLink>
+        {/* Logo moved to the V2 main header (Layout); spacer keeps the legacy nav centered until B4. */}
+        <div aria-hidden className="min-w-[96px] justify-self-start" />
 
         {/* Center module navigation (desktop) */}
         <HeaderNav />
