@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { cn } from '@/lib/cn';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EarnRiskTier } from '@/hooks';
 
@@ -25,18 +25,24 @@ function FilterSelect({
   allLabel: ReactNode;
   testId: string;
 }) {
+  // Same surface/item treatment as the header's MoreMenu popover: container
+  // background, hover rows, selection shown by a prominent row background.
+  const itemClasses =
+    'text-textSecondary hover:text-text focus:text-text hover:bg-bgHover focus:bg-bgHover data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2';
   return (
     <Select value={selected} onValueChange={onChange}>
       <SelectTrigger
         data-testid={testId}
-        className="border-borderPrimary text-text h-8 w-auto gap-1.5 rounded-full bg-transparent px-3 text-sm"
+        className="border-borderPrimary text-text bg-secondary h-8 w-auto gap-1.5 rounded-full px-3 text-sm"
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">{allLabel}</SelectItem>
+      <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
+        <SelectItem value="all" hideIndicator className={itemClasses}>
+          {allLabel}
+        </SelectItem>
         {options.map(option => (
-          <SelectItem key={option.value} value={option.value}>
+          <SelectItem key={option.value} value={option.value} hideIndicator className={itemClasses}>
             {option.label}
           </SelectItem>
         ))}
@@ -83,21 +89,17 @@ export function EarnTableFilters({
         {RISK_TIERS.map(tier => {
           const isSelected = selectedRiskTiers.includes(tier.value);
           return (
-            <button
+            <Button
               key={tier.value}
-              type="button"
+              variant={isSelected ? 'pill' : 'chip'}
+              size="xs"
               aria-pressed={isSelected}
               data-testid={`earn-filter-risk-${tier.value}`}
               onClick={() => onRiskTierToggle(tier.value)}
-              className={cn(
-                'rounded-full border border-transparent px-3 py-1 text-sm transition-colors',
-                isSelected
-                  ? 'bg-surface text-text border-borderPrimary'
-                  : 'text-textSecondary hover:text-text'
-              )}
+              className="border-borderPrimary h-8 border px-3 text-sm"
             >
               {tier.label}
-            </button>
+            </Button>
           );
         })}
       </div>

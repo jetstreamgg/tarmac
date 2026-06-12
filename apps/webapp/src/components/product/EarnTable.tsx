@@ -48,8 +48,10 @@ const COLUMNS: { key: EarnTableColumn; label: ReactNode }[] = [
 // TableRow's own border/hover treatments are neutralized.
 const rowClasses =
   'group/row cursor-pointer border-0 last:border-b-0 has-[td]:hover:bg-transparent has-[td]:active:bg-transparent has-[td]:focus:border-y-0';
+// Container-card surface for contrast against the page background, lifting
+// toward the surface tint on hover.
 const cellClasses =
-  'bg-surface group-hover/row:bg-bgHover transition-colors first:rounded-l-2xl last:rounded-r-2xl';
+  'bg-container group-hover/row:bg-surfaceHover transition-colors first:rounded-l-2xl last:rounded-r-2xl';
 
 function NumericCell({ value, isLoading }: { value: string; isLoading?: boolean }) {
   return (
@@ -91,7 +93,10 @@ export function EarnTable({ rows, sort, onSortChange, onRowSelect }: EarnTablePr
                   type="button"
                   data-testid={`earn-sort-${column.key}`}
                   onClick={() => onSortChange(column.key)}
-                  className="hover:text-text inline-flex items-center gap-1 transition-colors"
+                  className={cn(
+                    'hover:text-text inline-flex items-center gap-1 transition-colors',
+                    isSorted && 'text-text'
+                  )}
                 >
                   {column.label}
                   <ChevronDown

@@ -43,8 +43,10 @@ export type EarnProductDescriptor = {
   /** Module that owns the product (availability, network override, analytics). */
   intent: Intent;
   name: string;
-  /** Supply-asset symbol shown in the Token column. */
+  /** The product's display-asset symbol (Token column icon). */
   tokenSymbol: string;
+  /** Symbols the user can supply into the product ("Supply:" icons, stablecoin filter). */
+  supplyTokens: string[];
   risk: EarnRiskTier;
   /**
    * Chains within the active family the product is live on. Derived from

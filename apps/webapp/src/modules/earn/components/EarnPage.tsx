@@ -60,7 +60,7 @@ export function EarnPage() {
 
   const stablecoinOptions = useMemo<EarnFilterOption[]>(
     () =>
-      [...new Set(rows.map(row => row.tokenSymbol))].map(symbol => ({
+      [...new Set(rows.flatMap(row => row.supplyTokens))].map(symbol => ({
         value: symbol.toLowerCase(),
         label: symbol
       })),
@@ -97,7 +97,13 @@ export function EarnPage() {
           row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
             <Morpho className="h-3 w-3 rounded-sm" />
           ) : undefined,
-        supply: <TokenIcon token={{ symbol: row.tokenSymbol }} width={14} className="h-3.5 w-3.5" />,
+        supply: (
+          <span className="flex -space-x-1">
+            {row.supplyTokens.map(symbol => (
+              <TokenIcon key={symbol} token={{ symbol }} width={14} className="h-3.5 w-3.5" />
+            ))}
+          </span>
+        ),
         maturityLabel: row.maturity ? maturityFormatter.format(new Date(row.maturity * 1000)) : undefined,
         network: (
           <div className="flex -space-x-1.5">
@@ -142,6 +148,7 @@ export function EarnPage() {
         selectedProduct={filters.product}
         onProductChange={product => updateFilters({ product })}
       />
+      <div className="border-borderPrimary border-b" />
       <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
     </div>
   );

@@ -72,7 +72,12 @@ export function filterEarnRows(
     if (filters.network !== 'all' && !row.networks.some(id => chainSlugById[id] === filters.network)) {
       return false;
     }
-    if (filters.stablecoin !== 'all' && row.tokenSymbol.toLowerCase() !== filters.stablecoin) return false;
+    if (
+      filters.stablecoin !== 'all' &&
+      !row.supplyTokens.some(symbol => symbol.toLowerCase() === filters.stablecoin)
+    ) {
+      return false;
+    }
     if (filters.product !== 'all' && row.kind !== filters.product) return false;
     return true;
   });

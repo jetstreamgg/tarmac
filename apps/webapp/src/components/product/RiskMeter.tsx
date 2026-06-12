@@ -5,8 +5,8 @@ const SEGMENTS: EarnRiskTier[] = ['low', 'moderate', 'advanced'];
 
 const TIER_COLOR: Record<EarnRiskTier, string> = {
   low: 'bg-green-400',
-  moderate: 'bg-teal-400',
-  advanced: 'bg-orange-400'
+  moderate: 'bg-orange-400',
+  advanced: 'bg-red-400'
 };
 
 /** Compact three-segment risk indicator (Figma "Risk profile" cell). */

@@ -94,6 +94,15 @@ describe('buildEarnProducts', () => {
     }
   });
 
+  it('declares the supply tokens each product accepts', () => {
+    const byId = Object.fromEntries(products.map(p => [p.id, p]));
+    expect(byId['savings'].supplyTokens).toEqual(['USDS']);
+    expect(byId['stusds'].supplyTokens).toEqual(['USDS']);
+    for (const product of products.filter(p => p.kind === 'fixed')) {
+      expect(product.supplyTokens).toEqual(['USDS', 'USDC', 'sUSDS']);
+    }
+  });
+
   it('derives network badges from static config within the family', () => {
     const byId = Object.fromEntries(products.map(p => [p.id, p]));
     expect(byId['savings'].networks).toEqual(PRODUCTION_FAMILY);

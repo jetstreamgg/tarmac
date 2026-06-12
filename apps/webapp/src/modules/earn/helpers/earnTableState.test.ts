@@ -15,6 +15,7 @@ const row = (overrides: Partial<EarnProductRow>): EarnProductRow =>
     kind: 'savings',
     name: 'Sky Savings Rate',
     tokenSymbol: 'sUSDS',
+    supplyTokens: ['USDS'],
     risk: 'moderate',
     networks: [1],
     detailPath: '/earn/savings',
@@ -37,6 +38,7 @@ const ROWS: EarnProductRow[] = [
     kind: 'vault',
     name: 'USDT Savings',
     tokenSymbol: 'USDT',
+    supplyTokens: ['USDT'],
     rate: { value: 0.024, formatted: '2.40%' },
     tvl: { totalUsd: 300 }
   }),
