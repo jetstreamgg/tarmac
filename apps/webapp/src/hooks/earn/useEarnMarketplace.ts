@@ -164,6 +164,10 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
   const rows = useMemo<EarnProductRow[]>(() => {
     const usdsPrice = pricesData?.USDS?.price;
     const priceFor = (symbol: string) => pricesData?.[symbol]?.price ?? usdsPrice;
+    // Disconnected → position undefined on EVERY row (some sources report 0n
+    // without an account, which would render as a misleading $0). Connected →
+    // a number on every row, 0 included.
+    const connected = !!address;
 
     return products
       .filter(product => product.maturity === undefined || !isMarketMatured(product.maturity))
@@ -183,12 +187,13 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               rate: toRate(rawRate ? parseFloat(rawRate) : undefined),
               // BA Labs reports savings TVL as a global USD figure — no per-chain split.
               tvl: rawTvl ? { totalUsd: parseFloat(rawTvl) } : undefined,
-              position: savingsBalances
-                ? {
-                    totalUsd: Object.values(byChain).reduce((acc, usd) => acc + usd, 0),
-                    byChain
-                  }
-                : undefined,
+              position:
+                connected && savingsBalances
+                  ? {
+                      totalUsd: Object.values(byChain).reduce((acc, usd) => acc + usd, 0),
+                      byChain
+                    }
+                  : undefined,
               isLoading: overallLoading || savingsBalancesLoading || pricesLoading,
               error: overallError || savingsBalancesError || null
             };
@@ -197,7 +202,8 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
             const index = rewardContracts.findIndex(c => c.contractAddress === product.address);
             const latest = latestChartEntry(rewardsCharts?.[index]);
             const supplied = rewardsBalances?.[index]?.result as bigint | undefined;
-            const suppliedUsd = supplied !== undefined ? bigintToUsd(supplied, usdsPrice) : undefined;
+            const suppliedUsd =
+              connected && supplied !== undefined ? bigintToUsd(supplied, usdsPrice) : undefined;
             const tvlUsd = latest
               ? parseFloat(latest.totalSupplied) * parseFloat(usdsPrice || '0')
               : undefined;
@@ -239,9 +245,10 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               tvlUsd = morphoMarketResults[morphoIndex]?.data?.totalAssetsUsd;
             }
             const userVault = vaultUserAssets.vaults.find(v => v.vaultAddress === product.address);
-            const positionUsd = userVault
-              ? bigintToUsd(userVault.balanceNormalized, priceFor(userVault.assetToken.symbol))
-              : undefined;
+            const positionUsd =
+              connected && userVault
+                ? bigintToUsd(userVault.balanceNormalized, priceFor(userVault.assetToken.symbol))
+                : undefined;
             return {
               ...product,
               rate,
@@ -264,7 +271,11 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
               ...product,
               rate: toRate(stats?.impliedApy),
               tvl: stats?.tvl !== undefined ? singleChainAmount(familyMainnetId, stats.tvl) : undefined,
-              position: userMarket ? singleChainAmount(familyMainnetId, userMarket.valuationUsd) : undefined,
+              // The pendle breakdown only lists markets with a non-zero PT
+              // balance — connected users with none still get an explicit 0.
+              position: connected
+                ? singleChainAmount(familyMainnetId, userMarket?.valuationUsd ?? 0)
+                : undefined,
               isLoading: pendleMarketsLoading || pendleUserAssetsLoading,
               error: pendleMarketsError || pendleUserAssetsError || null
             };
@@ -282,7 +293,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
                   ? singleChainAmount(familyMainnetId, bigintToUsd(stUsdsData.totalAssets, usdsPrice))
                   : undefined,
               position:
-                stUsdsData?.userSuppliedUsds !== undefined
+                connected && stUsdsData?.userSuppliedUsds !== undefined
                   ? singleChainAmount(familyMainnetId, bigintToUsd(stUsdsData.userSuppliedUsds, usdsPrice))
                   : undefined,
               isLoading: stUsdsLoading || pricesLoading,
@@ -293,6 +304,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
       });
   }, [
     products,
+    address,
     pricesData,
     pricesLoading,
     overallSkyData,
