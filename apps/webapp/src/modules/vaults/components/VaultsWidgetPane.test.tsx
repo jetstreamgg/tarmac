@@ -162,9 +162,7 @@ describe('VaultsWidgetPane card-select navigation', () => {
   });
 
   it('navigates to the sky vault detail path when the Spark vault card is selected', () => {
-    const { container } = renderComponent(
-      <VaultsWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
-    );
+    const { container } = renderComponent(<VaultsWidgetPane />);
 
     clickButtonByText(container, /Tether Savings/i);
 
@@ -176,9 +174,7 @@ describe('VaultsWidgetPane card-select navigation', () => {
   });
 
   it('navigates to the morpho vault detail path when a Morpho vault card is selected', () => {
-    const { container } = renderComponent(
-      <VaultsWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
-    );
+    const { container } = renderComponent(<VaultsWidgetPane />);
 
     clickButtonByText(container, /USDS Flagship/i);
 

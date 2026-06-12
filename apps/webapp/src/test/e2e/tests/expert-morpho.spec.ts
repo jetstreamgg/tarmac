@@ -103,7 +103,7 @@ test.describe('Expert Module - Morpho Vault', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // Navigate to Expert module
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     // Navigate to Morpho Vault module
     await isolatedPage.getByTestId('morpho-vault-stats-card').click();
   });
@@ -470,7 +470,7 @@ test.describe('Expert Module - Morpho Vault', () => {
       await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
 
       // Navigate to Expert module and Morpho vault
-      await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+      await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
       await isolatedPage.getByTestId('morpho-vault-stats-card').click();
 
       // Wait for the claim button to appear with the mocked reward amount
@@ -494,7 +494,7 @@ test.describe('Expert Module - Morpho Vault', () => {
       await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
 
       // Navigate to Expert module and Morpho vault
-      await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+      await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
       await isolatedPage.getByTestId('morpho-vault-stats-card').click();
 
       // Wait for the page to load

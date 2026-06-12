@@ -101,6 +101,7 @@
     "@playwright/test": "catalog:",
     "@sentry/vite-plugin": "catalog:",
     "@tailwindcss/vite": "catalog:",
+    "@tanstack/router-plugin": "catalog:",
     "@testing-library/dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@vitejs/plugin-react-swc": "catalog:",

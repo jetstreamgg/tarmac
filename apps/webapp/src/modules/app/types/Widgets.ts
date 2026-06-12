@@ -2,10 +2,6 @@ import React from 'react';
 import { Intent } from '@/lib/enums';
 import { IconProps } from '@/widgets/shared/components/icons/Icon';
 
-export type SharedProps = {
-  rightHeaderComponent: React.JSX.Element;
-};
-
 export type WidgetSubItem = {
   label: string;
   icon?: React.ReactNode;
@@ -19,8 +15,7 @@ export type WidgetItem = [
   Intent,
   string,
   (props: IconProps) => React.ReactNode,
-  React.ReactNode | null,
-  boolean,
+  boolean, // comingSoon
   { disabled?: boolean }?,
   string?, // description for tooltip
   WidgetSubItem[]? // sub-items for quick navigation in tooltip

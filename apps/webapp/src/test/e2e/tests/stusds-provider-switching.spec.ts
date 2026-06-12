@@ -34,7 +34,7 @@ test.describe('stUSDS Provider', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // Navigate to Expert module -> stUSDS
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
   });
 
@@ -68,7 +68,7 @@ test.describe('stUSDS Provider', () => {
     // Reload to pick up the new cap
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
 
     // Enter amount to supply
@@ -104,7 +104,7 @@ test.describe('stUSDS Provider', () => {
     // Reload to pick up the new cap
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
 
     // Enter amount to supply
@@ -150,7 +150,7 @@ test.describe('stUSDS Provider', () => {
     // Refresh the page to pick up the new cap
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
 
     // Enter same amount again

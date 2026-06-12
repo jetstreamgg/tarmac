@@ -6,4 +6,5 @@ node_modules
 pnpm-lock.yaml
 coverage
 apps/webapp/src/locales/*
+apps/webapp/src/routeTree.gen.ts
 apps/webapp/src/data/corpus-sync-log.jsonl

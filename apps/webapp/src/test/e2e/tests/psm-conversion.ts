@@ -31,7 +31,7 @@ const navigateToPsm = async (page: Page, options?: { batch?: boolean }) => {
   await connectMockWalletAndAcceptTerms(page, { batch });
   await page.waitForTimeout(1000);
   await dismissCookieBanner(page);
-  await page.getByRole('tab', { name: 'Convert' }).click();
+  await page.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   await clickPsmCard(page);
 };
 
@@ -42,7 +42,7 @@ const navigateToPsmL2 = async (page: Page, networkName: NetworkName, options?: {
   await page.waitForTimeout(1000);
   await switchToL2(page, networkName);
   await dismissCookieBanner(page);
-  await page.getByRole('tab', { name: 'Convert' }).click();
+  await page.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
   await clickPsmCard(page);
 };
 

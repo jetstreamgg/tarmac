@@ -1,4 +1,7 @@
 import { Link, useParams, useRouter, useRouterState } from '@tanstack/react-router';
+// Type-only: erased at runtime, so this does not pull the page graph into the
+// navigation helpers (see modules/sentry/init.ts for why that matters).
+import type { FileRouteTypes } from '@/routeTree.gen';
 import { ComponentProps, useCallback, useMemo } from 'react';
 import { ConvertIntent, ExpertIntent, FixedIntent, Intent, VaultsIntent } from '@/lib/enums';
 import { IS_PRODUCTION_ENV, QueryParams } from '@/lib/constants';
@@ -17,8 +20,11 @@ declare module '@tanstack/react-router' {
   }
 }
 
+/** A path registered in the app's route tree — typos or stale paths fail to compile. */
+export type AppRoutePath = FileRouteTypes['to'];
+
 /** Path each module lives at. TRADE/UPGRADE intents render as Convert submodules. */
-export const INTENT_PATHS: Record<Intent, string> = {
+export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.BALANCES_INTENT]: '/',
   [Intent.SAVINGS_INTENT]: '/savings',
   [Intent.REWARDS_INTENT]: '/rewards',
@@ -92,12 +98,12 @@ export const keepSearch = (prev: Record<string, string | undefined>): Record<str
 
 /**
  * Search params preserved when navigating between modules. Mirrors the legacy
- * deleteSearchParams behavior: keep details/network (and valid geo overrides in
+ * deleteSearchParams behavior: keep network (and valid geo overrides in
  * non-production), drop module-specific state like flow or source_token.
  */
 export function retainOnNavigate(prev: Record<string, string | undefined>): Record<string, string> {
   const retained: Record<string, string> = {};
-  for (const key of [QueryParams.Details, QueryParams.Network] as string[]) {
+  for (const key of [QueryParams.Network] as string[]) {
     if (prev[key] !== undefined) retained[key] = prev[key];
   }
   if (!IS_PRODUCTION_ENV) {

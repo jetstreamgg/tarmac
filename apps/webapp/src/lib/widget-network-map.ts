@@ -1,4 +1,6 @@
 import { Intent } from './enums';
+import { isL2ChainId, isTestnetId } from '@/utils';
+import { normalizeUrlParam } from './helpers/string/normalizeUrlParam';
 
 /**
  * Defines network requirements for each widget/intent
@@ -30,4 +32,19 @@ export function requiresMainnet(intent: Intent): boolean {
  */
 export function isMultichain(intent: Intent): boolean {
   return WIDGET_NETWORK_REQUIREMENTS[intent] === 'multichain';
+}
+
+/**
+ * Network search-param override for navigating to a module: mainnet-only
+ * modules force `network=ethereum` when the current chain is an L2 (they're
+ * not available there). Testnets are exempt so navigation never disrupts a
+ * testing session. Returns undefined when no switch is needed.
+ */
+export function getNetworkOverrideForIntent(
+  targetIntent: Intent,
+  currentChainId?: number
+): string | undefined {
+  if (!currentChainId || isTestnetId(currentChainId)) return undefined;
+  if (requiresMainnet(targetIntent) && isL2ChainId(currentChainId)) return normalizeUrlParam('Ethereum');
+  return undefined;
 }

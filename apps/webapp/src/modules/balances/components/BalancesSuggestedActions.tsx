@@ -464,7 +464,7 @@ export function BalancesSuggestedActions({
         to: url.pathname as '/',
         search: prev => {
           const next: Record<string, string> = {};
-          [QueryParams.Locale, QueryParams.Details].forEach(param => {
+          [QueryParams.Locale].forEach(param => {
             const value = prev[param];
             if (value !== undefined) next[param] = value;
           });

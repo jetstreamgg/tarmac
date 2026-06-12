@@ -21,7 +21,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.waitForTimeout(1000);
     await isolatedPage
       .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
+      .getByRole('link', { name: 'Savings', exact: true })
       .click();
   });
 
@@ -34,7 +34,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.waitForTimeout(1000);
     await isolatedPage
       .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
+      .getByRole('link', { name: 'Savings', exact: true })
       .click();
 
     await isolatedPage.getByTestId('supply-input-savings').fill('2');
@@ -75,7 +75,7 @@ test.describe('Sequential transactions — Savings supply', () => {
     await isolatedPage.waitForTimeout(1000);
     await isolatedPage
       .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
+      .getByRole('link', { name: 'Savings', exact: true })
       .click();
 
     // ── First attempt: approve succeeds, supply tx is rejected ──
@@ -134,7 +134,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
     await isolatedPage.getByText('With: USDS Get: SPK').first().click();
   });
 
@@ -144,7 +144,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
     await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
     await isolatedPage.getByTestId('supply-input-rewards').fill('2');
@@ -162,7 +162,7 @@ test.describe('Sequential transactions — Rewards supply', () => {
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
     await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
     // ── First attempt: approve succeeds, supply tx is rejected ──
@@ -225,7 +225,7 @@ test.describe('Sequential transactions — Upgrade DAI', () => {
   test.beforeEach(async ({ isolatedPage }) => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByRole('tab', { name: 'Convert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Convert' }).click();
     await isolatedPage.getByTestId('convert-upgrade-card').click();
   });
 
@@ -294,7 +294,7 @@ test.describe('Sequential transactions — stUSDS deposit', () => {
   test.beforeEach(async ({ isolatedPage }) => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
   });
 
@@ -304,7 +304,7 @@ test.describe('Sequential transactions — stUSDS deposit', () => {
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
 
     await isolatedPage.getByTestId('supply-input-stusds').fill('2');
@@ -324,7 +324,7 @@ test.describe('Sequential transactions — stUSDS deposit', () => {
     await isolatedPage.reload();
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     await isolatedPage.waitForTimeout(1000);
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     await isolatedPage.getByTestId('stusds-stats-card').click();
 
     // ── First attempt: approve succeeds, deposit tx is rejected ──

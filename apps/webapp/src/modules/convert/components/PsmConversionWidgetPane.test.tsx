@@ -19,8 +19,6 @@ const setSearchParamsMock = vi.fn(
   }
 );
 
-const setSelectedConvertOptionMock = vi.fn();
-
 let capturedWidgetProps: Record<string, any> | undefined;
 
 vi.mock('@/widgets', async importOriginal => {
@@ -33,12 +31,6 @@ vi.mock('@/widgets', async importOriginal => {
     }
   };
 });
-
-vi.mock('@/modules/config/hooks/useConfigContext', () => ({
-  useConfigContext: () => ({
-    setSelectedConvertOption: setSelectedConvertOptionMock
-  })
-}));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -67,10 +59,6 @@ vi.mock('@/lib/navigation', async importOriginal => {
 });
 
 describe('PsmConversionWidgetPane', () => {
-  const sharedProps = {
-    rightHeaderComponent: <div />
-  };
-
   beforeEach(() => {
     mockSearchParams = new URLSearchParams('source_token=USDC');
     mockRouteIntent = Intent.CONVERT_INTENT;
@@ -78,11 +66,10 @@ describe('PsmConversionWidgetPane', () => {
     capturedWidgetProps = undefined;
     navigateMock.mockClear();
     setSearchParamsMock.mockClear();
-    setSelectedConvertOptionMock.mockClear();
   });
 
   it('passes URL-derived external state into the widget', () => {
-    render(<PsmConversionWidgetPane {...sharedProps} />);
+    render(<PsmConversionWidgetPane />);
 
     expect(capturedWidgetProps?.externalWidgetState).toEqual({
       token: 'USDC'
@@ -90,7 +77,7 @@ describe('PsmConversionWidgetPane', () => {
   });
 
   it('syncs updated source token back into URL params in psm context', () => {
-    render(<PsmConversionWidgetPane {...sharedProps} />);
+    render(<PsmConversionWidgetPane />);
 
     capturedWidgetProps?.onWidgetStateChange({
       originToken: 'USDS',
@@ -103,7 +90,7 @@ describe('PsmConversionWidgetPane', () => {
   });
 
   it('does not write duplicate URL state', () => {
-    render(<PsmConversionWidgetPane {...sharedProps} />);
+    render(<PsmConversionWidgetPane />);
 
     capturedWidgetProps?.onWidgetStateChange({
       originToken: 'USDC',
@@ -116,7 +103,7 @@ describe('PsmConversionWidgetPane', () => {
   it('ignores widget state changes outside psm convert context', () => {
     mockConvertIntent = undefined;
 
-    render(<PsmConversionWidgetPane {...sharedProps} />);
+    render(<PsmConversionWidgetPane />);
 
     capturedWidgetProps?.onWidgetStateChange({
       originToken: 'USDS',
@@ -127,11 +114,10 @@ describe('PsmConversionWidgetPane', () => {
   });
 
   it('navigates back to the convert landing path', () => {
-    render(<PsmConversionWidgetPane {...sharedProps} />);
+    render(<PsmConversionWidgetPane />);
 
     capturedWidgetProps?.onBackToConvert();
 
     expect(navigateMock).toHaveBeenCalledWith(expect.objectContaining({ to: '/convert' }));
-    expect(setSelectedConvertOptionMock).toHaveBeenCalledWith(undefined);
   });
 });

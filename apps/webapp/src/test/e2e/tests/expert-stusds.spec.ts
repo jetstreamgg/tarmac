@@ -44,7 +44,7 @@ test.describe('Expert Module - stUSDS', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // Navigate to Expert module
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
     // Navigate to stUSDS module
     await isolatedPage.getByTestId('stusds-stats-card').click();
   });
@@ -103,7 +103,7 @@ test.describe('Expert Module - stUSDS', () => {
     ).toBeVisible();
 
     // go to balance page
-    await isolatedPage.getByRole('tab', { name: 'Balance' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Balances' }).click();
     await expect(isolatedPage.getByText('Supplied to Expert')).toBeVisible();
 
     // Click the Expert balance card (links to Expert overview)
@@ -234,7 +234,7 @@ test.describe('Expert Module - stUSDS', () => {
   test('Upgrade and access stUSDS', async ({ isolatedPage }) => {
     await setTestBalance(mcdDaiAddress[TENDERLY_CHAIN_ID], '10');
     // Navigate to Expert menu
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
 
     // Click on Upgrade button
     await isolatedPage.getByText('Upgrade and access stUSDS').first().click();
@@ -298,7 +298,7 @@ test.describe('Expert Module - stUSDS', () => {
     await connectMockWalletAndAcceptTerms(isolatedPage);
 
     // Navigate back to Expert module
-    await isolatedPage.getByRole('tab', { name: 'Expert' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Expert' }).click();
 
     // Navigate back to stUSDS module
     await isolatedPage.getByTestId('stusds-stats-card').click();

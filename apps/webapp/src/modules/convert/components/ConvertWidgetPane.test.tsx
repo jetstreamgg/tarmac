@@ -256,9 +256,7 @@ describe('ConvertWidgetPane', () => {
   });
 
   it('tracks convert-module selection when the Trade card is chosen', () => {
-    const { container } = renderComponent(
-      <ConvertWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
-    );
+    const { container } = renderComponent(<ConvertWidgetPane />);
 
     clickButtonByText(container, /Trade/i);
 
@@ -275,9 +273,7 @@ describe('ConvertWidgetPane', () => {
   it('tracks convert-module selection when Upgrade is chosen after an L2 switch', () => {
     analyticsMocks.chainId = 8453;
 
-    const { container } = renderComponent(
-      <ConvertWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
-    );
+    const { container } = renderComponent(<ConvertWidgetPane />);
 
     clickButtonByText(container, /Upgrade/i);
 
