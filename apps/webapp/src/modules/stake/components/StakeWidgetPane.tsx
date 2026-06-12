@@ -1,6 +1,5 @@
 import { TxStatus, WidgetStateChangeParams, StakeFlow, StakeModuleWidget, StakeAction } from '@/widgets';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useConfigContext } from '@/modules/config/hooks/useConfigContext';
 import { useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { Intent } from '@/lib/enums';
@@ -9,7 +8,7 @@ import { useStakeHistory } from '@/hooks';
 import { StakeHelpModal } from './StakeHelpModal';
 import { StakingSpkRewardsDisclaimer } from './StakingSpkRewardsDisclaimer';
 
-export function StakeWidgetPane(sharedProps: SharedProps) {
+export function StakeWidgetPane() {
   const { selectedStakeUrnIndex, setSelectedStakeUrnIndex } = useConfigContext();
   const { mutate: refreshStakeHistory } = useStakeHistory();
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -115,7 +114,6 @@ export function StakeWidgetPane(sharedProps: SharedProps) {
   return (
     <>
       <StakeModuleWidget
-        {...sharedProps}
         disclaimer={<StakingSpkRewardsDisclaimer />}
         onStakeUrnChange={onStakeUrnChange}
         onWidgetStateChange={onStakeWidgetStateChange}

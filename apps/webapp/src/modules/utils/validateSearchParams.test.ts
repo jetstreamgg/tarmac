@@ -58,15 +58,11 @@ describe('validateSearchParams source token scoping', () => {
   });
 });
 
-describe('validateSearchParams details param', () => {
-  it('keeps boolean values and removes anything else', () => {
-    const valid = new URLSearchParams('details=false');
-    validateSearchParams(valid, Intent.BALANCES_INTENT, undefined, false);
-    expect(valid.get('details')).toBe('false');
-
-    const invalid = new URLSearchParams('details=banana');
-    validateSearchParams(invalid, Intent.BALANCES_INTENT, undefined, false);
-    expect(invalid.has('details')).toBe(false);
+describe('validateSearchParams removed params', () => {
+  it('strips the legacy details param', () => {
+    const params = new URLSearchParams('details=false');
+    validateSearchParams(params, Intent.BALANCES_INTENT, undefined, false);
+    expect(params.has('details')).toBe(false);
   });
 });
 

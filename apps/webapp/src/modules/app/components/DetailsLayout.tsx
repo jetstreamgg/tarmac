@@ -24,9 +24,9 @@ type DetailsLayoutProps = {
 
 /**
  * Chrome of the details pane for per-route pane pairs: the `details-pane`
- * panel (the class drives the AppContainer width selectors), the connect
- * card for disconnected users, and the footer links on mobile. The content
- * plays the card enter animation when the route content mounts.
+ * panel, the connect card for disconnected users, and the footer links on
+ * mobile. The content plays the card enter animation when the route content
+ * mounts.
  */
 export function DetailsLayout({ intent, convertOption, contentKey, children }: DetailsLayoutProps) {
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
@@ -39,7 +39,7 @@ export function DetailsLayout({ intent, convertOption, contentKey, children }: D
 
   return (
     // The remaining padding in the right is added by the scrollbar
-    // `details-pane` class is used by the AppContainer component to make the container full width if the details pane is visible
+    // `details-pane` class is kept as a hook for the pane-visibility e2e locators
     <motion.div
       className="scrollbar-thin-always details-pane bg-panel flex w-full flex-col gap-4 p-3 md:overflow-auto md:rounded-3xl md:p-6 md:pr-3.5 xl:p-8 xl:pr-[22px]"
       layout

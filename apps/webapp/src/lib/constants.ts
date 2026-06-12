@@ -9,7 +9,6 @@ import { tenderly } from '@/data/wagmi/config/config.default';
 // these are the params that remain query-driven.
 export enum QueryParams {
   Locale = 'lang',
-  Details = 'details',
   UrnIndex = 'urn_index',
   SourceToken = 'source_token',
   TargetToken = 'target_token',

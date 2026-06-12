@@ -1,5 +1,4 @@
 import { CardAnimationWrapper, WidgetContainer } from '@/widgets';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { ConvertIntent } from '@/lib/enums';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,7 +23,7 @@ import { PsmConversionWidgetPane } from './PsmConversionWidgetPane';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useGeoConfig } from '@/modules/geo-config';
 
-export function ConvertWidgetPane(sharedProps: SharedProps) {
+export function ConvertWidgetPane() {
   const navigate = useNavigate();
   const routeConvertIntent = useRouteConvertIntent();
   const { info, error } = useToast();
@@ -111,11 +110,11 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
   const renderSelectedWidget = () => {
     switch (activeConvertOption) {
       case ConvertIntent.PSM_INTENT:
-        return <PsmConversionWidgetPane {...sharedProps} />;
+        return <PsmConversionWidgetPane />;
       case ConvertIntent.UPGRADE_INTENT:
-        return <UpgradeWidgetPane {...sharedProps} />;
+        return <UpgradeWidgetPane />;
       case ConvertIntent.TRADE_INTENT:
-        return isTradeEnabled ? <TradeWidgetPane {...sharedProps} /> : null;
+        return isTradeEnabled ? <TradeWidgetPane /> : null;
       default:
         return null;
     }
@@ -138,7 +137,6 @@ export function ConvertWidgetPane(sharedProps: SharedProps) {
                 <Trans>Get Sky Ecosystem tokens with best possible rates</Trans>
               </Text>
             }
-            rightHeader={sharedProps.rightHeaderComponent}
           >
             <CardAnimationWrapper className="flex flex-col gap-4">
               <Card

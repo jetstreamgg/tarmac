@@ -2,14 +2,13 @@ import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { useNavigate } from '@tanstack/react-router';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { RewardContract, useRewardsUserHistory } from '@/hooks';
 import { RewardsAction, RewardsFlow, RewardsWidget, TxStatus, WidgetStateChangeParams } from '@/widgets';
 import { keepSearch, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useRouteRewardContract } from '@/modules/rewards/hooks/useRouteRewardContract';
 import { RewardsUsdsSkyDisclaimer } from './RewardsUsdsSkyDisclaimer';
 
-export function RewardsWidgetPane(sharedProps: SharedProps) {
+export function RewardsWidgetPane() {
   const subgraphUrl = useSubgraphUrl();
   const selectedRewardContract = useRouteRewardContract();
   const { mutate: refreshRewardsHistory } = useRewardsUserHistory({
@@ -71,7 +70,6 @@ export function RewardsWidgetPane(sharedProps: SharedProps) {
 
   return (
     <RewardsWidget
-      {...sharedProps}
       onRewardContractChange={onRewardContractChange}
       externalWidgetState={{ selectedRewardContract, flow }}
       onWidgetStateChange={onRewardsWidgetStateChange}

@@ -43,7 +43,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 });
 
@@ -110,7 +110,7 @@ test.skip('Balances change after successfully supplying and withdrawing', async 
     // await isolatedPage.reload();
     // await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // await isolatedPage.waitForTimeout(1000);
-    // await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+    // await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
     // await isolatedPage.getByText('With: USDS Get: SPK').first().click();
     // supply again
     await isolatedPage.getByTestId('supply-input-rewards').fill('2');
@@ -172,7 +172,7 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
   await isolatedPage.reload();
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   await isolatedPage.getByTestId('supply-input-rewards').fill(supplyAmount.toString());
@@ -193,7 +193,7 @@ test('Insufficient token allowance triggers approval flow', async ({ isolatedPag
   await isolatedPage.reload();
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Rewards' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Rewards' }).click();
   await isolatedPage.getByText('With: USDS Get: SPK').first().click();
 
   await isolatedPage.getByTestId('supply-input-rewards').fill('10');

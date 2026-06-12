@@ -85,8 +85,8 @@ export function sanitizeUrl(url: string | undefined) {
 }
 
 const getQueryParams = (url: string, searchParams: URLSearchParams) => {
-  const { Locale, Details } = QueryParams;
-  const retainedParams = [Locale, Details];
+  const { Locale } = QueryParams;
+  const retainedParams = [Locale];
 
   return getRetainedQueryParams(url, retainedParams, searchParams);
 };

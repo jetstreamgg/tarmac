@@ -1,5 +1,4 @@
 import { ExpertIntent, Intent } from '@/lib/enums';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
@@ -26,9 +25,7 @@ export function ExpertPanes() {
     <TwoPane
       // Remount per breakpoint, matching the legacy widget-pane key
       key={`expert-${bpi}`}
-      widget={withErrorBoundary(
-        <ExpertWidgetPane rightHeaderComponent={<DualSwitcher className="hidden lg:flex" />} />
-      )}
+      widget={withErrorBoundary(<ExpertWidgetPane />)}
       details={
         <DetailsLayout intent={Intent.EXPERT_INTENT} contentKey={isStusds ? 'stusds' : 'overview'}>
           {isStusds ? <StUSDSDetails /> : <ExpertDetailsPane />}

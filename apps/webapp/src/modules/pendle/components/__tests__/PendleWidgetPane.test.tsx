@@ -206,10 +206,6 @@ function renderComponent(ui: ReactNode) {
   };
 }
 
-const sharedProps = {
-  rightHeaderComponent: <span />
-};
-
 const cardAddresses = (container: HTMLElement): string[] =>
   Array.from(container.querySelectorAll<HTMLElement>('[data-testid="pendle-market-stats-card"]')).map(
     el => el.dataset.market ?? ''
@@ -231,7 +227,7 @@ describe('PendleWidgetPane', () => {
   });
 
   it('renders the overview list with the configured market when no market path param is set', () => {
-    const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+    const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
     // eslint-disable-next-line testing-library/no-container
     expect(container.querySelector('[data-testid="pendle-widget-stub"]')).toBeNull();
@@ -244,7 +240,7 @@ describe('PendleWidgetPane', () => {
   it('renders the PendleWidget when a known market path param is selected', () => {
     mockEntityParams = { marketAddress: ACTIVE_MARKET_ADDRESS };
 
-    const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+    const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
     // eslint-disable-next-line testing-library/no-container
     expect(container.querySelector('[data-testid="pendle-widget-stub"]')).not.toBeNull();
@@ -255,7 +251,7 @@ describe('PendleWidgetPane', () => {
   it('falls back to the overview when the market path param is unknown', () => {
     mockEntityParams = { marketAddress: '0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' };
 
-    const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+    const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
     // eslint-disable-next-line testing-library/no-container
     expect(container.querySelector('[data-testid="pendle-widget-stub"]')).toBeNull();
@@ -269,7 +265,7 @@ describe('PendleWidgetPane', () => {
   describe('matured-market filter', () => {
     it('hides matured markets from a disconnected user', () => {
       // userAddress = undefined, balances = undefined
-      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+      const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
       const addresses = cardAddresses(container);
       expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
@@ -285,7 +281,7 @@ describe('PendleWidgetPane', () => {
         [MATURED_MARKET_ADDRESS]: 0n
       };
 
-      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+      const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
       const addresses = cardAddresses(container);
       expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);
@@ -304,7 +300,7 @@ describe('PendleWidgetPane', () => {
         [MATURED_MARKET_ADDRESS]: 100n // user has matured PT to redeem
       };
 
-      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+      const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
       const addresses = cardAddresses(container);
       expect(addresses).not.toContain(MATURED_MARKET_ADDRESS);
@@ -320,7 +316,7 @@ describe('PendleWidgetPane', () => {
         [MATURED_MARKET_ADDRESS]: 0n
       };
 
-      const { container, unmount } = renderComponent(<PendleWidgetPane {...sharedProps} />);
+      const { container, unmount } = renderComponent(<PendleWidgetPane />);
 
       const addresses = cardAddresses(container);
       expect(addresses).toContain(ACTIVE_MARKET_ADDRESS);

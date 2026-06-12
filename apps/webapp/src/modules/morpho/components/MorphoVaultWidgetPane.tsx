@@ -1,13 +1,12 @@
 import { MorphoVaultWidget, WidgetStateChangeParams, VaultFlow } from '@/widgets';
 import { Token, type VaultProvider } from '@/hooks';
 import { QueryParams } from '@/lib/constants';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useNavigate } from '@tanstack/react-router';
 import { keepSearch, useAppSearchParams, useRouteEntityParams } from '@/lib/navigation';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { useChainId } from 'wagmi';
 
-type MorphoVaultWidgetPaneProps = SharedProps & {
+type MorphoVaultWidgetPaneProps = {
   /** The vault contract address mapping by chain ID */
   vaultAddress: Record<number, `0x${string}`>;
   /** The underlying asset token */
@@ -22,8 +21,7 @@ export function MorphoVaultWidgetPane({
   vaultAddress,
   assetToken,
   vaultName,
-  provider = 'morpho',
-  ...sharedProps
+  provider = 'morpho'
 }: MorphoVaultWidgetPaneProps) {
   const chainId = useChainId();
   const [searchParams, setSearchParams] = useAppSearchParams();
@@ -63,7 +61,6 @@ export function MorphoVaultWidgetPane({
 
   return (
     <MorphoVaultWidget
-      {...sharedProps}
       vaultAddress={currentVaultAddress}
       assetAddress={currentAssetAddress}
       assetToken={assetToken}

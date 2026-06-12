@@ -11,12 +11,11 @@ import {
   upgradeTokens
 } from '@/widgets';
 import { QueryParams, REFRESH_DELAY } from '@/lib/constants';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import { useEffect, useState } from 'react';
 import { ConvertIntent, Intent } from '@/lib/enums';
 
-export function UpgradeWidgetPane(sharedProps: SharedProps) {
+export function UpgradeWidgetPane() {
   const subgraphUrl = useSubgraphUrl();
   const { mutate: refreshUpgradeHistory } = useUpgradeHistory({ subgraphUrl });
 
@@ -122,7 +121,6 @@ export function UpgradeWidgetPane(sharedProps: SharedProps) {
 
   return (
     <UpgradeWidget
-      {...sharedProps}
       externalWidgetState={{
         flow,
         initialUpgradeToken: (sourceToken && Object.values(upgradeTokens).includes(sourceToken)

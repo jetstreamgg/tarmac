@@ -8,7 +8,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   console.log('Connected wallet');
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Stake & Borrow' }).click();
   console.log('Clicked Stake & Borrow tab');
 });
 

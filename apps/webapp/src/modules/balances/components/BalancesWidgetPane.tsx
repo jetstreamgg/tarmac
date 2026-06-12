@@ -2,11 +2,10 @@ import { WidgetStateChangeParams, SavingsFlow, BalancesWidget, BalancesWidgetPro
 import { useNavigate } from '@tanstack/react-router';
 import { retainOnNavigate, useAppSearchParams, useRouteIntent } from '@/lib/navigation';
 import { useCallback } from 'react';
-import { SharedProps } from '@/modules/app/types/Widgets';
 import { QueryParams } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 
-export function BalancesWidgetPane(sharedProps: SharedProps & BalancesWidgetProps) {
+export function BalancesWidgetPane(widgetProps: BalancesWidgetProps) {
   const [searchParams, setSearchParams] = useAppSearchParams();
   const navigate = useNavigate();
   const intent = useRouteIntent();
@@ -38,7 +37,7 @@ export function BalancesWidgetPane(sharedProps: SharedProps & BalancesWidgetProp
 
   return (
     <BalancesWidget
-      {...sharedProps}
+      {...widgetProps}
       externalWidgetState={{
         flow
       }}

@@ -15,7 +15,7 @@ test.describe('Vaults - Spark Tether Savings (sUSDT)', () => {
     await isolatedPage.goto('/');
     await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
     // Navigate to the Vaults tab and open the Spark vault detail
-    await isolatedPage.getByRole('tab', { name: 'Vaults' }).click();
+    await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Vaults' }).click();
     await isolatedPage.getByTestId('sky-vault-stats-card').click();
   });
 

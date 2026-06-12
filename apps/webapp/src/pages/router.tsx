@@ -7,7 +7,7 @@ import type { AppSearchParams } from '../routes/__root';
 export type { AppSearchParams } from '../routes/__root';
 
 // Keep search params as plain strings (URLSearchParams semantics) instead of
-// TanStack's default JSON encoding, so values like `details=true` or token
+// TanStack's default JSON encoding, so values like `network=ethereum` or token
 // symbols round-trip byte-for-byte with the URLs the app produced before the
 // router migration.
 const parseSearch = (searchStr: string): AppSearchParams =>

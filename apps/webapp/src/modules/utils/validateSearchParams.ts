@@ -6,7 +6,7 @@ import { defaultConfig } from '../config/default-config';
 
 /**
  * Validates the search params that remain query-driven after the path
- * navigation migration (network, details, flow, tokens...). Navigation state
+ * navigation migration (network, flow, tokens...). Navigation state
  * (module, submodule, entities) lives in the path and is validated by the
  * routes and useAppOrchestration's route-validation effect.
  */
@@ -37,11 +37,6 @@ export const validateSearchParams = (
       } else {
         searchParams.delete(key);
       }
-    }
-
-    // removes details param if value is not true or false
-    if (key === QueryParams.Details && !['true', 'false'].includes(value.toLowerCase())) {
-      searchParams.delete(key);
     }
 
     // validate source token

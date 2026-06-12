@@ -1,5 +1,4 @@
 import { ConvertIntent, Intent } from '@/lib/enums';
-import { DualSwitcher } from '@/components/DualSwitcher';
 import { withErrorBoundary } from '@/modules/utils/withErrorBoundary';
 import { TwoPane } from '@/modules/app/components/TwoPane';
 import { DetailsLayout } from '@/modules/app/components/DetailsLayout';
@@ -33,9 +32,7 @@ export function ConvertPanes() {
     <TwoPane
       // Remount per breakpoint, matching the legacy widget-pane key
       key={`convert-${bpi}`}
-      widget={withErrorBoundary(
-        <ConvertWidgetPane rightHeaderComponent={<DualSwitcher className="hidden lg:flex" />} />
-      )}
+      widget={withErrorBoundary(<ConvertWidgetPane />)}
       details={
         <DetailsLayout
           intent={Intent.CONVERT_INTENT}

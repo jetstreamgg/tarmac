@@ -4,8 +4,6 @@ import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/utils';
-import { QueryParams } from '@/lib/constants';
-import { useAppSearchParams } from '@/lib/navigation';
 import { Text } from '@/modules/layout/components/Typography';
 import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
@@ -29,8 +27,6 @@ type TwoPaneProps = {
 export function TwoPane({ widget, details }: TwoPaneProps) {
   const { bpi } = useBreakpointIndex();
   const isMobile = bpi < BP.md;
-  const [searchParams] = useAppSearchParams();
-  const showDetails = !(searchParams.get(QueryParams.Details) === 'false');
   const { isSwitchingNetwork } = useNetworkSwitch();
   const { paneStyle, detailsSlot } = useShellChrome();
 
@@ -69,8 +65,8 @@ export function TwoPane({ widget, details }: TwoPaneProps) {
       >
         {widget}
       </motion.div>
-      {bpi === BP.sm && showDetails && details}
-      {bpi > BP.sm && showDetails && detailsSlot && createPortal(details, detailsSlot)}
+      {bpi === BP.sm && details}
+      {bpi > BP.sm && detailsSlot && createPortal(details, detailsSlot)}
     </>
   );
 }
