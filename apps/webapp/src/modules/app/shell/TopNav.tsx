@@ -59,9 +59,8 @@ const navTestId = (path: RoutePath) => `nav-${path.slice(1)}`;
 
 const isUnderDestination = (path: string, base: RoutePath) => path === base || path.startsWith(`${base}/`);
 
-// Active destination: the current path when it's already a target-IA path
-// (covers the intent-less /earn placeholder), else the destination owning the
-// legacy route's intent (e.g. /savings → /earn/savings → Earn).
+// Active destination: the current path when it sits under a destination, else
+// the destination owning the route's intent (covers Balances at / → Portfolio).
 function useActiveDestinationPath(): RoutePath | null {
   const pathname = useRouterState({ select: s => s.location.pathname });
   const routeIntent = useRouteIntent();

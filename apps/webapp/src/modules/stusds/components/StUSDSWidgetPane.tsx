@@ -60,7 +60,7 @@ export function StUSDSWidgetPane() {
   };
 
   const handleBack = () => {
-    void navigate({ to: '/expert', search: keepSearch });
+    void navigate({ to: '/earn/expert', search: keepSearch });
   };
 
   return (

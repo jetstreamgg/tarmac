@@ -61,7 +61,7 @@ export function VaultsWidgetPane() {
   // path reflects the vault the user opened.
   const handleSelectVault = (vaultAddress: `0x${string}`, provider: VaultProvider) => {
     void navigate({
-      to: '/vaults/$provider/$vaultAddress',
+      to: '/earn/vaults/$provider/$vaultAddress',
       params: { provider: vaultModuleForProvider(provider), vaultAddress },
       search: keepSearch
     });

@@ -168,7 +168,7 @@ describe('VaultsWidgetPane card-select navigation', () => {
 
     expect(navigateMock).toHaveBeenCalledTimes(1);
     const navArg = navigateMock.mock.calls[0][0];
-    expect(navArg.to).toBe('/vaults/$provider/$vaultAddress');
+    expect(navArg.to).toBe('/earn/vaults/$provider/$vaultAddress');
     expect(navArg.params.provider).toBe('sky');
     expect(navArg.params.vaultAddress.toLowerCase()).toBe(SPARK_USDT_VAULT_ADDRESS.toLowerCase());
   });
@@ -180,7 +180,7 @@ describe('VaultsWidgetPane card-select navigation', () => {
 
     expect(navigateMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        to: '/vaults/$provider/$vaultAddress',
+        to: '/earn/vaults/$provider/$vaultAddress',
         params: expect.objectContaining({ provider: 'morpho' })
       })
     );

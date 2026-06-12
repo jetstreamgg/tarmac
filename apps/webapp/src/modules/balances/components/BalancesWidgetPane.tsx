@@ -13,7 +13,7 @@ export function BalancesWidgetPane(widgetProps: BalancesWidgetProps) {
   const flow = (searchParams.get(QueryParams.Flow) || undefined) as SavingsFlow | undefined;
 
   const onExploreVaults = useCallback(() => {
-    void navigate({ to: '/vaults', search: retainOnNavigate });
+    void navigate({ to: '/earn/vaults', search: retainOnNavigate });
   }, [navigate]);
 
   const onBalancesWidgetStateChange = ({ widgetState }: WidgetStateChangeParams) => {
