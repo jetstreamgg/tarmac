@@ -4,5 +4,5 @@ import { Intent } from '@/lib/enums';
 
 export const Route = createFileRoute('/_shell/portfolio')({
   component: PortfolioPage,
-  staticData: { intent: Intent.BALANCES_INTENT }
+  staticData: { intent: Intent.BALANCES_INTENT, fullWidth: true }
 });
