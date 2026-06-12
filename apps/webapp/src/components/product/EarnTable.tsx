@@ -48,10 +48,10 @@ const COLUMNS: { key: EarnTableColumn; label: ReactNode }[] = [
 // TableRow's own border/hover treatments are neutralized.
 const rowClasses =
   'group/row cursor-pointer border-0 last:border-b-0 has-[td]:hover:bg-transparent has-[td]:active:bg-transparent has-[td]:focus:border-y-0';
-// Container-card surface for contrast against the page background, lifting
-// toward the surface tint on hover.
+// Container-card surface for contrast against the page background, deepening
+// on hover (surface-tint hovers go nearly transparent over the bright bg).
 const cellClasses =
-  'bg-container group-hover/row:bg-surfaceHover transition-colors first:rounded-l-2xl last:rounded-r-2xl';
+  'bg-container group-hover/row:bg-containerDark transition-colors first:rounded-l-2xl last:rounded-r-2xl';
 
 function NumericCell({ value, isLoading }: { value: string; isLoading?: boolean }) {
   return (

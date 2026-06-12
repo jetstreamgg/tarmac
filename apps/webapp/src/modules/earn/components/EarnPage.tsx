@@ -62,7 +62,12 @@ export function EarnPage() {
     () =>
       [...new Set(rows.flatMap(row => row.supplyTokens))].map(symbol => ({
         value: symbol.toLowerCase(),
-        label: symbol
+        label: (
+          <span className="flex items-center gap-2">
+            <TokenIcon token={{ symbol }} width={16} className="h-4 w-4" />
+            {symbol}
+          </span>
+        )
       })),
     [rows]
   );

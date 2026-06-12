@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
+import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { EarnRiskTier } from '@/hooks';
@@ -28,12 +29,12 @@ function FilterSelect({
   // Same surface/item treatment as the header's MoreMenu popover: container
   // background, hover rows, selection shown by a prominent row background.
   const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-bgHover focus:bg-bgHover data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2';
+    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
   return (
     <Select value={selected} onValueChange={onChange}>
       <SelectTrigger
         data-testid={testId}
-        className="border-borderPrimary text-text bg-secondary h-8 w-auto gap-1.5 rounded-full px-3 text-sm"
+        className="border-borderPrimary text-text bg-secondary hover:bg-surfaceAlt h-8 w-auto gap-1.5 rounded-full px-3 text-sm transition-colors"
       >
         <SelectValue />
       </SelectTrigger>
@@ -96,7 +97,12 @@ export function EarnTableFilters({
               aria-pressed={isSelected}
               data-testid={`earn-filter-risk-${tier.value}`}
               onClick={() => onRiskTierToggle(tier.value)}
-              className="border-borderPrimary h-8 border px-3 text-sm"
+              className={cn(
+                'border-borderPrimary h-8 border px-3 text-sm',
+                // secondaryHover === secondary today, so the chip needs its own
+                // visible hover; the selected pill keeps its variant hover.
+                !isSelected && 'hover:bg-surfaceAlt'
+              )}
             >
               {tier.label}
             </Button>
