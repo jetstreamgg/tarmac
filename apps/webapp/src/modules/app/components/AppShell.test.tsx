@@ -77,12 +77,14 @@ describe('AppShell pane column', () => {
     renderAppShell('/savings');
     const probe = await screen.findByTestId('route-probe');
     expect(probe.closest('[data-testid="widget-pane-column"]')).toBeTruthy();
+    expect(probe.closest('main')?.className).toContain('bg-container');
   });
 
-  it('renders a full-width destination route outside the widget-pane column', async () => {
+  it('renders a full-width destination route outside the widget-pane column, without the container card', async () => {
     renderAppShell('/earn');
     const probe = await screen.findByTestId('route-probe');
     expect(probe.closest('[data-testid="widget-pane-column"]')).toBeNull();
+    expect(probe.closest('main')?.className).not.toContain('bg-container');
   });
 
   it('falls back to the Balances panes when the module is geo-restricted', async () => {

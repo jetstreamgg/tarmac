@@ -1,80 +1,148 @@
-import { Trans } from '@lingui/react/macro';
+import { useMemo } from 'react';
 import { useChains } from 'wagmi';
-import { useEarnMarketplace } from '@/hooks';
-import { formatNumber } from '@/utils';
-import { Heading, Text } from '@/modules/layout/components/Typography';
-import { AppLink } from '@/lib/navigation';
+import { useNavigate } from '@tanstack/react-router';
+import { Trans } from '@lingui/react/macro';
+import { Morpho } from '@/widgets';
+import { useEarnMarketplace, EarnProductKind, EarnProductRow } from '@/hooks';
+import { formatNumber, getChainIcon } from '@/utils';
+import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
+import { retainOnNavigate } from '@/lib/navigation';
+import { Heading } from '@/modules/layout/components/Typography';
+import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
+import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
+import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
+import { useEarnTableState } from '../hooks/useEarnTableState';
 
 const NO_VALUE = '–';
 
 const formatUsd = (totalUsd?: number) => (totalUsd !== undefined ? `$${formatNumber(totalUsd)}` : NO_VALUE);
 
-// Placeholder destination screen; the real Earn marketplace lands with Track C
-// (C2). The table below is a deliberately bare rendering of the C1
-// useEarnMarketplace aggregator so the data layer can be exercised in-app.
+const PRODUCT_LABELS: Record<EarnProductKind, React.ReactNode> = {
+  savings: <Trans>Savings</Trans>,
+  rewards: <Trans>Rewards</Trans>,
+  vault: <Trans>Vaults</Trans>,
+  fixed: <Trans>Fixed yield</Trans>,
+  stusds: <Trans>Expert</Trans>
+};
+
+// Rewards rows supply USDS but are recognized by their reward token; the row
+// id encodes it ('rewards-spk' → SPK).
+const productIconSymbol = (row: EarnProductRow) =>
+  row.kind === 'rewards' ? row.id.replace('rewards-', '').toUpperCase() : row.tokenSymbol;
+
+const maturityFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric'
+});
+
+/** The /earn destination: the Earn Opportunities marketplace section (C2). */
 export function EarnPage() {
-  const { rows, isLoading } = useEarnMarketplace();
+  const { rows } = useEarnMarketplace();
   const chains = useChains();
-  const chainName = (id: number) => chains.find(c => c.id === id)?.name ?? id;
+  const navigate = useNavigate();
+
+  // Slug ↔ chain mapping for the network filter (same normalized names the
+  // `network` query param uses).
+  const chainSlugById = useMemo(
+    () => Object.fromEntries(chains.map(chain => [chain.id, normalizeUrlParam(chain.name)])),
+    [chains]
+  );
+
+  const networkOptions = useMemo<EarnFilterOption[]>(() => {
+    const ids = [...new Set(rows.flatMap(row => row.networks))];
+    return ids
+      .map(id => ({ id, chain: chains.find(chain => chain.id === id) }))
+      .filter(({ chain }) => chain !== undefined)
+      .map(({ id, chain }) => ({ value: chainSlugById[id], label: chain!.name }));
+  }, [rows, chains, chainSlugById]);
+
+  const stablecoinOptions = useMemo<EarnFilterOption[]>(
+    () =>
+      [...new Set(rows.map(row => row.tokenSymbol))].map(symbol => ({
+        value: symbol.toLowerCase(),
+        label: symbol
+      })),
+    [rows]
+  );
+
+  const productOptions = useMemo<EarnFilterOption[]>(
+    () =>
+      [...new Set(rows.map(row => row.kind))].map(kind => ({
+        value: kind,
+        label: PRODUCT_LABELS[kind]
+      })),
+    [rows]
+  );
+
+  const { filters, updateFilters, toggleRiskTier, sort, toggleSort } = useEarnTableState({
+    networks: networkOptions.map(option => option.value),
+    stablecoins: stablecoinOptions.map(option => option.value),
+    products: productOptions.map(option => option.value)
+  });
+
+  const visibleRows = useMemo(
+    () => sortEarnRows(filterEarnRows(rows, filters, chainSlugById), sort),
+    [rows, filters, chainSlugById, sort]
+  );
+
+  const items = useMemo<EarnTableRowItem[]>(
+    () =>
+      visibleRows.map(row => ({
+        id: row.id,
+        name: row.name,
+        icon: <TokenIcon token={{ symbol: productIconSymbol(row) }} width={36} className="h-9 w-9" />,
+        nameSuffix:
+          row.kind === 'vault' && row.id.startsWith('vault-morpho') ? (
+            <Morpho className="h-3 w-3 rounded-sm" />
+          ) : undefined,
+        supply: <TokenIcon token={{ symbol: row.tokenSymbol }} width={14} className="h-3.5 w-3.5" />,
+        maturityLabel: row.maturity ? maturityFormatter.format(new Date(row.maturity * 1000)) : undefined,
+        network: (
+          <div className="flex -space-x-1.5">
+            {row.networks.map(id => (
+              <span key={id} className="inline-flex">
+                {getChainIcon(id, 'h-5 w-5')}
+              </span>
+            ))}
+          </div>
+        ),
+        risk: row.risk,
+        rate: row.rate.formatted,
+        rate30d: row.rate30d?.formatted ?? NO_VALUE,
+        tvl: formatUsd(row.tvl?.totalUsd),
+        position: formatUsd(row.position?.totalUsd),
+        isLoading: row.isLoading
+      })),
+    [visibleRows]
+  );
+
+  const handleRowSelect = (id: string) => {
+    const row = rows.find(r => r.id === id);
+    if (!row) return;
+    void navigate({ to: row.detailPath as '/', search: retainOnNavigate });
+  };
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <Heading>
-        <Trans>Earn</Trans>
+    <div className="flex w-full flex-col gap-5 p-4 md:px-8 md:py-10" data-testid="earn-opportunities">
+      <Heading tag="h1" variant="large">
+        <Trans>Earn Opportunities</Trans>
       </Heading>
-      <Text variant="medium" className="text-textSecondary">
-        <Trans>The Earn experience is coming soon.</Trans>
-      </Text>
-      <table className="text-text w-full text-left text-sm" data-testid="earn-opportunities-table">
-        <thead>
-          <tr className="text-textSecondary border-b">
-            <th className="p-2 font-medium">
-              <Trans>Token</Trans>
-            </th>
-            <th className="p-2 font-medium">
-              <Trans>Network</Trans>
-            </th>
-            <th className="p-2 font-medium">
-              <Trans>Risk profile</Trans>
-            </th>
-            <th className="p-2 font-medium">
-              <Trans>Rate</Trans>
-            </th>
-            <th className="p-2 font-medium">
-              <Trans>30D Rate</Trans>
-            </th>
-            <th className="p-2 font-medium">
-              <Trans>TVL</Trans>
-            </th>
-            <th className="p-2 font-medium">
-              <Trans>My position</Trans>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(row => (
-            <tr key={row.id} className="border-b" data-testid={`earn-row-${row.id}`}>
-              <td className="p-2">
-                <AppLink to={row.detailPath} className="underline">
-                  {row.name}
-                </AppLink>
-                <span className="text-textSecondary ml-2">{row.tokenSymbol}</span>
-              </td>
-              <td className="p-2">{row.networks.map(chainName).join(', ') || NO_VALUE}</td>
-              <td className="p-2 capitalize">{row.risk}</td>
-              <td className="p-2">{row.isLoading ? '…' : row.rate.formatted}</td>
-              <td className="p-2">{row.rate30d?.formatted ?? NO_VALUE}</td>
-              <td className="p-2">{row.isLoading ? '…' : formatUsd(row.tvl?.totalUsd)}</td>
-              <td className="p-2">{row.isLoading ? '…' : formatUsd(row.position?.totalUsd)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {isLoading && (
-        <Text variant="small" className="text-textSecondary">
-          <Trans>Loading…</Trans>
-        </Text>
-      )}
+      <EarnTableFilters
+        selectedRiskTiers={filters.risk}
+        onRiskTierToggle={toggleRiskTier}
+        networks={networkOptions}
+        selectedNetwork={filters.network}
+        onNetworkChange={network => updateFilters({ network })}
+        stablecoins={stablecoinOptions}
+        selectedStablecoin={filters.stablecoin}
+        onStablecoinChange={stablecoin => updateFilters({ stablecoin })}
+        products={productOptions}
+        selectedProduct={filters.product}
+        onProductChange={product => updateFilters({ product })}
+      />
+      <EarnTable rows={items} sort={sort} onSortChange={toggleSort} onRowSelect={handleRowSelect} />
     </div>
   );
 }
