@@ -17,7 +17,7 @@ export const AppEvents = {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type SelectionMethod = 'sidebar_tab' | 'mobile_drawer' | 'deeplink' | 'card';
+export type SelectionMethod = 'header_nav' | 'mobile_drawer' | 'deeplink' | 'card';
 export type TxStatus = 'success' | 'error' | 'cancelled';
 export type ErrorContext = string;
 export type VpnCheckResult = 'allowed' | 'vpn_blocked' | 'region_blocked' | 'error' | 'unknown';

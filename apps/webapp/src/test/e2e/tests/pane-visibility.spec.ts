@@ -15,7 +15,7 @@ import { test, expect } from '@playwright/test';
  * - 3xl: >= 1680px (large desktop)
  *
  * Panel class selectors:
- * - Widget: data-testid="widget-navigation" (lg+) or hamburger menu button (sm-md)
+ * - Navigation: header nav data-testid="widget-navigation" (lg+) or header hamburger menu button (sm-md)
  * - Details: .details-pane
  *
  * Run with: pnpm e2e pane-visibility.spec.ts

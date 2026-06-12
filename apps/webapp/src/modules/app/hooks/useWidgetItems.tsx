@@ -241,8 +241,8 @@ export function useWidgetItems(intent: Intent): {
     }
   ];
 
-  // Show all widget items regardless of network for better discoverability
-  // Auto-switching will be handled in WidgetNavigation
+  // Show all widget items regardless of network for better discoverability;
+  // the header nav auto-switches to mainnet for mainnet-only modules
   const filteredWidgetContent: WidgetContent = widgetContent.filter(group => group.items.length > 0);
 
   return { widgetContent: filteredWidgetContent, effectiveIntent };

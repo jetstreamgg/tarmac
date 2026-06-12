@@ -21,7 +21,7 @@ test('Supply and withdraw from Savings - Parallel Safe', async ({ isolatedPage, 
 
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   await expect(isolatedPage.getByRole('button', { name: 'Transaction overview' })).not.toBeVisible();
@@ -66,7 +66,7 @@ test('Balance isolation - Two parallel tests with different accounts', async ({
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Verify the balance is unique to this account
@@ -97,7 +97,7 @@ test('Test 1 - Can run simultaneously', async ({ isolatedPage, testAccount }) =>
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Add a small delay to simulate real work
@@ -119,7 +119,7 @@ test('Test 2 - Can run simultaneously', async ({ isolatedPage, testAccount }) =>
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Add a small delay to simulate real work
@@ -141,7 +141,7 @@ test('Test 3 - Can run simultaneously', async ({ isolatedPage, testAccount }) =>
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // Add a small delay to simulate real work
@@ -164,7 +164,7 @@ test('Verify account isolation with allowances', async ({ isolatedPage, testAcco
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage
     .getByTestId('widget-navigation')
-    .getByRole('tab', { name: 'Savings', exact: true })
+    .getByRole('link', { name: 'Savings', exact: true })
     .click();
 
   // First supply without allowance (should trigger approval)

@@ -13,7 +13,7 @@ export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkN
     await isolatedPage.waitForTimeout(1000);
     await isolatedPage
       .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
+      .getByRole('link', { name: 'Savings', exact: true })
       .click();
     await switchToL2(isolatedPage, networkName);
 
@@ -77,7 +77,7 @@ export const runL2SavingsTests = async ({ networkName }: { networkName: NetworkN
     await isolatedPage.waitForTimeout(1000);
     await isolatedPage
       .getByTestId('widget-navigation')
-      .getByRole('tab', { name: 'Savings', exact: true })
+      .getByRole('link', { name: 'Savings', exact: true })
       .click();
     await switchToL2(isolatedPage, networkName);
 

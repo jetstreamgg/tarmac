@@ -8,7 +8,7 @@ test.beforeEach(async ({ isolatedPage }) => {
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Stake & Borrow' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Stake & Borrow' }).click();
 });
 
 test('Rewards step auto-skipped when only one reward available (SPK/USDS deprecated)', async ({
@@ -203,7 +203,7 @@ test.skip('Batch - Lock SKY, select rewards, select delegate, and open position'
   await isolatedPage.goto('/');
   await connectMockWalletAndAcceptTerms(isolatedPage, { batch: true });
   await isolatedPage.waitForTimeout(1000);
-  await isolatedPage.getByRole('tab', { name: 'Stake' }).click();
+  await isolatedPage.getByTestId('widget-navigation').getByRole('link', { name: 'Stake & Borrow' }).click();
 
   await expect(isolatedPage.getByTestId('supply-first-input-lse-balance')).toHaveText('100,000,000 SKY');
 
