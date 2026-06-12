@@ -6,8 +6,7 @@ import { cn } from '@/lib/cn';
 
 const Accordion = AccordionPrimitive.Root;
 
-/* App accordion (canonical `AccordionItem`/`AccordionTrigger`/`AccordionContent`)
- * — original components/ui look. UNCHANGED. */
+// App look — canonical, unchanged.
 
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
@@ -52,11 +51,8 @@ const AccordionContent = React.forwardRef<
 
 AccordionContent.displayName = AccordionPrimitive.Content.displayName;
 
-/* Widget accordion (`AccordionWidget*`) — original widgets look, preserved
- * verbatim per ticket A1's preserve-both decision (near-vanilla: no padding,
- * font-medium, smaller chevron, no text color). Exposed via the widget shim as
- * `AccordionItem`/`AccordionTrigger`/`AccordionContent`. (`Accordion` itself is
- * identical — both are `AccordionPrimitive.Root` — so it is shared.) */
+// Widget look — relocated under AccordionWidget*; the widgets/accordion shim aliases it back.
+// (Accordion itself is shared — both trees use AccordionPrimitive.Root.)
 
 const AccordionWidgetItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,

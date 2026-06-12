@@ -4,11 +4,7 @@ import { cn } from '@/lib/cn';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { motion } from 'motion/react';
 
-/* =============================================================================
- * App card (canonical `Card`) — the original components/ui look. UNCHANGED.
- * Consumed by `@/components/ui/card` call-sites. Pixel-identical to pre-A1.
- * ========================================================================== */
-
+// App look — canonical, unchanged.
 const cardVariants = cva('rounded-[20px] bg-card p-4 text-text text-base font-normal leading-normal', {
   variants: {
     variant: {
@@ -169,17 +165,7 @@ const CardFooter = React.forwardRef<
 ));
 CardFooter.displayName = 'CardFooter';
 
-/* =============================================================================
- * Widget card (`CardWidget`) — the original widgets/components/ui look,
- * relocated here under suffixed names per ticket A1's preserve-both decision.
- * Exposed to widget call-sites via the `@/widgets/components/ui/card` shim,
- * which aliases `CardWidget` -> `Card` etc. The two looks diverge on the shared
- * variants (default/stats/base padding, title weight); convergence is deferred
- * to a follow-up design-led ticket. Class strings are kept VERBATIM and the
- * displayName strings / cascade allow-lists are unchanged so variant
- * propagation stays pixel-identical to pre-A1.
- * ========================================================================== */
-
+// Widget look — relocated under CardWidget*; the widgets/card shim aliases it back.
 const cardWidgetVariants = cva(
   'rounded-[20px] bg-card p-4 lg:p-5 text-text text-base font-normal leading-normal data-[status=success]:bg-radial-(--gradient-position)',
   {

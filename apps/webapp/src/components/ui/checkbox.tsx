@@ -4,8 +4,7 @@ import { Check, Minus } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 
-/* App checkbox (canonical `Checkbox`) — original components/ui look. UNCHANGED.
- * Superset of the widget look (supports the `indeterminate` state). */
+// App look — canonical, unchanged (superset: supports the indeterminate state).
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
@@ -33,9 +32,7 @@ const Checkbox = React.forwardRef<
 ));
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 
-/* Widget checkbox (`CheckboxWidget`) — original widgets look, preserved verbatim
- * per ticket A1's preserve-both decision (different border token, no
- * indeterminate state). Exposed via the widget shim as `Checkbox`. */
+// Widget look — relocated as CheckboxWidget; the widgets/checkbox shim aliases it back.
 const CheckboxWidget = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>

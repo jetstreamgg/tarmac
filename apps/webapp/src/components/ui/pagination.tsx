@@ -9,9 +9,7 @@ import {
   buttonWidgetVariants
 } from '@/components/ui/button';
 
-/* App pagination (canonical) — original components/ui look. UNCHANGED.
- * Nav is right-aligned with a top margin and ships a `PaginationContent`; the
- * links use the app `buttonVariants` (primary-start gradients). */
+// App look — canonical, unchanged.
 
 const Pagination = ({ className, ...props }: React.ComponentProps<'nav'> & { className?: string }) => (
   <nav
@@ -114,10 +112,7 @@ const PaginationEllipsis = ({
 );
 PaginationEllipsis.displayName = 'PaginationEllipsis';
 
-/* Widget pagination (`PaginationWidget*`) — original widgets look, preserved
- * verbatim per ticket A1's preserve-both decision (nav is centered with no top
- * margin, no PaginationContent; links use the widget `buttonWidgetVariants` —
- * primary-alt gradients). Exposed via the widget shim as `Pagination` etc. */
+// Widget look — relocated under PaginationWidget*; the widgets/pagination shim aliases it back.
 
 const PaginationWidget = ({ className, ...props }: React.ComponentProps<'nav'>) => (
   <nav

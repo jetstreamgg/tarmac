@@ -4,10 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/cn';
 
-/* =============================================================================
- * App button (canonical `Button`) — the original components/ui look. UNCHANGED.
- * Consumed by `@/components/ui/button` call-sites. Pixel-identical to pre-A1.
- * ========================================================================== */
+// App look — canonical, unchanged.
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-xl text-sm font-medium ring-offset-background transition-[background-color,background-image,opacity,border-color,color,box-shadow] duration-250 ease-out-expo focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-primaryDisabled disabled:text-surfaceAlt light:disabled:text-textDimmed',
@@ -70,16 +67,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = 'Button';
 
-/* =============================================================================
- * Widget button (`ButtonWidget`) — the original widgets/components/ui look,
- * relocated here under suffixed names per ticket A1's preserve-both decision.
- * Exposed to widget call-sites via the `@/widgets/components/ui/button` shim,
- * which aliases `ButtonWidget` -> `Button`, `buttonWidgetVariants` ->
- * `buttonVariants`, `ButtonWidgetProps` -> `ButtonProps`. The two buttons
- * diverge on shared variant names (secondary/pill/pagination/link/ghost/input)
- * and the base radius/disabled rules; convergence is deferred to a follow-up
- * design-led ticket. Class strings are kept VERBATIM.
- * ========================================================================== */
+// Widget look — relocated under ButtonWidget*; the widgets/button shim aliases it back.
 
 export type ButtonVariant =
   | 'default'

@@ -3,13 +3,11 @@ import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { motion } from 'motion/react';
 
 import { cn } from '@/lib/cn';
-// Leaf-safe animation tokens (motion presets/labels — no app graph). Used only
-// by the widget popover variant below; candidate to relocate to a neutral tokens
-// home in the convergence follow-up.
+// Leaf-safe motion tokens (no app graph) — used only by the widget popover below.
 import { AnimationLabels } from '@/widgets/shared/animation/constants';
 import { cardInAnimate, cardInInitial } from '@/widgets/shared/animation/presets';
 
-// Plain Radix aliases — identical across both trees, shared as-is.
+// Shared Radix aliases (identical in both trees).
 const Popover = PopoverPrimitive.Root;
 const PopoverTrigger = PopoverPrimitive.Trigger;
 const PopoverPortal = PopoverPrimitive.Portal;
@@ -17,8 +15,7 @@ const PopoverAnchor = PopoverPrimitive.Anchor;
 const PopoverClose = PopoverPrimitive.Close;
 const PopoverArrow = PopoverPrimitive.Arrow;
 
-/* App popover content (canonical `PopoverContent`) — original components/ui look.
- * UNCHANGED. No border, wider (w-80), rounded-xl, z-100, no entrance animation. */
+// App look — canonical, unchanged.
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
@@ -39,10 +36,7 @@ const PopoverContent = React.forwardRef<
 
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-/* Widget popover content (`PopoverWidgetContent`) — original widgets look,
- * preserved verbatim per ticket A1's preserve-both decision (bordered, narrower
- * w-72, rounded-md, z-50, with a motion entrance animation). Exposed via the
- * widget shim as `PopoverContent`. */
+// Widget look — relocated as PopoverWidgetContent; the widgets/popover shim aliases it back.
 const PopoverWidgetContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>

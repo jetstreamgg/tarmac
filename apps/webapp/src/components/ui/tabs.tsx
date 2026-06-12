@@ -6,8 +6,7 @@ import { cn } from '@/lib/cn';
 
 const Tabs = TabsPrimitive.Root;
 
-/* App tabs (canonical `TabsList`/`TabsTrigger`/`TabsContent`) — original
- * components/ui look. UNCHANGED. */
+// App look — canonical, unchanged.
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
@@ -71,11 +70,8 @@ const TabsContent = React.forwardRef<
 ));
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
-/* Widget tabs (`TabsWidget*`) — original widgets look, preserved verbatim per
- * ticket A1's preserve-both decision (no TabsList background, different `icons`
- * variant + position borders, TabsContent adds mt-2). Exposed via the widget
- * shim as `TabsList`/`TabsTrigger`/`TabsContent`. (`Tabs` is identical — both are
- * `TabsPrimitive.Root` — so it is shared.) */
+// Widget look — relocated under TabsWidget*; the widgets/tabs shim aliases it back.
+// (Tabs itself is shared — both trees use TabsPrimitive.Root.)
 
 const TabsWidgetList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,

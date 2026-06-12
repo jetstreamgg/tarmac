@@ -1,4 +1,2 @@
-// Re-export shim — unified into the canonical L0 primitive (ticket A1).
-// Implementation lives in @/components/ui/switch; this path is kept so existing
-// widget call-sites keep compiling. Slated for removal once call-sites migrate.
+// Re-export shim → canonical @/components/ui/switch.
 export * from '@/components/ui/switch';
