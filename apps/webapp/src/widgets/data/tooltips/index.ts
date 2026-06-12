@@ -283,6 +283,12 @@ Bundled transaction: Active`
       'Vault rates are variable and depend on market conditions, borrower demand, and the allocation strategy defined by Sky as vault curator on Morpho. Key factors that influence vault rates include the supply and demand dynamics of the underlying lending markets, the utilization rate of each market the vault allocates to, and the specific allocation strategy and risk profile of the vault. Sky.money does not control or guarantee vault performance. The vault rate provided is an estimated annual rate, updated using data from Morpho, a third-party lending protocol. This estimate is for informational purposes only and does not guarantee future results.'
   },
   {
+    id: 'vault-rates',
+    title: 'Vault Rates',
+    tooltip:
+      "The rates shown reflect the range of variable rates currently offered across the vaults available here, from lowest to highest. These vaults come from different sources: some are curated by Sky on third-party lending protocols such as Morpho, while others are first-party vaults managed by Sky. Each vault's rate is variable and depends on that specific vault—its underlying strategy, the market conditions and supply-and-demand dynamics of the lending markets or products it uses, and its risk profile. Sky.money does not control or guarantee vault performance. The rates shown are estimated annual rates, updated using data from the relevant protocols, for informational purposes only, and do not guarantee future results."
+  },
+  {
     id: 'susdt-vault-rate',
     title: 'sUSDT Vault Rate',
     tooltip:

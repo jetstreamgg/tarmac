@@ -35,7 +35,7 @@ export function VaultsRatesCard(): React.ReactElement {
               <span className="text-bullish">{formattedMaxRate}</span>
             </Trans>
           </Text>
-          <PopoverInfo type="morpho" />
+          <PopoverInfo type="vaultsAggregate" />
         </div>
       }
       isLoading={isLoading}

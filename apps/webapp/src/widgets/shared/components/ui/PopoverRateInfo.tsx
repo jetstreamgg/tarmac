@@ -27,6 +27,7 @@ const TOOLTIP_ID_MAP = {
   stusds: 'stusds-rate',
   morpho: 'vault-rate',
   sky: 'susdt-vault-rate',
+  vaultsAggregate: 'vault-rates',
   expert: 'stusds-rate',
   stusdsLiquidity: 'available-liquidity',
   morphoLiquidity: 'morpho-liquidity',
