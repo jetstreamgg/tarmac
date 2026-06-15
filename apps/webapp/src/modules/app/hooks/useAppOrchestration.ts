@@ -144,7 +144,7 @@ export function useAppOrchestration(): { intent: Intent } {
 
     // Expert submodules require the risk disclaimer to have been acknowledged.
     if (expertIntent !== undefined && !expertRiskDisclaimerShown) {
-      void navigate({ to: '/expert', search: keepSearch, replace: true });
+      void navigate({ to: '/earn/expert', search: keepSearch, replace: true });
       return;
     }
 
@@ -154,7 +154,7 @@ export function useAppOrchestration(): { intent: Intent } {
       rewardContract !== undefined &&
       !rewardContracts?.some(c => c.contractAddress?.toLowerCase() === rewardContract.toLowerCase())
     ) {
-      void navigate({ to: '/rewards', search: keepSearch, replace: true });
+      void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
     }
   }, [
     intent,

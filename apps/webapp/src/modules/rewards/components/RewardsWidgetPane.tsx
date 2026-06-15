@@ -29,13 +29,13 @@ export function RewardsWidgetPane() {
 
     if (rewardContract?.contractAddress) {
       void navigate({
-        to: '/rewards/$rewardContract',
+        to: '/earn/rewards/$rewardContract',
         params: { rewardContract: rewardContract.contractAddress },
         search: keepSearch,
         replace: true
       });
     } else {
-      void navigate({ to: '/rewards', search: keepSearch, replace: true });
+      void navigate({ to: '/earn/rewards', search: keepSearch, replace: true });
     }
   };
 

@@ -211,7 +211,7 @@ describe('WalletPreviewDrawer', () => {
     await openDrawer();
 
     await act(async () => {
-      await lastRouter!.navigate({ to: '/savings' });
+      await lastRouter!.navigate({ to: '/earn/savings' });
     });
 
     expect(screen.queryByTestId('wallet-drawer')).toBeNull();

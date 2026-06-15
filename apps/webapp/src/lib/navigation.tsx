@@ -28,13 +28,13 @@ export type AppRoutePath = FileRouteTypes['to'];
 /** Path each module lives at. TRADE/UPGRADE intents render as Convert submodules. */
 export const INTENT_PATHS: Record<Intent, AppRoutePath> = {
   [Intent.BALANCES_INTENT]: '/',
-  [Intent.SAVINGS_INTENT]: '/savings',
-  [Intent.REWARDS_INTENT]: '/rewards',
+  [Intent.SAVINGS_INTENT]: '/earn/savings',
+  [Intent.REWARDS_INTENT]: '/earn/rewards',
   [Intent.STAKE_INTENT]: '/stake',
   [Intent.CONVERT_INTENT]: '/convert',
-  [Intent.EXPERT_INTENT]: '/expert',
-  [Intent.VAULTS_INTENT]: '/vaults',
-  [Intent.FIXED_INTENT]: '/fixed',
+  [Intent.EXPERT_INTENT]: '/earn/expert',
+  [Intent.VAULTS_INTENT]: '/earn/vaults',
+  [Intent.FIXED_INTENT]: '/earn/fixed',
   [Intent.TRADE_INTENT]: '/convert/trade',
   [Intent.UPGRADE_INTENT]: '/convert/upgrade'
 };

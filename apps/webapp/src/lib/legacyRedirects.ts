@@ -106,57 +106,45 @@ export function legacySearchToLocation(search: Record<string, string>): LegacyRe
   return { to, search: rest };
 }
 
-// Current-generation module paths → target-IA destinations (plan §4.1).
-// DORMANT: unit-tested but registered nowhere until the IA flips (Track B).
-// `params` lifts entity path segments back into query-param sub-state.
-type V2Redirect = { to: string; params?: (segments: string[]) => Record<string, string> };
+// Pre-flip module paths → target-IA destinations (plan §4.1). The modules kept
+// their entity path params when they moved under /earn, so `subpath` carries
+// recognised entity segments across; unrecognised ones drop to the overview.
+// Convert needs no entry: its paths survived the flip unchanged.
+type V2Redirect = { to: string; subpath?: (segments: string[]) => string[] };
 
 const V2_REDIRECT_BY_MODULE: Record<string, V2Redirect> = {
   balances: { to: ROUTES.PORTFOLIO },
   savings: { to: ROUTES.EARN_SAVINGS },
   rewards: {
     to: ROUTES.EARN_REWARDS,
-    params: ([reward]): Record<string, string> => (reward ? { [LegacyParams.Reward]: reward } : {})
+    subpath: ([reward]): string[] => (reward ? [reward] : [])
   },
   vaults: {
     to: ROUTES.EARN_VAULTS,
-    params: ([provider, vault]): Record<string, string> =>
-      provider && providerForVaultModule(provider)
-        ? {
-            [LegacyParams.VaultModule]: provider.toLowerCase(),
-            ...(vault && { [LegacyParams.Vault]: vault })
-          }
-        : {}
+    subpath: ([provider, vault]): string[] =>
+      // The vault detail route needs both segments; a bare provider has no target.
+      provider && vault && providerForVaultModule(provider) ? [provider.toLowerCase(), vault] : []
   },
   fixed: {
     to: ROUTES.EARN_FIXED,
-    params: ([module, market]): Record<string, string> =>
+    subpath: ([module, market]): string[] =>
       module?.toLowerCase() === FixedIntentMapping[FixedIntent.MARKET_INTENT] && market
-        ? { [LegacyParams.FixedModule]: module.toLowerCase(), [LegacyParams.Market]: market }
-        : {}
+        ? [module.toLowerCase(), market]
+        : []
   },
   expert: {
     to: ROUTES.EARN_EXPERT,
-    params: ([module]): Record<string, string> =>
-      module?.toLowerCase() === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]
-        ? { [LegacyParams.ExpertModule]: module.toLowerCase() }
-        : {}
-  },
-  convert: {
-    to: ROUTES.CONVERT,
-    params: ([module]): Record<string, string> =>
-      module && CONVERT_MODULE_VALUES.includes(module.toLowerCase())
-        ? { [LegacyParams.ConvertModule]: module.toLowerCase() }
-        : {}
+    subpath: ([module]): string[] =>
+      module?.toLowerCase() === ExpertIntentMapping[ExpertIntent.STUSDS_INTENT] ? [module.toLowerCase()] : []
   }
 };
 
 /**
- * Translates current module paths into their target-IA equivalents once the
- * IA flips. Returns null when the path needs no redirect. Composes after
- * legacySearchToLocation: ?widget= URLs first rewrite to a current path,
- * then this maps that path forward. Entity values pass through verbatim —
- * the target route's own validation handles invalid ones.
+ * Translates pre-flip module paths into their target-IA equivalents. Returns
+ * null when the path needs no redirect. Composes after legacySearchToLocation:
+ * ?widget= URLs first rewrite to a pre-flip path, then this maps that path
+ * forward. Entity values pass through verbatim — the target route's own
+ * validation handles invalid ones.
  */
 export function legacyPathToLocation(
   pathname: string,
@@ -166,13 +154,12 @@ export function legacyPathToLocation(
   const moduleKey = segments[0]?.toLowerCase();
   const redirect = moduleKey ? V2_REDIRECT_BY_MODULE[moduleKey] : undefined;
   if (!redirect) return null;
-  // Already at its destination with no sub-state to lift: nothing to do.
-  if (segments.length === 1 && `/${moduleKey}` === redirect.to) return null;
 
-  // input_amount/linked_action are retired in the new IA (plan §4.1); path-derived
-  // sub-state wins over any stale incoming param.
+  const subpath = redirect.subpath?.(segments.slice(1)) ?? [];
+  const to = [redirect.to, ...subpath].join('/');
+  // input_amount/linked_action are retired in the new IA (plan §4.1).
   const preserved = Object.fromEntries(
     Object.entries(search).filter(([key]) => key !== 'input_amount' && key !== 'linked_action')
   );
-  return { to: redirect.to, search: { ...preserved, ...(redirect.params?.(segments.slice(1)) ?? {}) } };
+  return { to, search: preserved };
 }

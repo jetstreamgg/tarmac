@@ -130,7 +130,7 @@ describe('BalancesSuggestedActions', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Tether Savings \(sUSDT\)/i }));
 
-    expect(lastNavigation?.to).toBe(`/vaults/sky/${SPARK_USDT_VAULT_ADDRESS}`);
+    expect(lastNavigation?.to).toBe(`/earn/vaults/sky/${SPARK_USDT_VAULT_ADDRESS}`);
     expect(lastNavigation?.search).toEqual({ network: 'ethereum', lang: 'en' });
   });
 });

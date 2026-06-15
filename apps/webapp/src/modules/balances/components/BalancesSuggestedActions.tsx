@@ -6,6 +6,7 @@ import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants
 import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
+import { ROUTES } from '@/lib/routes';
 import { isMultichain } from '@/lib/widget-network-map';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
 import { Text } from '@/modules/layout/components/Typography';
@@ -79,7 +80,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'vaults',
     subtitle: 'Rates up to {rate}',
     module: 'morpho',
-    url: '/vaults'
+    url: ROUTES.EARN_VAULTS
   },
   {
     label: 'Rewards and Points',
@@ -87,7 +88,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'rewards',
     subtitle: 'Rates up to {rate}',
     module: 'rewards',
-    url: '/rewards'
+    url: ROUTES.EARN_REWARDS
   },
   {
     label: 'Sky Savings Rate (sUSDS)',
@@ -95,7 +96,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'savings',
     subtitle: 'Rate: {rate}',
     module: 'savings',
-    url: '/savings'
+    url: ROUTES.EARN_SAVINGS
   },
   {
     label: 'Tether Savings (sUSDT)',
@@ -103,7 +104,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'sparkVault',
     subtitle: 'Rate: {rate}',
     module: 'morpho',
-    url: `/vaults/${vaultModuleForProvider('sky')}/${sparkUsdtVaultAddress[mainnet.id]}`,
+    url: `${ROUTES.EARN_VAULTS}/${vaultModuleForProvider('sky')}/${sparkUsdtVaultAddress[mainnet.id]}`,
     badge: 'New'
   },
   {
@@ -112,7 +113,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     tokens: [],
     rateKey: 'fixedYield',
     module: 'fixedYield',
-    url: '/fixed'
+    url: ROUTES.EARN_FIXED
   },
   {
     label: 'Expert: stUSDS',
@@ -120,7 +121,7 @@ const STABLE_ACTIONS: BalancesAction[] = [
     rateKey: 'stusds',
     subtitle: 'Rate: {rate}',
     module: 'stusds',
-    url: '/expert/stusds'
+    url: `${ROUTES.EARN_EXPERT}/stusds`
   }
 ];
 

@@ -66,14 +66,14 @@ export function PendleWidgetPane() {
 
   const handleSelectMarket = (market: PendleMarketConfig) => {
     void navigate({
-      to: '/fixed/market/$marketAddress',
+      to: '/earn/fixed/market/$marketAddress',
       params: { marketAddress: market.marketAddress },
       search: keepSearch
     });
   };
 
   const handleBack = () => {
-    void navigate({ to: '/fixed', search: keepSearch });
+    void navigate({ to: '/earn/fixed', search: keepSearch });
   };
 
   return (
