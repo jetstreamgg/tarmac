@@ -5,10 +5,12 @@ import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { productNetworks } from '@/hooks';
+import { productNetworks, useOverallSkyData, useSkySavingsRateHistoricData } from '@/hooks';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
+import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
+import { RiskMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
@@ -17,14 +19,11 @@ import { SavingsPositionCard } from './SavingsPositionCard';
 // the title glow + padded outline.
 const SUSDS_BRAND_COLOR = '#95DC89';
 
-// TODO(T4): detail VALUES are placeholders — wire the real hooks (current/6M
-// rate, TVL, users) and the <RiskMeter/>. Icons + labels are final.
-const PLACEHOLDER = '–';
+const NO_VALUE = '–';
 
 /**
- * Savings as the first ProductDetailTemplate consumer (C3 proof). Subsequent
- * tasks replace the placeholder slots: T2 chart, T3 position card + modal,
- * T4 detail values + risk meter, T5 about copy (corpus), T6 transactions.
+ * Savings as the first ProductDetailTemplate consumer (C3 proof). Remaining
+ * placeholder slots: T5 about copy (corpus), T6 transactions.
  */
 function SlotPlaceholder({ label, className }: { label: ReactNode; className?: string }) {
   return (
@@ -49,26 +48,47 @@ export function SavingsProductDetail() {
     [connectedChainId]
   );
 
+  const { data: overall } = useOverallSkyData();
+  // "6M Rate" = trailing 6-month average APY. 🔶 confirm semantics with design
+  // (trailing average vs forward estimate vs rate-as-of-6-months-ago).
+  const { data: rateHistoric } = useSkySavingsRateHistoricData({ daysAgo: 180 });
+
+  const currentRate = overall?.skySavingsRatecRate
+    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
+    : NO_VALUE;
+  const sixMonthRate = useMemo(() => {
+    if (!rateHistoric || rateHistoric.length === 0) return NO_VALUE;
+    const avg = rateHistoric.reduce((sum, d) => sum + parseFloat(d.rate), 0) / rateHistoric.length;
+    return formatDecimalPercentage(avg);
+  }, [rateHistoric]);
+  const tvl = overall?.skySavingsRateTvl
+    ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}`
+    : NO_VALUE;
+  const users = overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : NO_VALUE;
+
   const details: ProductDetailRow[] = [
     {
       id: 'current-rate',
       icon: <AudioLines className="h-4 w-4" />,
       label: <Trans>Current Rate</Trans>,
-      value: PLACEHOLDER
+      value: currentRate
     },
     {
       id: 'rate-6m',
       icon: <AudioLines className="h-4 w-4" />,
       label: <Trans>6M Rate</Trans>,
-      value: PLACEHOLDER
+      value: sixMonthRate
     },
     {
       id: 'risk',
       icon: <Asterisk className="h-4 w-4" />,
       label: <Trans>Risk scale</Trans>,
-      value: PLACEHOLDER
+      // Matches the C3 design (1 green segment = low). 🔶 BL-07: the registry
+      // hardcodes 'moderate' for every product — reconcile when risk ratings
+      // get a real source.
+      value: <RiskMeter tier="low" />
     },
-    { id: 'tvl', icon: <Vault className="h-4 w-4" />, label: <Trans>TVL</Trans>, value: PLACEHOLDER },
+    { id: 'tvl', icon: <Vault className="h-4 w-4" />, label: <Trans>TVL</Trans>, value: tvl },
     {
       id: 'liquidity',
       icon: <Droplet className="h-4 w-4" />,
@@ -79,7 +99,7 @@ export function SavingsProductDetail() {
       id: 'users',
       icon: <UsersRound className="h-4 w-4" />,
       label: <Trans>Users</Trans>,
-      value: PLACEHOLDER
+      value: users
     }
   ];
 
