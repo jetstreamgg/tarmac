@@ -28,8 +28,9 @@ export interface ProductTransactionRow {
   actionLabel: ReactNode;
   timeAgo: ReactNode;
   status: ProductTransactionStatus;
-  from: ProductTransactionAmount;
-  to: ProductTransactionAmount;
+  /** Transaction amount. Single column — From/To collapsed until the indexer
+   *  exposes share amounts (APP-300). */
+  amount: ProductTransactionAmount;
   /** Truncated hash label (e.g. "0xff9s…dsa6"). */
   txHashLabel: ReactNode;
   /** Block-explorer URL for the transaction. */
@@ -44,7 +45,7 @@ export interface ProductTransactionsTableProps {
   dataTestId?: string;
 }
 
-const GRID = 'grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr] items-center gap-4';
+const GRID = 'grid grid-cols-[1.5fr_1fr_1.5fr_1fr] items-center gap-4';
 
 // The user-supplied status SVGs (colors carried via currentColor).
 function DotsIcon() {
@@ -118,7 +119,7 @@ export function ProductTransactionsTable({
 }: ProductTransactionsTableProps) {
   return (
     <div className="overflow-x-auto">
-      <div className="flex min-w-[680px] flex-col gap-2" data-testid={dataTestId}>
+      <div className="flex min-w-[560px] flex-col gap-2" data-testid={dataTestId}>
         <div className={cn(GRID, 'text-textSecondary px-4 text-sm')}>
           <span>
             <Trans>Action</Trans>
@@ -127,10 +128,7 @@ export function ProductTransactionsTable({
             <Trans>Status</Trans>
           </span>
           <span>
-            <Trans>From</Trans>
-          </span>
-          <span>
-            <Trans>To</Trans>
+            <Trans>Amount</Trans>
           </span>
           <span>
             <Trans>Txn hash</Trans>
@@ -168,8 +166,7 @@ export function ProductTransactionsTable({
               <div>
                 <StatusBadge status={row.status} />
               </div>
-              <AmountCell amount={row.from} />
-              <AmountCell amount={row.to} />
+              <AmountCell amount={row.amount} />
               <a
                 href={row.txHref}
                 target="_blank"
