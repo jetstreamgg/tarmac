@@ -11,8 +11,6 @@ import { AppRoutePath, INTENT_PATHS, retainOnNavigate, useRouteIntent } from '@/
 import { getNetworkOverrideForIntent } from '@/lib/widget-network-map';
 import { useNewIntentDots } from '@/modules/app/hooks/useNewIntentDots';
 import { useNetworkSwitch } from '@/modules/ui/context/NetworkSwitchContext';
-import { BP, useBreakpointIndex } from '@/modules/ui/hooks/useBreakpointIndex';
-import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { BatchTransactionsToggle } from '@/components/BatchTransactionsToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -138,7 +136,6 @@ export function TopNav() {
   const chainId = useChainId();
   const { showNewDot } = useNewIntentDots();
   const { setIsSwitchingNetwork, setIsAutoSwitching } = useNetworkSwitch();
-  const { bpi } = useBreakpointIndex();
 
   // Same semantics as the legacy nav: mainnet-only destinations carry the
   // network switch in the href itself (cmd-click and copy-link included).
@@ -201,7 +198,6 @@ export function TopNav() {
           );
         })}
       </div>
-      <ChainModal dataTestId="chain-modal-trigger-header" showLabel={bpi >= BP.md} />
       <WalletChip />
       {import.meta.env.VITE_USE_MOCK_WALLET === 'true' && <MockConnectButton />}
       <MoreMenu />

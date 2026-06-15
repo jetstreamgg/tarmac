@@ -143,13 +143,6 @@ describe('TopNav destinations', () => {
   });
 });
 
-describe('TopNav chain trigger', () => {
-  it('mounts the ChainModal with the header trigger testid (e2e contract)', async () => {
-    renderTopNav();
-    expect(await screen.findByTestId('chain-modal-trigger-header')).toBeTruthy();
-  });
-});
-
 describe('TopNav mock wallet connect', () => {
   it('mounts the MockConnectButton when VITE_USE_MOCK_WALLET is on (e2e connects through it)', async () => {
     vi.stubEnv('VITE_USE_MOCK_WALLET', 'true');
