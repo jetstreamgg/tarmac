@@ -84,10 +84,11 @@ export function SavingsProductDetail() {
       id: 'risk',
       icon: <Asterisk className="h-4 w-4" />,
       label: <Trans>Risk scale</Trans>,
-      // Matches the C3 design (1 green segment = low). 🔶 BL-07: the registry
-      // hardcodes 'moderate' for every product — reconcile when risk ratings
-      // get a real source.
-      value: <RiskMeter tier="low" />
+      // Mirrors the marketplace's hardcoded tier (earnProducts.ts
+      // DEFAULT_RISK_TIER = 'moderate', BL-07) so the table and detail page
+      // never diverge for the same product. 🔶 the C3 design meter showed 'low'
+      // — confirm with design; updating the registry constant flips both.
+      value: <RiskMeter tier="moderate" />
     },
     { id: 'tvl', icon: <Vault className="h-4 w-4" />, label: <Trans>TVL</Trans>, value: tvl },
     {

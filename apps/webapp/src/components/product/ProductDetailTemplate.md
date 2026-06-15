@@ -69,8 +69,9 @@ contract:
   behind a disabled `SHOW_FAQS` flag pending design confirmation.
 - **"6M Rate" semantics** — Savings wires a trailing 6-month average APY; confirm vs. forward estimate
   / rate-as-of-6-months-ago.
-- **Risk tier (BL-07)** — Savings detail shows `low` (matches the design); the registry still hardcodes
-  `moderate`. Reconcile when risk ratings get a real source.
+- **Risk tier (BL-07)** — Savings detail mirrors the marketplace registry (`moderate`, earnProducts.ts
+  `DEFAULT_RISK_TIER`) so the table and detail stay consistent; the C3 design meter showed `low`.
+  Confirm with design — updating the registry constant flips both.
 - **Position "Already earned" / "1Y projected earnings"** — rendered but intentionally unwired (no
   cost-basis source yet).
 - **Transactions "Pending" status** — confirmed history only for now; pending in-flight txs are a later
