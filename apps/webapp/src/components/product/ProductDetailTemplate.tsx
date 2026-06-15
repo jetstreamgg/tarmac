@@ -15,6 +15,9 @@ import { AppLink } from '@/lib/navigation';
  * icon, network selector, chart, position card, transactions table) is INJECTED
  * as a slot by the owning module's composition — the template never reaches into
  * a module.
+ *
+ * Reference consumer: SavingsProductDetail (mounted full-width at /earn/savings
+ * via staticData.fullWidth) — copy its slot wiring for new products.
  */
 
 export interface ProductDetailToken {
