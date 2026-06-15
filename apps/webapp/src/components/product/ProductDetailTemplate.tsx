@@ -203,7 +203,7 @@ export function ProductDetailTemplate({
           the left column (the right column below position stays empty, per
           Figma). DOM order keeps the mobile single-column flow correct:
           chart → position → details → about → transactions. */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="lg:col-start-1 lg:row-start-1">{chart}</div>
         <div className="lg:col-start-2 lg:row-start-1">{position}</div>
         <div className="flex flex-col gap-10 lg:col-start-1 lg:row-start-2">
