@@ -14,12 +14,18 @@ import { RiskMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
+import { SavingsFaq } from './SavingsFaq';
 
 // sUSDS brand color (mirrors tokenColors['SUSDS'] in widgets/shared) — drives
 // the title glow + padded outline.
 const SUSDS_BRAND_COLOR = '#95DC89';
 
 const NO_VALUE = '–';
+
+// FAQs exist in today's detail panes but are absent from the C3 wireframe.
+// 🔶 If design confirms they survive on V2 detail pages, flip this to render the
+// corpus-fed accordion in the template's optional FAQs slot.
+const SHOW_FAQS = false;
 
 /**
  * Savings as the first ProductDetailTemplate consumer (C3 proof). Remaining
@@ -35,6 +41,18 @@ function SlotPlaceholder({ label, className }: { label: ReactNode; className?: s
     >
       {label}
     </div>
+  );
+}
+
+/** Corpus-fed FAQs wrapped with a section heading for the template's FAQs slot. */
+function SavingsFaqsSection() {
+  return (
+    <section className="flex flex-col gap-4" data-testid="product-detail-faqs">
+      <h2 className="text-text font-circle text-lg">
+        <Trans>FAQs</Trans>
+      </h2>
+      <SavingsFaq />
+    </section>
   );
 }
 
@@ -129,6 +147,7 @@ export function SavingsProductDetail() {
         learnMoreHref: 'https://docs.sky.money'
       }}
       transactions={<SlotPlaceholder label="Transactions — T6" />}
+      faqs={SHOW_FAQS ? <SavingsFaqsSection /> : undefined}
     />
   );
 }
