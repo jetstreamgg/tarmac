@@ -101,7 +101,9 @@ function AmountCell({ amount }: { amount: ProductTransactionAmount }) {
 
 function StateRow({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-card text-textSecondary rounded-2xl px-4 py-8 text-center text-sm">{children}</div>
+    <div className="bg-container text-textSecondary rounded-2xl px-4 py-8 text-center text-sm">
+      {children}
+    </div>
   );
 }
 
@@ -147,7 +149,10 @@ export function ProductTransactionsTable({
           rows.map(row => (
             <div
               key={row.id}
-              className={cn(GRID, 'bg-card rounded-2xl px-4 py-3 transition-colors hover:bg-white/[0.03]')}
+              className={cn(
+                GRID,
+                'bg-container hover:bg-containerDark rounded-2xl px-4 py-3 transition-colors'
+              )}
             >
               <div className="flex items-center gap-3">
                 <span className="border-borderPrimary text-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full border">
