@@ -126,7 +126,6 @@ function renderTopNav(initialPath = '/') {
 
   render(
     <I18nWidgetProvider locale="en">
-      {}
       <RouterProvider router={router as any} />
     </I18nWidgetProvider>
   );
