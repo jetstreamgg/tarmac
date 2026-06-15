@@ -526,8 +526,8 @@ export function Chart({
       <Card
         data-testid={dataTestId}
         className={cn(
-          'bg-cardLight relative overflow-hidden p-0',
-          isDetail ? 'pb-3' : 'h-[288px] lg:h-[220px] lg:p-0'
+          'relative overflow-hidden p-0',
+          isDetail ? 'bg-panel pb-3 backdrop-blur-2xl' : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
         )}
         ref={containerRef}
       >
@@ -611,17 +611,20 @@ export function Chart({
           tooltipLabel={tooltipLabel}
         />
       </Card>
-      <HStack className="mt-3 justify-between">
-        {dateAxis.map((date, index) => (
-          <Text
-            className="text-selectActive light:text-textSecondary"
-            variant="small"
-            key={`${date}+${index}`}
-          >
-            {date}
-          </Text>
-        ))}
-      </HStack>
+      {/* Detail variant drops the x-axis date labels (Figma). */}
+      {!isDetail && (
+        <HStack className="mt-3 justify-between">
+          {dateAxis.map((date, index) => (
+            <Text
+              className="text-selectActive light:text-textSecondary"
+              variant="small"
+              key={`${date}+${index}`}
+            >
+              {date}
+            </Text>
+          ))}
+        </HStack>
+      )}
     </>
   );
 }
