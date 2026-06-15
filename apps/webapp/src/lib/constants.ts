@@ -2,8 +2,6 @@ import { ConvertIntent, ExpertIntent, Intent, FixedIntent, VaultsIntent } from '
 import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
-import { base, mainnet, arbitrum, unichain, optimism } from 'viem/chains';
-import { tenderly } from '@/data/wagmi/config/config.default';
 
 // Navigation state (module, submodule, entity selection) lives in the path;
 // these are the params that remain query-driven.
@@ -59,41 +57,9 @@ export const FixedIntentMapping: Record<FixedIntent, string> = {
   [FixedIntent.MARKET_INTENT]: 'market'
 };
 
-export const CHAIN_WIDGET_MAP: Record<number, Intent[]> = {
-  [mainnet.id]: [
-    Intent.BALANCES_INTENT,
-    Intent.REWARDS_INTENT,
-    Intent.SAVINGS_INTENT,
-    Intent.UPGRADE_INTENT,
-    Intent.TRADE_INTENT,
-    Intent.STAKE_INTENT,
-    Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
-  ],
-  [tenderly.id]: [
-    Intent.BALANCES_INTENT,
-    Intent.REWARDS_INTENT,
-    Intent.SAVINGS_INTENT,
-    Intent.UPGRADE_INTENT,
-    Intent.TRADE_INTENT,
-    Intent.STAKE_INTENT,
-    Intent.EXPERT_INTENT,
-    Intent.VAULTS_INTENT,
-    Intent.CONVERT_INTENT,
-    Intent.FIXED_INTENT
-  ],
-  [base.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [arbitrum.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [unichain.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT],
-  [optimism.id]: [Intent.BALANCES_INTENT, Intent.SAVINGS_INTENT, Intent.TRADE_INTENT, Intent.CONVERT_INTENT]
-};
-
-export const COMING_SOON_MAP: Record<number, Intent[]> = {
-  // Rewards is now treated as a mainnet-only module with auto-switching
-  // [base.id]: [Intent.YOUR_INTENT] // Example of how to add a coming soon intent
-};
+// Moved to a Lingui-free module so the engine layer can import them; re-exported
+// here so existing import sites keep working.
+export { CHAIN_WIDGET_MAP, COMING_SOON_MAP } from './chainAvailability';
 
 export const intentTxt: Record<string, MessageDescriptor> = {
   psm: msg`1:1 conversion`,

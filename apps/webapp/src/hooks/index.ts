@@ -287,6 +287,19 @@ export { useEthereumCombinedHistory } from './shared/useEthereumCombinedHistory'
 export { useUsdsDaiData } from './shared/useUsdsDaiData';
 export { useOverallSkyData } from './shared/useOverallSkyData';
 
+// Earn marketplace (C1 registry + aggregator)
+export { useEarnMarketplace } from './earn/useEarnMarketplace';
+export { buildEarnProducts, productNetworks } from './earn/earnProducts';
+export type {
+  EarnMarketplaceResult,
+  EarnProductDescriptor,
+  EarnProductKind,
+  EarnProductRow,
+  EarnRate,
+  EarnRiskTier,
+  EarnUsdAmount
+} from './earn/types';
+
 // Decentralized Storage
 export { useIpfsStorage } from './decentralizedStorage/useIpfsStorage';
 export { useEnsContent } from './decentralizedStorage/useEnsContent';
