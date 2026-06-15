@@ -1,8 +1,7 @@
-import { ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
-import { cn } from '@/lib/cn';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { productNetworks, useOverallSkyData, useSkySavingsRateHistoricData } from '@/hooks';
@@ -15,6 +14,7 @@ import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/Pr
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsFaq } from './SavingsFaq';
+import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 
 // sUSDS brand color (mirrors tokenColors['SUSDS'] in widgets/shared) — drives
 // the title glow + padded outline.
@@ -26,23 +26,6 @@ const NO_VALUE = '–';
 // 🔶 If design confirms they survive on V2 detail pages, flip this to render the
 // corpus-fed accordion in the template's optional FAQs slot.
 const SHOW_FAQS = false;
-
-/**
- * Savings as the first ProductDetailTemplate consumer (C3 proof). Remaining
- * placeholder slots: T5 about copy (corpus), T6 transactions.
- */
-function SlotPlaceholder({ label, className }: { label: ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn(
-        'border-borderPrimary text-textSecondary flex min-h-[160px] items-center justify-center rounded-[20px] border border-dashed p-6 text-sm',
-        className
-      )}
-    >
-      {label}
-    </div>
-  );
-}
 
 /** Corpus-fed FAQs wrapped with a section heading for the template's FAQs slot. */
 function SavingsFaqsSection() {
@@ -146,7 +129,7 @@ export function SavingsProductDetail() {
         ),
         learnMoreHref: 'https://docs.sky.money'
       }}
-      transactions={<SlotPlaceholder label="Transactions — T6" />}
+      transactions={<SavingsTransactionsTable />}
       faqs={SHOW_FAQS ? <SavingsFaqsSection /> : undefined}
     />
   );
