@@ -11,6 +11,7 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
+import { SavingsPositionCard } from './SavingsPositionCard';
 
 // sUSDS brand color (mirrors tokenColors['SUSDS'] in widgets/shared) — drives
 // the title glow + padded outline.
@@ -94,7 +95,7 @@ export function SavingsProductDetail() {
       title={<Trans>Sky Savings</Trans>}
       networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
       chart={<SavingsDetailChart />}
-      position={<SlotPlaceholder label="My position — T3" className="min-h-[260px]" />}
+      position={<SavingsPositionCard />}
       details={details}
       about={{
         body: (
