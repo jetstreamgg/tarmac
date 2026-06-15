@@ -55,11 +55,12 @@ export function SavingsPositionCard() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <div
-        className="bg-card flex flex-col overflow-hidden rounded-[20px]"
+        className="bg-panel flex flex-col gap-3 rounded-[20px] p-2 backdrop-blur-2xl"
         data-testid="savings-position-card"
       >
-        {/* Hero — position value over the brand gradient (cloud art placeholder). */}
-        <div className="flex min-h-[160px] flex-col justify-between bg-[radial-gradient(120%_120%_at_20%_0%,_#7E6BF2_0%,_#3B2E7D_60%,_#2A1E63_100%)] p-5">
+        {/* Hero — position value over the brand gradient (cloud art placeholder),
+            inset within the glass card. */}
+        <div className="flex min-h-[160px] flex-col justify-between overflow-hidden rounded-2xl bg-[radial-gradient(120%_120%_at_20%_0%,_#7E6BF2_0%,_#3B2E7D_60%,_#2A1E63_100%)] p-5">
           <span className="text-text/80 text-sm">
             <Trans>My position</Trans>
           </span>
@@ -69,7 +70,7 @@ export function SavingsPositionCard() {
           </span>
         </div>
 
-        <div className="flex flex-col gap-4 p-5">
+        <div className="flex flex-col gap-4 px-3 pb-3">
           <div className="flex flex-col gap-3">
             <StatRow label={<Trans>sUSDS balance</Trans>}>
               <TokenIcon
