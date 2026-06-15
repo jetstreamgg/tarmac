@@ -84,5 +84,5 @@ apps/webapp/test-results.json
 **/account-pool.lock
 
 # locales
-packages/utils/src/locales/*.po
-packages/utils/src/locales/*.ts
+apps/webapp/src/locales/*.po
+apps/webapp/src/locales/*.ts
