@@ -40,7 +40,9 @@ export function Layout({
 
       <VStack
         className={
-          'bg-app-background flex max-h-svh min-h-svh max-w-full items-center overflow-auto bg-cover bg-center bg-no-repeat md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
+          // Dark: the sky image blended (luminosity) with the app container's
+          // #040434 backdrop so it takes that hue; light keeps the lilac gradient.
+          'bg-app-background light:bg-blend-normal flex max-h-svh min-h-svh max-w-full items-center overflow-auto [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
         }
       >
         <ErrorBoundary>
