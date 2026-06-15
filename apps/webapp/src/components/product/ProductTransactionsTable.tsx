@@ -80,8 +80,10 @@ function StatusBadge({ status }: { status: ProductTransactionStatus }) {
     );
   }
   return (
-    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#5AD293]/10 px-2.5 py-1 text-xs font-medium text-[#5AD293]">
-      <CheckIcon />
+    <span className="text-text inline-flex w-fit items-center gap-1.5 rounded-full bg-[#5AD293]/10 px-2.5 py-1 text-xs font-medium">
+      <span className="text-[#5AD293]">
+        <CheckIcon />
+      </span>
       <Trans>Completed</Trans>
     </span>
   );
