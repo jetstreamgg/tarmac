@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { useChainId } from 'wagmi';
+import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { productNetworks, useOverallSkyData, useSkySavingsRateHistoricData } from '@/hooks';
-import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
@@ -40,13 +39,18 @@ function SavingsFaqsSection() {
 }
 
 export function SavingsProductDetail() {
-  // The networks Savings is live on within the active family — scopes the
-  // header's network switcher. Consumers bound to a contract address should
-  // also pass that address map here, matching buildEarnProducts.
-  const connectedChainId = useChainId();
+  // The networks Savings is live on among the configured chains (which include
+  // the Tenderly fork in dev mode) — scopes the header's network switcher to
+  // chains where the module is available. Address-bound consumers should also
+  // pass their address map here, matching buildEarnProducts.
+  const chains = useChains();
   const networks = useMemo(
-    () => productNetworks(Intent.SAVINGS_INTENT, getSupportedChainIds(connectedChainId)),
-    [connectedChainId]
+    () =>
+      productNetworks(
+        Intent.SAVINGS_INTENT,
+        chains.map(chain => chain.id)
+      ),
+    [chains]
   );
 
   const { data: overall } = useOverallSkyData();
@@ -70,19 +74,19 @@ export function SavingsProductDetail() {
   const details: ProductDetailRow[] = [
     {
       id: 'current-rate',
-      icon: <AudioLines className="h-4 w-4" />,
+      icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>Current Rate</Trans>,
       value: currentRate
     },
     {
       id: 'rate-6m',
-      icon: <AudioLines className="h-4 w-4" />,
+      icon: <AudioLines className="h-3 w-3" />,
       label: <Trans>6M Rate</Trans>,
       value: sixMonthRate
     },
     {
       id: 'risk',
-      icon: <Asterisk className="h-4 w-4" />,
+      icon: <Asterisk className="h-3 w-3" />,
       label: <Trans>Risk scale</Trans>,
       // Mirrors the marketplace's hardcoded tier (earnProducts.ts
       // DEFAULT_RISK_TIER = 'moderate', BL-07) so the table and detail page
@@ -90,16 +94,16 @@ export function SavingsProductDetail() {
       // — confirm with design; updating the registry constant flips both.
       value: <RiskMeter tier="moderate" />
     },
-    { id: 'tvl', icon: <Vault className="h-4 w-4" />, label: <Trans>TVL</Trans>, value: tvl },
+    { id: 'tvl', icon: <Vault className="h-3 w-3" />, label: <Trans>TVL</Trans>, value: tvl },
     {
       id: 'liquidity',
-      icon: <Droplet className="h-4 w-4" />,
+      icon: <Droplet className="h-3 w-3" />,
       label: <Trans>Liquidity</Trans>,
       value: <Trans>Unlimited</Trans>
     },
     {
       id: 'users',
-      icon: <UsersRound className="h-4 w-4" />,
+      icon: <UsersRound className="h-3 w-3" />,
       label: <Trans>Users</Trans>,
       value: users
     }
