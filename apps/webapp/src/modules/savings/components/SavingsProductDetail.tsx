@@ -1,13 +1,18 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
+import { useChainId } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ROUTES } from '@/lib/routes';
+import { Intent } from '@/lib/enums';
+import { productNetworks } from '@/hooks';
+import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 
-// TODO(T1): source the brand color from a shared token-color map (the header
-// task centralizes the glow/ring treatment); inlined for now.
+// sUSDS brand color (mirrors tokenColors['SUSDS'] in widgets/shared) — drives
+// the title glow + padded outline.
 const SUSDS_BRAND_COLOR = '#95DC89';
 
 // TODO(T4): detail VALUES are placeholders — wire the real hooks (current/6M
@@ -33,6 +38,15 @@ function SlotPlaceholder({ label, className }: { label: ReactNode; className?: s
 }
 
 export function SavingsProductDetail() {
+  // The networks Savings is live on within the active family — scopes the
+  // header's network switcher. Consumers bound to a contract address should
+  // also pass that address map here, matching buildEarnProducts.
+  const connectedChainId = useChainId();
+  const networks = useMemo(
+    () => productNetworks(Intent.SAVINGS_INTENT, getSupportedChainIds(connectedChainId)),
+    [connectedChainId]
+  );
+
   const details: ProductDetailRow[] = [
     {
       id: 'current-rate',
@@ -77,6 +91,7 @@ export function SavingsProductDetail() {
         brandColor: SUSDS_BRAND_COLOR
       }}
       title={<Trans>Sky Savings</Trans>}
+      networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
       chart={<SlotPlaceholder label="Chart — T2" className="min-h-[260px]" />}
       position={<SlotPlaceholder label="My position — T3" className="min-h-[260px]" />}
       details={details}
