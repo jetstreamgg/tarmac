@@ -119,7 +119,7 @@ export function CookieConsentBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 20, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="light:border-border light:bg-containerDark fixed right-4 bottom-4 left-4 z-40 mx-auto max-w-[420px] rounded-xl border border-white/10 bg-[#1a1a2e] p-5 md:right-6 md:left-auto md:z-[999] md:mx-0 md:min-w-[420px]"
+          className="light:border-border fixed right-4 bottom-4 left-4 z-40 mx-auto max-w-[420px] rounded-xl border border-text/10 bg-cookieSurface p-5 md:right-6 md:left-auto md:z-[999] md:mx-0 md:min-w-[420px]"
         >
           <AnimatePresence mode="wait" initial={false}>
             {bannerView === 'default' ? (
@@ -130,7 +130,7 @@ export function CookieConsentBanner() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <Text variant="captionSm" className="light:text-textSecondary text-white/60">
+                <Text variant="captionSm" className="light:text-textSecondary text-text/60">
                   We collect anonymous usage analytics to understand how this app is used and to improve it.
                   No personal data is collected. Accepting enables persistent cookies for better insights.
                   {privacyLink && (
@@ -149,19 +149,19 @@ export function CookieConsentBanner() {
                     </>
                   )}
                 </Text>
-                <Text variant="captionSm" className="light:text-textSecondary mt-3 text-white/60">
+                <Text variant="captionSm" className="light:text-textSecondary mt-3 text-text/60">
                   You can change your preference at any time via Cookie Settings in the footer.
                 </Text>
                 <div className="mt-4 flex gap-3">
                   <button
                     onClick={() => setBannerView('manage')}
-                    className="light:border-border light:text-textSecondary light:hover:border-borderActive light:hover:text-text rounded-lg border border-white/20 px-4 py-2 text-[13px] font-medium text-white/60 transition-colors hover:border-white/40 hover:text-white"
+                    className="light:border-border light:text-textSecondary light:hover:border-borderActive light:hover:text-text rounded-lg border border-text/20 px-4 py-2 text-[13px] font-medium text-text/60 transition-colors hover:border-text/40 hover:text-text"
                   >
                     Manage
                   </button>
                   <button
                     onClick={handleAcceptAll}
-                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover rounded-lg bg-white/10 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-white/20"
+                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover rounded-lg bg-text/10 px-4 py-2 text-[13px] font-medium text-text transition-colors hover:bg-text/20"
                   >
                     Accept All
                   </button>
@@ -175,19 +175,19 @@ export function CookieConsentBanner() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
               >
-                <Text variant="captionSm" className="light:text-text font-medium text-white">
+                <Text variant="captionSm" className="font-medium text-text">
                   Manage cookie preferences
                 </Text>
-                <Text variant="captionSm" className="light:text-textDimmed mt-2 text-white/40">
+                <Text variant="captionSm" className="light:text-textDimmed mt-2 text-text/40">
                   Choose which analytics services you allow. You can update these at any time.
                 </Text>
                 <div className="mt-4 space-y-3">
                   <label className="flex items-center justify-between">
                     <div>
-                      <Text variant="captionSm" className="light:text-text font-medium text-white/80">
+                      <Text variant="captionSm" className="light:text-text font-medium text-text/80">
                         PostHog
                       </Text>
-                      <Text variant="captionSm" className="light:text-textDimmed text-white/40">
+                      <Text variant="captionSm" className="light:text-textDimmed text-text/40">
                         Usage analytics
                       </Text>
                     </div>
@@ -197,14 +197,14 @@ export function CookieConsentBanner() {
                       checked={posthogEnabled}
                       onChange={() => setPosthogEnabled(prev => !prev)}
                     />
-                    <div className="light:bg-surfaceAlt light:after:bg-textDimmed relative h-6 w-11 shrink-0 cursor-pointer rounded-full bg-white/10 transition-colors peer-checked:bg-[#5116CC] peer-focus-visible:ring-2 peer-focus-visible:ring-white/50 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white/40 after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-white" />
+                    <div className="light:bg-surfaceAlt light:after:bg-textDimmed relative h-6 w-11 shrink-0 cursor-pointer rounded-full bg-text/10 transition-colors peer-checked:bg-cookieToggleOn peer-focus-visible:ring-2 peer-focus-visible:ring-text/50 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-text/40 after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-text" />
                   </label>
                   <label className="flex items-center justify-between">
                     <div>
-                      <Text variant="captionSm" className="light:text-text font-medium text-white/80">
+                      <Text variant="captionSm" className="light:text-text font-medium text-text/80">
                         Google Analytics
                       </Text>
-                      <Text variant="captionSm" className="light:text-textDimmed text-white/40">
+                      <Text variant="captionSm" className="light:text-textDimmed text-text/40">
                         Traffic analytics
                       </Text>
                     </div>
@@ -214,19 +214,19 @@ export function CookieConsentBanner() {
                       checked={gaEnabled}
                       onChange={() => setGaEnabled(prev => !prev)}
                     />
-                    <div className="light:bg-surfaceAlt light:after:bg-textDimmed relative h-6 w-11 shrink-0 cursor-pointer rounded-full bg-white/10 transition-colors peer-checked:bg-[#5116CC] peer-focus-visible:ring-2 peer-focus-visible:ring-white/50 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white/40 after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-white" />
+                    <div className="light:bg-surfaceAlt light:after:bg-textDimmed relative h-6 w-11 shrink-0 cursor-pointer rounded-full bg-text/10 transition-colors peer-checked:bg-cookieToggleOn peer-focus-visible:ring-2 peer-focus-visible:ring-text/50 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-text/40 after:transition-transform peer-checked:after:translate-x-5 peer-checked:after:bg-text" />
                   </label>
                 </div>
                 <div className="mt-4 flex gap-3">
                   <button
                     onClick={() => setBannerView('default')}
-                    className="light:border-border light:text-textSecondary light:hover:border-borderActive light:hover:text-text rounded-lg border border-white/20 px-4 py-2 text-[13px] font-medium text-white/60 transition-colors hover:border-white/40 hover:text-white"
+                    className="light:border-border light:text-textSecondary light:hover:border-borderActive light:hover:text-text rounded-lg border border-text/20 px-4 py-2 text-[13px] font-medium text-text/60 transition-colors hover:border-text/40 hover:text-text"
                   >
                     Back
                   </button>
                   <button
                     onClick={handleSave}
-                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover rounded-lg bg-white/10 px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-white/20"
+                    className="light:bg-surfaceAlt light:text-text light:hover:bg-surfaceHover rounded-lg bg-text/10 px-4 py-2 text-[13px] font-medium text-text transition-colors hover:bg-text/20"
                   >
                     Save
                   </button>

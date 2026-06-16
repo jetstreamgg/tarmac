@@ -56,6 +56,14 @@
   --color-tabPrimary: var(--transparent-white-40);
   --color-card: rgba(128, 117, 255, 0.07);
   --color-cardLight: rgba(64, 60, 113, 0.207);
+  /* B5 chrome-surface tokens — dark values are production parity (don't change);
+     light values are interim (G2 owns full light parity). These replace magic hex
+     in CookieConsentBanner + TermsDialog so those surfaces render on tokens. */
+  --color-cookieSurface: #1a1a2e;
+  --color-cookieToggleOn: #5116cc;
+  --color-termsCard: #181720;
+  --color-termsBtnHover: rgb(17, 16, 31);
+  --color-termsBtnActive: rgb(34, 32, 66);
   --color-border: var(--transparent-white-15);
   --color-borderActive: --transparent-white-25;
   --color-borderPurple: #4c4577;
@@ -357,6 +365,14 @@
     --color-selectBackground: rgba(26, 24, 85, 0.05);
     --color-selectActive: rgba(26, 24, 85, 0.1);
     --color-chartSelect: rgba(235, 232, 255, 1);
+
+    /* B5 chrome-surface tokens — light values mirror the prior light: overrides.
+       cookieToggleOn has no light value: the toggle track's light:bg-surfaceAlt
+       wins by source order in light, so the accent only shows in dark (parity). */
+    --color-cookieSurface: rgba(232, 235, 250, 0.94); /* was light:bg-containerDark */
+    --color-termsCard: rgba(255, 255, 255, 0.96); /* was light:bg-card */
+    --color-termsBtnHover: rgba(108, 104, 255, 0.2); /* was light:hover:bg-surfaceHover */
+    --color-termsBtnActive: rgba(26, 24, 85, 0.06); /* was light:active:bg-surfaceAlt */
 
     /* secondary buttons */
     --color-secondary: rgba(26, 24, 85, 0.05);
