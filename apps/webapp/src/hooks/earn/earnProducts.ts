@@ -50,6 +50,7 @@ export function buildEarnProducts(
     intent: Intent.SAVINGS_INTENT,
     name: 'Sky Savings Rate',
     tokenSymbol: TOKENS.susds.symbol,
+    supplyTokens: [TOKENS.usds.symbol],
     risk: DEFAULT_RISK_TIER,
     networks: productNetworks(Intent.SAVINGS_INTENT, familyChainIds, TOKENS.susds.address),
     detailPath: intentToPath(Intent.SAVINGS_INTENT)
@@ -61,6 +62,7 @@ export function buildEarnProducts(
     intent: Intent.REWARDS_INTENT,
     name: contract.name,
     tokenSymbol: contract.supplyToken.symbol,
+    supplyTokens: [contract.supplyToken.symbol],
     risk: DEFAULT_RISK_TIER,
     networks: productNetworks(Intent.REWARDS_INTENT, familyChainIds),
     detailPath: intentToPath(Intent.REWARDS_INTENT, contract.contractAddress),
@@ -77,6 +79,7 @@ export function buildEarnProducts(
       intent: Intent.VAULTS_INTENT,
       name: vault.name,
       tokenSymbol: vault.assetToken.symbol,
+      supplyTokens: [vault.assetToken.symbol],
       risk: DEFAULT_RISK_TIER,
       networks: productNetworks(Intent.VAULTS_INTENT, familyChainIds, vault.vaultAddress),
       detailPath: intentToPath(Intent.VAULTS_INTENT, `${vaultModuleForProvider(vault.provider)}/${address}`),
@@ -90,6 +93,9 @@ export function buildEarnProducts(
     intent: Intent.FIXED_INTENT,
     name: market.name,
     tokenSymbol: market.underlyingSymbol,
+    // The Pendle buy flow accepts these input tokens (direct or via the SY
+    // aggregator route).
+    supplyTokens: [TOKENS.usds.symbol, TOKENS.usdc.symbol, TOKENS.susds.symbol],
     risk: DEFAULT_RISK_TIER,
     networks: productNetworks(Intent.FIXED_INTENT, familyChainIds),
     detailPath: intentToPath(Intent.FIXED_INTENT, `market/${market.marketAddress}`),
@@ -103,6 +109,7 @@ export function buildEarnProducts(
     intent: Intent.EXPERT_INTENT,
     name: 'stUSDS',
     tokenSymbol: TOKENS.stusds.symbol,
+    supplyTokens: [TOKENS.usds.symbol],
     risk: STUSDS_RISK_TIER,
     networks: productNetworks(Intent.EXPERT_INTENT, familyChainIds),
     // Slug = ExpertIntentMapping[ExpertIntent.STUSDS_INTENT]; inlined because

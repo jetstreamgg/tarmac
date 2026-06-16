@@ -126,7 +126,6 @@ function renderTopNav(initialPath = '/') {
 
   render(
     <I18nWidgetProvider locale="en">
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <RouterProvider router={router as any} />
     </I18nWidgetProvider>
   );

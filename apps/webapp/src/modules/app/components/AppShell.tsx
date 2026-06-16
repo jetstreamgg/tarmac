@@ -41,7 +41,9 @@ export function AppShell() {
 
   return (
     <Layout>
-      <AppContainer>
+      {/* Destination pages render bare — directly on the page background, no
+          container card (V2 Figma). Module routes keep the card. */}
+      <AppContainer variant={isFullWidth ? 'bare' : 'card'}>
         {isFullWidth ? (
           // Destination pages own the whole container; no module content, so
           // the geo fallback below doesn't apply.
