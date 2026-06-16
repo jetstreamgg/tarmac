@@ -36,8 +36,23 @@ export const tokenColors = [
   { symbol: 'SKY', color: '#d56ed7' },
   { symbol: 'USDT', color: '#5a9e7d' },
   { symbol: 'USDC', color: '#4872c4' },
-  { symbol: 'SUSDS', color: '#95DC89' }
+  { symbol: 'SUSDS', color: '#95DC89' },
+  { symbol: 'STUSDS', color: '#F17FBD' }
 ];
+
+// Neutral fallback for tokens without a brand color (keeps charts/legends from
+// breaking on an unmapped symbol).
+export const FALLBACK_TOKEN_COLOR = '#7e7e8f';
+
+/**
+ * Brand color for a token symbol, case-insensitive (the map keys are
+ * uppercase, but `Token.symbol` casing varies, e.g. 'sUSDS'). Returns
+ * {@link FALLBACK_TOKEN_COLOR} when the symbol isn't mapped.
+ */
+export function resolveTokenColor(symbol: string): string {
+  const upper = symbol.toUpperCase();
+  return tokenColors.find(token => token.symbol === upper)?.color ?? FALLBACK_TOKEN_COLOR;
+}
 
 export enum NotificationType {
   INSUFFICIENT_BALANCE = 'insufficient_balance',
