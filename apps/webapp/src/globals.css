@@ -37,6 +37,7 @@
   --color-containerDark: var(--transparent-black-85);
   --color-surface: rgba(108, 104, 255, 0.3);
   --color-surfaceHover: rgba(68, 45, 125, 0.202);
+  --color-bgHover: transparent; /* nav/menu row hover — no-op in dark (parity); tinted in the light scope */
   --color-surfaceAlt: var(--transparent-white-20);
   --color-panel: var(--transparent-black-20);
   --color-widget: transparent;
@@ -47,6 +48,7 @@
   --color-primaryActive: transparent;
   --color-primaryFocus: transparent;
   --color-primaryDisabled: transparent;
+  /* dark: secondary states intentionally share one value (parity); the light scope differentiates them */
   --color-secondary: var(--transparent-black-20);
   --color-secondaryHover: var(--transparent-black-20);
   --color-secondaryActive: var(--transparent-black-20);
@@ -56,13 +58,22 @@
   --color-tabPrimary: var(--transparent-white-40);
   --color-card: rgba(128, 117, 255, 0.07);
   --color-cardLight: rgba(64, 60, 113, 0.207);
+  /* B5 chrome-surface tokens — dark values are production parity (don't change);
+     light values are interim (G2 owns full light parity). These replace magic hex
+     in CookieConsentBanner + TermsDialog so those surfaces render on tokens. */
+  --color-cookieSurface: #1a1a2e;
+  --color-cookieToggleOn: #5116cc;
+  --color-termsCard: #181720;
+  --color-termsBtnHover: rgb(17, 16, 31);
+  --color-termsBtnActive: rgb(34, 32, 66);
   --color-border: var(--transparent-white-15);
-  --color-borderActive: --transparent-white-25;
+  --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
   --color-brand: rgb(var(--brand-purple));
   --color-brandLight: rgb(var(--brand-light-purple));
   --color-brandDark: rgb(var(--brand-dark-purple));
   --color-brandMiddle: rgb(var(--brand-middle-purple));
+  /* --background/--foreground are defined only in the light scope; undefined (invalid) in dark — known issue, fix deferred. See components/ui/THEMING.md */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-chartSelect: rgba(22, 17, 53, 1);
@@ -310,7 +321,7 @@
 
     --transparent-white-70: #ffffffb3;
     --transparent-white-40: #ffffff66;
-    /* --transparent-white-25: #ffffff40; */
+    --transparent-white-25: #ffffff40;
     --transparent-white-20: #ffffff33;
     --transparent-white-15: #ffffff26;
     --transparent-white-05: linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
@@ -350,6 +361,7 @@
     --color-containerDark: rgba(232, 235, 250, 0.94);
     --color-surface: rgba(108, 104, 255, 0.12);
     --color-surfaceHover: rgba(108, 104, 255, 0.2);
+    --color-bgHover: rgba(26, 24, 85, 0.06); /* TopNav MoreMenu row hover */
     --color-surfaceAlt: rgba(26, 24, 85, 0.06);
     --color-panel: rgba(255, 255, 255, 0.45);
     --color-card: rgba(255, 255, 255, 0.96);
@@ -357,6 +369,14 @@
     --color-selectBackground: rgba(26, 24, 85, 0.05);
     --color-selectActive: rgba(26, 24, 85, 0.1);
     --color-chartSelect: rgba(235, 232, 255, 1);
+
+    /* B5 chrome-surface tokens — light values mirror the prior light: overrides.
+       cookieToggleOn has no light value: the toggle track's light:bg-surfaceAlt
+       wins by source order in light, so the accent only shows in dark (parity). */
+    --color-cookieSurface: rgba(232, 235, 250, 0.94); /* was light:bg-containerDark */
+    --color-termsCard: rgba(255, 255, 255, 0.96); /* was light:bg-card */
+    --color-termsBtnHover: rgba(108, 104, 255, 0.2); /* was light:hover:bg-surfaceHover */
+    --color-termsBtnActive: rgba(26, 24, 85, 0.06); /* was light:active:bg-surfaceAlt */
 
     /* secondary buttons */
     --color-secondary: rgba(26, 24, 85, 0.05);
