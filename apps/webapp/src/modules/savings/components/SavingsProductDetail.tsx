@@ -6,37 +6,21 @@ import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { productNetworks, useOverallSkyData, useSkySavingsRateHistoricData } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
+import { parseBannerContent } from '@/utils/bannerContentParser';
+import { getBannerById } from '@/data/banners/banners';
+import { tokenColors } from '@/widgets/shared/constants';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
-import { SavingsFaq } from './SavingsFaq';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 
-// sUSDS brand color (mirrors tokenColors['SUSDS'] in widgets/shared) — drives
-// the title glow + padded outline.
-const SUSDS_BRAND_COLOR = '#95DC89';
+// Title glow/outline color, from the shared token-color map.
+const SUSDS_BRAND_COLOR = tokenColors.find(token => token.symbol === 'SUSDS')?.color;
 
 const NO_VALUE = '–';
-
-// FAQs exist in today's detail panes but are absent from the C3 wireframe.
-// 🔶 If design confirms they survive on V2 detail pages, flip this to render the
-// corpus-fed accordion in the template's optional FAQs slot.
-const SHOW_FAQS = false;
-
-/** Corpus-fed FAQs wrapped with a section heading for the template's FAQs slot. */
-function SavingsFaqsSection() {
-  return (
-    <section className="flex flex-col gap-4" data-testid="product-detail-faqs">
-      <h2 className="text-text font-circle text-lg">
-        <Trans>FAQs</Trans>
-      </h2>
-      <SavingsFaq />
-    </section>
-  );
-}
 
 export function SavingsProductDetail() {
   // The networks Savings is live on among the configured chains (which include
@@ -70,6 +54,10 @@ export function SavingsProductDetail() {
     ? `$${formatNumber(parseFloat(overall.skySavingsRateTvl))}`
     : NO_VALUE;
   const users = overall?.ssrSuppliers ? formatNumber(overall.ssrSuppliers) : NO_VALUE;
+
+  // About copy comes from the shared savings banner (id 'susds'), parsed for its
+  // inline tooltip link — the same source AboutSUsds and other surfaces use.
+  const aboutBanner = getBannerById('susds')?.description;
 
   const details: ProductDetailRow[] = [
     {
@@ -124,18 +112,10 @@ export function SavingsProductDetail() {
       position={<SavingsPositionCard />}
       details={details}
       about={{
-        body: (
-          <Trans>
-            sUSDS is a savings token for eligible Sky Protocol users. When you supply USDS to the Sky Savings
-            Rate module of the Protocol, you access the Sky Savings Rate and receive sUSDS tokens. These sUSDS
-            tokens serve as a digital record of your USDS interaction with the Sky Savings Rate module and any
-            value accrued to your position.
-          </Trans>
-        ),
+        body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
         learnMoreHref: 'https://docs.sky.money'
       }}
       transactions={<SavingsTransactionsTable />}
-      faqs={SHOW_FAQS ? <SavingsFaqsSection /> : undefined}
     />
   );
 }

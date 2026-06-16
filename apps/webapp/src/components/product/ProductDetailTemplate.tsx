@@ -63,8 +63,6 @@ export interface ProductDetailTemplateProps {
   transactionsTitle?: ReactNode;
   /** Optional control at the right of the Transactions heading (e.g. a filter). */
   transactionsAction?: ReactNode;
-  /** Optional corpus-fed FAQs section (🔶 pending design confirmation). */
-  faqs?: ReactNode;
   dataTestId?: string;
 }
 
@@ -123,22 +121,19 @@ function AboutSection({ title, about }: { title?: ReactNode; about: ProductDetai
   return (
     <section className="flex flex-col gap-4" data-testid="product-detail-about">
       <SectionHeading>{title ?? <Trans>About</Trans>}</SectionHeading>
-      <p className="text-textSecondary text-sm leading-relaxed">
+      <div className="text-textSecondary text-sm leading-relaxed">
         {about.body}
         {about.learnMoreHref && (
-          <>
-            {' '}
-            <a
-              href={about.learnMoreHref}
-              target="_blank"
-              rel="noreferrer"
-              className="text-text font-medium underline"
-            >
-              <Trans>Learn more</Trans>
-            </a>
-          </>
+          <a
+            href={about.learnMoreHref}
+            target="_blank"
+            rel="noreferrer"
+            className="text-text mt-1 inline-block font-medium underline"
+          >
+            <Trans>Learn more</Trans>
+          </a>
         )}
-      </p>
+      </div>
     </section>
   );
 }
@@ -178,7 +173,6 @@ export function ProductDetailTemplate({
   transactions,
   transactionsTitle,
   transactionsAction,
-  faqs,
   dataTestId = 'product-detail'
 }: ProductDetailTemplateProps) {
   return (
@@ -215,7 +209,6 @@ export function ProductDetailTemplate({
           <TransactionsSection title={transactionsTitle} action={transactionsAction}>
             {transactions}
           </TransactionsSection>
-          {faqs}
         </div>
       </div>
     </div>
