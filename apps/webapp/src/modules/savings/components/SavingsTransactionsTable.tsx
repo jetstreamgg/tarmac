@@ -10,51 +10,96 @@ import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSubgraphUrl } from '@/modules/app/hooks/useSubgraphUrl';
 import {
   ProductTransactionsTable,
-  ProductTransactionRow,
-  ProductTransactionAmount
+  ProductTransactionColumn,
+  TxStatusBadge,
+  TxActionCell,
+  TxAmountCell,
+  TxHashLink
 } from '@/components/product/ProductTransactionsTable';
 
+type SavingsTxRow = {
+  id: string;
+  isSupply: boolean;
+  amount: string;
+  usd: string;
+  symbol: string;
+  timeAgo: string;
+  txHashLabel: string;
+  txHref: string;
+};
+
+// Savings' columns. Other modules define their own — the table is column-driven.
+// Single USDS Amount column for now (no historical share data — see APP-300).
+const COLUMNS: ProductTransactionColumn<SavingsTxRow>[] = [
+  {
+    id: 'action',
+    header: <Trans>Action</Trans>,
+    width: '1.5fr',
+    cell: row => (
+      <TxActionCell
+        icon={
+          row.isSupply ? (
+            <SavingsSupply width={16} height={15} />
+          ) : (
+            <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
+          )
+        }
+        label={row.isSupply ? <Trans>Supply</Trans> : <Trans>Withdraw</Trans>}
+        timeAgo={row.timeAgo}
+      />
+    )
+  },
+  {
+    id: 'status',
+    header: <Trans>Status</Trans>,
+    width: '1fr',
+    // Confirmed on-chain history only; pending in-flight txs are a later ticket.
+    cell: () => <TxStatusBadge status="completed" />
+  },
+  {
+    id: 'amount',
+    header: <Trans>Amount</Trans>,
+    width: '1.5fr',
+    cell: row => (
+      <TxAmountCell
+        icon={
+          <TokenIcon token={{ symbol: row.symbol }} width={20} showChainIcon={false} className="h-5 w-5" />
+        }
+        amount={row.amount}
+        usd={row.usd}
+      />
+    )
+  },
+  {
+    id: 'hash',
+    header: <Trans>Txn hash</Trans>,
+    width: '1fr',
+    cell: row => <TxHashLink label={row.txHashLabel} href={row.txHref} />
+  }
+];
+
 /**
- * Maps the Savings history hook onto the reworked ProductTransactionsTable
- * (ProductDetailTemplate `transactions` slot). Status is always "completed" for
- * now — confirmed on-chain history only; pending in-flight txs are a later
- * ticket (C3 decision). Shows a single USDS Amount column — the subgraph records
- * only the USDS `assets`, not the sUSDS shares, so an accurate per-tx USDS→sUSDS
- * conversion isn't available yet (see APP-300).
+ * Savings history mapped onto the shared (column-driven) ProductTransactionsTable
+ * — the ProductDetailTemplate `transactions` slot.
  */
 export function SavingsTransactionsTable() {
   const subgraphUrl = useSubgraphUrl();
   const { data: savingsHistory, isLoading, error } = useSavingsHistory(subgraphUrl);
   const chainId = useChainId();
 
-  const rows = useMemo<ProductTransactionRow[]>(() => {
+  const rows = useMemo<SavingsTxRow[]>(() => {
     if (!savingsHistory) return [];
 
     return savingsHistory.map(s => {
-      const isSupply = s.type === TransactionTypeEnum.SUPPLY;
       const decimals = isL2ChainId(chainId) ? getTokenDecimals(s.token, chainId) : 18;
-      const usdsAmount = formatBigInt(absBigInt(s.assets), { unit: decimals });
-      const usdsSymbol = isL2ChainId(chainId) ? s.token.symbol : 'USDS';
-
-      const amount: ProductTransactionAmount = {
-        icon: (
-          <TokenIcon token={{ symbol: usdsSymbol }} width={20} showChainIcon={false} className="h-5 w-5" />
-        ),
-        amount: usdsAmount,
-        usd: `$${usdsAmount}` // USDS ≈ $1
-      };
-
+      const amount = formatBigInt(absBigInt(s.assets), { unit: decimals });
       return {
         id: s.transactionHash,
-        actionIcon: isSupply ? (
-          <SavingsSupply width={16} height={15} />
-        ) : (
-          <ArrowDown width={12} height={16} className="light:fill-text fill-white" />
-        ),
-        actionLabel: isSupply ? <Trans>Supply</Trans> : <Trans>Withdraw</Trans>,
-        timeAgo: formatDistanceToNowStrict(s.blockTimestamp, { addSuffix: true }),
-        status: 'completed' as const,
+        isSupply: s.type === TransactionTypeEnum.SUPPLY,
         amount,
+        usd: `$${amount}`, // USDS ≈ $1
+        symbol: isL2ChainId(chainId) ? s.token.symbol : 'USDS',
+        timeAgo: formatDistanceToNowStrict(s.blockTimestamp, { addSuffix: true }),
         txHashLabel: formatAddress(s.transactionHash, 6, 4),
         txHref: getEtherscanLink(chainId, s.transactionHash, 'tx')
       };
@@ -64,7 +109,9 @@ export function SavingsTransactionsTable() {
   return (
     <ProductTransactionsTable
       dataTestId="savings-transactions"
+      columns={COLUMNS}
       rows={rows}
+      rowKey={row => row.id}
       isLoading={isLoading}
       error={error}
     />

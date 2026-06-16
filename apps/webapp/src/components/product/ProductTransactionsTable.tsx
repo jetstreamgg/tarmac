@@ -5,47 +5,38 @@ import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
- * The product-detail transactions table (Figma C3, reworked from HistoryTable).
- * Presentational + reusable: every module-specific visual (action icon, token
- * icons) is injected as a slot; the owning module maps its history hook to these
- * rows. Lives in components/product per the layer rule.
+ * Reusable transactions table for product-detail pages (Figma C3). Column-driven
+ * so each module defines its own columns — Savings/Vaults/Rewards/Stake history
+ * differ — while the shared chrome (rounded rows, loading/empty/error states,
+ * status pill, common cells) lives here. components/product layer: module-specific
+ * visuals are injected through the column `cell` renderers.
  */
 
 export type ProductTransactionStatus = 'pending' | 'completed';
 
-export interface ProductTransactionAmount {
-  /** Token icon node, injected by the module. */
-  icon: ReactNode;
-  amount: ReactNode;
-  /** Optional USD sub-value under the amount. */
-  usd?: ReactNode;
-}
-
-export interface ProductTransactionRow {
+export interface ProductTransactionColumn<T> {
   id: string;
-  /** Action glyph (Supply/Withdraw/…), injected by the module. */
-  actionIcon: ReactNode;
-  actionLabel: ReactNode;
-  timeAgo: ReactNode;
-  status: ProductTransactionStatus;
-  /** Transaction amount. Single column — From/To collapsed until the indexer
-   *  exposes share amounts (APP-300). */
-  amount: ProductTransactionAmount;
-  /** Truncated hash label (e.g. "0xff9s…dsa6"). */
-  txHashLabel: ReactNode;
-  /** Block-explorer URL for the transaction. */
-  txHref: string;
+  header: ReactNode;
+  /** CSS grid track for this column (e.g. '1.5fr', '1fr', '140px'). */
+  width: string;
+  cell: (row: T) => ReactNode;
+  /** Right-align the header + cell (e.g. amounts). */
+  alignEnd?: boolean;
 }
 
-export interface ProductTransactionsTableProps {
-  rows?: ProductTransactionRow[];
+export interface ProductTransactionsTableProps<T> {
+  columns: ProductTransactionColumn<T>[];
+  rows?: T[];
+  rowKey: (row: T) => string;
   isLoading?: boolean;
   error?: Error | null;
   emptyLabel?: ReactNode;
+  /** Min table width before horizontal scroll kicks in (px). */
+  minWidth?: number;
   dataTestId?: string;
 }
 
-const GRID = 'grid grid-cols-[1.5fr_1fr_1.5fr_1fr] items-center gap-4';
+// --- Reusable cells (compose these in a column's `cell`, or build your own) ---
 
 // The user-supplied status SVGs (colors carried via currentColor).
 function DotsIcon() {
@@ -71,7 +62,7 @@ function CheckIcon() {
   );
 }
 
-function StatusBadge({ status }: { status: ProductTransactionStatus }) {
+export function TxStatusBadge({ status }: { status: ProductTransactionStatus }) {
   if (status === 'pending') {
     return (
       <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#A299F7]/10 px-2.5 py-1 text-xs font-medium text-[#A299F7]">
@@ -90,15 +81,62 @@ function StatusBadge({ status }: { status: ProductTransactionStatus }) {
   );
 }
 
-function AmountCell({ amount }: { amount: ProductTransactionAmount }) {
+/** Action cell: a circled glyph + label with an optional relative-time subline. */
+export function TxActionCell({
+  icon,
+  label,
+  timeAgo
+}: {
+  icon: ReactNode;
+  label: ReactNode;
+  timeAgo?: ReactNode;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="shrink-0">{amount.icon}</span>
+    <div className="flex items-center gap-3">
+      <span className="border-borderPrimary text-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full border">
+        {icon}
+      </span>
       <div className="flex flex-col">
-        <span className="text-text text-sm">{amount.amount}</span>
-        {amount.usd && <span className="text-textSecondary text-xs">{amount.usd}</span>}
+        <span className="text-text text-sm font-medium">{label}</span>
+        {timeAgo && <span className="text-textSecondary text-xs">{timeAgo}</span>}
       </div>
     </div>
+  );
+}
+
+/** Amount cell: an optional token icon + amount with an optional USD sub-value. */
+export function TxAmountCell({
+  icon,
+  amount,
+  usd
+}: {
+  icon?: ReactNode;
+  amount: ReactNode;
+  usd?: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      {icon && <span className="shrink-0">{icon}</span>}
+      <div className="flex flex-col">
+        <span className="text-text text-sm">{amount}</span>
+        {usd && <span className="text-textSecondary text-xs">{usd}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** Truncated tx-hash with an external-explorer link. */
+export function TxHashLink({ label, href }: { label: ReactNode; href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-textSecondary hover:text-text flex w-fit items-center gap-1 text-sm transition-colors"
+    >
+      {label}
+      <ArrowUpRight className="h-3.5 w-3.5" />
+    </a>
   );
 }
 
@@ -110,29 +148,27 @@ function StateRow({ children }: { children: ReactNode }) {
   );
 }
 
-export function ProductTransactionsTable({
+export function ProductTransactionsTable<T>({
+  columns,
   rows,
+  rowKey,
   isLoading,
   error,
   emptyLabel,
+  minWidth = 560,
   dataTestId = 'product-transactions'
-}: ProductTransactionsTableProps) {
+}: ProductTransactionsTableProps<T>) {
+  const gridStyle = { gridTemplateColumns: columns.map(column => column.width).join(' ') };
+
   return (
     <div className="overflow-x-auto">
-      <div className="flex min-w-[560px] flex-col gap-2" data-testid={dataTestId}>
-        <div className={cn(GRID, 'text-textSecondary px-4 text-sm')}>
-          <span>
-            <Trans>Action</Trans>
-          </span>
-          <span>
-            <Trans>Status</Trans>
-          </span>
-          <span>
-            <Trans>Amount</Trans>
-          </span>
-          <span>
-            <Trans>Txn hash</Trans>
-          </span>
+      <div className="flex flex-col gap-2" style={{ minWidth }} data-testid={dataTestId}>
+        <div className="text-textSecondary grid items-center gap-4 px-4 text-sm" style={gridStyle}>
+          {columns.map(column => (
+            <span key={column.id} className={cn(column.alignEnd && 'text-right')}>
+              {column.header}
+            </span>
+          ))}
         </div>
 
         {isLoading ? (
@@ -148,34 +184,15 @@ export function ProductTransactionsTable({
         ) : (
           rows.map(row => (
             <div
-              key={row.id}
-              className={cn(
-                GRID,
-                'bg-container hover:bg-containerDark rounded-2xl px-4 py-3 transition-colors'
-              )}
+              key={rowKey(row)}
+              className="bg-container hover:bg-containerDark grid items-center gap-4 rounded-2xl px-4 py-3 transition-colors"
+              style={gridStyle}
             >
-              <div className="flex items-center gap-3">
-                <span className="border-borderPrimary text-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full border">
-                  {row.actionIcon}
-                </span>
-                <div className="flex flex-col">
-                  <span className="text-text text-sm font-medium">{row.actionLabel}</span>
-                  <span className="text-textSecondary text-xs">{row.timeAgo}</span>
+              {columns.map(column => (
+                <div key={column.id} className={cn(column.alignEnd && 'flex justify-end')}>
+                  {column.cell(row)}
                 </div>
-              </div>
-              <div>
-                <StatusBadge status={row.status} />
-              </div>
-              <AmountCell amount={row.amount} />
-              <a
-                href={row.txHref}
-                target="_blank"
-                rel="noreferrer"
-                className="text-textSecondary hover:text-text flex w-fit items-center gap-1 text-sm transition-colors"
-              >
-                {row.txHashLabel}
-                <ArrowUpRight className="h-3.5 w-3.5" />
-              </a>
+              ))}
             </div>
           ))
         )}
