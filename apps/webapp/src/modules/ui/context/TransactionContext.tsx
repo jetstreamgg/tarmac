@@ -4,75 +4,20 @@ import { toError } from '@/hooks';
 import { getTransactionLink } from '@/utils';
 import { useIsSafeWallet } from '@/hooks';
 import { useChainId, useConnection } from 'wagmi';
-import { TransactionModal, TransactionSubtitles } from '@/modules/ui/components/TransactionModal';
+import { TransactionModal } from '@/modules/ui/components/TransactionModal';
 import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
+import type { TransactionConfig, TxCallbacks, TransactionContextValue } from './transactionContract';
 
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
 }
 
-/** Analytics metadata passed by consumers to attribute events correctly */
-export type TransactionAnalytics = {
-  /** Widget/page name (e.g. "vaults") */
-  widgetName: string;
-  /** Transaction flow (e.g. "claim") */
-  flow: string;
-  /** Specific action within the flow (e.g. "claim") */
-  action?: string;
-  /** Extra data merged into every analytics event (e.g. module, claimedRewards) */
-  data?: Record<string, unknown>;
-};
-
-// The config passed by consumers when launching a transaction
-export type TransactionConfig = {
-  title: string;
-  subtitles?: TransactionSubtitles;
-  transactionContent?: ReactNode;
-  /** Optional node rendered to the right of the title — e.g. a slippage gear. */
-  rightHeaderComponent?: ReactNode;
-  onConfirm: () => void;
-  onRetry?: () => void;
-  confirmLabel?: string;
-  /** Disables the Confirm button — e.g. while a quote is refetching. */
-  confirmDisabled?: boolean;
-  successLabel?: string;
-  errorLabel?: string;
-  onSuccess?: () => void;
-  onError?: () => void;
-  /** Step labels for multi-step transactions (e.g. ["Approve", "Supply"]) */
-  steps?: string[];
-  /** Analytics metadata for tracking transaction lifecycle events */
-  analytics?: TransactionAnalytics;
-  /** Identity used to gate updateModalContent calls to the active session. */
-  sessionId?: string;
-};
-
-type LiveModalUpdate = Partial<
-  Pick<TransactionConfig, 'transactionContent' | 'rightHeaderComponent' | 'confirmDisabled'>
->;
-
-// Transaction lifecycle callbacks compatible with both WriteHookParams and BatchWriteHookParams
-export type TxCallbacks = {
-  onMutate: () => void;
-  onStart: (hash?: string) => void;
-  onSuccess: (hash?: string) => void;
-  onError: (error: Error, hash?: string) => void;
-};
-
-type TransactionContextValue = {
-  /** Open the transaction modal with a review screen */
-  launch: (config: TransactionConfig) => void;
-  /** Live-update body / right-header / confirm-disabled. Gated on sessionId. */
-  updateModalContent: (sessionId: string, partial: LiveModalUpdate) => void;
-  isModalOpen: boolean;
-  /** Transaction lifecycle callbacks to spread into write hooks */
-  txCallbacks: TxCallbacks;
-  /** Current transaction status */
-  txStatus: TxStatus;
-};
+// The transaction-orchestration contract is frozen in ./transactionContract.
+// Re-exported here so existing import sites keep working.
+export type { TransactionAnalytics, TransactionConfig, TxCallbacks } from './transactionContract';
 
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
