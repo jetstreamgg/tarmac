@@ -37,6 +37,7 @@
   --color-containerDark: var(--transparent-black-85);
   --color-surface: rgba(108, 104, 255, 0.3);
   --color-surfaceHover: rgba(68, 45, 125, 0.202);
+  --color-bgHover: transparent; /* nav/menu row hover — no-op in dark (parity); tinted in the light scope */
   --color-surfaceAlt: var(--transparent-white-20);
   --color-panel: var(--transparent-black-20);
   --color-widget: transparent;
@@ -47,6 +48,7 @@
   --color-primaryActive: transparent;
   --color-primaryFocus: transparent;
   --color-primaryDisabled: transparent;
+  /* dark: secondary states intentionally share one value (parity); the light scope differentiates them */
   --color-secondary: var(--transparent-black-20);
   --color-secondaryHover: var(--transparent-black-20);
   --color-secondaryActive: var(--transparent-black-20);
@@ -57,12 +59,13 @@
   --color-card: rgba(128, 117, 255, 0.07);
   --color-cardLight: rgba(64, 60, 113, 0.207);
   --color-border: var(--transparent-white-15);
-  --color-borderActive: --transparent-white-25;
+  --color-borderActive: var(--transparent-white-25);
   --color-borderPurple: #4c4577;
   --color-brand: rgb(var(--brand-purple));
   --color-brandLight: rgb(var(--brand-light-purple));
   --color-brandDark: rgb(var(--brand-dark-purple));
   --color-brandMiddle: rgb(var(--brand-middle-purple));
+  /* --background/--foreground are defined only in the light scope; undefined (invalid) in dark — known issue, fix deferred. See components/ui/THEMING.md */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-chartSelect: rgba(22, 17, 53, 1);
@@ -310,7 +313,7 @@
 
     --transparent-white-70: #ffffffb3;
     --transparent-white-40: #ffffff66;
-    /* --transparent-white-25: #ffffff40; */
+    --transparent-white-25: #ffffff40;
     --transparent-white-20: #ffffff33;
     --transparent-white-15: #ffffff26;
     --transparent-white-05: linear-gradient(0deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
@@ -350,6 +353,7 @@
     --color-containerDark: rgba(232, 235, 250, 0.94);
     --color-surface: rgba(108, 104, 255, 0.12);
     --color-surfaceHover: rgba(108, 104, 255, 0.2);
+    --color-bgHover: rgba(26, 24, 85, 0.06); /* TopNav MoreMenu row hover */
     --color-surfaceAlt: rgba(26, 24, 85, 0.06);
     --color-panel: rgba(255, 255, 255, 0.45);
     --color-card: rgba(255, 255, 255, 0.96);
