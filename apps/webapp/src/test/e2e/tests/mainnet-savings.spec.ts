@@ -1,3 +1,5 @@
+// G1 COORDINATION (APP-303 D3): exercises the retired legacy SavingsWidget UI/testids; the savings
+// detail page now drives the inline panel (useSavingsLaunch). Left intact for G1 E2E-migration closeout — do not delete/disable here.
 import { expect, test } from '../fixtures-parallel';
 import { setErc20Balance } from '../utils/setBalance.ts';
 import { NetworkName } from '../utils/constants';

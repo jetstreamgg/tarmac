@@ -105,8 +105,7 @@ export function useSavingsLaunch({
 
   const isL2 = isL2ChainId(chainId);
   const isSupply = flow === 'supply';
-  // Same branch condition the legacy useSavingsTransactions orchestrator uses.
-  // DAI is a mainnet-only origin; on L2 the PSM path takes precedence.
+  // DAI is a mainnet-only supply origin; on L2 the PSM path takes precedence.
   const isDai = isSupply && !isL2 && originToken.symbol === TOKENS.dai.symbol;
   const isL2Withdraw = !isSupply && isL2;
   const originDecimals = getTokenDecimals(originToken, chainId);
