@@ -30,8 +30,8 @@ export const DEFAULT_FILTERS: EarnTableFiltersState = {
 };
 
 // Sort resets to this default every visit (deliberate deviation from the C2
-// AC's URL-controlled state — decision 2026-06-12: filters persist locally,
-// sort is ephemeral).
+// AC's URL-controlled state — only the risk filter persists locally; network,
+// stablecoin, product and sort are ephemeral).
 export const DEFAULT_SORT: EarnTableSort = { column: 'risk', direction: 'asc' };
 
 /** Direction a column starts with when first selected: sizes/rates biggest-first. */

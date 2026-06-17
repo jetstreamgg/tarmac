@@ -12,7 +12,9 @@ export enum QueryParams {
   TargetToken = 'target_token',
   Network = 'network',
   Flow = 'flow',
-  StakeTab = 'stake_tab'
+  StakeTab = 'stake_tab',
+  /** Earn list supply-token filter, e.g. /earn?token=USDS. */
+  Token = 'token'
 }
 
 export enum Environment {

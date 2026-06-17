@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useChains } from 'wagmi';
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
@@ -6,7 +6,8 @@ import { Morpho } from '@/widgets';
 import { useEarnMarketplace, EarnProductKind, EarnProductRow } from '@/hooks';
 import { formatNumber, getChainIcon } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
-import { retainOnNavigate } from '@/lib/navigation';
+import { QueryParams } from '@/lib/constants';
+import { retainOnNavigate, useAppSearchParams } from '@/lib/navigation';
 import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
@@ -42,6 +43,8 @@ export function EarnPage() {
   const { rows } = useEarnMarketplace();
   const chains = useChains();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useAppSearchParams();
+  const tokenParam = searchParams.get(QueryParams.Token);
 
   // Slug ↔ chain mapping for the network filter (same normalized names the
   // `network` query param uses).
@@ -86,6 +89,24 @@ export function EarnPage() {
     stablecoins: stablecoinOptions.map(option => option.value),
     products: productOptions.map(option => option.value)
   });
+
+  // Deep-link support: /earn?token=USDS preselects the supply-token filter, then
+  // the param is consumed so subsequent manual filter changes aren't overridden.
+  useEffect(() => {
+    if (!tokenParam || stablecoinOptions.length === 0) return;
+    const value = tokenParam.toLowerCase();
+    if (stablecoinOptions.some(option => option.value === value)) {
+      updateFilters({ stablecoin: value });
+    }
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        next.delete(QueryParams.Token);
+        return next;
+      },
+      { replace: true }
+    );
+  }, [tokenParam, stablecoinOptions, updateFilters, setSearchParams]);
 
   const visibleRows = useMemo(
     () => sortEarnRows(filterEarnRows(rows, filters, chainSlugById), sort),

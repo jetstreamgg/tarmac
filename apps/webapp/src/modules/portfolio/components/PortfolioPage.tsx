@@ -8,10 +8,10 @@ import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { buildSuppliedView } from '../helpers/suppliedView';
-import { buildIdleView } from '../helpers/idleView';
+import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
-import { SuppliedPositionsCarousel } from './SuppliedPositionsCarousel';
+import { PortfolioPositionsSection } from './PortfolioPositionsSection';
 import { type PortfolioTab } from './PortfolioTabs';
 
 export function PortfolioPage() {
@@ -31,6 +31,8 @@ export function PortfolioPage() {
   const network = selectedNetwork === 'all' ? 'all' : Number(selectedNetwork);
   const suppliedView = buildSuppliedView(rows, network);
   const idleView = buildIdleView(balances, network);
+  // Best supply rate + venue count per token, for the idle table's rate badge.
+  const idleSupplyInfo = buildIdleSupplyInfo(rows);
 
   // Sky Savings Rate as a decimal fraction (drives the Idle footer + projection).
   const savingsRate = overallSkyData?.skySavingsRatecRate
@@ -98,7 +100,15 @@ export function PortfolioPage() {
         tab={tab}
         onTabChange={setTab}
       />
-      <SuppliedPositionsCarousel view={suppliedView} isLoading={isLoading} tab={tab} onTabChange={setTab} />
+      <PortfolioPositionsSection
+        suppliedView={suppliedView}
+        suppliedLoading={isLoading}
+        idleView={idleView}
+        idleSupplyInfo={idleSupplyInfo}
+        idleLoading={balancesLoading}
+        tab={tab}
+        onTabChange={setTab}
+      />
     </div>
   );
 }

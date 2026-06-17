@@ -42,11 +42,15 @@ export function useStablecoinBalances(): UseStablecoinBalancesResult {
   const usdsPrice = pricesData?.USDS?.price;
   const priceFor = (symbol: string) => pricesData?.[symbol]?.price ?? usdsPrice;
 
-  const balances: StablecoinBalance[] = (rawBalances ?? []).map(balance => ({
-    symbol: balance.symbol,
-    chainId: balance.chainId,
-    amountUsd: parseFloat(balance.formatted) * parseFloat(priceFor(balance.symbol) || '0')
-  }));
+  const balances: StablecoinBalance[] = (rawBalances ?? []).map(balance => {
+    const amount = parseFloat(balance.formatted);
+    return {
+      symbol: balance.symbol,
+      chainId: balance.chainId,
+      amount,
+      amountUsd: amount * parseFloat(priceFor(balance.symbol) || '0')
+    };
+  });
 
   return {
     balances,

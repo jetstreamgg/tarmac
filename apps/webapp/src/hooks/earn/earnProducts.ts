@@ -50,7 +50,8 @@ export function buildEarnProducts(
     intent: Intent.SAVINGS_INTENT,
     name: 'Sky Savings Rate',
     tokenSymbol: TOKENS.susds.symbol,
-    supplyTokens: [TOKENS.usds.symbol],
+    // USDS deposits directly; DAI is accepted via the 1:1 upgrade to USDS.
+    supplyTokens: [TOKENS.usds.symbol, TOKENS.dai.symbol],
     risk: DEFAULT_RISK_TIER,
     networks: productNetworks(Intent.SAVINGS_INTENT, familyChainIds, TOKENS.susds.address),
     detailPath: intentToPath(Intent.SAVINGS_INTENT)
