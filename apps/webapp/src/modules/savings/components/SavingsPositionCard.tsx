@@ -3,13 +3,13 @@ import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { X } from 'lucide-react';
-import { SavingsWidget, L2SavingsWidget, SavingsFlow } from '@/widgets';
+import { L2SavingsWidget, SavingsFlow } from '@/widgets';
 import { useSavingsData, useTokenBalance, TOKENS } from '@/hooks';
 import { formatNumber, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { SavingsSupplyPanel } from './SavingsSupplyPanel';
+import { SavingsSupplyWithdrawPanel } from './SavingsSupplyWithdrawPanel';
 
 const NO_VALUE = '–';
 
@@ -34,10 +34,10 @@ const TodoValue = () => <span className="text-textSecondary text-sm italic">TODO
  * The "My position" card for the Savings product page (ProductDetailTemplate
  * `position` slot).
  *
- * D3: mainnet supply runs inline on the new transaction surface
- * (`SavingsSupplyPanel` → `useSavingsLaunch().launch()`). Withdraw (and all of
- * L2) still opens the legacy `SavingsWidget` modal until the withdraw / L2 PSM
- * slices migrate them; the whole legacy stack is retired in the closeout slice.
+ * D3: on mainnet, supply AND withdraw run inline on the new transaction surface
+ * (`SavingsSupplyWithdrawPanel` → `useSavingsLaunch().launch()`). L2 PSM
+ * supply/withdraw still opens the legacy `L2SavingsWidget` modal until the L2
+ * slices migrate it; the legacy stack is fully retired in the closeout slice.
  */
 export function SavingsPositionCard() {
   const chainId = useChainId();
@@ -52,14 +52,13 @@ export function SavingsPositionCard() {
   const isL2 = isL2ChainId(chainId);
   const [open, setOpen] = useState(false);
   const [flow, setFlow] = useState<SavingsFlow>(SavingsFlow.SUPPLY);
-  const Widget = isL2 ? L2SavingsWidget : SavingsWidget;
 
   const openFlow = (next: SavingsFlow) => {
     setFlow(next);
     setOpen(true);
   };
 
-  // Refresh position card + sUSDS balance after a successful inline supply.
+  // Refresh position card + sUSDS balance after a successful inline supply/withdraw.
   const refreshPosition = () => {
     mutateSavings();
     refetchSusds();
@@ -68,77 +67,75 @@ export function SavingsPositionCard() {
   const position = isConnected ? formatToken(savingsData?.userSavingsBalance) : NO_VALUE;
   const susds = isConnected ? formatToken(susdsBalance?.value) : NO_VALUE;
 
+  const card = (
+    <div
+      className="bg-panel flex flex-col gap-3 rounded-[20px] p-2 backdrop-blur-2xl"
+      data-testid="savings-position-card"
+    >
+      {/* Hero — position value over the brand gradient (cloud art placeholder),
+          inset within the glass card. */}
+      <div className="flex min-h-[160px] flex-col justify-between overflow-hidden rounded-2xl bg-[radial-gradient(120%_120%_at_20%_0%,_#7E6BF2_0%,_#3B2E7D_60%,_#2A1E63_100%)] p-5">
+        <span className="text-text/80 text-sm">
+          <Trans>My position</Trans>
+        </span>
+        <span className="text-text flex items-center gap-2 text-3xl font-semibold">
+          <TokenIcon token={{ symbol: 'USDS' }} width={28} showChainIcon={false} className="h-7 w-7" />
+          {position}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-4 px-3 pb-3">
+        <div className="flex flex-col gap-3">
+          <StatRow label={<Trans>sUSDS balance</Trans>}>
+            <TokenIcon
+              token={{ symbol: 'sUSDS' }}
+              width={18}
+              showChainIcon={false}
+              className="h-[18px] w-[18px]"
+            />
+            {susds}
+          </StatRow>
+          <StatRow label={<Trans>Already earned</Trans>}>
+            <TodoValue />
+          </StatRow>
+          <StatRow label={<Trans>1Y projected earnings</Trans>}>
+            <TodoValue />
+          </StatRow>
+        </div>
+        {isL2 ? (
+          // L2 PSM supply/withdraw still runs on the legacy widget until the L2 slices.
+          <div className="flex gap-3">
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={() => openFlow(SavingsFlow.SUPPLY)}
+              data-testid="position-supply"
+            >
+              <Trans>Supply</Trans>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => openFlow(SavingsFlow.WITHDRAW)}
+              data-testid="position-withdraw"
+            >
+              <Trans>Withdraw</Trans>
+            </Button>
+          </div>
+        ) : (
+          <SavingsSupplyWithdrawPanel onSuccess={refreshPosition} />
+        )}
+      </div>
+    </div>
+  );
+
+  // Mainnet runs fully inline on the new transaction surface — no modal.
+  if (!isL2) return card;
+
+  // L2 still hands off to the legacy widget in a modal until the L2 slices land.
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <div
-        className="bg-panel flex flex-col gap-3 rounded-[20px] p-2 backdrop-blur-2xl"
-        data-testid="savings-position-card"
-      >
-        {/* Hero — position value over the brand gradient (cloud art placeholder),
-            inset within the glass card. */}
-        <div className="flex min-h-[160px] flex-col justify-between overflow-hidden rounded-2xl bg-[radial-gradient(120%_120%_at_20%_0%,_#7E6BF2_0%,_#3B2E7D_60%,_#2A1E63_100%)] p-5">
-          <span className="text-text/80 text-sm">
-            <Trans>My position</Trans>
-          </span>
-          <span className="text-text flex items-center gap-2 text-3xl font-semibold">
-            <TokenIcon token={{ symbol: 'USDS' }} width={28} showChainIcon={false} className="h-7 w-7" />
-            {position}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-4 px-3 pb-3">
-          <div className="flex flex-col gap-3">
-            <StatRow label={<Trans>sUSDS balance</Trans>}>
-              <TokenIcon
-                token={{ symbol: 'sUSDS' }}
-                width={18}
-                showChainIcon={false}
-                className="h-[18px] w-[18px]"
-              />
-              {susds}
-            </StatRow>
-            <StatRow label={<Trans>Already earned</Trans>}>
-              <TodoValue />
-            </StatRow>
-            <StatRow label={<Trans>1Y projected earnings</Trans>}>
-              <TodoValue />
-            </StatRow>
-          </div>
-          {isL2 ? (
-            // L2 PSM supply/withdraw still runs on the legacy widget until the L2 slices.
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                className="flex-1"
-                onClick={() => openFlow(SavingsFlow.SUPPLY)}
-                data-testid="position-supply"
-              >
-                <Trans>Supply</Trans>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => openFlow(SavingsFlow.WITHDRAW)}
-                data-testid="position-withdraw"
-              >
-                <Trans>Withdraw</Trans>
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <SavingsSupplyPanel onSuccess={refreshPosition} />
-              {/* Withdraw still opens the legacy modal until the withdraw slice. */}
-              <Button
-                variant="outline"
-                onClick={() => openFlow(SavingsFlow.WITHDRAW)}
-                data-testid="position-withdraw"
-              >
-                <Trans>Withdraw</Trans>
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
+      {card}
 
       <DialogContent aria-describedby={undefined} className="bg-background">
         <DialogTitle className="sr-only">
@@ -155,7 +152,7 @@ export function SavingsPositionCard() {
         </DialogClose>
         {/* key on flow → reopening with a different action remounts the widget
             on the correct supply/withdraw tab. */}
-        <Widget key={flow} externalWidgetState={{ flow }} />
+        <L2SavingsWidget key={flow} externalWidgetState={{ flow }} />
       </DialogContent>
     </Dialog>
   );

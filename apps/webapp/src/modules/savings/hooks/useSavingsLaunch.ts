@@ -1,7 +1,7 @@
 import { useCallback, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { t } from '@lingui/core/macro';
-import { type Token, useBatchSavingsSupply, useSavingsAllowance } from '@/hooks';
+import { type Token, useBatchSavingsSupply, useSavingsAllowance, useSavingsWithdraw } from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 
@@ -35,14 +35,16 @@ export interface UseSavingsLaunchResult {
  * to the correct (unmodified) call-builder engine hook, spreads the context's
  * `txCallbacks` into it, and describes the review modal.
  *
- * Slice 01 (this file) wires mainnet USDS supply via `useBatchSavingsSupply`.
- * Later slices extend it with withdraw, DAI upgrade-and-supply, and the L2 PSM
- * paths — each routing to its own engine hook, never re-deriving calldata here.
+ * Slice 01 wired mainnet USDS supply via `useBatchSavingsSupply`; slice 02 adds
+ * the withdraw branch via `useSavingsWithdraw`. Later slices extend it with DAI
+ * upgrade-and-supply and the L2 PSM paths — each routing to its own engine hook,
+ * never re-deriving calldata here.
  */
 export function useSavingsLaunch({
   flow,
   originToken,
   amount,
+  max = false,
   referralCode,
   transactionContent,
   onSuccess
@@ -56,48 +58,89 @@ export function useSavingsLaunch({
   // built entirely inside useBatchSavingsSupply; TanStack dedupes this read with
   // the engine's own.
   const { data: allowance } = useSavingsAllowance();
-  const needsApproval = allowance !== undefined && allowance < amount;
+  const needsApproval = isSupply && allowance !== undefined && allowance < amount;
 
-  // Engine — the single source of truth for supply calldata. Unmodified; we only
-  // route to it and spread the transaction context's callbacks.
+  // Engines — the single source of truth for calldata. Both are called
+  // unconditionally (React hooks rules) and gated by `enabled` to the active
+  // flow; we only route to them and spread the context's callbacks. The withdraw
+  // amount (including the `max` → maxWithdraw(owner) resolution, landmine #1)
+  // stays entirely inside useSavingsWithdraw.
   const supplyHook = useBatchSavingsSupply({
     amount,
     ref: referralCode,
     enabled: isSupply,
     ...txCallbacks
   });
-  const execute = supplyHook.execute;
+  const withdrawHook = useSavingsWithdraw({
+    amount,
+    max,
+    enabled: !isSupply,
+    ...txCallbacks
+  });
+
+  const activeHook = isSupply ? supplyHook : withdrawHook;
+  const execute = activeHook.execute;
 
   const launch = useCallback(() => {
-    if (!isSupply) return; // withdraw lands in slice 02
-
-    launchModal({
-      title: t`Supply to Sky Savings`,
-      subtitles: {
-        review: t`You are supplying ${formatBigInt(amount)} ${originToken.symbol} to Sky Savings.`,
-        pending: t`Please confirm the transaction in your wallet.`,
-        loading: t`Your supply is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully supplied to Sky Savings.`,
-        error: t`An error occurred while supplying to Sky Savings.`
-      },
-      transactionContent,
-      steps: needsApproval ? [t`Approve`, t`Supply`] : [t`Supply`],
-      confirmLabel: t`Supply`,
-      onConfirm: execute,
-      onSuccess,
-      analytics: {
-        widgetName: 'savings',
-        flow: 'supply',
-        action: 'supply',
-        data: {
-          module: 'savings',
-          originToken: originToken.symbol,
-          amount: Number(formatUnits(amount, 18))
+    if (isSupply) {
+      launchModal({
+        title: t`Supply to Sky Savings`,
+        subtitles: {
+          review: t`You are supplying ${formatBigInt(amount)} ${originToken.symbol} to Sky Savings.`,
+          pending: t`Please confirm the transaction in your wallet.`,
+          loading: t`Your supply is being processed on the blockchain. Please wait.`,
+          success: t`You've successfully supplied to Sky Savings.`,
+          error: t`An error occurred while supplying to Sky Savings.`
+        },
+        transactionContent,
+        steps: needsApproval ? [t`Approve`, t`Supply`] : [t`Supply`],
+        confirmLabel: t`Supply`,
+        onConfirm: execute,
+        onSuccess,
+        analytics: {
+          widgetName: 'savings',
+          flow: 'supply',
+          action: 'supply',
+          data: {
+            module: 'savings',
+            originToken: originToken.symbol,
+            amount: Number(formatUnits(amount, 18))
+          }
         }
-      }
-    });
+      });
+    } else {
+      launchModal({
+        title: t`Withdraw from Sky Savings`,
+        subtitles: {
+          review: max
+            ? t`You are withdrawing your entire position from Sky Savings.`
+            : t`You are withdrawing ${formatBigInt(amount)} ${originToken.symbol} from Sky Savings.`,
+          pending: t`Please confirm the transaction in your wallet.`,
+          loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
+          success: t`You've successfully withdrawn from Sky Savings.`,
+          error: t`An error occurred while withdrawing from Sky Savings.`
+        },
+        transactionContent,
+        // Withdraw is a single signature — you already own the sUSDS, no approve.
+        steps: [t`Withdraw`],
+        confirmLabel: t`Withdraw`,
+        onConfirm: execute,
+        onSuccess,
+        analytics: {
+          widgetName: 'savings',
+          flow: 'withdraw',
+          action: 'withdraw',
+          data: {
+            module: 'savings',
+            originToken: originToken.symbol,
+            amount: Number(formatUnits(amount, 18))
+          }
+        }
+      });
+    }
   }, [
     isSupply,
+    max,
     launchModal,
     amount,
     originToken.symbol,
@@ -109,8 +152,8 @@ export function useSavingsLaunch({
 
   return {
     launch,
-    prepared: supplyHook.prepared,
-    isLoading: supplyHook.isLoading,
-    error: supplyHook.error
+    prepared: activeHook.prepared,
+    isLoading: activeHook.isLoading,
+    error: activeHook.error
   };
 }

@@ -35,9 +35,52 @@ vi.mock('wagmi', async importOriginal => {
   return {
     ...actual,
     useChainId: () => 1,
-    useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false })
+    useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
+    useBlockNumber: () => ({ data: 0n })
   };
 });
+
+// The orchestrator now calls useSavingsWithdraw unconditionally (hooks rules),
+// gated to enabled:false on the supply flow. These stubs keep that disabled
+// withdraw hook from reaching real wagmi reads — they do not affect the supply
+// calldata seam (useTransactionFlow) the supply tests assert against.
+vi.mock('@tanstack/react-query', async importOriginal => {
+  const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+  return {
+    ...actual,
+    useQueryClient: () => ({ invalidateQueries: () => undefined })
+  };
+});
+
+vi.mock('@/hooks/savings/useSavingsData', () => ({
+  useSavingsData: () => ({
+    data: { userSavingsBalance: 0n, userNstBalance: 0n, savingsRate: 0n, savingsTvl: 0n },
+    error: null,
+    isLoading: false,
+    mutate: () => undefined,
+    dataSources: []
+  })
+}));
+
+vi.mock('@/hooks/savings/useReadSavingsUsds', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/hooks/savings/useReadSavingsUsds')>();
+  return {
+    ...actual,
+    useReadSavingsUsdsMaxWithdraw: () => ({ data: undefined, queryKey: ['maxWithdraw'] })
+  };
+});
+
+vi.mock('@/hooks/shared/useWriteContractFlow', () => ({
+  useWriteContractFlow: () => ({
+    error: null,
+    prepareError: null,
+    isLoading: false,
+    prepared: false,
+    execute: () => undefined,
+    data: undefined,
+    retryPrepare: () => undefined
+  })
+}));
 
 // Capture the exact Call[] the engine hands to the transaction flow — this is
 // the only channel through which calldata leaves useBatchSavingsSupply, so it is
