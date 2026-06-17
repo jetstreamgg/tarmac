@@ -466,6 +466,7 @@ function TradeWidgetWrapped({
         action: 'approve',
         flow: TradeFlow.TRADE,
         txHash: hash,
+        error,
         data: swapData
       });
     },
@@ -523,6 +524,7 @@ function TradeWidgetWrapped({
         action: 'approve',
         flow: TradeFlow.TRADE,
         txHash: hash,
+        error,
         data: swapData
       });
     },
@@ -601,6 +603,7 @@ function TradeWidgetWrapped({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
         action: 'trade',
         flow: TradeFlow.TRADE,
+        error,
         data: swapData
       });
     }
@@ -673,6 +676,7 @@ function TradeWidgetWrapped({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
         action: 'trade',
         flow: TradeFlow.TRADE,
+        error,
         data: swapData
       });
     },
@@ -689,6 +693,7 @@ function TradeWidgetWrapped({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
         action: 'trade',
         flow: TradeFlow.TRADE,
+        error,
         data: swapData
       });
     }
@@ -775,6 +780,7 @@ function TradeWidgetWrapped({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
         action: 'trade',
         flow: TradeFlow.TRADE,
+        error,
         data: swapData
       });
     }
@@ -815,6 +821,7 @@ function TradeWidgetWrapped({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
         action: 'cancel',
         flow: TradeFlow.TRADE,
+        error,
         data: { ...swapData, orderId }
       });
     }
@@ -857,6 +864,7 @@ function TradeWidgetWrapped({
         event: WidgetAnalyticsEventType.TRANSACTION_ERROR,
         action: 'cancel',
         flow: TradeFlow.TRADE,
+        error,
         data: { ...swapData, orderId }
       });
     }

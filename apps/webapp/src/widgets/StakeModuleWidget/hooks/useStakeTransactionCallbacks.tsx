@@ -205,6 +205,7 @@ export const useStakeTransactionCallbacks = ({
           action: 'multicall',
           flow,
           txHash: hash,
+          error,
           data: stakeData
         });
       }
@@ -278,6 +279,7 @@ export const useStakeTransactionCallbacks = ({
           action: claimAction ?? 'claim',
           flow,
           txHash: hash,
+          error,
           data: stakeData
         });
       }

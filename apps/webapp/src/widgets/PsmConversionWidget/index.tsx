@@ -275,6 +275,7 @@ function PsmConversionWidgetWrapped({
         action: current.action,
         flow: PsmConversionFlow.CONVERT,
         txHash: hash,
+        error,
         amount: Number(formatUnits(originAmount, getTokenDecimals(current.originToken, chainId))),
         assetSymbol: current.originToken?.symbol,
         data: {
@@ -282,8 +283,7 @@ function PsmConversionWidgetWrapped({
           convert_module: 'psm',
           direction,
           target_symbol: current.targetToken?.symbol,
-          isBatchTx: current.shouldUseBatch,
-          error_message: error.message
+          isBatchTx: current.shouldUseBatch
         }
       });
     }
