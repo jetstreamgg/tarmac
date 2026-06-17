@@ -190,6 +190,7 @@ export function usePendleTransactionCallbacks({
         action: mainAction,
         flow: mainAction,
         txHash: hash,
+        error: err,
         amount: formattedAmount,
         data: buildData()
       });
