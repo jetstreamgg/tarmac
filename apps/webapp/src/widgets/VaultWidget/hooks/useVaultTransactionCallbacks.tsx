@@ -137,6 +137,7 @@ export const useVaultTransactionCallbacks = ({
           action: VaultAction.SUPPLY,
           flow: VaultFlow.SUPPLY,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: vaultData
@@ -210,6 +211,7 @@ export const useVaultTransactionCallbacks = ({
           action: VaultAction.WITHDRAW,
           flow: VaultFlow.WITHDRAW,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: vaultData

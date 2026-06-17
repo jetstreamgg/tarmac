@@ -141,6 +141,7 @@ export const useStUsdsTransactionCallbacks = ({
           action: StUSDSAction.SUPPLY,
           flow: StUSDSFlow.SUPPLY,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: stUsdsData
@@ -228,6 +229,7 @@ export const useStUsdsTransactionCallbacks = ({
           action: StUSDSAction.WITHDRAW,
           flow: StUSDSFlow.WITHDRAW,
           txHash: hash,
+          error,
           amount: formattedAmount,
           assetSymbol,
           data: stUsdsData

@@ -5,6 +5,7 @@ import { WidgetAnalyticsEventType } from '@/widgets/shared/types/analyticsEvents
 import type { WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { AppEvents, safeCapture, getViewport, reportAnalyticsError, type TxStatus } from '../constants';
 import { useAnalyticsFlow } from '../context/AnalyticsFlowContext';
+import { classifyTransactionError } from '../lib/classifyTransactionError';
 
 const EVENT_NAME_MAP: Record<WidgetAnalyticsEventType, string> = {
   [WidgetAnalyticsEventType.REVIEW_VIEWED]: AppEvents.WIDGET_REVIEW_VIEWED,
@@ -70,7 +71,10 @@ export function useWidgetAnalytics(widgetName: string, chainId: number) {
           ...(txStatus && { tx_status: txStatus }),
           ...(event.txHash && { tx_hash: event.txHash }),
           ...(amount != null && { amount }),
-          ...event.data
+          ...event.data,
+          ...(event.event === WidgetAnalyticsEventType.TRANSACTION_ERROR
+            ? classifyTransactionError(event.error, !!event.txHash)
+            : {})
         };
 
         safeCapture(posthog, eventName, properties);
