@@ -9,6 +9,7 @@ import { formatNumber, isL2ChainId } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { SavingsSupplyPanel } from './SavingsSupplyPanel';
 
 const NO_VALUE = '–';
 
@@ -31,22 +32,37 @@ const TodoValue = () => <span className="text-textSecondary text-sm italic">TODO
 
 /**
  * The "My position" card for the Savings product page (ProductDetailTemplate
- * `position` slot). Supply/Withdraw open a modal hosting the existing
- * SavingsWidget — the inline launch() migration is deferred to D3.
+ * `position` slot).
+ *
+ * D3: mainnet supply runs inline on the new transaction surface
+ * (`SavingsSupplyPanel` → `useSavingsLaunch().launch()`). Withdraw (and all of
+ * L2) still opens the legacy `SavingsWidget` modal until the withdraw / L2 PSM
+ * slices migrate them; the whole legacy stack is retired in the closeout slice.
  */
 export function SavingsPositionCard() {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
-  const { data: savingsData } = useSavingsData();
-  const { data: susdsBalance } = useTokenBalance({ address, chainId, token: TOKENS.susds.address[chainId] });
+  const { data: savingsData, mutate: mutateSavings } = useSavingsData();
+  const { data: susdsBalance, refetch: refetchSusds } = useTokenBalance({
+    address,
+    chainId,
+    token: TOKENS.susds.address[chainId]
+  });
 
+  const isL2 = isL2ChainId(chainId);
   const [open, setOpen] = useState(false);
   const [flow, setFlow] = useState<SavingsFlow>(SavingsFlow.SUPPLY);
-  const Widget = isL2ChainId(chainId) ? L2SavingsWidget : SavingsWidget;
+  const Widget = isL2 ? L2SavingsWidget : SavingsWidget;
 
   const openFlow = (next: SavingsFlow) => {
     setFlow(next);
     setOpen(true);
+  };
+
+  // Refresh position card + sUSDS balance after a successful inline supply.
+  const refreshPosition = () => {
+    mutateSavings();
+    refetchSusds();
   };
 
   const position = isConnected ? formatToken(savingsData?.userSavingsBalance) : NO_VALUE;
@@ -88,24 +104,39 @@ export function SavingsPositionCard() {
               <TodoValue />
             </StatRow>
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={() => openFlow(SavingsFlow.SUPPLY)}
-              data-testid="position-supply"
-            >
-              <Trans>Supply</Trans>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => openFlow(SavingsFlow.WITHDRAW)}
-              data-testid="position-withdraw"
-            >
-              <Trans>Withdraw</Trans>
-            </Button>
-          </div>
+          {isL2 ? (
+            // L2 PSM supply/withdraw still runs on the legacy widget until the L2 slices.
+            <div className="flex gap-3">
+              <Button
+                variant="primary"
+                className="flex-1"
+                onClick={() => openFlow(SavingsFlow.SUPPLY)}
+                data-testid="position-supply"
+              >
+                <Trans>Supply</Trans>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => openFlow(SavingsFlow.WITHDRAW)}
+                data-testid="position-withdraw"
+              >
+                <Trans>Withdraw</Trans>
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <SavingsSupplyPanel onSuccess={refreshPosition} />
+              {/* Withdraw still opens the legacy modal until the withdraw slice. */}
+              <Button
+                variant="outline"
+                onClick={() => openFlow(SavingsFlow.WITHDRAW)}
+                data-testid="position-withdraw"
+              >
+                <Trans>Withdraw</Trans>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
