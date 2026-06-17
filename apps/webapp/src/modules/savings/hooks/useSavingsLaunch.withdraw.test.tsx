@@ -38,6 +38,9 @@ vi.mock('wagmi', async importOriginal => {
     ...actual,
     useChainId: () => 1,
     useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
+    // The orchestrator + useBatchUpgradeAndSavingsSupply read useAccount (not the
+    // exported useConnection); without this it reaches real wagmi → useConfig.
+    useAccount: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
     useBlockNumber: () => ({ data: 0n })
   };
 });
@@ -88,6 +91,18 @@ vi.mock('@/hooks/shared/useTransactionFlow', () => ({
 
 vi.mock('@/hooks/savings/useSavingsAllowance', () => ({
   useSavingsAllowance: () => ({
+    data: 0n,
+    error: null,
+    isLoading: false,
+    mutate: () => undefined,
+    dataSources: []
+  })
+}));
+
+// DAI -> daiUsds allowance, read by the always-mounted (disabled) upgrade engine
+// and the orchestrator. Irrelevant to the withdraw path under test.
+vi.mock('@/hooks/tokens/useTokenAllowance', () => ({
+  useTokenAllowance: () => ({
     data: 0n,
     error: null,
     isLoading: false,

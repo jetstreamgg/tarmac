@@ -36,6 +36,9 @@ vi.mock('wagmi', async importOriginal => {
     ...actual,
     useChainId: () => 1,
     useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
+    // The orchestrator + useBatchUpgradeAndSavingsSupply read useAccount (not the
+    // exported useConnection); without this it reaches real wagmi → useConfig.
+    useAccount: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false }),
     useBlockNumber: () => ({ data: 0n })
   };
 });
@@ -85,9 +88,12 @@ vi.mock('@/hooks/shared/useWriteContractFlow', () => ({
 // Capture the exact Call[] the engine hands to the transaction flow — this is
 // the only channel through which calldata leaves useBatchSavingsSupply, so it is
 // precisely "the calls that get signed". The engine itself is left unmodified.
+// The orchestrator now also mounts useBatchUpgradeAndSavingsSupply (disabled on
+// the USDS path); guard the capture on `enabled` so only the routed engine's
+// calls are recorded.
 vi.mock('@/hooks/shared/useTransactionFlow', () => ({
-  useTransactionFlow: (params: { calls: RawCall[] }) => {
-    h.capturedCalls = params.calls;
+  useTransactionFlow: (params: { calls: RawCall[]; enabled?: boolean }) => {
+    if (params.enabled) h.capturedCalls = params.calls;
     return {
       error: null,
       isLoading: false,
@@ -103,6 +109,19 @@ vi.mock('@/hooks/shared/useTransactionFlow', () => ({
 vi.mock('@/hooks/savings/useSavingsAllowance', () => ({
   useSavingsAllowance: () => ({
     data: h.allowance,
+    error: null,
+    isLoading: false,
+    mutate: () => undefined,
+    dataSources: []
+  })
+}));
+
+// DAI -> daiUsds allowance, read by the always-mounted (disabled) upgrade engine
+// and the orchestrator's step labels. Irrelevant to the USDS supply path under
+// test — a large value keeps the disabled hook quiet.
+vi.mock('@/hooks/tokens/useTokenAllowance', () => ({
+  useTokenAllowance: () => ({
+    data: parseUnits('1000000', 18),
     error: null,
     isLoading: false,
     mutate: () => undefined,

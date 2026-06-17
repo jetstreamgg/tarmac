@@ -1,7 +1,18 @@
 import { useCallback, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
+import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
-import { type Token, useBatchSavingsSupply, useSavingsAllowance, useSavingsWithdraw } from '@/hooks';
+import {
+  type Token,
+  TOKENS,
+  daiUsdsAddress,
+  mcdDaiAddress,
+  useBatchSavingsSupply,
+  useBatchUpgradeAndSavingsSupply,
+  useSavingsAllowance,
+  useSavingsWithdraw,
+  useTokenAllowance
+} from '@/hooks';
 import { formatBigInt } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 
@@ -35,10 +46,15 @@ export interface UseSavingsLaunchResult {
  * to the correct (unmodified) call-builder engine hook, spreads the context's
  * `txCallbacks` into it, and describes the review modal.
  *
- * Slice 01 wired mainnet USDS supply via `useBatchSavingsSupply`; slice 02 adds
- * the withdraw branch via `useSavingsWithdraw`. Later slices extend it with DAI
- * upgrade-and-supply and the L2 PSM paths — each routing to its own engine hook,
- * never re-deriving calldata here.
+ * Routing (slices 01–03):
+ *  - supply + USDS → `useBatchSavingsSupply` (optional approve → deposit)
+ *  - supply + DAI  → `useBatchUpgradeAndSavingsSupply` (optional approve-DAI →
+ *    daiToUsds → optional approve-USDS → deposit) — the multi-step path
+ *  - withdraw      → `useSavingsWithdraw` (`max` resolves via maxWithdraw(owner))
+ *
+ * The engines own all calldata. Allowance reads here are READ ONLY — they label
+ * the modal's approve steps; the approve/deposit calls (and the USDT/allowance
+ * derivation, landmine #1) are built entirely inside the engine hooks.
  */
 export function useSavingsLaunch({
   flow,
@@ -50,25 +66,40 @@ export function useSavingsLaunch({
   onSuccess
 }: UseSavingsLaunchParams): UseSavingsLaunchResult {
   const { launch: launchModal, txCallbacks } = useTransaction();
+  const { address } = useAccount();
+  const chainId = useChainId();
 
   const isSupply = flow === 'supply';
+  // Same branch condition the legacy useSavingsTransactions orchestrator uses.
+  const isDai = isSupply && originToken.symbol === TOKENS.dai.symbol;
 
-  // READ ONLY — used solely to label the modal's approve→supply steps. The
-  // approve/deposit calls (and the USDT/allowance derivation, landmine #1) are
-  // built entirely inside useBatchSavingsSupply; TanStack dedupes this read with
-  // the engine's own.
-  const { data: allowance } = useSavingsAllowance();
-  const needsApproval = isSupply && allowance !== undefined && allowance < amount;
+  // READ ONLY — used solely to label the modal's approve steps. The approve/deposit
+  // calls (and the USDT/allowance derivation, landmine #1) are built entirely inside
+  // the engine hooks; TanStack dedupes these reads with the engines' own.
+  const { data: usdsAllowance } = useSavingsAllowance();
+  const { data: daiAllowance } = useTokenAllowance({
+    chainId,
+    contractAddress: mcdDaiAddress[chainId as keyof typeof mcdDaiAddress],
+    owner: address,
+    spender: daiUsdsAddress[chainId as keyof typeof daiUsdsAddress]
+  });
 
-  // Engines — the single source of truth for calldata. Both are called
+  const needsUsdsApproval = isSupply && usdsAllowance !== undefined && usdsAllowance < amount;
+  const needsDaiApproval = isDai && daiAllowance !== undefined && daiAllowance < amount;
+
+  // Engines — the single source of truth for calldata. All three are called
   // unconditionally (React hooks rules) and gated by `enabled` to the active
-  // flow; we only route to them and spread the context's callbacks. The withdraw
-  // amount (including the `max` → maxWithdraw(owner) resolution, landmine #1)
-  // stays entirely inside useSavingsWithdraw.
+  // flow + origin token; we only route to them and spread the context's callbacks.
   const supplyHook = useBatchSavingsSupply({
     amount,
     ref: referralCode,
-    enabled: isSupply,
+    enabled: isSupply && !isDai,
+    ...txCallbacks
+  });
+  const upgradeHook = useBatchUpgradeAndSavingsSupply({
+    amount,
+    ref: referralCode,
+    enabled: isDai,
     ...txCallbacks
   });
   const withdrawHook = useSavingsWithdraw({
@@ -78,11 +109,24 @@ export function useSavingsLaunch({
     ...txCallbacks
   });
 
-  const activeHook = isSupply ? supplyHook : withdrawHook;
+  const activeHook = isSupply ? (isDai ? upgradeHook : supplyHook) : withdrawHook;
   const execute = activeHook.execute;
 
   const launch = useCallback(() => {
     if (isSupply) {
+      // Step labels mirror the engine's call count: the DAI path is up to 4 steps
+      // (approve-DAI → upgrade → approve-USDS → supply), each approve elided when
+      // its allowance is already present so the step indicator advances in lockstep.
+      const steps = isDai
+        ? ([
+            needsDaiApproval && t`Approve DAI`,
+            t`Upgrade DAI to USDS`,
+            needsUsdsApproval && t`Approve USDS`,
+            t`Supply USDS`
+          ].filter(Boolean) as string[])
+        : needsUsdsApproval
+          ? [t`Approve`, t`Supply`]
+          : [t`Supply`];
       launchModal({
         title: t`Supply to Sky Savings`,
         subtitles: {
@@ -93,7 +137,7 @@ export function useSavingsLaunch({
           error: t`An error occurred while supplying to Sky Savings.`
         },
         transactionContent,
-        steps: needsApproval ? [t`Approve`, t`Supply`] : [t`Supply`],
+        steps,
         confirmLabel: t`Supply`,
         onConfirm: execute,
         onSuccess,
@@ -140,12 +184,14 @@ export function useSavingsLaunch({
     }
   }, [
     isSupply,
+    isDai,
     max,
     launchModal,
     amount,
     originToken.symbol,
     transactionContent,
-    needsApproval,
+    needsUsdsApproval,
+    needsDaiApproval,
     execute,
     onSuccess
   ]);
