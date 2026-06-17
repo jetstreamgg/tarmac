@@ -10,6 +10,7 @@ import {
   mcdDaiAddress,
   psm3L2Address,
   useBatchPsmSwapExactIn,
+  useBatchPsmSwapExactOut,
   useBatchSavingsSupply,
   useBatchUpgradeAndSavingsSupply,
   useSavingsAllowance,
@@ -39,6 +40,19 @@ export interface UseSavingsLaunchParams {
    * `useSavingsSupplyMinAmountOut`) and passed straight through to the engine.
    */
   minAmountOut?: bigint;
+  /**
+   * L2 PSM withdraw only. `max` swaps the whole sUSDS balance out via
+   * `swapExactIn(sUSDS → token)`; a specific amount caps the sUSDS in via
+   * `swapExactOut(…, amountOut, maxAmountIn)`. All three are computed by the panel
+   * from the PSM preview reads (mirroring the legacy L2 widget) and passed straight
+   * through to the engines:
+   *  - `sUsdsBalance` — the whole sUSDS balance (max withdraw `amountIn`)
+   *  - `minAmountOutForWithdrawAll` — the origin token floor for a max withdraw
+   *  - `maxAmountInForWithdraw` — the sUSDS ceiling for a specific-amount withdraw
+   */
+  sUsdsBalance?: bigint;
+  minAmountOutForWithdrawAll?: bigint;
+  maxAmountInForWithdraw?: bigint;
   /** Review-screen body; the panel passes a token/amount preview. */
   transactionContent?: ReactNode;
   /** Refetch position / balances after a successful transaction. */
@@ -79,6 +93,9 @@ export function useSavingsLaunch({
   max = false,
   referralCode,
   minAmountOut,
+  sUsdsBalance,
+  minAmountOutForWithdrawAll,
+  maxAmountInForWithdraw,
   transactionContent,
   onSuccess
 }: UseSavingsLaunchParams): UseSavingsLaunchResult {
@@ -91,6 +108,7 @@ export function useSavingsLaunch({
   // Same branch condition the legacy useSavingsTransactions orchestrator uses.
   // DAI is a mainnet-only origin; on L2 the PSM path takes precedence.
   const isDai = isSupply && !isL2 && originToken.symbol === TOKENS.dai.symbol;
+  const isL2Withdraw = !isSupply && isL2;
   const originDecimals = getTokenDecimals(originToken, chainId);
 
   // READ ONLY — used solely to label the modal's approve steps. The approve/deposit/swap
@@ -103,10 +121,18 @@ export function useSavingsLaunch({
     owner: address,
     spender: daiUsdsAddress[chainId as keyof typeof daiUsdsAddress]
   });
-  // L2 PSM assetIn → psm3L2 allowance (disabled on mainnet: spender undefined).
+  // L2 PSM supply assetIn (the origin token) → psm3L2 allowance (disabled on
+  // mainnet: spender undefined).
   const { data: psmAllowance } = useTokenAllowance({
     chainId,
     contractAddress: originToken.address[chainId],
+    owner: address,
+    spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
+  });
+  // L2 PSM withdraw flips the assetIn to sUSDS → psm3L2 — a separate allowance.
+  const { data: psmWithdrawAllowance } = useTokenAllowance({
+    chainId,
+    contractAddress: TOKENS.susds.address[chainId],
     owner: address,
     spender: psm3L2Address[chainId as keyof typeof psm3L2Address]
   });
@@ -114,6 +140,10 @@ export function useSavingsLaunch({
   const needsUsdsApproval = isSupply && usdsAllowance !== undefined && usdsAllowance < amount;
   const needsDaiApproval = isDai && daiAllowance !== undefined && daiAllowance < amount;
   const needsPsmApproval = isSupply && isL2 && psmAllowance !== undefined && psmAllowance < amount;
+  // The sUSDS spent on a withdraw: the whole balance (max) or the exact-out ceiling.
+  const withdrawApproveAmount = max ? (sUsdsBalance ?? 0n) : (maxAmountInForWithdraw ?? 0n);
+  const needsPsmWithdrawApproval =
+    isL2Withdraw && psmWithdrawAllowance !== undefined && psmWithdrawAllowance < withdrawApproveAmount;
 
   // L2 PSM referral is a bigint (mainnet deposit's is a number — do not unify).
   const psmReferralCode = referralCode ? BigInt(referralCode) : undefined;
@@ -142,14 +172,45 @@ export function useSavingsLaunch({
     enabled: isSupply && isL2,
     ...txCallbacks
   });
+  // L2 PSM withdraw, max: swap the whole sUSDS balance out (sUSDS → token).
+  const psmWithdrawMaxHook = useBatchPsmSwapExactIn({
+    assetIn: TOKENS.susds.address[chainId],
+    assetOut: originToken.address[chainId],
+    amountIn: sUsdsBalance ?? 0n,
+    minAmountOut: minAmountOutForWithdrawAll ?? 0n,
+    referralCode: psmReferralCode,
+    enabled: isL2Withdraw && max,
+    ...txCallbacks
+  });
+  // L2 PSM withdraw, specific amount: take exactly `amount` token out, capping
+  // the sUSDS in at `maxAmountInForWithdraw`.
+  const psmWithdrawHook = useBatchPsmSwapExactOut({
+    assetIn: TOKENS.susds.address[chainId],
+    assetOut: originToken.address[chainId],
+    amountOut: amount,
+    maxAmountIn: maxAmountInForWithdraw ?? 0n,
+    referralCode: psmReferralCode,
+    enabled: isL2Withdraw && !max,
+    ...txCallbacks
+  });
   const withdrawHook = useSavingsWithdraw({
     amount,
     max,
-    enabled: !isSupply,
+    enabled: !isSupply && !isL2,
     ...txCallbacks
   });
 
-  const activeHook = isSupply ? (isL2 ? psmSupplyHook : isDai ? upgradeHook : supplyHook) : withdrawHook;
+  const activeHook = isSupply
+    ? isL2
+      ? psmSupplyHook
+      : isDai
+        ? upgradeHook
+        : supplyHook
+    : isL2
+      ? max
+        ? psmWithdrawMaxHook
+        : psmWithdrawHook
+      : withdrawHook;
   const execute = activeHook.execute;
 
   const launch = useCallback(() => {
@@ -198,6 +259,11 @@ export function useSavingsLaunch({
         }
       });
     } else {
+      // Mainnet withdraw is a single signature (you already own the sUSDS). L2
+      // withdraw swaps sUSDS → token through the PSM, so it needs an approve when
+      // the sUSDS → psm3L2 allowance is short — elided otherwise so the step
+      // indicator advances in lockstep with the engine's call count.
+      const steps = needsPsmWithdrawApproval ? [t`Approve`, t`Withdraw`] : [t`Withdraw`];
       launchModal({
         title: t`Withdraw from Sky Savings`,
         subtitles: {
@@ -210,8 +276,7 @@ export function useSavingsLaunch({
           error: t`An error occurred while withdrawing from Sky Savings.`
         },
         transactionContent,
-        // Withdraw is a single signature — you already own the sUSDS, no approve.
-        steps: [t`Withdraw`],
+        steps,
         confirmLabel: t`Withdraw`,
         onConfirm: execute,
         onSuccess,
@@ -222,7 +287,7 @@ export function useSavingsLaunch({
           data: {
             module: 'savings',
             originToken: originToken.symbol,
-            amount: Number(formatUnits(amount, 18))
+            amount: Number(formatUnits(amount, originDecimals))
           }
         }
       });
@@ -240,6 +305,7 @@ export function useSavingsLaunch({
     needsUsdsApproval,
     needsDaiApproval,
     needsPsmApproval,
+    needsPsmWithdrawApproval,
     execute,
     onSuccess
   ]);

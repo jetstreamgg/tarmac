@@ -3,7 +3,15 @@ import { useChainId, useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { TOKENS, useTokenBalance, useSavingsData, getTokenDecimals, type Token } from '@/hooks';
+import {
+  TOKENS,
+  useTokenBalance,
+  useSavingsData,
+  getTokenDecimals,
+  usePreviewSwapExactIn,
+  usePreviewSwapExactOut,
+  type Token
+} from '@/hooks';
 import { formatBigInt, formatNumber, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
@@ -25,6 +33,9 @@ const ORIGIN_TOKENS: Record<OriginSymbol, Token> = {
 };
 const MAINNET_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'DAI'];
 const L2_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
+// L2 withdraw lets the user pick the destination token (USDS / USDC); mainnet
+// withdraw is always USDS.
+const L2_WITHDRAW_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
 
 // Parse the raw input to a bigint at the origin token's decimals (USDC is 6 on
 // L2); partial/invalid input → 0.
@@ -43,11 +54,16 @@ function parseAmount(value: string, decimals: number): bigint {
  * amount entry and the supply/withdraw choice happen inline, and confirming hands
  * off to the shared review modal via `useSavingsLaunch().launch()`.
  *
- * Mainnet only: supply draws from the wallet balance of the selected origin token
+ * Mainnet: supply draws from the wallet balance of the selected origin token
  * (USDS or DAI — DAI upgrades to USDS then deposits), withdraw from the savings
  * position. A withdraw "Max" flags the engine to redeem the whole position via
  * `maxWithdraw(owner)` (no dust), rather than passing a stale displayed balance.
- * L2 PSM stays on the legacy widget until the L2 slices.
+ *
+ * L2: supply/withdraw swap through the PSM. Supply takes USDS/USDC and surfaces the
+ * sUSDS slippage floor; withdraw swaps sUSDS back to the chosen destination token —
+ * a "Max" swaps the whole sUSDS balance out (swapExactIn), otherwise a specific
+ * amount caps the sUSDS in (swapExactOut). The PSM min-out / max-in bounds are
+ * computed here and handed to the orchestrator.
  */
 export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => void }) {
   const chainId = useChainId();
@@ -61,9 +77,12 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
   const [max, setMax] = useState(false);
 
   const isSupply = flow === 'supply';
-  // DAI (mainnet) / USDC (L2) origins apply to supply only; withdraw is USDS.
-  const supplyOrigins = isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS;
-  const originToken = isSupply ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
+  // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2).
+  // Withdraw offers a destination choice only on L2 (USDS/USDC); mainnet withdraw
+  // is USDS-only.
+  const showOriginSelect = isSupply || isL2;
+  const origins = isSupply ? (isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS) : L2_WITHDRAW_ORIGINS;
+  const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
   const amount = parseAmount(value, originDecimals);
 
@@ -72,13 +91,33 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
     chainId,
     token: originToken.address[chainId]
   });
+  // sUSDS token balance — the whole of it is swapped out on a max L2 withdraw.
+  const { data: susdsBalance } = useTokenBalance({
+    address,
+    chainId,
+    token: TOKENS.susds.address[chainId]
+  });
 
   // L2 PSM supply slippage floor (chi-projected sUSDS out). The orchestrator hands
   // this straight to the engine; it's ignored on the mainnet / withdraw paths.
   const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
 
-  // Supply draws from the origin token's wallet balance; withdraw from the position.
-  const sourceBalance = isSupply ? (walletBalance?.value ?? 0n) : (savingsData?.userSavingsBalance ?? 0n);
+  // L2 PSM withdraw previews (mirror the legacy L2 widget; no-ops on mainnet):
+  //  - convert the whole sUSDS balance to the destination token → max-withdraw
+  //    floor + the withdrawable balance shown to the user
+  //  - the sUSDS in needed to take exactly `amount` destination token out → the
+  //    specific-withdraw ceiling
+  const convertedBalance = usePreviewSwapExactIn(susdsBalance?.value ?? 0n, TOKENS.susds, originToken);
+  const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(amount, TOKENS.susds, originToken);
+
+  // Supply draws from the origin token's wallet balance; withdraw from the
+  // position (mainnet: the USDS-denominated savings balance; L2: the sUSDS balance
+  // converted to the destination token).
+  const sourceBalance = isSupply
+    ? (walletBalance?.value ?? 0n)
+    : isL2
+      ? convertedBalance.value
+      : (savingsData?.userSavingsBalance ?? 0n);
   const isZero = amount === 0n;
   const insufficient = isConnected && !max && amount > sourceBalance;
 
@@ -86,10 +125,14 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
     flow,
     originToken,
     amount,
-    // `max` only applies to withdraw — it routes the engine to maxWithdraw(owner).
+    // `max` only applies to withdraw — it routes to maxWithdraw(owner) on mainnet
+    // or swapExactIn(whole sUSDS balance) on L2.
     max: !isSupply && max,
     referralCode: REFERRAL_CODE,
     minAmountOut,
+    sUsdsBalance: susdsBalance?.value,
+    minAmountOutForWithdrawAll: convertedBalance.value,
+    maxAmountInForWithdraw,
     transactionContent: (
       <div className="flex items-center gap-2 py-1" data-testid="savings-tx-preview">
         <TokenIcon className="h-6 w-6" token={{ symbol: originToken.symbol }} showChainIcon={false} />
@@ -163,11 +206,12 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
         </button>
       </div>
 
-      {/* Supply origin token: USDS deposits/swaps directly; DAI upgrades to USDS
-          first (mainnet); USDC swaps through the PSM (L2). */}
-      {isSupply && (
+      {/* Origin/destination token. Supply: USDS deposits/swaps directly; DAI
+          upgrades to USDS first (mainnet); USDC swaps through the PSM (L2).
+          Withdraw (L2 only): the destination token the sUSDS is swapped out to. */}
+      {showOriginSelect && (
         <div className="flex items-center gap-1" data-testid="savings-origin-select">
-          {supplyOrigins.map(symbol => (
+          {origins.map(symbol => (
             <button
               key={symbol}
               type="button"
