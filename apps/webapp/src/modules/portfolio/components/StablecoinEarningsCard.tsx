@@ -2,17 +2,24 @@ import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { formatDecimalPercentage, formatUsd } from '@/utils';
-import { Button } from '@/components/ui/button';
 import { GainValue } from '@/components/ui/GainValue';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import type { SuppliedView } from '../helpers/suppliedView';
 import { PortfolioDonutChart, type DonutSegment } from './PortfolioDonutChart';
+import { PortfolioTabs, type PortfolioTab } from './PortfolioTabs';
 
-type EarningsTab = 'supplied' | 'idle';
-
-export function StablecoinEarningsCard({ view, isLoading }: { view: SuppliedView; isLoading: boolean }) {
-  const [tab, setTab] = useState<EarningsTab>('supplied');
+export function StablecoinEarningsCard({
+  view,
+  isLoading,
+  tab,
+  onTabChange
+}: {
+  view: SuppliedView;
+  isLoading: boolean;
+  tab: PortfolioTab;
+  onTabChange: (tab: PortfolioTab) => void;
+}) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const showSkeleton = isLoading && view.positions.length === 0;
@@ -54,27 +61,7 @@ export function StablecoinEarningsCard({ view, isLoading }: { view: SuppliedView
       className="bg-container rounded-3xl border p-6 bg-blend-overlay backdrop-blur-[50px] md:p-8"
       data-testid="stablecoin-earnings-card"
     >
-      {/* Tabs */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant={tab === 'supplied' ? 'pill' : 'chip'}
-          size="xs"
-          className="h-8 px-4 text-sm"
-          aria-pressed={tab === 'supplied'}
-          onClick={() => setTab('supplied')}
-        >
-          <Trans>Supplied</Trans>
-        </Button>
-        <Button
-          variant={tab === 'idle' ? 'pill' : 'chip'}
-          size="xs"
-          className="h-8 px-4 text-sm"
-          aria-pressed={tab === 'idle'}
-          onClick={() => setTab('idle')}
-        >
-          <Trans>Idle</Trans>
-        </Button>
-      </div>
+      <PortfolioTabs tab={tab} onTabChange={onTabChange} />
 
       {tab === 'idle' ? (
         // TODO(D1): Idle tab — wire wallet stablecoin balances once requirements land.

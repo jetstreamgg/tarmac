@@ -31,6 +31,7 @@ describe('buildSuppliedView', () => {
       name: 'Sky Savings Rate',
       tokenSymbol: 'sUSDS',
       kind: 'savings',
+      detailPath: '/earn/savings',
       rate: { value: 0.05, formatted: '5.00%' },
       position: amount(900, { 1: 600, 8453: 300 })
     }),
@@ -39,6 +40,7 @@ describe('buildSuppliedView', () => {
       name: 'USDS Flagship',
       tokenSymbol: 'USDS',
       kind: 'vault',
+      detailPath: '/earn/vaults/morpho/0xabc',
       rate: { value: 0.1, formatted: '10.00%' },
       position: amount(80, { 1: 80 })
     }),
@@ -47,6 +49,7 @@ describe('buildSuppliedView', () => {
       name: 'stUSDS',
       tokenSymbol: 'stUSDS',
       kind: 'stusds',
+      detailPath: '/earn/expert/stusds',
       rate: { value: 0.2, formatted: '20.00%' },
       position: amount(20, { 1: 20 })
     })
@@ -65,6 +68,29 @@ describe('buildSuppliedView', () => {
     const view = buildSuppliedView(rows, 'all');
     expect(view.positions[0].color).toBe(resolveTokenColor('sUSDS'));
     expect(view.positions[2].color).toBe('#F17FBD'); // stUSDS pink
+  });
+
+  it('carries the registry detailPath onto each position', () => {
+    const view = buildSuppliedView(rows, 'all');
+    expect(view.positions.map(p => p.detailPath)).toEqual([
+      '/earn/savings',
+      '/earn/vaults/morpho/0xabc',
+      '/earn/expert/stusds'
+    ]);
+  });
+
+  it('lists a position’s balance-bearing chains for the "all" scope', () => {
+    const view = buildSuppliedView(rows, 'all');
+    expect(view.positions.find(p => p.id === 'savings')?.chainIds).toEqual([1, 8453]);
+    expect(view.positions.find(p => p.id === 'vault-usds')?.chainIds).toEqual([1]);
+  });
+
+  it('scopes chainIds to the selected chain', () => {
+    const base = buildSuppliedView(rows, 8453);
+    expect(base.positions.map(p => p.chainIds)).toEqual([[8453]]);
+
+    const ethereum = buildSuppliedView(rows, 1);
+    expect(ethereum.positions.map(p => p.chainIds)).toEqual([[1], [1], [1]]);
   });
 
   it('computes projected earnings and supplied-weighted average rate', () => {

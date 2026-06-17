@@ -15,6 +15,15 @@ export type SuppliedPosition = {
   color: string;
   /** Share of total supplied, 0..1. */
   share: number;
+  /** In-app product page (registry route contract) — Supply/Manage destination. */
+  detailPath: string;
+  /**
+   * Chains where this position holds a balance, scoped to the active filter:
+   * `'all'` → every `byChain` key with a positive amount; a specific chain →
+   * just that chain (the position only made the cut because it has a balance
+   * there). Drives the stacked network badge. Sorted ascending.
+   */
+  chainIds: number[];
 };
 
 export type SuppliedView = {
@@ -58,6 +67,17 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     return network === 'all' ? row.position.totalUsd : (row.position.byChain?.[network] ?? 0);
   };
 
+  // 'all' → the chains this position actually holds a balance on; a specific
+  // chain → just that chain (the row only survives the filter with a balance
+  // there). Always sorted, for a stable badge order.
+  const chainsFor = (row: EarnProductRow): number[] => {
+    if (network !== 'all') return [network];
+    return Object.entries(row.position?.byChain ?? {})
+      .filter(([, usd]) => usd > 0)
+      .map(([id]) => Number(id))
+      .sort((a, b) => a - b);
+  };
+
   // Network options come from the full (unfiltered) byChain map so selecting a
   // network never removes the option you'd need to switch back from.
   const networkSet = new Set<number>();
@@ -82,7 +102,9 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     amountUsd,
     rate: row.rate.value,
     color: resolveTokenColor(row.tokenSymbol),
-    share: totalSupplied > 0 ? amountUsd / totalSupplied : 0
+    share: totalSupplied > 0 ? amountUsd / totalSupplied : 0,
+    detailPath: row.detailPath,
+    chainIds: chainsFor(row)
   }));
 
   const projected1Y = positions.reduce((acc, p) => acc + p.amountUsd * (p.rate ?? 0), 0);

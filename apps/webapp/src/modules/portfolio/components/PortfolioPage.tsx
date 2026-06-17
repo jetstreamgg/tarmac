@@ -8,6 +8,8 @@ import { FilterSelect, type FilterOption } from '@/components/product/FilterSele
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
+import { SuppliedPositionsCarousel } from './SuppliedPositionsCarousel';
+import { type PortfolioTab } from './PortfolioTabs';
 
 export function PortfolioPage() {
   const { rows, isLoading } = useEarnMarketplace();
@@ -17,6 +19,8 @@ export function PortfolioPage() {
 
   // 'all' or a chain id (as string, the FilterSelect value type).
   const [selectedNetwork, setSelectedNetwork] = useState('all');
+  // Supplied/Idle is shared across sections (earnings card + positions carousel).
+  const [tab, setTab] = useState<PortfolioTab>('supplied');
 
   const view = buildSuppliedView(rows, selectedNetwork === 'all' ? 'all' : Number(selectedNetwork));
 
@@ -69,7 +73,8 @@ export function PortfolioPage() {
         />
       </div>
 
-      <StablecoinEarningsCard view={view} isLoading={isLoading} />
+      <StablecoinEarningsCard view={view} isLoading={isLoading} tab={tab} onTabChange={setTab} />
+      <SuppliedPositionsCarousel view={view} isLoading={isLoading} tab={tab} onTabChange={setTab} />
     </div>
   );
 }
