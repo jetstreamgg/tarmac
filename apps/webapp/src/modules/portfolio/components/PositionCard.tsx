@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Morpho } from '@/widgets';
+import { Morpho, Pendle } from '@/widgets';
 import { formatDecimalPercentage, formatUsd, getChainIcon } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { GainValue } from '@/components/ui/GainValue';
@@ -61,6 +61,14 @@ export function PositionCard({ position, onSelect }: { position: SuppliedPositio
           {position.name}
         </Text>
         {isMorphoVault(position) && <Morpho className="h-3.5 w-3.5 rounded-sm" />}
+        {position.kind === 'fixed' && (
+          <span
+            className="flex h-3.5 w-3.5 items-center justify-center rounded-sm text-white"
+            style={{ backgroundColor: RING_PENDLE }}
+          >
+            <Pendle className="h-2.5 w-2.5" />
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-5">
