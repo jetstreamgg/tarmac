@@ -44,7 +44,8 @@ export function ChainModal({
   dataTestId = 'chain-modal-trigger',
   children,
   nextIntent,
-  disabled = false
+  disabled = false,
+  chainIds
 }: {
   showLabel?: boolean;
   showDropdownIcon?: boolean;
@@ -53,6 +54,8 @@ export function ChainModal({
   children?: React.ReactNode;
   nextIntent?: Intent;
   disabled?: boolean;
+  /** Restrict the switchable network list to these chain ids (per-product scoping). */
+  chainIds?: number[];
 }) {
   const [open, setOpen] = useState(false);
   const chainId = useChainId();
@@ -109,6 +112,7 @@ export function ChainModal({
             </div>
           )}
           {chains
+            .filter(chain => (chainIds ? chainIds.includes(chain.id) : true))
             .filter(chain => (isSafeWallet ? chain.id === chainId : true))
             .map(chain => (
               <Button

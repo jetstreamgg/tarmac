@@ -7,8 +7,6 @@ import { VStack } from './VStack';
 import { useConnectedContext } from '@/modules/ui/context/ConnectedContext';
 import { UnsupportedNetworkPage } from './UnsupportedNetworkPage';
 import { Text } from '@/modules/layout/components/Typography';
-import { FooterLinks } from './FooterLinks';
-import { useBreakpointIndex, BP } from '@/modules/ui/hooks/useBreakpointIndex';
 import { IS_DEVELOPMENT_ENV, IS_STAGING_ENV } from '@/lib/constants';
 import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
@@ -26,7 +24,6 @@ export function Layout({
   const { siteConfig } = useContext(ConfigContext);
   const { chain } = useConnection();
   const { isConnectedAndAcceptedTerms } = useConnectedContext();
-  const { bpi } = useBreakpointIndex();
 
   useWalletAnalytics();
 
@@ -43,7 +40,9 @@ export function Layout({
 
       <VStack
         className={
-          'bg-app-background flex max-h-svh min-h-svh max-w-full items-center overflow-auto bg-cover bg-center bg-no-repeat md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
+          // Dark: the sky image blended (luminosity) with the app container's
+          // #040434 backdrop so it takes that hue; light keeps the lilac gradient.
+          'bg-app-background light:bg-blend-normal flex max-h-svh min-h-svh max-w-full items-center overflow-auto [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
         }
       >
         <ErrorBoundary>
@@ -62,7 +61,6 @@ export function Layout({
             <AuthWrapper>{children}</AuthWrapper>
           )}
         </ErrorBoundary>
-        {bpi > BP.sm && <FooterLinks />}
       </VStack>
       <Banner />
       {showEnvInfo && (

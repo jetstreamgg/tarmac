@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/cn';
 import { HStack } from '@/modules/layout/components/HStack';
 import { formatNumber } from '@/utils';
 import { useMemo, useState, useRef, useEffect, useId } from 'react';
@@ -79,7 +80,7 @@ const TimeframeControls = ({
           key={tfKey}
           className={
             activeTimeframe === tfKey
-              ? 'text-text bg-[rgb(60,50,122)] hover:bg-[rgb(60,50,122)] active:bg-[rgb(60,50,122)] light:bg-[rgb(125,108,242)] light:hover:bg-[rgb(125,108,242)] light:active:bg-[rgb(125,108,242)]'
+              ? 'text-text light:bg-[rgb(125,108,242)] light:hover:bg-[rgb(125,108,242)] light:active:bg-[rgb(125,108,242)] bg-[rgb(60,50,122)] hover:bg-[rgb(60,50,122)] active:bg-[rgb(60,50,122)]'
               : ''
           }
           onClick={() => {
@@ -185,6 +186,50 @@ export type Data = {
   tooltipLabel?: string;
 };
 
+const TIMEFRAME_OPTIONS: { value: TimeFrame; label: string }[] = [
+  { value: 'w', label: '1W' },
+  { value: 'm', label: '1M' },
+  { value: 'y', label: '1Y' },
+  { value: 'all', label: 'All' }
+];
+
+/**
+ * Rounded segmented pill group used by the `detail` variant header (the Rate|TVL
+ * metric toggle and the timeframe toggle in the Figma product-detail chart).
+ */
+function SegmentedPills<T extends string>({
+  options,
+  value,
+  onChange,
+  dataTestId
+}: {
+  options: { value: T; label: React.ReactNode }[];
+  value: T;
+  onChange: (value: T) => void;
+  dataTestId?: string;
+}) {
+  return (
+    <div className="bg-chartSelect inline-flex items-center gap-1 rounded-full p-1" data-testid={dataTestId}>
+      {options.map(option => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          data-state={value === option.value ? 'active' : 'inactive'}
+          className={cn(
+            'rounded-full px-3 py-1 text-sm leading-none transition-colors',
+            value === option.value
+              ? 'from-primary-start/100 to-primary-end/100 text-text bg-radial-(--gradient-position)'
+              : 'text-selectActive light:text-textSecondary hover:text-text'
+          )}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 interface ChartProps {
   data: Data[];
   symbol?: string;
@@ -198,6 +243,14 @@ interface ChartProps {
   displayValue?: number;
   tooltipLabel?: string;
   icons?: React.ReactNode;
+  /** 'detail' switches to the product-detail header (label + value + Rate|TVL toggle). */
+  variant?: 'default' | 'detail';
+  /** detail variant: small label above the value (e.g. "Current Rate"). */
+  label?: React.ReactNode;
+  /** detail variant: metric toggle options (e.g. Rate | TVL). */
+  metrics?: { value: string; label: React.ReactNode }[];
+  activeMetric?: string;
+  onMetricChange?: (value: string) => void;
 }
 
 const formatPercentage = (percentage: number, isLarge: boolean) => {
@@ -300,6 +353,32 @@ function CardTitleContent({
   );
 }
 
+/** detail-variant headline: just the formatted value (no % change / timestamp). */
+function DetailHeaderValue({
+  data,
+  displayValue,
+  isPercentage,
+  symbol,
+  prefix,
+  isLoading
+}: {
+  data: Data[];
+  displayValue?: number;
+  isPercentage: boolean;
+  symbol?: string;
+  prefix?: string;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return <Skeleton className="h-9 w-32" />;
+  }
+  const value = displayValue ?? data[data.length - 1]?.value ?? 0;
+  const formatted = `${prefix || ''}${formatNumber(value, { maxDecimals: 2, compact: true })}${
+    isPercentage ? '%' : symbol ? ` ${symbol}` : ''
+  }`;
+  return <span className="text-text text-2xl font-semibold lg:text-[28px]">{formatted}</span>;
+}
+
 function ChartContent({
   data,
   isLarge,
@@ -309,7 +388,8 @@ function ChartContent({
   activeTimeframe,
   isLoading,
   error,
-  tooltipLabel
+  tooltipLabel,
+  chartHeight
 }: {
   data: Data[];
   isLarge: boolean;
@@ -320,6 +400,7 @@ function ChartContent({
   activeTimeframe: TimeFrame;
   error?: Error | null;
   tooltipLabel?: string;
+  chartHeight?: number;
 }) {
   const { bpi } = useBreakpointIndex();
   const gradientId = useId();
@@ -338,7 +419,7 @@ function ChartContent({
         </VStack>
       }
     >
-      <ResponsiveContainer width={'100%'} height={isLarge ? 220 : 288}>
+      <ResponsiveContainer width={'100%'} height={chartHeight ?? (isLarge ? 220 : 288)}>
         <AreaChart
           data={data}
           margin={{ top: isLarge ? 12 : 30, right: 0, bottom: isLarge ? 22 : 0, left: 0 }}
@@ -392,8 +473,14 @@ export function Chart({
   dataTestId,
   displayValue,
   tooltipLabel,
-  icons
+  icons,
+  variant = 'default',
+  label,
+  metrics,
+  activeMetric,
+  onMetricChange
 }: ChartProps) {
+  const isDetail = variant === 'detail';
   const containerRef = useRef<HTMLDivElement>(null);
   const { bpi } = useBreakpointIndex();
   const isLarge = bpi >= BP.lg;
@@ -438,36 +525,78 @@ export function Chart({
     <>
       <Card
         data-testid={dataTestId}
-        className="bg-cardLight relative h-[288px] overflow-hidden p-0 lg:h-[220px] lg:p-0"
+        className={cn(
+          'relative overflow-hidden p-0',
+          isDetail ? 'bg-panel pb-3 backdrop-blur-2xl' : 'bg-cardLight h-[288px] lg:h-[220px] lg:p-0'
+        )}
         ref={containerRef}
       >
         <CardHeader className="p-5 pb-0">
-          <HStack className="h-8 w-full items-center justify-between p-0">
-            <CardTitle className="leading-loose">
-              <CardTitleContent
-                data={data}
-                isLarge={isLarge}
-                isPercentage={isPercentage}
-                symbol={symbol}
-                prefix={prefix}
-                percentage={percentage}
-                formattedPercentage={formattedPercentage}
-                isZeroPercentage={isZeroPercentage}
-                isLoading={isLoading}
-                hidePercentChange={hidePercentChange}
-                displayValue={displayValue}
-                icons={icons}
+          {isDetail ? (
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-1">
+                {label && (
+                  <span className="text-selectActive light:text-textSecondary text-[13px] leading-none">
+                    {label}
+                  </span>
+                )}
+                <DetailHeaderValue
+                  data={data}
+                  displayValue={displayValue}
+                  isPercentage={isPercentage}
+                  symbol={symbol}
+                  prefix={prefix}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {metrics && activeMetric !== undefined && onMetricChange && (
+                  <SegmentedPills
+                    options={metrics}
+                    value={activeMetric}
+                    onChange={onMetricChange}
+                    dataTestId="chart-metric-toggle"
+                  />
+                )}
+                <SegmentedPills
+                  options={TIMEFRAME_OPTIONS}
+                  value={activeTimeframe}
+                  onChange={tf => {
+                    setActiveTimeframe(tf);
+                    onTimeFrameChange?.(tf);
+                  }}
+                  dataTestId="chart-timeframe-toggle"
+                />
+              </div>
+            </div>
+          ) : (
+            <HStack className="h-8 w-full items-center justify-between p-0">
+              <CardTitle className="leading-loose">
+                <CardTitleContent
+                  data={data}
+                  isLarge={isLarge}
+                  isPercentage={isPercentage}
+                  symbol={symbol}
+                  prefix={prefix}
+                  percentage={percentage}
+                  formattedPercentage={formattedPercentage}
+                  isZeroPercentage={isZeroPercentage}
+                  isLoading={isLoading}
+                  hidePercentChange={hidePercentChange}
+                  displayValue={displayValue}
+                  icons={icons}
+                />
+                <Text variant="chartSecondary">{format(new Date(), "EEE, MMM d 'at' h:mm a")}</Text>
+              </CardTitle>
+              <TimeframeControls
+                bpi={bpi}
+                compact={width < 600}
+                activeTimeframe={activeTimeframe}
+                setActiveTimeframe={setActiveTimeframe}
+                onTimeFrameChange={onTimeFrameChange}
               />
-              <Text variant="chartSecondary">{format(new Date(), "EEE, MMM d 'at' h:mm a")}</Text>
-            </CardTitle>
-            <TimeframeControls
-              bpi={bpi}
-              compact={width < 600}
-              activeTimeframe={activeTimeframe}
-              setActiveTimeframe={setActiveTimeframe}
-              onTimeFrameChange={onTimeFrameChange}
-            />
-          </HStack>
+            </HStack>
+          )}
         </CardHeader>
         <ChartContent
           data={data}
@@ -478,16 +607,24 @@ export function Chart({
           activeTimeframe={activeTimeframe}
           isLoading={isLoading}
           error={error}
+          chartHeight={isDetail ? 280 : undefined}
           tooltipLabel={tooltipLabel}
         />
       </Card>
-      <HStack className="mt-3 justify-between">
-        {dateAxis.map((date, index) => (
-          <Text className="text-selectActive light:text-textSecondary" variant="small" key={`${date}+${index}`}>
-            {date}
-          </Text>
-        ))}
-      </HStack>
+      {/* Detail variant drops the x-axis date labels (Figma). */}
+      {!isDetail && (
+        <HStack className="mt-3 justify-between">
+          {dateAxis.map((date, index) => (
+            <Text
+              className="text-selectActive light:text-textSecondary"
+              variant="small"
+              key={`${date}+${index}`}
+            >
+              {date}
+            </Text>
+          ))}
+        </HStack>
+      )}
     </>
   );
 }
