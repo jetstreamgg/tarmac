@@ -27,6 +27,8 @@ export function useSequentialTransactionFlow(
   // Snapshot of `calls` frozen at execute() time — keeps a refetching quote
   // from swapping in different args after the user clicked Confirm.
   const transactionsRef = useRef(calls);
+  // Frozen call count for the completion check; the live `calls` length shrinks after an approve.
+  const totalCallsRef = useRef(0);
 
   // Use the stored transactions during execution
   const stableTransactions = isExecuting ? transactionsRef.current : calls;
@@ -152,7 +154,7 @@ export function useSequentialTransactionFlow(
       // Check if this was the last transaction
       const nextIndex = currentIndex + 1;
 
-      if (nextIndex >= stableTransactions.length) {
+      if (nextIndex >= totalCallsRef.current) {
         // All transactions completed
         onSuccess(txHash);
         setIsExecuting(false);
@@ -181,7 +183,6 @@ export function useSequentialTransactionFlow(
     txHash,
     txReverted,
     currentIndex,
-    stableTransactions.length,
     transactionHashes
   ]);
 
@@ -209,6 +210,7 @@ export function useSequentialTransactionFlow(
 
     if (simulationData?.request) {
       transactionsRef.current = calls; // freeze args for the whole sequence
+      totalCallsRef.current = calls.length; // and the count, for the completion check
       setIsExecuting(true);
       writeContract(simulationData.request as Parameters<typeof writeContract>[0]);
     } else {

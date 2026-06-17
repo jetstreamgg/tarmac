@@ -30,6 +30,8 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [activeConfig, setActiveConfig] = useState<TransactionConfig | null>(null);
   const configRef = useRef<TransactionConfig | null>(null);
   const activeSessionRef = useRef<string | null>(null);
+  // Mirrors txStatus for reads inside callbacks (avoids setState-inside-updater impurity).
+  const txStatusRef = useRef<TxStatus>(TxStatus.IDLE);
 
   const chainId = useChainId();
   const { address } = useConnection();
@@ -43,6 +45,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       activeSessionRef.current = config.sessionId ?? null;
       setActiveConfig(config);
       setTxStatus(TxStatus.IDLE);
+      txStatusRef.current = TxStatus.IDLE;
       setExternalLink(undefined);
       setCurrentStep(0);
       setOpen(true);
@@ -94,6 +97,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
     setOpen(false);
     setTxStatus(TxStatus.IDLE);
+    txStatusRef.current = TxStatus.IDLE;
     setExternalLink(undefined);
     setCurrentStep(0);
     setActiveConfig(null);
@@ -114,13 +118,12 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
 
   const txCallbacks: TxCallbacks = {
     onMutate: useCallback(() => {
-      setTxStatus(prev => {
-        // If already transacting, this is the next step in a sequential flow
-        if (prev === TxStatus.INITIALIZED || prev === TxStatus.LOADING) {
-          setCurrentStep(s => s + 1);
-        }
-        return TxStatus.INITIALIZED;
-      });
+      // Advance the step from a ref, not inside the setTxStatus updater (StrictMode double-invokes it).
+      if (txStatusRef.current === TxStatus.INITIALIZED || txStatusRef.current === TxStatus.LOADING) {
+        setCurrentStep(s => s + 1);
+      }
+      setTxStatus(TxStatus.INITIALIZED);
+      txStatusRef.current = TxStatus.INITIALIZED;
       setExternalLink(undefined);
 
       // Track transaction started
@@ -139,6 +142,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     onStart: useCallback(
       (hash?: string) => {
         setTxStatus(TxStatus.LOADING);
+        txStatusRef.current = TxStatus.LOADING;
         if (hash) {
           setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         }
@@ -149,6 +153,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     onSuccess: useCallback(
       (hash?: string) => {
         setTxStatus(TxStatus.SUCCESS);
+        txStatusRef.current = TxStatus.SUCCESS;
         if (hash) {
           setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         }
@@ -176,6 +181,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
     onError: useCallback(
       (error: Error, hash?: string) => {
         setTxStatus(TxStatus.ERROR);
+        txStatusRef.current = TxStatus.ERROR;
         if (hash) {
           setExternalLink(getTransactionLink(chainId, address, hash, isSafeWallet));
         }
