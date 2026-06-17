@@ -151,10 +151,8 @@ export function useSequentialTransactionFlow(
       newHashes[currentIndex] = txHash;
       setTransactionHashes(newHashes);
 
-      // Check if this was the last transaction
-      const nextIndex = currentIndex + 1;
-
-      if (nextIndex >= totalCallsRef.current) {
+      // Done only when every expected call has produced a hash, not merely when the index reaches the count.
+      if (newHashes.filter(Boolean).length >= totalCallsRef.current) {
         // All transactions completed
         onSuccess(txHash);
         setIsExecuting(false);
