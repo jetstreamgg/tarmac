@@ -9,13 +9,29 @@ i18n.activate('en');
 const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 
 const h = vi.hoisted(() => ({
+  chainId: 1 as number,
   walletBalance: 0n as bigint,
+  // L2 PSM mocks: the sUSDS→token converted balance (withdraw source) and the
+  // sUSDS-in ceiling for a specific withdraw, plus the supply slippage floor.
+  convertedValue: 0n as bigint,
+  maxAmountIn: 0n as bigint,
+  minAmountOut: 0n as bigint,
   prepared: true,
   execute: vi.fn(),
   update: vi.fn(),
-  // Latest params the form passed to useSavingsLaunch (flow / max / amount / origin wiring).
+  // Latest params the form passed to useSavingsLaunch (flow / max / amount / origin +
+  // the L2 PSM bounds, so the L2 routing can be asserted).
   launchParams: undefined as
-    | { flow?: string; max?: boolean; amount?: bigint; originToken?: { symbol?: string } }
+    | {
+        flow?: string;
+        max?: boolean;
+        amount?: bigint;
+        originToken?: { symbol?: string };
+        minAmountOut?: bigint;
+        sUsdsBalance?: bigint;
+        minAmountOutForWithdrawAll?: bigint;
+        maxAmountInForWithdraw?: bigint;
+      }
     | undefined
 }));
 
@@ -23,8 +39,11 @@ vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
   return {
     ...actual,
-    useChainId: () => 1,
-    useChains: () => [{ id: 1, name: 'Ethereum' }],
+    useChainId: () => h.chainId,
+    useChains: () => [
+      { id: 1, name: 'Ethereum' },
+      { id: 8453, name: 'Base' }
+    ],
     useConnection: () => ({ address: TEST_ADDRESS, isConnected: true, isConnecting: false })
   };
 });
@@ -41,18 +60,30 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: vi.fn(),
       dataSources: []
     }),
-    useTokenBalance: () => ({ data: { value: h.walletBalance }, refetch: vi.fn() })
+    useTokenBalance: () => ({ data: { value: h.walletBalance }, refetch: vi.fn() }),
+    // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
+    usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
+    usePreviewSwapExactOut: () => ({ value: h.maxAmountIn })
   };
 });
 
+// L2 PSM supply slippage floor — stubbed (the real hook reads the SSR auth oracle).
+vi.mock('../hooks/useSavingsSupplyMinAmountOut', () => ({
+  useSavingsSupplyMinAmountOut: () => h.minAmountOut
+}));
+
 // The engine seam — stubbed so the form mounts without real wagmi writes. Records
-// the params so the withdraw flow + Max → max flag wiring can be asserted.
+// the params so the withdraw flow + Max → max flag + L2 bound wiring can be asserted.
 vi.mock('../hooks/useSavingsLaunch', () => ({
   useSavingsLaunch: (params: {
     flow: string;
     max?: boolean;
     amount: bigint;
     originToken?: { symbol?: string };
+    minAmountOut?: bigint;
+    sUsdsBalance?: bigint;
+    minAmountOutForWithdrawAll?: bigint;
+    maxAmountInForWithdraw?: bigint;
   }) => {
     h.launchParams = params;
     return {
@@ -125,7 +156,11 @@ const FIGMA_ROWS = ['Savings rate', 'Supply', '1Y est. earnings', 'Network', 'Ne
 
 describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   beforeEach(() => {
+    h.chainId = 1;
     h.walletBalance = 100n * 10n ** 18n;
+    h.convertedValue = 0n;
+    h.maxAmountIn = 0n;
+    h.minAmountOut = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
@@ -186,8 +221,12 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
 
 describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
   beforeEach(() => {
+    h.chainId = 1;
     // A small wallet balance proves withdraw caps on the position, not the wallet.
     h.walletBalance = 1n * 10n ** 18n;
+    h.convertedValue = 0n;
+    h.maxAmountIn = 0n;
+    h.minAmountOut = 0n;
     h.prepared = true;
     h.execute.mockClear();
     h.update.mockClear();
@@ -244,5 +283,80 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
 
     fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
     expect(h.launchParams?.max).toBe(false);
+  });
+});
+
+describe('SavingsModalForm — L2 PSM (Base) supply/withdraw', () => {
+  beforeEach(() => {
+    h.chainId = 8453; // Base
+    h.walletBalance = 100n * 10n ** 18n;
+    // The whole sUSDS balance valued in the destination token: 200 (USDS-equivalent,
+    // the default USDS destination is 18-dec). Proves withdraw caps on the converted
+    // balance, not the 100-USDS position.
+    h.convertedValue = 200n * 10n ** 18n;
+    h.maxAmountIn = 7n * 10n ** 18n; // sUSDS-in ceiling for a specific withdraw
+    h.minAmountOut = 49n * 10n ** 17n; // 4.9 sUSDS slippage floor
+    h.prepared = true;
+    h.execute.mockClear();
+    h.update.mockClear();
+    h.launchParams = undefined;
+  });
+  afterEach(() => cleanup());
+
+  it('offers USDS and USDC supply origins (no DAI) on L2', () => {
+    renderForm('supply');
+    expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-USDC')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-DAI')).toBeNull();
+  });
+
+  it('routes the supply to the USDC origin token (PSM) when USDC is selected', () => {
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-USDC'));
+    expect(h.launchParams?.originToken?.symbol).toBe('USDC');
+  });
+
+  it('surfaces the sUSDS slippage floor ("Receive at least") once an amount is entered', () => {
+    renderForm('supply');
+    expect(screen.queryByTestId('savings-modal-row-Receive at least')).toBeNull();
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '5' } });
+    expect(screen.queryByTestId('savings-modal-row-Receive at least')).not.toBeNull();
+  });
+
+  it('passes the min sUSDS out (slippage floor) to useSavingsLaunch on L2 supply', () => {
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '5' } });
+    expect(h.launchParams?.minAmountOut).toBe(h.minAmountOut);
+  });
+
+  it('offers a USDS / USDC withdraw destination choice on L2', () => {
+    renderForm('withdraw');
+    expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-USDC')).not.toBeNull();
+  });
+
+  it('caps the L2 withdraw on the converted (sUSDS→token) balance, not the position', () => {
+    renderForm('withdraw');
+    // 150 > the 100-USDS position but < the 200 converted balance → valid, proving
+    // the L2 withdraw is bounded by the swap-out balance, not the position.
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '150' } });
+    expect(lastDisabled()).toBe(false);
+    expect(screen.queryByTestId('savings-modal-amount-error')).toBeNull();
+  });
+
+  it('Max swaps the whole sUSDS balance out (max flag + sUsdsBalance passed)', () => {
+    renderForm('withdraw');
+    fireEvent.click(screen.getByTestId('savings-modal-amount-max'));
+    expect(h.launchParams?.max).toBe(true);
+    // The whole sUSDS balance is handed to the engine for swapExactIn (no dust).
+    expect(h.launchParams?.sUsdsBalance).toBe(h.walletBalance);
+    expect(lastDisabled()).toBe(false);
+  });
+
+  it('caps a specific L2 withdraw via the sUSDS-in ceiling (swapExactOut)', () => {
+    renderForm('withdraw');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '50' } });
+    expect(h.launchParams?.max).toBe(false);
+    expect(h.launchParams?.maxAmountInForWithdraw).toBe(h.maxAmountIn);
   });
 });

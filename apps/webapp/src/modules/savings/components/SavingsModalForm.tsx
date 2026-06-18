@@ -3,16 +3,26 @@ import { useChainId, useChains, useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { getTokenDecimals, useSavingsData, useTokenBalance } from '@/hooks';
-import { formatNumber, formatPercent, isL2ChainId } from '@/utils';
+import {
+  getTokenDecimals,
+  useSavingsData,
+  useTokenBalance,
+  usePreviewSwapExactIn,
+  usePreviewSwapExactOut,
+  TOKENS
+} from '@/hooks';
+import { formatBigInt, formatNumber, formatPercent, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
+import { useSavingsSupplyMinAmountOut } from '../hooks/useSavingsSupplyMinAmountOut';
 import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
 import {
   ORIGIN_TOKENS,
   MAINNET_SUPPLY_ORIGINS,
+  L2_SUPPLY_ORIGINS,
+  L2_WITHDRAW_ORIGINS,
   SavingsOriginSelect,
   type OriginSymbol
 } from './SavingsOriginSelect';
@@ -46,8 +56,12 @@ function ModalRow({ row }: { row: SavingsModalRow }) {
  * Editable body for the has-position "Supply to / Withdraw from Sky Savings" modals
  * (Figma 527:7591 / 527:10945), mounted as the shared modal's `entry.content`. One
  * body, two flows (`flow`) — the single component the PRD calls for (module 2).
- * Mainnet supply offers a USDS/DAI origin dropdown (DAI → upgrade-and-supply);
- * withdraw is USDS-only. Slice 05 adds the L2 PSM affordances.
+ *
+ * Token choice (Figma `USDS ▾`):
+ *  - mainnet supply  → USDS / DAI (DAI routes to upgrade-and-supply, calldata unchanged)
+ *  - mainnet withdraw → USDS-only (static chip)
+ *  - L2 supply       → USDS / USDC (USDC swaps through the PSM)
+ *  - L2 withdraw     → USDS / USDC destination choice (sUSDS swaps out to the picked token)
  *
  * It owns its amount/max state and renders the input + Max + the flow's before→after
  * rows. The shared modal owns the confirm button; this body keeps that button's
@@ -57,9 +71,14 @@ function ModalRow({ row }: { row: SavingsModalRow }) {
  * directly (the modal is already open, so there is no separate review screen) —
  * calldata is identical to the inline/launch path.
  *
- * Supply spends the wallet USDS balance; withdraw spends the savings position, and
- * its Max sets the `max` flag so the engine redeems via `maxWithdraw(owner)` with no
- * dust (the UI never computes the redeem amount).
+ * Supply spends the wallet balance of the origin token; withdraw spends the position
+ * (mainnet: the USDS savings balance; L2: the sUSDS balance converted to the chosen
+ * destination token). A withdraw Max sets the `max` flag so the engine redeems the
+ * whole position with no dust — mainnet via `maxWithdraw(owner)`, L2 via
+ * `swapExactIn(whole sUSDS balance)`; the UI never computes the redeem amount. The L2
+ * PSM bounds (`minAmountOut` / `sUsdsBalance` / `minAmountOutForWithdrawAll` /
+ * `maxAmountInForWithdraw`) are computed here and handed straight to the orchestrator
+ * (mirroring `SavingsSupplyWithdrawPanel`); they are no-ops on mainnet.
  */
 export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow: SavingsLaunchFlow }) {
   const isSupply = flow === 'supply';
@@ -70,17 +89,18 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   const { updateModalContent } = useTransaction();
 
   const [value, setValue] = useState('');
-  // Withdraw-only: set by Max so the engine redeems the whole position via
-  // maxWithdraw(owner) (no dust). Cleared the moment the user edits the amount.
+  // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
+  // Cleared the moment the user edits the amount.
   const [max, setMax] = useState(false);
-  // Supply origin token (Figma `USDS ▾`). Mainnet supply offers USDS/DAI — DAI
-  // routes useSavingsLaunch to the upgrade-and-supply path (calldata unchanged).
-  // Withdraw is USDS-only here (mainnet); L2 origins arrive in slice 05.
   const [originSymbol, setOriginSymbol] = useState<OriginSymbol>('USDS');
   const isL2 = isL2ChainId(chainId);
-  const showOriginSelect = isSupply && !isL2;
-  const originOptions: OriginSymbol[] = showOriginSelect ? MAINNET_SUPPLY_ORIGINS : ['USDS'];
-  const originToken = ORIGIN_TOKENS[originSymbol];
+  // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2); withdraw
+  // offers a destination choice only on L2 (USDS/USDC). Mainnet withdraw → USDS-only
+  // static chip.
+  const showOriginSelect = isSupply || isL2;
+  const origins = isSupply ? (isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS) : L2_WITHDRAW_ORIGINS;
+  const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
+  const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
 
   const amount = parseAmount(value, originDecimals);
@@ -90,22 +110,46 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
     token: originToken.address[chainId]
   });
   const walletBalanceValue = walletBalance?.value ?? 0n;
+  // sUSDS token balance — the whole of it is swapped out on a max L2 withdraw.
+  const { data: susdsBalance } = useTokenBalance({
+    address,
+    chainId,
+    token: TOKENS.susds.address[chainId]
+  });
   const position = savingsData?.userSavingsBalance ?? 0n;
+
+  // L2 PSM bounds (no-ops on mainnet / where the flow doesn't use them):
+  //  - minAmountOut: chi-projected sUSDS-out floor for an L2 supply (swapExactIn)
+  //  - convertedBalance: the whole sUSDS balance valued in the destination token →
+  //    the L2 withdraw source balance + the max-withdraw floor (swapExactIn)
+  //  - maxAmountInForWithdraw: the sUSDS-in ceiling to take exactly `amount` out
+  //    (specific L2 withdraw, swapExactOut)
+  const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
+  const convertedBalance = usePreviewSwapExactIn(susdsBalance?.value ?? 0n, TOKENS.susds, originToken);
+  const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(amount, TOKENS.susds, originToken);
+
   // Supply is capped by the wallet balance of the origin token; withdraw by the
-  // savings position.
-  const available = isSupply ? walletBalanceValue : position;
+  // position (mainnet: USDS savings balance; L2: sUSDS converted to the destination
+  // token).
+  const available = isSupply ? walletBalanceValue : isL2 ? convertedBalance.value : position;
   const isZero = amount === 0n;
-  const insufficient = isConnected && amount > available;
+  // A max withdraw bypasses the amount check — the redeem is driven by the flag, not
+  // the displayed (rounded) value.
+  const insufficient = isConnected && !max && amount > available;
 
   const { execute, steps, prepared } = useSavingsLaunch({
     flow,
     originToken,
     amount,
     max: !isSupply && max,
-    referralCode: REFERRAL_CODE
+    referralCode: REFERRAL_CODE,
+    minAmountOut,
+    sUsdsBalance: susdsBalance?.value,
+    minAmountOutForWithdrawAll: convertedBalance.value,
+    maxAmountInForWithdraw
   });
 
-  const disabled = !isConnected || !prepared || isZero || insufficient;
+  const disabled = !isConnected || !prepared || (!max && (isZero || insufficient));
 
   // The modal's confirm calls this. `execute` is rebuilt every render (its calls
   // array is fresh each time), so pushing it directly would loop the sync below;
@@ -142,11 +186,20 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
 
   const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
   const savingsRate = savingsData ? formatPercent(savingsData.savingsRate) : NO_VALUE;
+  // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
+  // the sUSDS balance pre-converted to USDS). Express the entered amount as a USDS
+  // wad for the before→after delta: USDS/DAI are already 18-dec; an L2 USDC amount
+  // (6-dec) is widened 1:1 (the PSM swaps ≈1:1 — exact figures are stubbed per the
+  // PRD Out of Scope). Mainnet is unchanged (amount === amountWad).
+  const amountWad = originDecimals === 18 ? amount : amount * 10n ** BigInt(18 - originDecimals);
   const rows = isSupply
     ? buildSupplyModalRows({
         savingsRate,
         supplyBefore: formatUsds(position),
-        supplyAfter: formatUsds(position + amount),
+        supplyAfter: formatUsds(position + amountWad),
+        // L2 PSM supply: surface the sUSDS slippage floor once an amount is entered.
+        minReceived:
+          isL2 && !isZero ? `${formatBigInt(minAmountOut, { unit: 18, maxDecimals: 2 })} sUSDS` : undefined,
         // 1Y est. earnings has no projection source yet (PRD Out of Scope) — stubbed.
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
@@ -158,7 +211,7 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
         savingsRateBefore: savingsRate,
         savingsRateAfter: savingsRate,
         supplyBefore: formatUsds(position),
-        supplyAfter: formatUsds(position > amount ? position - amount : 0n),
+        supplyAfter: formatUsds(position > amountWad ? position - amountWad : 0n),
         earningsBefore: NO_VALUE,
         earningsAfter: NO_VALUE,
         network: networkName,

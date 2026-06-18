@@ -19,6 +19,12 @@ export type SupplyModalRowInput = {
   supplyBefore: string;
   /** Supply (position) value after the deposit. */
   supplyAfter: string;
+  /**
+   * L2 PSM supply only: the slippage floor ("Receive at least" min sUSDS out),
+   * formatted (e.g. "4.95 sUSDS"). Omitted on mainnet — Figma draws mainnet only,
+   * so this row is added "in the spirit of the design" for the L2 swap.
+   */
+  minReceived?: string;
   /** 1Y estimated earnings before — stubbed until a projection source exists. */
   earningsBefore: string;
   /** 1Y estimated earnings after — stubbed until a projection source exists. */
@@ -34,11 +40,18 @@ export type SupplyModalRowInput = {
  * `Savings rate` (single), `Supply` (before→after), `1Y est. earnings`
  * (before→after), `Network` (single), `Network fee` (single). Projection deltas
  * are stubbed by the caller per the PRD's Out of Scope (no cost-basis source yet).
+ *
+ * On L2, when `minReceived` is supplied, a `Receive at least` single row is inserted
+ * right after `Supply` to surface the PSM slippage floor — the one L2-only addition
+ * to the Figma set ("Figma is the minimum UX, not the cap").
  */
 export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalRow[] {
   return [
     { kind: 'single', label: 'Savings rate', value: input.savingsRate },
     { kind: 'delta', label: 'Supply', before: input.supplyBefore, after: input.supplyAfter },
+    ...(input.minReceived
+      ? [{ kind: 'single' as const, label: 'Receive at least', value: input.minReceived }]
+      : []),
     { kind: 'delta', label: '1Y est. earnings', before: input.earningsBefore, after: input.earningsAfter },
     { kind: 'single', label: 'Network', value: input.network },
     { kind: 'single', label: 'Network fee', value: input.networkFee }

@@ -53,6 +53,26 @@ describe('buildSupplyModalRows — Figma 527:7591 "Supply to Sky Savings"', () =
     expect(byLabel['Supply']).toMatchObject({ kind: 'delta', before: '100 USDS', after: '110 USDS' });
     expect(byLabel['1Y est. earnings']).toMatchObject({ kind: 'delta', before: '–', after: '–' });
   });
+
+  it('omits the L2 "Receive at least" row on mainnet (no minReceived)', () => {
+    const rows = buildSupplyModalRows(INPUT);
+    expect(labels(rows)).not.toContain('Receive at least');
+  });
+
+  it('appends a "Receive at least" single row after Supply when minReceived is given (L2 PSM)', () => {
+    // L2 supply surfaces the sUSDS slippage floor; placement is right after Supply.
+    const rows = buildSupplyModalRows({ ...INPUT, minReceived: '4.95 sUSDS' });
+    expect(labels(rows)).toEqual([
+      'Savings rate',
+      'Supply',
+      'Receive at least',
+      '1Y est. earnings',
+      'Network',
+      'Network fee'
+    ]);
+    const byLabel = Object.fromEntries(rows.map(r => [r.label, r]));
+    expect(byLabel['Receive at least']).toMatchObject({ kind: 'single', value: '4.95 sUSDS' });
+  });
 });
 
 describe('buildWithdrawModalRows — Figma 527:10945 "Withdraw from Sky Savings"', () => {
