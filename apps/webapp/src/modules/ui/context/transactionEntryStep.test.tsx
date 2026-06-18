@@ -143,9 +143,14 @@ describe('TransactionModal — editable entry step', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Supply' }));
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    // We left the entry screen for the wallet/status screen.
-    expect(screen.queryByTestId('entry-fields')).toBeNull();
+    // We left the entry screen for the wallet/status screen...
     expect(screen.queryByText(/confirm this transaction in your wallet/i)).not.toBeNull();
+    // ...but the entry body stays MOUNTED (just hidden) so the engine hook it owns
+    // can observe the receipt and fire onSuccess. Unmounting it here would strand the
+    // modal in LOADING — the has-position supply/withdraw stuck-modal bug.
+    const entryFields = screen.queryByTestId('entry-fields');
+    expect(entryFields).not.toBeNull();
+    expect(entryFields?.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(get().txStatus).toBeDefined();
   });
 

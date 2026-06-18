@@ -232,9 +232,18 @@ export function TransactionModal({
             </div>
           )}
 
-          {/* First-screen content: the editable entry body, or the read-only
-              review breakdown (token amounts, etc.). */}
-          {firstScreenContent && <div className="text-text">{firstScreenContent}</div>}
+          {/* The editable entry body stays MOUNTED for the modal's lifetime — it can
+              own the in-flight engine hook whose onSuccess completes the transaction,
+              so unmounting it on the transaction screen would strand the modal in
+              LOADING. It is only shown on the entry screen (hidden otherwise). The
+              read-only review breakdown owns no hook, so it renders normally. */}
+          {entry ? (
+            <div className={isEntry ? 'text-text' : 'hidden'} aria-hidden={!isEntry}>
+              {entry.content}
+            </div>
+          ) : (
+            firstScreenContent && <div className="text-text">{firstScreenContent}</div>
+          )}
 
           <div className="grow" />
 
