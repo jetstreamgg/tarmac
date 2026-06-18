@@ -225,9 +225,9 @@ function IdleContent({
           label={<Trans>1Y projected earnings</Trans>}
           value={<GainValue value={displayProjected} className="text-lg font-medium" />}
         />
-        {!activeToken && (
-          <Stat label={<Trans>Idle stablecoins</Trans>} value={<StatValue>{view.idleCount}</StatValue>} />
-        )}
+        {/* Always the total — unlike Supplied's "Active positions", this stat
+            stays fixed when focusing a single token. */}
+        <Stat label={<Trans>Idle stablecoins</Trans>} value={<StatValue>{view.idleCount}</StatValue>} />
       </FooterStats>
     </>
   );
