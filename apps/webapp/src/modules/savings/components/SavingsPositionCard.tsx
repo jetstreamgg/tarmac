@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
-import { SavingsModalSupplyForm } from './SavingsModalSupplyForm';
+import { SavingsModalForm } from './SavingsModalForm';
 
 const NO_VALUE = '–';
 
@@ -35,12 +35,12 @@ const TodoValue = () => <span className="text-textSecondary text-sm italic">TODO
  * `position` slot). The savings balance picks the card:
  *  - no position (incl. disconnected) → the no-position "Supply" entry card
  *    (`SavingsSupplyCard`, Figma 527:7404).
- *  - has position → the "My position" summary below, with the interim inline
- *    `SavingsSupplyWithdrawPanel` (replaced by Supply/Withdraw modals in slices
- *    02/03).
+ *  - has position → the "My position" summary below, with Supply / Withdraw
+ *    buttons that each open the shared editable modal (`SavingsModalForm`) for
+ *    the chosen flow.
  *
- * Both branches confirm through `useSavingsLaunch().launch()` (sUSDS
- * deposit/withdraw + DAI upgrade on mainnet, PSM swap on L2) — calldata unchanged.
+ * Both branches confirm through `useSavingsLaunch()` (sUSDS deposit/withdraw +
+ * DAI upgrade on mainnet, PSM swap on L2) — calldata unchanged.
  */
 export function SavingsPositionCard() {
   const chainId = useChainId();
@@ -53,6 +53,7 @@ export function SavingsPositionCard() {
   });
   const { launch } = useTransaction();
   const supplySessionId = useId();
+  const withdrawSessionId = useId();
 
   // Refresh position card + sUSDS balance after a successful supply/withdraw.
   // A no-position supply also flips this card to "My position" once the savings
@@ -66,7 +67,7 @@ export function SavingsPositionCard() {
   // body owns the amount and live-syncs the confirm gating + handler; the
   // placeholder onConfirm is replaced by the body's engine execute before it
   // enables. No analytics here — analytics parity is a separate sign-off-gated
-  // slice (PRD Out of Scope). Withdraw arrives in slice 03.
+  // slice (PRD Out of Scope).
   const openSupplyModal = useCallback(() => {
     launch({
       title: t`Supply to Sky Savings`,
@@ -78,7 +79,7 @@ export function SavingsPositionCard() {
       },
       sessionId: supplySessionId,
       entry: {
-        content: <SavingsModalSupplyForm sessionId={supplySessionId} />,
+        content: <SavingsModalForm sessionId={supplySessionId} flow="supply" />,
         confirmLabel: t`Supply`,
         confirmDisabled: true
       },
@@ -86,6 +87,29 @@ export function SavingsPositionCard() {
       onSuccess: refreshPosition
     });
   }, [launch, supplySessionId, refreshPosition]);
+
+  // Opens the editable "Withdraw from Sky Savings" modal (Figma 527:10945). Same
+  // entry-step machinery as supply — the body just runs the withdraw flow (its Max
+  // redeems the whole position with no dust via maxWithdraw(owner)).
+  const openWithdrawModal = useCallback(() => {
+    launch({
+      title: t`Withdraw from Sky Savings`,
+      subtitles: {
+        pending: t`Please confirm the transaction in your wallet.`,
+        loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
+        success: t`You've successfully withdrawn from Sky Savings.`,
+        error: t`An error occurred while withdrawing from Sky Savings.`
+      },
+      sessionId: withdrawSessionId,
+      entry: {
+        content: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" />,
+        confirmLabel: t`Withdraw`,
+        confirmDisabled: true
+      },
+      onConfirm: () => {},
+      onSuccess: refreshPosition
+    });
+  }, [launch, withdrawSessionId, refreshPosition]);
 
   const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
   if (!hasPosition) {
@@ -130,17 +154,27 @@ export function SavingsPositionCard() {
             <TodoValue />
           </StatRow>
         </div>
-        {/* Supply opens the editable "Supply to Sky Savings" modal. Withdraw
-            arrives in slice 03 (which removes the interim inline panel for good). */}
-        <Button
-          variant="primary"
-          className="w-full"
-          onClick={openSupplyModal}
-          disabled={!isConnected}
-          data-testid="savings-position-supply"
-        >
-          <Trans>Supply</Trans>
-        </Button>
+        {/* Supply / Withdraw each open the editable modal for their flow. */}
+        <div className="flex gap-3">
+          <Button
+            variant="primary"
+            className="flex-1"
+            onClick={openSupplyModal}
+            disabled={!isConnected}
+            data-testid="savings-position-supply"
+          >
+            <Trans>Supply</Trans>
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={openWithdrawModal}
+            disabled={!isConnected}
+            data-testid="savings-position-withdraw"
+          >
+            <Trans>Withdraw</Trans>
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -44,3 +44,40 @@ export function buildSupplyModalRows(input: SupplyModalRowInput): SavingsModalRo
     { kind: 'single', label: 'Network fee', value: input.networkFee }
   ];
 }
+
+/** Display strings for the "Withdraw from Sky Savings" modal (Figma 527:10945). */
+export type WithdrawModalRowInput = {
+  /** Savings rate before the withdrawal (the rate the user holds today). */
+  savingsRateBefore: string;
+  /** Savings rate after the withdrawal. Unchanged in practice, but Figma draws a delta. */
+  savingsRateAfter: string;
+  /** Supply (position) value before the withdrawal. */
+  supplyBefore: string;
+  /** Supply (position) value after the withdrawal. */
+  supplyAfter: string;
+  /** 1Y estimated earnings before — stubbed until a projection source exists. */
+  earningsBefore: string;
+  /** 1Y estimated earnings after — stubbed until a projection source exists. */
+  earningsAfter: string;
+  /** Network the transaction runs on (e.g. "Ethereum"). */
+  network: string;
+  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  networkFee: string;
+};
+
+/**
+ * Rows for the has-position "Withdraw from Sky Savings" modal (Figma 527:10945):
+ * `Savings rate` (before→after), `Supply` (before→after), `1Y est. earnings`
+ * (before→after), `Network` (single), `Network fee` (single). Unlike the supply
+ * modal, `Savings rate` is a before→after delta here per Figma. Projection deltas
+ * are stubbed by the caller per the PRD's Out of Scope (no cost-basis source yet).
+ */
+export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsModalRow[] {
+  return [
+    { kind: 'delta', label: 'Savings rate', before: input.savingsRateBefore, after: input.savingsRateAfter },
+    { kind: 'delta', label: 'Supply', before: input.supplyBefore, after: input.supplyAfter },
+    { kind: 'delta', label: '1Y est. earnings', before: input.earningsBefore, after: input.earningsAfter },
+    { kind: 'single', label: 'Network', value: input.network },
+    { kind: 'single', label: 'Network fee', value: input.networkFee }
+  ];
+}

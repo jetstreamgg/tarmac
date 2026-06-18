@@ -39,8 +39,8 @@ vi.mock('@/hooks', async importOriginal => {
 vi.mock('./SavingsSupplyWithdrawPanel', () => ({
   SavingsSupplyWithdrawPanel: () => <div data-testid="mock-panel" />
 }));
-vi.mock('./SavingsModalSupplyForm', () => ({
-  SavingsModalSupplyForm: () => <div data-testid="mock-modal-form" />
+vi.mock('./SavingsModalForm', () => ({
+  SavingsModalForm: ({ flow }: { flow: string }) => <div data-testid={`mock-modal-form-${flow}`} />
 }));
 
 // The has-position card opens the shared modal via launch() — capture it.
@@ -82,13 +82,14 @@ describe('SavingsPositionCard — position routing', () => {
     expect(screen.queryByTestId('savings-position-card')).toBeNull();
   });
 
-  it('renders the "My position" card with a Supply button when the savings balance is positive', () => {
+  it('renders the "My position" card with Supply and Withdraw buttons when the savings balance is positive', () => {
     h.savingsBalance = 100n * 10n ** 18n;
     renderCard();
 
     expect(screen.queryByTestId('savings-position-card')).not.toBeNull();
     expect(screen.queryByTestId('savings-supply-card')).toBeNull();
     expect(screen.queryByTestId('savings-position-supply')).not.toBeNull();
+    expect(screen.queryByTestId('savings-position-withdraw')).not.toBeNull();
   });
 
   it('opens the "Supply to Sky Savings" editable modal (entry descriptor) on Supply', () => {
@@ -103,6 +104,20 @@ describe('SavingsPositionCard — position routing', () => {
     // It's the editable entry flow, not a read-only review.
     expect(config.entry).toBeDefined();
     expect(config.entry.confirmLabel).toBe('Supply');
+    expect(config.entry.confirmDisabled).toBe(true);
+  });
+
+  it('opens the "Withdraw from Sky Savings" editable modal (entry descriptor) on Withdraw', () => {
+    h.savingsBalance = 100n * 10n ** 18n;
+    renderCard();
+
+    fireEvent.click(screen.getByTestId('savings-position-withdraw'));
+
+    expect(h.launch).toHaveBeenCalledTimes(1);
+    const config = h.launch.mock.calls[0][0];
+    expect(config.title).toBe('Withdraw from Sky Savings');
+    expect(config.entry).toBeDefined();
+    expect(config.entry.confirmLabel).toBe('Withdraw');
     expect(config.entry.confirmDisabled).toBe(true);
   });
 });
