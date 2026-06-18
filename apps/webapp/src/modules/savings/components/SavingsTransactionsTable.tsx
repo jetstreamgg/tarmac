@@ -16,6 +16,7 @@ import {
   TxAmountCell,
   TxHashLink
 } from '@/components/product/ProductTransactionsTable';
+import { SavingsTxFilter } from './SavingsTransactionsFilter';
 
 type SavingsTxRow = {
   id: string;
@@ -81,8 +82,12 @@ const COLUMNS: ProductTransactionColumn<SavingsTxRow>[] = [
 /**
  * Savings history mapped onto the shared (column-driven) ProductTransactionsTable
  * — the ProductDetailTemplate `transactions` slot.
+ *
+ * `filter` narrows by action type over the data already fetched (no new source).
+ * It defaults to `'all'`; the no-position page never passes anything else, so its
+ * list stays unfiltered.
  */
-export function SavingsTransactionsTable() {
+export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsTxFilter }) {
   const subgraphUrl = useSubgraphUrl();
   const { data: savingsHistory, isLoading, error } = useSavingsHistory(subgraphUrl);
   const chainId = useChainId();
@@ -90,7 +95,7 @@ export function SavingsTransactionsTable() {
   const rows = useMemo<SavingsTxRow[]>(() => {
     if (!savingsHistory) return [];
 
-    return savingsHistory.map(s => {
+    const mapped = savingsHistory.map(s => {
       const decimals = isL2ChainId(chainId) ? getTokenDecimals(s.token, chainId) : 18;
       const amount = formatBigInt(absBigInt(s.assets), { unit: decimals });
       return {
@@ -104,7 +109,11 @@ export function SavingsTransactionsTable() {
         txHref: getEtherscanLink(chainId, s.transactionHash, 'tx')
       };
     });
-  }, [savingsHistory, chainId]);
+
+    if (filter === 'supply') return mapped.filter(row => row.isSupply);
+    if (filter === 'withdraw') return mapped.filter(row => !row.isSupply);
+    return mapped;
+  }, [savingsHistory, chainId, filter]);
 
   return (
     <ProductTransactionsTable

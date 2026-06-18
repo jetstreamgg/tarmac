@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { AudioLines, Asterisk, Vault, Droplet, UsersRound } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
-import { productNetworks, useOverallSkyData, useSkySavingsRateHistoricData } from '@/hooks';
+import { productNetworks, useOverallSkyData, useSavingsData, useSkySavingsRateHistoricData } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
@@ -16,6 +16,7 @@ import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/Pr
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
+import { SavingsTransactionsFilter, SavingsTxFilter } from './SavingsTransactionsFilter';
 
 // Title glow/outline color, from the shared token-color map.
 const SUSDS_BRAND_COLOR = tokenColors.find(token => token.symbol === 'SUSDS')?.color;
@@ -36,6 +37,14 @@ export function SavingsProductDetail() {
       ),
     [chains]
   );
+
+  // Position-awareness (same derivation as SavingsPositionCard; the duplicate
+  // useSavingsData() call is deduped by TanStack Query). The has-position page
+  // gets the `All ▾` transactions filter (Figma 527:7204); the no-position page
+  // keeps its full, unfiltered list (Figma 527:7404).
+  const { data: savingsData } = useSavingsData();
+  const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
+  const [txFilter, setTxFilter] = useState<SavingsTxFilter>('all');
 
   const { data: overall } = useOverallSkyData();
   // "6M Rate" = trailing 6-month average APY. 🔶 confirm semantics with design
@@ -115,7 +124,10 @@ export function SavingsProductDetail() {
         body: aboutBanner ? parseBannerContent(aboutBanner) : NO_VALUE,
         learnMoreHref: 'https://docs.sky.money'
       }}
-      transactions={<SavingsTransactionsTable />}
+      transactions={<SavingsTransactionsTable filter={hasPosition ? txFilter : 'all'} />}
+      transactionsAction={
+        hasPosition ? <SavingsTransactionsFilter value={txFilter} onChange={setTxFilter} /> : undefined
+      }
     />
   );
 }
