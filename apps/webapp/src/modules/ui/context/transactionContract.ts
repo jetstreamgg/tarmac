@@ -58,6 +58,13 @@ export type TransactionConfig = {
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**
+   * Compact body for the wallet/status screen ("Confirm in the wallet"). Figma
+   * shows a relabelled amount summary there instead of the full review breakdown.
+   * Falls back to `transactionContent` when omitted, so existing consumers render
+   * unchanged.
+   */
+  transactionScreenContent?: ReactNode;
+  /**
    * Editable first screen. When present the modal opens on the entry screen
    * (instead of the read-only review built from `transactionContent`). Both lead
    * to the same wallet/status screen.
@@ -92,7 +99,12 @@ export type TransactionConfig = {
 export type LiveModalUpdate = Partial<
   Pick<
     TransactionConfig,
-    'transactionContent' | 'rightHeaderComponent' | 'confirmDisabled' | 'onConfirm' | 'steps'
+    | 'transactionContent'
+    | 'transactionScreenContent'
+    | 'rightHeaderComponent'
+    | 'confirmDisabled'
+    | 'onConfirm'
+    | 'steps'
   >
 > & {
   /** Partial entry merged into the existing entry — `content` is preserved if omitted. */

@@ -60,6 +60,8 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: vi.fn(),
       dataSources: []
     }),
+    // Canonical Sky Savings Rate (skySavingsRatecRate) — the "Savings rate" row source.
+    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } }),
     useTokenBalance: () => ({ data: { value: h.walletBalance }, refetch: vi.fn() }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
     usePreviewSwapExactIn: () => ({ value: h.convertedValue }),

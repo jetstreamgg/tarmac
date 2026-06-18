@@ -50,6 +50,8 @@ vi.mock('@/hooks', async importOriginal => {
       data: { userSavingsBalance: 0n, userNstBalance: 0n, savingsRate: 0n, savingsTvl: 0n },
       mutate: vi.fn()
     }),
+    // Canonical Sky Savings Rate (skySavingsRatecRate) — the APY source.
+    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.036' } }),
     useReadSavingsUsds: () => ({ data: h.previewShares }),
     usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
     usePreviewSwapExactOut: () => ({ value: h.maxAmountIn })

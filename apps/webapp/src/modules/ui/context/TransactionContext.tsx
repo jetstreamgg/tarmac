@@ -257,6 +257,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           transactionTitle={activeConfig.transactionTitle}
           subtitles={activeConfig.subtitles}
           transactionContent={activeConfig.transactionContent}
+          transactionScreenContent={activeConfig.transactionScreenContent}
           entry={activeConfig.entry}
           rightHeaderComponent={activeConfig.rightHeaderComponent}
           onConfirm={activeConfig.onConfirm}

@@ -9,6 +9,7 @@ import {
   FailedX,
   Cancel
 } from '@/widgets';
+import { ChevronLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -45,6 +46,12 @@ export type TransactionModalProps = {
   transactionTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /**
+   * Compact body for the wallet/status screen (Figma "Confirm in the wallet").
+   * Falls back to `transactionContent` (review path) when omitted, so consumers
+   * that don't supply one render unchanged.
+   */
+  transactionScreenContent?: ReactNode;
   /**
    * Editable first screen. When present the modal opens on the entry screen
    * (the body in `entry.content`) instead of the read-only review.
@@ -89,6 +96,7 @@ export function TransactionModal({
   transactionTitle,
   subtitles,
   transactionContent,
+  transactionScreenContent,
   entry,
   rightHeaderComponent,
   onConfirm,
@@ -127,9 +135,12 @@ export function TransactionModal({
 
   // The entry screen sources its label/gating from the entry descriptor (kept
   // live by the in-modal body); the review screen uses the top-level config.
-  const firstScreenContent = isEntry ? entry?.content : transactionContent;
   const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
   const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
+  // The wallet/status screen shows a compact summary when supplied; otherwise it
+  // falls back to the review body (review path only), so consumers that pass only
+  // `transactionContent` keep their previous transaction-screen content.
+  const transactionScreenBody = transactionScreenContent ?? (entry ? null : transactionContent);
 
   const subtitleByStatus: Partial<Record<TxStatus, string | undefined>> = {
     [TxStatus.INITIALIZED]: subtitles?.pending,
@@ -172,6 +183,18 @@ export function TransactionModal({
     setContentHeight(undefined);
   }, [onBack, firstStep]);
 
+  // Header back arrow (Figma chrome on every screen): on the first screen it
+  // closes (there's nothing before it — the inputs live on the page/entry); on
+  // the wallet/status screen it returns to the first screen. Disabled mid-flight,
+  // like the close button.
+  const handleHeaderBack = useCallback(() => {
+    if (isFirstScreen) {
+      handleClose();
+    } else {
+      handleBack();
+    }
+  }, [isFirstScreen, handleClose, handleBack]);
+
   return (
     <Dialog open={open} onOpenChange={val => !val && handleClose()}>
       <DialogContent
@@ -183,7 +206,19 @@ export function TransactionModal({
         onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between">
-          <DialogTitle className="text-text text-2xl">{displayTitle}</DialogTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              aria-label={t`Back`}
+              className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
+              onClick={handleHeaderBack}
+              disabled={isTransacting}
+              data-testid="transaction-modal-back"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <DialogTitle className="text-text text-2xl">{displayTitle}</DialogTitle>
+          </div>
           <div className="flex items-center gap-2">
             {rightHeaderComponent}
             <Button
@@ -217,8 +252,9 @@ export function TransactionModal({
             )}
           </AnimatePresence>
 
-          {/* Step indicators */}
-          {hasMultipleSteps && (
+          {/* Step indicators — Figma shows them only on the wallet/status screen,
+              not on the review/entry screen. */}
+          {hasMultipleSteps && isTransaction && (
             <div className="flex flex-col">
               {steps.map((label, i) => {
                 const allDone = isTransaction && txStatus === TxStatus.SUCCESS;
@@ -242,15 +278,22 @@ export function TransactionModal({
           {/* The editable entry body stays MOUNTED for the modal's lifetime — it can
               own the in-flight engine hook whose onSuccess completes the transaction,
               so unmounting it on the transaction screen would strand the modal in
-              LOADING. It is only shown on the entry screen (hidden otherwise). The
-              read-only review breakdown owns no hook, so it renders normally. */}
-          {entry ? (
+              LOADING. It is only shown on the entry screen (hidden otherwise). */}
+          {entry && (
             <div className={isEntry ? 'text-text' : 'hidden'} aria-hidden={!isEntry}>
               {entry.content}
             </div>
-          ) : (
-            firstScreenContent && <div className="text-text">{firstScreenContent}</div>
           )}
+
+          {/* Read-only review breakdown (review path) — first screen only. Owns no
+              hook, so it can unmount on the transaction screen. */}
+          {!entry && isFirstScreen && transactionContent && (
+            <div className="text-text">{transactionContent}</div>
+          )}
+
+          {/* Compact summary on the wallet/status screen (Figma "Confirm in the
+              wallet"): a relabelled amount header in place of the full breakdown. */}
+          {isTransaction && transactionScreenBody && <div className="text-text">{transactionScreenBody}</div>}
 
           <div className="grow" />
 

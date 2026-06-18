@@ -7,12 +7,13 @@ import {
   TOKENS,
   useTokenBalance,
   useSavingsData,
+  useOverallSkyData,
   useReadSavingsUsds,
   getTokenDecimals,
   usePreviewSwapExactIn,
   usePreviewSwapExactOut
 } from '@/hooks';
-import { formatBigInt, formatNumber, formatPercent, isL2ChainId } from '@/utils';
+import { formatBigInt, formatNumber, formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
@@ -27,6 +28,7 @@ import {
   type OriginSymbol
 } from './SavingsOriginSelect';
 import { SavingsSupplyReview } from './SavingsSupplyReview';
+import { SavingsAmountSummary } from './SavingsAmountSummary';
 
 const NO_VALUE = '–';
 
@@ -81,6 +83,13 @@ export function SavingsSupplyWithdrawPanel({
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
   const { data: savingsData } = useSavingsData();
+  const { data: overall } = useOverallSkyData();
+  // Canonical Sky Savings Rate APY — the same source as the page headline + the
+  // Details grid (skySavingsRatecRate), NOT useSavingsData().savingsRate (the DSR,
+  // a different number).
+  const apyDisplay = overall?.skySavingsRatecRate
+    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
+    : NO_VALUE;
 
   const isL2 = isL2ChainId(chainId);
   const [flowState, setFlowState] = useState<SavingsLaunchFlow>('supply');
@@ -173,7 +182,18 @@ export function SavingsSupplyWithdrawPanel({
             ? `${formatBigInt(previewShares, { unit: 18, maxDecimals: 2 })} sUSDS`
             : `${NO_VALUE} sUSDS`
         }
-        apy={savingsData ? formatPercent(savingsData.savingsRate) : NO_VALUE}
+        apy={apyDisplay}
+      />
+    ),
+    // Compact summary shown on the wallet/status screen in place of the full
+    // breakdown (Figma "Confirm in the wallet").
+    transactionScreenContent: (
+      <SavingsAmountSummary
+        label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
+        amount={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0'}
+        symbol={originToken.symbol}
+        usd={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : undefined}
+        dataTestId="savings-confirm-summary"
       />
     ),
     onSuccess: () => {

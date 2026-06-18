@@ -1,7 +1,7 @@
 import { useChainId, useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Text } from '@/modules/layout/components/Typography';
+import { SavingsAmountSummary } from './SavingsAmountSummary';
 import { buildSupplyReviewRows } from './savingsModalRows';
 
 const NO_VALUE = '–';
@@ -45,22 +45,14 @@ export function SavingsSupplyReview({
 
   return (
     <div className="flex flex-col gap-4" data-testid="savings-supply-review">
-      {/* You supply — the amount header. */}
-      <div className="flex flex-col gap-1">
-        <Text className="text-textSecondary text-sm">
-          <Trans>You supply</Trans>
-        </Text>
-        <div className="flex items-center gap-2">
-          <TokenIcon className="h-7 w-7" token={{ symbol }} showChainIcon={false} />
-          <span className="text-text text-2xl font-medium">{amount}</span>
-          <span className="text-textSecondary text-lg font-medium">{symbol}</span>
-        </div>
-        {usd && (
-          <Text className="text-textSecondary text-sm" data-testid="savings-supply-review-usd">
-            ${usd}
-          </Text>
-        )}
-      </div>
+      {/* You supply — the amount header (Figma 527:7812). */}
+      <SavingsAmountSummary
+        label={<Trans>You supply</Trans>}
+        amount={amount}
+        symbol={symbol}
+        usd={usd}
+        usdTestId="savings-supply-review-usd"
+      />
 
       <div className="flex flex-col gap-3">
         {rows.map(row => (

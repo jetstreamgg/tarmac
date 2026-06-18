@@ -25,10 +25,10 @@ function StatRow({ label, children }: { label: ReactNode; children: ReactNode })
   );
 }
 
-// TODO(C3): 'Already earned' + '1Y projected earnings' have no data source yet
-// (cost-basis / projection hooks pending) — both rows render this placeholder,
-// intentionally unwired per the C3 scope decision.
-const TodoValue = () => <span className="text-textSecondary text-sm italic">TODO</span>;
+// 'Already earned' + '1Y projected earnings' have no data source yet (cost-basis /
+// projection hooks pending) — both rows render a dash until then, never a literal
+// "TODO" (PRD: unavailable values read "–").
+const TodoValue = () => <span className="text-textSecondary text-sm">{NO_VALUE}</span>;
 
 /**
  * Position-aware action card for the Savings product page (ProductDetailTemplate
@@ -73,7 +73,6 @@ export function SavingsPositionCard() {
       title: t`Supply to Sky Savings`,
       transactionTitle: t`Confirm in the wallet`,
       subtitles: {
-        pending: t`Please confirm the transaction in your wallet.`,
         loading: t`Your supply is being processed on the blockchain. Please wait.`,
         success: t`You've successfully supplied to Sky Savings.`,
         error: t`An error occurred while supplying to Sky Savings.`
@@ -97,7 +96,6 @@ export function SavingsPositionCard() {
       title: t`Withdraw from Sky Savings`,
       transactionTitle: t`Confirm in the wallet`,
       subtitles: {
-        pending: t`Please confirm the transaction in your wallet.`,
         loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
         success: t`You've successfully withdrawn from Sky Savings.`,
         error: t`An error occurred while withdrawing from Sky Savings.`

@@ -252,7 +252,9 @@ describe('useSavingsLaunch — withdraw launch() config', () => {
     expect(config.analytics.action).toBe('withdraw');
     expect(config.title).toBe('Withdraw from Sky Savings');
     expect(config.transactionTitle).toBe('Confirm in the wallet');
-    expect(config.confirmLabel).toBe('Withdraw');
+    // Read-only review screen confirms with "Confirm" (Figma); the editable entry
+    // screen keeps the action verb ("Withdraw") via its own entry config.
+    expect(config.confirmLabel).toBe('Confirm');
   });
 
   it('routes onConfirm to the withdraw engine execute (not the supply engine), single step', () => {

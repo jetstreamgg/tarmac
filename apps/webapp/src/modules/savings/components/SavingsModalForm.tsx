@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -6,18 +6,20 @@ import { t } from '@lingui/core/macro';
 import {
   getTokenDecimals,
   useSavingsData,
+  useOverallSkyData,
   useTokenBalance,
   usePreviewSwapExactIn,
   usePreviewSwapExactOut,
   TOKENS
 } from '@/hooks';
-import { formatBigInt, formatNumber, formatPercent, isL2ChainId } from '@/utils';
+import { formatBigInt, formatNumber, formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsSupplyMinAmountOut } from '../hooks/useSavingsSupplyMinAmountOut';
 import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
+import { SavingsAmountSummary } from './SavingsAmountSummary';
 import {
   ORIGIN_TOKENS,
   MAINNET_SUPPLY_ORIGINS,
@@ -86,6 +88,7 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   const chains = useChains();
   const { address, isConnected } = useConnection();
   const { data: savingsData } = useSavingsData();
+  const { data: overall } = useOverallSkyData();
   const { updateModalContent } = useTransaction();
 
   const [value, setValue] = useState('');
@@ -161,12 +164,34 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   }, [execute]);
   const onConfirm = useCallback(() => executeRef.current(), []);
 
-  // Keep the shared modal's confirm gating + handler + step labels in sync. Merged
-  // (not replacing `content`), so the body never remounts; bounded to amount-driven
-  // state changes (disabled / steps), so it can't loop on provider re-renders.
+  // Compact summary for the wallet/status screen (Figma "Confirm in the wallet").
+  // Memoised so the sync effect below only fires when the amount/token/flow change
+  // — a fresh element every render would loop the merge.
+  const transactionScreenContent = useMemo(() => {
+    const display = value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0';
+    return (
+      <SavingsAmountSummary
+        label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
+        amount={display}
+        symbol={originToken.symbol}
+        usd={value ? display : undefined}
+        dataTestId="savings-confirm-summary"
+      />
+    );
+  }, [isSupply, value, originToken.symbol]);
+
+  // Keep the shared modal's confirm gating + handler + step labels + the
+  // wallet-screen summary in sync. Merged (not replacing `content`), so the body
+  // never remounts; bounded to amount-driven changes, so it can't loop on provider
+  // re-renders.
   useEffect(() => {
-    updateModalContent(sessionId, { entry: { confirmDisabled: disabled }, onConfirm, steps });
-  }, [sessionId, disabled, steps, onConfirm, updateModalContent]);
+    updateModalContent(sessionId, {
+      entry: { confirmDisabled: disabled },
+      onConfirm,
+      steps,
+      transactionScreenContent
+    });
+  }, [sessionId, disabled, steps, onConfirm, transactionScreenContent, updateModalContent]);
 
   const onInput = (raw: string) => {
     setMax(false);
@@ -185,7 +210,11 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   };
 
   const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
-  const savingsRate = savingsData ? formatPercent(savingsData.savingsRate) : NO_VALUE;
+  // Canonical Sky Savings Rate — same source as the page headline + Details grid
+  // (skySavingsRatecRate), NOT useSavingsData().savingsRate (the DSR).
+  const savingsRate = overall?.skySavingsRatecRate
+    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
+    : NO_VALUE;
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
   // the sUSDS balance pre-converted to USDS). Express the entered amount as a USDS
   // wad for the before→after delta: USDS/DAI are already 18-dec; an L2 USDC amount

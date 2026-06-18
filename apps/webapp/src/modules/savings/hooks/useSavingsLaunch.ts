@@ -17,7 +17,7 @@ import {
   useSavingsWithdraw,
   useTokenAllowance
 } from '@/hooks';
-import { formatBigInt, isL2ChainId } from '@/utils';
+import { isL2ChainId } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 
 export type SavingsLaunchFlow = 'supply' | 'withdraw';
@@ -55,6 +55,8 @@ export interface UseSavingsLaunchParams {
   maxAmountInForWithdraw?: bigint;
   /** Review-screen body; the panel passes a token/amount preview. */
   transactionContent?: ReactNode;
+  /** Compact body for the wallet/status screen ("Confirm in the wallet"). */
+  transactionScreenContent?: ReactNode;
   /** Refetch position / balances after a successful transaction. */
   onSuccess?: () => void;
 }
@@ -106,6 +108,7 @@ export function useSavingsLaunch({
   minAmountOutForWithdrawAll,
   maxAmountInForWithdraw,
   transactionContent,
+  transactionScreenContent,
   onSuccess
 }: UseSavingsLaunchParams): UseSavingsLaunchResult {
   const { launch: launchModal, txCallbacks } = useTransaction();
@@ -262,15 +265,14 @@ export function useSavingsLaunch({
         title: t`Review supply`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
-          review: t`You are supplying ${formatBigInt(amount, { unit: originDecimals })} ${originToken.symbol} to Sky Savings.`,
-          pending: t`Please confirm the transaction in your wallet.`,
           loading: t`Your supply is being processed on the blockchain. Please wait.`,
           success: t`You've successfully supplied to Sky Savings.`,
           error: t`An error occurred while supplying to Sky Savings.`
         },
         transactionContent,
+        transactionScreenContent,
         steps,
-        confirmLabel: t`Supply`,
+        confirmLabel: t`Confirm`,
         onConfirm: execute,
         onSuccess,
         analytics: {
@@ -292,17 +294,14 @@ export function useSavingsLaunch({
         title: t`Withdraw from Sky Savings`,
         transactionTitle: t`Confirm in the wallet`,
         subtitles: {
-          review: max
-            ? t`You are withdrawing your entire position from Sky Savings.`
-            : t`You are withdrawing ${formatBigInt(amount, { unit: originDecimals })} ${originToken.symbol} from Sky Savings.`,
-          pending: t`Please confirm the transaction in your wallet.`,
           loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
           success: t`You've successfully withdrawn from Sky Savings.`,
           error: t`An error occurred while withdrawing from Sky Savings.`
         },
         transactionContent,
+        transactionScreenContent,
         steps,
-        confirmLabel: t`Withdraw`,
+        confirmLabel: t`Confirm`,
         onConfirm: execute,
         onSuccess,
         analytics: {
@@ -319,12 +318,12 @@ export function useSavingsLaunch({
     }
   }, [
     isSupply,
-    max,
     launchModal,
     amount,
     originToken.symbol,
     originDecimals,
     transactionContent,
+    transactionScreenContent,
     steps,
     execute,
     onSuccess
