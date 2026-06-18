@@ -71,6 +71,7 @@ export function SavingsPositionCard() {
   const openSupplyModal = useCallback(() => {
     launch({
       title: t`Supply to Sky Savings`,
+      transactionTitle: t`Confirm in the wallet`,
       subtitles: {
         pending: t`Please confirm the transaction in your wallet.`,
         loading: t`Your supply is being processed on the blockchain. Please wait.`,
@@ -94,6 +95,7 @@ export function SavingsPositionCard() {
   const openWithdrawModal = useCallback(() => {
     launch({
       title: t`Withdraw from Sky Savings`,
+      transactionTitle: t`Confirm in the wallet`,
       subtitles: {
         pending: t`Please confirm the transaction in your wallet.`,
         loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,

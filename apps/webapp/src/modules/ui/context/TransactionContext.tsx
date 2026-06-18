@@ -254,6 +254,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           open={open}
           onClose={handleClose}
           title={activeConfig.title}
+          transactionTitle={activeConfig.transactionTitle}
           subtitles={activeConfig.subtitles}
           transactionContent={activeConfig.transactionContent}
           entry={activeConfig.entry}

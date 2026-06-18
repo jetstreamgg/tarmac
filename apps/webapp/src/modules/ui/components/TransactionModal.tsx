@@ -41,6 +41,8 @@ export type TransactionModalProps = {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** Title for the wallet/status screen; falls back to `title` when omitted. */
+  transactionTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**
@@ -84,6 +86,7 @@ export function TransactionModal({
   open,
   onClose,
   title,
+  transactionTitle,
   subtitles,
   transactionContent,
   entry,
@@ -136,6 +139,10 @@ export function TransactionModal({
   };
   const subtitle = isFirstScreen ? subtitles?.review : subtitleByStatus[txStatus];
 
+  // The wallet/status screen may carry its own title (e.g. "Confirm in the wallet");
+  // falls back to `title` so single-title configs render unchanged on both screens.
+  const displayTitle = isTransaction ? (transactionTitle ?? title) : title;
+
   const handleConfirm = useCallback(() => {
     if (reviewRef.current) {
       setContentHeight(reviewRef.current.offsetHeight);
@@ -176,7 +183,7 @@ export function TransactionModal({
         onCloseAutoFocus={e => e.preventDefault()}
       >
         <div className="flex items-center justify-between">
-          <DialogTitle className="text-text text-2xl">{title}</DialogTitle>
+          <DialogTitle className="text-text text-2xl">{displayTitle}</DialogTitle>
           <div className="flex items-center gap-2">
             {rightHeaderComponent}
             <Button

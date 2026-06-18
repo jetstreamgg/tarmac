@@ -51,7 +51,10 @@ export type TransactionAnalytics = {
 
 /** The config a consumer passes to `launch()` for a standard on-chain transaction. */
 export type TransactionConfig = {
+  /** Title for the first (review/entry) screen — and the whole modal when no `transactionTitle`. */
   title: string;
+  /** Title for the wallet/status screen (e.g. "Confirm in the wallet"); defaults to `title`. */
+  transactionTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
   /**

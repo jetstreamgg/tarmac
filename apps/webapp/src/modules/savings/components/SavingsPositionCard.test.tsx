@@ -101,6 +101,8 @@ describe('SavingsPositionCard — position routing', () => {
     expect(h.launch).toHaveBeenCalledTimes(1);
     const config = h.launch.mock.calls[0][0];
     expect(config.title).toBe('Supply to Sky Savings');
+    // The wallet/status screen reads "Confirm in the wallet" (Figma 527:8273).
+    expect(config.transactionTitle).toBe('Confirm in the wallet');
     // It's the editable entry flow, not a read-only review.
     expect(config.entry).toBeDefined();
     expect(config.entry.confirmLabel).toBe('Supply');
@@ -116,6 +118,7 @@ describe('SavingsPositionCard — position routing', () => {
     expect(h.launch).toHaveBeenCalledTimes(1);
     const config = h.launch.mock.calls[0][0];
     expect(config.title).toBe('Withdraw from Sky Savings');
+    expect(config.transactionTitle).toBe('Confirm in the wallet');
     expect(config.entry).toBeDefined();
     expect(config.entry.confirmLabel).toBe('Withdraw');
     expect(config.entry.confirmDisabled).toBe(true);

@@ -259,7 +259,8 @@ export function useSavingsLaunch({
   const launch = useCallback(() => {
     if (isSupply) {
       launchModal({
-        title: t`Supply to Sky Savings`,
+        title: t`Review supply`,
+        transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           review: t`You are supplying ${formatBigInt(amount, { unit: originDecimals })} ${originToken.symbol} to Sky Savings.`,
           pending: t`Please confirm the transaction in your wallet.`,
@@ -289,6 +290,7 @@ export function useSavingsLaunch({
       // sUSDS → psm3L2 allowance already covers it). `steps` is the hoisted memo.
       launchModal({
         title: t`Withdraw from Sky Savings`,
+        transactionTitle: t`Confirm in the wallet`,
         subtitles: {
           review: max
             ? t`You are withdrawing your entire position from Sky Savings.`

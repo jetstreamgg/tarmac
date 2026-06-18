@@ -277,6 +277,18 @@ describe('useSavingsLaunch — launch() config', () => {
     expect(config.analytics.action).toBe('supply');
   });
 
+  it('titles the review "Review supply" and the wallet/status screen "Confirm in the wallet"', () => {
+    const { result } = renderHook(() =>
+      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
+    );
+    act(() => result.current.launch());
+
+    const config = h.launchMock.mock.calls[0][0];
+    // Figma 527:7812 (Review supply) → 527:8273 (Confirm in the wallet).
+    expect(config.title).toBe('Review supply');
+    expect(config.transactionTitle).toBe('Confirm in the wallet');
+  });
+
   it('routes onConfirm to the engine execute', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })

@@ -251,6 +251,7 @@ describe('useSavingsLaunch — withdraw launch() config', () => {
     expect(config.analytics.flow).toBe('withdraw');
     expect(config.analytics.action).toBe('withdraw');
     expect(config.title).toBe('Withdraw from Sky Savings');
+    expect(config.transactionTitle).toBe('Confirm in the wallet');
     expect(config.confirmLabel).toBe('Withdraw');
   });
 
