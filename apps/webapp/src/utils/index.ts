@@ -22,6 +22,7 @@ export * as math from './math';
 export * from './math/calculateApy';
 export * from './formatDate';
 export * from './formatValue';
+export * from './projectAnnualEarnings';
 export * from './formatUnits';
 export * from './formatTradeAmount';
 export * from './strings';

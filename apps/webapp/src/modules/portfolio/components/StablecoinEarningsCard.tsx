@@ -1,7 +1,7 @@
 import { ReactNode, useState } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
-import { formatDecimalPercentage, formatUsd } from '@/utils';
+import { formatDecimalPercentage, formatUsd, projectAnnualEarnings } from '@/utils';
 import { GainValue } from '@/components/ui/GainValue';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -55,7 +55,7 @@ function SuppliedContent({ view, isLoading }: { view: SuppliedView; isLoading: b
   const activeSymbol = activePosition?.tokenSymbol ?? null;
   const displayTotal = activePosition ? activePosition.amountUsd : view.totalSupplied;
   const displayProjected = activePosition
-    ? activePosition.amountUsd * (activePosition.rate ?? 0)
+    ? projectAnnualEarnings(activePosition.amountUsd, activePosition.rate)
     : view.projected1Y;
   const displayAvgRate = activePosition ? (activePosition.rate ?? 0) : view.avgRate;
 
@@ -160,7 +160,7 @@ function IdleContent({
   const activeToken = activeId ? view.tokens.find(t => t.symbol === activeId) : undefined;
   const activeSymbol = activeToken?.symbol ?? null;
   const displayTotal = activeToken ? activeToken.amountUsd : view.walletBalance;
-  const displayProjected = displayTotal * savingsRate;
+  const displayProjected = projectAnnualEarnings(displayTotal, savingsRate);
 
   const segments: DonutSegment[] = view.tokens.map(t => ({
     id: t.symbol,

@@ -1,4 +1,5 @@
 import type { EarnProductKind, EarnProductRow } from '@/hooks';
+import { projectAnnualEarnings } from '@/utils';
 import { resolveTokenColor } from '@/widgets/shared/constants';
 
 /** One supplied position, decorated for the Portfolio "Supplied" tab. */
@@ -107,7 +108,7 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     chainIds: chainsFor(row)
   }));
 
-  const projected1Y = positions.reduce((acc, p) => acc + p.amountUsd * (p.rate ?? 0), 0);
+  const projected1Y = positions.reduce((acc, p) => acc + projectAnnualEarnings(p.amountUsd, p.rate), 0);
 
   return {
     positions,
