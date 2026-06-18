@@ -51,6 +51,19 @@ describe('target-IA destination routes', () => {
   });
 });
 
+describe('root path', () => {
+  it('redirects "/" to the Portfolio destination', async () => {
+    const router = await routerAt('/');
+    expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+  });
+
+  it('preserves global search params when redirecting "/" to Portfolio', async () => {
+    const router = await routerAt('/?network=base');
+    expect(router.state.location.pathname).toBe(ROUTES.PORTFOLIO);
+    expect(router.state.location.search).toEqual({ network: 'base' });
+  });
+});
+
 describe('pre-flip module path redirects', () => {
   it.each([
     ['/savings', ROUTES.EARN_SAVINGS],

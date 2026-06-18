@@ -96,7 +96,7 @@ describe('buildEarnProducts', () => {
 
   it('declares the supply tokens each product accepts', () => {
     const byId = Object.fromEntries(products.map(p => [p.id, p]));
-    expect(byId['savings'].supplyTokens).toEqual(['USDS']);
+    expect(byId['savings'].supplyTokens).toEqual(['USDS', 'DAI']);
     expect(byId['stusds'].supplyTokens).toEqual(['USDS']);
     for (const product of products.filter(p => p.kind === 'fixed')) {
       expect(product.supplyTokens).toEqual(['USDS', 'USDC', 'sUSDS']);

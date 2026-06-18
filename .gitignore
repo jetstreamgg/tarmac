@@ -86,3 +86,6 @@ apps/webapp/test-results.json
 # locales
 apps/webapp/src/locales/*.po
 apps/webapp/src/locales/*.ts
+
+# TanStack Router temp/generated cache
+apps/webapp/.tanstack

@@ -102,6 +102,7 @@ export {
   Cancel
 } from './shared/components/icons/Icons';
 export { Morpho } from './shared/components/icons/Morpho';
+export { Pendle } from './shared/components/icons/Pendle';
 export { WalletCard } from './BalancesWidget/components/WalletCard';
 export { ModuleCardVariant, ModulesBalances } from './BalancesWidget/components/ModulesBalances';
 export { BalancesHistory } from './BalancesWidget/components/BalancesHistory';
