@@ -12,11 +12,10 @@ import {
   usePreviewSwapExactIn,
   usePreviewSwapExactOut
 } from '@/hooks';
-import { formatBigInt, formatNumber, isL2ChainId } from '@/utils';
+import { formatBigInt, formatNumber, formatPercent, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsSupplyMinAmountOut } from '../hooks/useSavingsSupplyMinAmountOut';
 import {
@@ -27,6 +26,7 @@ import {
   SavingsOriginSelect,
   type OriginSymbol
 } from './SavingsOriginSelect';
+import { SavingsSupplyReview } from './SavingsSupplyReview';
 
 const NO_VALUE = '–';
 
@@ -163,11 +163,18 @@ export function SavingsSupplyWithdrawPanel({
     minAmountOutForWithdrawAll: convertedBalance.value,
     maxAmountInForWithdraw,
     transactionContent: (
-      <div className="flex items-center gap-2 py-1" data-testid="savings-tx-preview">
-        <TokenIcon className="h-6 w-6" token={{ symbol: originToken.symbol }} showChainIcon={false} />
-        <Text>{value || '0'}</Text>
-        <Text>{originToken.symbol}</Text>
-      </div>
+      <SavingsSupplyReview
+        amount={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0'}
+        symbol={originToken.symbol}
+        // USD value ≈ the token amount for the $1-pegged origins (USDS/DAI/USDC).
+        usd={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : undefined}
+        youReceive={
+          previewShares !== undefined
+            ? `${formatBigInt(previewShares, { unit: 18, maxDecimals: 2 })} sUSDS`
+            : `${NO_VALUE} sUSDS`
+        }
+        apy={savingsData ? formatPercent(savingsData.savingsRate) : NO_VALUE}
+      />
     ),
     onSuccess: () => {
       setValue('');
@@ -234,6 +241,28 @@ export function SavingsSupplyWithdrawPanel({
         </div>
       )}
 
+      {/* Amount label + balance·MAX above the input (Figma 527:7404): "Amount" on
+          the left, the wallet balance with a clickable MAX on the right. */}
+      <div className="flex items-center justify-between">
+        <Text className="text-textSecondary text-sm">
+          <Trans>Amount</Trans>
+        </Text>
+        <button
+          type="button"
+          onClick={setMaxAmount}
+          disabled={!isConnected}
+          className="text-textSecondary text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+          data-testid="savings-amount-max"
+        >
+          {isConnected
+            ? formatNumber(parseFloat(formatUnits(sourceBalance, originDecimals)), { maxDecimals: 2 })
+            : NO_VALUE}{' '}
+          <span className="text-textEmphasis">
+            <Trans>MAX</Trans>
+          </span>
+        </button>
+      </div>
+
       {/* Origin/destination token selector (Figma `USDS ▾`), inline in the amount
           row. Supply: USDS deposits/swaps directly; DAI upgrades to USDS first
           (mainnet); USDC swaps through the PSM (L2). Withdraw (L2 only): the
@@ -256,23 +285,6 @@ export function SavingsSupplyWithdrawPanel({
           onChange={switchOrigin}
           disabled={!isConnected}
         />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <Text className="text-textSecondary text-sm">
-          <Trans>Balance</Trans>:{' '}
-          {isConnected
-            ? formatNumber(parseFloat(formatUnits(sourceBalance, originDecimals)), { maxDecimals: 2 })
-            : NO_VALUE}
-        </Text>
-        <button
-          type="button"
-          onClick={setMaxAmount}
-          className="text-textEmphasis text-sm font-medium"
-          data-testid="savings-amount-max"
-        >
-          <Trans>Max</Trans>
-        </button>
       </div>
 
       {/* L2 PSM supply surfaces the slippage floor (min sUSDS out). */}
@@ -307,7 +319,7 @@ export function SavingsSupplyWithdrawPanel({
           <Text className="text-textSecondary text-sm">
             <Trans>1Y projected earnings</Trans>
           </Text>
-          <Text className="text-textSecondary text-sm italic">TODO</Text>
+          <Text className="text-text text-sm font-medium">{NO_VALUE}</Text>
         </div>
       )}
 

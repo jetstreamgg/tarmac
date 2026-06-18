@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
+import {
+  buildSupplyModalRows,
+  buildSupplyReviewRows,
+  buildWithdrawModalRows,
+  type SavingsModalRow
+} from './savingsModalRows';
 
 const INPUT = {
   savingsRate: '6.50%',
@@ -103,5 +108,45 @@ describe('buildWithdrawModalRows — Figma 527:10945 "Withdraw from Sky Savings"
     expect(byLabel['Savings rate']).toMatchObject({ kind: 'delta', before: '6.50%', after: '6.50%' });
     expect(byLabel['Supply']).toMatchObject({ kind: 'delta', before: '100 USDS', after: '90 USDS' });
     expect(byLabel['1Y est. earnings']).toMatchObject({ kind: 'delta', before: '–', after: '–' });
+  });
+});
+
+describe('buildSupplyReviewRows — Figma 527:7812 "Review supply"', () => {
+  const REVIEW_INPUT = {
+    youReceive: '908.93 sUSDS',
+    apy: '3.60%',
+    estEarnings: '–',
+    product: 'Sky Savings',
+    withdrawal: 'Anytime',
+    network: 'Ethereum',
+    networkFee: '–'
+  } as const;
+
+  it('produces exactly the Figma review row set, in order (You supply is the header)', () => {
+    const rows = buildSupplyReviewRows(REVIEW_INPUT);
+    expect(labels(rows)).toEqual([
+      "You'll receive",
+      'APY',
+      'Est. earnings (1Y)',
+      'Product',
+      'Withdrawal',
+      'Network',
+      'Network fee'
+    ]);
+  });
+
+  it('renders every review row as a single value', () => {
+    const rows = buildSupplyReviewRows(REVIEW_INPUT);
+    expect(kinds(rows)).toEqual(Array(7).fill('single'));
+  });
+
+  it('threads the values through verbatim', () => {
+    const rows = buildSupplyReviewRows(REVIEW_INPUT);
+    const byLabel = Object.fromEntries(rows.map(r => [r.label, r]));
+
+    expect(byLabel["You'll receive"]).toMatchObject({ kind: 'single', value: '908.93 sUSDS' });
+    expect(byLabel['APY']).toMatchObject({ kind: 'single', value: '3.60%' });
+    expect(byLabel['Product']).toMatchObject({ kind: 'single', value: 'Sky Savings' });
+    expect(byLabel['Withdrawal']).toMatchObject({ kind: 'single', value: 'Anytime' });
   });
 });

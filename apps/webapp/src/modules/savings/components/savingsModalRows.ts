@@ -94,3 +94,41 @@ export function buildWithdrawModalRows(input: WithdrawModalRowInput): SavingsMod
     { kind: 'single', label: 'Network fee', value: input.networkFee }
   ];
 }
+
+/** Display strings for the read-only "Review supply" modal (Figma 527:7812). */
+export type SupplyReviewRowInput = {
+  /** sUSDS you'll receive, formatted (e.g. "9,999.99 sUSDS"). */
+  youReceive: string;
+  /** Current APY, formatted (e.g. "3.75%"). */
+  apy: string;
+  /** 1Y estimated earnings — stubbed until a projection source exists. */
+  estEarnings: string;
+  /** Product name (e.g. "Sky Savings"). */
+  product: string;
+  /** Withdrawal availability (e.g. "Anytime"). */
+  withdrawal: string;
+  /** Network the transaction runs on (e.g. "Ethereum"). */
+  network: string;
+  /** Network fee, formatted — stubbed until a gas estimate is wired. */
+  networkFee: string;
+};
+
+/**
+ * Rows for the no-position "Review supply" modal (Figma 527:7812) — the read-only
+ * summary shown after the inline Supply CTA. The supplied amount is rendered as the
+ * header by the review component; these are the rows beneath it: `You'll receive`,
+ * `APY`, `Est. earnings (1Y)`, `Product`, `Withdrawal`, `Network`, `Network fee`
+ * (all single-value). Est. earnings and Network fee are stubbed by the caller per
+ * the PRD's Out of Scope (no projection / gas-estimate source yet).
+ */
+export function buildSupplyReviewRows(input: SupplyReviewRowInput): SavingsModalRow[] {
+  return [
+    { kind: 'single', label: "You'll receive", value: input.youReceive },
+    { kind: 'single', label: 'APY', value: input.apy },
+    { kind: 'single', label: 'Est. earnings (1Y)', value: input.estEarnings },
+    { kind: 'single', label: 'Product', value: input.product },
+    { kind: 'single', label: 'Withdrawal', value: input.withdrawal },
+    { kind: 'single', label: 'Network', value: input.network },
+    { kind: 'single', label: 'Network fee', value: input.networkFee }
+  ];
+}
