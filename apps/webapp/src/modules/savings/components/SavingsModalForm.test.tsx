@@ -13,8 +13,10 @@ const h = vi.hoisted(() => ({
   prepared: true,
   execute: vi.fn(),
   update: vi.fn(),
-  // Latest params the form passed to useSavingsLaunch (flow / max / amount wiring).
-  launchParams: undefined as { flow?: string; max?: boolean; amount?: bigint } | undefined
+  // Latest params the form passed to useSavingsLaunch (flow / max / amount / origin wiring).
+  launchParams: undefined as
+    | { flow?: string; max?: boolean; amount?: bigint; originToken?: { symbol?: string } }
+    | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -46,7 +48,12 @@ vi.mock('@/hooks', async importOriginal => {
 // The engine seam — stubbed so the form mounts without real wagmi writes. Records
 // the params so the withdraw flow + Max → max flag wiring can be asserted.
 vi.mock('../hooks/useSavingsLaunch', () => ({
-  useSavingsLaunch: (params: { flow: string; max?: boolean; amount: bigint }) => {
+  useSavingsLaunch: (params: {
+    flow: string;
+    max?: boolean;
+    amount: bigint;
+    originToken?: { symbol?: string };
+  }) => {
     h.launchParams = params;
     return {
       launch: vi.fn(),
@@ -62,6 +69,39 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({ updateModalContent: h.update })
 }));
+
+// Stub the origin dropdown as plain option buttons (Radix Select interaction is
+// fragile in happy-dom); the real origin constants are preserved so the form still
+// maps the picked symbol → Token and routes DAI to the upgrade-and-supply path.
+vi.mock('./SavingsOriginSelect', async importOriginal => {
+  const actual = await importOriginal<typeof import('./SavingsOriginSelect')>();
+  return {
+    ...actual,
+    SavingsOriginSelect: ({
+      value,
+      options,
+      onChange
+    }: {
+      value: string;
+      options: string[];
+      onChange: (next: string) => void;
+    }) => (
+      <div data-testid="savings-origin-select">
+        {options.map(symbol => (
+          <button
+            key={symbol}
+            type="button"
+            aria-pressed={value === symbol}
+            data-testid={`origin-opt-${symbol}`}
+            onClick={() => onChange(symbol)}
+          >
+            {symbol}
+          </button>
+        ))}
+      </div>
+    )
+  };
+});
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({ TokenIcon: () => null }));
 
@@ -123,6 +163,25 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
     expect(lastDisabled()).toBe(true);
     expect(screen.queryByTestId('savings-modal-amount-error')).not.toBeNull();
   });
+
+  it('offers USDS and DAI origin options on mainnet supply', () => {
+    renderForm('supply');
+    expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-DAI')).not.toBeNull();
+  });
+
+  it('routes the supply to the DAI origin token (upgrade-and-supply) when DAI is selected', () => {
+    renderForm('supply');
+    fireEvent.click(screen.getByTestId('origin-opt-DAI'));
+    expect(h.launchParams?.originToken?.symbol).toBe('DAI');
+  });
+
+  it('resets the amount when the origin token is switched', () => {
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '5' } });
+    fireEvent.click(screen.getByTestId('origin-opt-DAI'));
+    expect((screen.getByTestId('savings-modal-amount-input') as HTMLInputElement).value).toBe('');
+  });
 });
 
 describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
@@ -146,6 +205,12 @@ describe('SavingsModalForm — Withdraw from Sky Savings entry body', () => {
   it('routes the withdraw flow to useSavingsLaunch', () => {
     renderForm('withdraw');
     expect(h.launchParams?.flow).toBe('withdraw');
+  });
+
+  it('shows only a USDS origin option on mainnet withdraw (no DAI)', () => {
+    renderForm('withdraw');
+    expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-DAI')).toBeNull();
   });
 
   it('caps on the savings position, not the wallet balance', () => {

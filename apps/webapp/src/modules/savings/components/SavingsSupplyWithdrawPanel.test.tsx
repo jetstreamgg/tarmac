@@ -13,7 +13,9 @@ const h = vi.hoisted(() => ({
   isConnected: true,
   walletBalance: 10n * 10n ** 18n, // 10 USDS
   previewShares: 99n * 10n ** 18n, // sUSDS preview for "You'll receive"
-  launch: vi.fn()
+  launch: vi.fn(),
+  // Latest params the panel passed to useSavingsLaunch (origin-token routing).
+  launchParams: undefined as { originToken?: { symbol?: string } } | undefined
 }));
 
 vi.mock('wagmi', async importOriginal => {
@@ -45,12 +47,48 @@ vi.mock('@/hooks', async importOriginal => {
 });
 
 vi.mock('../hooks/useSavingsLaunch', () => ({
-  useSavingsLaunch: () => ({ launch: h.launch, prepared: true, isLoading: false, error: null })
+  useSavingsLaunch: (params: { originToken?: { symbol?: string } }) => {
+    h.launchParams = params;
+    return { launch: h.launch, prepared: true, isLoading: false, error: null };
+  }
 }));
 
 vi.mock('../hooks/useSavingsSupplyMinAmountOut', () => ({
   useSavingsSupplyMinAmountOut: () => 0n
 }));
+
+// Stub the origin dropdown as plain option buttons (Radix Select interaction is
+// fragile in happy-dom). The real origin constants are preserved so the panel still
+// maps the picked symbol → Token and routes to useSavingsLaunch correctly.
+vi.mock('./SavingsOriginSelect', async importOriginal => {
+  const actual = await importOriginal<typeof import('./SavingsOriginSelect')>();
+  return {
+    ...actual,
+    SavingsOriginSelect: ({
+      value,
+      options,
+      onChange
+    }: {
+      value: string;
+      options: string[];
+      onChange: (next: string) => void;
+    }) => (
+      <div data-testid="savings-origin-select">
+        {options.map(symbol => (
+          <button
+            key={symbol}
+            type="button"
+            aria-pressed={value === symbol}
+            data-testid={`origin-opt-${symbol}`}
+            onClick={() => onChange(symbol)}
+          >
+            {symbol}
+          </button>
+        ))}
+      </div>
+    )
+  };
+});
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({
   TokenIcon: () => null
@@ -71,6 +109,7 @@ describe('SavingsSupplyWithdrawPanel — single-flow supply (no-position card)',
     h.walletBalance = 10n * 10n ** 18n;
     h.previewShares = 99n * 10n ** 18n;
     h.launch.mockClear();
+    h.launchParams = undefined;
   });
   afterEach(() => cleanup());
 
@@ -115,5 +154,24 @@ describe('SavingsSupplyWithdrawPanel — single-flow supply (no-position card)',
 
     expect(screen.queryByTestId('savings-amount-error')).toBeNull();
     expect(screen.getByTestId<HTMLButtonElement>('position-supply').disabled).toBe(false);
+  });
+
+  it('offers USDS and DAI origin options on mainnet supply', () => {
+    renderSupply();
+    expect(screen.queryByTestId('origin-opt-USDS')).not.toBeNull();
+    expect(screen.queryByTestId('origin-opt-DAI')).not.toBeNull();
+  });
+
+  it('routes useSavingsLaunch to the DAI origin token when DAI is selected', () => {
+    renderSupply();
+    fireEvent.click(screen.getByTestId('origin-opt-DAI'));
+    expect(h.launchParams?.originToken?.symbol).toBe('DAI');
+  });
+
+  it('resets the amount when the origin token is switched', () => {
+    renderSupply();
+    fireEvent.change(screen.getByTestId('savings-amount-input'), { target: { value: '5' } });
+    fireEvent.click(screen.getByTestId('origin-opt-DAI'));
+    expect(screen.getByTestId<HTMLInputElement>('savings-amount-input').value).toBe('');
   });
 });

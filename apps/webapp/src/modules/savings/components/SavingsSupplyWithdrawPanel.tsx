@@ -10,8 +10,7 @@ import {
   useReadSavingsUsds,
   getTokenDecimals,
   usePreviewSwapExactIn,
-  usePreviewSwapExactOut,
-  type Token
+  usePreviewSwapExactOut
 } from '@/hooks';
 import { formatBigInt, formatNumber, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
@@ -20,23 +19,16 @@ import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsSupplyMinAmountOut } from '../hooks/useSavingsSupplyMinAmountOut';
+import {
+  ORIGIN_TOKENS,
+  MAINNET_SUPPLY_ORIGINS,
+  L2_SUPPLY_ORIGINS,
+  L2_WITHDRAW_ORIGINS,
+  SavingsOriginSelect,
+  type OriginSymbol
+} from './SavingsOriginSelect';
 
 const NO_VALUE = '–';
-
-// Supply origin tokens. DAI (mainnet) routes useSavingsLaunch to the
-// upgrade-and-supply engine (DAI → USDS → deposit); USDC (L2) routes to the PSM
-// swap. Withdraw is always USDS.
-type OriginSymbol = 'USDS' | 'DAI' | 'USDC';
-const ORIGIN_TOKENS: Record<OriginSymbol, Token> = {
-  USDS: TOKENS.usds,
-  DAI: TOKENS.dai,
-  USDC: TOKENS.usdc
-};
-const MAINNET_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'DAI'];
-const L2_SUPPLY_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
-// L2 withdraw lets the user pick the destination token (USDS / USDC); mainnet
-// withdraw is always USDS.
-const L2_WITHDRAW_ORIGINS: OriginSymbol[] = ['USDS', 'USDC'];
 
 // Parse the raw input to a bigint at the origin token's decimals (USDC is 6 on
 // L2); partial/invalid input → 0.
@@ -104,6 +96,9 @@ export function SavingsSupplyWithdrawPanel({
   // is USDS-only.
   const showOriginSelect = isSupply || isL2;
   const origins = isSupply ? (isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS) : L2_WITHDRAW_ORIGINS;
+  // The token-selector options: the flow's origins when a choice exists, else a
+  // single static USDS chip (mainnet withdraw).
+  const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
   const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
   const originDecimals = getTokenDecimals(originToken, chainId);
   const amount = parseAmount(value, originDecimals);
@@ -212,11 +207,6 @@ export function SavingsSupplyWithdrawPanel({
   const tabClass = (active: boolean) =>
     `flex-1 rounded-lg py-2 text-sm font-medium ${active ? 'bg-background text-text' : 'text-textSecondary'}`;
 
-  const originClass = (active: boolean) =>
-    `flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${
-      active ? 'bg-background text-text' : 'text-textSecondary'
-    }`;
-
   return (
     <div className="flex flex-col gap-3" data-testid="savings-supply-withdraw-panel">
       {/* Supply/Withdraw tabs only in the uncontrolled (interim has-position)
@@ -244,27 +234,11 @@ export function SavingsSupplyWithdrawPanel({
         </div>
       )}
 
-      {/* Origin/destination token. Supply: USDS deposits/swaps directly; DAI
-          upgrades to USDS first (mainnet); USDC swaps through the PSM (L2).
-          Withdraw (L2 only): the destination token the sUSDS is swapped out to. */}
-      {showOriginSelect && (
-        <div className="flex items-center gap-1" data-testid="savings-origin-select">
-          {origins.map(symbol => (
-            <button
-              key={symbol}
-              type="button"
-              onClick={() => switchOrigin(symbol)}
-              aria-pressed={originSymbol === symbol}
-              data-testid={`savings-origin-${symbol.toLowerCase()}`}
-              className={originClass(originSymbol === symbol)}
-            >
-              <TokenIcon token={{ symbol }} width={18} showChainIcon={false} className="h-[18px] w-[18px]" />
-              {symbol}
-            </button>
-          ))}
-        </div>
-      )}
-
+      {/* Origin/destination token selector (Figma `USDS ▾`), inline in the amount
+          row. Supply: USDS deposits/swaps directly; DAI upgrades to USDS first
+          (mainnet); USDC swaps through the PSM (L2). Withdraw (L2 only): the
+          destination token the sUSDS is swapped out to. A single option renders a
+          static chip (mainnet withdraw). Switching resets the amount + Max. */}
       <div className="bg-panel flex items-center justify-between gap-2 rounded-xl p-3">
         <input
           inputMode="decimal"
@@ -276,15 +250,12 @@ export function SavingsSupplyWithdrawPanel({
           data-testid="savings-amount-input"
           className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
-        <div className="flex shrink-0 items-center gap-1.5">
-          <TokenIcon
-            token={{ symbol: originToken.symbol }}
-            width={20}
-            showChainIcon={false}
-            className="h-5 w-5"
-          />
-          <Text className="font-medium">{originToken.symbol}</Text>
-        </div>
+        <SavingsOriginSelect
+          value={originSymbol}
+          options={originOptions}
+          onChange={switchOrigin}
+          disabled={!isConnected}
+        />
       </div>
 
       <div className="flex items-center justify-between">

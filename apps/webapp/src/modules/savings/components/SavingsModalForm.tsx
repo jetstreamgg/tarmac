@@ -3,14 +3,19 @@ import { useChainId, useChains, useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import { TOKENS, useSavingsData, useTokenBalance } from '@/hooks';
-import { formatNumber, formatPercent } from '@/utils';
+import { getTokenDecimals, useSavingsData, useTokenBalance } from '@/hooks';
+import { formatNumber, formatPercent, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
+import {
+  ORIGIN_TOKENS,
+  MAINNET_SUPPLY_ORIGINS,
+  SavingsOriginSelect,
+  type OriginSymbol
+} from './SavingsOriginSelect';
 
 const NO_VALUE = '–';
 const USDS_DECIMALS = 18;
@@ -41,8 +46,8 @@ function ModalRow({ row }: { row: SavingsModalRow }) {
  * Editable body for the has-position "Supply to / Withdraw from Sky Savings" modals
  * (Figma 527:7591 / 527:10945), mounted as the shared modal's `entry.content`. One
  * body, two flows (`flow`) — the single component the PRD calls for (module 2).
- * Mainnet USDS only — slice 04 injects the USDS/DAI origin dropdown, slice 05 the
- * L2 PSM affordances.
+ * Mainnet supply offers a USDS/DAI origin dropdown (DAI → upgrade-and-supply);
+ * withdraw is USDS-only. Slice 05 adds the L2 PSM affordances.
  *
  * It owns its amount/max state and renders the input + Max + the flow's before→after
  * rows. The shared modal owns the confirm button; this body keeps that button's
@@ -68,23 +73,33 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   // Withdraw-only: set by Max so the engine redeems the whole position via
   // maxWithdraw(owner) (no dust). Cleared the moment the user edits the amount.
   const [max, setMax] = useState(false);
+  // Supply origin token (Figma `USDS ▾`). Mainnet supply offers USDS/DAI — DAI
+  // routes useSavingsLaunch to the upgrade-and-supply path (calldata unchanged).
+  // Withdraw is USDS-only here (mainnet); L2 origins arrive in slice 05.
+  const [originSymbol, setOriginSymbol] = useState<OriginSymbol>('USDS');
+  const isL2 = isL2ChainId(chainId);
+  const showOriginSelect = isSupply && !isL2;
+  const originOptions: OriginSymbol[] = showOriginSelect ? MAINNET_SUPPLY_ORIGINS : ['USDS'];
+  const originToken = ORIGIN_TOKENS[originSymbol];
+  const originDecimals = getTokenDecimals(originToken, chainId);
 
-  const amount = parseAmount(value);
+  const amount = parseAmount(value, originDecimals);
   const { data: walletBalance } = useTokenBalance({
     address,
     chainId,
-    token: TOKENS.usds.address[chainId]
+    token: originToken.address[chainId]
   });
   const walletBalanceValue = walletBalance?.value ?? 0n;
   const position = savingsData?.userSavingsBalance ?? 0n;
-  // Supply is capped by the wallet USDS balance; withdraw by the savings position.
+  // Supply is capped by the wallet balance of the origin token; withdraw by the
+  // savings position.
   const available = isSupply ? walletBalanceValue : position;
   const isZero = amount === 0n;
   const insufficient = isConnected && amount > available;
 
   const { execute, steps, prepared } = useSavingsLaunch({
     flow,
-    originToken: TOKENS.usds,
+    originToken,
     amount,
     max: !isSupply && max,
     referralCode: REFERRAL_CODE
@@ -115,7 +130,14 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   };
   const setMaxAmount = () => {
     if (!isSupply) setMax(true);
-    setValue(formatUnits(available, USDS_DECIMALS));
+    setValue(formatUnits(available, originDecimals));
+  };
+  // Switching the origin token resets the amount + Max (the previous amount was
+  // denominated in the old token's balance/decimals).
+  const switchOrigin = (next: OriginSymbol) => {
+    setOriginSymbol(next);
+    setMax(false);
+    setValue('');
   };
 
   const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
@@ -156,17 +178,19 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
           data-testid="savings-modal-amount-input"
           className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
-        <div className="flex shrink-0 items-center gap-1.5">
-          <TokenIcon token={{ symbol: 'USDS' }} width={20} showChainIcon={false} className="h-5 w-5" />
-          <Text className="font-medium">USDS</Text>
-        </div>
+        <SavingsOriginSelect
+          value={originSymbol}
+          options={originOptions}
+          onChange={switchOrigin}
+          disabled={!isConnected}
+        />
       </div>
 
       <div className="flex items-center justify-between">
         <Text className="text-textSecondary text-sm">
           <Trans>Balance</Trans>:{' '}
           {isConnected
-            ? formatNumber(parseFloat(formatUnits(available, USDS_DECIMALS)), { maxDecimals: 2 })
+            ? formatNumber(parseFloat(formatUnits(available, originDecimals)), { maxDecimals: 2 })
             : NO_VALUE}
         </Text>
         <button
@@ -194,11 +218,11 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   );
 }
 
-// Parse the raw USDS input (18 decimals) to a bigint; partial/invalid → 0.
-function parseAmount(raw: string): bigint {
+// Parse the raw input to a bigint at the origin token's decimals; partial/invalid → 0.
+function parseAmount(raw: string, decimals: number): bigint {
   if (!raw) return 0n;
   try {
-    return parseUnits(raw, USDS_DECIMALS);
+    return parseUnits(raw, decimals);
   } catch {
     return 0n;
   }
