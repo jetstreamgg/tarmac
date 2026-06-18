@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { Morpho, Pendle } from '@/widgets';
-import { formatDecimalPercentage, formatUsd, getChainIcon } from '@/utils';
+import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
@@ -30,7 +30,7 @@ const ringColor = (position: SuppliedPosition): string => {
  * page for now).
  */
 export function PositionCard({ position, onSelect }: { position: SuppliedPosition; onSelect: () => void }) {
-  const projected = position.amountUsd * (position.rate ?? 0);
+  const projected = projectAnnualEarnings(position.amountUsd, position.rate);
 
   return (
     <div
