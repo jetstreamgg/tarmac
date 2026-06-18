@@ -321,7 +321,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('labels approve → supply (2 steps) without allowance, and one step with allowance', () => {
+  it('keeps the L2 supply steps generic ("Approve" / "Supply") — Figma is mainnet-only', () => {
     h.allowance = 0n;
     const a = renderHook(() =>
       useSavingsLaunch({
@@ -333,7 +333,8 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
       })
     );
     act(() => a.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toHaveLength(2);
+    // L2 has no Figma frame; the labels intentionally stay token-agnostic.
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Approve', 'Supply']);
     a.unmount();
     h.launchMock.mockClear();
 
@@ -348,7 +349,7 @@ describe('useSavingsLaunch — L2 supply launch() config', () => {
       })
     );
     act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toHaveLength(1);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Supply']);
     b.unmount();
   });
 });

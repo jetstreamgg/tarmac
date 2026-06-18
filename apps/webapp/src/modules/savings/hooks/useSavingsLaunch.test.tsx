@@ -300,13 +300,14 @@ describe('useSavingsLaunch — launch() config', () => {
     expect(h.mockExecute).toHaveBeenCalledTimes(1);
   });
 
-  it('labels approve → supply (2 steps) without allowance, and one step with allowance', () => {
+  it('labels the USDS supply steps "Approve USDS" / "Supply USDS", eliding the approve with allowance', () => {
     h.allowance = 0n;
     const a = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
     act(() => a.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toHaveLength(2);
+    // Figma 527:8273 — the supply steps name their token; step count is unchanged.
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Approve USDS', 'Supply USDS']);
     a.unmount();
     h.launchMock.mockClear();
 
@@ -315,7 +316,7 @@ describe('useSavingsLaunch — launch() config', () => {
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
     );
     act(() => b.result.current.launch());
-    expect(h.launchMock.mock.calls[0][0].steps).toHaveLength(1);
+    expect(h.launchMock.mock.calls[0][0].steps).toEqual(['Supply USDS']);
     b.unmount();
   });
 });

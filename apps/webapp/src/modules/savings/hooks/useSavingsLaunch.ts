@@ -242,8 +242,8 @@ export function useSavingsLaunch({
               t`Supply USDS`
             ].filter(Boolean) as string[])
           : needsUsdsApproval
-            ? [t`Approve`, t`Supply`]
-            : [t`Supply`];
+            ? [t`Approve USDS`, t`Supply USDS`]
+            : [t`Supply USDS`];
     }
     return needsPsmWithdrawApproval ? [t`Approve`, t`Withdraw`] : [t`Withdraw`];
   }, [
