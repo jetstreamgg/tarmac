@@ -7,6 +7,7 @@ import {
   TOKENS,
   useTokenBalance,
   useSavingsData,
+  useReadSavingsUsds,
   getTokenDecimals,
   usePreviewSwapExactIn,
   usePreviewSwapExactOut,
@@ -65,13 +66,34 @@ function parseAmount(value: string, decimals: number): bigint {
  * amount caps the sUSDS in (swapExactOut). The PSM min-out / max-in bounds are
  * computed here and handed to the orchestrator.
  */
-export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => void }) {
+export function SavingsSupplyWithdrawPanel({
+  onSuccess,
+  flow: flowProp,
+  projection = false
+}: {
+  onSuccess?: () => void;
+  /**
+   * Controlled flow. When provided, the in-panel Supply/Withdraw tab toggle is
+   * hidden and the body renders single-flow (the redesigned no-position "Supply"
+   * card and, from slice 02, the editable modal). Omit it for the interim
+   * has-position card, which keeps its own tab state.
+   */
+  flow?: SavingsLaunchFlow;
+  /**
+   * Render the inline "Supply" card projection rows (`You'll receive`,
+   * `1Y projected earnings`). Mainnet supply only — L2 surfaces its own min-out
+   * row. `1Y projected earnings` is stubbed pending a projection source.
+   */
+  projection?: boolean;
+}) {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
   const { data: savingsData } = useSavingsData();
 
   const isL2 = isL2ChainId(chainId);
-  const [flow, setFlow] = useState<SavingsLaunchFlow>('supply');
+  const [flowState, setFlowState] = useState<SavingsLaunchFlow>('supply');
+  const controlled = flowProp !== undefined;
+  const flow = flowProp ?? flowState;
   const [originSymbol, setOriginSymbol] = useState<OriginSymbol>('USDS');
   const [value, setValue] = useState('');
   const [max, setMax] = useState(false);
@@ -101,6 +123,18 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
   // L2 PSM supply slippage floor (chi-projected sUSDS out). The orchestrator hands
   // this straight to the engine; it's ignored on the mainnet / withdraw paths.
   const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
+
+  // Inline "Supply" card preview: mainnet origin (USDS/DAI, both wad) → sUSDS
+  // shares via the vault's ERC-4626 convertToShares. Read-only; the actual
+  // supply still routes through useSavingsLaunch. L2 has its own min-out row.
+  const { data: previewSharesData } = useReadSavingsUsds({
+    functionName: 'convertToShares',
+    args: [amount],
+    // No chainId — the read uses the connected chain and is gated to mainnet
+    // supply below, where the sUSDS vault address resolves.
+    query: { enabled: projection && flow === 'supply' && !isL2 && amount > 0n }
+  });
+  const previewShares = typeof previewSharesData === 'bigint' ? previewSharesData : undefined;
 
   // L2 PSM withdraw previews (mirror the legacy L2 widget; no-ops on mainnet):
   //  - convert the whole sUSDS balance to the destination token → max-withdraw
@@ -150,7 +184,7 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
   const disabled = !isConnected || !prepared || (!max && (isZero || insufficient));
 
   const switchFlow = (next: SavingsLaunchFlow) => {
-    setFlow(next);
+    setFlowState(next);
     // Withdraw is USDS-only; reset the origin so re-entering supply starts on USDS.
     setOriginSymbol('USDS');
     setValue('');
@@ -185,26 +219,30 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
 
   return (
     <div className="flex flex-col gap-3" data-testid="savings-supply-withdraw-panel">
-      <div className="bg-panel flex gap-1 rounded-xl p-1">
-        <button
-          type="button"
-          onClick={() => switchFlow('supply')}
-          aria-pressed={isSupply}
-          data-testid="savings-tab-supply"
-          className={tabClass(isSupply)}
-        >
-          <Trans>Supply</Trans>
-        </button>
-        <button
-          type="button"
-          onClick={() => switchFlow('withdraw')}
-          aria-pressed={!isSupply}
-          data-testid="savings-tab-withdraw"
-          className={tabClass(!isSupply)}
-        >
-          <Trans>Withdraw</Trans>
-        </button>
-      </div>
+      {/* Supply/Withdraw tabs only in the uncontrolled (interim has-position)
+          mount. A controlled `flow` renders single-flow with no tab toggle. */}
+      {!controlled && (
+        <div className="bg-panel flex gap-1 rounded-xl p-1">
+          <button
+            type="button"
+            onClick={() => switchFlow('supply')}
+            aria-pressed={isSupply}
+            data-testid="savings-tab-supply"
+            className={tabClass(isSupply)}
+          >
+            <Trans>Supply</Trans>
+          </button>
+          <button
+            type="button"
+            onClick={() => switchFlow('withdraw')}
+            aria-pressed={!isSupply}
+            data-testid="savings-tab-withdraw"
+            className={tabClass(!isSupply)}
+          >
+            <Trans>Withdraw</Trans>
+          </button>
+        </div>
+      )}
 
       {/* Origin/destination token. Supply: USDS deposits/swaps directly; DAI
           upgrades to USDS first (mainnet); USDC swaps through the PSM (L2).
@@ -233,9 +271,10 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
           placeholder="0"
           value={value}
           onChange={e => onInput(e.target.value)}
+          disabled={!isConnected}
           aria-label={isSupply ? t`Supply amount` : t`Withdraw amount`}
           data-testid="savings-amount-input"
-          className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none"
+          className="text-text placeholder:text-textSecondary w-full min-w-0 bg-transparent text-2xl font-medium outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
         <div className="flex shrink-0 items-center gap-1.5">
           <TokenIcon
@@ -277,6 +316,30 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
         </div>
       )}
 
+      {/* Inline "Supply" card projection rows (Figma 527:7404). Mainnet shows the
+          sUSDS you'll receive; 1Y projected earnings is stubbed (no projection
+          source yet). On L2 the "Receive at least" row above covers the preview. */}
+      {projection && isSupply && !isL2 && (
+        <div className="flex items-center justify-between" data-testid="savings-supply-receive">
+          <Text className="text-textSecondary text-sm">
+            <Trans>You&apos;ll receive</Trans>
+          </Text>
+          <Text className="text-text text-sm font-medium">
+            {previewShares !== undefined
+              ? `${formatBigInt(previewShares, { unit: 18, maxDecimals: 2 })} sUSDS`
+              : `${NO_VALUE} sUSDS`}
+          </Text>
+        </div>
+      )}
+      {projection && isSupply && (
+        <div className="flex items-center justify-between" data-testid="savings-supply-projected-earnings">
+          <Text className="text-textSecondary text-sm">
+            <Trans>1Y projected earnings</Trans>
+          </Text>
+          <Text className="text-textSecondary text-sm italic">TODO</Text>
+        </div>
+      )}
+
       {insufficient && (
         <Text className="text-error text-sm" data-testid="savings-amount-error">
           {isSupply ? <Trans>Insufficient balance</Trans> : <Trans>Amount exceeds your position</Trans>}
@@ -285,6 +348,7 @@ export function SavingsSupplyWithdrawPanel({ onSuccess }: { onSuccess?: () => vo
 
       <Button
         variant="primary"
+        className="w-full"
         disabled={disabled}
         onClick={launch}
         data-testid={isSupply ? 'position-supply' : 'position-withdraw'}

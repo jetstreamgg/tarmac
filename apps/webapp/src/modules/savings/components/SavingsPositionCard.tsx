@@ -6,6 +6,7 @@ import { useSavingsData, useTokenBalance, TOKENS } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { SavingsSupplyWithdrawPanel } from './SavingsSupplyWithdrawPanel';
+import { SavingsSupplyCard } from './SavingsSupplyCard';
 
 const NO_VALUE = '–';
 
@@ -27,13 +28,16 @@ function StatRow({ label, children }: { label: ReactNode; children: ReactNode })
 const TodoValue = () => <span className="text-textSecondary text-sm italic">TODO</span>;
 
 /**
- * The "My position" card for the Savings product page (ProductDetailTemplate
- * `position` slot).
+ * Position-aware action card for the Savings product page (ProductDetailTemplate
+ * `position` slot). The savings balance picks the card:
+ *  - no position (incl. disconnected) → the no-position "Supply" entry card
+ *    (`SavingsSupplyCard`, Figma 527:7404).
+ *  - has position → the "My position" summary below, with the interim inline
+ *    `SavingsSupplyWithdrawPanel` (replaced by Supply/Withdraw modals in slices
+ *    02/03).
  *
- * D3: supply AND withdraw run inline on the new transaction surface
- * (`SavingsSupplyWithdrawPanel` → `useSavingsLaunch().launch()`) on both mainnet
- * (sUSDS deposit/withdraw + DAI upgrade) and L2 (PSM swap). The legacy
- * `SavingsWidget` / `L2SavingsWidget` stack is fully retired in the closeout slice.
+ * Both branches confirm through `useSavingsLaunch().launch()` (sUSDS
+ * deposit/withdraw + DAI upgrade on mainnet, PSM swap on L2) — calldata unchanged.
  */
 export function SavingsPositionCard() {
   const chainId = useChainId();
@@ -46,10 +50,17 @@ export function SavingsPositionCard() {
   });
 
   // Refresh position card + sUSDS balance after a successful inline supply/withdraw.
+  // A no-position supply also flips this card to "My position" once the savings
+  // balance refetches above zero.
   const refreshPosition = () => {
     mutateSavings();
     refetchSusds();
   };
+
+  const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
+  if (!hasPosition) {
+    return <SavingsSupplyCard onSuccess={refreshPosition} />;
+  }
 
   const position = isConnected ? formatToken(savingsData?.userSavingsBalance) : NO_VALUE;
   const susds = isConnected ? formatToken(susdsBalance?.value) : NO_VALUE;
