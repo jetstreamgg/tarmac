@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 i18n.load('en', {});
@@ -9,7 +9,7 @@ i18n.activate('en');
 const TEST_ADDRESS = '0xc12f7C1F2DCE119e2d0b77D65eC479Bfc32b0327' as const;
 
 // Mutable savings balance — drives which card the router renders.
-const h = vi.hoisted(() => ({ savingsBalance: 0n as bigint }));
+const h = vi.hoisted(() => ({ savingsBalance: 0n as bigint, launch: vi.fn() }));
 
 vi.mock('wagmi', async importOriginal => {
   const actual = await importOriginal<typeof import('wagmi')>();
@@ -35,9 +35,23 @@ vi.mock('@/hooks', async importOriginal => {
   };
 });
 
-// Stub the input body — routing is the unit under test, not the panel internals.
+// Stub the input bodies — routing is the unit under test, not the panel/form internals.
 vi.mock('./SavingsSupplyWithdrawPanel', () => ({
   SavingsSupplyWithdrawPanel: () => <div data-testid="mock-panel" />
+}));
+vi.mock('./SavingsModalSupplyForm', () => ({
+  SavingsModalSupplyForm: () => <div data-testid="mock-modal-form" />
+}));
+
+// The has-position card opens the shared modal via launch() — capture it.
+vi.mock('@/modules/ui/context/TransactionContext', () => ({
+  useTransaction: () => ({
+    launch: h.launch,
+    updateModalContent: vi.fn(),
+    isModalOpen: false,
+    txCallbacks: { onMutate: vi.fn(), onStart: vi.fn(), onSuccess: vi.fn(), onError: vi.fn() },
+    txStatus: 'idle'
+  })
 }));
 
 vi.mock('@/modules/ui/components/TokenIcon', () => ({
@@ -56,6 +70,7 @@ const renderCard = () =>
 describe('SavingsPositionCard — position routing', () => {
   beforeEach(() => {
     h.savingsBalance = 0n;
+    h.launch.mockClear();
   });
   afterEach(() => cleanup());
 
@@ -67,11 +82,27 @@ describe('SavingsPositionCard — position routing', () => {
     expect(screen.queryByTestId('savings-position-card')).toBeNull();
   });
 
-  it('renders the "My position" card when the savings balance is positive', () => {
+  it('renders the "My position" card with a Supply button when the savings balance is positive', () => {
     h.savingsBalance = 100n * 10n ** 18n;
     renderCard();
 
     expect(screen.queryByTestId('savings-position-card')).not.toBeNull();
     expect(screen.queryByTestId('savings-supply-card')).toBeNull();
+    expect(screen.queryByTestId('savings-position-supply')).not.toBeNull();
+  });
+
+  it('opens the "Supply to Sky Savings" editable modal (entry descriptor) on Supply', () => {
+    h.savingsBalance = 100n * 10n ** 18n;
+    renderCard();
+
+    fireEvent.click(screen.getByTestId('savings-position-supply'));
+
+    expect(h.launch).toHaveBeenCalledTimes(1);
+    const config = h.launch.mock.calls[0][0];
+    expect(config.title).toBe('Supply to Sky Savings');
+    // It's the editable entry flow, not a read-only review.
+    expect(config.entry).toBeDefined();
+    expect(config.entry.confirmLabel).toBe('Supply');
+    expect(config.entry.confirmDisabled).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { useAccount, useChainId } from 'wagmi';
 import { t } from '@lingui/core/macro';
@@ -60,8 +60,17 @@ export interface UseSavingsLaunchParams {
 }
 
 export interface UseSavingsLaunchResult {
-  /** Opens the standard review modal for the configured flow. */
+  /** Opens the standard review modal for the configured flow (no-position / inline flow). */
   launch: () => void;
+  /**
+   * Fires the routed engine call directly (txCallbacks already spread in). Used by
+   * the has-position editable modal entry body, whose own confirm button replaces
+   * the review screen — the modal is already open, so it executes rather than
+   * re-launching. Same call as `launch()`'s `onConfirm`, so calldata is identical.
+   */
+  execute: () => void;
+  /** Step labels for the configured flow (e.g. ["Approve", "Supply"]); matches `launch()`. */
+  steps: string[];
   /** Whether the routed call-builder hook is ready to execute. */
   prepared: boolean;
   isLoading: boolean;
@@ -212,13 +221,16 @@ export function useSavingsLaunch({
       : withdrawHook;
   const execute = activeHook.execute;
 
-  const launch = useCallback(() => {
+  // Step labels mirror the engine's call count, each approve elided when its
+  // allowance is already present so the step indicator advances in lockstep:
+  //  - mainnet USDS supply / mainnet withdraw: optional approve → action
+  //  - DAI supply: up to 4 (approve-DAI → upgrade → approve-USDS → supply)
+  //  - L2 PSM supply/withdraw: optional approve(assetIn → psm3L2) → swap
+  // Hoisted from launch() so the editable modal entry body can pass them straight
+  // to the shared modal; launch() consumes the same value (behaviour unchanged).
+  const steps = useMemo<string[]>(() => {
     if (isSupply) {
-      // Step labels mirror the engine's call count: the DAI path is up to 4 steps
-      // (approve-DAI → upgrade → approve-USDS → supply), each approve elided when
-      // its allowance is already present so the step indicator advances in lockstep.
-      // L2 PSM supply is the simple approve(assetIn → psm3L2) → swap path.
-      const steps = isL2
+      return isL2
         ? needsPsmApproval
           ? [t`Approve`, t`Supply`]
           : [t`Supply`]
@@ -232,6 +244,20 @@ export function useSavingsLaunch({
           : needsUsdsApproval
             ? [t`Approve`, t`Supply`]
             : [t`Supply`];
+    }
+    return needsPsmWithdrawApproval ? [t`Approve`, t`Withdraw`] : [t`Withdraw`];
+  }, [
+    isSupply,
+    isL2,
+    isDai,
+    needsPsmApproval,
+    needsDaiApproval,
+    needsUsdsApproval,
+    needsPsmWithdrawApproval
+  ]);
+
+  const launch = useCallback(() => {
+    if (isSupply) {
       launchModal({
         title: t`Supply to Sky Savings`,
         subtitles: {
@@ -258,11 +284,9 @@ export function useSavingsLaunch({
         }
       });
     } else {
-      // Mainnet withdraw is a single signature (you already own the sUSDS). L2
-      // withdraw swaps sUSDS → token through the PSM, so it needs an approve when
-      // the sUSDS → psm3L2 allowance is short — elided otherwise so the step
-      // indicator advances in lockstep with the engine's call count.
-      const steps = needsPsmWithdrawApproval ? [t`Approve`, t`Withdraw`] : [t`Withdraw`];
+      // Mainnet withdraw is a single signature (you already own the sUSDS); L2
+      // withdraw swaps sUSDS → token through the PSM (approve elided when the
+      // sUSDS → psm3L2 allowance already covers it). `steps` is the hoisted memo.
       launchModal({
         title: t`Withdraw from Sky Savings`,
         subtitles: {
@@ -293,24 +317,21 @@ export function useSavingsLaunch({
     }
   }, [
     isSupply,
-    isL2,
-    isDai,
     max,
     launchModal,
     amount,
     originToken.symbol,
     originDecimals,
     transactionContent,
-    needsUsdsApproval,
-    needsDaiApproval,
-    needsPsmApproval,
-    needsPsmWithdrawApproval,
+    steps,
     execute,
     onSuccess
   ]);
 
   return {
     launch,
+    execute,
+    steps,
     prepared: activeHook.prepared,
     isLoading: activeHook.isLoading,
     error: activeHook.error

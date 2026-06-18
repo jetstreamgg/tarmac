@@ -21,6 +21,22 @@ import type { TxStatus } from '@/widgets';
  * pending the tracked id is the bundle id, so `onStart` gets `undefined`.
  */
 
+/**
+ * An editable "entry" first screen (PRD module 1). When a config carries one, the
+ * shared modal opens on this screen instead of the read-only review: `content` is
+ * the interactive body (amount input, token, rows…), gated by `confirmDisabled`
+ * and labelled by `confirmLabel`. Confirming advances to the same wallet/status
+ * screen and fires the config's `onConfirm`. A body mounted inside `content` keeps
+ * its `confirmDisabled` / `onConfirm` live via `updateModalContent` (the merge
+ * preserves `content`, so the body never remounts). Vaults/Earn inherit this.
+ */
+export type TransactionEntry = {
+  content: ReactNode;
+  confirmLabel?: string;
+  /** Disables the entry's confirm button (e.g. amount is zero / over balance). */
+  confirmDisabled?: boolean;
+};
+
 /** Analytics metadata passed by consumers to attribute events correctly. */
 export type TransactionAnalytics = {
   /** Widget/page name (e.g. "vaults"). */
@@ -38,6 +54,12 @@ export type TransactionConfig = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /**
+   * Editable first screen. When present the modal opens on the entry screen
+   * (instead of the read-only review built from `transactionContent`). Both lead
+   * to the same wallet/status screen.
+   */
+  entry?: TransactionEntry;
   /** Optional node rendered to the right of the title — e.g. a slippage gear. */
   rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
@@ -57,10 +79,22 @@ export type TransactionConfig = {
   sessionId?: string;
 };
 
-/** The subset of config a flow may live-update after launch (gated on sessionId). */
+/**
+ * The subset of config a flow may live-update after launch (gated on sessionId).
+ * An in-modal entry body uses this to keep its gating + confirm fresh: `entry` is
+ * a *partial* merged into the existing entry (so `content` need not be re-pushed,
+ * and the body stays mounted), and `onConfirm` / `steps` are swapped to reflect
+ * the current amount.
+ */
 export type LiveModalUpdate = Partial<
-  Pick<TransactionConfig, 'transactionContent' | 'rightHeaderComponent' | 'confirmDisabled'>
->;
+  Pick<
+    TransactionConfig,
+    'transactionContent' | 'rightHeaderComponent' | 'confirmDisabled' | 'onConfirm' | 'steps'
+  >
+> & {
+  /** Partial entry merged into the existing entry — `content` is preserved if omitted. */
+  entry?: Partial<TransactionEntry>;
+};
 
 /**
  * Lifecycle callbacks spread into write hooks. Compatible with both

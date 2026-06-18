@@ -9,7 +9,12 @@ import { useAppAnalytics } from '@/modules/analytics/hooks/useAppAnalytics';
 import { useAnalyticsFlow } from '@/modules/analytics/context/AnalyticsFlowContext';
 import { reportError } from '@/modules/sentry/reportError';
 import { isUserRejectedRequestError } from '@/modules/utils/isUserRejectedRequestError';
-import type { TransactionConfig, TxCallbacks, TransactionContextValue } from './transactionContract';
+import type {
+  TransactionConfig,
+  TransactionEntry,
+  TxCallbacks,
+  TransactionContextValue
+} from './transactionContract';
 
 function shouldCaptureTransactionError(error: Error): boolean {
   return !isUserRejectedRequestError(error);
@@ -17,7 +22,12 @@ function shouldCaptureTransactionError(error: Error): boolean {
 
 // The transaction-orchestration contract is frozen in ./transactionContract.
 // Re-exported here so existing import sites keep working.
-export type { TransactionAnalytics, TransactionConfig, TxCallbacks } from './transactionContract';
+export type {
+  TransactionAnalytics,
+  TransactionConfig,
+  TransactionEntry,
+  TxCallbacks
+} from './transactionContract';
 
 const TransactionContext = createContext<TransactionContextValue | null>(null);
 
@@ -67,7 +77,15 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       if (sessionId !== activeSessionRef.current) return;
       setActiveConfig(prev => {
         if (!prev) return prev;
-        const next = { ...prev, ...partial };
+        const { entry: entryPatch, ...rest } = partial;
+        const next = { ...prev, ...rest };
+        // Merge the entry partial so an in-modal body can flip confirmDisabled /
+        // refresh its rows WITHOUT re-pushing `content` (which would remount it).
+        // A patch only ever arrives after launch seeded `entry`, so the merge is
+        // a complete TransactionEntry.
+        if (entryPatch) {
+          next.entry = { ...(prev.entry ?? {}), ...entryPatch } as TransactionEntry;
+        }
         configRef.current = next;
         return next;
       });
@@ -238,6 +256,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
           title={activeConfig.title}
           subtitles={activeConfig.subtitles}
           transactionContent={activeConfig.transactionContent}
+          entry={activeConfig.entry}
           rightHeaderComponent={activeConfig.rightHeaderComponent}
           onConfirm={activeConfig.onConfirm}
           onRetry={handleRetry}

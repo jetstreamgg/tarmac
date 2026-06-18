@@ -1,12 +1,15 @@
-import { ReactNode } from 'react';
+import { ReactNode, useCallback, useId } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
+import { t } from '@lingui/core/macro';
 import { useSavingsData, useTokenBalance, TOKENS } from '@/hooks';
 import { formatNumber } from '@/utils';
+import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { SavingsSupplyWithdrawPanel } from './SavingsSupplyWithdrawPanel';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
+import { SavingsModalSupplyForm } from './SavingsModalSupplyForm';
 
 const NO_VALUE = '–';
 
@@ -48,14 +51,41 @@ export function SavingsPositionCard() {
     chainId,
     token: TOKENS.susds.address[chainId]
   });
+  const { launch } = useTransaction();
+  const supplySessionId = useId();
 
-  // Refresh position card + sUSDS balance after a successful inline supply/withdraw.
+  // Refresh position card + sUSDS balance after a successful supply/withdraw.
   // A no-position supply also flips this card to "My position" once the savings
   // balance refetches above zero.
-  const refreshPosition = () => {
+  const refreshPosition = useCallback(() => {
     mutateSavings();
     refetchSusds();
-  };
+  }, [mutateSavings, refetchSusds]);
+
+  // Opens the editable "Supply to Sky Savings" modal (Figma 527:7591). The entry
+  // body owns the amount and live-syncs the confirm gating + handler; the
+  // placeholder onConfirm is replaced by the body's engine execute before it
+  // enables. No analytics here — analytics parity is a separate sign-off-gated
+  // slice (PRD Out of Scope). Withdraw arrives in slice 03.
+  const openSupplyModal = useCallback(() => {
+    launch({
+      title: t`Supply to Sky Savings`,
+      subtitles: {
+        pending: t`Please confirm the transaction in your wallet.`,
+        loading: t`Your supply is being processed on the blockchain. Please wait.`,
+        success: t`You've successfully supplied to Sky Savings.`,
+        error: t`An error occurred while supplying to Sky Savings.`
+      },
+      sessionId: supplySessionId,
+      entry: {
+        content: <SavingsModalSupplyForm sessionId={supplySessionId} />,
+        confirmLabel: t`Supply`,
+        confirmDisabled: true
+      },
+      onConfirm: () => {},
+      onSuccess: refreshPosition
+    });
+  }, [launch, supplySessionId, refreshPosition]);
 
   const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
   if (!hasPosition) {
@@ -100,9 +130,17 @@ export function SavingsPositionCard() {
             <TodoValue />
           </StatRow>
         </div>
-        {/* Supply/withdraw run inline on the new transaction surface across all
-            networks (mainnet sUSDS / DAI-upgrade, L2 PSM swap). */}
-        <SavingsSupplyWithdrawPanel onSuccess={refreshPosition} />
+        {/* Supply opens the editable "Supply to Sky Savings" modal. Withdraw
+            arrives in slice 03 (which removes the interim inline panel for good). */}
+        <Button
+          variant="primary"
+          className="w-full"
+          onClick={openSupplyModal}
+          disabled={!isConnected}
+          data-testid="savings-position-supply"
+        >
+          <Trans>Supply</Trans>
+        </Button>
       </div>
     </div>
   );

@@ -23,8 +23,11 @@ import { useIsSafeWallet } from '@/hooks';
 import { useIsBatchSupported } from '@/hooks';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useChainId } from 'wagmi';
+import type { TransactionEntry } from '@/modules/ui/context/transactionContract';
 
-type TransactionModalStep = 'review' | 'transaction';
+// 'entry' is an editable first screen (the body owns its inputs); 'review' is the
+// read-only first screen. Both transition to the shared 'transaction' screen.
+type TransactionModalStep = 'entry' | 'review' | 'transaction';
 
 export type TransactionSubtitles = {
   review?: string;
@@ -40,6 +43,11 @@ export type TransactionModalProps = {
   title: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /**
+   * Editable first screen. When present the modal opens on the entry screen
+   * (the body in `entry.content`) instead of the read-only review.
+   */
+  entry?: TransactionEntry;
   /** Optional node rendered between the title and the close button — e.g. a slippage gear. */
   rightHeaderComponent?: ReactNode;
   onConfirm: () => void;
@@ -78,6 +86,7 @@ export function TransactionModal({
   title,
   subtitles,
   transactionContent,
+  entry,
   rightHeaderComponent,
   onConfirm,
   onRetry,
@@ -91,7 +100,11 @@ export function TransactionModal({
   steps,
   currentStep = 0
 }: TransactionModalProps) {
-  const [step, setStep] = useState<TransactionModalStep>('review');
+  // The first screen is the editable entry when a config supplies one, else the
+  // read-only review. Initialised per mount (the provider remounts the modal on
+  // each launch, so the initializer sees the launch's `entry`).
+  const firstStep: TransactionModalStep = entry ? 'entry' : 'review';
+  const [step, setStep] = useState<TransactionModalStep>(firstStep);
   const [contentHeight, setContentHeight] = useState<number | undefined>();
   const reviewRef = useRef<HTMLDivElement>(null);
   const chainId = useChainId();
@@ -99,11 +112,21 @@ export function TransactionModal({
   const explorerName = getExplorerName(chainId, isSafeWallet);
   const { data: batchSupported } = useIsBatchSupported();
 
+  const isEntry = step === 'entry';
   const isReview = step === 'review';
+  // Both 'entry' and 'review' are first screens: content + a confirm button that
+  // advances to the transaction screen. They differ only in content + button source.
+  const isFirstScreen = isEntry || isReview;
   const isTransaction = step === 'transaction';
   const hasMultipleSteps = steps && steps.length > 1;
   const showBatchToggle = hasMultipleSteps && batchSupported;
   const isTransacting = txStatus === TxStatus.INITIALIZED || txStatus === TxStatus.LOADING;
+
+  // The entry screen sources its label/gating from the entry descriptor (kept
+  // live by the in-modal body); the review screen uses the top-level config.
+  const firstScreenContent = isEntry ? entry?.content : transactionContent;
+  const firstScreenConfirmLabel = isEntry ? (entry?.confirmLabel ?? confirmLabel) : confirmLabel;
+  const firstScreenConfirmDisabled = isEntry ? entry?.confirmDisabled : confirmDisabled;
 
   const subtitleByStatus: Partial<Record<TxStatus, string | undefined>> = {
     [TxStatus.INITIALIZED]: subtitles?.pending,
@@ -111,7 +134,7 @@ export function TransactionModal({
     [TxStatus.SUCCESS]: subtitles?.success,
     [TxStatus.ERROR]: subtitles?.error
   };
-  const subtitle = isReview ? subtitles?.review : subtitleByStatus[txStatus];
+  const subtitle = isFirstScreen ? subtitles?.review : subtitleByStatus[txStatus];
 
   const handleConfirm = useCallback(() => {
     if (reviewRef.current) {
@@ -131,16 +154,16 @@ export function TransactionModal({
 
   const handleClose = useCallback(() => {
     if (isTransacting) return;
-    setStep('review');
+    setStep(firstStep);
     setContentHeight(undefined);
     onClose();
-  }, [isTransacting, onClose]);
+  }, [isTransacting, onClose, firstStep]);
 
   const handleBack = useCallback(() => {
     onBack?.();
-    setStep('review');
+    setStep(firstStep);
     setContentHeight(undefined);
-  }, [onBack]);
+  }, [onBack, firstStep]);
 
   return (
     <Dialog open={open} onOpenChange={val => !val && handleClose()}>
@@ -168,7 +191,7 @@ export function TransactionModal({
         </div>
 
         <div
-          ref={isReview ? reviewRef : undefined}
+          ref={isFirstScreen ? reviewRef : undefined}
           className="flex flex-col gap-4"
           style={isTransaction ? { minHeight: contentHeight } : undefined}
         >
@@ -209,14 +232,15 @@ export function TransactionModal({
             </div>
           )}
 
-          {/* Transaction content (token breakdown, amounts, etc.) */}
-          {transactionContent && <div className="text-text">{transactionContent}</div>}
+          {/* First-screen content: the editable entry body, or the read-only
+              review breakdown (token amounts, etc.). */}
+          {firstScreenContent && <div className="text-text">{firstScreenContent}</div>}
 
           <div className="grow" />
 
           {/* Bottom section: animates on step/status change */}
           <AnimatePresence mode="wait" initial={false}>
-            {isReview ? (
+            {isFirstScreen ? (
               <motion.div
                 key="review-bottom"
                 initial={{ opacity: 0, x: -20 }}
@@ -230,9 +254,9 @@ export function TransactionModal({
                   variant="primaryAlt"
                   className="w-full"
                   onClick={handleConfirm}
-                  disabled={confirmDisabled}
+                  disabled={firstScreenConfirmDisabled}
                 >
-                  {confirmLabel ?? <Trans>Confirm</Trans>}
+                  {firstScreenConfirmLabel ?? <Trans>Confirm</Trans>}
                 </Button>
               </motion.div>
             ) : (
@@ -306,11 +330,11 @@ function BatchToggle() {
   return (
     <div className="border-selectActive flex items-center gap-4 border-t pt-4">
       <div className="flex flex-wrap items-center gap-1">
-        <Text className="text-sm leading-none text-text">
+        <Text className="text-text text-sm leading-none">
           <Trans>Bundle transactions</Trans>
         </Text>
         <Popover>
-          <PopoverTrigger onClick={e => e.stopPropagation()} className="z-10 text-text">
+          <PopoverTrigger onClick={e => e.stopPropagation()} className="text-text z-10">
             <Info width={13} height={13} />
           </PopoverTrigger>
           <PopoverContent align="center" side="top" className="bg-containerDark backdrop-blur-[50px]">
@@ -319,10 +343,10 @@ function BatchToggle() {
                 <Trans>Bundle transactions</Trans>
               </Text>
               <PopoverClose onClick={e => e.stopPropagation()}>
-                <Close className="h-5 w-5 cursor-pointer text-text" />
+                <Close className="text-text h-5 w-5 cursor-pointer" />
               </PopoverClose>
             </div>
-            <Text className="mt-2 text-sm text-white/80 light:text-textSecondary">
+            <Text className="light:text-textSecondary mt-2 text-sm text-white/80">
               <Trans>
                 Bundled transactions are set &apos;on&apos; by default to complete transactions in a single
                 step. Combining actions improves the user experience and reduces gas fees. Manually toggle off
