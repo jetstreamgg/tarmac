@@ -99,6 +99,22 @@ export function formatDecimalPercentage(value: number, decimalPlaces: number = 2
   return `${percentage.toFixed(decimalPlaces)}%`;
 }
 
+/**
+ * Money figure with a `$` prefix and exactly two fraction digits, grouped
+ * (e.g. `$1,000,000.00`). Unlike {@link formatNumber}, decimals are never
+ * dropped — the sign is placed before the symbol (`-$100.00`).
+ */
+export function formatUsd(amount: number): string {
+  const sign = amount < 0 ? '-' : '';
+  const formatted = new Intl.NumberFormat(getSupportedNumberLocale(), {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    useGrouping: true
+  }).format(Math.abs(amount));
+  return `${sign}$${formatted}`;
+}
+
 export function formatBigIntAsCeiledAbsoluteWithSymbol(
   amount: bigint,
   unit: number,

@@ -2,55 +2,16 @@ import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
 import type { EarnRiskTier } from '@/hooks';
 
-export type EarnFilterOption = { value: string; label: ReactNode };
+export type EarnFilterOption = FilterOption;
 
 const RISK_TIERS: { value: EarnRiskTier; label: ReactNode }[] = [
   { value: 'low', label: <Trans>Low</Trans> },
   { value: 'moderate', label: <Trans>Moderate</Trans> },
   { value: 'advanced', label: <Trans>Advanced</Trans> }
 ];
-
-function FilterSelect({
-  options,
-  selected,
-  onChange,
-  allLabel,
-  testId
-}: {
-  options: EarnFilterOption[];
-  selected: string;
-  onChange: (value: string) => void;
-  allLabel: ReactNode;
-  testId: string;
-}) {
-  // Same surface/item treatment as the header's MoreMenu popover: container
-  // background, hover rows, selection shown by a prominent row background.
-  const itemClasses =
-    'text-textSecondary hover:text-text focus:text-text hover:bg-surfaceAlt focus:bg-surfaceAlt data-[state=checked]:bg-surface data-[state=checked]:text-text cursor-pointer rounded-md px-3 py-2 transition-colors';
-  return (
-    <Select value={selected} onValueChange={onChange}>
-      <SelectTrigger
-        data-testid={testId}
-        className="border-borderPrimary text-text bg-secondary hover:bg-surfaceAlt h-8 w-auto gap-1.5 rounded-full px-3 text-sm transition-colors"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent className="bg-containerDark border-borderPrimary rounded-xl p-1.5 backdrop-blur-[50px]">
-        <SelectItem value="all" hideIndicator className={itemClasses}>
-          {allLabel}
-        </SelectItem>
-        {options.map(option => (
-          <SelectItem key={option.value} value={option.value} hideIndicator className={itemClasses}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-}
 
 export type EarnTableFiltersProps = {
   /** Selected risk tiers; empty = no risk filtering (all tiers shown). */
