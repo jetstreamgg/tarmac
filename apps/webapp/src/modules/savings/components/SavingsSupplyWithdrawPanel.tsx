@@ -1,47 +1,16 @@
 import { useState } from 'react';
-import { useChainId, useConnection } from 'wagmi';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
-import {
-  TOKENS,
-  useTokenBalance,
-  useSavingsData,
-  useOverallSkyData,
-  useReadSavingsUsds,
-  getTokenDecimals,
-  usePreviewSwapExactIn,
-  usePreviewSwapExactOut
-} from '@/hooks';
-import { formatBigInt, formatNumber, formatDecimalPercentage, isL2ChainId } from '@/utils';
-import { REFERRAL_CODE } from '@/lib/constants';
+import { formatBigInt, formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/modules/layout/components/Typography';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
-import { useSavingsSupplyMinAmountOut } from '../hooks/useSavingsSupplyMinAmountOut';
-import {
-  ORIGIN_TOKENS,
-  MAINNET_SUPPLY_ORIGINS,
-  L2_SUPPLY_ORIGINS,
-  L2_WITHDRAW_ORIGINS,
-  SavingsOriginSelect,
-  type OriginSymbol
-} from './SavingsOriginSelect';
+import { useSavingsTransactionForm } from '../hooks/useSavingsTransactionForm';
+import { SavingsOriginSelect } from './SavingsOriginSelect';
 import { SavingsSupplyReview } from './SavingsSupplyReview';
-import { SavingsAmountSummary } from './SavingsAmountSummary';
 
 const NO_VALUE = '–';
-
-// Parse the raw input to a bigint at the origin token's decimals (USDC is 6 on
-// L2); partial/invalid input → 0.
-function parseAmount(value: string, decimals: number): bigint {
-  if (!value) return 0n;
-  try {
-    return parseUnits(value, decimals);
-  } catch {
-    return 0n;
-  }
-}
 
 /**
  * Inline supply/withdraw input for the redesigned Savings detail page (D3).
@@ -49,16 +18,11 @@ function parseAmount(value: string, decimals: number): bigint {
  * amount entry and the supply/withdraw choice happen inline, and confirming hands
  * off to the shared review modal via `useSavingsLaunch().launch()`.
  *
- * Mainnet: supply draws from the wallet balance of the selected origin token
- * (USDS or DAI — DAI upgrades to USDS then deposits), withdraw from the savings
- * position. A withdraw "Max" flags the engine to redeem the whole position via
- * `maxWithdraw(owner)` (no dust), rather than passing a stale displayed balance.
- *
- * L2: supply/withdraw swap through the PSM. Supply takes USDS/USDC and surfaces the
- * sUSDS slippage floor; withdraw swaps sUSDS back to the chosen destination token —
- * a "Max" swaps the whole sUSDS balance out (swapExactIn), otherwise a specific
- * amount caps the sUSDS in (swapExactOut). The PSM min-out / max-in bounds are
- * computed here and handed to the orchestrator.
+ * The form model (amount/Max/token state, the balance + L2 PSM reads, and the spend
+ * gate) lives in `useSavingsTransactionForm`, shared with the editable modal body
+ * (`SavingsModalForm`); this component is the inline *presentation* over it: the
+ * optional Supply/Withdraw tabs, the amount input, the supply projection rows, and a
+ * full-width CTA that opens the review modal. Calldata is unchanged across surfaces.
  */
 export function SavingsSupplyWithdrawPanel({
   onSuccess,
@@ -69,8 +33,8 @@ export function SavingsSupplyWithdrawPanel({
   /**
    * Controlled flow. When provided, the in-panel Supply/Withdraw tab toggle is
    * hidden and the body renders single-flow (the redesigned no-position "Supply"
-   * card and, from slice 02, the editable modal). Omit it for the interim
-   * has-position card, which keeps its own tab state.
+   * card and the editable modal). Omit it for the interim has-position card, which
+   * keeps its own tab state.
    */
   flow?: SavingsLaunchFlow;
   /**
@@ -80,97 +44,37 @@ export function SavingsSupplyWithdrawPanel({
    */
   projection?: boolean;
 }) {
-  const chainId = useChainId();
-  const { address, isConnected } = useConnection();
-  const { data: savingsData } = useSavingsData();
-  const { data: overall } = useOverallSkyData();
-  // Canonical Sky Savings Rate APY — the same source as the page headline + the
-  // Details grid (skySavingsRatecRate), NOT useSavingsData().savingsRate (the DSR,
-  // a different number).
-  const apyDisplay = overall?.skySavingsRatecRate
-    ? formatDecimalPercentage(parseFloat(overall.skySavingsRatecRate))
-    : NO_VALUE;
-
-  const isL2 = isL2ChainId(chainId);
   const [flowState, setFlowState] = useState<SavingsLaunchFlow>('supply');
   const controlled = flowProp !== undefined;
   const flow = flowProp ?? flowState;
-  const [originSymbol, setOriginSymbol] = useState<OriginSymbol>('USDS');
-  const [value, setValue] = useState('');
-  const [max, setMax] = useState(false);
 
-  const isSupply = flow === 'supply';
-  // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2).
-  // Withdraw offers a destination choice only on L2 (USDS/USDC); mainnet withdraw
-  // is USDS-only.
-  const showOriginSelect = isSupply || isL2;
-  const origins = isSupply ? (isL2 ? L2_SUPPLY_ORIGINS : MAINNET_SUPPLY_ORIGINS) : L2_WITHDRAW_ORIGINS;
-  // The token-selector options: the flow's origins when a choice exists, else a
-  // single static USDS chip (mainnet withdraw).
-  const originOptions: OriginSymbol[] = showOriginSelect ? origins : ['USDS'];
-  const originToken = showOriginSelect ? ORIGIN_TOKENS[originSymbol] : TOKENS.usds;
-  const originDecimals = getTokenDecimals(originToken, chainId);
-  const amount = parseAmount(value, originDecimals);
-
-  const { data: walletBalance } = useTokenBalance({
-    address,
-    chainId,
-    token: originToken.address[chainId]
-  });
-  // sUSDS token balance — the whole of it is swapped out on a max L2 withdraw.
-  const { data: susdsBalance } = useTokenBalance({
-    address,
-    chainId,
-    token: TOKENS.susds.address[chainId]
-  });
-
-  // L2 PSM supply slippage floor (chi-projected sUSDS out). The orchestrator hands
-  // this straight to the engine; it's ignored on the mainnet / withdraw paths.
-  const minAmountOut = useSavingsSupplyMinAmountOut({ amount, originToken });
-
-  // Inline "Supply" card preview: mainnet origin (USDS/DAI, both wad) → sUSDS
-  // shares via the vault's ERC-4626 convertToShares. Read-only; the actual
-  // supply still routes through useSavingsLaunch. L2 has its own min-out row.
-  const { data: previewSharesData } = useReadSavingsUsds({
-    functionName: 'convertToShares',
-    args: [amount],
-    // No chainId — the read uses the connected chain and is gated to mainnet
-    // supply below, where the sUSDS vault address resolves.
-    query: { enabled: projection && flow === 'supply' && !isL2 && amount > 0n }
-  });
-  const previewShares = typeof previewSharesData === 'bigint' ? previewSharesData : undefined;
-
-  // L2 PSM withdraw previews (mirror the legacy L2 widget; no-ops on mainnet):
-  //  - convert the whole sUSDS balance to the destination token → max-withdraw
-  //    floor + the withdrawable balance shown to the user
-  //  - the sUSDS in needed to take exactly `amount` destination token out → the
-  //    specific-withdraw ceiling
-  const convertedBalance = usePreviewSwapExactIn(susdsBalance?.value ?? 0n, TOKENS.susds, originToken);
-  const { value: maxAmountInForWithdraw } = usePreviewSwapExactOut(amount, TOKENS.susds, originToken);
-
-  // Supply draws from the origin token's wallet balance; withdraw from the
-  // position (mainnet: the USDS-denominated savings balance; L2: the sUSDS balance
-  // converted to the destination token).
-  const sourceBalance = isSupply
-    ? (walletBalance?.value ?? 0n)
-    : isL2
-      ? convertedBalance.value
-      : (savingsData?.userSavingsBalance ?? 0n);
-  const isZero = amount === 0n;
-  const insufficient = isConnected && !max && amount > sourceBalance;
+  const form = useSavingsTransactionForm({ flow, enablePreview: projection });
+  const {
+    isConnected,
+    isSupply,
+    isL2,
+    originSymbol,
+    originOptions,
+    originToken,
+    originDecimals,
+    value,
+    available,
+    isZero,
+    insufficient,
+    amountReady,
+    apyDisplay,
+    previewShares,
+    engineParams,
+    transactionScreenContent,
+    onInput,
+    setMaxAmount,
+    switchOrigin,
+    clearAmount,
+    resetToUsds
+  } = form;
 
   const { launch, prepared } = useSavingsLaunch({
-    flow,
-    originToken,
-    amount,
-    // `max` only applies to withdraw — it routes to maxWithdraw(owner) on mainnet
-    // or swapExactIn(whole sUSDS balance) on L2.
-    max: !isSupply && max,
-    referralCode: REFERRAL_CODE,
-    minAmountOut,
-    sUsdsBalance: susdsBalance?.value,
-    minAmountOutForWithdrawAll: convertedBalance.value,
-    maxAmountInForWithdraw,
+    ...engineParams,
     transactionContent: (
       <SavingsSupplyReview
         amount={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0'}
@@ -185,50 +89,19 @@ export function SavingsSupplyWithdrawPanel({
         apy={apyDisplay}
       />
     ),
-    // Compact summary shown on the wallet/status screen in place of the full
-    // breakdown (Figma "Confirm in the wallet").
-    transactionScreenContent: (
-      <SavingsAmountSummary
-        label={isSupply ? t`Supply amount` : t`Withdrawal amount`}
-        amount={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0'}
-        symbol={originToken.symbol}
-        usd={value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : undefined}
-        dataTestId="savings-confirm-summary"
-      />
-    ),
+    transactionScreenContent,
     onSuccess: () => {
-      setValue('');
-      setMax(false);
+      clearAmount();
       onSuccess?.();
     }
   });
 
-  const disabled = !isConnected || !prepared || (!max && (isZero || insufficient));
+  const disabled = !amountReady || !prepared;
 
   const switchFlow = (next: SavingsLaunchFlow) => {
     setFlowState(next);
     // Withdraw is USDS-only; reset the origin so re-entering supply starts on USDS.
-    setOriginSymbol('USDS');
-    setValue('');
-    setMax(false);
-  };
-
-  const switchOrigin = (next: OriginSymbol) => {
-    setOriginSymbol(next);
-    setValue('');
-    setMax(false);
-  };
-
-  const onInput = (raw: string) => {
-    setValue(raw.replace(/[^0-9.]/g, ''));
-    // Typing overrides a previous max selection.
-    setMax(false);
-  };
-
-  const setMaxAmount = () => {
-    setValue(formatUnits(sourceBalance, originDecimals));
-    // Flag a max only for withdraw; supply just deposits exactly the input.
-    setMax(!isSupply);
+    resetToUsds();
   };
 
   const tabClass = (active: boolean) =>
@@ -275,7 +148,7 @@ export function SavingsSupplyWithdrawPanel({
           data-testid="savings-amount-max"
         >
           {isConnected
-            ? formatNumber(parseFloat(formatUnits(sourceBalance, originDecimals)), { maxDecimals: 2 })
+            ? formatNumber(parseFloat(formatUnits(available, originDecimals)), { maxDecimals: 2 })
             : NO_VALUE}{' '}
           <span className="text-textEmphasis">
             <Trans>MAX</Trans>
@@ -314,7 +187,7 @@ export function SavingsSupplyWithdrawPanel({
             <Trans>Receive at least</Trans>
           </Text>
           <Text className="text-text text-sm font-medium">
-            {formatBigInt(minAmountOut, { unit: 18, maxDecimals: 2 })} sUSDS
+            {formatBigInt(engineParams.minAmountOut ?? 0n, { unit: 18, maxDecimals: 2 })} sUSDS
           </Text>
         </div>
       )}

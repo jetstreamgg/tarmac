@@ -12,6 +12,7 @@ import {
   CarouselNext
 } from '@/components/ui/carousel';
 import { Text } from '@/modules/layout/components/Typography';
+import { usePortfolioSupplyActions } from '../hooks/usePortfolioSupplyActions';
 import type { SuppliedView } from '../helpers/suppliedView';
 import type { IdleSupplyInfo, IdleView } from '../helpers/idleView';
 import { PositionCard } from './PositionCard';
@@ -48,6 +49,9 @@ export function PortfolioPositionsSection({
   onTabChange: (tab: PortfolioTab) => void;
 }) {
   const navigate = useNavigate();
+  // Products with an in-place supply modal (savings today) open it without
+  // navigating; everything else — and all Manage buttons — route to the product page.
+  const resolveSupplyAction = usePortfolioSupplyActions();
   const goToProduct = (detailPath: string) =>
     void navigate({ to: detailPath as '/', search: retainOnNavigate });
   // Deep-link to the Earn list pre-filtered by the chosen stablecoin (keeps the
@@ -107,7 +111,11 @@ export function PortfolioPositionsSection({
         <CarouselContent>
           {suppliedView.positions.map(position => (
             <CarouselItem key={position.id} className={ITEM_BASIS}>
-              <PositionCard position={position} onSelect={() => goToProduct(position.detailPath)} />
+              <PositionCard
+                position={position}
+                onSupply={resolveSupplyAction(position) ?? (() => goToProduct(position.detailPath))}
+                onManage={() => goToProduct(position.detailPath)}
+              />
             </CarouselItem>
           ))}
         </CarouselContent>

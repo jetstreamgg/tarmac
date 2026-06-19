@@ -1,15 +1,13 @@
-import { ReactNode, useCallback, useId } from 'react';
+import { ReactNode, useCallback } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { t } from '@lingui/core/macro';
 import { useSavingsData, useTokenBalance, TOKENS } from '@/hooks';
 import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useSavingsModal } from '../hooks/useSavingsModal';
 import { SavingsSupplyCard } from './SavingsSupplyCard';
-import { SavingsModalForm } from './SavingsModalForm';
 
 const NO_VALUE = '–';
 
@@ -51,10 +49,6 @@ export function SavingsPositionCard() {
     chainId,
     token: TOKENS.susds.address[chainId]
   });
-  const { launch } = useTransaction();
-  const supplySessionId = useId();
-  const withdrawSessionId = useId();
-
   // Refresh position card + sUSDS balance after a successful supply/withdraw.
   // A no-position supply also flips this card to "My position" once the savings
   // balance refetches above zero.
@@ -63,57 +57,9 @@ export function SavingsPositionCard() {
     refetchSusds();
   }, [mutateSavings, refetchSusds]);
 
-  // Opens the editable "Supply to Sky Savings" modal (Figma 527:7591). The entry
-  // body owns the amount and live-syncs the confirm gating + handler; the
-  // placeholder onConfirm is replaced by the body's engine execute before it
-  // enables. No analytics here — analytics parity is a separate sign-off-gated
-  // slice (PRD Out of Scope).
-  const openSupplyModal = useCallback(() => {
-    launch({
-      title: t`Supply to Sky Savings`,
-      transactionTitle: t`Confirm in the wallet`,
-      subtitles: {
-        loading: t`Your supply is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully supplied to Sky Savings.`,
-        error: t`An error occurred while supplying to Sky Savings.`
-      },
-      sessionId: supplySessionId,
-      entry: {
-        confirmLabel: t`Supply`,
-        confirmDisabled: true
-      },
-      // The editable body lives outside the dialog (hidden host) so its in-flight
-      // hook survives minimize; it portals its inputs into the modal's entry slot.
-      backgroundContent: <SavingsModalForm sessionId={supplySessionId} flow="supply" />,
-      onConfirm: () => {},
-      onSuccess: refreshPosition
-    });
-  }, [launch, supplySessionId, refreshPosition]);
-
-  // Opens the editable "Withdraw from Sky Savings" modal (Figma 527:10945). Same
-  // entry-step machinery as supply — the body just runs the withdraw flow (its Max
-  // redeems the whole position with no dust via maxWithdraw(owner)).
-  const openWithdrawModal = useCallback(() => {
-    launch({
-      title: t`Withdraw from Sky Savings`,
-      transactionTitle: t`Confirm in the wallet`,
-      subtitles: {
-        loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
-        success: t`You've successfully withdrawn from Sky Savings.`,
-        error: t`An error occurred while withdrawing from Sky Savings.`
-      },
-      sessionId: withdrawSessionId,
-      entry: {
-        confirmLabel: t`Withdraw`,
-        confirmDisabled: true
-      },
-      // The editable body lives outside the dialog (hidden host) so its in-flight
-      // hook survives minimize; it portals its inputs into the modal's entry slot.
-      backgroundContent: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" />,
-      onConfirm: () => {},
-      onSuccess: refreshPosition
-    });
-  }, [launch, withdrawSessionId, refreshPosition]);
+  // Supply/withdraw triggers for the editable modal (Figma 527:7591 / 527:10945),
+  // shared with any other surface that opens this flow (e.g. Portfolio quick-deposit).
+  const { openSupply, openWithdraw } = useSavingsModal({ onSuccess: refreshPosition });
 
   const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
   if (!hasPosition) {
@@ -163,7 +109,7 @@ export function SavingsPositionCard() {
           <Button
             variant="primary"
             className="flex-1"
-            onClick={openSupplyModal}
+            onClick={() => openSupply()}
             disabled={!isConnected}
             data-testid="savings-position-supply"
           >
@@ -172,7 +118,7 @@ export function SavingsPositionCard() {
           <Button
             variant="secondary"
             className="flex-1"
-            onClick={openWithdrawModal}
+            onClick={() => openWithdraw()}
             disabled={!isConnected}
             data-testid="savings-position-withdraw"
           >
