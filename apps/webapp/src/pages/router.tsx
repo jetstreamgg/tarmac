@@ -7,6 +7,11 @@ import Dev from './Dev';
 import { SealEngine } from './SealEngine';
 import { BatchTransactionsLegal } from './BatchTransactionsLegal';
 import { rewriteLegacyWidgetParams } from '@/modules/utils/validateSearchParams';
+import { mainnet } from 'viem/chains';
+import { IntentMapping, QueryParams } from '@/lib/constants';
+import { Intent } from '@/lib/enums';
+import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
+import { sparkUsdtVaultAddress } from '@/hooks';
 
 // TODO: Remove once all references to widget=trade|upgrade are migrated
 const legacyWidgetLoader = ({ request }: { request: Request }) => {
@@ -19,11 +24,28 @@ const legacyWidgetLoader = ({ request }: { request: Request }) => {
   return null;
 };
 
+// sUSDT is mainnet-only, so the network is pinned in the deep-link.
+export const susdtRedirectLoader = () => {
+  const params = new URLSearchParams({
+    [QueryParams.Network]: 'ethereum',
+    [QueryParams.Widget]: IntentMapping[Intent.VAULTS_INTENT],
+    [QueryParams.VaultModule]: vaultModuleForProvider('sky'),
+    [QueryParams.Vault]: sparkUsdtVaultAddress[mainnet.id]
+  });
+  return redirect('/?' + params.toString());
+};
+
 const routes: RouteObject[] = [
   {
     path: '/',
     element: <Home />,
     loader: legacyWidgetLoader,
+    errorElement: <ErrorPage />
+  },
+  {
+    path: '/susdt',
+    loader: susdtRedirectLoader,
+    element: <Home />,
     errorElement: <ErrorPage />
   },
   {
