@@ -203,6 +203,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
       ),
       { id: MINIMIZED_TOAST_ID, duration: inFlight ? Infinity : 10000 }
     );
+
+    return () => {
+      toast.dismiss(MINIMIZED_TOAST_ID);
+    };
   }, [minimized, txStatus]);
 
   const handleRetry = useCallback(() => {
