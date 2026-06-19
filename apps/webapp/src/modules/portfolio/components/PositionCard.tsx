@@ -1,27 +1,13 @@
 import { ReactNode } from 'react';
 import { Trans } from '@lingui/react/macro';
-import { Morpho, Pendle } from '@/widgets';
 import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import type { SuppliedPosition } from '../helpers/suppliedView';
-
-// Outline-ring color keys the product family: Morpho vaults blue, Pendle fixed
-// green, everything else (savings, rewards, stUSDS, Spark) a neutral gray.
-const RING_MORPHO = '#2973FF';
-const RING_PENDLE = '#1DD9BA';
-const RING_DEFAULT = '#7E7E8F';
-
-const isMorphoVault = (position: SuppliedPosition) =>
-  position.kind === 'vault' && position.id.startsWith('vault-morpho');
-
-const ringColor = (position: SuppliedPosition): string => {
-  if (isMorphoVault(position)) return RING_MORPHO;
-  if (position.kind === 'fixed') return RING_PENDLE;
-  return RING_DEFAULT;
-};
+import { productRingColor } from '../helpers/productVisuals';
+import { ProductGlyph } from './ProductGlyph';
 
 /**
  * One supplied position in the Portfolio carousel: ringed token icon, stacked
@@ -47,7 +33,7 @@ export function PositionCard({
     >
       {/* Token icon with its family-colored outline ring + network badge */}
       <div className="flex items-start justify-between">
-        <div className="rounded-full p-[3px]" style={{ border: `2px solid ${ringColor(position)}` }}>
+        <div className="rounded-full p-[3px]" style={{ border: `2px solid ${productRingColor(position)}` }}>
           <TokenIcon
             token={{ symbol: position.tokenSymbol }}
             width={40}
@@ -68,15 +54,7 @@ export function PositionCard({
         <Text variant="large" tag="span" className="text-text text-2xl font-medium">
           {position.name}
         </Text>
-        {isMorphoVault(position) && <Morpho className="h-3.5 w-3.5 rounded-sm" />}
-        {position.kind === 'fixed' && (
-          <span
-            className="flex h-3.5 w-3.5 items-center justify-center rounded-sm text-white"
-            style={{ backgroundColor: RING_PENDLE }}
-          >
-            <Pendle className="h-2.5 w-2.5" />
-          </span>
-        )}
+        <ProductGlyph id={position.id} kind={position.kind} />
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-5">
