@@ -1,32 +1,41 @@
 import { useState } from 'react';
 import { useChainId, useChains, useConnection, useEnsName } from 'wagmi';
+import { useNavigate } from '@tanstack/react-router';
 import { mainnet } from 'viem/chains';
 import { Trans } from '@lingui/react/macro';
 import { useEarnMarketplace, useOverallSkyData } from '@/hooks';
 import { formatAddress, getChainIcon } from '@/utils';
 import { getSupportedChainIds } from '@/data/wagmi/config/chainFamily';
+import { ROUTES } from '@/lib/routes';
+import { retainOnNavigate } from '@/lib/navigation';
 import { FilterSelect, type FilterOption } from '@/components/product/FilterSelect';
 import { Heading, Text } from '@/modules/layout/components/Typography';
 import { buildSuppliedView } from '../helpers/suppliedView';
 import { buildIdleSupplyInfo, buildIdleView } from '../helpers/idleView';
+import { portfolioCallout, SIGNIFICANT_BALANCE_USD } from '../helpers/portfolioCallout';
 import { useStablecoinBalances } from '../hooks/useStablecoinBalances';
 import { StablecoinEarningsCard } from './StablecoinEarningsCard';
 import { PortfolioPositionsSection } from './PortfolioPositionsSection';
+import { SavingsTvlCallout } from './SavingsTvlCallout';
+import { AllocateStablecoinsBanner } from './AllocateStablecoinsBanner';
 import { type PortfolioTab } from './PortfolioTabs';
 
 export function PortfolioPage() {
   const connectedChainId = useChainId();
-  const { rows, isLoading } = useEarnMarketplace();
+  const { rows, isLoading, totalDepositedUsd } = useEarnMarketplace();
   const { balances, isLoading: balancesLoading } = useStablecoinBalances();
   const { data: overallSkyData } = useOverallSkyData();
   const { address } = useConnection();
   const chains = useChains();
+  const navigate = useNavigate();
   const { data: ensName } = useEnsName({ address, chainId: mainnet.id });
 
   // 'all' or a chain id (as string, the FilterSelect value type).
   const [selectedNetwork, setSelectedNetwork] = useState('all');
   // Supplied/Idle is shared across sections (earnings card + positions carousel).
-  const [tab, setTab] = useState<PortfolioTab>('supplied');
+  // Until the user picks a tab, it follows a data-derived default: Idle once it's
+  // settled that there's no significant earn position. A manual choice then wins.
+  const [userTab, setUserTab] = useState<PortfolioTab | null>(null);
 
   const network = selectedNetwork === 'all' ? 'all' : Number(selectedNetwork);
   const suppliedView = buildSuppliedView(rows, network);
@@ -38,6 +47,16 @@ export function PortfolioPage() {
   const savingsRate = overallSkyData?.skySavingsRatecRate
     ? parseFloat(overallSkyData.skySavingsRatecRate)
     : 0;
+  const savingsTvlUsd = overallSkyData?.skySavingsRateTvl ? parseFloat(overallSkyData.skySavingsRateTvl) : 0;
+
+  // Onboarding callout gates on family-wide totals (ignores the network filter),
+  // and only after both data sources settle so it never flashes the wrong state.
+  const idleTotalUsd = balances.reduce((acc, balance) => acc + balance.amountUsd, 0);
+  const callout = isLoading || balancesLoading ? 'none' : portfolioCallout(totalDepositedUsd, idleTotalUsd);
+
+  const tab = userTab ?? (!isLoading && totalDepositedUsd <= SIGNIFICANT_BALANCE_USD ? 'idle' : 'supplied');
+
+  const goToSavings = () => void navigate({ to: ROUTES.EARN_SAVINGS, search: retainOnNavigate });
 
   // The filter lists every supported chain — idle balances may sit on a chain
   // where the user has no supplied position.
@@ -91,6 +110,15 @@ export function PortfolioPage() {
         />
       </div>
 
+      {callout === 'simulate' && <SavingsTvlCallout tvlUsd={savingsTvlUsd} savingsRate={savingsRate} />}
+      {callout === 'allocate' && (
+        <AllocateStablecoinsBanner
+          idleUsd={idleTotalUsd}
+          savingsRate={savingsRate}
+          onAllocate={goToSavings}
+        />
+      )}
+
       <StablecoinEarningsCard
         suppliedView={suppliedView}
         suppliedLoading={isLoading}
@@ -98,7 +126,7 @@ export function PortfolioPage() {
         idleLoading={balancesLoading}
         savingsRate={savingsRate}
         tab={tab}
-        onTabChange={setTab}
+        onTabChange={setUserTab}
       />
       <PortfolioPositionsSection
         suppliedView={suppliedView}
@@ -107,7 +135,7 @@ export function PortfolioPage() {
         idleSupplyInfo={idleSupplyInfo}
         idleLoading={balancesLoading}
         tab={tab}
-        onTabChange={setTab}
+        onTabChange={setUserTab}
       />
     </div>
   );
