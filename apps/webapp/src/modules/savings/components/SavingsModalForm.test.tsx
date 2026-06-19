@@ -63,6 +63,9 @@ vi.mock('@/hooks', async importOriginal => {
     // Canonical Sky Savings Rate (skySavingsRatecRate) — the "Savings rate" row source.
     useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } }),
     useTokenBalance: () => ({ data: { value: h.walletBalance }, refetch: vi.fn() }),
+    // Mainnet-supply sUSDS preview — gated off in the modal (enablePreview=false), so
+    // it stays disabled here; stubbed only to keep the read out of real wagmi.
+    useReadSavingsUsds: () => ({ data: undefined }),
     // L2 PSM preview reads — stubbed (real ones need a wagmi read provider).
     usePreviewSwapExactIn: () => ({ value: h.convertedValue }),
     usePreviewSwapExactOut: () => ({ value: h.maxAmountIn })
