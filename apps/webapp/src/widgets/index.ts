@@ -35,11 +35,7 @@ export {
   PENDLE_DEFAULT_REDEEM_SLIPPAGE
 } from './PendleWidget/lib/constants';
 
-export { SavingsWidget } from './SavingsWidget';
 export { StUSDSWidget } from './StUSDSWidget';
-export { L2SavingsWidget as BaseSavingsWidget } from './L2SavingsWidget';
-export { L2SavingsWidget as ArbitrumSavingsWidget } from './L2SavingsWidget';
-export { L2SavingsWidget } from './L2SavingsWidget';
 export { UpgradeWidget } from './UpgradeWidget';
 export { RewardsWidget } from './RewardsWidget';
 export { TradeWidget } from './TradeWidget';

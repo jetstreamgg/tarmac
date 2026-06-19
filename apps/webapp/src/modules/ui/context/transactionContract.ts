@@ -21,6 +21,28 @@ import type { TxStatus } from '@/widgets';
  * pending the tracked id is the bundle id, so `onStart` gets `undefined`.
  */
 
+/**
+ * An editable "entry" first screen (PRD module 1). When a config carries one, the
+ * shared modal opens on this screen instead of the read-only review, gated by
+ * `confirmDisabled` and labelled by `confirmLabel`. Confirming advances to the same
+ * wallet/status screen and fires the config's `onConfirm`.
+ *
+ * The interactive body is supplied one of two ways:
+ *  - `content` — rendered inside the dialog. Simple for review-style entries, but
+ *    it unmounts when the dialog is hidden (so it can't host a minimize-surviving
+ *    hook). A body here keeps its `confirmDisabled` / `onConfirm` live via
+ *    `updateModalContent` (the merge preserves `content`, so it never remounts).
+ *  - omit `content` and supply `backgroundContent` on the config instead — the body
+ *    lives in a hidden, always-mounted host (so its in-flight hook survives a
+ *    minimize) and portals its inputs into the dialog's entry slot.
+ */
+export type TransactionEntry = {
+  content?: ReactNode;
+  confirmLabel?: string;
+  /** Disables the entry's confirm button (e.g. amount is zero / over balance). */
+  confirmDisabled?: boolean;
+};
+
 /** Analytics metadata passed by consumers to attribute events correctly. */
 export type TransactionAnalytics = {
   /** Widget/page name (e.g. "vaults"). */
@@ -35,11 +57,49 @@ export type TransactionAnalytics = {
 
 /** The config a consumer passes to `launch()` for a standard on-chain transaction. */
 export type TransactionConfig = {
+  /** Title for the first (review/entry) screen — and the whole modal when no `transactionTitle`. */
   title: string;
+  /** Title for the wallet/status screen (e.g. "Confirm in the wallet"); defaults to `title`. */
+  transactionTitle?: string;
   subtitles?: TransactionSubtitles;
   transactionContent?: ReactNode;
+  /**
+   * Compact body for the wallet/status screen ("Confirm in the wallet"). Figma
+   * shows a relabelled amount summary there instead of the full review breakdown.
+   * Falls back to `transactionContent` when omitted, so existing consumers render
+   * unchanged.
+   */
+  transactionScreenContent?: ReactNode;
+  /**
+   * Editable first screen. When present the modal opens on the entry screen
+   * (instead of the read-only review built from `transactionContent`). Both lead
+   * to the same wallet/status screen.
+   */
+  entry?: TransactionEntry;
+  /**
+   * Content the provider keeps mounted (hidden) for the whole modal lifetime —
+   * independent of which screen is showing and of minimize. This is where a flow
+   * hosts the in-flight engine hook whose receipt-watcher must survive a minimize:
+   * unlike `entry.content` (inside the Radix dialog, which unmounts when hidden),
+   * `backgroundContent` lives outside the dialog so the running transaction is
+   * never torn down. The visible inputs live in `entry.content` and share state
+   * with this host (e.g. via a session-keyed store).
+   */
+  backgroundContent?: ReactNode;
   /** Optional node rendered to the right of the title — e.g. a slippage gear. */
   rightHeaderComponent?: ReactNode;
+  /**
+   * Per-state titles for the toast shown while the modal is minimized (it's hidden,
+   * so the toast notifies progress). Flows set amount-aware titles here (e.g.
+   * "10,000.00 USDS supplied!"); each falls back to the matching `subtitles` entry,
+   * then `title`. An editable flow pushes these live via `updateModalContent` as the
+   * amount changes.
+   */
+  toast?: {
+    loading?: string;
+    success?: string;
+    error?: string;
+  };
   onConfirm: () => void;
   onRetry?: () => void;
   confirmLabel?: string;
@@ -57,10 +117,28 @@ export type TransactionConfig = {
   sessionId?: string;
 };
 
-/** The subset of config a flow may live-update after launch (gated on sessionId). */
+/**
+ * The subset of config a flow may live-update after launch (gated on sessionId).
+ * An in-modal entry body uses this to keep its gating + confirm fresh: `entry` is
+ * a *partial* merged into the existing entry (so `content` need not be re-pushed,
+ * and the body stays mounted), and `onConfirm` / `steps` are swapped to reflect
+ * the current amount.
+ */
 export type LiveModalUpdate = Partial<
-  Pick<TransactionConfig, 'transactionContent' | 'rightHeaderComponent' | 'confirmDisabled'>
->;
+  Pick<
+    TransactionConfig,
+    | 'transactionContent'
+    | 'transactionScreenContent'
+    | 'rightHeaderComponent'
+    | 'confirmDisabled'
+    | 'onConfirm'
+    | 'steps'
+    | 'toast'
+  >
+> & {
+  /** Partial entry merged into the existing entry — `content` is preserved if omitted. */
+  entry?: Partial<TransactionEntry>;
+};
 
 /**
  * Lifecycle callbacks spread into write hooks. Compatible with both
@@ -82,6 +160,12 @@ export type TransactionContextValue = {
   /** Live-update body / right-header / confirm-disabled. Gated on sessionId. */
   updateModalContent: (sessionId: string, partial: LiveModalUpdate) => void;
   isModalOpen: boolean;
+  /** Hide the modal without ending the transaction — it keeps running in the background. */
+  minimize: () => void;
+  /** Re-show a minimized modal at its current lifecycle state. */
+  restore: () => void;
+  /** Whether the modal is currently minimized (hidden but still tracking a tx). */
+  isMinimized: boolean;
   /** Transaction lifecycle callbacks to spread into write hooks. */
   txCallbacks: TxCallbacks;
   /** Current transaction status. */

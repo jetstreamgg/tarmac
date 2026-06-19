@@ -1,14 +1,15 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useCallback, useId } from 'react';
 import { useChainId, useConnection } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
-import { X } from 'lucide-react';
-import { SavingsWidget, L2SavingsWidget, SavingsFlow } from '@/widgets';
+import { t } from '@lingui/core/macro';
 import { useSavingsData, useTokenBalance, TOKENS } from '@/hooks';
-import { formatNumber, isL2ChainId } from '@/utils';
+import { formatNumber } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { SavingsSupplyCard } from './SavingsSupplyCard';
+import { SavingsModalForm } from './SavingsModalForm';
 
 const NO_VALUE = '–';
 
@@ -24,108 +25,161 @@ function StatRow({ label, children }: { label: ReactNode; children: ReactNode })
   );
 }
 
-// TODO(C3): 'Already earned' + '1Y projected earnings' have no data source yet
-// (cost-basis / projection hooks pending) — both rows render this placeholder,
-// intentionally unwired per the C3 scope decision.
-const TodoValue = () => <span className="text-textSecondary text-sm italic">TODO</span>;
+// 'Already earned' + '1Y projected earnings' have no data source yet (cost-basis /
+// projection hooks pending) — both rows render a dash until then, never a literal
+// "TODO" (PRD: unavailable values read "–").
+const TodoValue = () => <span className="text-textSecondary text-sm">{NO_VALUE}</span>;
 
 /**
- * The "My position" card for the Savings product page (ProductDetailTemplate
- * `position` slot). Supply/Withdraw open a modal hosting the existing
- * SavingsWidget — the inline launch() migration is deferred to D3.
+ * Position-aware action card for the Savings product page (ProductDetailTemplate
+ * `position` slot). The savings balance picks the card:
+ *  - no position (incl. disconnected) → the no-position "Supply" entry card
+ *    (`SavingsSupplyCard`, Figma 527:7404).
+ *  - has position → the "My position" summary below, with Supply / Withdraw
+ *    buttons that each open the shared editable modal (`SavingsModalForm`) for
+ *    the chosen flow.
+ *
+ * Both branches confirm through `useSavingsLaunch()` (sUSDS deposit/withdraw +
+ * DAI upgrade on mainnet, PSM swap on L2) — calldata unchanged.
  */
 export function SavingsPositionCard() {
   const chainId = useChainId();
   const { address, isConnected } = useConnection();
-  const { data: savingsData } = useSavingsData();
-  const { data: susdsBalance } = useTokenBalance({ address, chainId, token: TOKENS.susds.address[chainId] });
+  const { data: savingsData, mutate: mutateSavings } = useSavingsData();
+  const { data: susdsBalance, refetch: refetchSusds } = useTokenBalance({
+    address,
+    chainId,
+    token: TOKENS.susds.address[chainId]
+  });
+  const { launch } = useTransaction();
+  const supplySessionId = useId();
+  const withdrawSessionId = useId();
 
-  const [open, setOpen] = useState(false);
-  const [flow, setFlow] = useState<SavingsFlow>(SavingsFlow.SUPPLY);
-  const Widget = isL2ChainId(chainId) ? L2SavingsWidget : SavingsWidget;
+  // Refresh position card + sUSDS balance after a successful supply/withdraw.
+  // A no-position supply also flips this card to "My position" once the savings
+  // balance refetches above zero.
+  const refreshPosition = useCallback(() => {
+    mutateSavings();
+    refetchSusds();
+  }, [mutateSavings, refetchSusds]);
 
-  const openFlow = (next: SavingsFlow) => {
-    setFlow(next);
-    setOpen(true);
-  };
+  // Opens the editable "Supply to Sky Savings" modal (Figma 527:7591). The entry
+  // body owns the amount and live-syncs the confirm gating + handler; the
+  // placeholder onConfirm is replaced by the body's engine execute before it
+  // enables. No analytics here — analytics parity is a separate sign-off-gated
+  // slice (PRD Out of Scope).
+  const openSupplyModal = useCallback(() => {
+    launch({
+      title: t`Supply to Sky Savings`,
+      transactionTitle: t`Confirm in the wallet`,
+      subtitles: {
+        loading: t`Your supply is being processed on the blockchain. Please wait.`,
+        success: t`You've successfully supplied to Sky Savings.`,
+        error: t`An error occurred while supplying to Sky Savings.`
+      },
+      sessionId: supplySessionId,
+      entry: {
+        confirmLabel: t`Supply`,
+        confirmDisabled: true
+      },
+      // The editable body lives outside the dialog (hidden host) so its in-flight
+      // hook survives minimize; it portals its inputs into the modal's entry slot.
+      backgroundContent: <SavingsModalForm sessionId={supplySessionId} flow="supply" />,
+      onConfirm: () => {},
+      onSuccess: refreshPosition
+    });
+  }, [launch, supplySessionId, refreshPosition]);
+
+  // Opens the editable "Withdraw from Sky Savings" modal (Figma 527:10945). Same
+  // entry-step machinery as supply — the body just runs the withdraw flow (its Max
+  // redeems the whole position with no dust via maxWithdraw(owner)).
+  const openWithdrawModal = useCallback(() => {
+    launch({
+      title: t`Withdraw from Sky Savings`,
+      transactionTitle: t`Confirm in the wallet`,
+      subtitles: {
+        loading: t`Your withdrawal is being processed on the blockchain. Please wait.`,
+        success: t`You've successfully withdrawn from Sky Savings.`,
+        error: t`An error occurred while withdrawing from Sky Savings.`
+      },
+      sessionId: withdrawSessionId,
+      entry: {
+        confirmLabel: t`Withdraw`,
+        confirmDisabled: true
+      },
+      // The editable body lives outside the dialog (hidden host) so its in-flight
+      // hook survives minimize; it portals its inputs into the modal's entry slot.
+      backgroundContent: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" />,
+      onConfirm: () => {},
+      onSuccess: refreshPosition
+    });
+  }, [launch, withdrawSessionId, refreshPosition]);
+
+  const hasPosition = (savingsData?.userSavingsBalance ?? 0n) > 0n;
+  if (!hasPosition) {
+    return <SavingsSupplyCard onSuccess={refreshPosition} />;
+  }
 
   const position = isConnected ? formatToken(savingsData?.userSavingsBalance) : NO_VALUE;
   const susds = isConnected ? formatToken(susdsBalance?.value) : NO_VALUE;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <div
-        className="bg-panel flex flex-col gap-3 rounded-[20px] p-2 backdrop-blur-2xl"
-        data-testid="savings-position-card"
-      >
-        {/* Hero — position value over the brand gradient (cloud art placeholder),
-            inset within the glass card. */}
-        <div className="flex min-h-[160px] flex-col justify-between overflow-hidden rounded-2xl bg-[radial-gradient(120%_120%_at_20%_0%,_#7E6BF2_0%,_#3B2E7D_60%,_#2A1E63_100%)] p-5">
-          <span className="text-text/80 text-sm">
-            <Trans>My position</Trans>
-          </span>
-          <span className="text-text flex items-center gap-2 text-3xl font-semibold">
-            <TokenIcon token={{ symbol: 'USDS' }} width={28} showChainIcon={false} className="h-7 w-7" />
-            {position}
-          </span>
-        </div>
-
-        <div className="flex flex-col gap-4 px-3 pb-3">
-          <div className="flex flex-col gap-3">
-            <StatRow label={<Trans>sUSDS balance</Trans>}>
-              <TokenIcon
-                token={{ symbol: 'sUSDS' }}
-                width={18}
-                showChainIcon={false}
-                className="h-[18px] w-[18px]"
-              />
-              {susds}
-            </StatRow>
-            <StatRow label={<Trans>Already earned</Trans>}>
-              <TodoValue />
-            </StatRow>
-            <StatRow label={<Trans>1Y projected earnings</Trans>}>
-              <TodoValue />
-            </StatRow>
-          </div>
-          <div className="flex gap-3">
-            <Button
-              variant="primary"
-              className="flex-1"
-              onClick={() => openFlow(SavingsFlow.SUPPLY)}
-              data-testid="position-supply"
-            >
-              <Trans>Supply</Trans>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => openFlow(SavingsFlow.WITHDRAW)}
-              data-testid="position-withdraw"
-            >
-              <Trans>Withdraw</Trans>
-            </Button>
-          </div>
-        </div>
+    <div
+      className="bg-panel flex flex-col gap-3 rounded-[20px] p-2 backdrop-blur-2xl"
+      data-testid="savings-position-card"
+    >
+      {/* Hero — position value over the brand gradient (cloud art placeholder),
+          inset within the glass card. */}
+      <div className="flex min-h-[160px] flex-col justify-between overflow-hidden rounded-2xl bg-[radial-gradient(120%_120%_at_20%_0%,_#7E6BF2_0%,_#3B2E7D_60%,_#2A1E63_100%)] p-5">
+        <span className="text-text/80 text-sm">
+          <Trans>My position</Trans>
+        </span>
+        <span className="text-text flex items-center gap-2 text-3xl font-semibold">
+          <TokenIcon token={{ symbol: 'USDS' }} width={28} showChainIcon={false} className="h-7 w-7" />
+          {position}
+        </span>
       </div>
 
-      <DialogContent aria-describedby={undefined} className="bg-background">
-        <DialogTitle className="sr-only">
-          <Trans>Manage your Sky Savings position</Trans>
-        </DialogTitle>
-        <DialogClose asChild>
+      <div className="flex flex-col gap-4 px-3 pb-3">
+        <div className="flex flex-col gap-3">
+          <StatRow label={<Trans>sUSDS balance</Trans>}>
+            <TokenIcon
+              token={{ symbol: 'sUSDS' }}
+              width={18}
+              showChainIcon={false}
+              className="h-[18px] w-[18px]"
+            />
+            {susds}
+          </StatRow>
+          <StatRow label={<Trans>Already earned</Trans>}>
+            <TodoValue />
+          </StatRow>
+          <StatRow label={<Trans>1Y projected earnings</Trans>}>
+            <TodoValue />
+          </StatRow>
+        </div>
+        {/* Supply / Withdraw each open the editable modal for their flow. */}
+        <div className="flex gap-3">
           <Button
-            variant="outline"
-            className="text-text absolute top-4 right-4 h-8 w-8 rounded-full p-0"
-            data-testid="position-modal-close"
+            variant="primary"
+            className="flex-1"
+            onClick={openSupplyModal}
+            disabled={!isConnected}
+            data-testid="savings-position-supply"
           >
-            <X className="h-4 w-4" />
+            <Trans>Supply</Trans>
           </Button>
-        </DialogClose>
-        {/* key on flow → reopening with a different action remounts the widget
-            on the correct supply/withdraw tab. */}
-        <Widget key={flow} externalWidgetState={{ flow }} />
-      </DialogContent>
-    </Dialog>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={openWithdrawModal}
+            disabled={!isConnected}
+            data-testid="savings-position-withdraw"
+          >
+            <Trans>Withdraw</Trans>
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
