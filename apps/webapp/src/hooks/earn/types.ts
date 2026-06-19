@@ -80,4 +80,6 @@ export type EarnMarketplaceResult = {
   rows: EarnProductRow[];
   /** True while any row is still loading. Rows fail independently — check per-row error. */
   isLoading: boolean;
+  /** Σ of every row's user position USD — the wallet's total deposited across all earn products. */
+  totalDepositedUsd: number;
 };
