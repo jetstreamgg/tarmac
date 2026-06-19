@@ -26,10 +26,18 @@ const ringColor = (position: SuppliedPosition): string => {
 /**
  * One supplied position in the Portfolio carousel: ringed token icon, stacked
  * network badge, a 2×2 stats block and Supply/Manage actions. Presentational —
- * the caller owns navigation via `onSelect` (both buttons route to the product
- * page for now).
+ * the caller owns each action (e.g. the savings card opens the supply modal in
+ * place via `onSupply`; others route to the product page).
  */
-export function PositionCard({ position, onSelect }: { position: SuppliedPosition; onSelect: () => void }) {
+export function PositionCard({
+  position,
+  onSupply,
+  onManage
+}: {
+  position: SuppliedPosition;
+  onSupply: () => void;
+  onManage: () => void;
+}) {
   const projected = projectAnnualEarnings(position.amountUsd, position.rate);
 
   return (
@@ -96,10 +104,10 @@ export function PositionCard({ position, onSelect }: { position: SuppliedPositio
       </div>
 
       <div className="mt-1 flex gap-2">
-        <Button variant="primary" className="flex-1" onClick={onSelect}>
+        <Button variant="primary" className="flex-1" onClick={onSupply} data-testid="position-card-supply">
           <Trans>Supply</Trans>
         </Button>
-        <Button variant="outline" className="flex-1" onClick={onSelect}>
+        <Button variant="outline" className="flex-1" onClick={onManage} data-testid="position-card-manage">
           <Trans>Manage</Trans>
         </Button>
       </div>
