@@ -1,9 +1,10 @@
-import { MouseEvent, ReactNode, useCallback, useState } from 'react';
+import { ComponentType, MouseEvent, ReactNode, useCallback, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { useChainId } from 'wagmi';
 import { Menu } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
-import { cn, getFooterLinks, sanitizeUrl } from '@/lib/utils';
+import { getFooterLinks, sanitizeUrl } from '@/lib/utils';
+import { Balances, Savings, StakeSky, Trade } from '@/modules/icons';
 import { Intent } from '@/lib/enums';
 import { BATCH_TX_ENABLED, QueryParams } from '@/lib/constants';
 import { intentToPath, ROUTES, RoutePath } from '@/lib/routes';
@@ -26,6 +27,9 @@ type DestinationPath = Extract<AppRoutePath, RoutePath>;
 type Destination = {
   path: DestinationPath;
   label: ReactNode;
+  // Reuses the legacy module icons: Balances → Portfolio, Savings → Earn,
+  // Trade → Convert; StakeSky is the new pinwheel mark.
+  icon: ComponentType<{ className?: string }>;
   // Modules the destination covers; the first is its landing module and
   // decides the network override for the link.
   intents: Intent[];
@@ -33,10 +37,16 @@ type Destination = {
 
 // The 4 target-IA destinations (plan §4.2). Paths come from ROUTES, never hardcoded.
 const DESTINATIONS: Destination[] = [
-  { path: ROUTES.PORTFOLIO, label: <Trans>Portfolio</Trans>, intents: [Intent.BALANCES_INTENT] },
+  {
+    path: ROUTES.PORTFOLIO,
+    label: <Trans>Portfolio</Trans>,
+    icon: Balances,
+    intents: [Intent.BALANCES_INTENT]
+  },
   {
     path: ROUTES.EARN,
     label: <Trans>Earn</Trans>,
+    icon: Savings,
     intents: [
       Intent.SAVINGS_INTENT,
       Intent.REWARDS_INTENT,
@@ -45,10 +55,11 @@ const DESTINATIONS: Destination[] = [
       Intent.EXPERT_INTENT
     ]
   },
-  { path: ROUTES.STAKE, label: <Trans>Stake SKY</Trans>, intents: [Intent.STAKE_INTENT] },
+  { path: ROUTES.STAKE, label: <Trans>Stake SKY</Trans>, icon: StakeSky, intents: [Intent.STAKE_INTENT] },
   {
     path: ROUTES.CONVERT,
     label: <Trans>Convert</Trans>,
+    icon: Trade,
     intents: [Intent.CONVERT_INTENT, Intent.TRADE_INTENT, Intent.UPGRADE_INTENT]
   }
 ];
@@ -69,7 +80,7 @@ function useActiveDestinationPath(): RoutePath | null {
 }
 
 const navItemClasses =
-  'text-textSecondary hover:text-text relative rounded-lg px-3 py-1.5 text-sm font-medium transition-colors';
+  'nav-pill text-text relative flex items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors';
 
 const moreItemClasses =
   'text-textSecondary hover:text-text hover:bg-bgHover rounded-md px-3 py-2 text-left text-sm transition-colors';
@@ -173,10 +184,28 @@ export function TopNav() {
 
   return (
     <nav className="flex w-full items-center gap-3" data-testid="top-nav">
+      {/* Shared gradient for the selected nav icon (dark mode); referenced by
+          fill: url(#nav-icon-gradient) in globals.css. */}
+      <svg aria-hidden="true" focusable="false" width="0" height="0" className="absolute">
+        <defs>
+          <linearGradient
+            id="nav-icon-gradient"
+            x1="12"
+            y1="0"
+            x2="12"
+            y2="24"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop stopColor="#F7A7F9" />
+            <stop offset="1" stopColor="#9583FF" />
+          </linearGradient>
+        </defs>
+      </svg>
       {/* mx-auto centers the pill group between the logo (left, in Layout) and the chip cluster. */}
-      <div className="mx-auto flex items-center gap-1">
+      <div className="mx-auto flex items-center gap-2">
         {DESTINATIONS.map(destination => {
           const isActive = activePath === destination.path;
+          const Icon = destination.icon;
           return (
             <Link
               key={destination.path}
@@ -185,8 +214,9 @@ export function TopNav() {
               onClick={handleNavClick(destination.intents[0])}
               data-testid={navTestId(destination.path)}
               aria-current={isActive ? 'page' : undefined}
-              className={cn(navItemClasses, isActive && 'bg-surface text-text')}
+              className={navItemClasses}
             >
+              <Icon className="nav-icon h-5 w-5 shrink-0" />
               {destination.label}
               {destination.intents.some(showNewDot) && (
                 <span
