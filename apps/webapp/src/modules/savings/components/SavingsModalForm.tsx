@@ -83,7 +83,23 @@ function ModalRow({ row }: { row: SavingsModalRow }) {
  * `maxAmountInForWithdraw`) are computed here and handed straight to the orchestrator
  * (mirroring `SavingsSupplyWithdrawPanel`); they are no-ops on mainnet.
  */
-export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow: SavingsLaunchFlow }) {
+/** Seeds the body's initial amount/token (e.g. a Portfolio quick-deposit shortcut). */
+export type SavingsModalPreset = {
+  /** Raw amount string to seed the input (e.g. '100'). */
+  amount?: string;
+  /** Origin/destination token to preselect; must be valid for the flow/chain. Defaults to USDS. */
+  token?: OriginSymbol;
+};
+
+export function SavingsModalForm({
+  sessionId,
+  flow,
+  preset
+}: {
+  sessionId: string;
+  flow: SavingsLaunchFlow;
+  preset?: SavingsModalPreset;
+}) {
   const isSupply = flow === 'supply';
   const chainId = useChainId();
   const chains = useChains();
@@ -97,11 +113,12 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   // they render inline in the hidden host.
   const entrySlot = useEntrySlot();
 
-  const [value, setValue] = useState('');
+  // Seeded from `preset` on each fresh launch (the host remounts per launchCount).
+  const [value, setValue] = useState(preset?.amount ?? '');
   // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
   // Cleared the moment the user edits the amount.
   const [max, setMax] = useState(false);
-  const [originSymbol, setOriginSymbol] = useState<OriginSymbol>('USDS');
+  const [originSymbol, setOriginSymbol] = useState<OriginSymbol>(preset?.token ?? 'USDS');
   const isL2 = isL2ChainId(chainId);
   // Supply always offers an origin choice (USDS/DAI mainnet, USDS/USDC L2); withdraw
   // offers a destination choice only on L2 (USDS/USDC). Mainnet withdraw → USDS-only
