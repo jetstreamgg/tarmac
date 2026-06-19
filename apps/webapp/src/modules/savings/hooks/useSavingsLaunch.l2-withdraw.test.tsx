@@ -135,6 +135,16 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
   })
 }));
 
+// The orchestrator now derives shouldUseBatch from the batch toggle + wallet
+// capability; stub both (the batch decision itself is covered by
+// useSavingsLaunch.batch.test.tsx — these calldata/config tests don't assert it).
+vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
+  useBatchToggle: () => [false, () => undefined]
+}));
+vi.mock('@/hooks/shared/useIsBatchSupported', () => ({
+  useIsBatchSupported: () => ({ data: false })
+}));
+
 import { TOKENS, useBatchPsmSwapExactIn, useBatchPsmSwapExactOut, psm3L2Address } from '@/hooks';
 import { useSavingsLaunch } from './useSavingsLaunch';
 

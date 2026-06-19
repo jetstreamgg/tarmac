@@ -13,12 +13,14 @@ import {
   useBatchPsmSwapExactOut,
   useBatchSavingsSupply,
   useBatchUpgradeAndSavingsSupply,
+  useIsBatchSupported,
   useSavingsAllowance,
   useSavingsWithdraw,
   useTokenAllowance
 } from '@/hooks';
 import { isL2ChainId } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
 export type SavingsLaunchFlow = 'supply' | 'withdraw';
 
@@ -115,6 +117,14 @@ export function useSavingsLaunch({
   const { address } = useAccount();
   const chainId = useChainId();
 
+  // Honour the user's batch toggle: bundle approve+action into one EIP-5792 call
+  // only when the user opted in AND the wallet supports it. useTransactionFlow
+  // additionally gates on calls.length > 1, so a no-approval flow stays a single
+  // sequential signature regardless of this flag.
+  const [batchEnabled] = useBatchToggle();
+  const { data: batchSupported } = useIsBatchSupported();
+  const shouldUseBatch = !!batchEnabled && !!batchSupported;
+
   const isL2 = isL2ChainId(chainId);
   const isSupply = flow === 'supply';
   // DAI is a mainnet-only supply origin; on L2 the PSM path takes precedence.
@@ -166,12 +176,14 @@ export function useSavingsLaunch({
     amount,
     ref: referralCode,
     enabled: isSupply && !isL2 && !isDai,
+    shouldUseBatch,
     ...txCallbacks
   });
   const upgradeHook = useBatchUpgradeAndSavingsSupply({
     amount,
     ref: referralCode,
     enabled: isDai,
+    shouldUseBatch,
     ...txCallbacks
   });
   const psmSupplyHook = useBatchPsmSwapExactIn({
@@ -181,6 +193,7 @@ export function useSavingsLaunch({
     minAmountOut: minAmountOut ?? 0n,
     referralCode: psmReferralCode,
     enabled: isSupply && isL2,
+    shouldUseBatch,
     ...txCallbacks
   });
   // L2 PSM withdraw, max: swap the whole sUSDS balance out (sUSDS → token).
@@ -191,6 +204,7 @@ export function useSavingsLaunch({
     minAmountOut: minAmountOutForWithdrawAll ?? 0n,
     referralCode: psmReferralCode,
     enabled: isL2Withdraw && max,
+    shouldUseBatch,
     ...txCallbacks
   });
   // L2 PSM withdraw, specific amount: take exactly `amount` token out, capping
@@ -202,6 +216,7 @@ export function useSavingsLaunch({
     maxAmountIn: maxAmountInForWithdraw ?? 0n,
     referralCode: psmReferralCode,
     enabled: isL2Withdraw && !max,
+    shouldUseBatch,
     ...txCallbacks
   });
   const withdrawHook = useSavingsWithdraw({
