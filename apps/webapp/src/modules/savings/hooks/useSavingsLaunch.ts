@@ -18,7 +18,7 @@ import {
   useSavingsWithdraw,
   useTokenAllowance
 } from '@/hooks';
-import { isL2ChainId } from '@/utils';
+import { formatNumber, isL2ChainId } from '@/utils';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
 import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 
@@ -275,6 +275,21 @@ export function useSavingsLaunch({
   ]);
 
   const launch = useCallback(() => {
+    // Amount-aware titles for the minimized toast (parity with the editable
+    // SavingsModalForm path), e.g. "10,000 USDS supplied!".
+    const amountLabel = `${formatNumber(parseFloat(formatUnits(amount, originDecimals)), { maxDecimals: 2 })} ${originToken.symbol}`;
+    const toast = isSupply
+      ? {
+          loading: t`Supplying ${amountLabel}`,
+          success: t`${amountLabel} supplied!`,
+          error: t`Supply failed`
+        }
+      : {
+          loading: t`Withdrawing ${amountLabel}`,
+          success: t`${amountLabel} withdrawn!`,
+          error: t`Withdrawal failed`
+        };
+
     if (isSupply) {
       launchModal({
         title: t`Review supply`,
@@ -284,6 +299,7 @@ export function useSavingsLaunch({
           success: t`You've successfully supplied to Sky Savings.`,
           error: t`An error occurred while supplying to Sky Savings.`
         },
+        toast,
         transactionContent,
         transactionScreenContent,
         steps,
@@ -313,6 +329,7 @@ export function useSavingsLaunch({
           success: t`You've successfully withdrawn from Sky Savings.`,
           error: t`An error occurred while withdrawing from Sky Savings.`
         },
+        toast,
         transactionContent,
         transactionScreenContent,
         steps,

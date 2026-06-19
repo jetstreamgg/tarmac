@@ -265,6 +265,8 @@ describe('useSavingsLaunch — withdraw launch() config', () => {
     // Read-only review screen confirms with "Confirm" (Figma); the editable entry
     // screen keeps the action verb ("Withdraw") via its own entry config.
     expect(config.confirmLabel).toBe('Confirm');
+    // Amount-aware title for the minimized toast (parity with the editable path).
+    expect(config.toast.success).toBe('5 USDS withdrawn!');
   });
 
   it('routes onConfirm to the withdraw engine execute (not the supply engine), single step', () => {

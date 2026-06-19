@@ -299,6 +299,16 @@ describe('useSavingsLaunch — launch() config', () => {
     expect(config.transactionTitle).toBe('Confirm in the wallet');
   });
 
+  it('sets an amount-aware title for the minimized toast', () => {
+    const { result } = renderHook(() =>
+      useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
+    );
+    act(() => result.current.launch());
+
+    const config = h.launchMock.mock.calls[0][0];
+    expect(config.toast.success).toBe('10 USDS supplied!');
+  });
+
   it('routes onConfirm to the engine execute', () => {
     const { result } = renderHook(() =>
       useSavingsLaunch({ flow: 'supply', originToken: TOKENS.usds, amount: AMOUNT, referralCode: REF })
