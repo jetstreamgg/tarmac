@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, type ReactNode } from 'react';
+import { StrictMode, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
@@ -80,12 +80,52 @@ function ProbeBody() {
   return <div>probe-body</div>;
 }
 
+// Like ProbeBody but it PORTALS its output into the entry slot (the SavingsModalForm
+// pattern). The body-level effect stands in for the engine hook — it must survive the
+// portal→inline switch that minimize triggers.
+const portalProbe = vi.hoisted(() => ({ mounts: 0, unmounts: 0 }));
+function PortalingHost() {
+  useEffect(() => {
+    portalProbe.mounts += 1;
+    return () => {
+      portalProbe.unmounts += 1;
+    };
+  }, []);
+  const slot = useEntrySlot();
+  const body = <div data-testid="portaling-host-body">body</div>;
+  return slot ? createPortal(body, slot) : body;
+}
+
 // A backgroundContent host that portals its visible inputs into the dialog's entry
 // slot (the savings pattern), falling back to inline when no slot is mounted.
 function SlotProbe() {
   const slot = useEntrySlot();
   const inputs = <div data-testid="portaled-inputs">inputs</div>;
   return slot ? createPortal(inputs, slot) : inputs;
+}
+
+// Mimics SavingsModalForm's wiring: portals its body into the entry slot, and pushes
+// a stable `onConfirm` (reading the latest engine `execute` from a ref) via
+// updateModalContent. `execute` counts submissions so we can detect a duplicate.
+const submit = vi.hoisted(() => ({ count: 0 }));
+function WithdrawHost({ sessionId }: { sessionId: string }) {
+  const { updateModalContent } = useTransaction();
+  const slot = useEntrySlot();
+  const [value] = useState('800');
+  // Fresh closure every render (like the real engine's execute), so executeRef churns.
+  const execute = () => {
+    submit.count += 1;
+  };
+  const executeRef = useRef(execute);
+  useEffect(() => {
+    executeRef.current = execute;
+  });
+  const onConfirm = useCallback(() => executeRef.current(), []);
+  useEffect(() => {
+    updateModalContent(sessionId, { entry: { confirmDisabled: false }, onConfirm });
+  }, [updateModalContent, sessionId, onConfirm]);
+  const body = <div data-testid="withdraw-host">{value}</div>;
+  return slot ? createPortal(body, slot) : body;
 }
 
 // Launches the given flow on mount and hands the whole context to the test (so it
@@ -286,6 +326,56 @@ describe('TransactionModal minimize', () => {
     expect(probe.unmounts).toBe(unmountsBefore);
     expect(screen.queryByRole('button', { name: /processing/i })).not.toBeNull();
     expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
+  });
+
+  it('keeps a PORTALING host body mounted across minimize (engine survives the portal switch)', () => {
+    portalProbe.mounts = 0;
+    portalProbe.unmounts = 0;
+    const ctx = renderFlow({
+      title: 'Supply',
+      steps: ['Supply'],
+      entry: { confirmDisabled: false },
+      backgroundContent: <PortalingHost />,
+      onConfirm: () => undefined
+    });
+    const cb = cbOf(ctx);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xhash'));
+    const unmountsBefore = portalProbe.unmounts;
+
+    act(() => ctx.minimize()); // slot disappears → host switches portal→inline
+    expect(portalProbe.unmounts).toBe(unmountsBefore);
+
+    act(() => cb.onSuccess('0xhash'));
+    expect(portalProbe.unmounts).toBe(unmountsBefore);
+  });
+
+  it('does not re-submit the transaction when minimized (no duplicate execute)', () => {
+    submit.count = 0;
+    const sessionId = 'withdraw-session';
+    const ctx = renderFlow({
+      title: 'Withdraw',
+      steps: ['Withdraw'],
+      sessionId,
+      entry: { confirmDisabled: false },
+      backgroundContent: <WithdrawHost sessionId={sessionId} />,
+      onConfirm: () => undefined
+    });
+    const cb = cbOf(ctx);
+
+    // renderFlow already clicked Confirm → exactly one submission.
+    expect(submit.count).toBe(1);
+
+    act(() => cb.onMutate());
+    act(() => cb.onStart('0xhash')); // in-flight
+
+    // Closing (minimize) must NOT fire a second submission.
+    act(() => ctx.minimize());
+    expect(submit.count).toBe(1);
+
+    act(() => cb.onSuccess('0xhash'));
+    expect(submit.count).toBe(1);
   });
 
   it('portals backgroundContent inputs into the dialog entry slot', () => {
