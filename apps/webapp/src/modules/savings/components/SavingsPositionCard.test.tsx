@@ -107,6 +107,11 @@ describe('SavingsPositionCard — position routing', () => {
     expect(config.entry).toBeDefined();
     expect(config.entry.confirmLabel).toBe('Supply');
     expect(config.entry.confirmDisabled).toBe(true);
+    // The editable body is hosted OUTSIDE the dialog (backgroundContent) so its
+    // in-flight hook survives minimize — not inside entry.content.
+    expect(config.entry.content).toBeUndefined();
+    expect(config.backgroundContent).toBeDefined();
+    expect(config.backgroundContent.props.flow).toBe('supply');
   });
 
   it('opens the "Withdraw from Sky Savings" editable modal (entry descriptor) on Withdraw', () => {
@@ -122,5 +127,8 @@ describe('SavingsPositionCard — position routing', () => {
     expect(config.entry).toBeDefined();
     expect(config.entry.confirmLabel).toBe('Withdraw');
     expect(config.entry.confirmDisabled).toBe(true);
+    expect(config.entry.content).toBeUndefined();
+    expect(config.backgroundContent).toBeDefined();
+    expect(config.backgroundContent.props.flow).toBe('withdraw');
   });
 });

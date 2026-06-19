@@ -79,10 +79,12 @@ export function SavingsPositionCard() {
       },
       sessionId: supplySessionId,
       entry: {
-        content: <SavingsModalForm sessionId={supplySessionId} flow="supply" />,
         confirmLabel: t`Supply`,
         confirmDisabled: true
       },
+      // The editable body lives outside the dialog (hidden host) so its in-flight
+      // hook survives minimize; it portals its inputs into the modal's entry slot.
+      backgroundContent: <SavingsModalForm sessionId={supplySessionId} flow="supply" />,
       onConfirm: () => {},
       onSuccess: refreshPosition
     });
@@ -102,10 +104,12 @@ export function SavingsPositionCard() {
       },
       sessionId: withdrawSessionId,
       entry: {
-        content: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" />,
         confirmLabel: t`Withdraw`,
         confirmDisabled: true
       },
+      // The editable body lives outside the dialog (hidden host) so its in-flight
+      // hook survives minimize; it portals its inputs into the modal's entry slot.
+      backgroundContent: <SavingsModalForm sessionId={withdrawSessionId} flow="withdraw" />,
       onConfirm: () => {},
       onSuccess: refreshPosition
     });

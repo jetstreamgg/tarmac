@@ -40,7 +40,18 @@ export type TransactionSubtitles = {
 
 export type TransactionModalProps = {
   open: boolean;
+  /**
+   * Registers the entry-screen portal target (a flow's `backgroundContent` portals
+   * its editable inputs here). Called with the node on mount and null on unmount.
+   */
+  registerEntrySlot?: (el: HTMLElement | null) => void;
   onClose: () => void;
+  /**
+   * Hide the modal while keeping the transaction running. When provided, dismissing
+   * the modal mid-flight (close button / esc / click-outside) minimizes instead of
+   * being blocked — the transaction continues in the background and a toast tracks it.
+   */
+  onMinimize?: () => void;
   title: string;
   /** Title for the wallet/status screen; falls back to `title` when omitted. */
   transactionTitle?: string;
@@ -91,7 +102,9 @@ const statusMessages: Partial<Record<TxStatus, ReactNode>> = {
 
 export function TransactionModal({
   open,
+  registerEntrySlot,
   onClose,
+  onMinimize,
   title,
   transactionTitle,
   subtitles,
@@ -154,6 +167,9 @@ export function TransactionModal({
   // falls back to `title` so single-title configs render unchanged on both screens.
   const displayTitle = isTransaction ? (transactionTitle ?? title) : title;
 
+  // Stable callback ref so registering the entry slot doesn't thrash on re-render.
+  const slotRef = useCallback((el: HTMLDivElement | null) => registerEntrySlot?.(el), [registerEntrySlot]);
+
   const handleConfirm = useCallback(() => {
     if (reviewRef.current) {
       setContentHeight(reviewRef.current.offsetHeight);
@@ -177,6 +193,16 @@ export function TransactionModal({
     onClose();
   }, [isTransacting, onClose, firstStep]);
 
+  // Dismissing the modal: mid-flight it minimizes (the tx keeps running and a toast
+  // takes over); otherwise it closes. Used by the close button, esc, and click-outside.
+  const handleDismiss = useCallback(() => {
+    if (isTransacting && onMinimize) {
+      onMinimize();
+      return;
+    }
+    handleClose();
+  }, [isTransacting, onMinimize, handleClose]);
+
   const handleBack = useCallback(() => {
     onBack?.();
     setStep(firstStep);
@@ -196,12 +222,10 @@ export function TransactionModal({
   }, [isFirstScreen, handleClose, handleBack]);
 
   return (
-    <Dialog open={open} onOpenChange={val => !val && handleClose()}>
+    <Dialog open={open} onOpenChange={val => !val && handleDismiss()}>
       <DialogContent
         aria-describedby={undefined}
         className="bg-containerDark flex flex-col gap-6 p-4 sm:max-w-122.5 sm:min-w-122.5"
-        onPointerDownOutside={e => isTransacting && e.preventDefault()}
-        onEscapeKeyDown={e => isTransacting && e.preventDefault()}
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}
       >
@@ -223,9 +247,10 @@ export function TransactionModal({
             {rightHeaderComponent}
             <Button
               variant="ghost"
+              aria-label={isTransacting ? t`Minimize` : t`Close`}
               className="text-textSecondary hover:text-text h-8 w-8 rounded-full p-0"
-              onClick={handleClose}
-              disabled={isTransacting}
+              onClick={handleDismiss}
+              data-testid="transaction-modal-close"
             >
               <Close className="h-5 w-5" />
             </Button>
@@ -282,6 +307,8 @@ export function TransactionModal({
           {entry && (
             <div className={isEntry ? 'text-text' : 'hidden'} aria-hidden={!isEntry}>
               {entry.content}
+              {/* Portal target for a flow's backgroundContent inputs (see registerEntrySlot). */}
+              <div ref={slotRef} />
             </div>
           )}
 

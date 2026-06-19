@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useChainId, useChains, useConnection } from 'wagmi';
 import { formatUnits, parseUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
@@ -15,7 +16,7 @@ import {
 import { formatBigInt, formatNumber, formatDecimalPercentage, isL2ChainId } from '@/utils';
 import { REFERRAL_CODE } from '@/lib/constants';
 import { Text } from '@/modules/layout/components/Typography';
-import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
 import { useSavingsSupplyMinAmountOut } from '../hooks/useSavingsSupplyMinAmountOut';
 import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
@@ -90,6 +91,11 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
   const { data: savingsData } = useSavingsData();
   const { data: overall } = useOverallSkyData();
   const { updateModalContent } = useTransaction();
+  // Rendered as the modal's `backgroundContent` (a hidden, always-mounted host so
+  // the in-flight engine hook survives minimize). The visible inputs portal into
+  // the dialog's entry slot when present; with no slot (standalone / minimized)
+  // they render inline in the hidden host.
+  const entrySlot = useEntrySlot();
 
   const [value, setValue] = useState('');
   // Withdraw-only: set by Max so the engine redeems the whole position (no dust).
@@ -180,18 +186,29 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
     );
   }, [isSupply, value, originToken.symbol]);
 
+  // Amount-aware titles for the minimized toast (Figma "10,000.00 USDS supplied!").
+  // Memoised on the amount/token/flow so the sync effect below stays bounded.
+  const toastTitles = useMemo(() => {
+    const display = value ? formatNumber(parseFloat(value), { maxDecimals: 2 }) : '0';
+    const amount = `${display} ${originToken.symbol}`;
+    return isSupply
+      ? { loading: t`Supplying ${amount}`, success: t`${amount} supplied!`, error: t`Supply failed` }
+      : { loading: t`Withdrawing ${amount}`, success: t`${amount} withdrawn!`, error: t`Withdrawal failed` };
+  }, [isSupply, value, originToken.symbol]);
+
   // Keep the shared modal's confirm gating + handler + step labels + the
-  // wallet-screen summary in sync. Merged (not replacing `content`), so the body
-  // never remounts; bounded to amount-driven changes, so it can't loop on provider
-  // re-renders.
+  // wallet-screen summary + minimized-toast titles in sync. Merged (not replacing
+  // `content`), so the body never remounts; bounded to amount-driven changes, so it
+  // can't loop on provider re-renders.
   useEffect(() => {
     updateModalContent(sessionId, {
       entry: { confirmDisabled: disabled },
       onConfirm,
       steps,
-      transactionScreenContent
+      transactionScreenContent,
+      toast: toastTitles
     });
-  }, [sessionId, disabled, steps, onConfirm, transactionScreenContent, updateModalContent]);
+  }, [sessionId, disabled, steps, onConfirm, transactionScreenContent, toastTitles, updateModalContent]);
 
   const onInput = (raw: string) => {
     setMax(false);
@@ -247,7 +264,7 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
         networkFee: NO_VALUE
       });
 
-  return (
+  const body = (
     <div className="flex flex-col gap-3" data-testid={`savings-modal-${flow}-form`}>
       <div className="bg-panel flex items-center justify-between gap-2 rounded-xl p-3">
         <input
@@ -298,6 +315,10 @@ export function SavingsModalForm({ sessionId, flow }: { sessionId: string; flow:
       </div>
     </div>
   );
+
+  // Display inside the dialog when its entry slot is mounted; otherwise render
+  // inline in the hidden host (keeps the body — and its engine hook — mounted).
+  return entrySlot ? createPortal(body, entrySlot) : body;
 }
 
 // Parse the raw input to a bigint at the origin token's decimals; partial/invalid → 0.

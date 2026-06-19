@@ -100,7 +100,9 @@ vi.mock('../hooks/useSavingsLaunch', () => ({
 }));
 
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
-  useTransaction: () => ({ updateModalContent: h.update })
+  useTransaction: () => ({ updateModalContent: h.update }),
+  // No entry slot in these standalone renders → the form renders its body inline.
+  useEntrySlot: () => null
 }));
 
 // Stub the origin dropdown as plain option buttons (Radix Select interaction is
@@ -154,6 +156,12 @@ const lastDisabled = () => {
   return withEntry.at(-1)?.[1].entry.confirmDisabled;
 };
 
+// The last minimized-toast titles pushed to the modal.
+const lastToast = () => {
+  const withToast = h.update.mock.calls.filter(([, patch]) => patch?.toast !== undefined);
+  return withToast.at(-1)?.[1].toast;
+};
+
 const FIGMA_ROWS = ['Savings rate', 'Supply', '1Y est. earnings', 'Network', 'Network fee'];
 
 describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
@@ -185,6 +193,12 @@ describe('SavingsModalForm — Supply to Sky Savings entry body', () => {
   it('syncs confirmDisabled=true to the modal while the amount is zero', () => {
     renderForm('supply');
     expect(lastDisabled()).toBe(true);
+  });
+
+  it('pushes an amount-aware success title for the minimized toast', () => {
+    renderForm('supply');
+    fireEvent.change(screen.getByTestId('savings-modal-amount-input'), { target: { value: '10000' } });
+    expect(lastToast()?.success).toBe('10,000 USDS supplied!');
   });
 
   it('enables the confirm (confirmDisabled=false) once a valid amount is entered', () => {
