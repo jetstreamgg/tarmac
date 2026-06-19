@@ -343,6 +343,7 @@ export function useEarnMarketplace(): EarnMarketplaceResult {
 
   return {
     rows,
-    isLoading: rows.some(row => row.isLoading)
+    isLoading: rows.some(row => row.isLoading),
+    totalDepositedUsd: rows.reduce((acc, row) => acc + (row.position?.totalUsd ?? 0), 0)
   };
 }

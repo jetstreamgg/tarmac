@@ -33,6 +33,9 @@ describe('useEarnMarketplace', () => {
     expect(byId['stusds'].rate.value).toBeGreaterThan(0);
     expect(byId['stusds'].tvl?.totalUsd).toBeGreaterThan(0);
 
+    // Aggregate of all user positions (>= 0; the fork test account holds none).
+    expect(result.current.totalDepositedUsd).toBeGreaterThanOrEqual(0);
+
     // Every row resolved without error and 30D rate stays unwired (TODO C1).
     for (const row of result.current.rows) {
       expect(row.error).toBeNull();
