@@ -29,6 +29,7 @@ import { ArbitrumChain } from './ArbitrumChain';
 import { UnichainChain } from './UnichainChain';
 import { OptimismChain } from './OptimismChain';
 import { Stake } from './Stake';
+import { StakeSky } from './StakeSky';
 import { Expert } from './Expert';
 import { Delegate } from './Delegate';
 import { Borrow } from './Borrow';
@@ -74,6 +75,7 @@ export {
   OptimismChain,
   UnichainChain,
   Stake,
+  StakeSky,
   Expert,
   Delegate,
   Borrow,

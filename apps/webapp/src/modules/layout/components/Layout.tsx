@@ -48,7 +48,10 @@ export function Layout({
         <ErrorBoundary>
           <div className="flex w-full items-center gap-4 px-3 py-2 sm:px-10 md:mb-1">
             <AppLink to="/" title="Home page" className="min-w-[96px]">
-              <img src={defaultConfig.logo} alt="logo" width={96} />
+              {/* Theme-specific logo: dark is the default; light swaps in under
+                  [data-theme='light'] (the `light:` variant). */}
+              <img src={defaultConfig.logo} alt="logo" width={96} className="light:hidden" />
+              <img src={defaultConfig.logoLight} alt="logo" width={96} className="light:block hidden" />
             </AppLink>
             <TopNav />
           </div>

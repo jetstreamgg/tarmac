@@ -8,7 +8,8 @@ export const defaultConfig: SiteConfig = {
   name: 'Sky',
   description: 'Get rewarded for saving, without giving up control',
   daiSavingsReferral: 0,
-  logo: '/images/header-lg.png',
+  logo: '/images/header-dark-mode.png',
+  logoLight: '/images/header-light-mode.png',
   favicon: '/images/sky.svg',
   locale: 'en'
 };

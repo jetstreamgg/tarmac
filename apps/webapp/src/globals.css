@@ -402,12 +402,7 @@
     --color-primary-bright-end: rgba(148, 131, 248);
 
     /* page background: lilac daytime gradient, a touch deeper than the cards. */
-    --background-image-app-background: linear-gradient(
-      180deg,
-      #d3ddf6 0%,
-      #dbd3f3 55%,
-      #e2daf5 100%
-    );
+    --background-image-app-background: linear-gradient(180deg, #d3ddf6 0%, #dbd3f3 55%, #e2daf5 100%);
   }
 }
 
@@ -493,4 +488,43 @@
     -webkit-appearance: none;
     margin: 0;
   }
+}
+
+/* Header nav pills (TopNav) ------------------------------------------------
+   Dark is the default; light overrides via [data-theme='light'] (synced by
+   ConfigProvider). The exact gradient/rgba backgrounds and the selected-icon
+   gradient fill don't map cleanly to utilities, so they live here. */
+.nav-pill {
+  border: 1px solid #363a4d;
+  background: #10121e;
+}
+.nav-pill[aria-current='page'] {
+  background: #222533;
+}
+[data-theme='light'] .nav-pill {
+  border-color: transparent;
+  background: radial-gradient(116.48% 116.48% at 50% 2.27%, rgba(255, 255, 255, 0) 0%, #fff 100%), #dde3ff;
+}
+[data-theme='light'] .nav-pill[aria-current='page'] {
+  background:
+    radial-gradient(116.48% 116.48% at 50% 2.27%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.5) 100%),
+    #c2ccff;
+}
+
+/* Nav icon: idle = solid (currentColor); selected = gradient (dark) / indigo (light). */
+.nav-pill .nav-icon {
+  color: #9ca9ff;
+}
+.nav-pill[aria-current='page'] .nav-icon :where(path) {
+  fill: url(#nav-icon-gradient);
+}
+[data-theme='light'] .nav-pill .nav-icon {
+  color: #2d2689;
+  opacity: 0.5;
+}
+[data-theme='light'] .nav-pill[aria-current='page'] .nav-icon {
+  opacity: 1;
+}
+[data-theme='light'] .nav-pill[aria-current='page'] .nav-icon :where(path) {
+  fill: #2d2689;
 }
