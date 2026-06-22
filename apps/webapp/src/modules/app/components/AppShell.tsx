@@ -40,9 +40,10 @@ export function AppShell() {
   const paneStyle = bpi < BP.md ? { height: `calc(100dvh - ${MOBILE_HEADER_HEIGHT}px)` } : undefined;
 
   return (
-    <Layout>
+    <Layout fullWidth={isFullWidth}>
       {/* Destination pages render bare — directly on the page background, no
-          container card (V2 Figma). Module routes keep the card. */}
+          container card (V2 Figma), and scroll on the document. Module routes
+          keep the card + its inner-scroll box. */}
       <AppContainer variant={isFullWidth ? 'bare' : 'card'}>
         {isFullWidth ? (
           // Destination pages own the whole container; no module content, so

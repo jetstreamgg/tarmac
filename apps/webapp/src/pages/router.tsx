@@ -32,6 +32,10 @@ export const createAppRouter = (history?: RouterHistory) =>
     stringifySearch,
     // Prefetch lazy route chunks when links are hovered/focused
     defaultPreload: 'intent',
+    // Full-width routes scroll on the document (no inner-scroll box), so the
+    // router owns scroll position: reset to top on new navigations, restore on
+    // back/forward. A no-op for boxed routes whose scroll lives in an element.
+    scrollRestoration: true,
     defaultErrorComponent: ErrorPage,
     defaultNotFoundComponent: NotFound,
     // NotFound renders its own full-page Layout, so unmatched paths must surface
