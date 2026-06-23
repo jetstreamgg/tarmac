@@ -1,6 +1,6 @@
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 i18n.load('en', {});
@@ -92,5 +92,28 @@ describe('SavingsTransactionsTable — action-type filter', () => {
     expect(rowCount()).toBe(1);
     expect(withdrawRows()).toBe(1);
     expect(supplyRows()).toBe(0);
+  });
+});
+
+describe('SavingsTransactionsTable — pagination resets on filter change', () => {
+  afterEach(cleanup);
+
+  it('returns to the first page when the filter changes', () => {
+    // 9 supplies → two pages at the default page size of 7 (7 + 2).
+    h.history = Array.from({ length: 9 }, (_, i) => supply(`0x${i}`));
+    const { rerender } = renderTable('all');
+    expect(rowCount()).toBe(7);
+
+    // Advance to page 2 (the trailing 2 rows).
+    fireEvent.click(screen.getByLabelText('Go to next page'));
+    expect(rowCount()).toBe(2);
+
+    // Changing the filter must snap back to page 1, not strand the user on page 2.
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <SavingsTransactionsTable filter="supply" />
+      </I18nProvider>
+    );
+    expect(rowCount()).toBe(7);
   });
 });

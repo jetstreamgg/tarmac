@@ -117,6 +117,9 @@ export function SavingsTransactionsTable({ filter = 'all' }: { filter?: SavingsT
 
   return (
     <ProductTransactionsTable
+      // Remount on filter change so pagination snaps back to page 1 (C4) — a
+      // changing key resets the table's page state without an effect.
+      key={filter}
       dataTestId="savings-transactions"
       columns={COLUMNS}
       rows={rows}

@@ -1,8 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { cn } from '@/lib/cn';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CustomPagination } from '@/modules/ui/components/CustomPagination';
+import { paginate } from './paginate';
 
 /**
  * Reusable transactions table for product-detail pages (Figma C3). Column-driven
@@ -34,6 +36,8 @@ export interface ProductTransactionsTableProps<T> {
   /** Min table width before horizontal scroll kicks in (px). */
   minWidth?: number;
   dataTestId?: string;
+  /** Rows per page; the control appears once the set exceeds it (C4). */
+  pageSize?: number;
 }
 
 // --- Reusable cells (compose these in a column's `cell`, or build your own) ---
@@ -64,15 +68,19 @@ function CheckIcon() {
 
 export function TxStatusBadge({ status }: { status: ProductTransactionStatus }) {
   if (status === 'pending') {
+    // Figma: purple-tinted pill, accent dots, primary-text label (white in dark,
+    // ink in light via the `text-text` token). Border + tint carry across themes.
     return (
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#A299F7]/10 px-2.5 py-1 text-xs font-medium text-[#A299F7]">
-        <DotsIcon />
+      <span className="text-text inline-flex w-fit items-center gap-1.5 rounded-full border border-[#9583ff]/20 bg-[#9583ff]/10 px-2.5 py-1 text-xs font-medium">
+        <span className="text-[#9583ff]">
+          <DotsIcon />
+        </span>
         <Trans>Pending</Trans>
       </span>
     );
   }
   return (
-    <span className="text-text inline-flex w-fit items-center gap-1.5 rounded-full bg-[#5AD293]/10 px-2.5 py-1 text-xs font-medium">
+    <span className="text-text inline-flex w-fit items-center gap-1.5 rounded-full border border-[#5AD293]/40 bg-[#008f44]/15 px-2.5 py-1 text-xs font-medium">
       <span className="text-[#5AD293]">
         <CheckIcon />
       </span>
@@ -97,7 +105,7 @@ export function TxActionCell({
         {icon}
       </span>
       <div className="flex flex-col">
-        <span className="text-text text-sm font-medium">{label}</span>
+        <span className="text-text text-base font-medium tracking-[-0.16px]">{label}</span>
         {timeAgo && <span className="text-textSecondary text-xs">{timeAgo}</span>}
       </div>
     </div>
@@ -142,7 +150,7 @@ export function TxHashLink({ label, href }: { label: ReactNode; href: string }) 
 
 function StateRow({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-container text-textSecondary rounded-2xl px-4 py-8 text-center text-sm">
+    <div className="bg-container text-textSecondary rounded-[20px] px-4 py-8 text-center text-sm">
       {children}
     </div>
   );
@@ -156,47 +164,64 @@ export function ProductTransactionsTable<T>({
   error,
   emptyLabel,
   minWidth = 560,
-  dataTestId = 'product-transactions'
+  dataTestId = 'product-transactions',
+  pageSize = 7
 }: ProductTransactionsTableProps<T>) {
   const gridStyle = { gridTemplateColumns: columns.map(column => column.width).join(' ') };
 
-  return (
-    <div className="overflow-x-auto">
-      <div className="flex flex-col gap-2" style={{ minWidth }} data-testid={dataTestId}>
-        <div className="text-textSecondary grid items-center gap-4 px-4 text-sm" style={gridStyle}>
-          {columns.map(column => (
-            <span key={column.id} className={cn(column.alignEnd && 'text-right')}>
-              {column.header}
-            </span>
-          ))}
-        </div>
+  const allRows = rows ?? [];
+  const [page, setPage] = useState(1);
+  const { rows: pageRows, totalPages } = paginate(allRows, pageSize, page);
+  const showPagination = !isLoading && !error && totalPages > 1;
 
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-[60px] rounded-2xl" />
-          ))
-        ) : error ? (
-          <StateRow>
-            <Trans>Unable to load transactions, please try again later.</Trans>
-          </StateRow>
-        ) : !rows || rows.length === 0 ? (
-          <StateRow>{emptyLabel ?? <Trans>No transactions yet.</Trans>}</StateRow>
-        ) : (
-          rows.map(row => (
-            <div
-              key={rowKey(row)}
-              className="bg-container hover:bg-containerDark grid items-center gap-4 rounded-2xl px-4 py-3 transition-colors"
-              style={gridStyle}
-            >
-              {columns.map(column => (
-                <div key={column.id} className={cn(column.alignEnd && 'flex justify-end')}>
-                  {column.cell(row)}
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <div className="flex flex-col gap-4" style={{ minWidth }} data-testid={dataTestId}>
+          <div className="text-textSecondary grid items-center gap-4 px-4 text-xs" style={gridStyle}>
+            {columns.map(column => (
+              <span key={column.id} className={cn(column.alignEnd && 'text-right')}>
+                {column.header}
+              </span>
+            ))}
+          </div>
+
+          {/* Rows sit 2px apart (Figma); the gap-4 above keeps them off the header. */}
+          <div className="flex flex-col gap-0.5">
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton key={index} className="h-[88px] rounded-[20px]" />
+              ))
+            ) : error ? (
+              <StateRow>
+                <Trans>Unable to load transactions, please try again later.</Trans>
+              </StateRow>
+            ) : allRows.length === 0 ? (
+              <StateRow>{emptyLabel ?? <Trans>No transactions yet.</Trans>}</StateRow>
+            ) : (
+              pageRows.map(row => (
+                <div
+                  key={rowKey(row)}
+                  // Figma C3 row: a glassmorphic card — translucent ink fill in dark,
+                  // a white gradient + white border in light (the `light:` scope), with
+                  // a 20px backdrop blur so the page shows through. (node 1:3906 / 67:4842)
+                  className="light:border-white light:from-white/40 light:to-white/60 light:hover:from-white/55 light:hover:to-white/70 grid min-h-[88px] items-center gap-4 rounded-[20px] border border-white/10 bg-linear-to-b from-[#0e0e20]/40 to-[#0e0e20]/40 px-4 py-3 backdrop-blur-[20px] transition-colors hover:from-[#0e0e20]/55 hover:to-[#0e0e20]/55"
+                  style={gridStyle}
+                >
+                  {columns.map(column => (
+                    <div key={column.id} className={cn(column.alignEnd && 'flex justify-end')}>
+                      {column.cell(row)}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))
-        )}
+              ))
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+      {showPagination && (
+        <CustomPagination dataLength={allRows.length} itemsPerPage={pageSize} onPageChange={setPage} />
+      )}
+    </>
   );
 }
