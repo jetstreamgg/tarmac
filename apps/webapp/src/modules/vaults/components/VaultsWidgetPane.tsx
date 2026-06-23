@@ -29,12 +29,19 @@ export function VaultsWidgetPane(sharedProps: SharedProps) {
 
   const { data: userVaultsData } = useAllMorphoVaultsUserAssets();
 
-  // Separate vaults into "My Vaults" (user has balance) and "All Vaults"
+  // Separate vaults into "My Vaults" (user has balance) and "All Vaults",
+  // surfacing the Sky (Tether Savings) vault at the top of each list ahead of the
+  // third-party Morpho vaults.
   const [myVaults, allVaults] = useMemo(() => {
     const myVaults: typeof VAULTS = [];
     const allVaults: typeof VAULTS = [];
 
-    VAULTS.forEach(vault => {
+    // Sky vaults first; otherwise preserve registry order (Array.sort is stable).
+    const orderedVaults = [...VAULTS].sort((a, b) =>
+      a.provider === b.provider ? 0 : a.provider === 'sky' ? -1 : 1
+    );
+
+    orderedVaults.forEach(vault => {
       const vaultAddressForChain = vault.vaultAddress[chainId];
       if (!vaultAddressForChain) return;
 

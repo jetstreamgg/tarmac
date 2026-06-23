@@ -125,6 +125,12 @@ function renderComponent(ui: ReactNode) {
   };
 }
 
+function getButtonTexts(container: HTMLElement) {
+  return Array.from(container.querySelectorAll('button'))
+    .map(node => (node.textContent || '').trim())
+    .filter(Boolean);
+}
+
 function clickButtonByText(container: HTMLElement, matcher: RegExp) {
   const button = Array.from(container.querySelectorAll('button')).find(node =>
     matcher.test(node.textContent || '')
@@ -166,5 +172,20 @@ describe('VaultsWidgetPane card-select URL build', () => {
     clickButtonByText(container, /USDS Flagship/i);
 
     expect(mockSearchParams.get('vault_module')).toBe('morpho');
+  });
+
+  it('lists the Sky (Tether Savings) vault first, ahead of the Morpho vaults', () => {
+    const { container } = renderComponent(
+      <VaultsWidgetPane {...({ rightHeaderComponent: <div /> } as any)} />
+    );
+
+    // With no user balances every vault renders in "All vaults"; each card is a
+    // button labelled by its name, so button order is the list order.
+    const vaultNames = getButtonTexts(container);
+
+    expect(vaultNames.length).toBeGreaterThan(1);
+    expect(vaultNames[0]).toMatch(/Tether Savings/i);
+    // The Sky vault is the only one at the top — no Morpho vault precedes it.
+    expect(vaultNames.slice(1).some(name => /Tether Savings/i.test(name))).toBe(false);
   });
 });
