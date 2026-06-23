@@ -100,7 +100,7 @@ jobs:
           if [ -f "tenderlyTestnetData.json" ]; then
             echo "have_vnet_json=true" >> $GITHUB_OUTPUT
             echo "  ✅ tenderlyTestnetData.json exists ($(wc -c < tenderlyTestnetData.json) bytes)"
-            echo "  Networks: $(cat tenderlyTestnetData.json | jq -r '.[].NETWORK' | tr '\n' ', ')"
+            echo "  Networks: $(jq -r '.[].NETWORK' tenderlyTestnetData.json 2>/dev/null | wc -l | tr -d ' ') found"
           else
             echo "have_vnet_json=false" >> $GITHUB_OUTPUT
             echo "  ❌ tenderlyTestnetData.json NOT FOUND"
@@ -110,7 +110,7 @@ jobs:
           if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
             echo "have_snapshots=true" >> $GITHUB_OUTPUT
             echo "  ✅ persistent-vnet-snapshots.json exists ($(wc -c < apps/webapp/src/test/e2e/persistent-vnet-snapshots.json) bytes)"
-            echo "  Networks: $(cat apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | jq -r 'keys[]' | tr '\n' ', ')"
+            echo "  Snapshots: $(jq -r 'keys | length' apps/webapp/src/test/e2e/persistent-vnet-snapshots.json 2>/dev/null) found"
           else
             echo "have_snapshots=false" >> $GITHUB_OUTPUT
             echo "  ❌ persistent-vnet-snapshots.json NOT FOUND"
@@ -220,15 +220,14 @@ jobs:
           echo ""
           if [ -f "tenderlyTestnetData.json" ]; then
             echo "✅ tenderlyTestnetData.json exists ($(wc -c < tenderlyTestnetData.json) bytes)"
-            echo "   Networks: $(cat tenderlyTestnetData.json | jq -r '.[].NETWORK' | tr '\n' ', ')"
+            echo "   Networks: $(jq -r '.[].NETWORK' tenderlyTestnetData.json 2>/dev/null | wc -l | tr -d ' ') found"
           else
             echo "❌ tenderlyTestnetData.json NOT FOUND"
           fi
           echo ""
           if [ -f "apps/webapp/src/test/e2e/persistent-vnet-snapshots.json" ]; then
             echo "✅ persistent-vnet-snapshots.json exists ($(wc -c < apps/webapp/src/test/e2e/persistent-vnet-snapshots.json) bytes)"
-            echo "   Content:"
-            cat apps/webapp/src/test/e2e/persistent-vnet-snapshots.json | jq '.'
+            echo "   Snapshots: $(jq -r 'keys | length' apps/webapp/src/test/e2e/persistent-vnet-snapshots.json 2>/dev/null) found"
           else
             echo "❌ persistent-vnet-snapshots.json NOT FOUND"
             echo "⚠️  This means snapshots were not created during global setup!"

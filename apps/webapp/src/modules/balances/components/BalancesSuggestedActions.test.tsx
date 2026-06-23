@@ -135,4 +135,21 @@ describe('BalancesSuggestedActions', () => {
     expect(mockSearchParams.get('network')).toBe('ethereum');
     expect(mockSearchParams.get('lang')).toBe('en');
   });
+
+  // The Tether Savings action links to the vault by address (it bypasses the
+  // VAULTS registry), so it must be gated separately by the feature flag (APP-323).
+  it('hides the Tether Savings (sUSDT) card when the feature flag is off', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_SUSDT_VAULT_ENABLED', 'false');
+    const { BalancesSuggestedActions: GatedActions } = await import('./BalancesSuggestedActions');
+
+    render(<GatedActions widget="stables" variant="card" />);
+
+    expect(screen.queryByRole('button', { name: /Tether Savings \(sUSDT\)/i })).toBeNull();
+    // Other stables suggestions are unaffected.
+    expect(screen.getByRole('button', { name: /Sky Savings Rate/i })).toBeTruthy();
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
 });

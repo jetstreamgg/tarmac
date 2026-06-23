@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useChainId, useChains } from 'wagmi';
 import { mainnet } from 'wagmi/chains';
-import { QueryParams, mapQueryParamToIntent, isNewIntent } from '@/lib/constants';
+import { QueryParams, mapQueryParamToIntent, isNewIntent, SUSDT_VAULT_ENABLED } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
@@ -425,15 +425,19 @@ export function BalancesSuggestedActions({
 
   const stableActions = useMemo(() => {
     const activeMarkets = PENDLE_MARKETS.filter(m => !isMarketMatured(m.expiry));
-    return STABLE_ACTIONS.map(action =>
-      action.rateKey === 'fixedYield'
-        ? {
-            ...action,
-            tokens: activeMarkets.map(m => `PT-${m.underlyingSymbol}`),
-            subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
-            badge: isNewIntent(Intent.FIXED_INTENT) ? 'New' : undefined
-          }
-        : action
+    // The sUSDT (Tether Savings) vault is feature-flagged (APP-323); its suggested
+    // action links directly to the vault by address (bypassing the VAULTS registry),
+    // so it must be hidden separately when the flag is off.
+    return STABLE_ACTIONS.filter(action => SUSDT_VAULT_ENABLED || action.rateKey !== 'sparkVault').map(
+      action =>
+        action.rateKey === 'fixedYield'
+          ? {
+              ...action,
+              tokens: activeMarkets.map(m => `PT-${m.underlyingSymbol}`),
+              subtitle: activeMarkets.length === 1 ? 'Rate: {rate}' : 'Rates up to {rate}',
+              badge: isNewIntent(Intent.FIXED_INTENT) ? 'New' : undefined
+            }
+          : action
     );
   }, []);
 

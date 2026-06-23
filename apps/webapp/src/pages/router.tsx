@@ -8,7 +8,7 @@ import { SealEngine } from './SealEngine';
 import { BatchTransactionsLegal } from './BatchTransactionsLegal';
 import { rewriteLegacyWidgetParams } from '@/modules/utils/validateSearchParams';
 import { mainnet } from 'viem/chains';
-import { IntentMapping, QueryParams } from '@/lib/constants';
+import { IntentMapping, QueryParams, SUSDT_VAULT_ENABLED } from '@/lib/constants';
 import { Intent } from '@/lib/enums';
 import { vaultModuleForProvider } from '@/lib/vaults/vaultProviderMapping';
 import { sparkUsdtVaultAddress } from '@/hooks';
@@ -26,6 +26,14 @@ const legacyWidgetLoader = ({ request }: { request: Request }) => {
 
 // sUSDT is mainnet-only, so the network is pinned in the deep-link.
 export const susdtRedirectLoader = () => {
+  // The sUSDT vault is feature-flagged (APP-323). While it's hidden, this vanity
+  // route must not deep-link into a vault that no longer resolves — the vault
+  // panes fall back to `VAULTS[0]` (an unrelated Morpho vault), so send visitors
+  // to the app root instead of silently opening the wrong vault.
+  if (!SUSDT_VAULT_ENABLED) {
+    return redirect('/');
+  }
+
   const params = new URLSearchParams({
     [QueryParams.Network]: 'ethereum',
     [QueryParams.Widget]: IntentMapping[Intent.VAULTS_INTENT],
