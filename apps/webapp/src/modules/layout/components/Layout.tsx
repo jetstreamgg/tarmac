@@ -12,14 +12,23 @@ import { Banner } from '@/components/extensible';
 import { useWalletAnalytics } from '@/modules/analytics/hooks/useWalletAnalytics';
 import { TopNav } from '@/modules/app/shell/TopNav';
 import { AppLink } from '@/lib/navigation';
+import { shellHeaderClasses, shellSurfaceClasses } from './shellLayoutClasses';
 import { defaultConfig } from '../../config/default-config';
 
 export function Layout({
   children,
-  metaDescription
+  metaDescription,
+  fullWidth = false
 }: {
   children: React.ReactNode;
   metaDescription?: string;
+  /**
+   * Full-width destination routes scroll on the document instead of inside the
+   * viewport-capped box: the VStack drops its height cap + `overflow-auto` so it
+   * grows with content, and the header pins as a sticky frosted bar (B6). Legacy
+   * two-pane routes keep the boxed scroll (the default).
+   */
+  fullWidth?: boolean;
 }): React.ReactElement {
   const { siteConfig } = useContext(ConfigContext);
   const { chain } = useConnection();
@@ -38,15 +47,9 @@ export function Layout({
       <meta name="description" content={descriptionContent} />
       <link rel="icon" href={siteConfig.favicon} />
 
-      <VStack
-        className={
-          // Dark: the sky image blended (luminosity) with the app container's
-          // #040434 backdrop so it takes that hue; light keeps the lilac gradient.
-          'bg-app-background light:bg-blend-normal flex max-h-svh min-h-svh max-w-full items-center overflow-auto [background-color:#040434] bg-cover bg-center bg-no-repeat bg-blend-luminosity md:max-h-screen md:min-h-screen md:p-4 md:pb-2'
-        }
-      >
+      <VStack className={shellSurfaceClasses(fullWidth)}>
         <ErrorBoundary>
-          <div className="flex w-full items-center gap-4 px-3 py-2 sm:px-10 md:mb-1">
+          <div className={shellHeaderClasses(fullWidth)}>
             <AppLink to="/" title="Home page" className="min-w-[96px]">
               {/* Theme-specific logo: dark is the default; light swaps in under
                   [data-theme='light'] (the `light:` variant). */}
