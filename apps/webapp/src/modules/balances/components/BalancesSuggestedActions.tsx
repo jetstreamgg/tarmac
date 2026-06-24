@@ -52,6 +52,18 @@ import { Morpho, PopoverRateInfo, type PopoverTooltipType } from '@/widgets';
 import { useGeoConfig } from '@/modules/geo-config';
 import type { ModuleId } from '@/modules/geo-config';
 
+// Map action module names to geo-config ModuleId where applicable
+const actionModuleToGeoModule: Partial<Record<BalancesAction['module'], ModuleId>> = {
+  trade: 'trade',
+  morpho: 'vaults',
+  rewards: 'rewards',
+  savings: 'savings',
+  fixedYield: 'fixed',
+  stusds: 'expert',
+  stake: 'stake',
+  upgrade: 'upgrade'
+};
+
 type BalancesAction = {
   label: string;
   tokens: string[];
@@ -375,12 +387,10 @@ function useActionRates(
 
 export function BalancesSuggestedActions({
   widget,
-  variant = 'default',
-  restrictedModules
+  variant = 'default'
 }: {
   widget: 'stables' | 'sky' | 'tokens';
   variant?: 'default' | 'card' | 'card-sm';
-  restrictedModules?: string[];
 }) {
   const [, setSearchParams] = useSearchParams();
   const chainId = useChainId();
@@ -413,11 +423,6 @@ export function BalancesSuggestedActions({
 
   const { isModuleEnabled } = useGeoConfig();
 
-  // Map action module names to geo-config ModuleId where applicable
-  const actionModuleToGeoModule: Partial<Record<BalancesAction['module'], ModuleId>> = {
-    trade: 'trade'
-  };
-
   const stableActions = useMemo(() => {
     const activeMarkets = PENDLE_MARKETS.filter(m => !isMarketMatured(m.expiry));
     // The sUSDT (Tether Savings) vault is feature-flagged (APP-323); its suggested
@@ -438,15 +443,12 @@ export function BalancesSuggestedActions({
 
   const actions = useMemo(() => {
     let result = widget === 'stables' ? stableActions : widget === 'sky' ? SKY_ACTIONS : TOKEN_ACTIONS;
-    if (restrictedModules) {
-      result = result.filter(action => restrictedModules.includes(action.module));
-    }
     result = result.filter(action => {
       const geoModuleId = actionModuleToGeoModule[action.module];
       return !geoModuleId || isModuleEnabled(geoModuleId);
     });
     return result;
-  }, [widget, restrictedModules, isModuleEnabled, stableActions]);
+  }, [widget, isModuleEnabled, stableActions]);
 
   const { rates: rateMap, loading: rateLoading } = useActionRates(actions, chainId);
 
