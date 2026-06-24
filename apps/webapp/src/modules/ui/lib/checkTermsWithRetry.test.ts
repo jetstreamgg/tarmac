@@ -21,15 +21,15 @@ describe('checkTermsWithRetry', () => {
     vi.unstubAllEnvs();
   });
 
-  it('returns termsAccepted on successful response', async () => {
+  it('returns termsAccepted and latestVersion on successful response', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: () => Promise.resolve({ termsAccepted: true })
+      json: () => Promise.resolve({ termsAccepted: true, latestVersion: '2026-01-15' })
     });
 
     const result = await checkTermsWithRetry(TEST_ADDRESS);
 
-    expect(result).toEqual({ termsAccepted: true, error: false });
+    expect(result).toEqual({ termsAccepted: true, error: false, latestVersion: '2026-01-15' });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 

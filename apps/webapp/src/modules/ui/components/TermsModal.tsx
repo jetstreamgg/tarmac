@@ -23,7 +23,8 @@ export function TermsModal() {
     termsCheckError,
     retryTermsCheck,
     isConnectedAndAcceptedTerms,
-    setHasAcceptedTerms
+    setHasAcceptedTerms,
+    latestTermsVersion
   } = useConnectedContext();
   const [isChecked, setIsChecked] = useState(false);
   const [signStatus, setSignStatus] = useState<'idle' | 'loading' | 'signing' | 'error'>('idle');
@@ -221,6 +222,7 @@ export function TermsModal() {
       isOpen={isModalOpen}
       onOpenChange={handleOpenChange}
       title={<Trans>Legal Terms</Trans>}
+      termsVersion={latestTermsVersion}
       content={termsContent}
       additionalContent={checkboxContent}
       customError={errorContent}

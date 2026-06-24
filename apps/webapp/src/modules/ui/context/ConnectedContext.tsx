@@ -14,6 +14,8 @@ interface ConnectedContextType {
   isCheckingTerms: boolean;
   termsCheckError: boolean;
   retryTermsCheck: () => void;
+  // Current wallet terms version reported by the last successful check, surfaced in the terms modal.
+  latestTermsVersion?: string;
   authData: {
     addressAllowed?: boolean;
     authIsLoading: boolean;
@@ -50,6 +52,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
   const [isCheckingTerms, setIsCheckingTerms] = useState(false);
   const [termsCheckError, setTermsCheckError] = useState(false);
+  const [latestTermsVersion, setLatestTermsVersion] = useState<string | undefined>(undefined);
   const [enabled, setEnabled] = useState(false);
 
   const skipAuthCheck =
@@ -126,8 +129,10 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // 403 is an intentional access denial (VPN/region or sanctioned address).
       // The VPN/address hooks handle the blocked UI — just mark terms as not accepted.
       setHasAcceptedTerms(false);
+      setLatestTermsVersion(result.latestVersion);
     } else {
       setHasAcceptedTerms(result.termsAccepted);
+      setLatestTermsVersion(result.latestVersion);
     }
   }, []);
 
@@ -200,6 +205,7 @@ export const ConnectedProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isCheckingTerms,
         termsCheckError,
         retryTermsCheck,
+        latestTermsVersion,
         authData: {
           addressAllowed: authData?.addressAllowed,
           authIsLoading,

@@ -7,6 +7,8 @@ export interface TermsCheckResult {
   termsAccepted: boolean;
   error: false;
   accessDenied?: boolean;
+  // The current wallet terms version `termsAccepted` was evaluated against (when the API returns it).
+  latestVersion?: string;
 }
 
 export interface TermsCheckError {
@@ -41,7 +43,7 @@ export async function checkTermsWithRetry(address: string): Promise<TermsCheckOu
 
       if (response.ok) {
         const res = await response.json();
-        return { termsAccepted: res.termsAccepted, error: false };
+        return { termsAccepted: res.termsAccepted, error: false, latestVersion: res.latestVersion };
       }
 
       // 403 is a deliberate access denial (VPN/restricted region or sanctioned address) — not an error
