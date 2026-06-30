@@ -109,6 +109,7 @@ export function VaultProductDetail({
           <ProductTokenIcon
             symbol={vault.assetToken.symbol}
             ringColor={RING_MORPHO}
+            glowColor={RING_MORPHO}
             width={48}
             className="h-12 w-12"
           />

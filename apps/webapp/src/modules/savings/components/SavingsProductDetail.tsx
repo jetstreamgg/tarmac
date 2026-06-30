@@ -8,6 +8,7 @@ import { productNetworks, useOverallSkyData, useSavingsData, useSkySavingsRateHi
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
+import { resolveTokenColor } from '@/widgets/shared/constants';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskMeter } from '@/components/product/RiskMeter';
@@ -107,7 +108,15 @@ export function SavingsProductDetail() {
     <ProductDetailTemplate
       backHref={ROUTES.EARN}
       token={{
-        icon: <ProductTokenIcon symbol="sUSDS" ringColor={RING_DEFAULT} width={48} className="h-12 w-12" />
+        icon: (
+          <ProductTokenIcon
+            symbol="sUSDS"
+            ringColor={RING_DEFAULT}
+            glowColor={resolveTokenColor('sUSDS')}
+            width={48}
+            className="h-12 w-12"
+          />
+        )
       }}
       title={<Trans>Sky Savings</Trans>}
       networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}
