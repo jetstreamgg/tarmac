@@ -9,6 +9,8 @@ export type SuppliedPosition = {
   name: string;
   tokenSymbol: string;
   kind: EarnProductKind;
+  /** Contract address for address-bound products (vaults/rewards/markets); undefined otherwise. */
+  address?: `0x${string}`;
   amountUsd: number;
   /** Current rate as a decimal fraction (0.045 = 4.5%); undefined when the product has none. */
   rate?: number;
@@ -100,6 +102,7 @@ export function buildSuppliedView(rows: EarnProductRow[], network: number | 'all
     name: row.name,
     tokenSymbol: row.tokenSymbol,
     kind: row.kind,
+    address: row.address,
     amountUsd,
     rate: row.rate.value,
     color: resolveTokenColor(row.tokenSymbol),

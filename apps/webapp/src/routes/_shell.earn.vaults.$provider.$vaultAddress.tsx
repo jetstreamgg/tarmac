@@ -20,5 +20,8 @@ export const Route = createFileRoute('/_shell/earn/vaults/$provider/$vaultAddres
       throw redirect({ to: '/earn/vaults', search: keepSearch, replace: true });
     }
   },
-  staticData: { intent: Intent.VAULTS_INTENT }
+  // Morpho vault details render full-width through the ProductDetailTemplate
+  // (D4), like the Savings page; the overview route stays boxed. Spark/sky details
+  // share this leaf and render their legacy pane within the full-width shell.
+  staticData: { intent: Intent.VAULTS_INTENT, fullWidth: true }
 });

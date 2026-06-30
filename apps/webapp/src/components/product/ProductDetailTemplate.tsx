@@ -56,6 +56,14 @@ export interface ProductDetailTemplateProps {
   position: ReactNode;
   details: ProductDetailRow[];
   detailsTitle?: ReactNode;
+  /**
+   * Optional product-specific section rendered between Details and About (e.g.
+   * the Vaults "Strategy" allocation breakdown). The template owns the section +
+   * heading chrome (like Details/About/Transactions); the consumer supplies the
+   * title + body. Backward-compatible — consumers that don't need it (Savings)
+   * simply omit it.
+   */
+  afterDetails?: { title: ReactNode; body: ReactNode };
   about: ProductDetailAbout;
   aboutTitle?: ReactNode;
   /** The transactions table. */
@@ -168,6 +176,7 @@ export function ProductDetailTemplate({
   position,
   details,
   detailsTitle,
+  afterDetails,
   about,
   aboutTitle,
   transactions,
@@ -205,6 +214,12 @@ export function ProductDetailTemplate({
         <div className="lg:col-start-2 lg:row-start-1">{position}</div>
         <div className="flex flex-col gap-10 lg:col-start-1 lg:row-start-2">
           <DetailsSection title={detailsTitle} details={details} />
+          {afterDetails && (
+            <section className="flex flex-col gap-4" data-testid="product-detail-after-details">
+              <SectionHeading>{afterDetails.title}</SectionHeading>
+              {afterDetails.body}
+            </section>
+          )}
           <AboutSection title={aboutTitle} about={about} />
           <TransactionsSection title={transactionsTitle} action={transactionsAction}>
             {transactions}

@@ -88,6 +88,8 @@ export type TransactionConfig = {
   backgroundContent?: ReactNode;
   /** Optional node rendered to the right of the title — e.g. a slippage gear. */
   rightHeaderComponent?: ReactNode;
+  /** Optional badge rendered immediately after the title — e.g. a "Merkl" source chip. */
+  titleBadge?: ReactNode;
   /**
    * Per-state titles for the toast shown while the modal is minimized (it's hidden,
    * so the toast notifies progress). Flows set amount-aware titles here (e.g.

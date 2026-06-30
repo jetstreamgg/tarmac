@@ -79,6 +79,19 @@ export function formatNumber(amount: number, options?: FormatOptions): string {
   return lessThanSmallest ? '<' + result : result;
 }
 
+/**
+ * Splits a number into its grouped integer part and trailing fraction, so a hero
+ * value can render the whole part large and the decimals small/dimmed
+ * (e.g. `100,000` + `.00026`). Returns an empty `fraction` when there is none.
+ */
+export function splitAmount(value: number, fractionDigits = 5): { whole: string; fraction: string } {
+  const whole = Math.trunc(value);
+  const fractionRaw = Math.round((value - whole) * 10 ** fractionDigits);
+  const fraction =
+    fractionRaw > 0 ? String(fractionRaw).padStart(fractionDigits, '0').replace(/0+$/, '') : '';
+  return { whole: formatNumber(whole, { maxDecimals: 0 }), fraction };
+}
+
 export function formatPercent(amount: bigint, options?: FormatOptions): `${number}` {
   // Number is basis points, equivalent to "100%"
   const upperThreshold = 1;
