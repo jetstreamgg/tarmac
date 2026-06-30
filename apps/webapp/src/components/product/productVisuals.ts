@@ -1,10 +1,12 @@
 import type { EarnProductKind } from '@/hooks';
 
 /**
- * Outline-ring color keys the product family across Portfolio cards: Morpho
- * vaults blue, Pendle fixed-yield green, everything else (savings, rewards,
- * stUSDS, Spark vaults) a neutral gray. Shared by PositionCard and the
- * marketplace cards so the two never drift.
+ * Outline-ring color keys the product family wherever a product token icon is
+ * shown — Portfolio cards, Earn marketplace cards, and the product-detail page
+ * headers: Morpho vaults blue, Pendle fixed-yield green, everything else
+ * (savings, rewards, stUSDS, Spark vaults) a neutral gray. Consumed via
+ * `ProductTokenIcon` so the surfaces never drift. Lives in components/product so
+ * product modules import it "down" rather than from a sibling module.
  */
 export const RING_MORPHO = '#2973FF';
 export const RING_PENDLE = '#1DD9BA';

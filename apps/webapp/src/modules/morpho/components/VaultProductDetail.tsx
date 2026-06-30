@@ -12,9 +12,10 @@ import {
 } from '@/hooks';
 import { formatBigInt, formatDecimalPercentage, formatNumber } from '@/utils';
 import { Morpho } from '@/widgets';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import { RING_MORPHO } from '@/components/product/productVisuals';
 import { VaultDetailChart } from './VaultDetailChart';
 import { VaultStrategy } from './VaultStrategy';
 import { VaultPositionCard } from './VaultPositionCard';
@@ -22,10 +23,6 @@ import { VaultTransactionsTable } from './VaultTransactionsTable';
 import { trailing30DayRate } from '../helpers/vaultRates';
 
 const NO_VALUE = '–';
-
-// Product-family outline ring (Morpho blue), matching the ringed token icons on
-// the Earn marketplace + Portfolio cards. This page is Morpho-only.
-const MORPHO_RING_COLOR = '#2973FF';
 
 /**
  * Morpho-vault product-detail page (D4) — composes the reusable
@@ -108,16 +105,13 @@ export function VaultProductDetail({
     <ProductDetailTemplate
       backHref={ROUTES.EARN}
       token={{
-        // Morpho-family outline ring (no brand glow), per the product icon pattern.
         icon: (
-          <div className="rounded-full p-[3px]" style={{ border: `2px solid ${MORPHO_RING_COLOR}` }}>
-            <TokenIcon
-              token={{ symbol: vault.assetToken.symbol }}
-              width={48}
-              showChainIcon={false}
-              className="h-12 w-12"
-            />
-          </div>
+          <ProductTokenIcon
+            symbol={vault.assetToken.symbol}
+            ringColor={RING_MORPHO}
+            width={48}
+            className="h-12 w-12"
+          />
         )
       }}
       title={

@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { AppLink } from '@/lib/navigation';
@@ -21,10 +21,8 @@ import { AppLink } from '@/lib/navigation';
  */
 
 export interface ProductDetailToken {
-  /** Token image node injected by the module (e.g. <TokenIcon/>). */
+  /** Token image node injected by the module — a ringed `<ProductTokenIcon/>`. */
   icon: ReactNode;
-  /** Brand color driving the title glow + padded outline (e.g. '#95DC89'). */
-  brandColor?: string;
 }
 
 /** One row of the Details grid. The module supplies icon/label/value. */
@@ -74,27 +72,14 @@ export interface ProductDetailTemplateProps {
   dataTestId?: string;
 }
 
-/** Token title icon with the brand-colored glow + padded outline (Figma C3). */
-function ProductGlowIcon({ token }: { token: ProductDetailToken }) {
-  const { icon, brandColor } = token;
-  const glow: CSSProperties | undefined = brandColor
-    ? { boxShadow: `0 0 0 4px ${brandColor}33, 0 0 24px 2px ${brandColor}66` }
-    : undefined;
+/**
+ * Token title-icon slot. The module injects a ringed `<ProductTokenIcon/>`
+ * (product-family outline); the template just positions it.
+ */
+function ProductTitleIcon({ token }: { token: ProductDetailToken }) {
   return (
-    <div
-      className="relative flex shrink-0 items-center justify-center"
-      data-testid="product-detail-token-icon"
-    >
-      {brandColor && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full opacity-50 blur-lg"
-          style={{ backgroundColor: brandColor }}
-        />
-      )}
-      <span className="relative rounded-full" style={glow}>
-        {icon}
-      </span>
+    <div className="shrink-0" data-testid="product-detail-token-icon">
+      {token.icon}
     </div>
   );
 }
@@ -198,7 +183,7 @@ export function ProductDetailTemplate({
         </AppLink>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <ProductGlowIcon token={token} />
+            <ProductTitleIcon token={token} />
             <h1 className="text-text font-circle text-3xl">{title}</h1>
           </div>
           {networkSelector}

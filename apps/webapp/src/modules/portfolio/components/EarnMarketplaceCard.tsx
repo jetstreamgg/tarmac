@@ -4,8 +4,9 @@ import { Trans } from '@lingui/react/macro';
 import type { EarnProductRow, EarnRiskTier } from '@/hooks';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { RiskMeter } from '@/components/product/RiskMeter';
-import { productIconSymbol, productRingColor } from '../helpers/productVisuals';
+import { productIconSymbol, productRingColor } from '@/components/product/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
 
 const RISK_LABEL: Record<EarnRiskTier, ReactNode> = {
@@ -26,14 +27,12 @@ export function EarnMarketplaceCard({ row, onStart }: { row: EarnProductRow; onS
       className="bg-container flex h-full flex-col gap-8 rounded-3xl border p-5 bg-blend-overlay backdrop-blur-[50px]"
       data-testid="earn-marketplace-card"
     >
-      <div className="w-fit rounded-full p-[3px]" style={{ border: `2px solid ${productRingColor(row)}` }}>
-        <TokenIcon
-          token={{ symbol: productIconSymbol(row) }}
-          width={40}
-          showChainIcon={false}
-          className="h-10 w-10"
-        />
-      </div>
+      <ProductTokenIcon
+        symbol={productIconSymbol(row)}
+        ringColor={productRingColor(row)}
+        width={40}
+        className="h-10 w-10"
+      />
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
