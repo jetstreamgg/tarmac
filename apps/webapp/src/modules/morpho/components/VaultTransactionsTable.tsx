@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useChainId } from 'wagmi';
 import { format } from 'date-fns';
 import { Trans } from '@lingui/react/macro';
 import { useMorphoVaultHistory, getTokenDecimals, TransactionTypeEnum } from '@/hooks';
@@ -89,14 +88,15 @@ export function VaultTransactionsTable({
   vaultAddress: `0x${string}`;
   filter?: VaultTxFilter;
 }) {
-  const chainId = useChainId();
   const { data: history, isLoading, error } = useMorphoVaultHistory({ vaultAddress });
 
   const rows = useMemo<VaultTxRow[]>(() => {
     if (!history) return [];
 
+    // Each record carries the chain it happened on (normalized for testnets), so
+    // the explorer link + decimals stay correct even if the wallet is elsewhere.
     const mapped = history.map(item => {
-      const decimals = getTokenDecimals(item.token, chainId);
+      const decimals = getTokenDecimals(item.token, item.chainId);
       const amount = formatBigInt(absBigInt(item.assets), { unit: decimals });
       return {
         id: item.transactionHash,
@@ -106,14 +106,14 @@ export function VaultTransactionsTable({
         symbol: item.token.symbol,
         time: format(item.blockTimestamp, 'MMM d, yyyy, h:mm a'),
         txHashLabel: formatAddress(item.transactionHash, 6, 4),
-        txHref: getEtherscanLink(chainId, item.transactionHash, 'tx')
+        txHref: getEtherscanLink(item.chainId, item.transactionHash, 'tx')
       };
     });
 
     if (filter === 'supply') return mapped.filter(row => row.isSupply);
     if (filter === 'withdraw') return mapped.filter(row => !row.isSupply);
     return mapped;
-  }, [history, chainId, filter]);
+  }, [history, filter]);
 
   return (
     <ProductTransactionsTable

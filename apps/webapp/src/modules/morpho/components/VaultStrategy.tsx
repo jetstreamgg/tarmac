@@ -16,12 +16,12 @@ export function VaultStrategy({ vaultAddress }: { vaultAddress: `0x${string}` })
 
   return (
     <div data-testid="vault-strategy">
-      {isLoading || !strategy ? (
+      {isLoading ? (
         <div className="flex flex-col gap-4">
           <Skeleton className="h-9 w-32" />
           <Skeleton className="h-2.5 w-full rounded-full" />
         </div>
-      ) : strategy.segments.length === 0 ? (
+      ) : !strategy || strategy.segments.length === 0 ? (
         <span className="text-textSecondary text-sm">
           <Trans>No allocations found</Trans>
         </span>

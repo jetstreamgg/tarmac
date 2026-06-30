@@ -95,9 +95,8 @@ export function ClaimRewardsModalForm({ sessionId }: { sessionId: string }) {
       return next;
     });
 
-  const networkName = rewards[0]
-    ? (chains.find(chain => chain.id === rewards[0].distributionChainId)?.name ?? 'Ethereum')
-    : 'Ethereum';
+  // Don't mislabel an unresolved chain as Ethereum — show the no-value dash.
+  const networkName = chains.find(chain => chain.id === rewards[0]?.distributionChainId)?.name ?? NO_VALUE;
   const single = rewards.length === 1;
 
   const body = (

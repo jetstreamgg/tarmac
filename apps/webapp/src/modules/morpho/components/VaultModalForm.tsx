@@ -72,6 +72,7 @@ export function VaultModalForm({
     isSupply,
     decimals,
     value,
+    amount,
     available,
     insufficient,
     amountReady,
@@ -106,8 +107,10 @@ export function VaultModalForm({
     });
   }, [sessionId, disabled, steps, onConfirm, transactionScreenContent, toast, updateModalContent]);
 
+  // Derived from the parsed engine `amount` (not the raw input) so the preview
+  // matches what's submitted — an input that normalizes to 0n previews 0 too.
   // USD ≈ amount for the $1-pegged vault assets (USDC/USDS/USDT).
-  const amountUsd = parseFloat(value || '0');
+  const amountUsd = parseFloat(formatUnits(amount, decimals));
   const apy = netRate !== undefined ? formatDecimalPercentage(netRate) : NO_VALUE;
   const receiveRow: ModalRow = {
     label: <Trans>You&apos;ll receive</Trans>,
