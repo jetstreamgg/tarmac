@@ -1,5 +1,4 @@
-import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { ReactNode, useMemo, useState } from 'react';
 import { useChains } from 'wagmi';
 import { Trans } from '@lingui/react/macro';
 import { useMerklRewards, useMerklClaimRewards, type MerklTokenReward } from '@/hooks';
@@ -8,7 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { Text } from '@/modules/layout/components/Typography';
-import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
+import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 
 const NO_VALUE = '–';
 // Stable empty ref so `rewards` doesn't change identity every render.
@@ -36,8 +36,7 @@ function InfoRow({ label, children }: { label: ReactNode; children: ReactNode })
  * subset — calldata is the existing `useMerklClaimRewards` path.
  */
 export function ClaimRewardsModalForm({ sessionId }: { sessionId: string }) {
-  const { updateModalContent, txCallbacks } = useTransaction();
-  const entrySlot = useEntrySlot();
+  const { txCallbacks } = useTransaction();
   const chains = useChains();
   const { data, isLoading } = useMerklRewards();
   const rewards = data?.rewards ?? NO_REWARDS;
@@ -54,38 +53,31 @@ export function ClaimRewardsModalForm({ sessionId }: { sessionId: string }) {
   const claim = useMerklClaimRewards({ rewards: selectedRewards, ...txCallbacks });
   const disabled = selectedRewards.length === 0 || !claim.prepared;
 
-  // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
-  // is stable and never needs re-pushing.
-  const executeRef = useRef(claim.execute);
-  useEffect(() => {
-    executeRef.current = claim.execute;
-  }, [claim.execute]);
-  const onConfirm = useCallback(() => executeRef.current(), []);
-
-  // Keep the shared modal's confirm gating + handler + wallet-screen summary live.
-  useEffect(() => {
-    updateModalContent(sessionId, {
-      entry: { confirmDisabled: disabled },
-      onConfirm,
-      transactionScreenContent: (
-        <div className="flex flex-col gap-2" data-testid="claim-rewards-summary">
-          {selectedRewards.map(reward => (
-            <div key={reward.tokenAddress} className="flex items-center gap-2">
-              <TokenIcon
-                token={{ symbol: reward.tokenSymbol }}
-                width={24}
-                showChainIcon={false}
-                className="h-6 w-6"
-              />
-              <Text className="text-text text-sm">
-                {reward.formattedTotalAmount} {reward.tokenSymbol}
-              </Text>
-            </div>
-          ))}
-        </div>
-      )
-    });
-  }, [sessionId, disabled, onConfirm, selectedRewards, updateModalContent]);
+  // Stable confirm over a live `claim.execute` ref + the `updateModalContent` push
+  // that keeps the shared modal's confirm gating and wallet-screen summary live,
+  // and the entry-slot portal. Returns the slot renderer.
+  const renderInSlot = useModalEntryBody({
+    sessionId,
+    execute: claim.execute,
+    confirmDisabled: disabled,
+    transactionScreenContent: (
+      <div className="flex flex-col gap-2" data-testid="claim-rewards-summary">
+        {selectedRewards.map(reward => (
+          <div key={reward.tokenAddress} className="flex items-center gap-2">
+            <TokenIcon
+              token={{ symbol: reward.tokenSymbol }}
+              width={24}
+              showChainIcon={false}
+              className="h-6 w-6"
+            />
+            <Text className="text-text text-sm">
+              {reward.formattedTotalAmount} {reward.tokenSymbol}
+            </Text>
+          </div>
+        ))}
+      </div>
+    )
+  });
 
   const toggle = (tokenAddress: string) =>
     setDeselected(prev => {
@@ -162,7 +154,5 @@ export function ClaimRewardsModalForm({ sessionId }: { sessionId: string }) {
     </div>
   );
 
-  // Display inside the dialog when its entry slot is mounted; otherwise render
-  // inline in the hidden host (keeps the body — and its claim hook — mounted).
-  return entrySlot ? createPortal(body, entrySlot) : body;
+  return renderInSlot(body);
 }
