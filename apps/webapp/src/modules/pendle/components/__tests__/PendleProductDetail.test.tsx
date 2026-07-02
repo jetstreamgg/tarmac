@@ -127,12 +127,34 @@ describe('PendleProductDetail', () => {
     expect(section.textContent).toMatch(/2026/); // maturity date label
   });
 
-  it('renders about content and the FAQ items from the corpus', () => {
+  it('renders the About intro with a worked example from the live rate', () => {
+    h.stats = { [MARKET.marketAddress]: { impliedApy: 0.0486 } };
     renderDetail();
 
     const about = screen.getByTestId('product-detail-about');
-    expect(about.textContent?.length ?? 0).toBeGreaterThan(0);
-    expect(screen.getByTestId('pendle-detail-faq')).toBeTruthy();
+    expect(about.textContent).toContain('Lock in a fixed yield on your USDG');
+    // Worked example: 100 USDG compounded at 4.86% over the remaining term.
+    expect(about.textContent).toMatch(/Supply 100 USDG and withdraw [\d.]+ USDG in \d+ days \(4\.86%/);
+    expect(screen.getByRole('link', { name: 'Click here' })).toBeTruthy();
+  });
+
+  it('omits the worked example until the markets API loads', () => {
+    renderDetail();
+
+    const about = screen.getByTestId('product-detail-about');
+    expect(about.textContent).toContain('Lock in a fixed yield on your USDG');
+    expect(about.textContent).not.toContain('Supply 100');
+  });
+
+  it('renders the three About accordion rows with their copy collapsed', () => {
+    renderDetail();
+
+    const faq = screen.getByTestId('pendle-detail-faq');
+    expect(faq.textContent).toContain('Fixed vs. variable');
+    expect(faq.textContent).toContain('Withdrawing');
+    expect(faq.textContent).toContain('APY');
+    // Bodies are collapsed by default.
+    expect(faq.textContent).not.toContain('variable yield that moves with the market');
   });
 
   it('mounts the chart, position and transactions slots', () => {

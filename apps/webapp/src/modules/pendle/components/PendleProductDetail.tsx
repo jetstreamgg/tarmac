@@ -7,8 +7,6 @@ import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { productNetworks, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-import { parseBannerContent } from '@/utils/bannerContentParser';
-import { getBannerByIdAndModule } from '@/data/banners/helpers';
 import { Pendle } from '@/widgets';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
@@ -19,7 +17,7 @@ import { PendleDetailChart } from './PendleDetailChart';
 import { PendlePositionCard } from './PendlePositionCard';
 import { PendleTransactionsTable } from './PendleTransactionsTable';
 import { PendleMaturityProgress } from './PendleMaturityProgress';
-import { PendleFaq } from './PendleFaq';
+import { PendleAboutContent } from './PendleAboutContent';
 import { formatTimeLeft } from '../utils/formatTimeLeft';
 
 const NO_VALUE = '–';
@@ -53,10 +51,6 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
   const remainingSeconds = Math.max(0, expirySec - Math.floor(Date.now() / 1000));
   const remainingDays = Math.floor(remainingSeconds / SECONDS_PER_DAY);
   const maturityDateLabel = format(new Date(expirySec * 1000), 'd MMM yyyy');
-
-  // About copy comes from the fixed-yield corpus banner — the same source the
-  // legacy PendleAbout card used; content changes flow through the sync pipeline.
-  const aboutBanner = getBannerByIdAndModule('fixed-yield', 'fixed-yield-banners')?.description;
 
   const details: ProductDetailRow[] = [
     {
@@ -141,16 +135,7 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
       position={<PendlePositionCard market={market} />}
       details={details}
       afterDetails={{ title: <Trans>Maturity</Trans>, body: <PendleMaturityProgress market={market} /> }}
-      about={{
-        body: (
-          <div className="flex flex-col gap-6">
-            {aboutBanner ? <div>{parseBannerContent(aboutBanner)}</div> : NO_VALUE}
-            <div data-testid="pendle-detail-faq">
-              <PendleFaq />
-            </div>
-          </div>
-        )
-      }}
+      about={{ body: <PendleAboutContent market={market} /> }}
       transactions={<PendleTransactionsTable market={market} />}
       transactionsTitle={<Trans>All transactions</Trans>}
     />
