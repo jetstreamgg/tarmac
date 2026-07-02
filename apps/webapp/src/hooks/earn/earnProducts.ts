@@ -101,7 +101,7 @@ export function buildEarnProducts(
     supplyTokens: [TOKENS.usds.symbol, TOKENS.usdc.symbol, TOKENS.susds.symbol],
     risk: DEFAULT_RISK_TIER,
     networks: productNetworks(Intent.FIXED_INTENT, familyChainIds),
-    detailPath: intentToPath(Intent.FIXED_INTENT, `market/${market.marketAddress}`),
+    detailPath: intentToPath(Intent.FIXED_INTENT, market.slug),
     maturity: market.expiry,
     address: market.marketAddress
   }));

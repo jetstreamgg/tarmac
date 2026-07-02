@@ -83,6 +83,7 @@ export type RouteEntityParams = {
   provider?: string;
   vaultAddress?: string;
   marketAddress?: string;
+  slug?: string;
 };
 
 /** Entity path params of the current route (reward contract, vault, market). */

@@ -36,19 +36,16 @@ export function usePendleMarketsApiData(): PendleMarketsStatsHook {
 
       const map: PendleMarketsStats = {} as PendleMarketsStats;
       PENDLE_MARKETS.forEach(market => {
-        const summary = results.find(
-          r => r.address.toLowerCase() === market.marketAddress.toLowerCase()
-        );
+        const summary = results.find(r => r.address.toLowerCase() === market.marketAddress.toLowerCase());
         if (!summary) return;
         const tvl = summary.details.totalTvl;
         map[market.marketAddress] = {
           impliedApy: summary.details.impliedApy ?? 0,
           underlyingApy: summary.details.underlyingApy,
+          liquidity: summary.details.liquidity,
           tvl,
           formattedTvl:
-            tvl !== undefined
-              ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-              : undefined,
+            tvl !== undefined ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,
           expirySec: parseIsoToSec(summary.expiry),
           startTimestampSec: parseIsoToSec(summary.timestamp)
         };

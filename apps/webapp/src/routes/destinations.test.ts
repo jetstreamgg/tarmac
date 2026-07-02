@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, type AnyRouter } from '@tanstack/react-router';
 import { createAppRouter } from '@/pages/router';
 import { Intent } from '@/lib/enums';
 import { ROUTES } from '@/lib/routes';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 
 // Boots the app's real router (route tree + redirects + not-found config)
 // against a path without rendering, so a missing destination route or broken
@@ -88,6 +89,39 @@ describe('pre-flip module path redirects', () => {
     const router = await routerAt('/?widget=savings&network=base');
     expect(router.state.location.pathname).toBe(ROUTES.EARN_SAVINGS);
     expect(router.state.location.search).toEqual({ network: 'base' });
+  });
+});
+
+describe('fixed (Pendle) market detail routes', () => {
+  const market = PENDLE_MARKETS[0];
+
+  it('boots /earn/fixed/:slug full-width for a live market', async () => {
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/${market.slug}`);
+    const match = router.state.matches.find(m => (m.routeId as string) === '/_shell/earn/fixed/$slug');
+    expect(match).toBeDefined();
+    expect(match?.staticData?.fullWidth).toBe(true);
+  });
+
+  it('falls back to the fixed overview for an unknown slug', async () => {
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/pt-does-not-exist`);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN_FIXED);
+  });
+
+  it('redirects a matured market detail to the fixed overview', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date((market.expiry + 60) * 1000));
+    try {
+      const router = await routerAt(`${ROUTES.EARN_FIXED}/${market.slug}`);
+      expect(router.state.location.pathname).toBe(ROUTES.EARN_FIXED);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('redirects the legacy market/:address path to the slug route, preserving search', async () => {
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/market/${market.marketAddress}?network=ethereum`);
+    expect(router.state.location.pathname).toBe(`${ROUTES.EARN_FIXED}/${market.slug}`);
+    expect(router.state.location.search).toEqual({ network: 'ethereum' });
   });
 });
 

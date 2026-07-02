@@ -51,6 +51,7 @@ import type { PendleConvertQuote, PendleMarketConfig, Token } from '@/hooks';
 // PT-sUSDS-26NOV2026 fixture matching the shipped market.
 const MARKET: PendleMarketConfig = {
   name: 'PT-sUSDS',
+  slug: 'pt-susds',
   marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
   ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
   ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
@@ -285,9 +286,7 @@ describe('SupplyWithdraw — BUY pinnedData (Transaction overview)', () => {
         quote={makeBuyQuote({ effectiveApy: -0.01 })}
       />
     );
-    expect(captured.latest!.pinnedData!.find(r => r.label === 'Effective APY')!.className).toBe(
-      'text-error'
-    );
+    expect(captured.latest!.pinnedData!.find(r => r.label === 'Effective APY')!.className).toBe('text-error');
     negativeCase.unmount();
   });
 });
@@ -448,26 +447,22 @@ describe('SupplyWithdraw — BUY pinnedData / details: remaining row values', ()
         slippage={0.0025} // 0.25%
       />
     );
-    expect(
-      captured.latest!.transactionData!.find(r => r.label === 'Slippage tolerance')!.value
-    ).toBe('0.25%');
+    expect(captured.latest!.transactionData!.find(r => r.label === 'Slippage tolerance')!.value).toBe(
+      '0.25%'
+    );
     unmount();
   });
 
   it('"Price impact" flips the API sign: API positive (favorable) → displayed negative', () => {
     const { unmount } = buyRender({ priceImpact: -0.00054 });
     // -0.054% (API negative = unfavorable in our display convention)
-    expect(captured.latest!.transactionData!.find(r => r.label === 'Price impact')!.value).toBe(
-      '0.054%'
-    );
+    expect(captured.latest!.transactionData!.find(r => r.label === 'Price impact')!.value).toBe('0.054%');
     unmount();
   });
 
   it('"Routed via" without aggregator says just "Pendle pool"', () => {
     const { unmount } = buyRender(); // no aggregatorType
-    expect(captured.latest!.transactionData!.find(r => r.label === 'Routed via')!.value).toBe(
-      'Pendle pool'
-    );
+    expect(captured.latest!.transactionData!.find(r => r.label === 'Routed via')!.value).toBe('Pendle pool');
     unmount();
   });
 
@@ -514,17 +509,13 @@ describe('SupplyWithdraw — BUY pinnedData / details: remaining row values', ()
 
   it('"Pendle fee" with small USD value renders with 4 decimal places', () => {
     const { unmount } = buyRender({ feeUsd: 0.0363 });
-    expect(captured.latest!.transactionData!.find(r => r.label === 'Pendle fee')!.value).toBe(
-      '$0.0363'
-    );
+    expect(captured.latest!.transactionData!.find(r => r.label === 'Pendle fee')!.value).toBe('$0.0363');
     unmount();
   });
 
   it('"Pendle fee" with USD value >= 1 renders with 2 decimal places', () => {
     const { unmount } = buyRender({ feeUsd: 12.345 });
-    expect(captured.latest!.transactionData!.find(r => r.label === 'Pendle fee')!.value).toBe(
-      '$12.35'
-    );
+    expect(captured.latest!.transactionData!.find(r => r.label === 'Pendle fee')!.value).toBe('$12.35');
     unmount();
   });
 });

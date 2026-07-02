@@ -27,6 +27,7 @@ import { Route as ShellConvertUpgradeRouteImport } from './routes/_shell.convert
 import { Route as ShellConvertTradeRouteImport } from './routes/_shell.convert.trade'
 import { Route as ShellConvertPsmRouteImport } from './routes/_shell.convert.psm'
 import { Route as ShellEarnRewardsRewardContractRouteImport } from './routes/_shell.earn.rewards.$rewardContract'
+import { Route as ShellEarnFixedSlugRouteImport } from './routes/_shell.earn.fixed.$slug'
 import { Route as ShellEarnExpertStusdsRouteImport } from './routes/_shell.earn.expert.stusds'
 import { Route as ShellEarnVaultsProviderVaultAddressRouteImport } from './routes/_shell.earn.vaults.$provider.$vaultAddress'
 import { Route as ShellEarnFixedMarketMarketAddressRouteImport } from './routes/_shell.earn.fixed.market.$marketAddress'
@@ -122,6 +123,11 @@ const ShellEarnRewardsRewardContractRoute =
     path: '/$rewardContract',
     getParentRoute: () => ShellEarnRewardsRoute,
   } as any)
+const ShellEarnFixedSlugRoute = ShellEarnFixedSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ShellEarnFixedRoute,
+} as any)
 const ShellEarnExpertStusdsRoute = ShellEarnExpertStusdsRouteImport.update({
   id: '/stusds',
   path: '/stusds',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/earn/vaults': typeof ShellEarnVaultsRouteWithChildren
   '/earn/': typeof ShellEarnIndexRoute
   '/earn/expert/stusds': typeof ShellEarnExpertStusdsRoute
+  '/earn/fixed/$slug': typeof ShellEarnFixedSlugRoute
   '/earn/rewards/$rewardContract': typeof ShellEarnRewardsRewardContractRoute
   '/earn/fixed/market/$marketAddress': typeof ShellEarnFixedMarketMarketAddressRoute
   '/earn/vaults/$provider/$vaultAddress': typeof ShellEarnVaultsProviderVaultAddressRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/earn/vaults': typeof ShellEarnVaultsRouteWithChildren
   '/earn': typeof ShellEarnIndexRoute
   '/earn/expert/stusds': typeof ShellEarnExpertStusdsRoute
+  '/earn/fixed/$slug': typeof ShellEarnFixedSlugRoute
   '/earn/rewards/$rewardContract': typeof ShellEarnRewardsRewardContractRoute
   '/earn/fixed/market/$marketAddress': typeof ShellEarnFixedMarketMarketAddressRoute
   '/earn/vaults/$provider/$vaultAddress': typeof ShellEarnVaultsProviderVaultAddressRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/_shell/earn/vaults': typeof ShellEarnVaultsRouteWithChildren
   '/_shell/earn/': typeof ShellEarnIndexRoute
   '/_shell/earn/expert/stusds': typeof ShellEarnExpertStusdsRoute
+  '/_shell/earn/fixed/$slug': typeof ShellEarnFixedSlugRoute
   '/_shell/earn/rewards/$rewardContract': typeof ShellEarnRewardsRewardContractRoute
   '/_shell/earn/fixed/market/$marketAddress': typeof ShellEarnFixedMarketMarketAddressRoute
   '/_shell/earn/vaults/$provider/$vaultAddress': typeof ShellEarnVaultsProviderVaultAddressRoute
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/earn/vaults'
     | '/earn/'
     | '/earn/expert/stusds'
+    | '/earn/fixed/$slug'
     | '/earn/rewards/$rewardContract'
     | '/earn/fixed/market/$marketAddress'
     | '/earn/vaults/$provider/$vaultAddress'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/earn/vaults'
     | '/earn'
     | '/earn/expert/stusds'
+    | '/earn/fixed/$slug'
     | '/earn/rewards/$rewardContract'
     | '/earn/fixed/market/$marketAddress'
     | '/earn/vaults/$provider/$vaultAddress'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_shell/earn/vaults'
     | '/_shell/earn/'
     | '/_shell/earn/expert/stusds'
+    | '/_shell/earn/fixed/$slug'
     | '/_shell/earn/rewards/$rewardContract'
     | '/_shell/earn/fixed/market/$marketAddress'
     | '/_shell/earn/vaults/$provider/$vaultAddress'
@@ -413,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellEarnRewardsRewardContractRouteImport
       parentRoute: typeof ShellEarnRewardsRoute
     }
+    '/_shell/earn/fixed/$slug': {
+      id: '/_shell/earn/fixed/$slug'
+      path: '/$slug'
+      fullPath: '/earn/fixed/$slug'
+      preLoaderRoute: typeof ShellEarnFixedSlugRouteImport
+      parentRoute: typeof ShellEarnFixedRoute
+    }
     '/_shell/earn/expert/stusds': {
       id: '/_shell/earn/expert/stusds'
       path: '/stusds'
@@ -466,10 +485,12 @@ const ShellEarnExpertRouteWithChildren = ShellEarnExpertRoute._addFileChildren(
 )
 
 interface ShellEarnFixedRouteChildren {
+  ShellEarnFixedSlugRoute: typeof ShellEarnFixedSlugRoute
   ShellEarnFixedMarketMarketAddressRoute: typeof ShellEarnFixedMarketMarketAddressRoute
 }
 
 const ShellEarnFixedRouteChildren: ShellEarnFixedRouteChildren = {
+  ShellEarnFixedSlugRoute: ShellEarnFixedSlugRoute,
   ShellEarnFixedMarketMarketAddressRoute:
     ShellEarnFixedMarketMarketAddressRoute,
 }

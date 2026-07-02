@@ -17,6 +17,12 @@ import { PendleHistoryAction } from './constants';
 export type PendleMarketConfig = {
   /** Display name for the market (e.g. "PT-sUSDS") */
   name: string;
+  /**
+   * URL slug for the market's detail route (`/earn/fixed/:slug`). Unique across
+   * PENDLE_MARKETS (enforced by test). Kept short while unambiguous; a second
+   * market on the same underlying disambiguates itself (e.g. by maturity).
+   */
+  slug: string;
   /** The Pendle Market contract address (mainnet) */
   marketAddress: `0x${string}`;
   /** The PT token contract address */
@@ -173,6 +179,8 @@ export type PendleMarketStats = {
   formattedTvl?: string;
   /** Underlying APY of the SY (decimal) */
   underlyingApy?: number;
+  /** Market liquidity in USD (raw number) */
+  liquidity?: number;
   /** Market expiry as a UNIX timestamp in seconds (matches the on-chain expiry()) */
   expirySec?: number;
   /** Market deployment timestamp in seconds (start of the maturity window) */
