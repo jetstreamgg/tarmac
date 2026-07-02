@@ -13,7 +13,6 @@ export * from './SavingsWidget/lib/constants';
 export * from './StUSDSWidget/lib/constants';
 export * from './TradeWidget/lib/constants';
 export * from './UpgradeWidget/lib/constants';
-export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
 export { StakeFlow, StakeAction, StakeStep, StakeScreen } from './StakeModuleWidget/lib/constants';
 export {
   VaultFlow,
@@ -37,7 +36,6 @@ export {
 
 export { StUSDSWidget } from './StUSDSWidget';
 export { UpgradeWidget } from './UpgradeWidget';
-export { RewardsWidget } from './RewardsWidget';
 export { TradeWidget } from './TradeWidget';
 export { L2TradeWidget as BaseTradeWidget } from './L2TradeWidget';
 export { L2TradeWidget as ArbitrumTradeWidget } from './L2TradeWidget';
