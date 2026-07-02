@@ -9,6 +9,7 @@ import { VAULTS } from '@/hooks';
 import { VaultsWidgetPane } from './VaultsWidgetPane';
 import { VaultsDetailsPane } from './VaultsDetailsPane';
 import { VaultDetails } from '@/modules/morpho/components/VaultDetails';
+import { VaultProductDetail } from '@/modules/morpho/components/VaultProductDetail';
 
 /** Panes for the Vaults module, including the provider/vault detail route. */
 export function VaultsPanes() {
@@ -23,6 +24,13 @@ export function VaultsPanes() {
   const routeSelectedVault = VAULTS.find(
     v => v.vaultAddress[chainId]?.toLowerCase() === selectedVaultAddress?.toLowerCase()
   );
+
+  // Morpho vault details render on the new full-width ProductDetailTemplate (D4).
+  // The overview and Spark/sky details keep the legacy two-pane layout.
+  const selectedAddress = routeSelectedVault?.vaultAddress[chainId];
+  if (routeSelectedVault?.provider === 'morpho' && selectedAddress) {
+    return <VaultProductDetail vault={routeSelectedVault} vaultAddress={selectedAddress} />;
+  }
 
   return (
     <TwoPane

@@ -31,13 +31,14 @@ vi.mock('@/hooks', async importOriginal => {
       mutate: vi.fn(),
       dataSources: []
     }),
-    useTokenBalance: () => ({ data: { value: 0n }, refetch: vi.fn() })
+    useTokenBalance: () => ({ data: { value: 0n }, refetch: vi.fn() }),
+    useOverallSkyData: () => ({ data: { skySavingsRatecRate: '0.0375' } })
   };
 });
 
-// Stub the input bodies — routing is the unit under test, not the panel/form internals.
-vi.mock('./SavingsSupplyWithdrawPanel', () => ({
-  SavingsSupplyWithdrawPanel: () => <div data-testid="mock-panel" />
+// Stub the leaf cards/bodies — routing is the unit under test, not their internals.
+vi.mock('./SavingsSupplyCard', () => ({
+  SavingsSupplyCard: () => <div data-testid="savings-supply-card" />
 }));
 vi.mock('./SavingsModalForm', () => ({
   SavingsModalForm: ({ flow }: { flow: string }) => <div data-testid={`mock-modal-form-${flow}`} />

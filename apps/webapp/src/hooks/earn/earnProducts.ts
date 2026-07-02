@@ -50,8 +50,10 @@ export function buildEarnProducts(
     intent: Intent.SAVINGS_INTENT,
     name: 'Sky Savings Rate',
     tokenSymbol: TOKENS.susds.symbol,
-    // USDS deposits directly; DAI is accepted via the 1:1 upgrade to USDS.
-    supplyTokens: [TOKENS.usds.symbol, TOKENS.dai.symbol],
+    // USDS deposits directly; DAI is accepted via the 1:1 upgrade to USDS
+    // (mainnet); USDC swaps through the PSM (L2). The union across the family is
+    // listed here — the supply surface offers the chain-appropriate subset.
+    supplyTokens: [TOKENS.usds.symbol, TOKENS.dai.symbol, TOKENS.usdc.symbol],
     risk: DEFAULT_RISK_TIER,
     networks: productNetworks(Intent.SAVINGS_INTENT, familyChainIds, TOKENS.susds.address),
     detailPath: intentToPath(Intent.SAVINGS_INTENT)

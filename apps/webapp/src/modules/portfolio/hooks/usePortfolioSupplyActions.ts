@@ -1,6 +1,9 @@
 import { useCallback } from 'react';
 import { useChainId } from 'wagmi';
+import { VAULTS } from '@/hooks';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
+import { useVaultModal } from '@/modules/morpho/hooks/useVaultModal';
+import { isMorphoVault } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
 /**
@@ -20,6 +23,7 @@ import type { SuppliedPosition } from '../helpers/suppliedView';
 export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (() => void) | undefined {
   const connectedChainId = useChainId();
   const { openSupply: openSavingsSupply } = useSavingsModal();
+  const { openSupply: openVaultSupply } = useVaultModal();
 
   return useCallback(
     (position: SuppliedPosition) => {
@@ -27,12 +31,33 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
       switch (position.kind) {
         case 'savings':
           return onConnectedChain ? () => openSavingsSupply() : undefined;
-        // 'rewards' | 'vault' | 'fixed' | 'stusds' have no in-place supply modal
-        // yet — add a case as each product's trigger is integrated.
+        case 'vault': {
+          // Morpho vaults only (Spark/'sky' has no in-place modal). Resolve the
+          // registry vault from the position's structured address, then open
+          // against its address on the connected chain.
+          if (!onConnectedChain || !isMorphoVault(position) || !position.address) return undefined;
+          const positionAddress = position.address.toLowerCase();
+          const vault = VAULTS.find(
+            v =>
+              v.provider === 'morpho' &&
+              Object.values(v.vaultAddress).some(address => address?.toLowerCase() === positionAddress)
+          );
+          const vaultAddress = vault?.vaultAddress[connectedChainId];
+          if (!vault || !vaultAddress) return undefined;
+          return () =>
+            openVaultSupply({
+              vaultAddress,
+              assetToken: vault.assetToken,
+              vaultName: vault.name,
+              netRate: position.rate
+            });
+        }
+        // 'rewards' | 'fixed' | 'stusds' have no in-place supply modal yet — add a
+        // case as each product's trigger is integrated.
         default:
           return undefined;
       }
     },
-    [connectedChainId, openSavingsSupply]
+    [connectedChainId, openSavingsSupply, openVaultSupply]
   );
 }
