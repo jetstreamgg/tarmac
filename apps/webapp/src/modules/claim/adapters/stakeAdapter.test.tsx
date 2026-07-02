@@ -103,6 +103,21 @@ describe('stakeAdapter', () => {
       expect(vault.result.current.rewards).toEqual([]);
       expect(rewardContract.result.current.rewards).toEqual([]);
     });
+
+    it('returns referentially stable rewards across re-renders (loop guard)', () => {
+      // A fresh array each render would bust the panel's merged-rewards memo
+      // chain and loop its modal-content sync effect ("Maximum update depth").
+      seed();
+      const scoped = renderHook(() => stakeAdapter.useClaimable({ kind: 'reward-contract', address: '0xc' }));
+      const first = scoped.result.current.rewards;
+      scoped.rerender();
+      expect(scoped.result.current.rewards).toBe(first);
+
+      const stake = renderHook(() => stakeAdapter.useClaimable({ kind: 'stake', index: 0n }));
+      const firstStake = stake.result.current.rewards;
+      stake.rerender();
+      expect(stake.result.current.rewards).toBe(firstStake);
+    });
   });
 
   describe('useClaimCalls (plain claim)', () => {

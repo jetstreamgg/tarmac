@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   stake: [] as ClaimableReward[],
   flowCalls: [] as unknown[],
   entry: undefined as { confirmDisabled: boolean } | undefined,
+  screenContents: [] as unknown[],
   restakeSeen: false
 }));
 
@@ -71,8 +72,9 @@ vi.mock('@/modules/ui/context/TransactionContext', () => ({
 }));
 
 vi.mock('@/modules/ui/hooks/useModalEntryBody', () => ({
-  useModalEntryBody: (params: { confirmDisabled: boolean }) => {
+  useModalEntryBody: (params: { confirmDisabled: boolean; transactionScreenContent?: unknown }) => {
     h.entry = { confirmDisabled: params.confirmDisabled };
+    h.screenContents.push(params.transactionScreenContent);
     return (body: unknown) => body;
   }
 }));
@@ -105,6 +107,7 @@ describe('ClaimRewardsPanel', () => {
     h.stake = [];
     h.flowCalls = [];
     h.entry = undefined;
+    h.screenContents = [];
     h.restakeSeen = false;
   });
   afterEach(() => cleanup());
@@ -160,5 +163,22 @@ describe('ClaimRewardsPanel', () => {
     h.merkl = [reward('merkl', '0xa', 'MORPHO')];
     renderPanel({ kind: 'vault', vaultAddress: '0xvault' });
     expect(screen.queryByTestId('claim-restake-toggle')).toBeNull();
+  });
+
+  it('keeps the wallet-screen summary referentially stable across re-renders (loop guard)', () => {
+    // A fresh element per render feeds useModalEntryBody's sync effect a new dep
+    // each time, looping updateModalContent → re-render → "Maximum update depth"
+    // (crashes the page when the modal opens — the D4 vault-form failure mode).
+    h.sky = [reward('sky-rewards', '0xb', 'SKY')];
+    const { rerender } = renderPanel({ kind: 'reward-contract', address: '0xb' });
+    rerender(
+      <I18nProvider i18n={i18n}>
+        <ClaimRewardsPanel sessionId="s1" scope={{ kind: 'reward-contract', address: '0xb' }} />
+      </I18nProvider>
+    );
+
+    const contents = h.screenContents.filter(content => content !== undefined);
+    expect(contents.length).toBeGreaterThanOrEqual(2);
+    expect(contents[contents.length - 1]).toBe(contents[0]);
   });
 });
