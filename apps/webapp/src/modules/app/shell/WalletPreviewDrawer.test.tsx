@@ -75,8 +75,7 @@ vi.mock('@/modules/app/hooks/useModuleUrls', () => ({
     rewardsUrl: '/rewards',
     savingsUrlMap: { 1: '/savings' },
     stakeUrl: '/stake',
-    expertOverviewUrl: '/stake-expert',
-    stusdsUrl: '/stake-expert/stusds',
+    stusdsUrl: '/earn/stusds',
     vaultsUrl: '/vaults',
     convertUrl: '/convert',
     fixedYieldUrl: '/fixed'

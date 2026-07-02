@@ -1,4 +1,4 @@
-import { ConvertIntent, ExpertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
+import { ConvertIntent, Intent, FixedIntent, VaultsIntent } from './enums';
 import { vaultModuleForVaultsIntent } from './vaults/vaultProviderMapping';
 import { msg } from '@lingui/core/macro';
 import { MessageDescriptor } from '@lingui/core';
@@ -30,7 +30,7 @@ export const IntentMapping = {
   [Intent.SAVINGS_INTENT]: 'savings',
   [Intent.REWARDS_INTENT]: 'rewards',
   [Intent.STAKE_INTENT]: 'stake',
-  [Intent.EXPERT_INTENT]: 'expert',
+  [Intent.EXPERT_INTENT]: 'stusds',
   [Intent.VAULTS_INTENT]: 'vaults',
   [Intent.CONVERT_INTENT]: 'convert',
   [Intent.FIXED_INTENT]: 'fixed'
@@ -39,10 +39,6 @@ export const IntentMapping = {
 // Recently launched modules, surfaced with a "new" indicator in the nav and suggested actions.
 export const NEW_INTENTS: Intent[] = [Intent.FIXED_INTENT];
 export const isNewIntent = (intent: Intent): boolean => NEW_INTENTS.includes(intent);
-
-export const ExpertIntentMapping: Record<ExpertIntent, string> = {
-  [ExpertIntent.STUSDS_INTENT]: 'stusds'
-};
 
 export const VaultsIntentMapping: Record<VaultsIntent, string> = {
   [VaultsIntent.MORPHO_VAULT_INTENT]: vaultModuleForVaultsIntent(VaultsIntent.MORPHO_VAULT_INTENT),
@@ -76,16 +72,6 @@ export const intentTxt: Record<string, MessageDescriptor> = {
   convert: msg`convert`,
   pendle: msg`pendle`
 };
-
-export const EXPERT_WIDGET_OPTIONS: {
-  id: ExpertIntent;
-  name: string;
-}[] = [
-  {
-    id: ExpertIntent.STUSDS_INTENT,
-    name: 'stUSDS'
-  }
-];
 
 export function mapIntentToQueryParam(intent: Intent): string {
   return IntentMapping[intent] || '';

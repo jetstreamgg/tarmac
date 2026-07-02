@@ -14,7 +14,6 @@ import {
 } from '@/widgets/PsmConversionWidget/lib/constants';
 import { PendleAction, PendleFlow, PendleScreen } from '@/widgets/PendleWidget/lib/constants';
 import { StakeAction, StakeFlow, StakeScreen } from '@/widgets/StakeModuleWidget/lib/constants';
-import { StUSDSAction, StUSDSFlow, StUSDSScreen } from '@/widgets/StUSDSWidget/lib/constants';
 import { VaultAction, VaultFlow, VaultScreen } from '@/widgets/VaultWidget/lib/constants';
 import { BalancesFlow } from '@/widgets/BalancesWidget/constants';
 import { RewardContract, Token } from '@/hooks';
@@ -30,7 +29,6 @@ export type WidgetFlow =
   | TradeFlow
   | PsmConversionFlow
   | StakeFlow
-  | StUSDSFlow
   | VaultFlow
   | PendleFlow;
 
@@ -42,7 +40,6 @@ export type WidgetAction =
   | TradeAction
   | PsmConversionAction
   | StakeAction
-  | StUSDSAction
   | VaultAction
   | PendleAction;
 
@@ -54,7 +51,6 @@ export type WidgetScreen =
   | TradeScreen
   | PsmConversionScreen
   | StakeScreen
-  | StUSDSScreen
   | VaultScreen
   | PendleScreen;
 

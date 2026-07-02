@@ -17,7 +17,7 @@ describe('intentToPath', () => {
     expect(intentToPath(Intent.REWARDS_INTENT)).toBe('/earn/rewards');
     expect(intentToPath(Intent.VAULTS_INTENT)).toBe('/earn/vaults');
     expect(intentToPath(Intent.FIXED_INTENT)).toBe('/earn/fixed');
-    expect(intentToPath(Intent.EXPERT_INTENT)).toBe('/earn/expert');
+    expect(intentToPath(Intent.EXPERT_INTENT)).toBe('/earn/stusds');
     expect(intentToPath(Intent.STAKE_INTENT)).toBe('/stake');
     expect(intentToPath(Intent.CONVERT_INTENT)).toBe('/convert');
   });
