@@ -27,6 +27,9 @@ vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
 vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
   useVaultModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
 }));
+vi.mock('@/modules/rewards/hooks/useRewardsModal', () => ({
+  useRewardsModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
+}));
 
 // Carousel → passthroughs so the cards render flat (no embla/DOM coupling).
 vi.mock('@/components/ui/carousel', () => ({

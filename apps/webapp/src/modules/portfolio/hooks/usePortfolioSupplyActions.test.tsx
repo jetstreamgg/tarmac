@@ -6,12 +6,14 @@ import type { SuppliedPosition } from '../helpers/suppliedView';
 const h = vi.hoisted(() => ({
   openSavingsSupply: vi.fn(),
   openVaultSupply: vi.fn(),
+  openRewardsSupply: vi.fn(),
   chainId: 1
 }));
 
 vi.mock('wagmi', () => ({ useChainId: () => h.chainId }));
 
 vi.mock('@/hooks', () => ({
+  TOKENS: { cle: { symbol: 'CLE' } },
   VAULTS: [
     {
       provider: 'morpho',
@@ -20,6 +22,22 @@ vi.mock('@/hooks', () => ({
       assetToken: { symbol: 'USDC' }
     },
     { provider: 'sky', name: 'Tether Savings', vaultAddress: { 1: '0xDEF' }, assetToken: { symbol: 'USDT' } }
+  ],
+  useAvailableTokenRewardContracts: () => [
+    {
+      contractAddress: '0xFA12',
+      chainId: 1,
+      name: 'With: USDS Get: SPK',
+      supplyToken: { symbol: 'USDS' },
+      rewardToken: { symbol: 'SPK' }
+    },
+    {
+      contractAddress: '0xC1E0',
+      chainId: 1,
+      name: 'Chronicle Points',
+      supplyToken: { symbol: 'USDS' },
+      rewardToken: { symbol: 'CLE' }
+    }
   ]
 }));
 
@@ -29,6 +47,10 @@ vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
 
 vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
   useVaultModal: () => ({ openSupply: h.openVaultSupply, openWithdraw: vi.fn() })
+}));
+
+vi.mock('@/modules/rewards/hooks/useRewardsModal', () => ({
+  useRewardsModal: () => ({ openSupply: h.openRewardsSupply, openWithdraw: vi.fn() })
 }));
 
 const position = (
@@ -52,6 +74,7 @@ describe('usePortfolioSupplyActions', () => {
   beforeEach(() => {
     h.openSavingsSupply.mockClear();
     h.openVaultSupply.mockClear();
+    h.openRewardsSupply.mockClear();
     h.chainId = 1;
   });
   afterEach(() => cleanup());
@@ -102,10 +125,54 @@ describe('usePortfolioSupplyActions', () => {
     expect(result.current(position('vault', { id: 'vault-sky-0xdef' }))).toBeUndefined();
   });
 
+  it('resolves a rewards position to an opener that launches the rewards modal with its config', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(
+      position('rewards', { id: 'rewards-spk', address: '0xFA12', rate: 0.045 })
+    );
+
+    expect(handler).toBeTypeOf('function');
+    handler!();
+    expect(h.openRewardsSupply).toHaveBeenCalledWith({
+      contractAddress: '0xFA12',
+      supplyToken: { symbol: 'USDS' },
+      displayName: 'SPK Rewards',
+      rewardTokenSymbol: 'SPK',
+      rate: 0.045
+    });
+  });
+
+  it('omits the rewards-in token for a points farm (Chronicle) and titles it by its registry name', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(
+      position('rewards', { id: 'rewards-cle', address: '0xC1E0', rate: undefined })
+    );
+
+    handler!();
+    expect(h.openRewardsSupply).toHaveBeenCalledWith({
+      contractAddress: '0xC1E0',
+      supplyToken: { symbol: 'USDS' },
+      displayName: 'Chronicle Points',
+      rewardTokenSymbol: undefined,
+      rate: undefined
+    });
+  });
+
+  it('returns undefined for a rewards position off the connected chain or with no known contract', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+
+    expect(
+      result.current(position('rewards', { id: 'rewards-spk', address: '0xFA12', chainIds: [8453] }))
+    ).toBeUndefined();
+    expect(result.current(position('rewards', { id: 'rewards-spk', address: '0xBEEF' }))).toBeUndefined();
+    expect(result.current(position('rewards', { id: 'rewards-spk' }))).toBeUndefined();
+    expect(h.openRewardsSupply).not.toHaveBeenCalled();
+  });
+
   it('returns undefined for products with no in-place supply modal (caller navigates)', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
 
-    for (const kind of ['rewards', 'fixed', 'stusds'] as const) {
+    for (const kind of ['fixed', 'stusds'] as const) {
       expect(result.current(position(kind))).toBeUndefined();
     }
   });
