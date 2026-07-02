@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { type ReactNode } from 'react';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
@@ -7,7 +6,7 @@ import { type Token, type VaultProvider } from '@/hooks';
 import { formatDecimalPercentage, formatNumber, projectAnnualEarnings } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
-import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
+import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useVaultLaunch, type VaultLaunchFlow } from '../hooks/useVaultLaunch';
 import { useVaultTransactionForm, type VaultModalPreset } from '../hooks/useVaultTransactionForm';
 
@@ -63,9 +62,6 @@ export function VaultModalForm({
   netRate?: number;
   preset?: VaultModalPreset;
 }) {
-  const { updateModalContent } = useTransaction();
-  const entrySlot = useEntrySlot();
-
   const form = useVaultTransactionForm({ flow, vaultAddress, assetToken, provider, preset });
   const {
     isConnected,
@@ -86,26 +82,17 @@ export function VaultModalForm({
   const { execute, steps, prepared } = useVaultLaunch(engineParams);
   const disabled = !amountReady || !prepared;
 
-  // `execute` is rebuilt every render; read the latest from a ref so `onConfirm`
-  // need never be re-pushed (which would loop the sync below).
-  const executeRef = useRef(execute);
-  useEffect(() => {
-    executeRef.current = execute;
-  }, [execute]);
-  const onConfirm = useCallback(() => executeRef.current(), []);
-
-  // Keep the shared modal's confirm gating + handler + step labels + wallet-screen
-  // summary + minimized-toast titles in sync. Merged (not replacing entry content),
-  // so the body never remounts.
-  useEffect(() => {
-    updateModalContent(sessionId, {
-      entry: { confirmDisabled: disabled },
-      onConfirm,
-      steps,
-      transactionScreenContent,
-      toast
-    });
-  }, [sessionId, disabled, steps, onConfirm, transactionScreenContent, toast, updateModalContent]);
+  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
+  // keeps the shared modal's confirm gating / step labels / wallet summary / toast
+  // titles in sync, and the entry-slot portal. Returns the slot renderer.
+  const renderInSlot = useModalEntryBody({
+    sessionId,
+    execute,
+    confirmDisabled: disabled,
+    steps,
+    transactionScreenContent,
+    toast
+  });
 
   // Derived from the parsed engine `amount` (not the raw input) so the preview
   // matches what's submitted — an input that normalizes to 0n previews 0 too.
@@ -189,7 +176,5 @@ export function VaultModalForm({
     </div>
   );
 
-  // Display inside the dialog when its entry slot is mounted; otherwise render
-  // inline in the hidden host (keeps the body — and its engine hook — mounted).
-  return entrySlot ? createPortal(body, entrySlot) : body;
+  return renderInSlot(body);
 }
