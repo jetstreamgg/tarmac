@@ -119,8 +119,8 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
         <span className="flex flex-col gap-1">
           <span className="flex flex-wrap items-center gap-3">
             {market.name}
-            <span className="bg-surface text-textSecondary flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium">
-              <Pendle className="h-3 w-3" />
+            <span className="bg-surface text-textSecondary flex items-center gap-1 rounded-full py-1 pr-2 pl-1 text-xs font-medium">
+              <Pendle className="h-4 w-4" />
               <Trans>Powered by Pendle</Trans>
             </span>
           </span>
