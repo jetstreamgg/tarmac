@@ -51,13 +51,19 @@ const hoisted = vi.hoisted(() => ({
   batchArgs: undefined as (Record<string, unknown> & BatchCallbacks) | undefined,
   executeSpy: vi.fn(),
   analyticsSpy: vi.fn(),
+  // Router allowance for the input token — 0n means every amount needs approval.
+  allowance: 0n,
   // Optional hook a test can set to mimic the real provider (every push
   // re-renders the tree) — the loop regression below relies on it.
   onPush: undefined as (() => void) | undefined,
   updateModalContent: vi.fn<
     (
       sessionId: string,
-      partial: { entry?: { confirmDisabled?: boolean }; rightHeaderComponent?: unknown }
+      partial: {
+        entry?: { confirmDisabled?: boolean };
+        steps?: string[];
+        rightHeaderComponent?: unknown;
+      }
     ) => void
   >(() => hoisted.onPush?.()),
   txCallbacks: {
@@ -98,6 +104,13 @@ vi.mock('@/hooks', async importOriginal => {
       error: null,
       refetch: () => undefined
     }),
+    useTokenAllowance: () => ({
+      data: hoisted.allowance,
+      isLoading: false,
+      error: null,
+      mutate: () => undefined
+    }),
+    useIsBatchSupported: () => ({ data: true }),
     useAllPendleMarketsHistory: () => ({
       data: undefined,
       isLoading: false,
@@ -141,6 +154,10 @@ vi.mock('@/modules/analytics/hooks/useWidgetAnalytics', () => ({
   useWidgetAnalytics: () => hoisted.analyticsSpy
 }));
 
+vi.mock('@/modules/ui/hooks/useBatchToggle', () => ({
+  useBatchToggle: () => [true, () => undefined]
+}));
+
 vi.mock('@/modules/ui/context/TransactionContext', () => ({
   useTransaction: () => ({
     launch: () => undefined,
@@ -176,6 +193,7 @@ describe('PendleModalForm', () => {
     hoisted.quoteArgs = undefined;
     hoisted.batchArgs = undefined;
     hoisted.onPush = undefined;
+    hoisted.allowance = 0n;
   });
 
   it('settles its content pushes when every push re-renders the host (regression: max update depth)', () => {
@@ -290,6 +308,21 @@ describe('PendleModalForm', () => {
       );
     });
 
+    it('pushes approve + supply step labels while the router allowance is insufficient', () => {
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(lastEntryUpdate()?.steps).toEqual(['Approve USDG', 'Supply USDG']);
+    });
+
+    it('collapses to a single supply step once the allowance covers the amount', () => {
+      hoisted.allowance = parseUnits('1000', 6);
+      renderForm('supply');
+      typeAmount('100');
+
+      expect(lastEntryUpdate()?.steps).toEqual(['Supply USDG']);
+    });
+
     it('pushes the SlippageMenu into the modal header', () => {
       renderForm('supply');
 
@@ -319,6 +352,13 @@ describe('PendleModalForm', () => {
 
       typeAmount('600');
       expect(lastEntryUpdate()?.entry?.confirmDisabled).toBe(true);
+    });
+
+    it('pushes approve + withdraw step labels for the PT input', () => {
+      renderForm('withdraw');
+      typeAmount('200');
+
+      expect(lastEntryUpdate()?.steps).toEqual(['Approve PT-USDG', 'Withdraw PT-USDG']);
     });
 
     it('fires withdraw-flavored analytics', () => {

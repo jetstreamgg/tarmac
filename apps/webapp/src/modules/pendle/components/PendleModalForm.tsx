@@ -6,11 +6,14 @@ import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import {
   getTokenDecimals,
+  PENDLE_ROUTER_V4_ADDRESS,
   PendleConvertSide,
   useAllPendleMarketsHistory,
   useBatchPendleConvert,
+  useIsBatchSupported,
   usePendleUserPtBalances,
   useQuotePendleConvert,
+  useTokenAllowance,
   useTokenBalance,
   type PendleMarketConfig,
   type Token
@@ -25,7 +28,13 @@ import {
   usePendleUsdValue,
   type PendleAnalyticsSide
 } from '@/widgets';
-import { formatBigInt, formatDecimalPercentage, formatNumber, isTestnetId } from '@/utils';
+import {
+  chainId as chainIdMap,
+  formatBigInt,
+  formatDecimalPercentage,
+  formatNumber,
+  isTestnetId
+} from '@/utils';
 import { WidgetAnalyticsEventType, type WidgetAnalyticsEvent } from '@/widgets/shared/types/analyticsEvents';
 import { useWidgetAnalytics } from '@/modules/analytics/hooks/useWidgetAnalytics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,6 +42,7 @@ import { SlippageMenu } from '@/components/ui/SlippageMenu';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { useTransaction } from '@/modules/ui/context/TransactionContext';
+import { useBatchToggle } from '@/modules/ui/hooks/useBatchToggle';
 import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { pendlePrepareErrorMessage } from '../utils/prepareErrorMessage';
 
@@ -114,6 +124,34 @@ export function PendleModalForm({
   );
   const valueUsd = usePendleUsdValue();
 
+  // Honour the user's batch toggle: bundle approve+convert into one EIP-5792
+  // call only when opted in AND supported (mirrors useSavingsLaunch /
+  // useVaultLaunch). useTransactionFlow additionally gates on calls.length > 1.
+  const [batchEnabled] = useBatchToggle();
+  const { data: batchSupported } = useIsBatchSupported();
+  const shouldUseBatch = !!batchEnabled && !!batchSupported;
+
+  // READ ONLY — labels the approve step only; the approve/convert calls live in
+  // useBatchPendleConvert. Same inputs as the engine's own allowance read (input
+  // token → Pendle router on the engine's chain) so TanStack dedupes the two.
+  const engineChainId = isTestnetId(chainId) ? chainIdMap.tenderly : chainIdMap.mainnet;
+  const inputTokenAddress = isSupply ? selectedAddress : market.ptToken;
+  const inputSymbol = isSupply ? selectedToken.symbol : ptToken.symbol;
+  const { data: allowance } = useTokenAllowance({
+    chainId: engineChainId,
+    contractAddress: inputTokenAddress,
+    owner: address,
+    spender: PENDLE_ROUTER_V4_ADDRESS[engineChainId]
+  });
+  const needsAllowance = allowance !== undefined && amount > 0n && allowance < amount;
+
+  // Step labels mirror the engine's call count ([approve?, convert]) so the
+  // indicator advances in lockstep with the sequential flow's onMutate bumps.
+  const steps = useMemo<string[]>(() => {
+    const convertStep = isSupply ? t`Supply ${inputSymbol}` : t`Withdraw ${inputSymbol}`;
+    return needsAllowance ? [t`Approve ${inputSymbol}`, convertStep] : [convertStep];
+  }, [isSupply, needsAllowance, inputSymbol]);
+
   const { data: quote, isLoading: isFetchingQuote } = useQuotePendleConvert({
     side,
     marketAddress: market.marketAddress,
@@ -160,7 +198,7 @@ export function PendleModalForm({
       toDecimals,
       slippage,
       quote,
-      isBatchTx: true
+      isBatchTx: shouldUseBatch
     });
 
   // Analytics must never break functionality.
@@ -201,7 +239,7 @@ export function PendleModalForm({
     quote,
     slippage,
     enabled: amountReady && !!quote,
-    shouldUseBatch: true,
+    shouldUseBatch,
     onMutate: () => {
       txCallbacks.onMutate();
       fireAnalytics({
@@ -274,7 +312,8 @@ export function PendleModalForm({
     sessionId,
     execute: writeHook.execute,
     confirmDisabled,
-    transactionScreenContent
+    transactionScreenContent,
+    steps
   });
 
   // The slippage gear lives in the modal header but must share this form's
