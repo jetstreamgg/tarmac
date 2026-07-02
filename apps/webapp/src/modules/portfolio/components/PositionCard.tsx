@@ -4,9 +4,9 @@ import { formatDecimalPercentage, formatUsd, getChainIcon, projectAnnualEarnings
 import { Button } from '@/components/ui/button';
 import { GainValue } from '@/components/ui/GainValue';
 import { Text } from '@/modules/layout/components/Typography';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
+import { productRingColor } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
-import { productRingColor } from '../helpers/productVisuals';
 import { ProductGlyph } from './ProductGlyph';
 
 /**
@@ -33,14 +33,12 @@ export function PositionCard({
     >
       {/* Token icon with its family-colored outline ring + network badge */}
       <div className="flex items-start justify-between">
-        <div className="rounded-full p-[3px]" style={{ border: `2px solid ${productRingColor(position)}` }}>
-          <TokenIcon
-            token={{ symbol: position.tokenSymbol }}
-            width={40}
-            showChainIcon={false}
-            className="h-10 w-10"
-          />
-        </div>
+        <ProductTokenIcon
+          symbol={position.tokenSymbol}
+          ringColor={productRingColor(position)}
+          width={40}
+          className="h-10 w-10"
+        />
         <div className="flex -space-x-1.5" data-testid="position-card-networks">
           {position.chainIds.map(id => (
             <span key={id} className="ring-container inline-flex rounded-full ring-2">

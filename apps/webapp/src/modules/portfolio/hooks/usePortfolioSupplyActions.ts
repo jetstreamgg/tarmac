@@ -3,7 +3,7 @@ import { useChainId } from 'wagmi';
 import { VAULTS } from '@/hooks';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
 import { useVaultModal } from '@/modules/morpho/hooks/useVaultModal';
-import { isMorphoVault } from '../helpers/productVisuals';
+import { isMorphoVault } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
 /**

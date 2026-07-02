@@ -1,5 +1,10 @@
 import { Morpho, Pendle } from '@/widgets';
-import { RING_PENDLE, isMorphoVault, isPendleFixed, type ProductIdentity } from '../helpers/productVisuals';
+import {
+  RING_PENDLE,
+  isMorphoVault,
+  isPendleFixed,
+  type ProductIdentity
+} from '@/components/product/productVisuals';
 
 /**
  * Provider badge shown beside a product name: the Morpho glyph for Morpho

@@ -13,8 +13,8 @@ import { formatNumber, projectAnnualEarnings, splitAmount } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { GainValue } from '@/components/ui/GainValue';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { useClaimRewardsModal } from '@/modules/claim';
 import { useVaultModal } from '../hooks/useVaultModal';
-import { useClaimRewardsModal } from '../hooks/useClaimRewardsModal';
 import { VaultSupplyCard } from './VaultSupplyCard';
 
 const NO_VALUE = '–';
@@ -166,7 +166,7 @@ export function VaultPositionCard({
             <Button
               variant="secondary"
               className="w-full"
-              onClick={openClaim}
+              onClick={() => openClaim({ kind: 'vault', vaultAddress })}
               data-testid="vault-position-claim"
             >
               <Trans>Claim rewards</Trans>
