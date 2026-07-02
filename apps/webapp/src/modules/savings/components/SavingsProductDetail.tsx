@@ -8,18 +8,16 @@ import { productNetworks, useOverallSkyData, useSavingsData, useSkySavingsRateHi
 import { formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerById } from '@/data/banners/banners';
-import { tokenColors } from '@/widgets/shared/constants';
-import { TokenIcon } from '@/modules/ui/components/TokenIcon';
+import { resolveTokenColor } from '@/widgets/shared/constants';
+import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskMeter } from '@/components/product/RiskMeter';
 import { ProductDetailTemplate, ProductDetailRow } from '@/components/product/ProductDetailTemplate';
+import { RING_DEFAULT } from '@/components/product/productVisuals';
 import { SavingsDetailChart } from './SavingsDetailChart';
 import { SavingsPositionCard } from './SavingsPositionCard';
 import { SavingsTransactionsTable } from './SavingsTransactionsTable';
 import { SavingsTransactionsFilter, SavingsTxFilter } from './SavingsTransactionsFilter';
-
-// Title glow/outline color, from the shared token-color map.
-const SUSDS_BRAND_COLOR = tokenColors.find(token => token.symbol === 'SUSDS')?.color;
 
 const NO_VALUE = '–';
 
@@ -111,9 +109,14 @@ export function SavingsProductDetail() {
       backHref={ROUTES.EARN}
       token={{
         icon: (
-          <TokenIcon token={{ symbol: 'sUSDS' }} width={48} showChainIcon={false} className="h-12 w-12" />
-        ),
-        brandColor: SUSDS_BRAND_COLOR
+          <ProductTokenIcon
+            symbol="sUSDS"
+            ringColor={RING_DEFAULT}
+            glowColor={resolveTokenColor('sUSDS')}
+            width={48}
+            className="h-12 w-12"
+          />
+        )
       }}
       title={<Trans>Sky Savings</Trans>}
       networkSelector={<ChainModal chainIds={networks} dataTestId="product-detail-network" />}

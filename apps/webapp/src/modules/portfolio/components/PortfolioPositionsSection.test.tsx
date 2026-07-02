@@ -24,6 +24,9 @@ vi.mock('wagmi', async importOriginal => {
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
   useSavingsModal: () => ({ openSupply: h.openSupply, openWithdraw: h.openWithdraw })
 }));
+vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
+  useVaultModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
+}));
 
 // Carousel → passthroughs so the cards render flat (no embla/DOM coupling).
 vi.mock('@/components/ui/carousel', () => ({
@@ -53,7 +56,12 @@ const position = (over: Partial<SuppliedPosition>): SuppliedPosition => ({
   ...over
 });
 
-const SAVINGS = position({ id: 'savings', name: 'Sky Savings Rate', kind: 'savings', detailPath: '/earn/savings' });
+const SAVINGS = position({
+  id: 'savings',
+  name: 'Sky Savings Rate',
+  kind: 'savings',
+  detailPath: '/earn/savings'
+});
 const VAULT = position({ id: 'vault-sky-1', name: 'A Vault', kind: 'vault', detailPath: '/earn/vault' });
 
 const view = (positions: SuppliedPosition[]): SuppliedView => ({

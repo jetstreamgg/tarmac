@@ -42,6 +42,7 @@ import { SelectRewards } from './SelectRewards';
 import { Vaults } from './Vaults';
 import { Convert } from './Convert';
 import { Pendle } from './Pendle';
+import { Merkl } from './Merkl';
 
 export {
   ArrowDown,
@@ -87,5 +88,6 @@ export {
   SelectRewards,
   Vaults,
   Convert,
-  Pendle
+  Pendle,
+  Merkl
 };

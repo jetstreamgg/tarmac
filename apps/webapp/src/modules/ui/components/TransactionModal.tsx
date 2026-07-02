@@ -70,6 +70,8 @@ export type TransactionModalProps = {
   entry?: TransactionEntry;
   /** Optional node rendered between the title and the close button — e.g. a slippage gear. */
   rightHeaderComponent?: ReactNode;
+  /** Optional badge rendered immediately after the title — e.g. a "Merkl" source chip. */
+  titleBadge?: ReactNode;
   onConfirm: () => void;
   onRetry?: () => void;
   onBack?: () => void;
@@ -112,6 +114,7 @@ export function TransactionModal({
   transactionScreenContent,
   entry,
   rightHeaderComponent,
+  titleBadge,
   onConfirm,
   onRetry,
   onBack,
@@ -242,6 +245,9 @@ export function TransactionModal({
               <ChevronLeft className="h-5 w-5" />
             </Button>
             <DialogTitle className="text-text text-2xl">{displayTitle}</DialogTitle>
+            {/* Source badge sits with the product title (e.g. "Merkl"); hidden once
+                the wallet/status screen relabels the title. */}
+            {isFirstScreen && titleBadge}
           </div>
           <div className="flex items-center gap-2">
             {rightHeaderComponent}

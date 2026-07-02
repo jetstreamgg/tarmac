@@ -372,6 +372,7 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
             transactionScreenContent={activeConfig.transactionScreenContent}
             entry={activeConfig.entry}
             rightHeaderComponent={activeConfig.rightHeaderComponent}
+            titleBadge={activeConfig.titleBadge}
             onConfirm={activeConfig.onConfirm}
             onRetry={handleRetry}
             onBack={resetTransactionProgress}

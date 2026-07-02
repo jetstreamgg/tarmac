@@ -3,7 +3,7 @@ import { useChains } from 'wagmi';
 import { useNavigate } from '@tanstack/react-router';
 import { Trans } from '@lingui/react/macro';
 import { Morpho } from '@/widgets';
-import { useEarnMarketplace, EarnProductKind, EarnProductRow } from '@/hooks';
+import { useEarnMarketplace, EarnProductKind } from '@/hooks';
 import { formatNumber, getChainIcon } from '@/utils';
 import { normalizeUrlParam } from '@/lib/helpers/string/normalizeUrlParam';
 import { QueryParams } from '@/lib/constants';
@@ -12,6 +12,7 @@ import { Heading } from '@/modules/layout/components/Typography';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
 import { EarnTable, EarnTableRowItem } from '@/components/product/EarnTable';
 import { EarnTableFilters, EarnFilterOption } from '@/components/product/EarnTableFilters';
+import { productIconSymbol } from '@/components/product/productVisuals';
 import { filterEarnRows, sortEarnRows } from '../helpers/earnTableState';
 import { useEarnTableState } from '../hooks/useEarnTableState';
 
@@ -26,11 +27,6 @@ const PRODUCT_LABELS: Record<EarnProductKind, React.ReactNode> = {
   fixed: <Trans>Fixed yield</Trans>,
   stusds: <Trans>Expert</Trans>
 };
-
-// Rewards rows supply USDS but are recognized by their reward token; the row
-// id encodes it ('rewards-spk' → SPK).
-const productIconSymbol = (row: EarnProductRow) =>
-  row.kind === 'rewards' ? row.id.replace('rewards-', '').toUpperCase() : row.tokenSymbol;
 
 const maturityFormatter = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',

@@ -1,17 +1,12 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useChainId, useChains } from 'wagmi';
 import { formatUnits } from 'viem';
 import { Trans } from '@lingui/react/macro';
 import { t } from '@lingui/core/macro';
 import { formatBigInt, formatNumber } from '@/utils';
 import { Text } from '@/modules/layout/components/Typography';
-import { useTransaction, useEntrySlot } from '@/modules/ui/context/TransactionContext';
+import { useModalEntryBody } from '@/modules/ui/hooks/useModalEntryBody';
 import { useSavingsLaunch, type SavingsLaunchFlow } from '../hooks/useSavingsLaunch';
-import {
-  useSavingsTransactionForm,
-  type SavingsModalPreset
-} from '../hooks/useSavingsTransactionForm';
+import { useSavingsTransactionForm, type SavingsModalPreset } from '../hooks/useSavingsTransactionForm';
 import { buildSupplyModalRows, buildWithdrawModalRows, type SavingsModalRow } from './savingsModalRows';
 import { SavingsOriginSelect } from './SavingsOriginSelect';
 
@@ -71,12 +66,6 @@ export function SavingsModalForm({
 }) {
   const chainId = useChainId();
   const chains = useChains();
-  const { updateModalContent } = useTransaction();
-  // Rendered as the modal's `backgroundContent` (a hidden, always-mounted host so
-  // the in-flight engine hook survives minimize). The visible inputs portal into
-  // the dialog's entry slot when present; with no slot (standalone / minimized)
-  // they render inline in the hidden host.
-  const entrySlot = useEntrySlot();
 
   const form = useSavingsTransactionForm({ flow, preset });
   const {
@@ -105,29 +94,17 @@ export function SavingsModalForm({
   const { execute, steps, prepared } = useSavingsLaunch(engineParams);
   const disabled = !amountReady || !prepared;
 
-  // The modal's confirm calls this. `execute` is rebuilt every render (its calls
-  // array is fresh each time), so pushing it directly would loop the sync below;
-  // instead a stable handler reads the latest `execute` from a ref kept current in
-  // an effect — so `onConfirm` need never be re-pushed.
-  const executeRef = useRef(execute);
-  useEffect(() => {
-    executeRef.current = execute;
-  }, [execute]);
-  const onConfirm = useCallback(() => executeRef.current(), []);
-
-  // Keep the shared modal's confirm gating + handler + step labels + the
-  // wallet-screen summary + minimized-toast titles in sync. Merged (not replacing
-  // `content`), so the body never remounts; bounded to amount-driven changes, so it
-  // can't loop on provider re-renders.
-  useEffect(() => {
-    updateModalContent(sessionId, {
-      entry: { confirmDisabled: disabled },
-      onConfirm,
-      steps,
-      transactionScreenContent,
-      toast
-    });
-  }, [sessionId, disabled, steps, onConfirm, transactionScreenContent, toast, updateModalContent]);
+  // Stable confirm over a live `execute` ref + the `updateModalContent` push that
+  // keeps the shared modal's confirm gating / step labels / wallet summary / toast
+  // titles in sync, and the entry-slot portal. Returns the slot renderer.
+  const renderInSlot = useModalEntryBody({
+    sessionId,
+    execute,
+    confirmDisabled: disabled,
+    steps,
+    transactionScreenContent,
+    toast
+  });
 
   const networkName = chains.find(c => c.id === chainId)?.name ?? 'Ethereum';
   // The position is always USDS-denominated (18-dec — on L2 `userSavingsBalance` is
@@ -216,7 +193,5 @@ export function SavingsModalForm({
     </div>
   );
 
-  // Display inside the dialog when its entry slot is mounted; otherwise render
-  // inline in the hidden host (keeps the body — and its engine hook — mounted).
-  return entrySlot ? createPortal(body, entrySlot) : body;
+  return renderInSlot(body);
 }

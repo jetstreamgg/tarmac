@@ -4,7 +4,13 @@ import { formatUnits } from 'viem';
 import { TrendingUp } from 'lucide-react';
 import { Trans } from '@lingui/react/macro';
 import { useSavingsData, useTokenBalance, useOverallSkyData, TOKENS } from '@/hooks';
-import { formatDecimalPercentage, formatNumber, formatUsd, projectAnnualEarnings } from '@/utils';
+import {
+  formatDecimalPercentage,
+  formatNumber,
+  formatUsd,
+  projectAnnualEarnings,
+  splitAmount
+} from '@/utils';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/button';
 import { TokenIcon } from '@/modules/ui/components/TokenIcon';
@@ -15,19 +21,6 @@ const NO_VALUE = '–';
 
 const formatToken = (value?: bigint) =>
   value === undefined ? NO_VALUE : formatNumber(parseFloat(formatUnits(value, 18)), { maxDecimals: 2 });
-
-/**
- * Splits a token amount into its grouped integer part and trailing fraction, so
- * the hero can render the whole number large and the decimals small/dimmed
- * (e.g. `100,000` + `.00026`). Returns an empty `fraction` when there is none.
- */
-function splitAmount(value: number, fractionDigits = 5): { whole: string; fraction: string } {
-  const whole = Math.trunc(value);
-  const fractionRaw = Math.round((value - whole) * 10 ** fractionDigits);
-  const fraction =
-    fractionRaw > 0 ? String(fractionRaw).padStart(fractionDigits, '0').replace(/0+$/, '') : '';
-  return { whole: formatNumber(whole, { maxDecimals: 0 }), fraction };
-}
 
 function Stat({ label, className, children }: { label: ReactNode; className?: string; children: ReactNode }) {
   return (

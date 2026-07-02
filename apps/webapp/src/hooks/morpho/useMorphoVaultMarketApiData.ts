@@ -228,6 +228,7 @@ export async function fetchMorphoVaultMarketData(
       collateralAsset: market.collateralAsset.symbol,
       formattedAssets: formatBigInt(vaultAssets, { unit: assetDecimals, compact: true }),
       formattedAssetsUsd: `$${formatNumber(vaultAssetsUsd, { compact: true })}`,
+      assetsUsd: vaultAssetsUsd,
       formattedNetApy: `${(market.state.netSupplyApy * 100).toFixed(2)}%`,
       totalSupplyAssets,
       totalBorrowAssets,

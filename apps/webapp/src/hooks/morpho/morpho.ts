@@ -94,6 +94,8 @@ export type MorphoMarketAllocation = {
   formattedAssets: string;
   /** Formatted assets in USD (e.g., "$5.93M") */
   formattedAssetsUsd: string;
+  /** Assets allocated to this market, in USD (numeric — for share/proportion math). */
+  assetsUsd: number;
   /** Formatted net APY (e.g., "3.68%") */
   formattedNetApy: string;
   /** Total assets supplied to the market */
