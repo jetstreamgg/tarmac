@@ -15,6 +15,7 @@ import {
 import { calculateApyFromStr, formatDecimalPercentage, formatNumber } from '@/utils';
 import { parseBannerContent } from '@/utils/bannerContentParser';
 import { getBannerByIdAndModule } from '@/data/banners/helpers';
+import { resolveTokenColor } from '@/widgets/shared/constants';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskMeter } from '@/components/product/RiskMeter';
@@ -135,7 +136,7 @@ export function StUsdsProductDetail() {
           <ProductTokenIcon
             symbol="stUSDS"
             ringColor={RING_DEFAULT}
-            glowColor={RING_DEFAULT}
+            glowColor={resolveTokenColor('stUSDS')}
             width={48}
             className="h-12 w-12"
           />
