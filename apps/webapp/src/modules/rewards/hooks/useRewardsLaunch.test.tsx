@@ -318,14 +318,24 @@ describe('useRewardsLaunch — step labels', () => {
   it('labels the supply steps "Approve USDS" / "Supply USDS", eliding the approve with allowance', () => {
     h.allowance = 0n;
     const a = renderHook(() =>
-      useRewardsLaunch({ flow: 'supply', contractAddress: SPK_CONTRACT, supplyToken: TOKENS.usds, amount: AMOUNT })
+      useRewardsLaunch({
+        flow: 'supply',
+        contractAddress: SPK_CONTRACT,
+        supplyToken: TOKENS.usds,
+        amount: AMOUNT
+      })
     );
     expect(a.result.current.steps).toEqual(['Approve USDS', 'Supply USDS']);
     a.unmount();
 
     h.allowance = HAS_ALLOWANCE;
     const b = renderHook(() =>
-      useRewardsLaunch({ flow: 'supply', contractAddress: SPK_CONTRACT, supplyToken: TOKENS.usds, amount: AMOUNT })
+      useRewardsLaunch({
+        flow: 'supply',
+        contractAddress: SPK_CONTRACT,
+        supplyToken: TOKENS.usds,
+        amount: AMOUNT
+      })
     );
     expect(b.result.current.steps).toEqual(['Supply USDS']);
     b.unmount();
