@@ -7,7 +7,6 @@ import { ROUTES } from '@/lib/routes';
 import { Intent } from '@/lib/enums';
 import { productNetworks, usePendleMarketsApiData, type PendleMarketConfig } from '@/hooks';
 import { formatDecimalPercentage, formatNumber } from '@/utils';
-import { Pendle } from '@/widgets';
 import { ProductTokenIcon } from '@/modules/ui/components/ProductTokenIcon';
 import { ChainModal } from '@/modules/ui/components/ChainModal';
 import { RiskMeter } from '@/components/product/RiskMeter';
@@ -120,7 +119,9 @@ export function PendleProductDetail({ market }: PendleProductDetailProps) {
           <span className="flex flex-wrap items-center gap-3">
             {market.name}
             <span className="bg-surface text-textSecondary flex items-center gap-1 rounded-full py-1 pr-2 pl-1 text-xs font-medium">
-              <Pendle className="h-4 w-4" />
+              {/* Brand-colored mark from the design system (a bitmap in Figma too) —
+                  the monochrome <Pendle /> glyph reads wrong at badge size. */}
+              <img src="/images/pendle_logo.png" alt="" className="h-4 w-4" />
               <Trans>Powered by Pendle</Trans>
             </span>
           </span>
