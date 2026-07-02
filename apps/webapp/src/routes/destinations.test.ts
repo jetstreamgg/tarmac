@@ -27,12 +27,23 @@ describe('target-IA destination routes', () => {
 
   it.each([
     [ROUTES.EARN_SAVINGS, '/_shell/earn/savings'],
-    [ROUTES.EARN_REWARDS, '/_shell/earn/rewards'],
     [ROUTES.EARN_VAULTS, '/_shell/earn/vaults'],
     [ROUTES.EARN_FIXED, '/_shell/earn/fixed'],
     [ROUTES.EARN_EXPERT, '/_shell/earn/expert']
   ])('boots the %s module under the Earn destination', async (path, routeId) => {
     expect(matchedRouteIds(await routerAt(path))).toContain(routeId);
+  });
+
+  it('boots the per-farm rewards detail route under the Earn destination (D6)', async () => {
+    const reward = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';
+    expect(matchedRouteIds(await routerAt(`${ROUTES.EARN_REWARDS}/${reward}`))).toContain(
+      '/_shell/earn/rewards/$rewardContract'
+    );
+  });
+
+  it('redirects the bare /earn/rewards index to the Earn marketplace (D6 — no overview screen)', async () => {
+    const router = await routerAt(ROUTES.EARN_REWARDS);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN);
   });
 
   it('declares the Balances intent on /portfolio for shell orchestration', async () => {
@@ -67,7 +78,8 @@ describe('root path', () => {
 describe('pre-flip module path redirects', () => {
   it.each([
     ['/savings', ROUTES.EARN_SAVINGS],
-    ['/rewards', ROUTES.EARN_REWARDS],
+    // /rewards chains through /earn/rewards, whose index forwards to /earn (D6).
+    ['/rewards', ROUTES.EARN],
     ['/vaults', ROUTES.EARN_VAULTS],
     ['/fixed', ROUTES.EARN_FIXED],
     ['/expert', ROUTES.EARN_EXPERT],
