@@ -24,6 +24,9 @@ vi.mock('wagmi', async importOriginal => {
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
   useSavingsModal: () => ({ openSupply: h.openSupply, openWithdraw: h.openWithdraw })
 }));
+vi.mock('@/modules/stusds/hooks/useStUsdsModal', () => ({
+  useStUsdsModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
+}));
 vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
   useVaultModal: () => ({ openSupply: vi.fn(), openWithdraw: vi.fn() })
 }));
