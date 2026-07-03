@@ -65,10 +65,10 @@ function renderComponent(ui: ReactNode) {
 }
 
 const TestConsumer = ({ flow }: { flow: 'supply' | 'withdraw' }) => {
-  const { openSupply, openWithdraw } = usePendleModal({ market: MARKET });
+  const { openSupply, openWithdraw } = usePendleModal();
   useEffect(() => {
-    if (flow === 'supply') openSupply();
-    else openWithdraw();
+    if (flow === 'supply') openSupply(MARKET);
+    else openWithdraw(MARKET);
   }, [flow, openSupply, openWithdraw]);
   return null;
 };
@@ -106,10 +106,10 @@ describe('usePendleModal', () => {
 
   it('uses distinct sessions for supply and withdraw', () => {
     const Both = () => {
-      const { openSupply, openWithdraw } = usePendleModal({ market: MARKET });
+      const { openSupply, openWithdraw } = usePendleModal();
       useEffect(() => {
-        openSupply();
-        openWithdraw();
+        openSupply(MARKET);
+        openWithdraw(MARKET);
       }, [openSupply, openWithdraw]);
       return null;
     };

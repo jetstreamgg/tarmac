@@ -7,7 +7,10 @@ const h = vi.hoisted(() => ({
   openSavingsSupply: vi.fn(),
   openStUsdsSupply: vi.fn(),
   openVaultSupply: vi.fn(),
-  chainId: 1
+  openPendleSupply: vi.fn(),
+  chainId: 1,
+  // Far-future expiry so the market reads as active; the maturity test flips it.
+  pendleMarket: { name: 'PT-sUSDS', slug: 'pt-susds', marketAddress: '0x9C5', expiry: 4102444800 }
 }));
 
 vi.mock('wagmi', () => ({ useChainId: () => h.chainId }));
@@ -21,7 +24,10 @@ vi.mock('@/hooks', () => ({
       assetToken: { symbol: 'USDC' }
     },
     { provider: 'sky', name: 'Tether Savings', vaultAddress: { 1: '0xDEF' }, assetToken: { symbol: 'USDT' } }
-  ]
+  ],
+  getPendleMarketByAddress: (address: string) =>
+    address.toLowerCase() === h.pendleMarket.marketAddress.toLowerCase() ? h.pendleMarket : undefined,
+  isMarketMatured: (expiry: number) => expiry * 1000 <= Date.now()
 }));
 
 vi.mock('@/modules/savings/hooks/useSavingsModal', () => ({
@@ -34,6 +40,10 @@ vi.mock('@/modules/stusds/hooks/useStUsdsModal', () => ({
 
 vi.mock('@/modules/morpho/hooks/useVaultModal', () => ({
   useVaultModal: () => ({ openSupply: h.openVaultSupply, openWithdraw: vi.fn() })
+}));
+
+vi.mock('@/modules/pendle/hooks/usePendleModal', () => ({
+  usePendleModal: () => ({ openSupply: h.openPendleSupply, openWithdraw: vi.fn() })
 }));
 
 const position = (
@@ -58,7 +68,9 @@ describe('usePortfolioSupplyActions', () => {
     h.openSavingsSupply.mockClear();
     h.openStUsdsSupply.mockClear();
     h.openVaultSupply.mockClear();
+    h.openPendleSupply.mockClear();
     h.chainId = 1;
+    h.pendleMarket.expiry = 4102444800;
   });
   afterEach(() => cleanup());
 
@@ -123,11 +135,39 @@ describe('usePortfolioSupplyActions', () => {
     expect(h.openStUsdsSupply).not.toHaveBeenCalled();
   });
 
+  it('resolves a fixed (Pendle) position to an opener that launches the supply modal with its market', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    const handler = result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }));
+
+    expect(handler).toBeTypeOf('function');
+    handler!();
+    expect(h.openPendleSupply).toHaveBeenCalledWith(h.pendleMarket);
+  });
+
+  it('returns undefined for a fixed position off the connected chain', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    expect(
+      result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5', chainIds: [8453] }))
+    ).toBeUndefined();
+    expect(h.openPendleSupply).not.toHaveBeenCalled();
+  });
+
+  it('returns undefined for a matured fixed market (redemption lives on the overview)', () => {
+    h.pendleMarket.expiry = 1; // long past
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    expect(result.current(position('fixed', { id: 'fixed-0x9c5', address: '0x9C5' }))).toBeUndefined();
+    expect(h.openPendleSupply).not.toHaveBeenCalled();
+  });
+
+  it('returns undefined for a fixed position whose address is not in the market registry', () => {
+    const { result } = renderHook(() => usePortfolioSupplyActions());
+    expect(result.current(position('fixed', { id: 'fixed-0x404', address: '0x404' }))).toBeUndefined();
+    expect(h.openPendleSupply).not.toHaveBeenCalled();
+  });
+
   it('returns undefined for products with no in-place supply modal (caller navigates)', () => {
     const { result } = renderHook(() => usePortfolioSupplyActions());
 
-    for (const kind of ['rewards', 'fixed'] as const) {
-      expect(result.current(position(kind))).toBeUndefined();
-    }
+    expect(result.current(position('rewards'))).toBeUndefined();
   });
 });

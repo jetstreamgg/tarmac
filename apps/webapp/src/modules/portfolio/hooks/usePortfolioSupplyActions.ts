@@ -1,9 +1,10 @@
 import { useCallback } from 'react';
 import { useChainId } from 'wagmi';
-import { VAULTS } from '@/hooks';
+import { VAULTS, getPendleMarketByAddress, isMarketMatured } from '@/hooks';
 import { useSavingsModal } from '@/modules/savings/hooks/useSavingsModal';
 import { useStUsdsModal } from '@/modules/stusds/hooks/useStUsdsModal';
 import { useVaultModal } from '@/modules/morpho/hooks/useVaultModal';
+import { usePendleModal } from '@/modules/pendle/hooks/usePendleModal';
 import { isMorphoVault } from '@/components/product/productVisuals';
 import type { SuppliedPosition } from '../helpers/suppliedView';
 
@@ -26,6 +27,7 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
   const { openSupply: openSavingsSupply } = useSavingsModal();
   const { openSupply: openStUsdsSupply } = useStUsdsModal();
   const { openSupply: openVaultSupply } = useVaultModal();
+  const { openSupply: openPendleSupply } = usePendleModal();
 
   return useCallback(
     (position: SuppliedPosition) => {
@@ -57,12 +59,21 @@ export function usePortfolioSupplyActions(): (position: SuppliedPosition) => (()
         case 'stusds':
           // Singleton product, mainnet-family only — no call-time args needed.
           return onConnectedChain ? () => openStUsdsSupply() : undefined;
-        // 'rewards' | 'fixed' have no in-place supply modal yet — add a case as
-        // each product's trigger is integrated.
+        case 'fixed': {
+          // Resolve the registry market from the position's address. Matured
+          // markets take no new supply — their card navigates to the overview,
+          // where redemption lives (maturity gating unchanged).
+          if (!onConnectedChain || !position.address) return undefined;
+          const market = getPendleMarketByAddress(position.address);
+          if (!market || isMarketMatured(market.expiry)) return undefined;
+          return () => openPendleSupply(market);
+        }
+        // 'rewards' has no in-place supply modal yet — add a case as each
+        // product's trigger is integrated.
         default:
           return undefined;
       }
     },
-    [connectedChainId, openSavingsSupply, openStUsdsSupply, openVaultSupply]
+    [connectedChainId, openSavingsSupply, openStUsdsSupply, openVaultSupply, openPendleSupply]
   );
 }

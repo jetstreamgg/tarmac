@@ -169,7 +169,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
     mutateBalances();
   }, [mutateBalances]);
 
-  const { openSupply, openWithdraw } = usePendleModal({ market, onSuccess: refresh });
+  const { openSupply, openWithdraw } = usePendleModal({ onSuccess: refresh });
 
   if (ptBalance === 0n) {
     return (
@@ -177,7 +177,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
         market={market}
         fixedApy={stats?.impliedApy}
         remainingDays={remainingDays}
-        onSupply={openSupply}
+        onSupply={() => openSupply(market)}
       />
     );
   }
@@ -240,7 +240,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           <Button
             variant="primary"
             className="w-full"
-            onClick={openSupply}
+            onClick={() => openSupply(market)}
             disabled={!isConnected}
             data-testid="pendle-position-supply"
           >
@@ -249,7 +249,7 @@ export function PendlePositionCard({ market }: { market: PendleMarketConfig }) {
           <Button
             variant="secondary"
             className="w-full"
-            onClick={openWithdraw}
+            onClick={() => openWithdraw(market)}
             disabled={!isConnected}
             data-testid="pendle-position-withdraw"
           >
