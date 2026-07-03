@@ -1,8 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ExpertIntent } from '@/lib/enums';
 
-// Gated on the expert risk disclaimer in useAppOrchestration's route-validation
-// effect (user settings live in React context).
-export const Route = createFileRoute('/_shell/earn/expert/stusds')({
-  staticData: { expertIntent: ExpertIntent.STUSDS_INTENT }
-});
+// Old stUSDS detail URL under the retired Expert module — the parent
+// /earn/expert route's beforeLoad forwards both to /earn/stusds (D7).
+export const Route = createFileRoute('/_shell/earn/expert/stusds')({});

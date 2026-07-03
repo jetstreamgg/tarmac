@@ -141,7 +141,7 @@ describe('legacyPathToLocation', () => {
     expect(legacyPathToLocation('/rewards')).toEqual({ to: '/earn/rewards', search: {} });
     expect(legacyPathToLocation('/vaults')).toEqual({ to: '/earn/vaults', search: {} });
     expect(legacyPathToLocation('/fixed')).toEqual({ to: '/earn/fixed', search: {} });
-    expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/expert', search: {} });
+    expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/stusds', search: {} });
   });
 
   it('tolerates trailing slashes', () => {
@@ -171,11 +171,9 @@ describe('legacyPathToLocation', () => {
     });
   });
 
-  it('keeps the expert module as a path segment', () => {
-    expect(legacyPathToLocation('/expert/stusds')).toEqual({
-      to: '/earn/expert/stusds',
-      search: {}
-    });
+  it('collapses both expert paths onto the flattened stUSDS page', () => {
+    expect(legacyPathToLocation('/expert')).toEqual({ to: '/earn/stusds', search: {} });
+    expect(legacyPathToLocation('/expert/stusds')).toEqual({ to: '/earn/stusds', search: {} });
   });
 
   it('drops unrecognised trailing segments and lands on the destination', () => {

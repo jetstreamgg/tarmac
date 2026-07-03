@@ -84,12 +84,13 @@ describe('buildEarnProducts', () => {
     expect(byId['rewards-spk'].detailPath).toBe(
       `${ROUTES.EARN_REWARDS}/${REWARD_FIXTURES[0].contractAddress}`
     );
-    expect(byId['stusds'].detailPath).toBe(`${ROUTES.EARN_EXPERT}/stusds`);
+    expect(byId['stusds'].detailPath).toBe(ROUTES.EARN_STUSDS);
     for (const product of products.filter(p => p.kind === 'vault')) {
       expect(product.detailPath.startsWith(`${ROUTES.EARN_VAULTS}/`)).toBe(true);
     }
     for (const product of products.filter(p => p.kind === 'fixed')) {
-      expect(product.detailPath).toBe(`${ROUTES.EARN_FIXED}/market/${product.address}`);
+      const market = PENDLE_MARKETS.find(m => m.marketAddress === product.address);
+      expect(product.detailPath).toBe(`${ROUTES.EARN_FIXED}/${market?.slug}`);
       expect(product.maturity).toBeGreaterThan(0);
     }
   });

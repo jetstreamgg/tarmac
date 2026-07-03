@@ -394,6 +394,7 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
     // wrapped yield-bearing token). PT redeems to 1 USDS at maturity per
     // SY.assetInfo (assetType=0 TOKEN, USDS), so usdsEquivalence is 'pegged'.
     name: 'PT-sUSDS',
+    slug: 'pt-susds',
     marketAddress: '0x9c560ebaf78e596cbcc27411d633a74d628dd7dc',
     ptToken: '0xdc169abe56461a2e0c034da431ac2a3ebf596094',
     ytToken: '0xc7b8551c6b286ce0b44952320e940bd3dee58a09',
@@ -416,4 +417,8 @@ export const PENDLE_MARKETS: PendleMarketConfig[] = [
 export function getPendleMarketByAddress(address: `0x${string}`): PendleMarketConfig | undefined {
   const lower = address.toLowerCase();
   return PENDLE_MARKETS.find(m => m.marketAddress.toLowerCase() === lower);
+}
+
+export function getPendleMarketBySlug(slug: string): PendleMarketConfig | undefined {
+  return PENDLE_MARKETS.find(m => m.slug === slug);
 }

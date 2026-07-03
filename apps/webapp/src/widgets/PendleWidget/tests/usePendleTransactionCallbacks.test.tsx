@@ -22,6 +22,7 @@ i18n.activate('en');
 
 const MARKET: PendleMarketConfig = {
   name: 'PT-USDG',
+  slug: 'pt-usdg',
   marketAddress: '0xc5b32dba5f29f8395fb9591e1a15f23a75214f33',
   ptToken: '0x9db38d74a0d29380899ad354121dfb521adb0548',
   ytToken: '0x4a1294749a70bc32a998b49dd11bf26e9379e3c1',

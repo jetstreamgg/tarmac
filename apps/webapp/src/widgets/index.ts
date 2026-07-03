@@ -10,7 +10,6 @@ export type {
   ExternalWidgetState
 } from './shared/types/widgetState';
 export * from './SavingsWidget/lib/constants';
-export * from './StUSDSWidget/lib/constants';
 export * from './TradeWidget/lib/constants';
 export * from './UpgradeWidget/lib/constants';
 export { RewardsFlow, RewardsScreen, RewardsAction } from './RewardsWidget/lib/constants';
@@ -32,10 +31,10 @@ export {
   PENDLE_BUY_SLIPPAGE_STORAGE_KEY,
   PENDLE_SELL_SLIPPAGE_STORAGE_KEY,
   PENDLE_REDEEM_SLIPPAGE_STORAGE_KEY,
-  PENDLE_DEFAULT_REDEEM_SLIPPAGE
+  PENDLE_DEFAULT_REDEEM_SLIPPAGE,
+  PENDLE_HISTORY_REFRESH_MS
 } from './PendleWidget/lib/constants';
 
-export { StUSDSWidget } from './StUSDSWidget';
 export { UpgradeWidget } from './UpgradeWidget';
 export { RewardsWidget } from './RewardsWidget';
 export { TradeWidget } from './TradeWidget';

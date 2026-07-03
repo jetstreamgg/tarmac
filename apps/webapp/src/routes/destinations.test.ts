@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, type AnyRouter } from '@tanstack/react-router';
 import { createAppRouter } from '@/pages/router';
 import { Intent } from '@/lib/enums';
 import { ROUTES } from '@/lib/routes';
+import { PENDLE_MARKETS } from '@/hooks/pendle/constants';
 
 // Boots the app's real router (route tree + redirects + not-found config)
 // against a path without rendering, so a missing destination route or broken
@@ -30,7 +31,7 @@ describe('target-IA destination routes', () => {
     [ROUTES.EARN_REWARDS, '/_shell/earn/rewards'],
     [ROUTES.EARN_VAULTS, '/_shell/earn/vaults'],
     [ROUTES.EARN_FIXED, '/_shell/earn/fixed'],
-    [ROUTES.EARN_EXPERT, '/_shell/earn/expert']
+    [ROUTES.EARN_STUSDS, '/_shell/earn/stusds']
   ])('boots the %s module under the Earn destination', async (path, routeId) => {
     expect(matchedRouteIds(await routerAt(path))).toContain(routeId);
   });
@@ -70,12 +71,22 @@ describe('pre-flip module path redirects', () => {
     ['/rewards', ROUTES.EARN_REWARDS],
     ['/vaults', ROUTES.EARN_VAULTS],
     ['/fixed', ROUTES.EARN_FIXED],
-    ['/expert', ROUTES.EARN_EXPERT],
-    ['/expert/stusds', `${ROUTES.EARN_EXPERT}/stusds`]
+    ['/expert', ROUTES.EARN_STUSDS],
+    ['/expert/stusds', ROUTES.EARN_STUSDS]
   ])('redirects %s to %s', async (from, to) => {
     const router = await routerAt(from);
     expect(router.state.location.pathname).toBe(to);
   });
+
+  // The Expert module collapsed into /earn/stusds (D7) — its old /earn URLs
+  // (both generations could have been bookmarked) forward there.
+  it.each([['/earn/expert'], ['/earn/expert/stusds']])(
+    'redirects the retired %s to /earn/stusds',
+    async from => {
+      const router = await routerAt(from);
+      expect(router.state.location.pathname).toBe(ROUTES.EARN_STUSDS);
+    }
+  );
 
   it('keeps entity segments in the path and preserves search params', async () => {
     const reward = '0x0650CAF159C5A49f711e8169D4336ECB9b950275';
@@ -88,6 +99,39 @@ describe('pre-flip module path redirects', () => {
     const router = await routerAt('/?widget=savings&network=base');
     expect(router.state.location.pathname).toBe(ROUTES.EARN_SAVINGS);
     expect(router.state.location.search).toEqual({ network: 'base' });
+  });
+});
+
+describe('fixed (Pendle) market detail routes', () => {
+  const market = PENDLE_MARKETS[0];
+
+  it('boots /earn/fixed/:slug full-width for a live market', async () => {
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/${market.slug}`);
+    const match = router.state.matches.find(m => (m.routeId as string) === '/_shell/earn/fixed/$slug');
+    expect(match).toBeDefined();
+    expect(match?.staticData?.fullWidth).toBe(true);
+  });
+
+  it('falls back to the fixed overview for an unknown slug', async () => {
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/pt-does-not-exist`);
+    expect(router.state.location.pathname).toBe(ROUTES.EARN_FIXED);
+  });
+
+  it('redirects a matured market detail to the fixed overview', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date((market.expiry + 60) * 1000));
+    try {
+      const router = await routerAt(`${ROUTES.EARN_FIXED}/${market.slug}`);
+      expect(router.state.location.pathname).toBe(ROUTES.EARN_FIXED);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('redirects the legacy market/:address path to the slug route, preserving search', async () => {
+    const router = await routerAt(`${ROUTES.EARN_FIXED}/market/${market.marketAddress}?network=ethereum`);
+    expect(router.state.location.pathname).toBe(`${ROUTES.EARN_FIXED}/${market.slug}`);
+    expect(router.state.location.search).toEqual({ network: 'ethereum' });
   });
 });
 
