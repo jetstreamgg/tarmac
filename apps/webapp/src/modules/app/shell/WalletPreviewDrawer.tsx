@@ -68,7 +68,9 @@ export function WalletPreviewDrawer({
             onSwitchAccountClick={onSwitchAccountClick}
             onDisconnect={onDisconnect}
           />
-          <div className="bg-containerDark flex min-h-0 flex-1 flex-col p-3 pt-7">
+          {/* pr compensates the 10px scrollbar gutter reserved inside the tab
+              panels so left/right content insets stay visually equal. */}
+          <div className="bg-containerDark flex min-h-0 flex-1 flex-col pt-7 pr-0.5 pb-3 pl-3">
             <WalletDrawerTabs />
           </div>
         </div>
